@@ -5,9 +5,12 @@ import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { WithClientService } from "@/services/ClientService/ClientService.ts";
 import { Route, Routes } from "react-router-dom";
 
-export function RootWidget(props: WithServices<[WithAuthService]>) {
+export function RootWidget(
+  props: WithServices<[WithAuthService, WithClientService]>,
+) {
   return (
     <Routes>
       <Route

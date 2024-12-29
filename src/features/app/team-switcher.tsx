@@ -1,3 +1,9 @@
+import { Client } from "@/api/clients/clients.api.ts";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,42 +19,51 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { getInitials } from "@/platform/lang/getInitials.ts";
 import { ChevronsUpDown, Plus } from "lucide-react";
 import * as React from "react";
 
-export function TeamSwitcher({
-  clients,
-}: {
-  clients: {
-    name: string;
-    logo: React.ElementType;
-    plan: string;
-  }[];
-}) {
+export function TeamSwitcher({ clients }: { clients: Client[] }) {
   const { isMobile } = useSidebar();
   const [activeTeam, setActiveTeam] = React.useState(clients[0]);
+
+  if (clients.length === 0) {
+    console.error("No clients found");
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <activeTeam.logo className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {activeTeam.name}
-                </span>
-                <span className="truncate text-xs">{activeTeam.plan}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
+          {activeTeam && (
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              >
+                <Avatar asChild>
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    {activeTeam.avatarUrl && (
+                      <AvatarImage
+                        src={activeTeam.avatarUrl}
+                        alt={activeTeam.name}
+                      />
+                    )}
+                    <AvatarFallback>
+                      {getInitials(activeTeam.name)}
+                    </AvatarFallback>
+                  </div>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">
+                    {activeTeam.name}
+                  </span>
+                  {/*<span className="truncate text-xs">{activeTeam.plan}</span>*/}
+                </div>
+                <ChevronsUpDown className="ml-auto" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+          )}
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             align="start"
@@ -64,9 +79,14 @@ export function TeamSwitcher({
                 onClick={() => setActiveTeam(team)}
                 className="gap-2 p-2"
               >
-                <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <team.logo className="size-4 shrink-0" />
-                </div>
+                <Avatar className="size-4" asChild>
+                  <div className="flex size-6 items-center justify-center rounded-sm border">
+                    {team.avatarUrl && (
+                      <AvatarImage src={team.avatarUrl} alt={team.name} />
+                    )}
+                    <AvatarFallback>{getInitials(team.name)}</AvatarFallback>
+                  </div>
+                </Avatar>
                 {team.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>

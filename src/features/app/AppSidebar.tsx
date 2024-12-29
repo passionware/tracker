@@ -6,6 +6,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { renderError } from "@/features/_common/renderError.tsx";
 
 import { NavMain } from "@/features/app/nav-main.tsx";
 import { NavProjects } from "@/features/app/nav-projects.tsx";
@@ -13,14 +14,12 @@ import { NavUser } from "@/features/app/nav-user.tsx";
 import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { WithClientService } from "@/services/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
 import {
-  AudioWaveform,
   BookOpen,
   Bot,
-  Command,
   Frame,
-  GalleryVerticalEnd,
   Map,
   PieChart,
   Settings2,
@@ -30,23 +29,6 @@ import { ComponentProps } from "react";
 
 // This is sample data.
 const data = {
-  clients: [
-    {
-      name: "Atellio",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "eKosztorysowanie",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Countful",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
       title: "Playground",
@@ -156,12 +138,20 @@ const data = {
 export function AppSidebar({
   services,
   ...props
-}: WithServices<[WithAuthService]> & ComponentProps<typeof Sidebar>) {
+}: WithServices<[WithAuthService, WithClientService]> &
+  ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
+  const clients = services.clientService.useClients();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher clients={data.clients} />
+        {rd
+          .journey(clients)
+          .wait(<Skeleton className="w-20 h-4" />)
+          .catch(renderError)
+          .map((clients) => (
+            <TeamSwitcher clients={clients} />
+          ))}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
