@@ -1,10 +1,24 @@
 import { AuthInfo, AuthService } from "@/services/AuthService/AuthService.ts";
 import { rd, RemoteData } from "@passionware/monads";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { promiseState } from "@passionware/platform-react";
+import { SupabaseClient, User } from "@supabase/supabase-js";
 import { create } from "zustand";
 
 export function createAuthService(client: SupabaseClient): AuthService {
   const useAuth = create<RemoteData<AuthInfo>>(rd.ofIdle);
+
+  function getUserData(user: User) {
+    // Bezpośrednio z obiektu user:
+    const email = user.email;
+
+    // Z metadanych:
+    const displayName =
+      user.user_metadata?.full_name || user.user_metadata?.display_name;
+    const avatarUrl = user.user_metadata?.avatar_url;
+    const id = user.id;
+
+    return { id, email, displayName, avatarUrl };
+  }
 
   async function init() {
     // 1. Pobieramy aktualną sesję
@@ -21,7 +35,7 @@ export function createAuthService(client: SupabaseClient): AuthService {
       useAuth.setState(rd.ofError(new Error("No session")));
       return;
     }
-    useAuth.setState(rd.of({}));
+    useAuth.setState(rd.of(getUserData(session.user)));
   }
   init();
   client.auth.onAuthStateChange((event, currentSession) => {
@@ -29,12 +43,7 @@ export function createAuthService(client: SupabaseClient): AuthService {
       case "SIGNED_IN":
         // Użytkownik się zalogował
         if (currentSession) {
-          useAuth.setState(
-            rd.of({
-              user: currentSession.user,
-              session: currentSession,
-            }),
-          );
+          useAuth.setState(rd.of(getUserData(currentSession.user)));
         } else {
           // To się rzadko zdarza, ale możesz obsłużyć sytuację braku session
           useAuth.setState(rd.ofError(new Error("SIGNED_IN without session")));
@@ -51,12 +60,7 @@ export function createAuthService(client: SupabaseClient): AuthService {
       case "TOKEN_REFRESHED":
         // Token został odświeżony
         if (currentSession) {
-          useAuth.setState(
-            rd.of({
-              user: currentSession.user, // todo decide if we need to update user
-              session: currentSession,
-            }),
-          );
+          useAuth.setState(rd.of(getUserData(currentSession.user)));
         } else {
           // Podobnie jak wyżej – raczej rzadki edge case.
           useAuth.setState(
@@ -74,5 +78,31 @@ export function createAuthService(client: SupabaseClient): AuthService {
 
   return {
     useAuth,
+    loginWithGoogle: async () => {
+      await promiseState.syncRemoteData(useAuth.setState).track(
+        (async () => {
+          const { error } = await client.auth.signInWithOAuth({
+            provider: "google",
+          });
+          if (error) {
+            throw error;
+          }
+          {
+            const { error, data } = await client.auth.getSession();
+            if (error) {
+              throw error;
+            }
+            if (!data?.session) {
+              throw new Error("No session");
+            }
+            return getUserData(data.session.user);
+          }
+        })(),
+      );
+    },
+    logout: async () => {
+      await client.auth.signOut();
+      useAuth.setState(rd.ofError(new Error("Logged out")));
+    },
   };
 }

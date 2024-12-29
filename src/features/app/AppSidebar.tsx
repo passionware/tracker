@@ -5,11 +5,15 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 import { NavMain } from "@/features/app/nav-main.tsx";
 import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
+import { WithServices } from "@/platform/typescript/services.ts";
+import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { rd } from "@passionware/monads";
 import {
   AudioWaveform,
   BookOpen,
@@ -22,15 +26,10 @@ import {
   Settings2,
   SquareTerminal,
 } from "lucide-react";
-import * as React from "react";
+import { ComponentProps } from "react";
 
 // This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   clients: [
     {
       name: "Atellio",
@@ -154,7 +153,11 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  services,
+  ...props
+}: WithServices<[WithAuthService]> & ComponentProps<typeof Sidebar>) {
+  const auth = services.authService.useAuth();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -165,7 +168,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {rd
+          .journey(auth)
+          .wait(<Skeleton className="w-20 h-4" />)
+          .catch(() => null)
+          .map((auth) => (
+            <NavUser info={auth} services={services} />
+          ))}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

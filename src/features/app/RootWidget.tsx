@@ -1,7 +1,7 @@
 import { ProtectedRoute } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { DummyPage } from "@/features/app/DummyPage.tsx";
-import LoginPage from "@/features/app/LoginWidget.tsx";
+import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
@@ -14,7 +14,7 @@ export function RootWidget(props: WithServices<[WithAuthService]>) {
         path="/"
         element={
           <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar />}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <DummyPage services={props.services} />
             </Layout>
           </ProtectedRoute>
