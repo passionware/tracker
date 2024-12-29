@@ -17,16 +17,16 @@ import { ChevronsUpDown, Plus } from "lucide-react";
 import * as React from "react";
 
 export function TeamSwitcher({
-  teams,
+  clients,
 }: {
-  teams: {
+  clients: {
     name: string;
     logo: React.ElementType;
     plan: string;
   }[];
 }) {
   const { isMobile } = useSidebar();
-  const [activeTeam, setActiveTeam] = React.useState(teams[0]);
+  const [activeTeam, setActiveTeam] = React.useState(clients[0]);
 
   return (
     <SidebarMenu>
@@ -56,9 +56,9 @@ export function TeamSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
-              Teams
+              Clients
             </DropdownMenuLabel>
-            {teams.map((team, index) => (
+            {clients.map((team, index) => (
               <DropdownMenuItem
                 key={team.name}
                 onClick={() => setActiveTeam(team)}
@@ -77,7 +77,7 @@ export function TeamSwitcher({
                 <Plus className="size-4" />
               </div>
               <div className="font-medium text-slate-500 dark:text-slate-400">
-                Add team
+                Add client
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
