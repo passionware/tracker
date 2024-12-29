@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ReactNode } from "react";
 
 export function Layout({
@@ -11,10 +11,7 @@ export function Layout({
   return (
     <SidebarProvider>
       {sidebarSlot}
-      <main>
-        <SidebarTrigger />
-        {children}
-      </main>
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 }
