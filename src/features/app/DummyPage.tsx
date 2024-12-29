@@ -8,8 +8,14 @@ import {
 } from "@/components/ui/breadcrumb.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { renderError } from "@/features/_common/renderError.tsx";
+import { Services } from "@/platform/typescript/services.ts";
+import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { rd } from "@passionware/monads";
 
-export function DummyPage() {
+export function DummyPage(props: Services<[WithAuthService]>) {
+  const auth = props.services.authService.useAuth();
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -25,7 +31,13 @@ export function DummyPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                <BreadcrumbPage>
+                  {rd
+                    .journey(auth)
+                    .wait(<Skeleton className="w-20 h-4" />)
+                    .catch(renderError)
+                    .map((auth) => "logged in")}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
