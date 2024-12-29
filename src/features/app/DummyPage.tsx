@@ -10,11 +10,11 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { Services } from "@/platform/typescript/services.ts";
+import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
 import { rd } from "@passionware/monads";
 
-export function DummyPage(props: Services<[WithAuthService]>) {
+export function DummyPage(props: WithServices<[WithAuthService]>) {
   const auth = props.services.authService.useAuth();
   return (
     <>
@@ -36,7 +36,7 @@ export function DummyPage(props: Services<[WithAuthService]>) {
                     .journey(auth)
                     .wait(<Skeleton className="w-20 h-4" />)
                     .catch(renderError)
-                    .map((auth) => "logged in")}
+                    .map(() => "logged in")}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>

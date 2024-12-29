@@ -15,7 +15,7 @@
  * ```
  *
  */
-export type Services<T extends readonly object[]> = {
+export type WithServices<T extends readonly object[]> = {
   services: UnionToIntersection<T[number]>;
 };
 
