@@ -1,9 +1,9 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
 import { rd } from "@passionware/monads";
-import { AlertCircle } from "lucide-react";
 import { PropsWithChildren } from "react";
+import { Link } from "react-router-dom";
 
 export function ProtectedRoute(
   props: PropsWithChildren<WithServices<[WithAuthService]>>,
@@ -22,13 +22,18 @@ export function ProtectedRoute(
       </div>,
     )
     .catch(() => (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          Your session has expired. Please log in again.
-        </AlertDescription>
-      </Alert>
+      <div className="h-screen w-screen flex flex-row items-center justify-center bg-slate-100">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-medium mb-4">
+              You are not currently logged in
+            </h1>
+            <Button asChild>
+              <Link to="/login">Go to Login</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     ))
     .map(() => props.children);
 }
