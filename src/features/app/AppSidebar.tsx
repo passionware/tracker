@@ -38,7 +38,7 @@ const data = {
       items: [
         {
           title: "Reported hours",
-          url: "/reports",
+          url: "/clients/1/reports",
         },
         {
           title: "Billing",

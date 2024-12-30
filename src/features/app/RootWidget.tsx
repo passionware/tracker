@@ -2,14 +2,18 @@ import { ProtectedRoute } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { DummyPage } from "@/features/app/DummyPage.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
+import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/ClientService/ClientService.ts";
+import { WithContractorReportService } from "@/services/ContractorReportService/ContractorReportService.ts";
 import { Route, Routes } from "react-router-dom";
 
 export function RootWidget(
-  props: WithServices<[WithAuthService, WithClientService]>,
+  props: WithServices<
+    [WithAuthService, WithClientService, WithContractorReportService]
+  >,
 ) {
   return (
     <Routes>
@@ -24,6 +28,16 @@ export function RootWidget(
         }
       />
       <Route path="/login" element={<LoginPage services={props.services} />} />
+      <Route
+        path="/clients/:clientId/reports"
+        element={
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              <ContractorReportsWidget clientId={2} services={props.services} />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

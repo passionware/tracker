@@ -10,3 +10,7 @@ export interface ContractorReportService {
   ): RemoteData<ContractorReport[]>;
   useContractorReport(id: ContractorReport["id"]): RemoteData<ContractorReport>;
 }
+
+export interface WithContractorReportService {
+  contractorReportService: ContractorReportService;
+}

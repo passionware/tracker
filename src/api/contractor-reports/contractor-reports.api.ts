@@ -1,6 +1,12 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { WithFilters } from "@/api/_common/query/queryUtils.ts";
-import { Maybe } from "@passionware/monads";
+import {
+  WithFilters,
+  withFiltersUtils,
+  WithPagination,
+  withPaginationUtils,
+} from "@/api/_common/query/queryUtils.ts";
+import { Client } from "@/api/clients/clients.api.ts";
+import { Nullable } from "@/platform/typescript/Nullable.ts";
 
 export interface ContractorReport {
   id: number;
@@ -13,8 +19,9 @@ export interface ContractorReport {
 }
 
 export type ContractorReportQuery = WithFilters<{
-  clientId: Maybe<EnumFilter<string>>;
-}>;
+  clientId: Nullable<EnumFilter<Client["id"]>>;
+}> &
+  WithPagination;
 
 export interface ContractorReportApi {
   getContractorReports: (
@@ -22,3 +29,12 @@ export interface ContractorReportApi {
   ) => Promise<ContractorReport[]>;
   getContractorReport: (id: number) => Promise<ContractorReport>;
 }
+
+export const contractorReportQueryUtils = {
+  ...withFiltersUtils<ContractorReportQuery>(),
+  ...withPaginationUtils<ContractorReportQuery>(),
+  ofEmpty: (): ContractorReportQuery => ({
+    filters: { clientId: null },
+    page: { page: 0, pageSize: 10 },
+  }),
+};
