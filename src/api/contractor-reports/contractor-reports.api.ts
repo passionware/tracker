@@ -10,7 +10,7 @@ import { Nullable } from "@/platform/typescript/Nullable.ts";
 
 export interface ContractorReport {
   id: number;
-  contractorId: string;
+  contractorId: number;
   periodStart: Date;
   periodEnd: Date;
   currency: string;
