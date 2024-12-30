@@ -5,6 +5,7 @@ import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -29,6 +30,7 @@ export function RootWidget(
       WithClientService,
       WithContractorReportService,
       WithLocationService,
+      WithRoutingService,
     ]
   >,
 ) {
