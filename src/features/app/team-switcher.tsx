@@ -21,15 +21,23 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { ChevronsUpDown, Plus } from "lucide-react";
-import * as React from "react";
 
-export function TeamSwitcher({ clients }: { clients: Client[] }) {
+export function TeamSwitcher({
+  clients,
+  onClientSwitch,
+  activeClient,
+}: {
+  clients: Client[];
+  activeClient: Client["id"];
+  onClientSwitch: (client: Client["id"]) => void;
+}) {
   const { isMobile } = useSidebar();
-  const [activeTeam, setActiveTeam] = React.useState(clients[0]);
 
   if (clients.length === 0) {
     console.error("No clients found");
   }
+
+  const activeTeam = clients.find((team) => team.id === activeClient);
 
   return (
     <SidebarMenu>
@@ -76,7 +84,7 @@ export function TeamSwitcher({ clients }: { clients: Client[] }) {
             {clients.map((team, index) => (
               <DropdownMenuItem
                 key={team.name}
-                onClick={() => setActiveTeam(team)}
+                onClick={() => onClientSwitch(team.id)}
                 className="gap-2 p-2"
               >
                 <Avatar className="size-4" asChild>

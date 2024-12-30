@@ -13,15 +13,19 @@ import { create } from "zustand";
 export function createNavigationService(
   injectEvent: SimpleEvent<NavigateFunction>,
 ): NavigationService {
-  const useNavigate = create<NavigateFunction | null>(() => null);
+  const useNavigate = create<{ value: NavigateFunction | null }>(() => ({
+    value: null,
+  }));
 
-  injectEvent.addListener(useNavigate.setState);
+  injectEvent.addListener((navigate) => {
+    useNavigate.setState({ value: navigate });
+  });
 
   function myNavigate(delta: number): void;
   function myNavigate(to: To, options?: NavigateOptions): void;
   function myNavigate(toOrDelta: number | To, options?: NavigateOptions) {
     const currentNavigate = maybe.getOrThrow(
-      useNavigate.getState(),
+      useNavigate.getState().value,
       "NavigationService not initialized",
     );
 

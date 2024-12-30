@@ -10,7 +10,7 @@ export function createContractorReportService(
     useContractorReports: (query) => {
       return useQuery(
         {
-          queryKey: ["contractor_reports", "list"],
+          queryKey: ["contractor_reports", "list", query],
           queryFn: () => api.getContractorReports(query),
         },
         client,

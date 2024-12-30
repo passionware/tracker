@@ -13,9 +13,10 @@ import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import {
   BookOpen,
   Bot,
@@ -138,20 +139,27 @@ const data = {
 export function AppSidebar({
   services,
   ...props
-}: WithServices<[WithAuthService, WithClientService]> &
+}: WithServices<[WithAuthService, WithClientService, WithLocationService]> &
   ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
   const clients = services.clientService.useClients();
+  const currentClientId = services.locationService.useCurrentClientId();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        {rd
-          .journey(clients)
-          .wait(<Skeleton className="w-20 h-4" />)
-          .catch(renderError)
-          .map((clients) => (
-            <TeamSwitcher clients={clients} />
-          ))}
+        {maybe.map(currentClientId, (currentClientId) =>
+          rd
+            .journey(clients)
+            .wait(<Skeleton className="w-20 h-4" />)
+            .catch(renderError)
+            .map((clients) => (
+              <TeamSwitcher
+                clients={clients}
+                activeClient={currentClientId}
+                onClientSwitch={services.locationService.changeCurrentClientId}
+              />
+            )),
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

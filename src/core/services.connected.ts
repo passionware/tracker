@@ -15,8 +15,10 @@ import { createClientService } from "@/services/io/ClientService/ClientService.i
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.impl.ts";
 import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { maybe } from "@passionware/monads";
 import { createSimpleEvent } from "@passionware/simple-event";
-import { NavigateFunction } from "react-router-dom";
+import { useRef } from "react";
+import { NavigateFunction, useNavigate } from "react-router-dom";
 
 const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
@@ -50,3 +52,13 @@ export const myServices = {
     WithRoutingService,
   ]
 >;
+
+export function NavigationServiceInject() {
+  const navigate = useNavigate();
+  const ref = useRef<NavigateFunction>();
+  if (maybe.isAbsent(ref.current)) {
+    ref.current = navigate;
+    navigationInjectEvent.emit(navigate);
+  }
+  return null;
+}
