@@ -48,7 +48,9 @@ export function NavMain({
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton
                   tooltip={item.title}
-                  isActive={matchPath(item.url, location.pathname) !== null}
+                  isActive={
+                    matchPath(item.url + "/*", location.pathname) !== null
+                  }
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -62,7 +64,8 @@ export function NavMain({
                       <SidebarMenuSubButton
                         asChild
                         isActive={
-                          matchPath(subItem.url, location.pathname) !== null
+                          matchPath(subItem.url + "/*", location.pathname) !==
+                          null
                         }
                       >
                         <Link to={subItem.url}>

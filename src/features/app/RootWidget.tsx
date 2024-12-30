@@ -8,7 +8,16 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/ClientService/ClientService.ts";
 import { WithContractorReportService } from "@/services/ContractorReportService/ContractorReportService.ts";
-import { Route, Routes } from "react-router-dom";
+import { maybe } from "@passionware/monads";
+import { ReactNode } from "react";
+import { Route, Routes, useParams } from "react-router-dom";
+
+function ClientIdResolver(props: {
+  children: (clientId: number) => ReactNode;
+}) {
+  const { clientId } = useParams();
+  return props.children(parseInt(maybe.getOrThrow(clientId, "No client ID")));
+}
 
 export function RootWidget(
   props: WithServices<
@@ -33,7 +42,14 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <ContractorReportsWidget clientId={2} services={props.services} />
+              <ClientIdResolver>
+                {(clientId) => (
+                  <ContractorReportsWidget
+                    clientId={clientId}
+                    services={props.services}
+                  />
+                )}
+              </ClientIdResolver>
             </Layout>
           </ProtectedRoute>
         }
