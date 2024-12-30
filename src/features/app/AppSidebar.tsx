@@ -31,18 +31,18 @@ import { ComponentProps } from "react";
 const data = {
   navMain: [
     {
-      title: "Playground",
+      title: "For client",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Reported hours",
+          url: "/reports",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Billing",
+          url: "/billing",
         },
         {
           title: "Settings",

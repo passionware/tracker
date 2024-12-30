@@ -14,7 +14,7 @@ export function RootWidget(
   return (
     <Routes>
       <Route
-        path="/"
+        path="*"
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
