@@ -1,5 +1,5 @@
 import { ClientsApi } from "@/api/clients/clients.api.ts";
-import { ClientService } from "@/services/ClientService/ClientService.ts";
+import { ClientService } from "@/services/io/ClientService/ClientService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
 export function createClientService(

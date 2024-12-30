@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithContractorReportService } from "@/services/ContractorReportService/ContractorReportService.ts";
+import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
 import { rd } from "@passionware/monads";
 import { format } from "date-fns";
 

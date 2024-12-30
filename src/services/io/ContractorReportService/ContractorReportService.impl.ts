@@ -1,5 +1,5 @@
 import { ContractorReportApi } from "@/api/contractor-reports/contractor-reports.api.ts";
-import { ContractorReportService } from "@/services/ContractorReportService/ContractorReportService.ts";
+import { ContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
 export function createContractorReportService(

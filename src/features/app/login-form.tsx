@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { ComponentProps } from "react";
 import placeholder from "./placeholder.png";
 

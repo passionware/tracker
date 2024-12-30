@@ -11,7 +11,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { rd } from "@passionware/monads";
 
 export function DummyPage(props: WithServices<[WithAuthService]>) {

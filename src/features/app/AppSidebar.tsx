@@ -13,8 +13,8 @@ import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithAuthService } from "@/services/AuthService/AuthService.ts";
-import { WithClientService } from "@/services/ClientService/ClientService.ts";
+import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
 import {
   BookOpen,

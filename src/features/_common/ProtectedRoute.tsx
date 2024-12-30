@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithAuthService } from "@/services/AuthService/AuthService.ts";
+import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { rd } from "@passionware/monads";
 import { PropsWithChildren } from "react";
 import { Link } from "react-router-dom";

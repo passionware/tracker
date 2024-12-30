@@ -1,4 +1,4 @@
-import { AuthInfo, AuthService } from "@/services/AuthService/AuthService.ts";
+import { AuthInfo, AuthService } from "@/services/io/AuthService/AuthService.ts";
 import { rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { SupabaseClient, User } from "@supabase/supabase-js";

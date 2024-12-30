@@ -25,7 +25,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import {
   AuthInfo,
   WithAuthService,
-} from "@/services/AuthService/AuthService.ts";
+} from "@/services/io/AuthService/AuthService.ts";
 import {
   BadgeCheck,
   Bell,

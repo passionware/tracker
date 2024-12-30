@@ -3,12 +3,12 @@ import { createContractorReportsApi } from "@/api/contractor-reports/contractor-
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
-import { createAuthService } from "@/services/AuthService/AuthService.impl.ts";
-import { WithAuthService } from "@/services/AuthService/AuthService.ts";
-import { createClientService } from "@/services/ClientService/ClientService.impl.ts";
-import { WithClientService } from "@/services/ClientService/ClientService.ts";
-import { createContractorReportService } from "@/services/ContractorReportService/ContractorReportService.impl.ts";
-import { WithContractorReportService } from "@/services/ContractorReportService/ContractorReportService.ts";
+import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
+import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
+import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { createContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.impl.ts";
+import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
 
 export const myServices = {
   authService: createAuthService(mySupabase),
