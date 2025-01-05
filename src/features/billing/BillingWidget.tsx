@@ -154,7 +154,7 @@ export function BillingWidget(
                         <div className="space-y-8">
                           {billing.links.map((link) => (
                             <div
-                              className="flex items-center gap-2"
+                              className="flex items-stretch gap-2"
                               key={link.id}
                             >
                               <div className="flex flex-col gap-3">
