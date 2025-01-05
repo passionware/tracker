@@ -47,7 +47,8 @@ export function ContractorReportsWidget(
     >
       <Table>
         <TableCaption>
-          A list of all reported work for given client.
+          A list of all reported work for given client, matched with billing or
+          clarifications.
         </TableCaption>
         <TableHeader>
           <TableRow>
