@@ -97,5 +97,8 @@ export function createReportDisplayService(
         (data) => data.map(calculateReport),
       );
     },
+    useBillingView: () => {
+      return rd.ofError(new Error("Not implemented"));
+    },
   };
 }

@@ -36,9 +36,17 @@ export type ContractorReportLinkView = {
 );
 
 export interface ReportDisplayService {
+  /**
+   * Returns a list of reports, with all links and billing information.
+   */
   useReportView: (
     query: ContractorReportQuery,
   ) => RemoteData<ContractorReportView[]>;
+  /**
+   * Returns a list of billing information, with all links and contractor report information.
+   * @param query
+   */
+  useBillingView: (query: unknown) => RemoteData<unknown>;
 }
 
 export interface WithReportDisplayService {
