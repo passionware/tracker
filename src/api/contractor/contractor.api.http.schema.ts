@@ -5,6 +5,7 @@ import { z } from "zod";
 export const contractor$ = z.object({
   id: z.number(),
   name: z.string(),
+  full_name: z.string(),
   created_at: z.coerce.date(),
 });
 

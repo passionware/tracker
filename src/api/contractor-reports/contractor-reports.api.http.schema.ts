@@ -15,8 +15,8 @@ export const linkBillingReport$ = z.object({
   created_at: z.string(),
   client_billing_id: z.number().nullable(),
   contractor_report_id: z.number().nullable(),
-  reconcile_amount: z.number().nullable(),
-  link_type: z.string().nullable(),
+  reconcile_amount: z.number(),
+  link_type: z.enum(["clarify"] as const).nullable(),
   clarify_justification: z.string().nullable(),
   client_billing: clientBilling$.nullable(),
 });

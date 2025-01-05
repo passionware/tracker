@@ -1,14 +1,12 @@
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
-import { PropsWithChildren } from "react";
+import { Fragment, PropsWithChildren, ReactNode } from "react";
 
 /**
  * Experimental
@@ -16,7 +14,11 @@ import { PropsWithChildren } from "react";
  * @param props
  * @constructor
  */
-export function CommonPageContainer(props: PropsWithChildren<{}>) {
+export function CommonPageContainer(
+  props: PropsWithChildren<{
+    segments: ReactNode[];
+  }>,
+) {
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -25,15 +27,24 @@ export function CommonPageContainer(props: PropsWithChildren<{}>) {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">
-                  Building Your Application
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Dummy Page</BreadcrumbPage>
-              </BreadcrumbItem>
+              {props.segments.map((segment, index) => (
+                <Fragment key={index}>
+                  <BreadcrumbItem
+                    className={
+                      index === props.segments.length - 1
+                        ? ""
+                        : "hidden md:block"
+                    }
+                  >
+                    {segment}
+                  </BreadcrumbItem>
+                  {index < props.segments.length - 1 && (
+                    <>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                    </>
+                  )}
+                </Fragment>
+              ))}
             </BreadcrumbList>
           </Breadcrumb>
         </div>

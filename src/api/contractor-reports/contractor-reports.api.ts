@@ -14,8 +14,8 @@ export interface LinkBillingReport {
   createdAt: string;
   clientBillingId: number | null;
   contractorReportId: number | null;
-  reconcileAmount: number | null;
-  linkType: string | null;
+  reconcileAmount: number;
+  linkType: "clarify" | null;
   clarifyJustification: string | null;
   clientBilling: ClientBilling | null;
 }

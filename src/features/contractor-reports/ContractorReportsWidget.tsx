@@ -1,24 +1,26 @@
 import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
+import { BreadcrumbLink, BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -37,13 +39,23 @@ export function ContractorReportsWidget(
     ),
   );
   return (
-    <CommonPageContainer>
+    <CommonPageContainer
+      segments={[
+        <BreadcrumbLink>Client</BreadcrumbLink>,
+        <BreadcrumbPage>Reported work</BreadcrumbPage>,
+      ]}
+    >
       <Table>
-        <TableCaption>A list of your recent invoices.</TableCaption>
+        <TableCaption>
+          A list of all reported work for given client.
+        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead>Contractor</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Net value</TableHead>
+            <TableHead>Billed value</TableHead>
             <TableHead>Period</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
@@ -65,58 +77,166 @@ export function ContractorReportsWidget(
                 <TableCell>
                   <Skeleton className="w-32 h-6" />
                 </TableCell>
+                <TableCell>
+                  <Skeleton className="w-32 h-6" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-32 h-6" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-32 h-6" />
+                </TableCell>
               </TableRow>,
             )
             .catch(renderError)
-            .map((invoices) => {
-              if (invoices.length === 0) {
+            .map((reports) => {
+              if (reports.length === 0) {
                 return (
                   <TableRow>
                     <TableCell colSpan={4}>No invoices found.</TableCell>
                   </TableRow>
                 );
               }
-              return invoices.map((report) => (
+              return reports.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-medium">{report.id}</TableCell>
+                  <TableCell>{report.contractor.fullName}</TableCell>
                   <TableCell>
-                    <div className="flex flex-row gap-2 items-center">
-                      {props.services.formatService.financial.amount(
-                        report.netAmount.amount,
-                        report.netAmount.currency,
-                      )}
-                      <Popover>
-                        <PopoverTrigger>
-                          <Badge
-                            variant={
-                              report.status === "billed"
-                                ? "outline"
-                                : "destructive"
-                            }
-                          >
-                            {report.status === "billed"
-                              ? "Billed"
-                              : "Uncovered"}
-                          </Badge>
-                        </PopoverTrigger>
-                        <PopoverContent>
-                          <div className="text-green-700">
-                            <Badge variant="outline">Reconciled</Badge>{" "}
+                    <Popover>
+                      <PopoverTrigger>
+                        <Badge
+                          tone="solid"
+                          variant={
+                            (
+                              {
+                                billed: "positive",
+                                uncovered: "destructive",
+                                clarified: "secondary",
+                              } as const
+                            )[report.status]
+                          }
+                        >
+                          {
+                            {
+                              billed: "Billed",
+                              uncovered: "Uncovered",
+                              clarified: "Clarified",
+                            }[report.status]
+                          }
+                        </Badge>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-fit">
+                        <div className="flex justify-between">
+                          <div className="text-green-700 flex flex-col gap-2 items-start">
+                            <Badge tone="outline" variant="positive">
+                              Reconciled
+                            </Badge>{" "}
                             {props.services.formatService.financial.amount(
                               report.reconciledAmount.amount,
                               report.reconciledAmount.currency,
                             )}
                           </div>
-                          <div className="text-red-800">
-                            <Badge variant="outline">Remaining</Badge>{" "}
+                          <div
+                            className={cn(
+                              "flex flex-col gap-2 items-end",
+                              report.remainingAmount.amount === 0
+                                ? "text-gray-800"
+                                : "text-red-800",
+                            )}
+                          >
+                            <Badge tone="outline" variant="destructive">
+                              Remaining
+                            </Badge>{" "}
                             {props.services.formatService.financial.amount(
                               report.remainingAmount.amount,
                               report.remainingAmount.currency,
                             )}
                           </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="text-sm text-gray-700 font-medium my-1 text-center">
+                          Linked invoices or clarifications
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="space-y-8">
+                          {report.links.map((link) => (
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  (
+                                    {
+                                      clientBilling: "positive",
+                                      clarification: "warning",
+                                    } as const
+                                  )[link.linkType]
+                                }
+                                className=""
+                              >
+                                {
+                                  {
+                                    clientBilling: "Client billing",
+                                    clarification: "Clarification",
+                                  }[link.linkType]
+                                }
+                              </Badge>
+                              <p className="text-sm font-medium leading-none">
+                                {props.services.formatService.financial.amount(
+                                  link.amount.amount,
+                                  link.amount.currency,
+                                )}
+                              </p>
+                              <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
+                                {link.linkType === "clientBilling" && (
+                                  <>
+                                    <div className="text-gray-600 text-xs mr-1.5">
+                                      {link.billing.invoiceNumber}
+                                    </div>
+                                    <Badge variant="secondary" size="sm">
+                                      {props.services.formatService.temporal.date(
+                                        link.billing.invoiceDate,
+                                      )}
+                                    </Badge>
+                                  </>
+                                )}
+                                {link.linkType === "clarification" && (
+                                  <Popover>
+                                    <PopoverTrigger>
+                                      <Badge size="sm" variant="secondary">
+                                        Justification
+                                      </Badge>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      align="end"
+                                      side="right"
+                                      className="max-w-lg w-fit"
+                                    >
+                                      <div>
+                                        Justification for unmatched amount
+                                      </div>
+                                      <div className="text-xs text-gray-900">
+                                        {link.justification}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.amount(
+                      report.netAmount.amount,
+                      report.netAmount.currency,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.amount(
+                      report.billedAmount.amount,
+                      report.billedAmount.currency,
+                    )}
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
@@ -134,12 +254,12 @@ export function ContractorReportsWidget(
               ));
             })}
         </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={3}>Total</TableCell>
-            <TableCell className="text-right">$2,500.00</TableCell>
-          </TableRow>
-        </TableFooter>
+        {/*<TableFooter>*/}
+        {/*  <TableRow>*/}
+        {/*    <TableCell colSpan={5}>Total</TableCell>*/}
+        {/*    <TableCell className="text-right">$2,500.00</TableCell>*/}
+        {/*  </TableRow>*/}
+        {/*</TableFooter>*/}
       </Table>
     </CommonPageContainer>
   );
