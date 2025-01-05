@@ -79,7 +79,10 @@ export function createFormatService(clock: () => Date): FormatService {
         }
 
         const result = formattedValue.split(" ");
-        const text = `${result[1]}${result[0]}`;
+        const currencySymbol = result[1];
+        const currencyValue = result[0];
+        const text = `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
+
         return <div className="font-mono ">{text}</div>;
         // return (
         //   <div className="flex flex-row gap-1 justify-end">

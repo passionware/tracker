@@ -6,6 +6,7 @@ import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import {
   Popover,
   PopoverContent,
+  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
@@ -130,6 +131,7 @@ export function ContractorReportsWidget(
                         </Badge>
                       </PopoverTrigger>
                       <PopoverContent className="w-fit">
+                        <PopoverHeader>Report details</PopoverHeader>
                         <div className="flex justify-between">
                           <div className="text-green-700 flex flex-col gap-2 items-start">
                             <Badge tone="outline" variant="positive">

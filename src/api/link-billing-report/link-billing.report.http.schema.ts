@@ -30,13 +30,13 @@ export const linkBillingReportBase$ = z.object({
 export type LinkBillingReport$ = z.input<typeof linkBillingReportBase$> & {
   client_billing?: ClientBilling$ | null;
   contractor?: Contractor$ | null;
-  contractor_report?: ContractorReport$ | null;
+  contractor_reports?: ContractorReport$ | null;
 };
 
 export const linkBillingReport$ = linkBillingReportBase$.extend({
   client_billing: z.lazy(() => clientBilling$.nullish()),
   contractor: z.lazy(() => contractor$.nullish()),
-  contractor_report: z.lazy(() => contractorReport$.nullish()),
+  contractor_reports: z.lazy(() => contractorReport$.nullish()),
 });
 
 export function linkBillingReportFromHttp(
@@ -53,7 +53,7 @@ export function linkBillingReportFromHttp(
       contractorFromHttp,
     ),
     contractorReport: maybe.mapOrNull(
-      linkBillingReport.contractor_report,
+      linkBillingReport.contractor_reports,
       contractorReportFromHttp,
     ),
   };

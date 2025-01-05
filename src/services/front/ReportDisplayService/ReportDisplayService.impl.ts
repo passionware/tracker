@@ -137,7 +137,10 @@ function calculateBilling(billing: ClientBilling): ClientBillingView {
           amount: link.reconcileAmount ?? 0,
           currency: billing.currency,
         },
-        contractorReport: link.contractorReport,
+        contractorReport: maybe.getOrThrow(
+          link.contractorReport,
+          "Contractor report link is required to calculate billing",
+        ),
       };
     }),
     matchedAmount: {
