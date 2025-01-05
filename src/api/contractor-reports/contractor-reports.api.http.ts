@@ -1,7 +1,9 @@
-import { contractorReport$ } from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
+import {
+  contractorReport$,
+  contractorReportFromHttp,
+} from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { fromHttp } from "./contractor-reports.api.http.adapter.ts";
 import { ContractorReportApi } from "./contractor-reports.api.ts";
 
 export function createContractorReportsApi(
@@ -9,7 +11,14 @@ export function createContractorReportsApi(
 ): ContractorReportApi {
   return {
     getContractorReports: async (query) => {
-      let request = client.from("contractor_reports").select("*");
+      let request = client.from("contractor_reports").select(`
+      *,
+      link_billing_report (
+        *,
+        client_billing (*)
+      ),
+      contractors (*)
+    `);
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {
           case "oneOf":
@@ -29,7 +38,10 @@ export function createContractorReportsApi(
       if (error) {
         throw error;
       }
-      return z.array(contractorReport$).parse(data).map(fromHttp);
+      return z
+        .array(contractorReport$)
+        .parse(data)
+        .map(contractorReportFromHttp);
     },
     getContractorReport: async (id) => {
       const { data, error } = await client
@@ -39,7 +51,9 @@ export function createContractorReportsApi(
       if (error) {
         throw error;
       }
-      return fromHttp(z.array(contractorReport$).parse(data)[0]);
+      return contractorReportFromHttp(
+        z.array(contractorReport$).parse(data)[0],
+      );
     },
   };
 }

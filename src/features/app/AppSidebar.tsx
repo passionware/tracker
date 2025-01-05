@@ -40,7 +40,7 @@ function useData(
     return {
       navMain: [
         {
-          title: "For client",
+          title: "Client",
           url: "#",
           icon: SquareTerminal,
           isActive: true,
@@ -54,22 +54,22 @@ function useData(
               url: routing.billing(),
             },
             {
-              title: "Settings",
+              title: "Unmatched", // raporty niepowiązane z płatnościami
               url: "#",
             },
           ],
         },
         {
-          title: "Models",
+          title: "Forge Team",
           url: "#",
           icon: Bot,
           items: [
             {
-              title: "Genesis",
+              title: "Not paid reports",
               url: "#",
             },
             {
-              title: "Explorer",
+              title: "Not matched costs",
               url: "#",
             },
             {

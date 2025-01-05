@@ -3,6 +3,8 @@ import { createContractorReportsApi } from "@/api/contractor-reports/contractor-
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
+import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
@@ -42,6 +44,7 @@ export const myServices = {
       routingService,
     },
   }),
+  formatService: createFormatService(() => new Date()),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -50,6 +53,7 @@ export const myServices = {
     WithLocationService,
     WithNavigationService,
     WithRoutingService,
+    WithFormatService,
   ]
 >;
 
