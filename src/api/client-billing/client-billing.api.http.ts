@@ -15,9 +15,11 @@ export function createClientBillingApi(
       *,
       link_billing_report (
         *,
-        contractor_report (*)
-      ),
-      contractors (*)
+        contractor_reports (
+          *,
+          contractors (*)
+        )
+      )
     `);
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {

@@ -1,13 +1,7 @@
+import { billingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -21,7 +15,6 @@ import {
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -33,236 +26,109 @@ export function BillingWidget(
     [WithReportDisplayService, WithFormatService, WithClientService]
   >,
 ) {
-  const reports = props.services.reportDisplayService.useReportView(
-    contractorReportQueryUtils.setFilter(
-      contractorReportQueryUtils.ofEmpty(),
-      "clientId",
-      { operator: "oneOf", value: [props.clientId] },
-    ),
+  const billings = props.services.reportDisplayService.useBillingView(
+    billingQueryUtils.setFilter(billingQueryUtils.ofEmpty(), "clientId", {
+      operator: "oneOf",
+      value: [props.clientId],
+    }),
   );
+
   return (
     <CommonPageContainer
       segments={[
         <ClientBreadcrumbLink {...props} />,
-        <BreadcrumbPage>Invoiced work</BreadcrumbPage>,
+        <BreadcrumbPage>Client Billings</BreadcrumbPage>,
       ]}
     >
       <Table>
         <TableCaption>
-          A list of all invoices for the selected client, matched with reported
-          work.
+          A list of all billings for the selected client.
         </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Id</TableHead>
-            <TableHead>Contractor</TableHead>
+            <TableHead>Invoice Number</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Net value</TableHead>
-            <TableHead>Billed value</TableHead>
-            <TableHead>Period</TableHead>
+            <TableHead>Net Amount</TableHead>
+            <TableHead>Gross Amount</TableHead>
+            <TableHead>Matched Amount</TableHead>
+            <TableHead>Remaining Amount</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rd
-            .journey(reports)
+            .journey(billings)
             .wait(
               <TableRow>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
+                {Array(8)
+                  .fill(null)
+                  .map((_, index) => (
+                    <TableCell key={index}>
+                      <Skeleton className="w-32 h-6" />
+                    </TableCell>
+                  ))}
               </TableRow>,
             )
             .catch(renderError)
-            .map((reports) => {
-              if (reports.length === 0) {
+            .map((billings) => {
+              if (billings.length === 0) {
                 return (
                   <TableRow>
-                    <TableCell colSpan={4}>No invoices found.</TableCell>
+                    <TableCell colSpan={8}>No billings found.</TableCell>
                   </TableRow>
                 );
               }
-              return reports.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.id}</TableCell>
-                  <TableCell>{report.contractor.fullName}</TableCell>
+              return billings.map((billing) => (
+                <TableRow key={billing.id}>
+                  <TableCell className="font-medium">{billing.id}</TableCell>
+                  <TableCell>{billing.invoiceNumber}</TableCell>
                   <TableCell>
-                    <Popover>
-                      <PopoverTrigger>
-                        <Badge
-                          tone="solid"
-                          variant={
-                            (
-                              {
-                                billed: "positive",
-                                uncovered: "destructive",
-                                clarified: "secondary",
-                              } as const
-                            )[report.status]
-                          }
-                        >
+                    <Badge
+                      tone="solid"
+                      variant={
+                        (
                           {
-                            {
-                              billed: "Billed",
-                              uncovered: "Uncovered",
-                              clarified: "Clarified",
-                            }[report.status]
-                          }
-                        </Badge>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-fit">
-                        <div className="flex justify-between">
-                          <div className="text-green-700 flex flex-col gap-2 items-start">
-                            <Badge tone="outline" variant="positive">
-                              Reconciled
-                            </Badge>{" "}
-                            {props.services.formatService.financial.amount(
-                              report.reconciledAmount.amount,
-                              report.reconciledAmount.currency,
-                            )}
-                          </div>
-                          <div
-                            className={cn(
-                              "flex flex-col gap-2 items-end",
-                              report.remainingAmount.amount === 0
-                                ? "text-gray-800"
-                                : "text-red-800",
-                            )}
-                          >
-                            <Badge tone="outline" variant="destructive">
-                              Remaining
-                            </Badge>{" "}
-                            {props.services.formatService.financial.amount(
-                              report.remainingAmount.amount,
-                              report.remainingAmount.currency,
-                            )}
-                          </div>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="text-sm text-gray-700 font-medium my-1 text-center">
-                          Linked invoices or clarifications
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="space-y-8">
-                          {report.links.map((link) => (
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant={
-                                  (
-                                    {
-                                      clientBilling: "positive",
-                                      clarification: "warning",
-                                    } as const
-                                  )[link.linkType]
-                                }
-                                className=""
-                              >
-                                {
-                                  {
-                                    clientBilling: "Client billing",
-                                    clarification: "Clarification",
-                                  }[link.linkType]
-                                }
-                              </Badge>
-                              <p className="text-sm font-medium leading-none">
-                                {props.services.formatService.financial.amount(
-                                  link.amount.amount,
-                                  link.amount.currency,
-                                )}
-                              </p>
-                              <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
-                                {link.linkType === "clientBilling" && (
-                                  <>
-                                    <div className="text-gray-600 text-xs mr-1.5">
-                                      {link.billing.invoiceNumber}
-                                    </div>
-                                    <Badge variant="secondary" size="sm">
-                                      {props.services.formatService.temporal.date(
-                                        link.billing.invoiceDate,
-                                      )}
-                                    </Badge>
-                                  </>
-                                )}
-                                {link.linkType === "clarification" && (
-                                  <Popover>
-                                    <PopoverTrigger>
-                                      <Badge size="sm" variant="secondary">
-                                        Justification
-                                      </Badge>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                      align="end"
-                                      side="right"
-                                      className="max-w-lg w-fit"
-                                    >
-                                      <div>
-                                        Justification for unmatched amount
-                                      </div>
-                                      <div className="text-xs text-gray-900">
-                                        {link.justification}
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                            matched: "positive",
+                            unmatched: "destructive",
+                          } as const
+                        )[billing.status]
+                      }
+                    >
+                      {billing.status === "matched" ? "Matched" : "Unmatched"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.amount(
-                      report.netAmount.amount,
-                      report.netAmount.currency,
+                      billing.netAmount.amount,
+                      billing.netAmount.currency,
                     )}
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.amount(
-                      report.billedAmount.amount,
-                      report.billedAmount.currency,
+                      billing.grossAmount.amount,
+                      billing.grossAmount.currency,
                     )}
                   </TableCell>
                   <TableCell>
-                    {props.services.formatService.temporal.date(
-                      report.periodStart,
-                    )}{" "}
-                    -{" "}
-                    {props.services.formatService.temporal.date(
-                      report.periodEnd,
+                    {props.services.formatService.financial.amount(
+                      billing.matchedAmount.amount,
+                      billing.matchedAmount.currency,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.amount(
+                      billing.remainingAmount.amount,
+                      billing.remainingAmount.currency,
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {report.description}
+                    {billing.description || "N/A"}
                   </TableCell>
                 </TableRow>
               ));
             })}
         </TableBody>
-        {/*<TableFooter>*/}
-        {/*  <TableRow>*/}
-        {/*    <TableCell colSpan={5}>Total</TableCell>*/}
-        {/*    <TableCell className="text-right">$2,500.00</TableCell>*/}
-        {/*  </TableRow>*/}
-        {/*</TableFooter>*/}
       </Table>
     </CommonPageContainer>
   );

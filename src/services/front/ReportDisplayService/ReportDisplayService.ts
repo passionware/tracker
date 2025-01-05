@@ -61,7 +61,7 @@ export interface ClientBillingView {
 export interface ClientBillingLinkView {
   id: number;
   amount: CurrencyValue;
-  contractorReport: ContractorReport;
+  contractorReport: ContractorReport | null;
 }
 
 export interface ReportDisplayService {
