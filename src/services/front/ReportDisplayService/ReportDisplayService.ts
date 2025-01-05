@@ -1,5 +1,11 @@
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
-import { ContractorReportQuery } from "@/api/contractor-reports/contractor-reports.api.ts";
+import {
+  ClientBilling,
+  ClientBillingQuery,
+} from "@/api/client-billing/client-billing.api.ts";
+import {
+  ContractorReport,
+  ContractorReportQuery,
+} from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { RemoteData } from "@passionware/monads";
@@ -35,6 +41,29 @@ export type ContractorReportLinkView = {
     }
 );
 
+export interface ClientBillingView {
+  id: number;
+  netAmount: CurrencyValue;
+  grossAmount: CurrencyValue;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  description: string | null;
+  links: ClientBillingLinkView[];
+  matchedAmount: CurrencyValue;
+  remainingAmount: CurrencyValue;
+  /**
+   * Whether the billing is fully matched with reports or not yet
+   * If unmatched, this means we still did not link all reports to this billing and as such we can't say it is a reliable source of information.
+   */
+  status: "matched" | "unmatched";
+}
+
+export interface ClientBillingLinkView {
+  id: number;
+  amount: CurrencyValue;
+  contractorReport: ContractorReport;
+}
+
 export interface ReportDisplayService {
   /**
    * Returns a list of reports, with all links and billing information.
@@ -46,7 +75,9 @@ export interface ReportDisplayService {
    * Returns a list of billing information, with all links and contractor report information.
    * @param query
    */
-  useBillingView: (query: unknown) => RemoteData<unknown>;
+  useBillingView: (
+    query: ClientBillingQuery,
+  ) => RemoteData<ClientBillingView[]>;
 }
 
 export interface WithReportDisplayService {

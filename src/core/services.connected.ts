@@ -1,3 +1,4 @@
+import { createClientBillingApi } from "@/api/client-billing/client-billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
@@ -15,6 +16,7 @@ import { createNavigationService } from "@/services/internal/NavigationService/N
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
+import { createClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.impl.ts";
@@ -28,8 +30,12 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
-let contractorReportService = createContractorReportService(
+const contractorReportService = createContractorReportService(
   createContractorReportsApi(mySupabase),
+  myQueryClient,
+);
+const clientBillingService = createClientBillingService(
+  createClientBillingApi(mySupabase),
   myQueryClient,
 );
 export const myServices = {
@@ -51,6 +57,7 @@ export const myServices = {
   reportDisplayService: createReportDisplayService({
     services: {
       contractorReportService,
+      clientBillingService,
     },
   }),
 } satisfies MergeServices<

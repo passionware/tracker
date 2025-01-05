@@ -1,4 +1,4 @@
-import { fromHttp } from "@/api/clients/clients.api.http.adapter.ts";
+import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import { ClientsApi } from "@/api/clients/clients.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -11,7 +11,7 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
       if (error) {
         throw error;
       }
-      return z.array(client$).parse(data).map(fromHttp);
+      return z.array(client$).parse(data).map(clientFromHttp);
     },
     getClient: async (id) => {
       const { data, error } = await client
@@ -21,7 +21,7 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
       if (error) {
         throw error;
       }
-      return fromHttp(z.array(client$).parse(data)[0]);
+      return clientFromHttp(z.array(client$).parse(data)[0]);
     },
   };
 }

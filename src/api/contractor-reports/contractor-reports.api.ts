@@ -5,20 +5,11 @@ import {
   WithPagination,
   withPaginationUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
-export interface LinkBillingReport {
-  id: number;
-  createdAt: string;
-  clientBillingId: number | null;
-  contractorReportId: number | null;
-  reconcileAmount: number;
-  linkType: "clarify" | null;
-  clarifyJustification: string | null;
-  clientBilling: ClientBilling | null;
-}
+
 export interface ContractorReport {
   id: number;
   createdAt: string;

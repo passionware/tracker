@@ -1,5 +1,6 @@
 import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbLink, BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import {
@@ -224,6 +225,20 @@ export function ContractorReportsWidget(
                             </div>
                           ))}
                         </div>
+                        <Alert variant="info" className="mt-4">
+                          <AlertTitle>
+                            If remaining amount is greater than 0, it may mean:
+                          </AlertTitle>
+                          <AlertDescription>
+                            <ul className="list-disc list-inside text-left">
+                              <li>We didn't link report to existing invoice</li>
+                              <li>We forgot to invoice the client</li>
+                              <li>
+                                We didn't clarify the difference, like discount
+                              </li>
+                            </ul>
+                          </AlertDescription>
+                        </Alert>
                       </PopoverContent>
                     </Popover>
                   </TableCell>
