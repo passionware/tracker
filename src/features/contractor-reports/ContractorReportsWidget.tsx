@@ -2,7 +2,7 @@ import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { BreadcrumbLink, BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
+import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import {
   Popover,
   PopoverContent,
@@ -19,17 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
 
 export function ContractorReportsWidget(
   props: { clientId: Client["id"] } & WithServices<
-    [WithReportDisplayService, WithFormatService]
+    [WithReportDisplayService, WithFormatService, WithClientService]
   >,
 ) {
   const reports = props.services.reportDisplayService.useReportView(
@@ -42,7 +44,7 @@ export function ContractorReportsWidget(
   return (
     <CommonPageContainer
       segments={[
-        <BreadcrumbLink>Client</BreadcrumbLink>,
+        <ClientBreadcrumbLink {...props} />,
         <BreadcrumbPage>Reported work</BreadcrumbPage>,
       ]}
     >

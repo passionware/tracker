@@ -2,6 +2,7 @@ import { ProtectedRoute } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { DummyPage } from "@/features/app/DummyPage.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
+import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -50,13 +51,30 @@ export function RootWidget(
       />
       <Route path="/login" element={<LoginPage services={props.services} />} />
       <Route
-        path="/clients/:clientId/reports"
+        path={props.services.routingService.forClient().reports()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <ClientIdResolver services={props.services}>
                 {(clientId) => (
                   <ContractorReportsWidget
+                    clientId={clientId}
+                    services={props.services}
+                  />
+                )}
+              </ClientIdResolver>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={props.services.routingService.forClient().billing()}
+        element={
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              <ClientIdResolver services={props.services}>
+                {(clientId) => (
+                  <BillingWidget
                     clientId={clientId}
                     services={props.services}
                   />

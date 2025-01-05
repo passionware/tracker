@@ -15,7 +15,7 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
     },
     getClient: async (id) => {
       const { data, error } = await client
-        .from("clients")
+        .from("client")
         .select("*")
         .eq("id", id);
       if (error) {

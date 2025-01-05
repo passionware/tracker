@@ -8,5 +8,5 @@ export interface Client {
 
 export interface ClientsApi {
   getClients: () => Promise<Client[]>;
-  getClient: (id: string) => Promise<Client>;
+  getClient: (id: number) => Promise<Client>;
 }

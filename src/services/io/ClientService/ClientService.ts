@@ -3,7 +3,7 @@ import { RemoteData } from "@passionware/monads";
 
 export interface ClientService {
   useClients: () => RemoteData<Client[]>;
-  useClient: (id: string) => RemoteData<Client>;
+  useClient: (id: number) => RemoteData<Client>;
 }
 
 export interface WithClientService {
