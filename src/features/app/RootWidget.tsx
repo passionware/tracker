@@ -6,11 +6,11 @@ import { ContractorReportsWidget } from "@/features/contractor-reports/Contracto
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -29,10 +29,10 @@ export function RootWidget(
     [
       WithAuthService,
       WithClientService,
-      WithContractorReportService,
       WithLocationService,
       WithRoutingService,
       WithFormatService,
+      WithReportDisplayService,
     ]
   >,
 ) {

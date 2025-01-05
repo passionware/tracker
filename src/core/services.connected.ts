@@ -5,6 +5,8 @@ import { mySupabase } from "@/core/supabase.connected.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
+import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
@@ -26,16 +28,17 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
+let contractorReportService = createContractorReportService(
+  createContractorReportsApi(mySupabase),
+  myQueryClient,
+);
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
     createClientsApi(mySupabase),
     myQueryClient,
   ),
-  contractorReportService: createContractorReportService(
-    createContractorReportsApi(mySupabase),
-    myQueryClient,
-  ),
+  contractorReportService,
   routingService,
   navigationService,
   locationService: createLocationService({
@@ -45,6 +48,11 @@ export const myServices = {
     },
   }),
   formatService: createFormatService(() => new Date()),
+  reportDisplayService: createReportDisplayService({
+    services: {
+      contractorReportService,
+    },
+  }),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -54,6 +62,7 @@ export const myServices = {
     WithNavigationService,
     WithRoutingService,
     WithFormatService,
+    WithReportDisplayService,
   ]
 >;
 

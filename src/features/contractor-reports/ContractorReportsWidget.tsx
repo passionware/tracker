@@ -1,5 +1,11 @@
 import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { Badge } from "@/components/ui/badge.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -15,15 +21,15 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { rd } from "@passionware/monads";
 
 export function ContractorReportsWidget(
   props: { clientId: Client["id"] } & WithServices<
-    [WithContractorReportService, WithFormatService]
+    [WithReportDisplayService, WithFormatService]
   >,
 ) {
-  const reports = props.services.contractorReportService.useContractorReports(
+  const reports = props.services.reportDisplayService.useReportView(
     contractorReportQueryUtils.setFilter(
       contractorReportQueryUtils.ofEmpty(),
       "clientId",
@@ -74,10 +80,43 @@ export function ContractorReportsWidget(
                 <TableRow key={report.id}>
                   <TableCell className="font-medium">{report.id}</TableCell>
                   <TableCell>
-                    {props.services.formatService.financial.amount(
-                      report.netValue,
-                      report.currency,
-                    )}
+                    <div className="flex flex-row gap-2 items-center">
+                      {props.services.formatService.financial.amount(
+                        report.netAmount.amount,
+                        report.netAmount.currency,
+                      )}
+                      <Popover>
+                        <PopoverTrigger>
+                          <Badge
+                            variant={
+                              report.status === "billed"
+                                ? "outline"
+                                : "destructive"
+                            }
+                          >
+                            {report.status === "billed"
+                              ? "Billed"
+                              : "Uncovered"}
+                          </Badge>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          <div className="text-green-700">
+                            <Badge variant="outline">Reconciled</Badge>{" "}
+                            {props.services.formatService.financial.amount(
+                              report.reconciledAmount.amount,
+                              report.reconciledAmount.currency,
+                            )}
+                          </div>
+                          <div className="text-red-800">
+                            <Badge variant="outline">Remaining</Badge>{" "}
+                            {props.services.formatService.financial.amount(
+                              report.remainingAmount.amount,
+                              report.remainingAmount.currency,
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
