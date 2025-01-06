@@ -126,7 +126,7 @@ export function ContractorReportsWidget(
                     )}
                     defaultPeriodStart={rd.tryMap(reports, (reports) =>
                       maybe.map(
-                        reports[reports.length - 1],
+                        reports[reports.length - 1]?.periodEnd,
                         partialRight(addDays, 1),
                       ),
                     )}
