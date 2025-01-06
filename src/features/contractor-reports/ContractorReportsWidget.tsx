@@ -44,6 +44,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
+import { partialRight } from "lodash";
 import { Check, Link2, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -124,7 +125,10 @@ export function ContractorReportsWidget(
                       (reports) => reports[reports.length - 1]?.contractor.id,
                     )}
                     defaultPeriodStart={rd.tryMap(reports, (reports) =>
-                      addDays(reports[reports.length - 1]?.periodEnd, 1),
+                      maybe.map(
+                        reports[reports.length - 1],
+                        partialRight(addDays, 1),
+                      ),
                     )}
                     defaultPeriodEnd={new Date()}
                     defaultClientId={props.clientId}
