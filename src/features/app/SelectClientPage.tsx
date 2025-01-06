@@ -63,7 +63,7 @@ export function SelectClientPage(
             .catch(renderError)
             .map((clients) =>
               clients.map((client) => (
-                <Card className="" {...props}>
+                <Card key={client.id} className="" {...props}>
                   <CardHeader>
                     <CardTitle>{client.name}</CardTitle>
                     {/*<CardDescription>*/}
