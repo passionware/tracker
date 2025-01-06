@@ -1,3 +1,4 @@
+import { maybe, Maybe } from "@passionware/monads";
 import { z } from "zod";
 
 export type NumberFilter =
@@ -78,6 +79,21 @@ export const numberFilter = {
         },
       } as const
     )[operator];
+  },
+  matches: (filter: Maybe<NumberFilter>, value: number) => {
+    if (maybe.isAbsent(filter)) {
+      return true;
+    }
+    switch (filter.operator) {
+      case "equal":
+        return value === filter.value;
+      case "greaterThan":
+        return value > filter.value;
+      case "lessThan":
+        return value < filter.value;
+      case "between":
+        return value >= filter.value.from && value <= filter.value.to;
+    }
   },
 };
 

@@ -1,7 +1,9 @@
 import { billingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
+import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -189,6 +192,34 @@ export function BillingWidget(
                               </div>
                             </div>
                           ))}
+                          {billing.links.length === 0 && (
+                            <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
+                              No linked contractor reports.
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="default" size="xs">
+                                    Find & link report
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-fit">
+                                  <InlineContractorReportSearch
+                                    maxAmount={billing.remainingAmount.amount}
+                                    services={props.services}
+                                    onSelect={(report) => {
+                                      alert(
+                                        `Selected report: ${report.contractorReportId} with value: ${report.value}`,
+                                      );
+                                    }}
+                                    query={contractorReportQueryUtils.setFilter(
+                                      contractorReportQueryUtils.ofEmpty(),
+                                      "remainingAmount",
+                                      { operator: "greaterThan", value: 0 },
+                                    )}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          )}
                         </div>
                       </PopoverContent>
                     </Popover>

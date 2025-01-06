@@ -94,10 +94,10 @@ export const withFiltersUtils = <
 >() => {
   const pagUtils = withPaginationUtils<Q>();
   return {
-    setFilter: (
+    setFilter: <K extends keyof Q["filters"]>(
       query: Q,
-      filterName: keyof Q["filters"],
-      value: Q["filters"][keyof Q["filters"]],
+      filterName: K,
+      value: Q["filters"][K],
     ): Q =>
       pagUtils.resetPage({
         ...query,

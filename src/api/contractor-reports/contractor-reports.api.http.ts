@@ -1,3 +1,4 @@
+import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
   contractorReport$,
   contractorReportFromHttp,
@@ -41,7 +42,17 @@ export function createContractorReportsApi(
       return z
         .array(contractorReport$)
         .parse(data)
-        .map(contractorReportFromHttp);
+        .map(contractorReportFromHttp)
+        .filter((report) =>
+          numberFilter.matches(
+            query.filters.remainingAmount,
+            report.netValue -
+              (report.linkBillingReport?.reduce(
+                (acc, link) => acc + (link.reconcileAmount ?? 0),
+                0,
+              ) ?? 0),
+          ),
+        );
     },
     getContractorReport: async (id) => {
       const { data, error } = await client

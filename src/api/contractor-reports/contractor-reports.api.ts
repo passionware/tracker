@@ -1,4 +1,5 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
+import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
   WithFilters,
   withFiltersUtils,
@@ -26,6 +27,7 @@ export interface ContractorReport {
 
 export type ContractorReportQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
+  remainingAmount: Nullable<NumberFilter>;
 }> &
   WithPagination;
 
@@ -40,7 +42,7 @@ export const contractorReportQueryUtils = {
   ...withFiltersUtils<ContractorReportQuery>(),
   ...withPaginationUtils<ContractorReportQuery>(),
   ofEmpty: (): ContractorReportQuery => ({
-    filters: { clientId: null },
+    filters: { clientId: null, remainingAmount: null },
     page: { page: 0, pageSize: 10 },
   }),
 };
