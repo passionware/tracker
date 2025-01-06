@@ -40,6 +40,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           period_end: report.periodEnd,
           currency: report.currency,
           client_id: report.clientId,
+          workspace_id: report.workspaceId,
         })
         .select("id");
       if (response.error) {

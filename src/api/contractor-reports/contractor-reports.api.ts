@@ -23,6 +23,7 @@ export interface ContractorReport {
   clientId: number;
   linkBillingReport: LinkBillingReport[] | null;
   contractor: Contractor | null;
+  workspaceId: number;
 }
 
 export type ContractorReportQuery = WithFilters<{

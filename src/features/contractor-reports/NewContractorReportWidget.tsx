@@ -16,16 +16,23 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
+import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
 export interface NewContractorReportWidgetProps
   extends WithServices<
-    [WithMutationService, WithClientService, WithContractorService]
+    [
+      WithMutationService,
+      WithClientService,
+      WithContractorService,
+      WithWorkspaceService,
+    ]
   > {
   // initialLink: LinkPayload; todo: think about this
   defaultClientId?: Client["id"];
@@ -44,6 +51,7 @@ type FormModel = {
   currency: string | null;
   description: string;
   netValue: string;
+  workspaceId: number | null;
 };
 
 export function NewContractorReportWidget(
@@ -75,6 +83,7 @@ export function NewContractorReportWidget(
         "Period start is required",
       ),
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
+      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
     });
   }
 
@@ -84,6 +93,24 @@ export function NewContractorReportWidget(
         onSubmit={form.handleSubmit(handleSubmit)}
         className="grid grid-cols-2 gap-4 min-w-[20rem]"
       >
+        <FormField
+          control={form.control}
+          name="workspaceId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Workspace</FormLabel>
+              <FormControl>
+                <WorkspacePicker
+                  value={field.value}
+                  onSelect={field.onChange}
+                  services={props.services}
+                />
+              </FormControl>
+              <FormDescription>Select client</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="clientId"

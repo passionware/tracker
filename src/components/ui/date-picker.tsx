@@ -9,11 +9,9 @@ import {
 } from "@/components/ui/popover";
 
 import { cn } from "@/lib/utils";
+import { Maybe } from "@passionware/monads";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-
-// Define a Maybe type
-export type Maybe<T> = T | null | undefined;
 
 interface DatePickerProps {
   value: Maybe<Date>;

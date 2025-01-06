@@ -24,6 +24,7 @@ export const contractorReportBase$ = z.object({
   currency: z.string(),
   client_id: z.number(),
   contractors: contractor$.optional(),
+  workspace_id: z.number(),
 });
 
 export type ContractorReport$ = z.input<typeof contractorReportBase$> & {

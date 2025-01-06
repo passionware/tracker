@@ -3,6 +3,7 @@ import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
@@ -29,6 +30,8 @@ import { createContractorService } from "@/services/io/ContractorService/Contrac
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { createSimpleEvent } from "@passionware/simple-event";
 import { useRef } from "react";
@@ -86,6 +89,11 @@ export const myServices = {
     myQueryClient,
     messageService,
   ),
+  workspaceService: createWorkspaceService(
+    createWorkspaceApi(mySupabase),
+    myQueryClient,
+    messageService,
+  ),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -99,6 +107,7 @@ export const myServices = {
     WithMessageService,
     WithMutationService,
     WithContractorService,
+    WithWorkspaceService,
   ]
 >;
 
