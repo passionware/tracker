@@ -68,7 +68,7 @@ export function ContractorReportsWidget(
   const reports = props.services.reportDisplayService.useReportView(
     contractorReportQueryUtils.setFilter(
       contractorReportQueryUtils.setFilter(
-        contractorReportQueryUtils.ofEmpty(),
+        contractorReportQueryUtils.ofDefault(),
         "clientId",
         { operator: "oneOf", value: [props.clientId] },
       ),
@@ -388,7 +388,7 @@ export function ContractorReportsWidget(
                                     }
                                     query={clientBillingQueryUtils.setFilter(
                                       clientBillingQueryUtils.setFilter(
-                                        clientBillingQueryUtils.ofEmpty(),
+                                        clientBillingQueryUtils.ofDefault(),
                                         "remainingAmount",
                                         { operator: "greaterThan", value: 0 },
                                       ),

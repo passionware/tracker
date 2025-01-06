@@ -5,6 +5,8 @@ import {
   withFiltersUtils,
   WithPagination,
   withPaginationUtils,
+  WithSorter,
+  withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 
@@ -31,14 +33,17 @@ export type ClientBillingQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
 }> &
-  WithPagination;
+  WithPagination &
+  WithSorter<"invoiceDate">;
 
 export const clientBillingQueryUtils = {
   ...withFiltersUtils<ClientBillingQuery>(),
   ...withPaginationUtils<ClientBillingQuery>(),
-  ofEmpty: (): ClientBillingQuery => ({
+  ...withSorterUtils<ClientBillingQuery>(),
+  ofDefault: (): ClientBillingQuery => ({
     filters: { clientId: null, remainingAmount: null },
     page: { page: 0, pageSize: 10 },
+    sort: { field: "invoiceDate", order: "asc" },
   }),
 };
 

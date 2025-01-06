@@ -5,6 +5,8 @@ import {
   withFiltersUtils,
   WithPagination,
   withPaginationUtils,
+  WithSorter,
+  withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
@@ -31,7 +33,8 @@ export type ContractorReportQuery = WithFilters<{
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Contractor["id"]>>;
 }> &
-  WithPagination;
+  WithPagination &
+  WithSorter<"periodStart" | "periodEnd" | "netValue">;
 
 export interface ContractorReportApi {
   getContractorReports: (
@@ -43,8 +46,10 @@ export interface ContractorReportApi {
 export const contractorReportQueryUtils = {
   ...withFiltersUtils<ContractorReportQuery>(),
   ...withPaginationUtils<ContractorReportQuery>(),
-  ofEmpty: (): ContractorReportQuery => ({
+  ...withSorterUtils<ContractorReportQuery>(),
+  ofDefault: (): ContractorReportQuery => ({
     filters: { clientId: null, remainingAmount: null, contractorId: null },
     page: { page: 0, pageSize: 10 },
+    sort: { field: "periodStart", order: "asc" },
   }),
 };

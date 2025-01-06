@@ -4,6 +4,7 @@ import {
   contractorReportFromHttp,
 } from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { snakeCase } from "lodash";
 import { z } from "zod";
 import { ContractorReportApi } from "./contractor-reports.api.ts";
 
@@ -50,6 +51,11 @@ export function createContractorReportsApi(
             );
             break;
         }
+      }
+      if (query.sort) {
+        request = request.order(snakeCase(query.sort.field), {
+          ascending: query.sort.order === "asc",
+        });
       }
 
       const { data, error } = await request;

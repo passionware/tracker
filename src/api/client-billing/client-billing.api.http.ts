@@ -5,6 +5,7 @@ import {
 } from "@/api/client-billing/client-billing.api.http.schema.ts";
 import { ClientBillingApi } from "@/api/client-billing/client-billing.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { snakeCase } from "lodash";
 import { z } from "zod";
 
 export function createClientBillingApi(
@@ -35,6 +36,11 @@ export function createClientBillingApi(
             );
             break;
         }
+      }
+      if (query.sort) {
+        request = request.order(snakeCase(query.sort.field), {
+          ascending: query.sort.order === "asc",
+        });
       }
 
       const { data, error } = await request;

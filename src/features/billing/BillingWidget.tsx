@@ -52,7 +52,7 @@ export function BillingWidget(
 ) {
   const billings = props.services.reportDisplayService.useBillingView(
     clientBillingQueryUtils.setFilter(
-      clientBillingQueryUtils.ofEmpty(),
+      clientBillingQueryUtils.ofDefault(),
       "clientId",
       {
         operator: "oneOf",
@@ -253,7 +253,7 @@ export function BillingWidget(
                                   }
                                   query={contractorReportQueryUtils.setFilter(
                                     contractorReportQueryUtils.setFilter(
-                                      contractorReportQueryUtils.ofEmpty(),
+                                      contractorReportQueryUtils.ofDefault(),
                                       "remainingAmount",
                                       { operator: "greaterThan", value: 0 },
                                     ),

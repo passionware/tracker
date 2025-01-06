@@ -19,3 +19,24 @@ export function WorkspaceView({ workspace }: { workspace: Workspace }) {
     </div>
   );
 }
+
+/**
+ * Todo:
+ * przemyśleć niezależne sidebary (różne tryby):
+ * * workspace scoped -> company scoped -> wszystko z Atellio na spółce zoo
+ *   -> /workspace/1/company/2
+ * * company scoped -> all workspaces -> wszystko z Atellio na spółce i na JDG etc
+ *   -> /workspace/all/company/1
+ * * workspace scoped -> all companies -> wszystkie sprawy spółki, albo wszystkie sprawy mojego JDG
+ *   -> /workspace/1/company/all
+ * * all workspaces -> all companies -> wszystkie sprawy wszystkich podmiotów
+ *   -> /workspace/all/company/all
+ *
+ * * główny dashboard - wybór trybu
+ *   -> /
+ *
+ *   co więcej, np sprawy pojedynczego kontraktora dla spółki zoo
+ *   -> /workspace/1/contractor/2
+ *   lub dla wszystkich spółek
+ *   -> /workspace/all/contractor/2
+ */
