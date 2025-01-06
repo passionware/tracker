@@ -16,7 +16,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 function ClientIdResolver(
   props: WithServices<[WithLocationService]> & {
@@ -54,6 +54,18 @@ export function RootWidget(
         }
       />
       <Route path="/login" element={<LoginPage services={props.services} />} />
+      <Route
+        path={props.services.routingService.forClient().root()}
+        element={
+          <ClientIdResolver services={props.services}>
+            {(clientId) => (
+              <Navigate
+                to={props.services.routingService.forClient(clientId).reports()}
+              />
+            )}
+          </ClientIdResolver>
+        }
+      />
       <Route
         path={props.services.routingService.forClient().reports()}
         element={
