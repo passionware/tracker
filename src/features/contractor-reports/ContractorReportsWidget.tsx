@@ -140,7 +140,9 @@ export function ContractorReportsWidget(
               if (reports.length === 0) {
                 return (
                   <TableRow>
-                    <TableCell colSpan={4}>No invoices found.</TableCell>
+                    <TableCell colSpan={4}>
+                      No contractor reports found.
+                    </TableCell>
                   </TableRow>
                 );
               }
