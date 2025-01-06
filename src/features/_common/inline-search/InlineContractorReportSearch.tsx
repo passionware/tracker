@@ -53,6 +53,7 @@ export function InlineContractorReportSearch(
               <TableHeader>
                 <TableRow>
                   <TableHead>Id</TableHead>
+                  <TableHead>Contractor</TableHead>
                   <TableHead>Reconciled</TableHead>
                   <TableHead>Remaining</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -62,6 +63,7 @@ export function InlineContractorReportSearch(
                 {reports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell>{report.id}</TableCell>
+                    <TableCell>{report.contractor.fullName}</TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
                         report.reconciledAmount.amount,

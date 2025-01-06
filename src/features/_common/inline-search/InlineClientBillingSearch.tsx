@@ -51,6 +51,8 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Id</TableHead>
+                  <TableHead>Invoice number</TableHead>
+                  <TableHead>Invoice date</TableHead>
                   <TableHead>Net Amount</TableHead>
                   <TableHead>Remaining</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -60,6 +62,12 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                 {billings.map((billing) => (
                   <TableRow key={billing.id}>
                     <TableCell>{billing.id}</TableCell>
+                    <TableCell>{billing.invoiceNumber}</TableCell>
+                    <TableCell>
+                      {props.services.formatService.temporal.date(
+                        billing.invoiceDate,
+                      )}
+                    </TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
                         billing.netAmount.amount,
