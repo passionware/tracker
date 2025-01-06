@@ -7,10 +7,8 @@ import {
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -22,22 +20,17 @@ import {
 } from "@/components/ui/card.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
-import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
-import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
 import { CircleArrowOutUpRight } from "lucide-react";
 
 export function SelectClientPage(
-  props: WithServices<
-    [WithAuthService, WithClientService, WithLocationService]
-  >,
+  props: WithServices<[WithClientService, WithLocationService]>,
 ) {
-  const auth = props.services.authService.useAuth();
   const clients = props.services.clientService.useClients(
     clientQueryUtils.ofEmpty(),
   );
