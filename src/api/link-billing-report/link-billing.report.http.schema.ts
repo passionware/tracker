@@ -3,20 +3,15 @@ import {
   contractorReport$,
   contractorReportFromHttp,
 } from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
-import {
-  Contractor$,
-  contractor$,
-  contractorFromHttp,
-} from "@/api/contractor/contractor.api.http.schema.ts";
+import { contractor$ } from "@/api/contractor/contractor.api.http.schema.ts";
+import { maybe } from "@passionware/monads";
+import { z } from "zod";
 import {
   ClientBilling$,
   clientBilling$,
   clientBillingFromHttp,
 } from "../client-billing/client-billing.api.http.schema.ts";
 import { LinkBillingReport } from "./link-billing-report.api.ts";
-import { maybe } from "@passionware/monads";
-import camelcaseKeys from "camelcase-keys";
-import { z } from "zod";
 
 export const linkBillingReportBase$ = z.object({
   id: z.number(),
@@ -29,7 +24,6 @@ export const linkBillingReportBase$ = z.object({
 });
 export type LinkBillingReport$ = z.input<typeof linkBillingReportBase$> & {
   client_billing?: ClientBilling$ | null;
-  contractor?: Contractor$ | null;
   contractor_reports?: ContractorReport$ | null;
 };
 
@@ -42,19 +36,50 @@ export const linkBillingReport$ = linkBillingReportBase$.extend({
 export function linkBillingReportFromHttp(
   linkBillingReport: LinkBillingReport$,
 ): LinkBillingReport {
-  return {
-    ...camelcaseKeys(linkBillingReport),
-    clientBilling: maybe.mapOrNull(
-      linkBillingReport.client_billing,
-      clientBillingFromHttp,
-    ),
-    contractor: maybe.mapOrNull(
-      linkBillingReport.contractor,
-      contractorFromHttp,
-    ),
-    contractorReport: maybe.mapOrNull(
-      linkBillingReport.contractor_reports,
-      contractorReportFromHttp,
-    ),
-  };
+  switch (linkBillingReport.link_type) {
+    case "clarify":
+      return {
+        id: linkBillingReport.id,
+        createdAt: linkBillingReport.created_at,
+        linkType: "clarify",
+        contractorReportId: maybe.getOrThrow(
+          linkBillingReport.contractor_report_id,
+          'contractor_report_id is required for linkType "clarify"',
+        ),
+        clarifyJustification: maybe.getOrThrow(
+          linkBillingReport.clarify_justification,
+          'clarify_justification is required for linkType "clarify"',
+        ),
+        linkAmount: linkBillingReport.reconcile_amount,
+        // references to the linked entities
+        contractorReport: maybe.mapOrNull(
+          linkBillingReport.contractor_reports,
+          contractorReportFromHttp,
+        ),
+      };
+    case null:
+      return {
+        id: linkBillingReport.id,
+        createdAt: linkBillingReport.created_at,
+        linkType: "reconcile",
+        linkAmount: linkBillingReport.reconcile_amount,
+        clientBillingId: maybe.getOrThrow(
+          linkBillingReport.client_billing_id,
+          'client_billing_id is required for linkType "reconcile"',
+        ),
+        contractorReportId: maybe.getOrThrow(
+          linkBillingReport.contractor_report_id,
+          'contractor_report_id is required for linkType "reconcile"',
+        ),
+        // references to the linked entities
+        clientBilling: maybe.mapOrNull(
+          linkBillingReport.client_billing,
+          clientBillingFromHttp,
+        ),
+        contractorReport: maybe.mapOrNull(
+          linkBillingReport.contractor_reports,
+          contractorReportFromHttp,
+        ),
+      };
+  }
 }

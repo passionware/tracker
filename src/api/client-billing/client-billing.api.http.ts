@@ -50,7 +50,7 @@ export function createClientBillingApi(
             query.filters.remainingAmount,
             clientBilling.totalNet -
               (clientBilling.linkBillingReport?.reduce(
-                (acc, link) => acc + (link.reconcileAmount ?? 0),
+                (acc, link) => acc + (link.linkAmount ?? 0),
                 0,
               ) ?? 0),
           ),

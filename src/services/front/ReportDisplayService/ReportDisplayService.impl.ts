@@ -31,7 +31,7 @@ export function createReportDisplayService(
 function calculateReport(report: ContractorReport): ContractorReportView {
   const haveSameClient = report.linkBillingReport?.every(
     (link) =>
-      link.clientBilling === null ||
+      link.linkType === "clarify" ||
       link.clientBilling?.clientId === report.clientId,
   );
   if (!haveSameClient) {
@@ -42,7 +42,7 @@ function calculateReport(report: ContractorReport): ContractorReportView {
 
   const sumOfLinkedAmounts =
     report.linkBillingReport?.reduce(
-      (acc, link) => acc + (link.reconcileAmount ?? 0),
+      (acc, link) => acc + (link.linkAmount ?? 0),
       0,
     ) ?? 0;
   const remainingAmount = report.netValue - sumOfLinkedAmounts;
@@ -51,8 +51,8 @@ function calculateReport(report: ContractorReport): ContractorReportView {
   );
   const sumOfBillingAmounts =
     report.linkBillingReport
-      ?.filter((link) => link.clientBilling !== null)
-      ?.reduce((acc, link) => acc + (link.reconcileAmount ?? 0), 0) ?? 0;
+      ?.filter((link) => link.linkType === "reconcile")
+      ?.reduce((acc, link) => acc + (link.linkAmount ?? 0), 0) ?? 0;
 
   return {
     id: report.id,
@@ -83,26 +83,30 @@ function calculateReport(report: ContractorReport): ContractorReportView {
       currency: report.currency,
     },
     links: (report.linkBillingReport ?? [])?.map((link) => {
-      if (link.clientBilling) {
-        return {
-          id: link.id,
-          amount: {
-            amount: link.reconcileAmount ?? 0,
-            currency: link.clientBilling.currency ?? report.currency,
-          },
-          linkType: "clientBilling",
-          billing: link.clientBilling,
-        };
-      } else {
-        return {
-          id: link.id,
-          amount: {
-            amount: link.reconcileAmount ?? 0,
-            currency: report.currency,
-          },
-          linkType: "clarification",
-          justification: link.clarifyJustification ?? "",
-        };
+      switch (link.linkType) {
+        case "reconcile":
+          return {
+            id: link.id,
+            amount: {
+              amount: link.linkAmount ?? 0,
+              currency: link.clientBilling?.currency ?? report.currency,
+            },
+            linkType: "clientBilling",
+            billing: maybe.getOrThrow(
+              link.clientBilling,
+              "Client billing is required to calculate report",
+            ),
+          };
+        case "clarify":
+          return {
+            id: link.id,
+            amount: {
+              amount: link.linkAmount ?? 0,
+              currency: report.currency,
+            },
+            linkType: "clarification",
+            justification: link.clarifyJustification,
+          };
       }
     }),
   };
@@ -111,7 +115,7 @@ function calculateReport(report: ContractorReport): ContractorReportView {
 function calculateBilling(billing: ClientBilling): ClientBillingView {
   const sumOfLinkedAmounts =
     billing.linkBillingReport?.reduce(
-      (acc, link) => acc + (link.reconcileAmount ?? 0),
+      (acc, link) => acc + (link.linkAmount ?? 0),
       0,
     ) ?? 0;
   const remainingAmount = billing.totalNet - sumOfLinkedAmounts;
@@ -134,7 +138,7 @@ function calculateBilling(billing: ClientBilling): ClientBillingView {
       return {
         id: link.id,
         amount: {
-          amount: link.reconcileAmount ?? 0,
+          amount: link.linkAmount ?? 0,
           currency: billing.currency,
         },
         contractorReport: maybe.getOrThrow(

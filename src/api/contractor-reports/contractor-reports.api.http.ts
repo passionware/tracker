@@ -48,7 +48,7 @@ export function createContractorReportsApi(
             query.filters.remainingAmount,
             report.netValue -
               (report.linkBillingReport?.reduce(
-                (acc, link) => acc + (link.reconcileAmount ?? 0),
+                (acc, link) => acc + (link.linkAmount ?? 0),
                 0,
               ) ?? 0),
           ),
