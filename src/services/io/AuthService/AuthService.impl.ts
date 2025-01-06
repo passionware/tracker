@@ -1,4 +1,7 @@
-import { AuthInfo, AuthService } from "@/services/io/AuthService/AuthService.ts";
+import {
+  AuthInfo,
+  AuthService,
+} from "@/services/io/AuthService/AuthService.ts";
 import { rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { SupabaseClient, User } from "@supabase/supabase-js";
@@ -83,6 +86,9 @@ export function createAuthService(client: SupabaseClient): AuthService {
         (async () => {
           const { error } = await client.auth.signInWithOAuth({
             provider: "google",
+            options: {
+              redirectTo: window.location.origin,
+            },
           });
           if (error) {
             throw error;
