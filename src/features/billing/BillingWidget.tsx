@@ -66,7 +66,7 @@ export function BillingWidget(
     <CommonPageContainer
       segments={[
         <ClientBreadcrumbLink {...props} />,
-        <BreadcrumbPage>Client Billings</BreadcrumbPage>,
+        <BreadcrumbPage>Client Invoices</BreadcrumbPage>,
       ]}
     >
       <Table>

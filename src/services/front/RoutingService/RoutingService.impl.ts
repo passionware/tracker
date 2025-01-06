@@ -4,7 +4,7 @@ export function createRoutingService(): RoutingService {
   return {
     forClient: (clientId = ":clientId") => ({
       reports: () => `/clients/${clientId}/reports`,
-      billing: () => `/clients/${clientId}/billing`,
+      invoices: () => `/clients/${clientId}/billing`,
       root: () => `/clients/${clientId}`,
     }),
     forGlobal: () => ({

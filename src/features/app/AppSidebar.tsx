@@ -22,7 +22,10 @@ import { maybe, rd } from "@passionware/monads";
 import {
   BookOpen,
   Bot,
+  Building,
+  Building2,
   Frame,
+  HandCoins,
   Map,
   PieChart,
   Settings2,
@@ -43,38 +46,30 @@ function useData(
         {
           title: "Client",
           url: "#",
-          icon: SquareTerminal,
+          icon: Building2,
           isActive: true,
           items: [
             {
-              title: "Reported hours",
+              title: "Reports",
               url: routing.reports(),
             },
             {
-              title: "Billing",
-              url: routing.billing(),
-            },
-            {
-              title: "Unmatched", // raporty niepowiązane z płatnościami
-              url: "#",
+              title: "Income invoices",
+              url: routing.invoices(),
             },
           ],
         },
         {
           title: "Forge Team",
           url: "#",
-          icon: Bot,
+          icon: HandCoins,
           items: [
             {
-              title: "Not paid reports",
+              title: "Reports",
               url: "#",
             },
             {
-              title: "Not matched costs",
-              url: "#",
-            },
-            {
-              title: "Quantum",
+              title: "Cost invoices",
               url: "#",
             },
           ],
