@@ -14,13 +14,12 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     clarifyLink: async (payload) => {
-      const response = await client
-        .from("link_billing_report")
-        .update({
-          clarify_justification: payload.clarifyJustification,
-          link_type: "clarify",
-        })
-        .eq("id", payload.linkBillingReportId);
+      const response = await client.from("link_billing_report").insert({
+        clarify_justification: payload.clarifyJustification,
+        link_type: "clarify",
+        contractor_report_id: payload.contractorReportId,
+        reconcile_amount: payload.clarifyAmount,
+      });
       if (response.error) {
         throw response.error;
       }
