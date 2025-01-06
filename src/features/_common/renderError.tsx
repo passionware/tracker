@@ -33,7 +33,7 @@ export const renderSmallError =
       <SimpleTooltip title={message}>
         <div
           className={cn(
-            "text-red-700 bg-red-100 border border-red-800 px-1 text-sm h-[1lh]",
+            "text-red-800 bg-red-300 border border-red-800 px-1 text-sm h-[1lh]",
             "flex flex-row justify-center items-center",
             "rounded-sm",
             className,

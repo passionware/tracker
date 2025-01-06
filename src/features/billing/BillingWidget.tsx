@@ -24,26 +24,43 @@ import {
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
-import { renderError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { Slot } from "@radix-ui/react-slot";
+import { Check, Link2, Loader2 } from "lucide-react";
 
 export function BillingWidget(
   props: { clientId: Client["id"] } & WithServices<
-    [WithReportDisplayService, WithFormatService, WithClientService]
+    [
+      WithReportDisplayService,
+      WithFormatService,
+      WithClientService,
+      WithMutationService /*todo use auth flow*/,
+    ]
   >,
 ) {
   const billings = props.services.reportDisplayService.useBillingView(
-    clientBillingQueryUtils.setFilter(clientBillingQueryUtils.ofEmpty(), "clientId", {
-      operator: "oneOf",
-      value: [props.clientId],
-    }),
+    clientBillingQueryUtils.setFilter(
+      clientBillingQueryUtils.ofEmpty(),
+      "clientId",
+      {
+        operator: "oneOf",
+        value: [props.clientId],
+      },
+    ),
   );
+
+  const linkingState = promiseState.useRemoteData();
 
   return (
     <CommonPageContainer
@@ -201,6 +218,14 @@ export function BillingWidget(
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button variant="default" size="xs">
+                                  {rd
+                                    .fullJourney(linkingState.state)
+                                    .initially(<Link2 />)
+                                    .wait(<Loader2 />)
+                                    .catch(renderSmallError("w-6 h-4"))
+                                    .map(() => (
+                                      <Check />
+                                    ))}
                                   Find & link report
                                 </Button>
                               </PopoverTrigger>
@@ -208,11 +233,18 @@ export function BillingWidget(
                                 <InlineContractorReportSearch
                                   maxAmount={billing.remainingAmount.amount}
                                   services={props.services}
-                                  onSelect={(report) => {
-                                    alert(
-                                      `Selected report: ${report.contractorReportId} with value: ${report.value}`,
-                                    );
-                                  }}
+                                  onSelect={(report) =>
+                                    linkingState.track(
+                                      props.services.mutationService.linkReportAndBilling(
+                                        {
+                                          clientBillingId: billing.id,
+                                          contractorReportId:
+                                            report.contractorReportId,
+                                          reconcileAmount: report.value,
+                                        },
+                                      ),
+                                    )
+                                  }
                                   query={contractorReportQueryUtils.setFilter(
                                     contractorReportQueryUtils.setFilter(
                                       contractorReportQueryUtils.ofEmpty(),

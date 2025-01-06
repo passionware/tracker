@@ -25,17 +25,28 @@ import {
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
-import { renderError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
+import { Check, Link2, Loader2 } from "lucide-react";
 
 export function ContractorReportsWidget(
   props: { clientId: Client["id"] } & WithServices<
-    [WithReportDisplayService, WithFormatService, WithClientService]
+    [
+      WithReportDisplayService,
+      WithFormatService,
+      WithClientService,
+      WithMutationService,
+    ]
   >,
 ) {
   const reports = props.services.reportDisplayService.useReportView(
@@ -45,6 +56,9 @@ export function ContractorReportsWidget(
       { operator: "oneOf", value: [props.clientId] },
     ),
   );
+
+  const linkingState = promiseState.useRemoteData();
+
   return (
     <CommonPageContainer
       segments={[
@@ -64,6 +78,7 @@ export function ContractorReportsWidget(
             <TableHead>Status</TableHead>
             <TableHead>Net value</TableHead>
             <TableHead>Billed value</TableHead>
+            <TableHead>Remaining</TableHead>
             <TableHead>Period</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
@@ -73,6 +88,9 @@ export function ContractorReportsWidget(
             .journey(reports)
             .wait(
               <TableRow>
+                <TableCell>
+                  <Skeleton className="w-32 h-6" />
+                </TableCell>
                 <TableCell>
                   <Skeleton className="w-32 h-6" />
                 </TableCell>
@@ -235,6 +253,14 @@ export function ContractorReportsWidget(
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button variant="default" size="xs">
+                                  {rd
+                                    .fullJourney(linkingState.state)
+                                    .initially(<Link2 />)
+                                    .wait(<Loader2 />)
+                                    .catch(renderSmallError("w-6 h-4"))
+                                    .map(() => (
+                                      <Check />
+                                    ))}
                                   Find & link billing
                                 </Button>
                               </PopoverTrigger>
@@ -242,11 +268,17 @@ export function ContractorReportsWidget(
                                 <InlineBillingSearch
                                   maxAmount={report.remainingAmount.amount}
                                   services={props.services}
-                                  onSelect={(report) => {
-                                    alert(
-                                      `Selected report: ${report.billingId} with value: ${report.value}`,
-                                    );
-                                  }}
+                                  onSelect={(data) =>
+                                    linkingState.track(
+                                      props.services.mutationService.linkReportAndBilling(
+                                        {
+                                          contractorReportId: report.id,
+                                          clientBillingId: data.billingId,
+                                          reconcileAmount: data.value,
+                                        },
+                                      ),
+                                    )
+                                  }
                                   query={clientBillingQueryUtils.setFilter(
                                     clientBillingQueryUtils.setFilter(
                                       clientBillingQueryUtils.ofEmpty(),
@@ -289,8 +321,14 @@ export function ContractorReportsWidget(
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.amount(
-                      report.billedAmount.amount,
-                      report.billedAmount.currency,
+                        report.billedAmount.amount,
+                        report.billedAmount.currency,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.amount(
+                        report.remainingAmount.amount,
+                        report.remainingAmount.currency,
                     )}
                   </TableCell>
                   <TableCell>
