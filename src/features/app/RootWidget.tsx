@@ -12,6 +12,7 @@ import { WithRoutingService } from "@/services/front/RoutingService/RoutingServi
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
@@ -36,6 +37,7 @@ export function RootWidget(
       WithFormatService,
       WithReportDisplayService,
       WithMutationService,
+      WithContractorService,
     ]
   >,
 ) {

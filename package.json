@@ -11,6 +11,7 @@
     "update:dev:passionware": "npx update-by-scope @passionware npm install --tag dev"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@passionware/component-factory": "^0.0.0-dev-20241230075516",
     "@passionware/entities": "^0.0.0-dev-20241230075516",
     "@passionware/monads": "^0.0.0-dev-20241230075516",

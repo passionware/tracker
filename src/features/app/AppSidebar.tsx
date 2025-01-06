@@ -1,3 +1,4 @@
+import { clientQueryUtils } from "@/api/clients/clients.api.ts";
 import {
   Sidebar,
   SidebarContent,
@@ -154,7 +155,7 @@ export function AppSidebar({
 > &
   ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
-  const clients = services.clientService.useClients();
+  const clients = services.clientService.useClients(clientQueryUtils.ofEmpty());
   const currentClientId = services.locationService.useCurrentClientId();
   const data = useData(services);
   return (

@@ -1,9 +1,9 @@
-import { Client } from "@/api/clients/clients.api.ts";
-import { RemoteData } from "@passionware/monads";
+import { Client, ClientQuery } from "@/api/clients/clients.api.ts";
+import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ClientService {
-  useClients: () => RemoteData<Client[]>;
-  useClient: (id: number) => RemoteData<Client>;
+  useClients: (query: ClientQuery) => RemoteData<Client[]>;
+  useClient: (id: Maybe<number>) => RemoteData<Client>;
 }
 
 export interface WithClientService {

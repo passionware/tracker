@@ -14,5 +14,12 @@ export function createMutationService(
         scope: "Linking report and billing",
       });
     },
+    createContractorReport: async (report) => {
+      const response = await api.createContractorReport(report);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating contractor report",
+      });
+      return response;
+    },
   };
 }

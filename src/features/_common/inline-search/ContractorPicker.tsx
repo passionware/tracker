@@ -19,21 +19,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
-import { ensureError } from "@/platform/lang/ensureError.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { CommandLoading } from "cmdk";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { ReactElement, useState } from "react";
+import { useState } from "react";
 
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
   value: Maybe<Contractor["id"]>;
   onSelect: (contractorId: Contractor["id"]) => void;
-  onClear: () => void;
   allowClear?: boolean;
-  children: ReactElement;
 }
 
 export function ContractorPicker(props: ContractorPickerProps) {
@@ -43,7 +40,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
   const options = props.services.contractorService.useContractors(
     contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
   );
-  const curentOption = props.services.contractorService.useContractor(
+  const currentOption = props.services.contractorService.useContractor(
     props.value,
   );
 
@@ -54,11 +51,11 @@ export function ContractorPicker(props: ContractorPickerProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="justify-between"
         >
           {rd
-            .fullJourney(curentOption)
-            .initially("select contractor...")
+            .fullJourney(currentOption)
+            .initially("Select contractor...")
             .wait(<Skeleton className="w-full h-[1lh]" />)
             .catch(renderSmallError("w-full h-[1lh]", "Not found"))
             .map((contractor) => contractor.fullName)}
@@ -78,9 +75,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
               {rd
                 .journey(options)
                 .wait(<CommandLoading />)
-                .catch((e) => (
-                  <CommandEmpty>Error: {ensureError(e).message}</CommandEmpty>
-                ))
+                .catch((e) => <CommandEmpty>Error: {e.message}</CommandEmpty>)
                 .map((options) => {
                   if (options.length === 0) {
                     return <CommandEmpty>No contractor found.</CommandEmpty>;

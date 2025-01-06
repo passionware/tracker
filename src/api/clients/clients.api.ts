@@ -1,3 +1,4 @@
+import { WithSearch, withSearchUtils } from "@/api/_common/query/queryUtils.ts";
 import { Maybe } from "@passionware/monads";
 
 export interface Client {
@@ -6,7 +7,16 @@ export interface Client {
   avatarUrl: Maybe<string>;
 }
 
+export type ClientQuery = WithSearch;
+
+export const clientQueryUtils = {
+  ...withSearchUtils<ClientQuery>(),
+  ofEmpty: (): ClientQuery => ({
+    search: "",
+  }),
+};
+
 export interface ClientsApi {
-  getClients: () => Promise<Client[]>;
+  getClients: (query: ClientQuery) => Promise<Client[]>;
   getClient: (id: number) => Promise<Client>;
 }

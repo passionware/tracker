@@ -1,5 +1,6 @@
 import { ContractorApi } from "@/api/contractor/contractor.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
+import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
 import { ContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";
@@ -27,13 +28,16 @@ export function createContractorService(
       );
     },
     useContractor: (id) => {
-      return useQuery(
-        {
-          queryKey: ["contractors", "get", id],
-          enabled: maybe.isPresent(id),
-          queryFn: () => api.getContractor(id!),
-        },
-        client,
+      return ensureIdleQuery(
+        id,
+        useQuery(
+          {
+            queryKey: ["contractors", "get", id],
+            enabled: maybe.isPresent(id),
+            queryFn: () => api.getContractor(id!),
+          },
+          client,
+        ),
       );
     },
   };

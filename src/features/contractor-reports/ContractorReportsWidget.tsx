@@ -30,11 +30,13 @@ import {
   renderError,
   renderSmallError,
 } from "@/features/_common/renderError.tsx";
+import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -47,6 +49,7 @@ export function ContractorReportsWidget(
       WithFormatService,
       WithClientService,
       WithMutationService,
+      WithContractorService,
     ]
   >,
 ) {
@@ -60,6 +63,7 @@ export function ContractorReportsWidget(
 
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
+  const addReportState = promiseState.useRemoteData();
 
   return (
     <CommonPageContainer
@@ -70,19 +74,29 @@ export function ContractorReportsWidget(
       tools={
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="default" size="sm">
-              <PlusCircle />
+            <Button variant="default" size="sm" className="flex">
+              {rd
+                .fullJourney(addReportState.state)
+                .initially(<PlusCircle />)
+                .wait(<Loader2 />)
+                .catch(renderSmallError("w-6 h-6"))
+                .map(() => (
+                  <Check />
+                ))}
               Add report
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
-            <div>Coming soon</div>
-            {/* TODO
-
-             * closable popover - with child as render function that returns api to close popover
-             * new report widget - with form
-             
-             */}
+            <PopoverHeader>Add new contractor report</PopoverHeader>
+            <NewContractorReportWidget
+              defaultClientId={props.clientId}
+              services={props.services}
+              onSubmit={(data) =>
+                addReportState.track(
+                  props.services.mutationService.createContractorReport(data),
+                )
+              }
+            />
           </PopoverContent>
         </Popover>
       }
@@ -273,7 +287,7 @@ export function ContractorReportsWidget(
                             </div>
                           ))}
                           {report.remainingAmount.amount > 0 && (
-                            <div className="space-x-2">
+                            <div className="flex gap-2 flex-row">
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="default" size="xs">

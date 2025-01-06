@@ -1,6 +1,7 @@
 import { createClientBillingApi } from "@/api/client-billing/client-billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
+import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
@@ -24,6 +25,8 @@ import { createClientService } from "@/services/io/ClientService/ClientService.i
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.impl.ts";
 import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe } from "@passionware/monads";
@@ -78,6 +81,11 @@ export const myServices = {
     },
     createMutationApi(mySupabase),
   ),
+  contractorService: createContractorService(
+    createContractorApi(mySupabase),
+    myQueryClient,
+    messageService,
+  ),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -90,6 +98,7 @@ export const myServices = {
     WithReportDisplayService,
     WithMessageService,
     WithMutationService,
+    WithContractorService,
   ]
 >;
 

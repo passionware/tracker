@@ -29,5 +29,26 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    createContractorReport: async (report) => {
+      const response = await client
+        .from("contractor_reports")
+        .insert({
+          contractor_id: report.contractorId,
+          description: report.description,
+          net_value: report.netValue,
+          period_start: report.periodStart,
+          period_end: report.periodEnd,
+          currency: report.currency,
+          client_id: report.clientId,
+        })
+        .select("id");
+      if (response.error) {
+        throw response.error;
+      }
+      if (response.data[0]?.id === undefined) {
+        throw new Error("No id returned");
+      }
+      return { id: response.data[0].id };
+    },
   };
 }

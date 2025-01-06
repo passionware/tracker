@@ -6,8 +6,12 @@ import { z } from "zod";
 
 export function createClientsApi(client: SupabaseClient): ClientsApi {
   return {
-    getClients: async () => {
-      const { data, error } = await client.from("client").select("*");
+    getClients: async (query) => {
+      let request = client.from("client").select("*");
+      if (query.search) {
+        request = request.ilike("name", `%${query.search}%`);
+      }
+      const { data, error } = await request;
       if (error) {
         throw error;
       }
