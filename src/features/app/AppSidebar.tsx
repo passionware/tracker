@@ -21,15 +21,12 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { maybe, rd } from "@passionware/monads";
 import {
   BookOpen,
-  Bot,
-  Building,
   Building2,
   Frame,
   HandCoins,
   Map,
   PieChart,
   Settings2,
-  SquareTerminal,
 } from "lucide-react";
 import { ComponentProps, useMemo } from "react";
 
@@ -123,7 +120,7 @@ function useData(
       ],
       projects: [
         {
-          name: "Design Engineering",
+          name: "Contractor reports",
           url: "#",
           icon: Frame,
         },
