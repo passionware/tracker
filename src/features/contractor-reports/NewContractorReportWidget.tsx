@@ -29,6 +29,10 @@ export interface NewContractorReportWidgetProps
   > {
   // initialLink: LinkPayload; todo: think about this
   defaultClientId?: Client["id"];
+  defaultContractorId?: number;
+  defaultCurrency?: string;
+  defaultPeriodStart?: Date;
+  defaultPeriodEnd?: Date;
   onSubmit: (data: CreateContractorReportPayload) => void;
 }
 
@@ -47,11 +51,11 @@ export function NewContractorReportWidget(
 ) {
   const form = useForm<FormModel>({
     defaultValues: {
-      contractorId: null,
+      contractorId: props.defaultContractorId,
       clientId: props.defaultClientId,
-      periodStart: null,
-      periodEnd: null,
-      currency: null,
+      periodStart: props.defaultPeriodStart,
+      periodEnd: props.defaultPeriodEnd,
+      currency: props.defaultCurrency,
       description: "",
       netValue: "0",
     },

@@ -26,6 +26,7 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { InlineClientBillingClarify } from "@/features/_common/inline-search/InlineClientBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
+import { OpenState } from "@/features/_common/OpenState.tsx";
 import {
   renderError,
   renderSmallError,
@@ -40,6 +41,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { addDays } from "date-fns";
 import { Check, Link2, Loader2, PlusCircle } from "lucide-react";
 
 export function ContractorReportsWidget(
@@ -72,33 +74,52 @@ export function ContractorReportsWidget(
         <BreadcrumbPage>Reported work</BreadcrumbPage>,
       ]}
       tools={
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="default" size="sm" className="flex">
-              {rd
-                .fullJourney(addReportState.state)
-                .initially(<PlusCircle />)
-                .wait(<Loader2 />)
-                .catch(renderSmallError("w-6 h-6"))
-                .map(() => (
-                  <Check />
-                ))}
-              Add report
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Add new contractor report</PopoverHeader>
-            <NewContractorReportWidget
-              defaultClientId={props.clientId}
-              services={props.services}
-              onSubmit={(data) =>
-                addReportState.track(
-                  props.services.mutationService.createContractorReport(data),
-                )
-              }
-            />
-          </PopoverContent>
-        </Popover>
+        <OpenState>
+          {(bag) => (
+            <Popover {...bag}>
+              <PopoverTrigger asChild>
+                <Button variant="default" size="sm" className="flex">
+                  {rd
+                    .fullJourney(addReportState.state)
+                    .initially(<PlusCircle />)
+                    .wait(<Loader2 />)
+                    .catch(renderSmallError("w-6 h-6"))
+                    .map(() => (
+                      <Check />
+                    ))}
+                  Add report
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-fit">
+                <PopoverHeader>Add new contractor report</PopoverHeader>
+                <NewContractorReportWidget
+                  defaultCurrency={rd.tryMap(
+                    reports,
+                    (reports) =>
+                      reports[reports.length - 1]?.netAmount.currency,
+                  )}
+                  defaultContractorId={rd.tryMap(
+                    reports,
+                    (reports) => reports[reports.length - 1]?.contractor.id,
+                  )}
+                  defaultPeriodStart={rd.tryMap(reports, (reports) =>
+                    addDays(reports[reports.length - 1]?.periodEnd, 1),
+                  )}
+                  defaultPeriodEnd={new Date()}
+                  defaultClientId={props.clientId}
+                  services={props.services}
+                  onSubmit={(data) =>
+                    addReportState.track(
+                      props.services.mutationService
+                        .createContractorReport(data)
+                        .then(bag.close),
+                    )
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </OpenState>
       }
     >
       <Table>
@@ -413,8 +434,10 @@ export function ContractorReportsWidget(
                       report.periodEnd,
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {report.description}
+                  <TableCell className="text-left">
+                    <div className="whitespace-pre-line">
+                      {report.description}
+                    </div>
                   </TableCell>
                 </TableRow>
               ));
