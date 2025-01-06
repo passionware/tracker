@@ -2,7 +2,7 @@ import {
   Contractor,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
-import { Button } from "@/components/ui/button.tsx";
+import { Button, ButtonProps } from "@/components/ui/button.tsx";
 import {
   Command,
   CommandEmpty,
@@ -29,8 +29,9 @@ import { useState } from "react";
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
   value: Maybe<Contractor["id"]>;
-  onSelect: (contractorId: Contractor["id"]) => void;
+  onSelect: (contractorId: Maybe<Contractor["id"]>) => void;
   allowClear?: boolean;
+  size?: ButtonProps["size"];
 }
 
 export function ContractorPicker(props: ContractorPickerProps) {
@@ -48,6 +49,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          size={props.size}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -85,6 +87,14 @@ export function ContractorPicker(props: ContractorPickerProps) {
                       key={contractor.id}
                       value={contractor.id.toString()}
                       onSelect={() => {
+                        if (props.value === contractor.id) {
+                          if (props.allowClear) {
+                            props.onSelect(null);
+                          }
+                          setOpen(false);
+                          return;
+                        }
+
                         props.onSelect(contractor.id);
                         setOpen(false);
                       }}

@@ -34,6 +34,23 @@ export function createContractorReportsApi(
             break;
         }
       }
+      if (query.filters.contractorId) {
+        switch (query.filters.contractorId.operator) {
+          case "oneOf":
+            request = request.in(
+              "contractor_id",
+              query.filters.contractorId.value,
+            );
+            break;
+          case "matchNone":
+            request = request.not(
+              "contractor_id",
+              "in",
+              query.filters.contractorId.value,
+            );
+            break;
+        }
+      }
 
       const { data, error } = await request;
       if (error) {

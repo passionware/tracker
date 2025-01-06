@@ -28,6 +28,7 @@ export interface ContractorReport {
 export type ContractorReportQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
+  contractorId: Nullable<EnumFilter<Contractor["id"]>>;
 }> &
   WithPagination;
 
@@ -42,7 +43,7 @@ export const contractorReportQueryUtils = {
   ...withFiltersUtils<ContractorReportQuery>(),
   ...withPaginationUtils<ContractorReportQuery>(),
   ofEmpty: (): ContractorReportQuery => ({
-    filters: { clientId: null, remainingAmount: null },
+    filters: { clientId: null, remainingAmount: null, contractorId: null },
     page: { page: 0, pageSize: 10 },
   }),
 };

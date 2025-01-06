@@ -1,6 +1,7 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineClientBillingClarify } from "@/features/_common/inline-search/InlineClientBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
@@ -39,10 +41,11 @@ import { WithReportDisplayService } from "@/services/front/ReportDisplayService/
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
 import { Check, Link2, Loader2, PlusCircle } from "lucide-react";
+import { useState } from "react";
 
 export function ContractorReportsWidget(
   props: { clientId: Client["id"] } & WithServices<
@@ -55,11 +58,18 @@ export function ContractorReportsWidget(
     ]
   >,
 ) {
+  const [contractorFilter, setContractorFilter] = useState<
+    Maybe<Contractor["id"]>
+  >(maybe.ofAbsent());
   const reports = props.services.reportDisplayService.useReportView(
     contractorReportQueryUtils.setFilter(
-      contractorReportQueryUtils.ofEmpty(),
-      "clientId",
-      { operator: "oneOf", value: [props.clientId] },
+      contractorReportQueryUtils.setFilter(
+        contractorReportQueryUtils.ofEmpty(),
+        "clientId",
+        { operator: "oneOf", value: [props.clientId] },
+      ),
+      "contractorId",
+      maybe.map(contractorFilter, (x) => ({ operator: "oneOf", value: [x] })),
     ),
   );
 
@@ -74,52 +84,64 @@ export function ContractorReportsWidget(
         <BreadcrumbPage>Reported work</BreadcrumbPage>,
       ]}
       tools={
-        <OpenState>
-          {(bag) => (
-            <Popover {...bag}>
-              <PopoverTrigger asChild>
-                <Button variant="default" size="sm" className="flex">
-                  {rd
-                    .fullJourney(addReportState.state)
-                    .initially(<PlusCircle />)
-                    .wait(<Loader2 />)
-                    .catch(renderSmallError("w-6 h-6"))
-                    .map(() => (
-                      <Check />
-                    ))}
-                  Add report
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-fit">
-                <PopoverHeader>Add new contractor report</PopoverHeader>
-                <NewContractorReportWidget
-                  defaultCurrency={rd.tryMap(
-                    reports,
-                    (reports) =>
-                      reports[reports.length - 1]?.netAmount.currency,
-                  )}
-                  defaultContractorId={rd.tryMap(
-                    reports,
-                    (reports) => reports[reports.length - 1]?.contractor.id,
-                  )}
-                  defaultPeriodStart={rd.tryMap(reports, (reports) =>
-                    addDays(reports[reports.length - 1]?.periodEnd, 1),
-                  )}
-                  defaultPeriodEnd={new Date()}
-                  defaultClientId={props.clientId}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    addReportState.track(
-                      props.services.mutationService
-                        .createContractorReport(data)
-                        .then(bag.close),
-                    )
-                  }
-                />
-              </PopoverContent>
-            </Popover>
-          )}
-        </OpenState>
+        <>
+          <div className="rounded-md border border-slate-300 bg-slate-50 p-2 w-fit flex flex-row gap-1 items-center text-xs text-slate-600">
+            Filters:
+            <ContractorPicker
+              allowClear
+              size="xs"
+              value={contractorFilter}
+              onSelect={setContractorFilter}
+              services={props.services}
+            />
+          </div>
+          <OpenState>
+            {(bag) => (
+              <Popover {...bag}>
+                <PopoverTrigger asChild>
+                  <Button variant="default" size="sm" className="flex">
+                    {rd
+                      .fullJourney(addReportState.state)
+                      .initially(<PlusCircle />)
+                      .wait(<Loader2 />)
+                      .catch(renderSmallError("w-6 h-6"))
+                      .map(() => (
+                        <Check />
+                      ))}
+                    Add report
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-fit">
+                  <PopoverHeader>Add new contractor report</PopoverHeader>
+                  <NewContractorReportWidget
+                    defaultCurrency={rd.tryMap(
+                      reports,
+                      (reports) =>
+                        reports[reports.length - 1]?.netAmount.currency,
+                    )}
+                    defaultContractorId={rd.tryMap(
+                      reports,
+                      (reports) => reports[reports.length - 1]?.contractor.id,
+                    )}
+                    defaultPeriodStart={rd.tryMap(reports, (reports) =>
+                      addDays(reports[reports.length - 1]?.periodEnd, 1),
+                    )}
+                    defaultPeriodEnd={new Date()}
+                    defaultClientId={props.clientId}
+                    services={props.services}
+                    onSubmit={(data) =>
+                      addReportState.track(
+                        props.services.mutationService
+                          .createContractorReport(data)
+                          .then(bag.close),
+                      )
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </OpenState>
+        </>
       }
     >
       <Table>
@@ -264,12 +286,21 @@ export function ContractorReportsWidget(
                                   }[link.linkType]
                                 }
                               </Badge>
-                              <p className="text-sm font-medium leading-none">
+                              <div className="text-sm font-medium leading-none flex flex-row gap-2">
                                 {props.services.formatService.financial.amount(
                                   link.amount.amount,
                                   link.amount.currency,
                                 )}
-                              </p>
+                                {link.linkType === "clientBilling" && (
+                                  <div className="contents text-gray-500">
+                                    of
+                                    {props.services.formatService.financial.amount(
+                                      link.billing.totalNet,
+                                      link.billing.currency,
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                               <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
                                 {link.linkType === "clientBilling" && (
                                   <>

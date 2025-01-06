@@ -97,7 +97,7 @@ export const withFiltersUtils = <
     setFilter: <K extends keyof Q["filters"]>(
       query: Q,
       filterName: K,
-      value: Q["filters"][K],
+      value: Maybe<Q["filters"][K]>,
     ): Q =>
       pagUtils.resetPage({
         ...query,
