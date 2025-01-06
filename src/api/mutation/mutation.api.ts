@@ -1,14 +1,17 @@
-export type ClarifyLinkPayload = {
-  contractorReportId: number;
-  clarifyJustification: string;
-  clarifyAmount: number;
-};
+export type LinkPayload =
+  | {
+      type: "clarify";
+      contractorReportId: number;
+      clarifyJustification: string;
+      linkAmount: number;
+    }
+  | {
+      type: "reconcile";
+      clientBillingId: number;
+      contractorReportId: number;
+      linkAmount: number;
+    };
 
 export interface MutationApi {
-  linkReportAndBilling: (payload: {
-    clientBillingId: number;
-    contractorReportId: number;
-    reconcileAmount: number;
-  }) => Promise<void>;
-  clarifyLink: (payload: ClarifyLinkPayload) => Promise<void>;
+  linkReportAndBilling: (payload: LinkPayload) => Promise<void>;
 }

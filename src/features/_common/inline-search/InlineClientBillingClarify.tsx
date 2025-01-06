@@ -1,4 +1,4 @@
-import { ClarifyLinkPayload } from "@/api/mutation/mutation.api.ts";
+import { LinkPayload } from "@/api/mutation/mutation.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 
 export interface InlineBillingClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
-  onSelect: (data: ClarifyLinkPayload) => void;
+  onSelect: (data: LinkPayload) => void;
   maxAmount: number;
   contractorReportId: number;
   /**
@@ -31,7 +31,8 @@ export function InlineClientBillingClarify(props: InlineBillingClarifyProps) {
       className="flex flex-col gap-2"
       onSubmit={form.handleSubmit((data) =>
         props.onSelect({
-          clarifyAmount: data.clarifyAmount,
+          type: "clarify",
+          linkAmount: data.clarifyAmount,
           contractorReportId: props.contractorReportId,
           clarifyJustification: data.clarifyJustification,
         }),

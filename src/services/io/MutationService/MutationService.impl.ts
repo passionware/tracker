@@ -14,11 +14,5 @@ export function createMutationService(
         scope: "Linking report and billing",
       });
     },
-    clarifyLink: async (payload) => {
-      await api.clarifyLink(payload);
-      await config.services.messageService.reportSystemEffect.sendRequest({
-        scope: "Clarifying link",
-      });
-    },
   };
 }

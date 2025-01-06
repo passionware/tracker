@@ -237,10 +237,11 @@ export function BillingWidget(
                                     linkingState.track(
                                       props.services.mutationService.linkReportAndBilling(
                                         {
+                                          type: "reconcile",
                                           clientBillingId: billing.id,
                                           contractorReportId:
                                             report.contractorReportId,
-                                          reconcileAmount: report.value,
+                                          linkAmount: report.value,
                                         },
                                       ),
                                     )

@@ -296,9 +296,10 @@ export function ContractorReportsWidget(
                                       linkingState.track(
                                         props.services.mutationService.linkReportAndBilling(
                                           {
+                                            type: "reconcile",
                                             contractorReportId: report.id,
                                             clientBillingId: data.billingId,
-                                            reconcileAmount: data.value,
+                                            linkAmount: data.value,
                                           },
                                         ),
                                       )
@@ -342,7 +343,7 @@ export function ContractorReportsWidget(
                                     services={props.services}
                                     onSelect={(data) =>
                                       clarifyState.track(
-                                        props.services.mutationService.clarifyLink(
+                                        props.services.mutationService.linkReportAndBilling(
                                           data,
                                         ),
                                       )
