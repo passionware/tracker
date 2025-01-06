@@ -149,7 +149,7 @@ export function LoginForm({
             <img
                 src={tracker}
                 alt="Image"
-                className="absolute top-3 -left-12 size-24 object-cover"
+                className="absolute top-5 -left-12 size-24 object-cover"
             />
           </div>
         </CardContent>
