@@ -41,8 +41,8 @@ export function ContractorPicker(props: ContractorPickerProps) {
   const options = props.services.contractorService.useContractors(
     contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
   );
-  const currentOption = props.services.contractorService.useContractor(
-    props.value,
+  const currentOption = rd.useLastWithPlaceholder(
+    props.services.contractorService.useContractor(props.value),
   );
 
   return (
