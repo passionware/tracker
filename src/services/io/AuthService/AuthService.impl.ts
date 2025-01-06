@@ -16,7 +16,7 @@ export function createAuthService(client: SupabaseClient): AuthService {
 
     // Z metadanych:
     const displayName =
-      user.user_metadata?.full_name || user.user_metadata?.display_name;
+      user.user_metadata?.full_name || user.user_metadata?.display_name || "";
     const avatarUrl = user.user_metadata?.avatar_url;
     const id = user.id;
 
