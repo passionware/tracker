@@ -7,6 +7,9 @@ export interface RoutingService {
     billing: () => string;
     root: () => string;
   };
+  forGlobal: () => {
+    root: () => string;
+  };
 }
 export interface WithRoutingService {
   routingService: RoutingService;

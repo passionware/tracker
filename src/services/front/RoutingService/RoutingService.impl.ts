@@ -7,5 +7,8 @@ export function createRoutingService(): RoutingService {
       billing: () => `/clients/${clientId}/billing`,
       root: () => `/clients/${clientId}`,
     }),
+    forGlobal: () => ({
+      root: () => "/",
+    }),
   };
 }

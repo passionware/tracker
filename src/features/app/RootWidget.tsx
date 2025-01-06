@@ -1,6 +1,6 @@
 import { ProtectedRoute } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
-import { DummyPage } from "@/features/app/DummyPage.tsx";
+import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
@@ -44,11 +44,11 @@ export function RootWidget(
   return (
     <Routes>
       <Route
-        path="*"
+        path={props.services.routingService.forGlobal().root()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <DummyPage services={props.services} />
+              <SelectClientPage services={props.services} />
             </Layout>
           </ProtectedRoute>
         }
