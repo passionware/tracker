@@ -1,4 +1,5 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
+import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
   WithFilters,
   withFiltersUtils,
@@ -26,14 +27,15 @@ export interface ClientBilling {
 
 export type ClientBillingQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
+  remainingAmount: Nullable<NumberFilter>;
 }> &
   WithPagination;
 
-export const billingQueryUtils = {
+export const clientBillingQueryUtils = {
   ...withFiltersUtils<ClientBillingQuery>(),
   ...withPaginationUtils<ClientBillingQuery>(),
   ofEmpty: (): ClientBillingQuery => ({
-    filters: { clientId: null },
+    filters: { clientId: null, remainingAmount: null },
     page: { page: 0, pageSize: 10 },
   }),
 };

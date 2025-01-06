@@ -1,3 +1,4 @@
+import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
   clientBilling$,
   clientBillingFromHttp,
@@ -40,7 +41,20 @@ export function createClientBillingApi(
       if (error) {
         throw error;
       }
-      return z.array(clientBilling$).parse(data).map(clientBillingFromHttp);
+      return z
+        .array(clientBilling$)
+        .parse(data)
+        .map(clientBillingFromHttp)
+        .filter((clientBilling) =>
+          numberFilter.matches(
+            query.filters.remainingAmount,
+            clientBilling.totalNet -
+              (clientBilling.linkBillingReport?.reduce(
+                (acc, link) => acc + (link.reconcileAmount ?? 0),
+                0,
+              ) ?? 0),
+          ),
+        );
     },
   };
 }

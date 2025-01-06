@@ -1,8 +1,10 @@
+import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -228,6 +231,38 @@ export function ContractorReportsWidget(
                               </div>
                             </div>
                           ))}
+                          {report.remainingAmount.amount > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="default" size="xs">
+                                  Find & link billing
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-fit">
+                                <InlineBillingSearch
+                                  maxAmount={report.remainingAmount.amount}
+                                  services={props.services}
+                                  onSelect={(report) => {
+                                    alert(
+                                      `Selected report: ${report.billingId} with value: ${report.value}`,
+                                    );
+                                  }}
+                                  query={clientBillingQueryUtils.setFilter(
+                                    clientBillingQueryUtils.setFilter(
+                                      clientBillingQueryUtils.ofEmpty(),
+                                      "remainingAmount",
+                                      { operator: "greaterThan", value: 0 },
+                                    ),
+                                    "clientId",
+                                    {
+                                      operator: "oneOf",
+                                      value: [props.clientId],
+                                    },
+                                  )}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                         <Alert variant="info" className="mt-4">
                           <AlertTitle>
