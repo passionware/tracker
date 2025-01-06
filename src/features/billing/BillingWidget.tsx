@@ -28,6 +28,7 @@ import {
   renderError,
   renderSmallError,
 } from "@/features/_common/renderError.tsx";
+import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -76,6 +77,7 @@ export function BillingWidget(
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead>Issuer</TableHead>
             <TableHead>Invoice Number</TableHead>
             <TableHead>Invoice Date</TableHead>
             <TableHead>Status</TableHead>
@@ -112,6 +114,9 @@ export function BillingWidget(
               return billings.map((billing) => (
                 <TableRow key={billing.id}>
                   <TableCell className="font-medium">{billing.id}</TableCell>
+                  <TableCell>
+                    <WorkspaceView workspace={billing.workspace} />
+                  </TableCell>
                   <TableCell>{billing.invoiceNumber}</TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -53,6 +54,7 @@ export function InlineContractorReportSearch(
               <TableHeader>
                 <TableRow>
                   <TableHead>Id</TableHead>
+                  <TableHead>Issuer</TableHead>
                   <TableHead>Contractor</TableHead>
                   <TableHead>Reconciled</TableHead>
                   <TableHead>Remaining</TableHead>
@@ -63,6 +65,9 @@ export function InlineContractorReportSearch(
                 {reports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell>{report.id}</TableCell>
+                    <TableCell>
+                      <WorkspaceView workspace={report.workspace} />
+                    </TableCell>
                     <TableCell>{report.contractor.fullName}</TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(

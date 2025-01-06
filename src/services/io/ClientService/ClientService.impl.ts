@@ -1,4 +1,4 @@
-import { ClientsApi } from "@/api/clients/clients.api.ts";
+import { Client, ClientsApi } from "@/api/clients/clients.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
 import { ClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -16,6 +16,27 @@ export function createClientService(
     });
     request.resolveCallback();
   });
+
+  // Funkcja do wyszukiwania klienta w pamięci podręcznej
+  const findClientInCache = (id: Client["id"]) => {
+    // Pobierz wszystkie list queries z pamięci podręcznej
+    const allLists = client.getQueriesData<Client[]>({
+      queryKey: ["clients", "list"],
+    });
+
+    // Przeszukaj każdą tablicę z list
+    for (const [, list] of allLists) {
+      if (list) {
+        const found = list.find((client) => client.id === id);
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return undefined; // Nie znaleziono klienta
+  };
+
   return {
     useClients: (query) => {
       return useQuery(
@@ -34,6 +55,8 @@ export function createClientService(
             queryKey: ["clients", "item", id],
             enabled: maybe.isPresent(id),
             queryFn: () => api.getClient(id!),
+            staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla pojedynczych klienta
+            initialData: () => findClientInCache(id!),
           },
           client,
         ),

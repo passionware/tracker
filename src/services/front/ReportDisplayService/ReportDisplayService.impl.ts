@@ -1,5 +1,9 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+import {
+  Workspace,
+  workspaceQueryUtils,
+} from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientBillingView,
@@ -8,27 +12,47 @@ import {
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.ts";
 import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 
 export function createReportDisplayService(
-  config: WithServices<[WithContractorReportService, WithClientBillingService]>,
+  config: WithServices<
+    [
+      WithContractorReportService,
+      WithClientBillingService,
+      WithWorkspaceService,
+    ]
+  >,
 ): ReportDisplayService {
   return {
     useReportView: (query) => {
-      return rd.useMemoMap(
-        config.services.contractorReportService.useContractorReports(query),
-        (data) => data.map(calculateReport),
+      const reports =
+        config.services.contractorReportService.useContractorReports(query);
+      const workspaces = config.services.workspaceService.useWorkspaces(
+        workspaceQueryUtils.ofEmpty(),
+      );
+      return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) =>
+        data.reports.map((report) => calculateReport(report, data.workspaces)),
       );
     },
     useBillingView: (query) => {
-      return rd.useMemoMap(
-        config.services.clientBillingService.useClientBillings(query),
-        (data) => data.map(calculateBilling),
+      const billings =
+        config.services.clientBillingService.useClientBillings(query);
+      const workspaces = config.services.workspaceService.useWorkspaces(
+        workspaceQueryUtils.ofEmpty(),
+      );
+      return rd.useMemoMap(rd.combine({ billings, workspaces }), (data) =>
+        data.billings.map((billing) =>
+          calculateBilling(billing, data.workspaces),
+        ),
       );
     },
   };
 }
-function calculateReport(report: ContractorReport): ContractorReportView {
+function calculateReport(
+  report: ContractorReport,
+  workspaces: Workspace[],
+): ContractorReportView {
   const haveSameClient = report.linkBillingReport?.every(
     (link) =>
       link.linkType === "clarify" ||
@@ -109,10 +133,17 @@ function calculateReport(report: ContractorReport): ContractorReportView {
           };
       }
     }),
+    workspace: maybe.getOrThrow(
+      workspaces.find((workspace) => workspace.id === report.workspaceId),
+      "Workspace is missing",
+    ),
   };
 }
 
-function calculateBilling(billing: ClientBilling): ClientBillingView {
+function calculateBilling(
+  billing: ClientBilling,
+  workspaces: Workspace[],
+): ClientBillingView {
   const sumOfLinkedAmounts =
     billing.linkBillingReport?.reduce(
       (acc, link) => acc + (link.linkAmount ?? 0),
@@ -156,5 +187,9 @@ function calculateBilling(billing: ClientBilling): ClientBillingView {
       currency: billing.currency,
     },
     status: status,
+    workspace: maybe.getOrThrow(
+      workspaces.find((workspace) => workspace.id === billing.workspaceId),
+      "Workspace is missing",
+    ),
   };
 }

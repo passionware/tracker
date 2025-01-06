@@ -9,6 +9,7 @@ import {
 import { Client } from "@/api/clients/clients.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 
 export interface ClientBilling {
@@ -23,6 +24,7 @@ export interface ClientBilling {
   description: string | null;
   client: Client | null;
   linkBillingReport: LinkBillingReport[] | null;
+  workspaceId: Workspace["id"];
 }
 
 export type ClientBillingQuery = WithFilters<{

@@ -52,6 +52,11 @@ const clientBillingService = createClientBillingService(
   myQueryClient,
   messageService,
 );
+const workspaceService = createWorkspaceService(
+  createWorkspaceApi(mySupabase),
+  myQueryClient,
+  messageService,
+);
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
@@ -73,6 +78,7 @@ export const myServices = {
     services: {
       contractorReportService,
       clientBillingService,
+      workspaceService,
     },
   }),
   messageService,
@@ -89,11 +95,7 @@ export const myServices = {
     myQueryClient,
     messageService,
   ),
-  workspaceService: createWorkspaceService(
-    createWorkspaceApi(mySupabase),
-    myQueryClient,
-    messageService,
-  ),
+  workspaceService,
 } satisfies MergeServices<
   [
     WithAuthService,

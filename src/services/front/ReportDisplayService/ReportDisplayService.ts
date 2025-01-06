@@ -7,6 +7,7 @@ import {
   ContractorReportQuery,
 } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { RemoteData } from "@passionware/monads";
 
@@ -25,6 +26,7 @@ export interface ContractorReportView {
   remainingAmount: CurrencyValue;
   links: ContractorReportLinkView[];
   contractor: Contractor;
+  workspace: Workspace;
 }
 
 export type ContractorReportLinkView = {
@@ -56,6 +58,7 @@ export interface ClientBillingView {
    * If unmatched, this means we still did not link all reports to this billing and as such we can't say it is a reliable source of information.
    */
   status: "matched" | "unmatched";
+  workspace: Workspace;
 }
 
 export interface ClientBillingLinkView {

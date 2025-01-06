@@ -21,6 +21,7 @@ const clientBillingBase$ = z.object({
   invoice_date: z.coerce.date(),
   description: z.string().nullable(),
   client: client$.nullish(),
+  workspace_id: z.number(),
 });
 
 export type ClientBilling$ = z.infer<typeof clientBillingBase$> & {

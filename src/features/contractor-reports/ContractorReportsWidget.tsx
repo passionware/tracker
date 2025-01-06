@@ -33,6 +33,7 @@ import {
   renderError,
   renderSmallError,
 } from "@/features/_common/renderError.tsx";
+import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -158,6 +159,7 @@ export function ContractorReportsWidget(
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead>Issuer</TableHead>
             <TableHead>Contractor</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Net value</TableHead>
@@ -172,6 +174,9 @@ export function ContractorReportsWidget(
             .journey(reports)
             .wait(
               <TableRow>
+                <TableCell>
+                  <Skeleton className="w-32 h-6" />
+                </TableCell>
                 <TableCell>
                   <Skeleton className="w-32 h-6" />
                 </TableCell>
@@ -212,7 +217,12 @@ export function ContractorReportsWidget(
               return reports.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-medium">{report.id}</TableCell>
-                  <TableCell>{report.contractor.fullName}</TableCell>
+                  <TableCell>
+                    <WorkspaceView workspace={report.workspace} />
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-pre">
+                    {report.contractor.fullName}
+                  </TableCell>
                   <TableCell>
                     <Popover>
                       <PopoverTrigger>

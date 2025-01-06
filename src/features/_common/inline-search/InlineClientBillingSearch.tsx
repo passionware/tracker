@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -51,6 +52,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Id</TableHead>
+                  <TableHead>Issuer</TableHead>
                   <TableHead>Invoice number</TableHead>
                   <TableHead>Invoice date</TableHead>
                   <TableHead>Net Amount</TableHead>
@@ -62,6 +64,9 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                 {billings.map((billing) => (
                   <TableRow key={billing.id}>
                     <TableCell>{billing.id}</TableCell>
+                    <TableCell>
+                      <WorkspaceView workspace={billing.workspace} />
+                    </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>
                     <TableCell>
                       {props.services.formatService.temporal.date(
