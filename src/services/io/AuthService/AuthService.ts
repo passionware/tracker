@@ -10,6 +10,10 @@ export interface AuthInfo {
 export interface AuthService {
   useAuth: () => RemoteData<AuthInfo>;
   loginWithGoogle: () => void;
+  loginWithEmail: (options: {
+    email: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => void;
 }
 

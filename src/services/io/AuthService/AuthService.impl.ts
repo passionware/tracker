@@ -14,9 +14,16 @@ export function createAuthService(client: SupabaseClient): AuthService {
     // Bezpośrednio z obiektu user:
     const email = user.email;
 
+    function extractNickFromEmail(email: string): string {
+      return email.split("@")[0];
+    }
+
     // Z metadanych:
     const displayName =
-      user.user_metadata?.full_name || user.user_metadata?.display_name || "";
+      user.user_metadata?.full_name ||
+      user.user_metadata?.display_name ||
+      extractNickFromEmail(user.email ?? "") ||
+      "";
     const avatarUrl = user.user_metadata?.avatar_url;
     const id = user.id;
 
@@ -105,6 +112,30 @@ export function createAuthService(client: SupabaseClient): AuthService {
           }
         })(),
       );
+    },
+    loginWithEmail: async ({ email, password }) => {
+      await promiseState.syncRemoteData(useAuth.setState).track(
+        (async () => {
+          const { error } = await client.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) {
+            throw error;
+          }
+          {
+            const { error, data } = await client.auth.getSession();
+            if (error) {
+              throw error;
+            }
+            if (!data?.session) {
+              throw new Error("No session");
+            }
+            return getUserData(data.session.user);
+          }
+        })(),
+      );
+      rd.getOrThrow(useAuth.getState());
     },
     logout: async () => {
       await client.auth.signOut();
