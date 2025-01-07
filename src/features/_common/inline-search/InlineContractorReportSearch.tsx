@@ -66,7 +66,10 @@ export function InlineContractorReportSearch(
                   <TableRow key={report.id}>
                     <TableCell>{report.id}</TableCell>
                     <TableCell>
-                      <WorkspaceView workspace={report.workspace} />
+                      <WorkspaceView
+                        layout="avatar"
+                        workspace={report.workspace}
+                      />
                     </TableCell>
                     <TableCell>{report.contractor.fullName}</TableCell>
                     <TableCell>

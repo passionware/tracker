@@ -4,17 +4,31 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 
-export function WorkspaceView({ workspace }: { workspace: Workspace }) {
+export interface WorkspaceViewProps {
+  workspace: Workspace;
+  layout?: "full" | "avatar";
+}
+
+export function WorkspaceView({ workspace, layout }: WorkspaceViewProps) {
+  const avatar = (
+    <Avatar className="size-8">
+      {workspace.avatarUrl && (
+        <AvatarImage src={workspace.avatarUrl} alt={workspace.name} />
+      )}
+      <AvatarFallback>{getInitials(workspace.name)}</AvatarFallback>
+    </Avatar>
+  );
+
+  if (layout === "avatar") {
+    return <SimpleTooltip title={workspace.name}>{avatar}</SimpleTooltip>;
+  }
+
   return (
     <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
-      <Avatar className="size-8">
-        {workspace.avatarUrl && (
-          <AvatarImage src={workspace.avatarUrl} alt={workspace.name} />
-        )}
-        <AvatarFallback>{getInitials(workspace.name)}</AvatarFallback>
-      </Avatar>
+      {avatar}
       {workspace.name}
     </div>
   );

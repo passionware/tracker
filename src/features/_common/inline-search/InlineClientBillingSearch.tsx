@@ -65,7 +65,10 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                   <TableRow key={billing.id}>
                     <TableCell>{billing.id}</TableCell>
                     <TableCell>
-                      <WorkspaceView workspace={billing.workspace} />
+                      <WorkspaceView
+                        layout="avatar"
+                        workspace={billing.workspace}
+                      />
                     </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>
                     <TableCell>

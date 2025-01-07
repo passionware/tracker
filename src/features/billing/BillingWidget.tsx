@@ -115,7 +115,10 @@ export function BillingWidget(
                 <TableRow key={billing.id}>
                   <TableCell className="font-medium">{billing.id}</TableCell>
                   <TableCell>
-                    <WorkspaceView workspace={billing.workspace} />
+                    <WorkspaceView
+                      layout="avatar"
+                      workspace={billing.workspace}
+                    />
                   </TableCell>
                   <TableCell>{billing.invoiceNumber}</TableCell>
                   <TableCell>

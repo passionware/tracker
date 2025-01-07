@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
@@ -47,7 +48,7 @@ import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
 import { partialRight } from "lodash";
-import { Check, Link2, Loader2, PlusCircle } from "lucide-react";
+import { Check, Info, Link2, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function ContractorReportsWidget(
@@ -155,17 +156,61 @@ export function ContractorReportsWidget(
         <TableCaption>
           A list of all reported work for given client, matched with billing or
           clarifications.
+          <div className="w-fit text-left">
+            <div className="">Definitions:</div>
+            <ul className="list-disc list-inside">
+              <li>
+                <strong>Refund status aka reverse charge status</strong>
+              </li>
+              <li>
+                <strong>Full refund status</strong>
+              </li>
+            </ul>
+          </div>
         </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead className="">Id</TableHead>
             <TableHead>Issuer</TableHead>
             <TableHead>Contractor</TableHead>
-            <TableHead>Charge&nbsp;Status</TableHead>
-            <TableHead>Refund&nbsp;Status</TableHead>
+            <SimpleTooltip
+              title={
+                <div className="space-y-4">
+                  <PopoverHeader>Charge status</PopoverHeader>
+                  <div>
+                    <Badge variant="positive">Billed</Badge> - We charged the
+                    client for the entire work value reported by the contractor
+                  </div>
+                  <div>
+                    <Badge variant="warning">Partially billed</Badge> - We
+                    charged the client for some work, but there is still some
+                    work we should charge the client for.
+                  </div>
+                  <div>
+                    <Badge variant="destructive">Uncovered</Badge> - We did not
+                    charge the client for any work reported by the contractor
+                    yet.
+                  </div>
+                  <div>
+                    <Badge variant="secondary">Clarified</Badge> - We charged
+                    for some work, and for the rest of work we didn't charge the
+                    client, but we clarified the difference, no more charges due
+                    to this report is expected.
+                  </div>
+                </div>
+              }
+            >
+              <TableHead className="whitespace-pre">
+                Charge Status <Info className="inline size-4" />
+              </TableHead>
+            </SimpleTooltip>
+            <TableHead>Charge&nbsp;Refund</TableHead>
+            <TableHead>Total&nbsp;Refund</TableHead>
             <TableHead>Net value</TableHead>
-            <TableHead>Billed value</TableHead>
-            <TableHead>Remaining</TableHead>
+            <TableHead>Charged&nbsp;value</TableHead>
+            <TableHead>To&nbsp;charge</TableHead>
+            <TableHead>To&nbsp;refund&nbsp;now</TableHead>
+            <TableHead>To&nbsp;refund&nbsp;later</TableHead>
             <TableHead>Period</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
@@ -175,7 +220,7 @@ export function ContractorReportsWidget(
             .journey(reports)
             .wait(
               <TableRow>
-                {Array.from({ length: 10 }).map((_, i) => (
+                {Array.from({ length: 11 }).map((_, i) => (
                   <TableCell key={i}>
                     <Skeleton className="w-32 h-6" />
                   </TableCell>
@@ -187,7 +232,7 @@ export function ContractorReportsWidget(
               if (reports.length === 0) {
                 return (
                   <TableRow>
-                    <TableCell colSpan={10}>
+                    <TableCell colSpan={11}>
                       No contractor reports found.
                     </TableCell>
                   </TableRow>
@@ -197,9 +242,12 @@ export function ContractorReportsWidget(
                 <TableRow key={report.id}>
                   <TableCell className="font-medium">{report.id}</TableCell>
                   <TableCell>
-                    <WorkspaceView workspace={report.workspace} />
+                    <WorkspaceView
+                      layout="avatar"
+                      workspace={report.workspace}
+                    />
                   </TableCell>
-                  <TableCell className="text-xs whitespace-pre">
+                  <TableCell className="text-xs">
                     {report.contractor.fullName}
                   </TableCell>
                   <TableCell>
@@ -326,7 +374,7 @@ export function ContractorReportsWidget(
                                       <PopoverHeader>
                                         Justification for unmatched amount
                                       </PopoverHeader>
-                                      <div className="text-xs text-gray-900 whitespace-pre-line">
+                                      <div className="text-xs text-gray-900">
                                         {link.justification}
                                       </div>
                                     </PopoverContent>
@@ -441,6 +489,11 @@ export function ContractorReportsWidget(
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    <Badge variant="secondary" size="md">
+                      TODO
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {props.services.formatService.financial.amount(
                       report.netAmount.amount,
                       report.netAmount.currency,
@@ -468,9 +521,11 @@ export function ContractorReportsWidget(
                     )}
                   </TableCell>
                   <TableCell className="text-left">
-                    <div className="whitespace-pre-line">
-                      {report.description}
-                    </div>
+                    <SimpleTooltip title={report.description}>
+                      <div className="line-clamp-6 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
+                        {report.description}
+                      </div>
+                    </SimpleTooltip>
                   </TableCell>
                 </TableRow>
               ));
