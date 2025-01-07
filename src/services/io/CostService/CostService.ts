@@ -5,3 +5,7 @@ export interface CostService {
   useCosts: (query: CostQuery) => RemoteData<Cost[]>;
   useCost: (id: Maybe<number>) => RemoteData<Cost>;
 }
+
+export interface WithCostService {
+  costService: CostService;
+}

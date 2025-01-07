@@ -86,17 +86,27 @@ export function BillingWidget(
             ];
 
             return (
-              <div className="space-y-1 text-gray-600">
-                {billingDetails.map((detail) => (
-                  <div key={detail.label}>
-                    <span className="font-medium">{detail.label}:</span>
-                    <span className="ml-1">
-                      {props.services.formatService.financial.currency(
-                        detail.value,
-                      )}
-                    </span>
-                  </div>
-                ))}
+              <div>
+                <h3 className="my-3 text-base font-semibold text-gray-900">
+                  Sumary
+                </h3>
+                <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-4">
+                  {billingDetails.map((item) => (
+                    <div
+                      key={item.label}
+                      className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
+                    >
+                      <dt className="truncate text-sm font-medium text-gray-500">
+                        {item.label}
+                      </dt>
+                      <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+                        {props.services.formatService.financial.currency(
+                          item.value,
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             );
           })}

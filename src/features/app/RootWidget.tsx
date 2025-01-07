@@ -4,6 +4,7 @@ import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
+import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -14,6 +15,7 @@ import { WithNavigationService } from "@/services/internal/NavigationService/Nav
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
@@ -29,6 +31,15 @@ function ClientIdResolver(
   return props.children(maybe.getOrThrow(clientId, "No client ID"));
 }
 
+function WorkspaceIdResolver(
+  props: WithServices<[WithLocationService]> & {
+    children: (workspaceId: number) => ReactNode;
+  },
+) {
+  const workspaceId = props.services.locationService.useCurrentWorkspaceId();
+  return props.children(maybe.getOrThrow(workspaceId, "No workspace ID"));
+}
+
 export function RootWidget(
   props: WithServices<
     [
@@ -42,6 +53,7 @@ export function RootWidget(
       WithContractorService,
       WithNavigationService,
       WithWorkspaceService,
+      WithCostService,
     ]
   >,
 ) {
@@ -100,6 +112,23 @@ export function RootWidget(
                   />
                 )}
               </ClientIdResolver>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={props.services.routingService.forClient().costs()}
+        element={
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              <WorkspaceIdResolver services={props.services}>
+                {(workspaceId) => (
+                  <CostsWidget
+                    workspaceId={workspaceId}
+                    services={props.services}
+                  />
+                )}
+              </WorkspaceIdResolver>
             </Layout>
           </ProtectedRoute>
         }

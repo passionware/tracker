@@ -38,6 +38,12 @@ export function createLocationService(
         return parsed;
       });
     },
+    useCurrentWorkspaceId: () => {
+      return 1; //todo - routing
+    },
+    getCurrentWorkspaceId: () => {
+      return 1; //todo - routing
+    },
     changeCurrentClientId: (id) => {
       config.services.navigationService.navigate(
         config.services.routingService.forClient(id).root(),

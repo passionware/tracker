@@ -2,6 +2,7 @@ import { createClientBillingApi } from "@/api/client-billing/client-billing.api.
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
+import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
@@ -28,6 +29,8 @@ import { createContractorReportService } from "@/services/io/ContractorReportSer
 import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
+import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
@@ -96,6 +99,11 @@ export const myServices = {
     messageService,
   ),
   workspaceService,
+  costService: createCostService(
+    createCostApi(mySupabase),
+    myQueryClient,
+    messageService,
+  ),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -110,6 +118,7 @@ export const myServices = {
     WithMutationService,
     WithContractorService,
     WithWorkspaceService,
+    WithCostService,
   ]
 >;
 
