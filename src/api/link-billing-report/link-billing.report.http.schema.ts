@@ -37,26 +37,47 @@ export function linkBillingReportFromHttp(
   linkBillingReport: LinkBillingReport$,
 ): LinkBillingReport {
   switch (linkBillingReport.link_type) {
-    case "clarify":
-      return {
+    case "clarify": {
+      const base = {
         id: linkBillingReport.id,
         createdAt: linkBillingReport.created_at,
         linkType: "clarify",
-        contractorReportId: maybe.getOrThrow(
-          linkBillingReport.contractor_report_id,
-          'contractor_report_id is required for linkType "clarify"',
-        ),
         clarifyJustification: maybe.getOrThrow(
           linkBillingReport.clarify_justification,
           'clarify_justification is required for linkType "clarify"',
         ),
         linkAmount: linkBillingReport.reconcile_amount,
-        // references to the linked entities
-        contractorReport: maybe.mapOrNull(
-          linkBillingReport.contractor_reports,
-          contractorReportFromHttp,
-        ),
-      };
+      } as const;
+      if (linkBillingReport.client_billing_id !== null) {
+        return {
+          ...base,
+          clientBillingId: linkBillingReport.client_billing_id,
+          // references to the linked entities
+          clientBilling: maybe.mapOrNull(
+            linkBillingReport.client_billing,
+            clientBillingFromHttp,
+          ),
+          contractorReportId: null,
+          contractorReport: null,
+        };
+      }
+      if (linkBillingReport.contractor_report_id !== null) {
+        return {
+          ...base,
+          contractorReportId: linkBillingReport.contractor_report_id,
+          // references to the linked entities
+          contractorReport: maybe.mapOrNull(
+            linkBillingReport.contractor_reports,
+            contractorReportFromHttp,
+          ),
+          clientBilling: null,
+          clientBillingId: null,
+        };
+      }
+      throw new Error(
+        'either client_billing_id or contractor_report_id must be null for linkType "clarify"',
+      );
+    }
     case null:
       return {
         id: linkBillingReport.id,

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import {
   renderError,
@@ -62,6 +63,7 @@ export function BillingWidget(
   );
 
   const linkingState = promiseState.useRemoteData();
+  const clarifyState = promiseState.useRemoteData();
 
   return (
     <CommonPageContainer
@@ -72,7 +74,13 @@ export function BillingWidget(
     >
       <Table>
         <TableCaption>
-          A list of all billings for the selected client.
+          A list of all billings for the selected client. Sum:{" "}
+          {rd.tryMap(billings, (billings) =>
+            billings.reduce(
+              (acc, billing) => acc + billing.netAmount.amount,
+              0,
+            ),
+          )}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -137,6 +145,7 @@ export function BillingWidget(
                                 matched: "positive",
                                 unmatched: "destructive",
                                 "partially-matched": "warning",
+                                clarified: "secondary",
                               } as const
                             )[billing.status]
                           }
@@ -147,6 +156,7 @@ export function BillingWidget(
                                 matched: "Matched",
                                 unmatched: "Unmatched",
                                 "partially-matched": "Partially Matched",
+                                clarified: "Clarified",
                               } as const
                             )[billing.status]
                           }
@@ -187,95 +197,157 @@ export function BillingWidget(
                         </div>
                         <Separator className="my-2" />
                         <div className="space-y-8">
-                          {billing.links.map((link) => (
-                            <div
-                              className="flex items-stretch gap-2"
-                              key={link.id}
-                            >
-                              <div className="flex flex-col gap-3">
-                                <div className="flex flex-row justify-between items-center gap-2">
-                                  <Badge variant="positive">Report</Badge>
-                                  <Badge variant="secondary" size="sm">
-                                    {props.services.formatService.temporal.date(
-                                      link.contractorReport.periodStart,
-                                    )}
-                                    -
-                                    {props.services.formatService.temporal.date(
-                                      link.contractorReport.periodEnd,
-                                    )}
-                                  </Badge>
-                                </div>
-                                <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
-                                  {props.services.formatService.financial.amount(
-                                    link.amount.amount,
-                                    link.amount.currency,
-                                  )}
-                                  <div className="text-gray-500">of</div>
-                                  <Slot className="text-gray-500">
-                                    {props.services.formatService.financial.amount(
-                                      link.contractorReport.netValue,
-                                      link.contractorReport.currency,
-                                    )}
-                                  </Slot>
-                                </div>
-                              </div>
-                              <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                                {link.contractorReport.description}
-                              </div>
-                            </div>
-                          ))}
+                          {billing.links.map((link) => {
+                            switch (link.type) {
+                              case "reconcile":
+                                return (
+                                  <div
+                                    className="flex items-stretch gap-2"
+                                    key={link.id}
+                                  >
+                                    <div className="flex flex-col gap-3">
+                                      <div className="flex flex-row justify-between items-center gap-2">
+                                        <Badge variant="positive">Report</Badge>
+                                        <Badge variant="secondary" size="sm">
+                                          {props.services.formatService.temporal.date(
+                                            link.contractorReport.periodStart,
+                                          )}
+                                          -
+                                          {props.services.formatService.temporal.date(
+                                            link.contractorReport.periodEnd,
+                                          )}
+                                        </Badge>
+                                      </div>
+                                      <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
+                                        {props.services.formatService.financial.amount(
+                                          link.amount.amount,
+                                          link.amount.currency,
+                                        )}
+                                        <div className="text-gray-500">of</div>
+                                        <Slot className="text-gray-500">
+                                          {props.services.formatService.financial.amount(
+                                            link.contractorReport.netValue,
+                                            link.contractorReport.currency,
+                                          )}
+                                        </Slot>
+                                      </div>
+                                    </div>
+                                    <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
+                                      {link.contractorReport.description}
+                                    </div>
+                                  </div>
+                                );
+                              case "clarify":
+                                return (
+                                  <div
+                                    className="flex items-center gap-2"
+                                    key={link.id}
+                                  >
+                                    <div className="flex flex-row justify-between items-center gap-2">
+                                      <Badge variant="warning">
+                                        Clarification
+                                      </Badge>
+                                    </div>
+                                    <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
+                                      {props.services.formatService.financial.amount(
+                                        link.amount.amount,
+                                        link.amount.currency,
+                                      )}
+                                    </div>
+                                    <div className="self-stretch text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
+                                      {link.justification}
+                                    </div>
+                                  </div>
+                                );
+                            }
+                          })}
                           {billing.links.length === 0 && (
                             <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
                               No linked contractor reports.
                             </div>
                           )}
                           {billing.remainingAmount.amount > 0 && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="default" size="xs">
-                                  {rd
-                                    .fullJourney(linkingState.state)
-                                    .initially(<Link2 />)
-                                    .wait(<Loader2 />)
-                                    .catch(renderSmallError("w-6 h-4"))
-                                    .map(() => (
-                                      <Check />
-                                    ))}
-                                  Find & link report
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-fit">
-                                <InlineContractorReportSearch
-                                  maxAmount={billing.remainingAmount.amount}
-                                  services={props.services}
-                                  onSelect={(report) =>
-                                    linkingState.track(
-                                      props.services.mutationService.linkReportAndBilling(
-                                        {
-                                          type: "reconcile",
-                                          clientBillingId: billing.id,
-                                          contractorReportId:
-                                            report.contractorReportId,
-                                          linkAmount: report.value,
-                                        },
+                            <div className="flex gap-2 flex-row">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="default" size="xs">
+                                    {rd
+                                      .fullJourney(linkingState.state)
+                                      .initially(<Link2 />)
+                                      .wait(<Loader2 />)
+                                      .catch(renderSmallError("w-6 h-4"))
+                                      .map(() => (
+                                        <Check />
+                                      ))}
+                                    Find & link report
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-fit">
+                                  <InlineContractorReportSearch
+                                    maxAmount={billing.remainingAmount.amount}
+                                    services={props.services}
+                                    onSelect={(report) =>
+                                      linkingState.track(
+                                        props.services.mutationService.linkReportAndBilling(
+                                          {
+                                            type: "reconcile",
+                                            clientBillingId: billing.id,
+                                            contractorReportId:
+                                              report.contractorReportId,
+                                            linkAmount: report.value,
+                                          },
+                                        ),
+                                      )
+                                    }
+                                    query={contractorReportQueryUtils.setFilter(
+                                      contractorReportQueryUtils.setFilter(
+                                        contractorReportQueryUtils.ofDefault(),
+                                        "remainingAmount",
+                                        { operator: "greaterThan", value: 0 },
                                       ),
-                                    )
-                                  }
-                                  query={contractorReportQueryUtils.setFilter(
-                                    contractorReportQueryUtils.setFilter(
-                                      contractorReportQueryUtils.ofDefault(),
-                                      "remainingAmount",
-                                      { operator: "greaterThan", value: 0 },
-                                    ),
-                                    "clientId",
-                                    {
-                                      operator: "oneOf",
-                                      value: [props.clientId],
-                                    },
-                                  )}
-                                />
-                              </PopoverContent>
-                            </Popover>
+                                      "clientId",
+                                      {
+                                        operator: "oneOf",
+                                        value: [props.clientId],
+                                      },
+                                    )}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="warning" size="xs">
+                                    {rd
+                                      .fullJourney(clarifyState.state)
+                                      .initially(<Link2 />)
+                                      .wait(<Loader2 />)
+                                      .catch(renderSmallError("w-6 h-4"))
+                                      .map(() => (
+                                        <Check />
+                                      ))}
+                                    Clarify
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-fit max-w-md"
+                                  align="center"
+                                  side="right"
+                                >
+                                  <InlineBillingClarify
+                                    maxAmount={billing.remainingAmount.amount}
+                                    services={props.services}
+                                    onSelect={(data) =>
+                                      clarifyState.track(
+                                        props.services.mutationService.linkReportAndBilling(
+                                          data,
+                                        ),
+                                      )
+                                    }
+                                    context={{ clientBillingId: billing.id }}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                           )}
                         </div>
                       </PopoverContent>

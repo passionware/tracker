@@ -9,18 +9,14 @@ import { WithReportDisplayService } from "@/services/front/ReportDisplayService/
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 
-export interface InlineBillingClarifyProps
+export interface InlineClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
   onSelect: (data: LinkPayload) => void;
   maxAmount: number;
-  contractorReportId: number;
-  /**
-   * todo: convert billingReportId to context {billingReportId | clientBillingId}
-   * for clientBillingId it will say that we applied some overhead for reported work, and this is why the invoice is higher than the report.
-   */
+  context: { contractorReportId: number } | { clientBillingId: number };
 }
 
-export function InlineClientBillingClarify(props: InlineBillingClarifyProps) {
+export function InlineBillingClarify(props: InlineClarifyProps) {
   const form = useForm({
     defaultValues: { clarifyAmount: props.maxAmount, clarifyJustification: "" },
   });
@@ -31,9 +27,9 @@ export function InlineClientBillingClarify(props: InlineBillingClarifyProps) {
       className="flex flex-col gap-2"
       onSubmit={form.handleSubmit((data) =>
         props.onSelect({
+          ...props.context,
           type: "clarify",
           linkAmount: data.clarifyAmount,
-          contractorReportId: props.contractorReportId,
           clarifyJustification: data.clarifyJustification,
         }),
       )}
@@ -78,6 +74,15 @@ export function InlineClientBillingClarify(props: InlineBillingClarifyProps) {
               the cost of a contractor that charges more than the agreed rate.
               We will cover the difference internally but the client should not
               be charged more just because.
+            </li>
+            <li>
+              <strong>Client billing clarification:</strong>
+              Overhead we apply for given services.
+            </li>
+            <li>
+              <strong>Client billing clarification:</strong>
+              Reversed cost (ie we have another developer that comes from the
+              client, but for its convenience we invoice him not the client).
             </li>
           </ul>
         </AlertDescription>

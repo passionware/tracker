@@ -19,6 +19,12 @@ export function createContractorReportsApi(
         *,
         client_billing (*)
       ),
+      link_cost_report (
+        *,
+        costs (
+          *
+        )
+      ),
       contractors (*)
     `);
       if (query.filters.clientId) {

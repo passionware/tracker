@@ -1,12 +1,18 @@
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
 
 export type LinkPayload =
-  | {
+  | ({
       type: "clarify";
-      contractorReportId: number;
       clarifyJustification: string;
       linkAmount: number;
-    }
+    } & (
+      | {
+          contractorReportId: number;
+        }
+      | {
+          clientBillingId: number;
+        }
+    ))
   | {
       type: "reconcile";
       clientBillingId: number;

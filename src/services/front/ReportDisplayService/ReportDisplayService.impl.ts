@@ -162,6 +162,12 @@ function calculateBilling(
 
   function getStatus() {
     if (remainingAmount === 0) {
+      const hasAtLeastOneClarification = billing.linkBillingReport?.some(
+        (link) => link.linkType === "clarify",
+      );
+      if (hasAtLeastOneClarification) {
+        return "clarified";
+      }
       return "matched";
     } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
       return "partially-matched";
@@ -186,17 +192,31 @@ function calculateBilling(
     invoiceDate: billing.invoiceDate,
     description: billing.description,
     links: (billing.linkBillingReport ?? [])?.map((link) => {
-      return {
-        id: link.id,
-        amount: {
-          amount: link.linkAmount ?? 0,
-          currency: billing.currency,
-        },
-        contractorReport: maybe.getOrThrow(
-          link.contractorReport,
-          "Contractor report link is required to calculate billing",
-        ),
-      };
+      switch (link.linkType) {
+        case "reconcile":
+          return {
+            id: link.id,
+            type: "reconcile",
+            amount: {
+              amount: link.linkAmount ?? 0,
+              currency: billing.currency,
+            },
+            contractorReport: maybe.getOrThrow(
+              link.contractorReport,
+              "Contractor report link is required to calculate billing reconcile link",
+            ),
+          };
+        case "clarify":
+          return {
+            id: link.id,
+            type: "clarify",
+            amount: {
+              amount: link.linkAmount ?? 0,
+              currency: billing.currency,
+            },
+            justification: link.clarifyJustification,
+          };
+      }
     }),
     matchedAmount: {
       amount: sumOfLinkedAmounts,

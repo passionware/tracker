@@ -27,7 +27,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
-import { InlineClientBillingClarify } from "@/features/_common/inline-search/InlineClientBillingClarify.tsx";
+import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
 import {
@@ -441,7 +441,7 @@ export function ContractorReportsWidget(
                                   align="center"
                                   side="right"
                                 >
-                                  <InlineClientBillingClarify
+                                  <InlineBillingClarify
                                     maxAmount={report.remainingAmount.amount}
                                     services={props.services}
                                     onSelect={(data) =>
@@ -451,7 +451,9 @@ export function ContractorReportsWidget(
                                         ),
                                       )
                                     }
-                                    contractorReportId={report.id}
+                                    context={{
+                                      contractorReportId: report.id,
+                                    }}
                                   />
                                 </PopoverContent>
                               </Popover>

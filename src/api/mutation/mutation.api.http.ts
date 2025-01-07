@@ -8,7 +8,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         return {
           clarify_justification: payload.clarifyJustification,
           link_type: "clarify",
-          contractor_report_id: payload.contractorReportId,
+          contractor_report_id:
+            "contractorReportId" in payload ? payload.contractorReportId : null,
+          client_billing_id:
+            "clientBillingId" in payload ? payload.clientBillingId : null,
           reconcile_amount: payload.linkAmount,
         };
       case "reconcile":

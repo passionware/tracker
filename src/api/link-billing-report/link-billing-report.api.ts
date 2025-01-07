@@ -14,12 +14,24 @@ export type LinkBillingReport = {
       contractorReport: ContractorReport | null;
       clientBilling: ClientBilling | null;
     }
-  | {
+  | ({
       linkType: "clarify";
-      contractorReportId: number;
       clarifyJustification: string;
       linkAmount: number;
-      // references to the linked entities
-      contractorReport: ContractorReport | null;
-    }
+    } & (
+      | {
+          contractorReportId: number;
+          // references to the linked entities
+          contractorReport: ContractorReport | null;
+          clientBillingId: null;
+          clientBilling: null;
+        }
+      | {
+          clientBillingId: number;
+          // references to the linked entities
+          clientBilling: ClientBilling | null;
+          contractorReportId: null;
+          contractorReport: null;
+        }
+    ))
 );

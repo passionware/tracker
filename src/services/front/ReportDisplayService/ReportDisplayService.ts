@@ -56,16 +56,25 @@ export interface ClientBillingView {
   /**
    * Whether the billing is fully matched with reports or not yet
    * If unmatched, this means we still did not link all reports to this billing and as such we can't say it is a reliable source of information.
+   * If clarified, this means we have some clarifications on this billing, so not everything is linked to reports, but there is a remainder value that has a reason and we no longer look for more reports to link.
    */
-  status: "matched" | "unmatched" | "partially-matched";
+  status: "matched" | "unmatched" | "partially-matched" | "clarified";
   workspace: Workspace;
 }
 
-export interface ClientBillingLinkView {
-  id: number;
-  amount: CurrencyValue;
-  contractorReport: ContractorReport;
-}
+export type ClientBillingLinkView =
+  | {
+      id: number;
+      type: "reconcile";
+      amount: CurrencyValue;
+      contractorReport: ContractorReport;
+    }
+  | {
+      id: number;
+      type: "clarify";
+      amount: CurrencyValue;
+      justification: string;
+    };
 
 export interface ReportDisplayService {
   /**
