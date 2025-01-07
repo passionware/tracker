@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import {
@@ -34,11 +35,13 @@ import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Slot } from "@radix-ui/react-slot";
+import { partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export function BillingWidget(
@@ -48,6 +51,7 @@ export function BillingWidget(
       WithFormatService,
       WithClientService,
       WithMutationService /*todo use auth flow*/,
+      WithPreferenceService,
     ]
   >,
 ) {
@@ -113,7 +117,7 @@ export function BillingWidget(
         </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead className="">Id</TableHead>
             <TableHead>Issuer</TableHead>
             <TableHead>Invoice Number</TableHead>
             <TableHead>Invoice Date</TableHead>
@@ -272,6 +276,14 @@ export function BillingWidget(
                                         {link.contractorReport.description}
                                       </div>
                                     </div>
+                                    <DeleteButtonWidget
+                                      services={props.services}
+                                      onDelete={partial(
+                                        props.services.mutationService
+                                          .deleteBillingReportLink,
+                                        link.id,
+                                      )}
+                                    />
                                   </div>
                                 );
                               case "clarify":
@@ -294,6 +306,14 @@ export function BillingWidget(
                                     <div className="self-stretch text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
                                       {link.justification}
                                     </div>
+                                    <DeleteButtonWidget
+                                      services={props.services}
+                                      onDelete={partial(
+                                        props.services.mutationService
+                                          .deleteBillingReportLink,
+                                        link.id,
+                                      )}
+                                    />
                                   </div>
                                 );
                             }

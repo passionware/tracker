@@ -62,6 +62,7 @@ const workspaceService = createWorkspaceService(
   myQueryClient,
   messageService,
 );
+const preferenceService = createPreferenceService();
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
@@ -91,6 +92,7 @@ export const myServices = {
     {
       services: {
         messageService,
+        preferenceService,
       },
     },
     createMutationApi(mySupabase),
@@ -106,7 +108,7 @@ export const myServices = {
     myQueryClient,
     messageService,
   ),
-  preferenceService: createPreferenceService(),
+  preferenceService,
 } satisfies MergeServices<
   [
     WithAuthService,

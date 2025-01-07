@@ -26,6 +26,7 @@ import {
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
@@ -40,6 +41,7 @@ import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
@@ -47,7 +49,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
-import { partialRight } from "lodash";
+import { partial, partialRight } from "lodash";
 import { Check, Info, Link2, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -60,6 +62,7 @@ export function ContractorReportsWidget(
       WithMutationService,
       WithContractorService,
       WithWorkspaceService,
+      WithPreferenceService,
     ]
   >,
 ) {
@@ -411,6 +414,14 @@ export function ContractorReportsWidget(
                                   </Popover>
                                 )}
                               </div>
+                              <DeleteButtonWidget
+                                services={props.services}
+                                onDelete={partial(
+                                  props.services.mutationService
+                                    .deleteBillingReportLink,
+                                  link.id,
+                                )}
+                              />
                             </div>
                           ))}
                           {report.remainingAmount.amount > 0 && (

@@ -54,5 +54,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
       return { id: response.data[0].id };
     },
+    deleteBillingReportLink: async (linkId) => {
+      const response = await client
+        .from("link_billing_report")
+        .delete()
+        .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

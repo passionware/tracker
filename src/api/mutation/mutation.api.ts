@@ -30,4 +30,5 @@ export interface MutationApi {
   createContractorReport: (
     report: CreateContractorReportPayload,
   ) => Promise<{ id: ContractorReport["id"] }>;
+  deleteBillingReportLink: (linkId: number) => Promise<void>;
 }
