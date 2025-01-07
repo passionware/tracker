@@ -29,9 +29,10 @@ import { useState } from "react";
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
   value: Maybe<Contractor["id"]>;
-  onSelect: (contractorId: Maybe<Contractor["id"]>) => void;
+  onSelect: Maybe<(contractorId: Maybe<Contractor["id"]>) => void>;
   allowClear?: boolean;
   size?: ButtonProps["size"];
+  className?: string;
 }
 
 export function ContractorPicker(props: ContractorPickerProps) {
@@ -45,25 +46,31 @@ export function ContractorPicker(props: ContractorPickerProps) {
     props.services.contractorService.useContractor(props.value),
   );
 
+  const button = (
+    <Button
+      size={props.size}
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className={cn("justify-between", props.className)}
+    >
+      {rd
+        .fullJourney(currentOption)
+        .initially("Select contractor...")
+        .wait(<Skeleton className="w-full h-[1lh]" />)
+        .catch(renderSmallError("w-full h-[1lh]", "Not found"))
+        .map((contractor) => contractor.fullName)}
+      <ChevronsUpDown className="opacity-50" />
+    </Button>
+  );
+
+  if (!props.onSelect) {
+    return button;
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          size={props.size}
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="justify-between"
-        >
-          {rd
-            .fullJourney(currentOption)
-            .initially("Select contractor...")
-            .wait(<Skeleton className="w-full h-[1lh]" />)
-            .catch(renderSmallError("w-full h-[1lh]", "Not found"))
-            .map((contractor) => contractor.fullName)}
-          <ChevronsUpDown className="opacity-50" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{button}</PopoverTrigger>
       <PopoverContent className="max-w-md w-fit p-0">
         <Command shouldFilter={false}>
           <CommandInput
@@ -89,13 +96,13 @@ export function ContractorPicker(props: ContractorPickerProps) {
                       onSelect={() => {
                         if (props.value === contractor.id) {
                           if (props.allowClear) {
-                            props.onSelect(null);
+                            props.onSelect?.(null);
                           }
                           setOpen(false);
                           return;
                         }
 
-                        props.onSelect(contractor.id);
+                        props.onSelect?.(contractor.id);
                         setOpen(false);
                       }}
                     >

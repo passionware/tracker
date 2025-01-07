@@ -12,14 +12,18 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { rd } from "@passionware/monads";
 
 export interface CostsWidgetProps
-  extends WithServices<[WithCostService, WithFormatService]> {
+  extends WithServices<
+    [WithCostService, WithFormatService, WithContractorService]
+  > {
   workspaceId: Workspace["id"];
 }
 
@@ -38,7 +42,7 @@ export function CostsWidget(props: CostsWidgetProps) {
         </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Id</TableHead>
+            <TableHead>Id</TableHead>
             <TableHead>Counterparty</TableHead>
             <TableHead>Invoice Number</TableHead>
             <TableHead>Invoice Date</TableHead>
@@ -74,7 +78,20 @@ export function CostsWidget(props: CostsWidgetProps) {
               return costs.map((cost) => (
                 <TableRow key={cost.id}>
                   <TableCell className="font-medium">{cost.id}</TableCell>
-                  <TableCell>{cost.counterparty || "N/A"}</TableCell>
+                  <TableCell className="py-0">
+                    {cost.contractorId ? (
+                      <>
+                        <ContractorPicker
+                          value={cost.contractorId}
+                          onSelect={null}
+                          services={props.services}
+                          size="xs"
+                        />
+                      </>
+                    ) : (
+                      <> {cost.counterparty || "N/A"} </>
+                    )}
+                  </TableCell>
                   <TableCell>{cost.invoiceNumber || "N/A"}</TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
