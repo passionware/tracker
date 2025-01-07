@@ -9,15 +9,15 @@ import {
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
-import { RemoteData } from "@passionware/monads";
+import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ContractorReportView {
   entries: ContractorReportViewEntry[];
   total: {
-    netAmount: CurrencyValue;
-    reconciledAmount: CurrencyValue;
-    chargedAmount: CurrencyValue;
-    toChargeAmount: CurrencyValue;
+    netAmount: Maybe<CurrencyValue>;
+    reconciledAmount: Maybe<CurrencyValue>;
+    chargedAmount: Maybe<CurrencyValue>;
+    toChargeAmount: Maybe<CurrencyValue>;
   };
 }
 

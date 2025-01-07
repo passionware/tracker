@@ -39,34 +39,46 @@ export function createReportDisplayService(
           (entries) => ({
             entries,
             total: {
-              netAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.netAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.netAmount.currency,
-              },
-              reconciledAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.reconciledAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.reconciledAmount.currency,
-              },
-              chargedAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.billedAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.billedAmount.currency,
-              },
-              toChargeAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.remainingAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.remainingAmount.currency,
-              },
+              netAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.netAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.netAmount.currency,
+                    },
+              reconciledAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.reconciledAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.reconciledAmount.currency,
+                    },
+              chargedAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.billedAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.billedAmount.currency,
+                    },
+              toChargeAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.remainingAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.remainingAmount.currency,
+                    },
             },
           }),
         ),

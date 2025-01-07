@@ -182,8 +182,10 @@ export function ContractorReportsWidget(
                         {item.label}
                       </dt>
                       <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-                        {props.services.formatService.financial.currency(
+                        {maybe.mapOrElse(
                           item.value,
+                          props.services.formatService.financial.currency,
+                          "-",
                         )}
                       </dd>
                     </div>
@@ -229,8 +231,8 @@ export function ContractorReportsWidget(
                 Charge Status <Info className="inline size-4" />
               </TableHead>
             </SimpleTooltip>
-            <TableHead>Charge&nbsp;Refund</TableHead>
-            <TableHead>Total&nbsp;Refund</TableHead>
+            <TableHead>Compensation&nbsp;Status</TableHead>
+            <TableHead>Full&nbsp;Compensation</TableHead>
             <TableHead>Net value</TableHead>
             <TableHead>Charged&nbsp;value</TableHead>
             <TableHead>To&nbsp;charge</TableHead>
