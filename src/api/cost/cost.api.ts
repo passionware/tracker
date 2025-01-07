@@ -24,8 +24,8 @@ export interface Cost {
   contractorId: Maybe<Contractor["id"]>;
   currency: string;
   // foreign references
-  contractor?: Contractor;
-  linkCostReports?: LinkCostReport[];
+  contractor: Contractor | null;
+  linkCostReports: LinkCostReport[] | null;
 }
 
 export type CostQuery = WithSearch &
