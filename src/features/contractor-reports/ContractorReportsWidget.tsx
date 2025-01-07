@@ -156,17 +156,6 @@ export function ContractorReportsWidget(
         <TableCaption>
           A list of all reported work for given client, matched with billing or
           clarifications.
-          <div className="w-fit text-left">
-            <div className="">Definitions:</div>
-            <ul className="list-disc list-inside">
-              <li>
-                <strong>Refund status aka reverse charge status</strong>
-              </li>
-              <li>
-                <strong>Full refund status</strong>
-              </li>
-            </ul>
-          </div>
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -514,6 +503,8 @@ export function ContractorReportsWidget(
                       report.remainingAmount.currency,
                     )}
                   </TableCell>
+                  <TableCell>-1</TableCell>
+                  <TableCell>-1</TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
                       report.periodStart,
