@@ -161,7 +161,8 @@ export function ContractorReportsWidget(
             <TableHead className="w-[100px]">Id</TableHead>
             <TableHead>Issuer</TableHead>
             <TableHead>Contractor</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Charge&nbsp;Status</TableHead>
+            <TableHead>Refund&nbsp;Status</TableHead>
             <TableHead>Net value</TableHead>
             <TableHead>Billed value</TableHead>
             <TableHead>Remaining</TableHead>
@@ -174,33 +175,11 @@ export function ContractorReportsWidget(
             .journey(reports)
             .wait(
               <TableRow>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="w-32 h-6" />
-                </TableCell>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TableCell key={i}>
+                    <Skeleton className="w-32 h-6" />
+                  </TableCell>
+                ))}
               </TableRow>,
             )
             .catch(renderError)
@@ -208,7 +187,7 @@ export function ContractorReportsWidget(
               if (reports.length === 0) {
                 return (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={10}>
                       No contractor reports found.
                     </TableCell>
                   </TableRow>
@@ -455,6 +434,11 @@ export function ContractorReportsWidget(
                         </Alert>
                       </PopoverContent>
                     </Popover>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" size="md">
+                      TODO
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.amount(

@@ -21,8 +21,8 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { maybe, rd } from "@passionware/monads";
 import {
   BookOpen,
-  Building2,
   Frame,
+  HandCoins,
   HardHat,
   Map,
   PieChart,
@@ -41,17 +41,21 @@ function useData(
     return {
       navMain: [
         {
-          title: "Client",
+          title: "Cash flow",
           url: "#",
-          icon: Building2,
+          icon: HandCoins,
           isActive: true,
           items: [
             {
-              title: "Reports",
+              title: "Work Reports",
               url: routing.reports(),
             },
             {
               title: "Income invoices",
+              url: routing.invoices(),
+            },
+            {
+              title: "Cost invoices",
               url: routing.invoices(),
             },
           ],
