@@ -12,6 +12,7 @@ import { WithReportDisplayService } from "@/services/front/ReportDisplayService/
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -54,6 +55,7 @@ export function RootWidget(
       WithNavigationService,
       WithWorkspaceService,
       WithCostService,
+      WithPreferenceService,
     ]
   >,
 ) {

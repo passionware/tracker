@@ -20,16 +20,18 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { Switch } from "@/components/ui/switch";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import {
   AuthInfo,
   WithAuthService,
 } from "@/services/io/AuthService/AuthService.ts";
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
+  Construction,
   CreditCard,
   LogOut,
   Sparkles,
@@ -38,8 +40,15 @@ import {
 export function NavUser({
   info,
   services,
-}: { info: AuthInfo } & WithServices<[WithAuthService]>) {
+}: { info: AuthInfo } & WithServices<
+  [WithAuthService, WithPreferenceService]
+>) {
   const { isMobile } = useSidebar();
+
+  const isDangerMode = services.preferenceService.useIsDangerMode();
+  const handleDangerModeChange = () => {
+    services.preferenceService.setIsDangerMode(!isDangerMode);
+  };
 
   return (
     <SidebarMenu>
@@ -108,9 +117,27 @@ export function NavUser({
                 <CreditCard />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleDangerModeChange();
+                }}
+                className={
+                  isDangerMode ? "text-red-700 focus:text-red-600" : ""
+                }
+              >
+                <Construction />
+                Destruction mode
+                <Switch
+                  checked={isDangerMode}
+                  onCheckedChange={handleDangerModeChange}
+                  variant={isDangerMode ? "danger" : "normal"}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                  className="ml-auto"
+                />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

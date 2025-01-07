@@ -20,6 +20,8 @@ import { createMessageService } from "@/services/internal/MessageService/Message
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.impl.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
+import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.impl.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { createClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.impl.ts";
@@ -104,6 +106,7 @@ export const myServices = {
     myQueryClient,
     messageService,
   ),
+  preferenceService: createPreferenceService(),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -119,6 +122,7 @@ export const myServices = {
     WithContractorService,
     WithWorkspaceService,
     WithCostService,
+    WithPreferenceService,
   ]
 >;
 

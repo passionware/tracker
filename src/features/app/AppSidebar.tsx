@@ -16,6 +16,7 @@ import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { maybe, rd } from "@passionware/monads";
@@ -147,7 +148,13 @@ export function AppSidebar({
   services,
   ...props
 }: WithServices<
-  [WithAuthService, WithClientService, WithLocationService, WithRoutingService]
+  [
+    WithAuthService,
+    WithClientService,
+    WithLocationService,
+    WithRoutingService,
+    WithPreferenceService,
+  ]
 > &
   ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
