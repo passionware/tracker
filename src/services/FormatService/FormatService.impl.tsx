@@ -3,6 +3,51 @@ import { differenceInDays, format, startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
 
 export function createFormatService(clock: () => Date): FormatService {
+  const amount = (
+    value: number,
+    currency: "EUR" | "USD" | string,
+    fullPrecision = false,
+  ) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency,
+      currencyDisplay: "symbol",
+      minimumFractionDigits: 2,
+    });
+
+    // eslint-disable-next-line no-compare-neg-zero
+    const clearedValue = value === -0 ? 0 : value;
+
+    let formattedValue = formatter.format(clearedValue);
+
+    if (fullPrecision && clearedValue > 0 && clearedValue < 0.01) {
+      formattedValue = `<${formatter.format(0.01)}`;
+    }
+
+    const result = formattedValue.split(" ");
+    const currencySymbol = result[1];
+    const currencyValue = result[0];
+    const text = `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
+
+    return <div className="font-mono ">{text}</div>;
+    // return (
+    //   <div className="flex flex-row gap-1 justify-end">
+    //     <div>{result[0]}</div>
+    //     <div className="w-8 text-left">{result[1]}</div>
+    //   </div>
+    // );
+    // Adjust currency placement based on the currency type
+    // if (currency === "EUR") {
+    // Move the symbol to the end for EUR
+    // return formattedValue.replace("€", "") + "€";
+    // } else if (currency === "PLN") {
+    //   // Handle PLN by moving the currency to the end and adding a space
+    //   return formattedValue.replace("PLN", "").trim() + " PLN";
+    // }
+    //
+    // // USD format remains unchanged as it matches the desired output
+    // return formattedValue;
+  };
   return {
     temporal: {
       date: (date: Date) => {
@@ -57,50 +102,9 @@ export function createFormatService(clock: () => Date): FormatService {
       },
     },
     financial: {
-      amount: (
-        value: number,
-        currency: "EUR" | "USD" | string,
-        fullPrecision = false,
-      ) => {
-        const formatter = new Intl.NumberFormat("de-DE", {
-          style: "currency",
-          currency,
-          currencyDisplay: "symbol",
-          minimumFractionDigits: 2,
-        });
-
-        // eslint-disable-next-line no-compare-neg-zero
-        const clearedValue = value === -0 ? 0 : value;
-
-        let formattedValue = formatter.format(clearedValue);
-
-        if (fullPrecision && clearedValue > 0 && clearedValue < 0.01) {
-          formattedValue = `<${formatter.format(0.01)}`;
-        }
-
-        const result = formattedValue.split(" ");
-        const currencySymbol = result[1];
-        const currencyValue = result[0];
-        const text = `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
-
-        return <div className="font-mono ">{text}</div>;
-        // return (
-        //   <div className="flex flex-row gap-1 justify-end">
-        //     <div>{result[0]}</div>
-        //     <div className="w-8 text-left">{result[1]}</div>
-        //   </div>
-        // );
-        // Adjust currency placement based on the currency type
-        // if (currency === "EUR") {
-        // Move the symbol to the end for EUR
-        // return formattedValue.replace("€", "") + "€";
-        // } else if (currency === "PLN") {
-        //   // Handle PLN by moving the currency to the end and adding a space
-        //   return formattedValue.replace("PLN", "").trim() + " PLN";
-        // }
-        //
-        // // USD format remains unchanged as it matches the desired output
-        // return formattedValue;
+      amount,
+      currency: (value) => {
+        return amount(value.amount, value.currency);
       },
       amountWithoutCurrency: (value: number, fullPrecision = false) => {
         const formatter = new Intl.NumberFormat("de-DE", {

@@ -12,6 +12,16 @@ import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { RemoteData } from "@passionware/monads";
 
 export interface ContractorReportView {
+  entries: ContractorReportViewEntry[];
+  total: {
+    netAmount: CurrencyValue;
+    reconciledAmount: CurrencyValue;
+    chargedAmount: CurrencyValue;
+    toChargeAmount: CurrencyValue;
+  };
+}
+
+export interface ContractorReportViewEntry {
   id: number;
   netAmount: CurrencyValue;
   periodStart: Date;
@@ -44,6 +54,16 @@ export type ContractorReportLinkView = {
 );
 
 export interface ClientBillingView {
+  entries: ClientBillingViewEntry[];
+  total: {
+    netAmount: CurrencyValue;
+    grossAmount: CurrencyValue;
+    matchedAmount: CurrencyValue;
+    remainingAmount: CurrencyValue;
+  };
+}
+
+export interface ClientBillingViewEntry {
   id: number;
   netAmount: CurrencyValue;
   grossAmount: CurrencyValue;
@@ -82,14 +102,12 @@ export interface ReportDisplayService {
    */
   useReportView: (
     query: ContractorReportQuery,
-  ) => RemoteData<ContractorReportView[]>;
+  ) => RemoteData<ContractorReportView>;
   /**
    * Returns a list of billing information, with all links and contractor report information.
    * @param query
    */
-  useBillingView: (
-    query: ClientBillingQuery,
-  ) => RemoteData<ClientBillingView[]>;
+  useBillingView: (query: ClientBillingQuery) => RemoteData<ClientBillingView>;
 }
 
 export interface WithReportDisplayService {

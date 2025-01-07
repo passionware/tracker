@@ -6,8 +6,8 @@ import {
 } from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
-  ClientBillingView,
-  ContractorReportView,
+  ClientBillingViewEntry,
+  ContractorReportViewEntry,
   ReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.ts";
@@ -32,7 +32,44 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
       return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) =>
-        data.reports.map((report) => calculateReport(report, data.workspaces)),
+        maybe.map(
+          data.reports.map((report) =>
+            calculateReportEntry(report, data.workspaces),
+          ),
+          (entries) => ({
+            entries,
+            total: {
+              netAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.netAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.netAmount.currency,
+              },
+              reconciledAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.reconciledAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.reconciledAmount.currency,
+              },
+              chargedAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.billedAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.billedAmount.currency,
+              },
+              toChargeAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.remainingAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.remainingAmount.currency,
+              },
+            },
+          }),
+        ),
       );
     },
     useBillingView: (query) => {
@@ -42,17 +79,52 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
       return rd.useMemoMap(rd.combine({ billings, workspaces }), (data) =>
-        data.billings.map((billing) =>
-          calculateBilling(billing, data.workspaces),
+        maybe.map(
+          data.billings.map((billing) =>
+            calculateBilling(billing, data.workspaces),
+          ),
+          (entries) => ({
+            entries,
+            total: {
+              netAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.netAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.netAmount.currency,
+              },
+              grossAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.grossAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.grossAmount.currency,
+              },
+              matchedAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.matchedAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.matchedAmount.currency,
+              },
+              remainingAmount: {
+                amount: entries.reduce(
+                  (acc, entry) => acc + entry.remainingAmount.amount,
+                  0,
+                ),
+                currency: entries[0]?.remainingAmount.currency,
+              },
+            },
+          }),
         ),
       );
     },
   };
 }
-function calculateReport(
+function calculateReportEntry(
   report: ContractorReport,
   workspaces: Workspace[],
-): ContractorReportView {
+): ContractorReportViewEntry {
   const haveSameClient = report.linkBillingReport?.every(
     (link) =>
       link.linkType === "clarify" ||
@@ -152,7 +224,7 @@ function calculateReport(
 function calculateBilling(
   billing: ClientBilling,
   workspaces: Workspace[],
-): ClientBillingView {
+): ClientBillingViewEntry {
   const sumOfLinkedAmounts =
     billing.linkBillingReport?.reduce(
       (acc, link) => acc + (link.linkAmount ?? 0),

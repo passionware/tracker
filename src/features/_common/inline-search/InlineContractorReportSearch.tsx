@@ -45,7 +45,7 @@ export function InlineContractorReportSearch(
         .wait(<Skeleton className="h-6" />)
         .catch(renderError)
         .map((reports) => {
-          if (reports.length === 0) {
+          if (reports.entries.length === 0) {
             return <div>No contractor reports found.</div>;
           }
 
@@ -62,7 +62,7 @@ export function InlineContractorReportSearch(
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.map((report) => (
+                {reports.entries.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell>{report.id}</TableCell>
                     <TableCell>

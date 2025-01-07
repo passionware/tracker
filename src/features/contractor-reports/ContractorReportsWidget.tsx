@@ -122,15 +122,18 @@ export function ContractorReportsWidget(
                     defaultCurrency={rd.tryMap(
                       reports,
                       (reports) =>
-                        reports[reports.length - 1]?.netAmount.currency,
+                        reports.entries[reports.entries.length - 1]?.netAmount
+                          .currency,
                     )}
                     defaultContractorId={rd.tryMap(
                       reports,
-                      (reports) => reports[reports.length - 1]?.contractor.id,
+                      (reports) =>
+                        reports.entries[reports.entries.length - 1]?.contractor
+                          .id,
                     )}
                     defaultPeriodStart={rd.tryMap(reports, (reports) =>
                       maybe.map(
-                        reports[reports.length - 1]?.periodEnd,
+                        reports.entries[reports.entries.length - 1]?.periodEnd,
                         partialRight(addDays, 1),
                       ),
                     )}
@@ -153,9 +156,32 @@ export function ContractorReportsWidget(
       }
     >
       <Table>
-        <TableCaption>
+        <TableCaption className="text-sm text-gray-500 text-left bg-gray-50 p-4 rounded-md">
           A list of all reported work for given client, matched with billing or
           clarifications.
+          {rd.tryMap(reports, (view) => {
+            const billingDetails = [
+              { label: "Reported", value: view.total.netAmount },
+              { label: "Charged", value: view.total.chargedAmount },
+              { label: "Reconciled", value: view.total.reconciledAmount },
+              { label: "To charge", value: view.total.toChargeAmount },
+            ];
+
+            return (
+              <div className="space-y-1 text-gray-600">
+                {billingDetails.map((detail) => (
+                  <div key={detail.label}>
+                    <span className="font-medium">{detail.label}:</span>
+                    <span className="ml-1">
+                      {props.services.formatService.financial.currency(
+                        detail.value,
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -218,7 +244,7 @@ export function ContractorReportsWidget(
             )
             .catch(renderError)
             .map((reports) => {
-              if (reports.length === 0) {
+              if (reports.entries.length === 0) {
                 return (
                   <TableRow>
                     <TableCell colSpan={11}>
@@ -227,7 +253,7 @@ export function ContractorReportsWidget(
                   </TableRow>
                 );
               }
-              return reports.map((report) => (
+              return reports.entries.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-medium">{report.id}</TableCell>
                   <TableCell>

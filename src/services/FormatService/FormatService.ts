@@ -1,3 +1,4 @@
+import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { ReactNode } from "react";
 
 export interface FormatService {
@@ -7,6 +8,7 @@ export interface FormatService {
       currency: "EUR" | "USD" | string,
       fullPrecision?: boolean,
     ) => ReactNode;
+    currency: (value: CurrencyValue) => ReactNode;
     amountWithoutCurrency: (
       value: number,
       fullPrecision?: boolean,

@@ -43,7 +43,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
         .wait(<Skeleton className="h-6" />)
         .catch(renderError)
         .map((billings) => {
-          if (billings.length === 0) {
+          if (billings.entries.length === 0) {
             return <div>No billings found.</div>;
           }
 
@@ -61,7 +61,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {billings.map((billing) => (
+                {billings.entries.map((billing) => (
                   <TableRow key={billing.id}>
                     <TableCell>{billing.id}</TableCell>
                     <TableCell>

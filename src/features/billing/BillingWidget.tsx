@@ -73,14 +73,33 @@ export function BillingWidget(
       ]}
     >
       <Table>
-        <TableCaption>
-          A list of all billings for the selected client. Sum:{" "}
-          {rd.tryMap(billings, (billings) =>
-            billings.reduce(
-              (acc, billing) => acc + billing.netAmount.amount,
-              0,
-            ),
-          )}
+        <TableCaption className="text-sm text-gray-500 text-left bg-gray-50 p-4 rounded-md">
+          <div className="mb-2 font-semibold text-gray-700">
+            A list of all billings for the selected client.
+          </div>
+          {rd.tryMap(billings, (view) => {
+            const billingDetails = [
+              { label: "Charged", value: view.total.netAmount },
+              // { label: "Charged gross", value: view.total.grossAmount },
+              { label: "Reconciled", value: view.total.matchedAmount },
+              { label: "To reconcile", value: view.total.remainingAmount },
+            ];
+
+            return (
+              <div className="space-y-1 text-gray-600">
+                {billingDetails.map((detail) => (
+                  <div key={detail.label}>
+                    <span className="font-medium">{detail.label}:</span>
+                    <span className="ml-1">
+                      {props.services.formatService.financial.currency(
+                        detail.value,
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -112,14 +131,14 @@ export function BillingWidget(
             )
             .catch(renderError)
             .map((billings) => {
-              if (billings.length === 0) {
+              if (billings.entries.length === 0) {
                 return (
                   <TableRow>
                     <TableCell colSpan={8}>No billings found.</TableCell>
                   </TableRow>
                 );
               }
-              return billings.map((billing) => (
+              return billings.entries.map((billing) => (
                 <TableRow key={billing.id}>
                   <TableCell className="font-medium">{billing.id}</TableCell>
                   <TableCell>
