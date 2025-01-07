@@ -23,7 +23,7 @@ import {
   BookOpen,
   Building2,
   Frame,
-  HandCoins,
+  HardHat,
   Map,
   PieChart,
   Settings2,
@@ -57,9 +57,9 @@ function useData(
           ],
         },
         {
-          title: "Forge Team",
+          title: "Contractor",
           url: "#",
-          icon: HandCoins,
+          icon: HardHat,
           items: [
             {
               title: "Reports",
