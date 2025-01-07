@@ -20,7 +20,7 @@ export interface ContractorReportView {
   /**
    * Whether the reported work has been already billed or not.
    */
-  status: "billed" | "clarified" | "uncovered";
+  status: "billed" | "partially-billed" | "clarified" | "uncovered";
   reconciledAmount: CurrencyValue;
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
@@ -57,7 +57,7 @@ export interface ClientBillingView {
    * Whether the billing is fully matched with reports or not yet
    * If unmatched, this means we still did not link all reports to this billing and as such we can't say it is a reliable source of information.
    */
-  status: "matched" | "unmatched";
+  status: "matched" | "unmatched" | "partially-matched";
   workspace: Workspace;
 }
 

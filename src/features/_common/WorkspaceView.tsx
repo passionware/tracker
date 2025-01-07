@@ -21,6 +21,8 @@ export function WorkspaceView({ workspace }: { workspace: Workspace }) {
 }
 
 /**
+ *
+ *
  * Todo:
  * przemyśleć niezależne sidebary (różne tryby):
  * * workspace scoped -> company scoped -> wszystko z Atellio na spółce zoo
@@ -39,4 +41,8 @@ export function WorkspaceView({ workspace }: { workspace: Workspace }) {
  *   -> /workspace/1/contractor/2
  *   lub dla wszystkich spółek
  *   -> /workspace/all/contractor/2
+ *
+ *   jeszcze specjalny tryb time trackera
+ *
+ *   -> /time-tracker/workspace/1/company/2 (naliczanie czasu dla klienta 2 w ramach workspace 1), z możliwością przełączania się między workspace'ami i klientami (zmiana path segmentów)
  */

@@ -232,6 +232,7 @@ export function ContractorReportsWidget(
                             (
                               {
                                 billed: "positive",
+                                "partially-billed": "warning",
                                 uncovered: "destructive",
                                 clarified: "secondary",
                               } as const
@@ -241,6 +242,7 @@ export function ContractorReportsWidget(
                           {
                             {
                               billed: "Billed",
+                              "partially-billed": "Partially billed",
                               uncovered: "Uncovered",
                               clarified: "Clarified",
                             }[report.status]

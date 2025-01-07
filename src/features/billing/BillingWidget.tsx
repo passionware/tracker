@@ -133,13 +133,20 @@ export function BillingWidget(
                               {
                                 matched: "positive",
                                 unmatched: "destructive",
+                                "partially-matched": "warning",
                               } as const
                             )[billing.status]
                           }
                         >
-                          {billing.status === "matched"
-                            ? "Matched"
-                            : "Unmatched"}
+                          {
+                            (
+                              {
+                                matched: "Matched",
+                                unmatched: "Unmatched",
+                                "partially-matched": "Partially Matched",
+                              } as const
+                            )[billing.status]
+                          }
                         </Badge>
                       </PopoverTrigger>
                       <PopoverContent className="w-fit">

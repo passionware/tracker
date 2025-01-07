@@ -78,6 +78,20 @@ function calculateReport(
       ?.filter((link) => link.linkType === "reconcile")
       ?.reduce((acc, link) => acc + (link.linkAmount ?? 0), 0) ?? 0;
 
+  function getStatus() {
+    if (remainingAmount === 0) {
+      if (hasAtLeastOneClarification) {
+        return "clarified";
+      } else {
+        return "billed";
+      }
+    } else if (remainingAmount > 0 && sumOfBillingAmounts > 0) {
+      return "partially-billed";
+    } else {
+      return "uncovered";
+    }
+  }
+
   return {
     id: report.id,
     contractor: maybe.getOrThrow(report.contractor, "Contractor is missing"),
@@ -88,12 +102,7 @@ function calculateReport(
     periodStart: report.periodStart,
     periodEnd: report.periodEnd,
     description: report.description,
-    status:
-      remainingAmount === 0
-        ? hasAtLeastOneClarification
-          ? "clarified"
-          : "billed"
-        : "uncovered",
+    status: getStatus(),
     reconciledAmount: {
       amount: sumOfLinkedAmounts,
       currency: report.currency,
@@ -150,7 +159,18 @@ function calculateBilling(
       0,
     ) ?? 0;
   const remainingAmount = billing.totalNet - sumOfLinkedAmounts;
-  const status = remainingAmount === 0 ? "matched" : "unmatched";
+
+  function getStatus() {
+    if (remainingAmount === 0) {
+      return "matched";
+    } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
+      return "partially-matched";
+    } else {
+      return "unmatched";
+    }
+  }
+
+  const status = getStatus();
 
   return {
     id: billing.id,
