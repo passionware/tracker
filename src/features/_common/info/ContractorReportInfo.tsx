@@ -13,7 +13,7 @@ import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { cn } from "@/lib/utils.ts";
+import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -49,33 +49,11 @@ export function ContractorReportInfo({
   const clarifyState = promiseState.useRemoteData();
   return (
     <>
-      <div className="flex justify-between">
-        <div className="text-green-700 flex flex-col gap-2 items-start">
-          <Badge tone="outline" variant="positive">
-            Reconciled
-          </Badge>{" "}
-          {services.formatService.financial.amount(
-            report.reconciledAmount.amount,
-            report.reconciledAmount.currency,
-          )}
-        </div>
-        <div
-          className={cn(
-            "flex flex-col gap-2 items-end",
-            report.remainingAmount.amount === 0
-              ? "text-gray-800"
-              : "text-red-800",
-          )}
-        >
-          <Badge tone="outline" variant="destructive">
-            Remaining
-          </Badge>{" "}
-          {services.formatService.financial.amount(
-            report.remainingAmount.amount,
-            report.remainingAmount.currency,
-          )}
-        </div>
-      </div>
+      <TransferView
+        fromAmount={report.remainingAmount}
+        toAmount={report.reconciledAmount}
+        services={services}
+      />
       <Separator className="my-2" />
       <div className="text-sm text-gray-700 font-medium my-1 text-center">
         Linked invoices or clarifications
