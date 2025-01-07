@@ -4,7 +4,8 @@ import { Maybe } from "@passionware/monads";
 export interface RoutingService {
   forClient: (clientId?: Maybe<":clientId" | Client["id"]>) => {
     reports: () => string;
-    invoices: () => string;
+    charges: () => string;
+    costs: () => string;
     root: () => string;
   };
   forGlobal: () => {

@@ -51,12 +51,12 @@ function useData(
               url: routing.reports(),
             },
             {
-              title: "Income invoices",
-              url: routing.invoices(),
+              title: "Charges",
+              url: routing.charges(),
             },
             {
-              title: "Cost invoices",
-              url: routing.invoices(),
+              title: "Costs",
+              url: routing.costs(),
             },
           ],
         },

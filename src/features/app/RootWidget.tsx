@@ -88,7 +88,7 @@ export function RootWidget(
         }
       />
       <Route
-        path={props.services.routingService.forClient().invoices()}
+        path={props.services.routingService.forClient().charges()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
