@@ -261,8 +261,16 @@ export function BillingWidget(
                                         </Slot>
                                       </div>
                                     </div>
-                                    <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                                      {link.contractorReport.description}
+                                    <div className="space-y-2">
+                                      <div className="text-xs text-slate-600">
+                                        {
+                                          link.contractorReport.contractor
+                                            ?.fullName
+                                        }
+                                      </div>
+                                      <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
+                                        {link.contractorReport.description}
+                                      </div>
                                     </div>
                                   </div>
                                 );
