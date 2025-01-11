@@ -28,7 +28,7 @@ import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
 
-function ClientIdResolver(
+function IdResolver(
   props: WithServices<[WithLocationService]> & {
     children: (clientId: ClientSpec, workspaceId: WorkspaceSpec) => ReactNode;
   },
@@ -39,15 +39,6 @@ function ClientIdResolver(
     maybe.getOrThrow(clientId, "No client ID"),
     maybe.getOrThrow(workspaceId, "No workspace ID"),
   );
-}
-
-function WorkspaceIdResolver(
-  props: WithServices<[WithLocationService]> & {
-    children: (workspaceId: WorkspaceSpec) => ReactNode;
-  },
-) {
-  const workspaceId = props.services.locationService.useCurrentWorkspaceId();
-  return props.children(maybe.getOrThrow(workspaceId, "No workspace ID"));
 }
 
 export function RootWidget(
@@ -86,7 +77,7 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <ClientIdResolver services={props.services}>
+              <IdResolver services={props.services}>
                 {(clientId, workspaceId) => (
                   <Dashboard
                     clientId={clientId}
@@ -94,7 +85,7 @@ export function RootWidget(
                     services={props.services}
                   />
                 )}
-              </ClientIdResolver>
+              </IdResolver>
             </Layout>
           </ProtectedRoute>
         }
@@ -107,7 +98,7 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <ClientIdResolver services={props.services}>
+              <IdResolver services={props.services}>
                 {(clientId, workspaceId) => (
                   <ContractorReportsWidget
                     clientId={clientId}
@@ -115,7 +106,7 @@ export function RootWidget(
                     services={props.services}
                   />
                 )}
-              </ClientIdResolver>
+              </IdResolver>
             </Layout>
           </ProtectedRoute>
         }
@@ -128,7 +119,7 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <ClientIdResolver services={props.services}>
+              <IdResolver services={props.services}>
                 {(clientId, workspaceId) => (
                   <BillingWidget
                     clientId={clientId}
@@ -136,7 +127,7 @@ export function RootWidget(
                     services={props.services}
                   />
                 )}
-              </ClientIdResolver>
+              </IdResolver>
             </Layout>
           </ProtectedRoute>
         }
@@ -146,14 +137,15 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <WorkspaceIdResolver services={props.services}>
-                {(workspaceId) => (
+              <IdResolver services={props.services}>
+                {(workspaceId, clientId) => (
                   <CostsWidget
                     workspaceId={workspaceId}
+                    clientId={clientId}
                     services={props.services}
                   />
                 )}
-              </WorkspaceIdResolver>
+              </IdResolver>
             </Layout>
           </ProtectedRoute>
         }

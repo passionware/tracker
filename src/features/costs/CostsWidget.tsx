@@ -10,21 +10,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 
 export interface CostsWidgetProps
   extends WithServices<
-    [WithCostService, WithFormatService, WithContractorService]
+    [
+      WithCostService,
+      WithFormatService,
+      WithContractorService,
+      WithClientService,
+      WithWorkspaceService,
+    ]
   > {
   workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
 }
 
 export function CostsWidget(props: CostsWidgetProps) {
@@ -32,7 +46,11 @@ export function CostsWidget(props: CostsWidgetProps) {
 
   return (
     <CommonPageContainer
-      segments={[<BreadcrumbPage>Workspace Costs</BreadcrumbPage>]}
+      segments={[
+        <WorkspaceBreadcrumbLink {...props} />,
+        <ClientBreadcrumbLink {...props} />,
+        <BreadcrumbPage>Costs</BreadcrumbPage>,
+      ]}
     >
       <Table>
         <TableCaption className="text-sm text-gray-500 text-left bg-gray-50 p-4 rounded-md">
