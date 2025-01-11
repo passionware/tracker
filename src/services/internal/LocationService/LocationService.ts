@@ -17,6 +17,7 @@ export interface LocationService {
   // maybe - we can be in the route which neither specific workspace nor all workspaces
   getCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
   changeCurrentClientId: (id: ClientSpec) => void;
+  changeCurrentWorkspaceId: (id: WorkspaceSpec) => void;
 }
 export interface WithLocationService {
   locationService: LocationService;

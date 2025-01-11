@@ -25,7 +25,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 function ClientIdResolver(
   props: WithServices<[WithLocationService]> & {
@@ -83,16 +83,11 @@ export function RootWidget(
       <Route
         path={props.services.routingService.forWorkspace().forClient().root()}
         element={
-          <ClientIdResolver services={props.services}>
-            {(clientId, workspaceId) => (
-              <Navigate
-                to={props.services.routingService
-                  .forWorkspace(workspaceId)
-                  .forClient(clientId)
-                  .reports()}
-              />
-            )}
-          </ClientIdResolver>
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              "Welcome to client dashboard"
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route

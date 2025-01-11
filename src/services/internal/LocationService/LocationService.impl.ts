@@ -52,6 +52,15 @@ export function createLocationService(
           .root(),
       );
     },
+    changeCurrentWorkspaceId: (id) => {
+      const currentClientId = api.getCurrentClientId();
+      config.services.navigationService.navigate(
+        config.services.routingService
+          .forWorkspace(id)
+          .forClient(currentClientId ?? routingUtils.client.ofAll())
+          .root(),
+      );
+    },
   };
   return api;
 }

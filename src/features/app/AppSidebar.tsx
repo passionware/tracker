@@ -1,4 +1,5 @@
 import { clientQueryUtils } from "@/api/clients/clients.api.ts";
+import { workspaceQueryUtils } from "@/api/workspace/workspace.api.ts";
 import {
   Sidebar,
   SidebarContent,
@@ -7,19 +8,23 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { myQueryClient } from "@/core/query.connected.ts";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { ClientSwitcher } from "@/features/app/ClientSwitcher.tsx";
 
 import { NavMain } from "@/features/app/nav-main.tsx";
 import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
+import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   BookOpen,
   Frame,
@@ -157,12 +162,17 @@ export function AppSidebar({
     WithLocationService,
     WithRoutingService,
     WithPreferenceService,
+    WithWorkspaceService,
   ]
 > &
   ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
   const clients = services.clientService.useClients(clientQueryUtils.ofEmpty());
+  const workspaces = services.workspaceService.useWorkspaces(
+    workspaceQueryUtils.ofEmpty(),
+  );
   const currentClientId = services.locationService.useCurrentClientId();
+  const currentWorkspaceId = services.locationService.useCurrentWorkspaceId();
   const data = useData(services);
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -180,12 +190,33 @@ export function AppSidebar({
               />
             )),
         )}
+        {maybe.map(currentWorkspaceId, (currentWorkspaceId) =>
+          rd
+            .journey(workspaces)
+            .wait(<Skeleton className="w-20 h-4" />)
+            .catch(renderError)
+            .map((workspaces) => (
+              <WorkspaceSwitcher
+                workspaces={workspaces}
+                activeWorkspace={currentWorkspaceId}
+                onWorkspaceSwitch={
+                  services.locationService.changeCurrentWorkspaceId
+                }
+              />
+            )),
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
+        <div className="[&_.tsqd-open-btn-container]:scale-75 w-min">
+          <ReactQueryDevtools
+            client={myQueryClient}
+            buttonPosition="relative"
+          />
+        </div>
         {rd
           .journey(auth)
           .wait(<Skeleton className="w-20 h-4" />)

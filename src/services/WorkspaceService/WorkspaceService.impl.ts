@@ -41,6 +41,9 @@ export function createWorkspaceService(
         {
           queryKey: ["workspaces", "list", query],
           queryFn: () => api.getWorkspaces(query),
+          staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla listy workspace
+          refetchOnMount: false,
+          refetchOnWindowFocus: false,
         },
         queryClient,
       ),
