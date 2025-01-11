@@ -6,12 +6,53 @@ import { z } from "zod";
 export function createCostApi(client: SupabaseClient): CostApi {
   return {
     getCosts: async (query) => {
-      let request = client.from("costs").select("*");
+      let request = client.from("costs_with_details").select("*");
       if (query.search) {
         request = request
           .ilike("invoice_number", `%${query.search}%`)
           .or(`counterparty.ilike('%${query.search}%')`);
       }
+      if (query.filters.workspaceId) {
+        switch (query.filters.workspaceId.operator) {
+          case "oneOf": {
+            request = request.in(
+              "workspace_id",
+              query.filters.workspaceId.value,
+            );
+            break;
+          }
+          case "matchNone": {
+            request = request.not(
+              "workspace_id",
+              "in",
+              query.filters.workspaceId.value,
+            );
+            break;
+          }
+        }
+      }
+      if (query.filters.clientId) {
+        switch (query.filters.clientId.operator) {
+          case "oneOf": {
+            // Sprawdzanie, czy client_ids zawiera przynajmniej jeden z podanych clientId
+            request = request.contains(
+              "client_ids",
+              `{${query.filters.clientId.value.join(",")}}`,
+            );
+            break;
+          }
+          case "matchNone": {
+            // Sprawdzanie, czy client_ids NIE zawiera żadnego z podanych clientId
+            request = request.not(
+              "client_ids",
+              "contains",
+              `{${query.filters.clientId.value.join(",")}}`,
+            );
+            break;
+          }
+        }
+      }
+
       if (query.filters.contractorId) {
         switch (query.filters.contractorId.operator) {
           case "oneOf": {

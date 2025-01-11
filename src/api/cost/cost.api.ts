@@ -10,6 +10,12 @@ import {
 } from "@/api/_common/query/queryUtils.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
+import {
+  ClientSpec,
+  routingUtils,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { Maybe } from "@passionware/monads";
 
 export interface Cost {
@@ -26,10 +32,13 @@ export interface Cost {
   // foreign references
   contractor: Contractor | null;
   linkCostReports: LinkCostReport[] | null;
+  workspaceId: Workspace["id"];
 }
 
 export type CostQuery = WithSearch &
   WithFilters<{
+    workspaceId: Maybe<EnumFilter<Workspace["id"]>>;
+    clientId: Maybe<EnumFilter<Contractor["id"]>>;
     contractorId: Maybe<EnumFilter<Contractor["id"] | null>>;
   }> &
   WithPagination;
@@ -38,9 +47,21 @@ export const costQueryUtils = {
   ...withFiltersUtils<CostQuery>(),
   ...withSearchUtils<CostQuery>(),
   ...withPaginationUtils<CostQuery>(),
-  ofDefault: (): CostQuery => ({
+  ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): CostQuery => ({
     search: "",
-    filters: { contractorId: null },
+    filters: {
+      workspaceId: routingUtils.workspace.mapSpecificOrElse(
+        workspaceId,
+        (x) => ({ operator: "oneOf", value: [x] }),
+        null,
+      ),
+      clientId: routingUtils.client.mapSpecificOrElse(
+        clientId,
+        (x) => ({ operator: "oneOf", value: [x] }),
+        null,
+      ),
+      contractorId: null,
+    },
     page: paginationUtils.ofDefault(),
   }),
 };

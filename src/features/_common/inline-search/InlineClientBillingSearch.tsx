@@ -67,7 +67,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                     <TableCell>
                       <WorkspaceView
                         layout="avatar"
-                        workspace={billing.workspace}
+                        workspace={rd.of(billing.workspace)}
                       />
                     </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>

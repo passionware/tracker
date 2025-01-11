@@ -26,7 +26,7 @@ export function createLocationService(
     ] satisfies (keyof typeof routing)[];
 
     for (const route of routesToKeep) {
-      if (navigationService.match(routing[route]())) {
+      if (navigationService.match(routing[route]() + "/*")) {
         // we are in the route we want to keep
         navigationService.navigate(
           routingService

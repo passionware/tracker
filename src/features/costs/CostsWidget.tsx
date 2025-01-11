@@ -15,6 +15,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -42,7 +43,9 @@ export interface CostsWidgetProps
 }
 
 export function CostsWidget(props: CostsWidgetProps) {
-  const costs = props.services.costService.useCosts(costQueryUtils.ofDefault());
+  const costs = props.services.costService.useCosts(
+    costQueryUtils.ofDefault(props.workspaceId, props.clientId),
+  );
 
   return (
     <CommonPageContainer
@@ -61,6 +64,7 @@ export function CostsWidget(props: CostsWidgetProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Id</TableHead>
+            <TableHead>Workspace</TableHead>
             <TableHead>Counterparty</TableHead>
             <TableHead>Invoice Number</TableHead>
             <TableHead>Invoice Date</TableHead>
@@ -96,6 +100,13 @@ export function CostsWidget(props: CostsWidgetProps) {
               return costs.map((cost) => (
                 <TableRow key={cost.id}>
                   <TableCell className="font-medium">{cost.id}</TableCell>
+                  <TableCell className="py-0">
+                    <WorkspaceWidget
+                      layout="avatar"
+                      workspaceId={cost.workspaceId}
+                      services={props.services}
+                    />
+                  </TableCell>
                   <TableCell className="py-0">
                     {cost.contractorId ? (
                       <>

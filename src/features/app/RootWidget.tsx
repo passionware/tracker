@@ -30,14 +30,14 @@ import { Route, Routes } from "react-router-dom";
 
 function IdResolver(
   props: WithServices<[WithLocationService]> & {
-    children: (clientId: ClientSpec, workspaceId: WorkspaceSpec) => ReactNode;
+    children: (workspaceId: WorkspaceSpec, clientId: ClientSpec) => ReactNode;
   },
 ) {
   const clientId = props.services.locationService.useCurrentClientId();
   const workspaceId = props.services.locationService.useCurrentWorkspaceId();
   return props.children(
-    maybe.getOrThrow(clientId, "No client ID"),
     maybe.getOrThrow(workspaceId, "No workspace ID"),
+    maybe.getOrThrow(clientId, "No client ID"),
   );
 }
 
@@ -78,7 +78,7 @@ export function RootWidget(
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <IdResolver services={props.services}>
-                {(clientId, workspaceId) => (
+                {(workspaceId, clientId) => (
                   <Dashboard
                     clientId={clientId}
                     workspaceId={workspaceId}
@@ -99,7 +99,7 @@ export function RootWidget(
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <IdResolver services={props.services}>
-                {(clientId, workspaceId) => (
+                {(workspaceId, clientId) => (
                   <ContractorReportsWidget
                     clientId={clientId}
                     workspaceId={workspaceId}
@@ -120,7 +120,7 @@ export function RootWidget(
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <IdResolver services={props.services}>
-                {(clientId, workspaceId) => (
+                {(workspaceId, clientId) => (
                   <BillingWidget
                     clientId={clientId}
                     workspaceId={workspaceId}

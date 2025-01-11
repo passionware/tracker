@@ -25,6 +25,7 @@ export const cost$ = z.object({
   // foreign references
   contractors: contractor$.optional(),
   link_cost_report: z.array(linkCostReport$).optional(),
+  workspace_id: z.number(),
 });
 
 export type Cost$ = z.input<typeof cost$>;

@@ -281,7 +281,7 @@ export function ContractorReportsWidget(
                   <TableCell>
                     <WorkspaceView
                       layout="avatar"
-                      workspace={report.workspace}
+                      workspace={rd.of(report.workspace)}
                     />
                   </TableCell>
                   <TableCell className="text-xs">
