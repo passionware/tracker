@@ -29,6 +29,7 @@ import {
   renderError,
   renderSmallError,
 } from "@/features/_common/renderError.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -37,6 +38,7 @@ import { WithReportDisplayService } from "@/services/front/ReportDisplayService/
 import {
   ClientSpec,
   routingUtils,
+  WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -51,7 +53,7 @@ import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function ContractorReportsWidget(
-  props: { clientId: ClientSpec } & WithServices<
+  props: { clientId: ClientSpec; workspaceId: WorkspaceSpec } & WithServices<
     [
       WithReportDisplayService,
       WithFormatService,
@@ -60,6 +62,7 @@ export function ContractorReportsWidget(
       WithContractorService,
       WithWorkspaceService,
       WithPreferenceService,
+      WithWorkspaceService,
     ]
   >,
 ) {
@@ -83,6 +86,7 @@ export function ContractorReportsWidget(
   return (
     <CommonPageContainer
       segments={[
+        <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
         <BreadcrumbPage>Reported work</BreadcrumbPage>,
       ]}

@@ -99,9 +99,10 @@ export function RootWidget(
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <ClientIdResolver services={props.services}>
-                {(clientId) => (
+                {(clientId, workspaceId) => (
                   <ContractorReportsWidget
                     clientId={clientId}
+                    workspaceId={workspaceId}
                     services={props.services}
                   />
                 )}
@@ -119,9 +120,10 @@ export function RootWidget(
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <ClientIdResolver services={props.services}>
-                {(clientId) => (
+                {(clientId, workspaceId) => (
                   <BillingWidget
                     clientId={clientId}
+                    workspaceId={workspaceId}
                     services={props.services}
                   />
                 )}

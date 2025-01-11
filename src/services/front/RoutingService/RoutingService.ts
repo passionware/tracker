@@ -15,7 +15,7 @@ export const routingUtils = {
   workspace: {
     isAll: (value: unknown): value is All => value === all,
     ofAll: (): All => all,
-    switchTo: <T>(value: WorkspaceSpec, switchTo: T) =>
+    switchAll: <T>(value: WorkspaceSpec, switchTo: T) =>
       value === all ? switchTo : value,
     fromString: (value: WorkspacePathSegment): WorkspaceSpec => {
       if (value === "all") {

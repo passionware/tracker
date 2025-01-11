@@ -9,25 +9,25 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
-  ClientSpec,
   routingUtils,
+  WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 
-export function ClientBreadcrumbLink(
-  props: { clientId: ClientSpec } & WithServices<[WithClientService]>,
+export function WorkspaceBreadcrumbLink(
+  props: { workspaceId: WorkspaceSpec } & WithServices<[WithWorkspaceService]>,
 ) {
-  const client = props.services.clientService.useClient(
-    routingUtils.client.switchAll(props.clientId, null),
+  const workspace = props.services.workspaceService.useWorkspace(
+    routingUtils.workspace.switchAll(props.workspaceId, null),
   );
   return (
     <BreadcrumbLink>
-      {routingUtils.client.isAll(props.clientId) ? (
-        <>All clients</>
+      {routingUtils.workspace.isAll(props.workspaceId) ? (
+        <>All workspaces</>
       ) : (
         rd
-          .journey(client)
+          .journey(workspace)
           .wait(<Skeleton className="w-20 h-4" />)
           .catch(renderSmallError("w-20 h-4"))
           .map((x) => (

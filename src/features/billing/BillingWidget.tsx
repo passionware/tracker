@@ -21,24 +21,30 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 
 export function BillingWidget(
-  props: { clientId: ClientSpec } & WithServices<
+  props: { clientId: ClientSpec; workspaceId: WorkspaceSpec } & WithServices<
     [
       WithReportDisplayService,
       WithFormatService,
       WithClientService,
       WithMutationService /*todo use auth flow*/,
       WithPreferenceService,
+      WithWorkspaceService,
     ]
   >,
 ) {
@@ -56,6 +62,7 @@ export function BillingWidget(
   return (
     <CommonPageContainer
       segments={[
+        <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
         <BreadcrumbPage>Client Invoices</BreadcrumbPage>,
       ]}
