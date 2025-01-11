@@ -23,22 +23,24 @@ import { getInitials } from "@/platform/lang/getInitials.ts";
 import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
-export function TeamSwitcher({
-  clients,
-  onClientSwitch,
-  activeClient,
-}: {
+export type ClientSwitcherProps = {
   clients: Client[];
   activeClient: ClientSpec;
   onClientSwitch: (client: ClientSpec) => void;
-}) {
+};
+
+export function ClientSwitcher({
+  clients,
+  onClientSwitch,
+  activeClient,
+}: ClientSwitcherProps) {
   const { isMobile } = useSidebar();
 
   if (clients.length === 0) {
     console.error("No clients found");
   }
 
-  const activeTeam = clients.find((team) => team.id === activeClient);
+  const activeItem = clients.find((client) => client.id === activeClient);
 
   return (
     <SidebarMenu>
@@ -49,26 +51,26 @@ export function TeamSwitcher({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              {activeTeam ? (
+              {activeItem ? (
                 <>
                   <Avatar asChild>
                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                      {activeTeam.avatarUrl && (
+                      {activeItem.avatarUrl && (
                         <AvatarImage
-                          src={activeTeam.avatarUrl}
-                          alt={activeTeam.name}
+                          src={activeItem.avatarUrl}
+                          alt={activeItem.name}
                         />
                       )}
                       <AvatarFallback>
-                        {getInitials(activeTeam.name)}
+                        {getInitials(activeItem.name)}
                       </AvatarFallback>
                     </div>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {activeTeam.name}
+                      {activeItem.name}
                     </span>
-                    {/*<span className="truncate text-xs">{activeTeam.plan}</span>*/}
+                    {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
                   </div>
                 </>
               ) : (
@@ -86,21 +88,21 @@ export function TeamSwitcher({
             <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
               Clients
             </DropdownMenuLabel>
-            {clients.map((team, index) => (
+            {clients.map((client, index) => (
               <DropdownMenuItem
-                key={team.name}
-                onClick={() => onClientSwitch(team.id)}
+                key={client.name}
+                onClick={() => onClientSwitch(client.id)}
                 className="gap-2 p-2"
               >
                 <Avatar className="size-4" asChild>
                   <div className="flex size-6 items-center justify-center rounded-sm border">
-                    {team.avatarUrl && (
-                      <AvatarImage src={team.avatarUrl} alt={team.name} />
+                    {client.avatarUrl && (
+                      <AvatarImage src={client.avatarUrl} alt={client.name} />
                     )}
-                    <AvatarFallback>{getInitials(team.name)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                   </div>
                 </Avatar>
-                {team.name}
+                {client.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}

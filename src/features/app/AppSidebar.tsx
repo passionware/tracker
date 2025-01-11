@@ -8,11 +8,11 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { ClientSwitcher } from "@/features/app/ClientSwitcher.tsx";
 
 import { NavMain } from "@/features/app/nav-main.tsx";
 import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
-import { TeamSwitcher } from "@/features/app/team-switcher.tsx";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
@@ -173,7 +173,7 @@ export function AppSidebar({
             .wait(<Skeleton className="w-20 h-4" />)
             .catch(renderError)
             .map((clients) => (
-              <TeamSwitcher
+              <ClientSwitcher
                 clients={clients}
                 activeClient={currentClientId}
                 onClientSwitch={services.locationService.changeCurrentClientId}
