@@ -1,4 +1,8 @@
 import {
+  contractorReport$,
+  contractorReportFromHttp,
+} from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
+import {
   contractor$,
   contractorFromHttp,
 } from "@/api/contractor/contractor.api.http.schema.ts";
@@ -24,8 +28,13 @@ export const cost$ = z.object({
   currency: z.string(),
   // foreign references
   contractors: contractor$.optional(),
-  link_cost_report: z.array(linkCostReport$).optional(),
   workspace_id: z.number(),
+  contractor_reports: z.array(
+    z.object({
+      link_cost_report: linkCostReport$,
+      contractor_report: contractorReport$,
+    }),
+  ),
 });
 
 export type Cost$ = z.input<typeof cost$>;
@@ -34,8 +43,9 @@ export function costFromHttp(cost: Cost$): Cost {
   return {
     ...camelcaseKeys(cost),
     contractor: maybe.mapOrNull(cost.contractors, contractorFromHttp),
-    linkCostReports: maybe.mapOrNull(cost.link_cost_report, (linkCostReport) =>
-      linkCostReport.map(linkCostReportFromHttp),
-    ),
+    linkReports: cost.contractor_reports.map((report) => ({
+      ...linkCostReportFromHttp(report.link_cost_report),
+      contractorReport: contractorReportFromHttp(report.contractor_report),
+    })),
   };
 }

@@ -31,7 +31,7 @@ export interface Cost {
   currency: string;
   // foreign references
   contractor: Contractor | null;
-  linkCostReports: LinkCostReport[] | null;
+  linkReports: LinkCostReport[];
   workspaceId: Workspace["id"];
 }
 
