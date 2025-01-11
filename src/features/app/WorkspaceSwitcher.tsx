@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import {
   routingUtils,
@@ -47,6 +48,9 @@ export function WorkspaceSwitcher({
     ? activeWorkspace
     : workspaces.find((workspace) => workspace.id === activeWorkspace);
 
+  const allClasses =
+    "bg-gradient-to-tl from-amber-600 to-emerald-600 text-white rounded-none";
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -54,14 +58,14 @@ export function WorkspaceSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="rounded-xl py-7 border border-emerald-500/20 bg-gradient-to-tl from-sky-300/10 to-yellow-500/10 outline-none focus-visible:ring-2 focus:ring-emerald-500/20"
             >
               {activeItem ? (
                 routingUtils.workspace.isAll(activeItem) ? (
                   <>
                     <Avatar asChild>
                       <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                        <AvatarFallback className="rounded-none bg-amber-500 text-white">
+                        <AvatarFallback className={allClasses}>
                           <Orbit />
                         </AvatarFallback>
                       </div>
@@ -118,8 +122,8 @@ export function WorkspaceSwitcher({
               onClick={() => onWorkspaceSwitch(routingUtils.workspace.ofAll())}
             >
               <Avatar asChild className="size-6">
-                <div className="flex size-4 items-center justify-center rounded-sm border">
-                  <AvatarFallback className="rounded-sm bg-amber-500 text-white">
+                <div className="flex size-4 items-center justify-center rounded-sm border border-slate-800">
+                  <AvatarFallback className={cn("text-sm", allClasses)}>
                     <Orbit />
                   </AvatarFallback>
                 </div>

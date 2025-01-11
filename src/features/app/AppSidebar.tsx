@@ -177,19 +177,6 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        {maybe.map(currentClientId, (currentClientId) =>
-          rd
-            .journey(clients)
-            .wait(<Skeleton className="w-20 h-4" />)
-            .catch(renderError)
-            .map((clients) => (
-              <ClientSwitcher
-                clients={clients}
-                activeClient={currentClientId}
-                onClientSwitch={services.locationService.changeCurrentClientId}
-              />
-            )),
-        )}
         {maybe.map(currentWorkspaceId, (currentWorkspaceId) =>
           rd
             .journey(workspaces)
@@ -202,6 +189,19 @@ export function AppSidebar({
                 onWorkspaceSwitch={
                   services.locationService.changeCurrentWorkspaceId
                 }
+              />
+            )),
+        )}
+        {maybe.map(currentClientId, (currentClientId) =>
+          rd
+            .journey(clients)
+            .wait(<Skeleton className="w-20 h-4" />)
+            .catch(renderError)
+            .map((clients) => (
+              <ClientSwitcher
+                clients={clients}
+                activeClient={currentClientId}
+                onClientSwitch={services.locationService.changeCurrentClientId}
               />
             )),
         )}

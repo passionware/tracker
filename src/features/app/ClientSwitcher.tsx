@@ -19,9 +19,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
-import { ChevronsUpDown, Plus } from "lucide-react";
+import {
+  ClientSpec,
+  routingUtils,
+} from "@/services/front/RoutingService/RoutingService.ts";
+import { ChevronsUpDown, Plus, Users } from "lucide-react";
 
 export type ClientSwitcherProps = {
   clients: Client[];
@@ -40,7 +44,11 @@ export function ClientSwitcher({
     console.error("No clients found");
   }
 
-  const activeItem = clients.find((client) => client.id === activeClient);
+  const activeItem = routingUtils.client.isAll(activeClient)
+    ? activeClient
+    : clients.find((client) => client.id === activeClient);
+  const allClasses =
+    "bg-gradient-to-tl from-pink-500 to-amber-300 text-white rounded-none";
 
   return (
     <SidebarMenu>
@@ -49,30 +57,59 @@ export function ClientSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="rounded-xl py-7 border border-sky-900/10 bg-gradient-to-tl from-rose-300/5 to-blue-500/5 outline-none focus-visible:ring-2 focus:ring-rose-500/20"
             >
               {activeItem ? (
-                <>
-                  <Avatar asChild>
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                      {activeItem.avatarUrl && (
-                        <AvatarImage
-                          src={activeItem.avatarUrl}
-                          alt={activeItem.name}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {getInitials(activeItem.name)}
-                      </AvatarFallback>
+                routingUtils.client.isAll(activeItem) ? (
+                  <>
+                    <Avatar asChild>
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                        <AvatarFallback
+                          className={cn(
+                            "rounded-none text-white bg-gradient-to-tl",
+                            allClasses,
+                          )}
+                        >
+                          <Users />
+                        </AvatarFallback>
+                      </div>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        All clients
+                      </span>
                     </div>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {activeItem.name}
-                    </span>
-                    {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
-                  </div>
-                </>
+                  </>
+                ) : (
+                  <>
+                    <Avatar
+                      asChild
+                      key={
+                        activeItem.avatarUrl /* Remount Avatar if conditional rendering issues occur */
+                      }
+                    >
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                        {activeItem.avatarUrl && (
+                          <AvatarImage
+                            src={activeItem.avatarUrl}
+                            alt={activeItem.name}
+                          />
+                        )}
+                        <AvatarFallback className="rounded-none bg-slate-600">
+                          {getInitials(activeItem.name)}
+                        </AvatarFallback>
+                      </div>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="text-slate-500 text-xs truncate font-light">
+                        Client
+                      </span>
+                      <span className="truncate font-semibold">
+                        {activeItem.name}
+                      </span>
+                    </div>
+                  </>
+                )
               ) : (
                 "Select a client"
               )}
@@ -80,11 +117,26 @@ export function ClientSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="min-w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => onClientSwitch(routingUtils.client.ofAll())}
+            >
+              <Avatar asChild className="size-6">
+                <div className="flex size-4 items-center justify-center rounded-sm border border-slate-800">
+                  <AvatarFallback className={cn("text-sm", allClasses)}>
+                    <Users />
+                  </AvatarFallback>
+                </div>
+              </Avatar>
+              All clients
+              <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
+            </DropdownMenuItem>
+
             <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
               Clients
             </DropdownMenuLabel>
@@ -98,7 +150,7 @@ export function ClientSwitcher({
                   className="size-4"
                   asChild
                   key={
-                    client.avatarUrl /* something wrong happens to Avatar if we conditionally render AvatarImage, hence key used to force remount */
+                    client.avatarUrl /* Remount Avatar if conditional rendering issues occur */
                   }
                 >
                   <div className="flex size-6 items-center justify-center rounded-sm border">
