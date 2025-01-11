@@ -25,7 +25,7 @@ export function Dashboard(props: DashboardProps) {
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
-        <BreadcrumbPage>Client Invoices</BreadcrumbPage>,
+        <BreadcrumbPage>Dashboard</BreadcrumbPage>,
       ]}
     >
       <div>Dashboard</div>
