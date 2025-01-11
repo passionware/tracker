@@ -2,6 +2,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import {
   routingUtils,
   WithRoutingService,
+  WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { LocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
@@ -10,6 +11,37 @@ import { maybe } from "@passionware/monads";
 export function createLocationService(
   config: WithServices<[WithRoutingService, WithNavigationService]>,
 ): LocationService {
+  function tryPersistCurrentRoute(
+    newWorkspaceId: WorkspaceSpec,
+    newClientId: WorkspaceSpec,
+  ) {
+    const { routingService, navigationService } = config.services;
+    const routing = routingService.forWorkspace().forClient();
+
+    const routesToKeep = [
+      "reports",
+      "charges",
+      "costs",
+      "root",
+    ] satisfies (keyof typeof routing)[];
+
+    for (const route of routesToKeep) {
+      if (navigationService.match(routing[route]())) {
+        // we are in the route we want to keep
+        navigationService.navigate(
+          routingService
+            .forWorkspace(newWorkspaceId)
+            .forClient(newClientId)
+            [route](),
+        );
+        return;
+      }
+    }
+    navigationService.navigate(
+      routingService.forWorkspace(newWorkspaceId).forClient(newClientId).root(),
+    );
+  }
+
   const api: LocationService = {
     useCurrentClientId: () => {
       const match = config.services.navigationService.useMatch(
@@ -43,22 +75,15 @@ export function createLocationService(
       );
     },
     changeCurrentClientId: (id) => {
-      config.services.navigationService.navigate(
-        config.services.routingService
-          .forWorkspace(
-            api.getCurrentWorkspaceId() ?? routingUtils.workspace.ofAll(),
-          )
-          .forClient(id)
-          .root(),
+      tryPersistCurrentRoute(
+        api.getCurrentWorkspaceId() ?? routingUtils.workspace.ofAll(),
+        id,
       );
     },
     changeCurrentWorkspaceId: (id) => {
-      const currentClientId = api.getCurrentClientId();
-      config.services.navigationService.navigate(
-        config.services.routingService
-          .forWorkspace(id)
-          .forClient(currentClientId ?? routingUtils.client.ofAll())
-          .root(),
+      tryPersistCurrentRoute(
+        id,
+        api.getCurrentClientId() ?? routingUtils.client.ofAll(),
       );
     },
   };
