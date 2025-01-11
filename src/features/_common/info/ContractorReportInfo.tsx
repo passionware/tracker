@@ -20,6 +20,7 @@ import {
   ContractorReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
@@ -37,7 +38,7 @@ export interface ContractorReportInfoProps
     ]
   > {
   report: ContractorReportViewEntry;
-  clientId: number;
+  clientId: ClientSpec;
 }
 
 export function ContractorReportInfo({

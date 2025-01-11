@@ -1,4 +1,3 @@
-import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -19,6 +18,7 @@ import {
   ClientBillingViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
@@ -37,7 +37,7 @@ export interface ChargeInfoProps
     ]
   > {
   billing: ClientBillingViewEntry;
-  clientId: Client["id"];
+  clientId: ClientSpec;
 }
 export function ChargeInfo({ billing, services, clientId }: ChargeInfoProps) {
   const linkingState = promiseState.useRemoteData();
@@ -50,86 +50,86 @@ export function ChargeInfo({ billing, services, clientId }: ChargeInfoProps) {
         fromAmount={billing.remainingAmount}
         toAmount={billing.matchedAmount}
       />
-        {billing.remainingAmount.amount > 0 && (
-            <div className="flex gap-2 flex-row self-end">
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="default" size="xs">
-                            {rd
-                                .fullJourney(linkingState.state)
-                                .initially(<Link2 />)
-                                .wait(<Loader2 />)
-                                .catch(renderSmallError("w-6 h-4"))
-                                .map(() => (
-                                    <Check />
-                                ))}
-                            Find & link report
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-fit">
-                        <InlineContractorReportSearch
-                            maxAmount={billing.remainingAmount.amount}
-                            services={services}
-                            onSelect={(report) =>
-                                linkingState.track(
-                                    services.mutationService.linkReportAndBilling({
-                                        type: "reconcile",
-                                        clientBillingId: billing.id,
-                                        contractorReportId: report.contractorReportId,
-                                        linkAmount: report.value,
-                                    }),
-                                )
-                            }
-                            query={contractorReportQueryUtils.setFilter(
-                                contractorReportQueryUtils.setFilter(
-                                    contractorReportQueryUtils.ofDefault(),
-                                    "remainingAmount",
-                                    { operator: "greaterThan", value: 0 },
-                                ),
-                                "clientId",
-                                {
-                                    operator: "oneOf",
-                                    value: [clientId],
-                                },
-                            )}
-                        />
-                    </PopoverContent>
-                </Popover>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="warning" size="xs">
-                            {rd
-                                .fullJourney(clarifyState.state)
-                                .initially(<Link2 />)
-                                .wait(<Loader2 />)
-                                .catch(renderSmallError("w-6 h-4"))
-                                .map(() => (
-                                    <Check />
-                                ))}
-                            Clarify
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                        className="w-fit max-w-md"
-                        align="center"
-                        side="right"
-                    >
-                        <InlineBillingClarify
-                            maxAmount={billing.remainingAmount.amount}
-                            services={services}
-                            onSelect={(data) =>
-                                clarifyState.track(
-                                    services.mutationService.linkReportAndBilling(data),
-                                )
-                            }
-                            context={{ clientBillingId: billing.id }}
-                        />
-                    </PopoverContent>
-                </Popover>
-            </div>
-        )}
+      {billing.remainingAmount.amount > 0 && (
+        <div className="flex gap-2 flex-row self-end">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="default" size="xs">
+                {rd
+                  .fullJourney(linkingState.state)
+                  .initially(<Link2 />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-4"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Find & link report
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-fit">
+              <InlineContractorReportSearch
+                maxAmount={billing.remainingAmount.amount}
+                services={services}
+                onSelect={(report) =>
+                  linkingState.track(
+                    services.mutationService.linkReportAndBilling({
+                      type: "reconcile",
+                      clientBillingId: billing.id,
+                      contractorReportId: report.contractorReportId,
+                      linkAmount: report.value,
+                    }),
+                  )
+                }
+                query={contractorReportQueryUtils.setFilter(
+                  contractorReportQueryUtils.setFilter(
+                    contractorReportQueryUtils.ofDefault(),
+                    "remainingAmount",
+                    { operator: "greaterThan", value: 0 },
+                  ),
+                  "clientId",
+                  {
+                    operator: "oneOf",
+                    value: [clientId],
+                  },
+                )}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="warning" size="xs">
+                {rd
+                  .fullJourney(clarifyState.state)
+                  .initially(<Link2 />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-4"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Clarify
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-fit max-w-md"
+              align="center"
+              side="right"
+            >
+              <InlineBillingClarify
+                maxAmount={billing.remainingAmount.amount}
+                services={services}
+                onSelect={(data) =>
+                  clarifyState.track(
+                    services.mutationService.linkReportAndBilling(data),
+                  )
+                }
+                context={{ clientBillingId: billing.id }}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
-        <Separator className="my-2" />
+      <Separator className="my-2" />
       <div className="text-sm text-gray-700 font-medium my-1 text-center">
         Linked Contractor Reports
       </div>

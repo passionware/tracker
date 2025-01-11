@@ -1,5 +1,8 @@
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  routingUtils,
+  WithRoutingService,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { LocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { maybe } from "@passionware/monads";
@@ -7,47 +10,48 @@ import { maybe } from "@passionware/monads";
 export function createLocationService(
   config: WithServices<[WithRoutingService, WithNavigationService]>,
 ): LocationService {
-  return {
+  const api: LocationService = {
     useCurrentClientId: () => {
       const match = config.services.navigationService.useMatch(
-        config.services.routingService.forClient().root() + "/*",
+        config.services.routingService.forWorkspace().forClient().root() + "/*",
       );
-      if (!match) {
-        return null;
-      }
-      return maybe.map(match.params.clientId, (clientId) => {
-        const parsed = parseInt(clientId);
-        if (isNaN(parsed)) {
-          throw new Error("Invalid client ID: " + clientId);
-        }
-        return parsed;
-      });
+
+      return maybe.map(match?.params.clientId, routingUtils.client.fromString);
     },
     getCurrentClientId: () => {
       const match = config.services.navigationService.match(
-        config.services.routingService.forClient().root() + "/*",
+        config.services.routingService.forWorkspace().forClient().root() + "/*",
       );
-      if (!match) {
-        return null;
-      }
-      return maybe.map(match.params.clientId, (clientId) => {
-        const parsed = parseInt(clientId);
-        if (isNaN(parsed)) {
-          throw new Error("Invalid client ID: " + clientId);
-        }
-        return parsed;
-      });
+      return maybe.map(match?.params.clientId, routingUtils.client.fromString);
     },
     useCurrentWorkspaceId: () => {
-      return 1; //todo - routing
+      const match = config.services.navigationService.useMatch(
+        config.services.routingService.forWorkspace().root() + "/*",
+      );
+      return maybe.map(
+        match?.params.workspaceId,
+        routingUtils.workspace.fromString,
+      );
     },
     getCurrentWorkspaceId: () => {
-      return 1; //todo - routing
+      const match = config.services.navigationService.match(
+        config.services.routingService.forWorkspace().root() + "/*",
+      );
+      return maybe.map(
+        match?.params.workspaceId,
+        routingUtils.workspace.fromString,
+      );
     },
     changeCurrentClientId: (id) => {
       config.services.navigationService.navigate(
-        config.services.routingService.forClient(id).root(),
+        config.services.routingService
+          .forWorkspace(
+            api.getCurrentWorkspaceId() ?? routingUtils.workspace.ofAll(),
+          )
+          .forClient(id)
+          .root(),
       );
     },
   };
+  return api;
 }

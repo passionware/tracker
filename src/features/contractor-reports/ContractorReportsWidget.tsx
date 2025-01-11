@@ -1,4 +1,3 @@
-import { Client } from "@/api/clients/clients.api.ts";
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -35,6 +34,10 @@ import { NewContractorReportWidget } from "@/features/contractor-reports/NewCont
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import {
+  ClientSpec,
+  routingUtils,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -48,7 +51,7 @@ import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function ContractorReportsWidget(
-  props: { clientId: Client["id"] } & WithServices<
+  props: { clientId: ClientSpec } & WithServices<
     [
       WithReportDisplayService,
       WithFormatService,
@@ -133,7 +136,10 @@ export function ContractorReportsWidget(
                       ),
                     )}
                     defaultPeriodEnd={new Date()}
-                    defaultClientId={props.clientId}
+                    defaultClientId={routingUtils.client.switchAll(
+                      props.clientId,
+                      undefined,
+                    )}
                     services={props.services}
                     onSubmit={(data) =>
                       addReportState.track(

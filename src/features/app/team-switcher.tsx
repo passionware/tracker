@@ -20,6 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
 export function TeamSwitcher({
@@ -28,8 +29,8 @@ export function TeamSwitcher({
   activeClient,
 }: {
   clients: Client[];
-  activeClient: Client["id"];
-  onClientSwitch: (client: Client["id"]) => void;
+  activeClient: ClientSpec;
+  onClientSwitch: (client: ClientSpec) => void;
 }) {
   const { isMobile } = useSidebar();
 

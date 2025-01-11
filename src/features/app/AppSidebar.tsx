@@ -36,9 +36,12 @@ function useData(
   services: MergeServices<[WithLocationService, WithRoutingService]>,
 ) {
   const currentClientId = services.locationService.useCurrentClientId();
+  const currentWorkspaceId = services.locationService.useCurrentWorkspaceId();
 
   return useMemo(() => {
-    const routing = services.routingService.forClient(currentClientId);
+    const routing = services.routingService
+      .forWorkspace(currentWorkspaceId)
+      .forClient(currentClientId);
     return {
       navMain: [
         {
@@ -141,7 +144,7 @@ function useData(
         },
       ],
     };
-  }, [currentClientId]);
+  }, [currentClientId, currentWorkspaceId]);
 }
 
 export function AppSidebar({

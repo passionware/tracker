@@ -8,10 +8,10 @@ import {
   WithSorter,
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 
 export interface ContractorReport {
   id: number;
@@ -29,7 +29,7 @@ export interface ContractorReport {
 }
 
 export type ContractorReportQuery = WithFilters<{
-  clientId: Nullable<EnumFilter<Client["id"]>>;
+  clientId: Nullable<EnumFilter<ClientSpec>>;
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Contractor["id"]>>;
 }> &

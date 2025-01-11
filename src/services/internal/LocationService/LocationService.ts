@@ -1,16 +1,22 @@
-import { Client } from "@/api/clients/clients.api.ts";
-import { Workspace } from "@/api/workspace/workspace.api.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { Maybe } from "@passionware/monads";
 
 /**
  * LocationService is responsible for managing the current client id and other location-related state.
  */
 export interface LocationService {
-  useCurrentClientId: () => Maybe<Client["id"]>;
-  useCurrentWorkspaceId: () => Maybe<Workspace["id"]>;
-  getCurrentClientId: () => Maybe<Client["id"]>;
-  getCurrentWorkspaceId: () => Maybe<Workspace["id"]>;
-  changeCurrentClientId: (id: Client["id"]) => void;
+  // maybe - we can be in the route which neither specific client nor all clients
+  useCurrentClientId: () => Maybe<ClientSpec>;
+  // maybe - we can be in the route which neither specific workspace nor all workspaces
+  useCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
+  // maybe - we can be in the route which neither specific client nor all clients
+  getCurrentClientId: () => Maybe<ClientSpec>;
+  // maybe - we can be in the route which neither specific workspace nor all workspaces
+  getCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
+  changeCurrentClientId: (id: ClientSpec) => void;
 }
 export interface WithLocationService {
   locationService: LocationService;

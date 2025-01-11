@@ -1,5 +1,4 @@
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
-import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
@@ -16,6 +15,7 @@ import { ContractorPicker } from "@/features/_common/inline-search/ContractorPic
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { rd } from "@passionware/monads";
@@ -24,7 +24,7 @@ export interface CostsWidgetProps
   extends WithServices<
     [WithCostService, WithFormatService, WithContractorService]
   > {
-  workspaceId: Workspace["id"];
+  workspaceId: WorkspaceSpec;
 }
 
 export function CostsWidget(props: CostsWidgetProps) {

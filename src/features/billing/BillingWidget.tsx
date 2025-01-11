@@ -1,5 +1,4 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
-import { Client } from "@/api/clients/clients.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import {
@@ -26,13 +25,14 @@ import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 
 export function BillingWidget(
-  props: { clientId: Client["id"] } & WithServices<
+  props: { clientId: ClientSpec } & WithServices<
     [
       WithReportDisplayService,
       WithFormatService,

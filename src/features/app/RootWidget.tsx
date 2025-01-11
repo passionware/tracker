@@ -9,7 +9,11 @@ import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WithRoutingService,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -25,16 +29,20 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 function ClientIdResolver(
   props: WithServices<[WithLocationService]> & {
-    children: (clientId: number) => ReactNode;
+    children: (clientId: ClientSpec, workspaceId: WorkspaceSpec) => ReactNode;
   },
 ) {
   const clientId = props.services.locationService.useCurrentClientId();
-  return props.children(maybe.getOrThrow(clientId, "No client ID"));
+  const workspaceId = props.services.locationService.useCurrentWorkspaceId();
+  return props.children(
+    maybe.getOrThrow(clientId, "No client ID"),
+    maybe.getOrThrow(workspaceId, "No workspace ID"),
+  );
 }
 
 function WorkspaceIdResolver(
   props: WithServices<[WithLocationService]> & {
-    children: (workspaceId: number) => ReactNode;
+    children: (workspaceId: WorkspaceSpec) => ReactNode;
   },
 ) {
   const workspaceId = props.services.locationService.useCurrentWorkspaceId();
@@ -73,19 +81,25 @@ export function RootWidget(
       />
       <Route path="/login" element={<LoginPage services={props.services} />} />
       <Route
-        path={props.services.routingService.forClient().root()}
+        path={props.services.routingService.forWorkspace().forClient().root()}
         element={
           <ClientIdResolver services={props.services}>
-            {(clientId) => (
+            {(clientId, workspaceId) => (
               <Navigate
-                to={props.services.routingService.forClient(clientId).reports()}
+                to={props.services.routingService
+                  .forWorkspace(workspaceId)
+                  .forClient(clientId)
+                  .reports()}
               />
             )}
           </ClientIdResolver>
         }
       />
       <Route
-        path={props.services.routingService.forClient().reports()}
+        path={props.services.routingService
+          .forWorkspace()
+          .forClient()
+          .reports()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
@@ -102,7 +116,10 @@ export function RootWidget(
         }
       />
       <Route
-        path={props.services.routingService.forClient().charges()}
+        path={props.services.routingService
+          .forWorkspace()
+          .forClient()
+          .charges()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
@@ -119,7 +136,7 @@ export function RootWidget(
         }
       />
       <Route
-        path={props.services.routingService.forClient().costs()}
+        path={props.services.routingService.forWorkspace().forClient().costs()}
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
