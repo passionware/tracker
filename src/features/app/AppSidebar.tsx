@@ -17,7 +17,10 @@ import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  routingUtils,
+  WithRoutingService,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
@@ -45,8 +48,8 @@ function useData(
 
   return useMemo(() => {
     const routing = services.routingService
-      .forWorkspace(currentWorkspaceId)
-      .forClient(currentClientId);
+      .forWorkspace(currentWorkspaceId ?? routingUtils.workspace.ofAll())
+      .forClient(currentClientId ?? routingUtils.client.ofAll());
     return {
       navMain: [
         {
@@ -171,8 +174,12 @@ export function AppSidebar({
   const workspaces = services.workspaceService.useWorkspaces(
     workspaceQueryUtils.ofEmpty(),
   );
-  const currentClientId = services.locationService.useCurrentClientId();
-  const currentWorkspaceId = services.locationService.useCurrentWorkspaceId();
+  const currentClientId =
+    services.locationService.useCurrentClientId() ??
+    routingUtils.client.ofAll();
+  const currentWorkspaceId =
+    services.locationService.useCurrentWorkspaceId() ??
+    routingUtils.workspace.ofAll();
   const data = useData(services);
   return (
     <Sidebar collapsible="icon" {...props}>
