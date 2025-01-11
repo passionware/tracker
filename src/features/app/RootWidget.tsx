@@ -5,6 +5,7 @@ import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
+import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -85,7 +86,15 @@ export function RootWidget(
         element={
           <ProtectedRoute services={props.services}>
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              "Welcome to client dashboard"
+              <ClientIdResolver services={props.services}>
+                {(clientId, workspaceId) => (
+                  <Dashboard
+                    clientId={clientId}
+                    workspaceId={workspaceId}
+                    services={props.services}
+                  />
+                )}
+              </ClientIdResolver>
             </Layout>
           </ProtectedRoute>
         }
