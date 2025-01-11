@@ -23,6 +23,23 @@ export function createClientBillingApi(
         )
       )
     `);
+      if (query.filters.workspaceId) {
+        switch (query.filters.workspaceId.operator) {
+          case "oneOf":
+            request = request.in(
+              "workspace_id",
+              query.filters.workspaceId.value,
+            );
+            break;
+          case "matchNone":
+            request = request.not(
+              "workspace_id",
+              "in",
+              query.filters.workspaceId.value,
+            );
+            break;
+        }
+      }
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {
           case "oneOf":

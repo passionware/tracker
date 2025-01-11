@@ -48,7 +48,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
-import { partialRight } from "lodash";
+import { chain, partialRight } from "lodash";
 import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -70,15 +70,20 @@ export function ContractorReportsWidget(
     Maybe<Contractor["id"]>
   >(maybe.ofAbsent());
   const reports = props.services.reportDisplayService.useReportView(
-    contractorReportQueryUtils.setFilter(
-      contractorReportQueryUtils.setFilter(
-        contractorReportQueryUtils.ofDefault(),
-        "clientId",
-        { operator: "oneOf", value: [props.clientId] },
-      ),
-      "contractorId",
-      maybe.map(contractorFilter, (x) => ({ operator: "oneOf", value: [x] })),
-    ),
+    chain(
+      contractorReportQueryUtils.ofDefault(props.workspaceId, props.clientId),
+    )
+      .thru((x) =>
+        contractorReportQueryUtils.setFilter(
+          x,
+          "contractorId",
+          maybe.map(contractorFilter, (x) => ({
+            operator: "oneOf",
+            value: [x],
+          })),
+        ),
+      )
+      .value(),
   );
 
   const addReportState = promiseState.useRemoteData();
@@ -313,6 +318,7 @@ export function ContractorReportsWidget(
                         <ContractorReportInfo
                           report={report}
                           clientId={props.clientId}
+                          workspaceId={props.workspaceId}
                           services={props.services}
                         />
                       </PopoverContent>

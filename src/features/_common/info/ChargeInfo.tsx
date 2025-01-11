@@ -18,13 +18,16 @@ import {
   ClientBillingViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Slot } from "@radix-ui/react-slot";
-import { partial } from "lodash";
+import { chain, partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface ChargeInfoProps
@@ -38,8 +41,14 @@ export interface ChargeInfoProps
   > {
   billing: ClientBillingViewEntry;
   clientId: ClientSpec;
+  workspaceId: WorkspaceSpec;
 }
-export function ChargeInfo({ billing, services, clientId }: ChargeInfoProps) {
+export function ChargeInfo({
+  billing,
+  services,
+  clientId,
+  workspaceId,
+}: ChargeInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
 
@@ -80,18 +89,16 @@ export function ChargeInfo({ billing, services, clientId }: ChargeInfoProps) {
                     }),
                   )
                 }
-                query={contractorReportQueryUtils.setFilter(
-                  contractorReportQueryUtils.setFilter(
-                    contractorReportQueryUtils.ofDefault(),
-                    "remainingAmount",
-                    { operator: "greaterThan", value: 0 },
-                  ),
-                  "clientId",
-                  {
-                    operator: "oneOf",
-                    value: [clientId],
-                  },
-                )}
+                query={chain(
+                  contractorReportQueryUtils.ofDefault(clientId, workspaceId),
+                )
+                  .thru((x) =>
+                    contractorReportQueryUtils.setFilter(x, "remainingAmount", {
+                      operator: "greaterThan",
+                      value: 0,
+                    }),
+                  )
+                  .value()}
               />
             </PopoverContent>
           </Popover>

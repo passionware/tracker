@@ -34,7 +34,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 
 export function BillingWidget(
   props: { clientId: ClientSpec; workspaceId: WorkspaceSpec } & WithServices<
@@ -49,14 +49,7 @@ export function BillingWidget(
   >,
 ) {
   const billings = props.services.reportDisplayService.useBillingView(
-    clientBillingQueryUtils.setFilter(
-      clientBillingQueryUtils.ofDefault(),
-      "clientId",
-      {
-        operator: "oneOf",
-        value: [props.clientId],
-      },
-    ),
+    clientBillingQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
   return (
@@ -95,8 +88,10 @@ export function BillingWidget(
                         {item.label}
                       </dt>
                       <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-                        {props.services.formatService.financial.currency(
+                        {maybe.mapOrElse(
                           item.value,
+                          props.services.formatService.financial.currency,
+                          "-",
                         )}
                       </dd>
                     </div>
@@ -192,6 +187,7 @@ export function BillingWidget(
                           services={props.services}
                           billing={billing}
                           clientId={props.clientId}
+                          workspaceId={props.workspaceId}
                         />
                       </PopoverContent>
                     </Popover>

@@ -98,34 +98,46 @@ export function createReportDisplayService(
           (entries) => ({
             entries,
             total: {
-              netAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.netAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.netAmount.currency,
-              },
-              grossAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.grossAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.grossAmount.currency,
-              },
-              matchedAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.matchedAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.matchedAmount.currency,
-              },
-              remainingAmount: {
-                amount: entries.reduce(
-                  (acc, entry) => acc + entry.remainingAmount.amount,
-                  0,
-                ),
-                currency: entries[0]?.remainingAmount.currency,
-              },
+              netAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.netAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.netAmount.currency,
+                    },
+              grossAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.grossAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.grossAmount.currency,
+                    },
+              matchedAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.matchedAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.matchedAmount.currency,
+                    },
+              remainingAmount:
+                entries.length === 0
+                  ? null
+                  : {
+                      amount: entries.reduce(
+                        (acc, entry) => acc + entry.remainingAmount.amount,
+                        0,
+                      ),
+                      currency: entries[0]?.remainingAmount.currency,
+                    },
             },
           }),
         ),

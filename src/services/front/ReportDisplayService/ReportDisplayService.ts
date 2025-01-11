@@ -56,10 +56,10 @@ export type ContractorReportLinkView = {
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];
   total: {
-    netAmount: CurrencyValue;
-    grossAmount: CurrencyValue;
-    matchedAmount: CurrencyValue;
-    remainingAmount: CurrencyValue;
+    netAmount: Maybe<CurrencyValue>;
+    grossAmount: Maybe<CurrencyValue>;
+    matchedAmount: Maybe<CurrencyValue>;
+    remainingAmount: Maybe<CurrencyValue>;
   };
 }
 

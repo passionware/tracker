@@ -15,6 +15,11 @@ export const routingUtils = {
   workspace: {
     isAll: (value: unknown): value is All => value === all,
     ofAll: (): All => all,
+    mapSpecificOrElse: <T>(
+      value: WorkspaceSpec,
+      map: (value: Workspace["id"]) => T,
+      orElse: T,
+    ) => (value === all ? orElse : map(value)),
     switchAll: <T>(value: WorkspaceSpec, switchTo: T) =>
       value === all ? switchTo : value,
     fromString: (value: WorkspacePathSegment): WorkspaceSpec => {
@@ -36,6 +41,11 @@ export const routingUtils = {
   client: {
     isAll: (value: unknown): value is All => value === all,
     ofAll: (): All => all,
+    mapSpecificOrElse: <T>(
+      value: ClientSpec,
+      map: (value: Client["id"]) => T,
+      orElse: T,
+    ) => (value === all ? orElse : map(value)),
     switchAll: <T>(value: ClientSpec, switchTo: T) =>
       value === all ? switchTo : value,
     fromString: (value: ClientPathSegment): ClientSpec => {

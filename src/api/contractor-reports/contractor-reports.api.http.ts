@@ -58,6 +58,23 @@ export function createContractorReportsApi(
             break;
         }
       }
+      if (query.filters.workspaceId) {
+        switch (query.filters.workspaceId.operator) {
+          case "oneOf":
+            request = request.in(
+              "workspace_id",
+              query.filters.workspaceId.value,
+            );
+            break;
+          case "matchNone":
+            request = request.not(
+              "workspace_id",
+              "in",
+              query.filters.workspaceId.value,
+            );
+            break;
+        }
+      }
       if (query.sort) {
         request = request.order(snakeCase(query.sort.field), {
           ascending: query.sort.order === "asc",

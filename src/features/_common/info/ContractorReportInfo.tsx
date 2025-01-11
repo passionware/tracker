@@ -20,7 +20,10 @@ import {
   ContractorReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
@@ -39,12 +42,14 @@ export interface ContractorReportInfoProps
   > {
   report: ContractorReportViewEntry;
   clientId: ClientSpec;
+  workspaceId: WorkspaceSpec;
 }
 
 export function ContractorReportInfo({
   services,
   report,
   clientId,
+  workspaceId,
 }: ContractorReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
@@ -87,16 +92,9 @@ export function ContractorReportInfo({
                   )
                 }
                 query={clientBillingQueryUtils.setFilter(
-                  clientBillingQueryUtils.setFilter(
-                    clientBillingQueryUtils.ofDefault(),
-                    "remainingAmount",
-                    { operator: "greaterThan", value: 0 },
-                  ),
-                  "clientId",
-                  {
-                    operator: "oneOf",
-                    value: [clientId],
-                  },
+                  clientBillingQueryUtils.ofDefault(workspaceId, clientId),
+                  "remainingAmount",
+                  { operator: "greaterThan", value: 0 },
                 )}
               />
             </PopoverContent>

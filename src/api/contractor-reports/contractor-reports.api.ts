@@ -8,10 +8,16 @@ import {
   WithSorter,
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
+import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  routingUtils,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 
 export interface ContractorReport {
   id: number;
@@ -29,7 +35,8 @@ export interface ContractorReport {
 }
 
 export type ContractorReportQuery = WithFilters<{
-  clientId: Nullable<EnumFilter<ClientSpec>>;
+  clientId: Nullable<EnumFilter<Client["id"]>>;
+  workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Contractor["id"]>>;
 }> &
@@ -47,8 +54,30 @@ export const contractorReportQueryUtils = {
   ...withFiltersUtils<ContractorReportQuery>(),
   ...withPaginationUtils<ContractorReportQuery>(),
   ...withSorterUtils<ContractorReportQuery>(),
-  ofDefault: (): ContractorReportQuery => ({
-    filters: { clientId: null, remainingAmount: null, contractorId: null },
+  ofDefault: (
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): ContractorReportQuery => ({
+    filters: {
+      workspaceId: routingUtils.workspace.mapSpecificOrElse(
+        workspaceId,
+        (x) => ({
+          operator: "oneOf",
+          value: [x],
+        }),
+        null,
+      ),
+      clientId: routingUtils.client.mapSpecificOrElse(
+        clientId,
+        (x) => ({
+          operator: "oneOf",
+          value: [x],
+        }),
+        null,
+      ),
+      remainingAmount: null,
+      contractorId: null,
+    },
     page: { page: 0, pageSize: 10 },
     sort: { field: "periodStart", order: "asc" },
   }),

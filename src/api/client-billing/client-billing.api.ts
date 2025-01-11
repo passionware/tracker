@@ -13,7 +13,11 @@ import { Client } from "@/api/clients/clients.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  routingUtils,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 
 export interface ClientBilling {
   id: number;
@@ -31,7 +35,8 @@ export interface ClientBilling {
 }
 
 export type ClientBillingQuery = WithFilters<{
-  clientId: Nullable<EnumFilter<ClientSpec>>;
+  clientId: Nullable<EnumFilter<Client["id"]>>;
+  workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
 }> &
   WithPagination &
@@ -41,8 +46,23 @@ export const clientBillingQueryUtils = {
   ...withFiltersUtils<ClientBillingQuery>(),
   ...withPaginationUtils<ClientBillingQuery>(),
   ...withSorterUtils<ClientBillingQuery>(),
-  ofDefault: (): ClientBillingQuery => ({
-    filters: { clientId: null, remainingAmount: null },
+  ofDefault: (
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): ClientBillingQuery => ({
+    filters: {
+      clientId: routingUtils.client.mapSpecificOrElse(
+        clientId,
+        (x) => ({ operator: "oneOf", value: [x] }),
+        null,
+      ),
+      workspaceId: routingUtils.workspace.mapSpecificOrElse(
+        workspaceId,
+        (x) => ({ operator: "oneOf", value: [x] }),
+        null,
+      ),
+      remainingAmount: null,
+    },
     page: { page: 0, pageSize: 10 },
     sort: { field: "invoiceDate", order: "asc" },
   }),
