@@ -94,7 +94,13 @@ export function ClientSwitcher({
                 onClick={() => onClientSwitch(client.id)}
                 className="gap-2 p-2"
               >
-                <Avatar className="size-4" asChild>
+                <Avatar
+                  className="size-4"
+                  asChild
+                  key={
+                    client.avatarUrl /* something wrong happens to Avatar if we conditionally render AvatarImage, hence key used to force remount */
+                  }
+                >
                   <div className="flex size-6 items-center justify-center rounded-sm border">
                     {client.avatarUrl && (
                       <AvatarImage src={client.avatarUrl} alt={client.name} />

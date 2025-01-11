@@ -20,8 +20,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
-import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
-import { ChevronsUpDown, Plus } from "lucide-react";
+import {
+  routingUtils,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
+import { ChevronsUpDown, Orbit, Plus } from "lucide-react";
 
 export type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
@@ -40,9 +43,9 @@ export function WorkspaceSwitcher({
     console.error("No workspaces found");
   }
 
-  const activeItem = workspaces.find(
-    (workspace) => workspace.id === activeWorkspace,
-  );
+  const activeItem = routingUtils.workspace.isAll(activeWorkspace)
+    ? activeWorkspace
+    : workspaces.find((workspace) => workspace.id === activeWorkspace);
 
   return (
     <SidebarMenu>
@@ -54,27 +57,50 @@ export function WorkspaceSwitcher({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               {activeItem ? (
-                <>
-                  <Avatar asChild>
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                      {activeItem.avatarUrl && (
-                        <AvatarImage
-                          src={activeItem.avatarUrl}
-                          alt={activeItem.name}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {getInitials(activeItem.name)}
-                      </AvatarFallback>
+                routingUtils.workspace.isAll(activeItem) ? (
+                  <>
+                    <Avatar asChild>
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                        <AvatarFallback className="rounded-none bg-amber-500 text-white">
+                          <Orbit />
+                        </AvatarFallback>
+                      </div>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        All workspaces
+                      </span>
+                      {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
                     </div>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {activeItem.name}
-                    </span>
-                    {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
-                  </div>
-                </>
+                  </>
+                ) : (
+                  <>
+                    <Avatar
+                      asChild
+                      key={
+                        activeItem.avatarUrl /* something wrong happens to Avatar if we conditionally render AvatarImage, hence key used to force remount */
+                      }
+                    >
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                        {activeItem.avatarUrl && (
+                          <AvatarImage
+                            src={activeItem.avatarUrl}
+                            alt={activeItem.name}
+                          />
+                        )}
+                        <AvatarFallback className="rounded-none bg-slate-600">
+                          {getInitials(activeItem.name)}
+                        </AvatarFallback>
+                      </div>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        {activeItem.name}
+                      </span>
+                      {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
+                    </div>
+                  </>
+                )
               ) : (
                 "Select workspace"
               )}
@@ -82,11 +108,26 @@ export function WorkspaceSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="min-w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => onWorkspaceSwitch(routingUtils.workspace.ofAll())}
+            >
+              <Avatar asChild className="size-6">
+                <div className="flex size-4 items-center justify-center rounded-sm border">
+                  <AvatarFallback className="rounded-sm bg-amber-500 text-white">
+                    <Orbit />
+                  </AvatarFallback>
+                </div>
+              </Avatar>
+              All workspaces
+              <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
+            </DropdownMenuItem>
+
             <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
               Workspaces
             </DropdownMenuLabel>
@@ -104,7 +145,7 @@ export function WorkspaceSwitcher({
                         alt={workspace.name}
                       />
                     )}
-                    <AvatarFallback>
+                    <AvatarFallback className="rounded-sm">
                       {getInitials(workspace.name)}
                     </AvatarFallback>
                   </div>
