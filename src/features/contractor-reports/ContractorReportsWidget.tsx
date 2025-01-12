@@ -210,9 +210,6 @@ export function ContractorReportsWidget(
         </TableCaption>
         <TableHeader>
           <TableRow className="*:whitespace-pre">
-            <TableHead rowSpan={2} className="">
-              Id
-            </TableHead>
             <TableHead rowSpan={2}>Issuer</TableHead>
             <TableHead rowSpan={2}>Contractor</TableHead>
             <TableHead rowSpan={2}>Client</TableHead>
@@ -252,28 +249,54 @@ export function ContractorReportsWidget(
                 <div className="space-y-4">
                   <PopoverHeader>Compensation status</PopoverHeader>
                   <div>
-                    <Badge variant="positive">Compensated</Badge> - The
-                    contractor was compensated for the entire work value
-                    reported by the contractor
+                    <Badge variant="positive">Paid</Badge> - The contractor was
+                    compensated for the entire work value reported by the
+                    contractor
                   </div>
                   <div>
-                    <Badge variant="warning">Partially compensated</Badge> - The
-                    contractor was compensated for some work, but there is still
-                    some work we should compensate the contractor for.
+                    <Badge variant="warning">Partially</Badge> - The contractor
+                    was compensated for some work, but there is still some work
+                    we should compensate the contractor for.
                   </div>
                   <div>
-                    <Badge variant="destructive">Uncompensated</Badge> - The
-                    contractor was not compensated for any work reported by the
-                    contractor yet.
+                    <Badge variant="destructive">Unpaid</Badge> - The contractor
+                    was not compensated for any work reported by the contractor
+                    yet.
                   </div>
                 </div>
               }
             >
               <TableHead rowSpan={2} className="whitespace-pre">
-                Compensation Status <Info className="inline size-4" />
+                Compensation <Info className="inline size-4" />
               </TableHead>
             </SimpleTooltip>
-            <TableHead rowSpan={2}>Full Compensation</TableHead>
+            <SimpleTooltip
+              title={
+                <div className="space-y-4">
+                  <PopoverHeader>Full compensation status</PopoverHeader>
+                  <div>
+                    <Badge variant="positive">Compensated</Badge> - The
+                    contractor was compensated for the entire work value
+                    reported by the contractor
+                  </div>
+                  <div>
+                    <Badge variant="warning">Partially</Badge> - The contractor
+                    was compensated for some work, but there is still some work
+                    we should compensate the contractor for.
+                  </div>
+                  <div>
+                    <Badge variant="destructive">Unpaid</Badge> - The contractor
+                    was not compensated for any work reported by the contractor
+                    yet.
+                  </div>
+                </div>
+              }
+            >
+              <TableHead rowSpan={2}>
+                Full Comp.&nbsp;
+                <Info className="inline size-4" />
+              </TableHead>
+            </SimpleTooltip>
             <TableHead
               rowSpan={2}
               className="text-center bg-sky-50 border-x border-slate-800/10"
@@ -297,12 +320,16 @@ export function ContractorReportsWidget(
           <TableRow className="*:whitespace-pre">
             <TableCell className="bg-rose-50">Amount</TableCell>
             <TableCell className="bg-rose-50">Remaining</TableCell>
-            <TableCell className="bg-lime-50 border-l border-slate-800/10">
-              Compensated
-            </TableCell>
-            <TableCell className="bg-lime-50 whitespace-normal w-min">
-              Remaining
-            </TableCell>
+            <SimpleTooltip title="How much the contractor was compensated for reported work">
+              <TableCell className="bg-lime-50 border-l border-slate-800/10">
+                Amount <Info className="inline size-4" />
+              </TableCell>
+            </SimpleTooltip>
+            <SimpleTooltip title="How much compensation is remaining to cover the reported amount, not only to the level of charging. Sometimes we charge the client less for the report, but still the contractor can be compensated, but from different money. In such case we link another cost with this report.">
+              <TableCell className="bg-lime-50 whitespace-normal w-min">
+                Remaining <Info className="inline size-4" />
+              </TableCell>
+            </SimpleTooltip>
             <SimpleTooltip title="How much to compensate against reported work value">
               <TableCell className="bg-lime-50 border-r border-slate-800/10">
                 vs reported <Info className="inline size-4" />
@@ -335,7 +362,6 @@ export function ContractorReportsWidget(
               }
               return reports.entries.map((report) => (
                 <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.id}</TableCell>
                   <TableCell>
                     <WorkspaceView
                       layout="avatar"
@@ -373,7 +399,7 @@ export function ContractorReportsWidget(
                           {
                             {
                               billed: "Billed",
-                              "partially-billed": "Partially billed",
+                              "partially-billed": "Partially",
                               uncovered: "Uncovered",
                               clarified: "Clarified",
                             }[report.status]
@@ -394,7 +420,8 @@ export function ContractorReportsWidget(
                     <Popover>
                       <PopoverTrigger>
                         <Badge
-                          tone="solid"
+                          tone="secondary"
+                          className="border border-black/10"
                           variant={
                             (
                               {
@@ -407,9 +434,9 @@ export function ContractorReportsWidget(
                         >
                           {
                             {
-                              compensated: "Compensated",
-                              "partially-compensated": "Partially compensated",
-                              uncompensated: "Uncompensated",
+                              compensated: "Paid",
+                              "partially-compensated": "Partially",
+                              uncompensated: "Unpaid",
                             }[report.compensationStatus]
                           }
                         </Badge>
@@ -441,8 +468,8 @@ export function ContractorReportsWidget(
                       {
                         {
                           compensated: "Compensated",
-                          "partially-compensated": "Partially compensated",
-                          uncompensated: "Uncompensated",
+                          "partially-compensated": "Partially",
+                          uncompensated: "Unpaid",
                         }[report.fullCompensationStatus]
                       }
                     </Badge>
