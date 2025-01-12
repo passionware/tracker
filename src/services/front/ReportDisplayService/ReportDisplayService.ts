@@ -15,10 +15,10 @@ import { Maybe, RemoteData } from "@passionware/monads";
 export interface ContractorReportView {
   entries: ContractorReportViewEntry[];
   total: {
-    netAmount: Maybe<CurrencyValue>;
-    reconciledAmount: Maybe<CurrencyValue>;
-    chargedAmount: Maybe<CurrencyValue>;
-    toChargeAmount: Maybe<CurrencyValue>;
+    netAmount: CurrencyValue[];
+    reconciledAmount: CurrencyValue[];
+    chargedAmount: CurrencyValue[];
+    toChargeAmount: CurrencyValue[];
   };
 }
 
@@ -57,10 +57,10 @@ export type ContractorReportLinkView = {
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];
   total: {
-    netAmount: Maybe<CurrencyValue>;
-    grossAmount: Maybe<CurrencyValue>;
-    matchedAmount: Maybe<CurrencyValue>;
-    remainingAmount: Maybe<CurrencyValue>;
+    netAmount: CurrencyValue[];
+    grossAmount: CurrencyValue[];
+    matchedAmount: CurrencyValue[];
+    remainingAmount: CurrencyValue[];
   };
 }
 

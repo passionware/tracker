@@ -29,6 +29,11 @@ import {
   renderError,
   renderSmallError,
 } from "@/features/_common/renderError.tsx";
+import {
+  Summary,
+  SummaryEntry,
+  SummaryEntryValue,
+} from "@/features/_common/Summary.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
@@ -182,25 +187,19 @@ export function ContractorReportsWidget(
                 <h3 className="my-3 text-base font-semibold text-gray-900">
                   Sumary
                 </h3>
-                <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-4">
+                <Summary>
                   {billingDetails.map((item) => (
-                    <div
-                      key={item.label}
-                      className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
-                    >
-                      <dt className="truncate text-sm font-medium text-gray-500">
-                        {item.label}
-                      </dt>
-                      <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-                        {maybe.mapOrElse(
-                          item.value,
-                          props.services.formatService.financial.currency,
-                          "-",
-                        )}
-                      </dd>
-                    </div>
+                    <SummaryEntry key={item.label} label={item.label}>
+                      {item.value.map((value, index) => (
+                        <SummaryEntryValue key={index}>
+                          {props.services.formatService.financial.currency(
+                            value,
+                          )}
+                        </SummaryEntryValue>
+                      ))}
+                    </SummaryEntry>
                   ))}
-                </dl>
+                </Summary>
               </div>
             );
           })}

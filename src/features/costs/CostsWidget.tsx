@@ -22,6 +22,11 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import {
+  Summary,
+  SummaryEntry,
+  SummaryEntryValue,
+} from "@/features/_common/Summary.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -73,6 +78,35 @@ export function CostsWidget(props: CostsWidgetProps) {
           <div className="mb-2 font-semibold text-gray-700">
             A list of all costs associated with the selected workspace.
           </div>
+          {rd.tryMap(costs, (view) => {
+            const billingDetails = [
+              { label: "Net total", value: view.total.netAmount },
+              // { label: "Charged gross", value: view.total.grossAmount },
+              { label: "Total matched", value: view.total.matchedAmount },
+              { label: "Total remaining", value: view.total.remainingAmount },
+            ];
+
+            return (
+              <div>
+                <h3 className="my-3 text-base font-semibold text-gray-900">
+                  Summary
+                </h3>
+                <Summary>
+                  {billingDetails.map((item) => (
+                    <SummaryEntry key={item.label} label={item.label}>
+                      {item.value.map((value, index) => (
+                        <SummaryEntryValue key={index}>
+                          {props.services.formatService.financial.currency(
+                            value,
+                          )}
+                        </SummaryEntryValue>
+                      ))}
+                    </SummaryEntry>
+                  ))}
+                </Summary>
+              </div>
+            );
+          })}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -83,7 +117,7 @@ export function CostsWidget(props: CostsWidgetProps) {
             <TableHead>Invoice Date</TableHead>
             <TableHead>Net Value</TableHead>
             <TableHead>Gross Value</TableHead>
-            <TableHead>status</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Matched</TableHead>
             <TableHead>Remaining</TableHead>
             <TableHead className="text-right">Description</TableHead>

@@ -21,6 +21,11 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import {
+  Summary,
+  SummaryEntry,
+  SummaryEntryValue,
+} from "@/features/_common/Summary.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -34,7 +39,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe, rd } from "@passionware/monads";
+import { rd } from "@passionware/monads";
 
 export function BillingWidget(
   props: { clientId: ClientSpec; workspaceId: WorkspaceSpec } & WithServices<
@@ -76,27 +81,21 @@ export function BillingWidget(
             return (
               <div>
                 <h3 className="my-3 text-base font-semibold text-gray-900">
-                  Sumary
+                  Summary
                 </h3>
-                <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-4">
+                <Summary>
                   {billingDetails.map((item) => (
-                    <div
-                      key={item.label}
-                      className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
-                    >
-                      <dt className="truncate text-sm font-medium text-gray-500">
-                        {item.label}
-                      </dt>
-                      <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-                        {maybe.mapOrElse(
-                          item.value,
-                          props.services.formatService.financial.currency,
-                          "-",
-                        )}
-                      </dd>
-                    </div>
+                    <SummaryEntry key={item.label} label={item.label}>
+                      {item.value.map((value, index) => (
+                        <SummaryEntryValue key={index}>
+                          {props.services.formatService.financial.currency(
+                            value,
+                          )}
+                        </SummaryEntryValue>
+                      ))}
+                    </SummaryEntry>
                   ))}
-                </dl>
+                </Summary>
               </div>
             );
           })}

@@ -17,7 +17,7 @@ import { WithContractorReportService } from "@/services/io/ContractorReportServi
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { groupBy } from "lodash";
+import { groupBy, sumBy } from "lodash";
 
 export function createReportDisplayService(
   config: WithServices<
@@ -36,58 +36,50 @@ export function createReportDisplayService(
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) =>
-        maybe.map(
-          data.reports.map((report) =>
-            calculateReportEntry(report, data.workspaces),
-          ),
-          (entries) => ({
-            entries,
-            total: {
-              netAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.netAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.netAmount.currency,
-                    },
-              reconciledAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.reconciledAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.reconciledAmount.currency,
-                    },
-              chargedAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.billedAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.billedAmount.currency,
-                    },
-              toChargeAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.remainingAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.remainingAmount.currency,
-                    },
-            },
-          }),
-        ),
-      );
+      return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) => {
+        const entries = data.reports.map((report) =>
+          calculateReportEntry(report, data.workspaces),
+        );
+        const groupedEntries = groupBy(
+          entries,
+          (cost) => cost.netAmount.currency,
+        );
+        return {
+          entries,
+          total: {
+            netAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(reports, (report) => report.netAmount.amount),
+                currency,
+              }),
+            ),
+            reconciledAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.reconciledAmount.amount,
+                ),
+                currency,
+              }),
+            ),
+            chargedAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(reports, (report) => report.billedAmount.amount),
+                currency,
+              }),
+            ),
+            toChargeAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.remainingAmount.amount,
+                ),
+                currency,
+              }),
+            ),
+          },
+        };
+      });
     },
     useBillingView: (query) => {
       const billings =
@@ -95,58 +87,47 @@ export function createReportDisplayService(
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return rd.useMemoMap(rd.combine({ billings, workspaces }), (data) =>
-        maybe.map(
-          data.billings.map((billing) =>
-            calculateBilling(billing, data.workspaces),
-          ),
-          (entries) => ({
-            entries,
-            total: {
-              netAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.netAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.netAmount.currency,
-                    },
-              grossAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.grossAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.grossAmount.currency,
-                    },
-              matchedAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.matchedAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.matchedAmount.currency,
-                    },
-              remainingAmount:
-                entries.length === 0
-                  ? null
-                  : {
-                      amount: entries.reduce(
-                        (acc, entry) => acc + entry.remainingAmount.amount,
-                        0,
-                      ),
-                      currency: entries[0]?.remainingAmount.currency,
-                    },
-            },
-          }),
-        ),
-      );
+      return rd.useMemoMap(rd.combine({ billings, workspaces }), (data) => {
+        const entries = data.billings.map((billing) =>
+          calculateBilling(billing, data.workspaces),
+        );
+        const groupedEntries = groupBy(
+          entries,
+          (cost) => cost.netAmount.currency,
+        );
+        return {
+          entries,
+          total: {
+            netAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(reports, (report) => report.netAmount.amount),
+                currency,
+              }),
+            ),
+            grossAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(reports, (report) => report.grossAmount.amount),
+                currency,
+              }),
+            ),
+            matchedAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(reports, (report) => report.matchedAmount.amount),
+                currency,
+              }),
+            ),
+            remainingAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.remainingAmount.amount,
+                ),
+                currency,
+              }),
+            ),
+          },
+        };
+      });
     },
     useCostView: (query) => {
       const costs = config.services.costService.useCosts(query);
@@ -157,36 +138,26 @@ export function createReportDisplayService(
         const entries = data.costs.map((cost) =>
           calculateCost(cost, data.workspaces),
         );
-
-        const costGroupsByCurrency = groupBy(
+        const groupedEntries = groupBy(
           entries,
           (cost) => cost.netAmount.currency,
         );
         const total = {
-          netAmount: Object.entries(costGroupsByCurrency).map(
+          netAmount: Object.entries(groupedEntries).map(
             ([currency, costs]) => ({
-              amount: costs.reduce(
-                (acc, cost) => acc + cost.netAmount.amount,
-                0,
-              ),
+              amount: sumBy(costs, (cost) => cost.netAmount.amount),
               currency,
             }),
           ),
-          matchedAmount: Object.entries(costGroupsByCurrency).map(
+          matchedAmount: Object.entries(groupedEntries).map(
             ([currency, costs]) => ({
-              amount: costs.reduce(
-                (acc, cost) => acc + cost.matchedAmount.amount,
-                0,
-              ),
+              amount: sumBy(costs, (cost) => cost.matchedAmount.amount),
               currency,
             }),
           ),
-          remainingAmount: Object.entries(costGroupsByCurrency).map(
+          remainingAmount: Object.entries(groupedEntries).map(
             ([currency, costs]) => ({
-              amount: costs.reduce(
-                (acc, cost) => acc + cost.remainingAmount.amount,
-                0,
-              ),
+              amount: sumBy(costs, (cost) => cost.remainingAmount.amount),
               currency,
             }),
           ),
@@ -215,19 +186,18 @@ function calculateReportEntry(
     );
   }
 
-  const sumOfLinkedAmounts =
-    report.linkBillingReport?.reduce(
-      (acc, link) => acc + (link.linkAmount ?? 0),
-      0,
-    ) ?? 0;
+  const sumOfLinkedAmounts = sumBy(
+    report.linkBillingReport,
+    (link) => link.linkAmount,
+  );
   const remainingAmount = report.netValue - sumOfLinkedAmounts;
   const hasAtLeastOneClarification = report.linkBillingReport?.some(
     (link) => link.linkType === "clarify",
   );
-  const sumOfBillingAmounts =
-    report.linkBillingReport
-      ?.filter((link) => link.linkType === "reconcile")
-      ?.reduce((acc, link) => acc + (link.linkAmount ?? 0), 0) ?? 0;
+  const sumOfBillingAmounts = sumBy(
+    report.linkBillingReport?.filter((link) => link.linkType === "reconcile"),
+    (link) => link.linkAmount,
+  );
 
   function getStatus() {
     if (remainingAmount === 0) {
@@ -304,11 +274,10 @@ function calculateBilling(
   billing: ClientBilling,
   workspaces: Workspace[],
 ): ClientBillingViewEntry {
-  const sumOfLinkedAmounts =
-    billing.linkBillingReport?.reduce(
-      (acc, link) => acc + (link.linkAmount ?? 0),
-      0,
-    ) ?? 0;
+  const sumOfLinkedAmounts = sumBy(
+    billing.linkBillingReport,
+    (link) => link.linkAmount,
+  );
   const remainingAmount = billing.totalNet - sumOfLinkedAmounts;
 
   function getStatus() {
@@ -386,8 +355,7 @@ function calculateBilling(
 }
 
 function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
-  const sumOfLinkedAmounts =
-    cost.linkReports?.reduce((acc, link) => acc + link.costAmount, 0) ?? 0;
+  const sumOfLinkedAmounts = sumBy(cost.linkReports, (link) => link.costAmount);
   const remainingAmount = cost.netValue - sumOfLinkedAmounts;
 
   function getStatus() {
