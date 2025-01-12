@@ -99,6 +99,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="workspaceId"
+          rules={{ required: "Workspace is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Workspace</FormLabel>
@@ -117,6 +118,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="clientId"
+          rules={{ required: "Client is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Client</FormLabel>
@@ -135,6 +137,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="contractorId"
+          rules={{ required: "Contractor is required" }}
           render={({ field }) => (
             <FormItem className="col-span-2">
               <FormLabel>Contractor</FormLabel>
@@ -153,6 +156,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="periodStart"
+          rules={{ required: "Start date is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Period start</FormLabel>
@@ -171,6 +175,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="periodEnd"
+          rules={{ required: "End date is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Period end</FormLabel>
@@ -189,6 +194,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="currency"
+          rules={{ required: "Currency is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Currency</FormLabel>
@@ -203,6 +209,7 @@ export function NewContractorReportWidget(
         <FormField
           control={form.control}
           name="netValue"
+          rules={{ required: "Net value is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Net value</FormLabel>

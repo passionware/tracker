@@ -35,6 +35,13 @@ export function createMutationService(
       });
       return response;
     },
+    createCost: async (cost) => {
+      const response = await api.createCost(cost);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating cost",
+      });
+      return response;
+    },
     deleteBillingReportLink: async (linkId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteBillingReportLink(linkId);

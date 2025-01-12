@@ -91,6 +91,29 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
       return { id: response.data[0].id };
     },
+    createCost: async (cost) => {
+      const response = await client
+        .from("costs")
+        .insert({
+          invoice_number: cost.invoiceNumber,
+          counterparty: cost.counterparty,
+          contractor_id: cost.contractorId,
+          description: cost.description,
+          invoice_date: cost.invoiceDate,
+          net_value: cost.netValue,
+          gross_value: cost.grossValue,
+          currency: cost.currency,
+          workspace_id: cost.workspaceId,
+        })
+        .select("id");
+      if (response.error) {
+        throw response.error;
+      }
+      if (response.data[0]?.id === undefined) {
+        throw new Error("No id returned");
+      }
+      return { id: response.data[0].id };
+    },
     deleteBillingReportLink: async (linkId) => {
       const response = await client
         .from("link_billing_report")

@@ -21,7 +21,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { Maybe, rd } from "@passionware/monads";
+import { maybe, Maybe, rd } from "@passionware/monads";
 import { CommandLoading } from "cmdk";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
@@ -42,8 +42,14 @@ export function ContractorPicker(props: ContractorPickerProps) {
   const options = props.services.contractorService.useContractors(
     contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
   );
-  const currentOption = rd.useLastWithPlaceholder(
+  const lastOption = rd.useLastWithPlaceholder(
     props.services.contractorService.useContractor(props.value),
+  );
+
+  const currentOption = maybe.mapOrElse(
+    props.value,
+    () => lastOption,
+    rd.ofIdle(),
   );
 
   const button = (
@@ -97,6 +103,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
                         if (props.value === contractor.id) {
                           if (props.allowClear) {
                             props.onSelect?.(null);
+                            setQuery("");
                           }
                           setOpen(false);
                           return;

@@ -1,5 +1,6 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { Cost } from "@/api/cost/cost.api.ts";
 
 export type LinkReportBillingPayload =
   | ({
@@ -39,6 +40,11 @@ export type CreateClientBillingPayload = Omit<
   "client" | "linkBillingReport" | "createdAt" | "id"
 >;
 
+export type CreateCostPayload = Omit<
+  Cost,
+  "createdAt" | "linkReports" | "id" | "contractor"
+>;
+
 export interface MutationApi {
   linkReportAndBilling: (payload: LinkReportBillingPayload) => Promise<void>;
   linkCostAndReport: (payload: LinkCostReportPayload) => Promise<void>;
@@ -48,6 +54,7 @@ export interface MutationApi {
   createClientBilling: (
     billing: CreateClientBillingPayload,
   ) => Promise<{ id: ClientBilling["id"] }>;
+  createCost: (cost: CreateCostPayload) => Promise<{ id: Cost["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
 }

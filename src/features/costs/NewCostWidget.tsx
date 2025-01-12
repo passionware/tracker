@@ -1,4 +1,4 @@
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
+import { Cost } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -12,62 +12,63 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
-export interface NewClientBillingWidgetProps
-  extends WithServices<[WithClientService, WithWorkspaceService]> {
-  defaultClientId?: number;
+export interface NewCostWidgetProps
+  extends WithServices<[WithWorkspaceService, WithContractorService]> {
   defaultWorkspaceId?: number;
   defaultCurrency?: string;
   defaultInvoiceDate?: Date;
   onSubmit: (
-    data: Omit<
-      ClientBilling,
-      "id" | "createdAt" | "linkBillingReport" | "client"
-    >,
+    data: Omit<Cost, "createdAt" | "linkReports" | "id" | "contractor">,
   ) => void;
   onCancel: () => void;
 }
 
 type FormModel = {
-  clientId: number | null;
+  contractorId: number | null;
+  counterparty: string;
   workspaceId: number | null;
   currency: string | null;
-  totalNet: string;
-  totalGross: string;
+  netValue: string;
+  grossValue: string;
   invoiceNumber: string;
   invoiceDate: Date | null;
   description: string;
 };
 
-export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
+export function NewCostWidget(props: NewCostWidgetProps) {
   const form = useForm<FormModel>({
     defaultValues: {
-      clientId: props.defaultClientId,
+      contractorId: null,
+      counterparty: "",
       workspaceId: props.defaultWorkspaceId,
       currency: props.defaultCurrency,
-      totalNet: "0",
-      totalGross: "0",
+      netValue: "0",
+      grossValue: "0",
       invoiceNumber: "",
       invoiceDate: props.defaultInvoiceDate,
       description: "",
     },
   });
 
+  const watchContractorId = form.watch("contractorId");
+
   function handleSubmit(data: FormModel) {
     props.onSubmit({
-      clientId: maybe.getOrThrow(data.clientId, "Client is required"),
+      contractorId: data.contractorId,
+      counterparty: watchContractorId ? null : data.counterparty,
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
       currency: maybe.getOrThrow(data.currency, "Currency is required"),
-      totalNet: parseFloat(data.totalNet),
-      totalGross: parseFloat(data.totalGross),
+      netValue: parseFloat(data.netValue),
+      grossValue: parseFloat(data.grossValue),
       invoiceNumber: data.invoiceNumber,
       invoiceDate: maybe.getOrThrow(
         data.invoiceDate,
@@ -85,6 +86,7 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
       >
         <FormField
           control={form.control}
+          rules={{ required: "Workspace is required" }}
           name="workspaceId"
           render={({ field }) => (
             <FormItem>
@@ -103,19 +105,39 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
         />
         <FormField
           control={form.control}
-          name="clientId"
-          rules={{ required: "Client is required" }}
+          name="contractorId"
+          rules={{ required: "Contractor is required" }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Client</FormLabel>
+              <FormLabel>Contractor</FormLabel>
               <FormControl>
-                <ClientPicker
+                <ContractorPicker
+                  allowClear
                   value={field.value}
                   onSelect={field.onChange}
                   services={props.services}
                 />
               </FormControl>
-              <FormDescription>Select client</FormDescription>
+              <FormDescription>Select contractor</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="counterparty"
+          render={({ field }) => (
+            <FormItem
+              className={maybe.isPresent(watchContractorId) ? "opacity-50" : ""}
+            >
+              <FormLabel>
+                Counterparty
+                {maybe.isPresent(watchContractorId) ? " (not needed)" : ""}
+              </FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormDescription>Enter counterparty</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -136,30 +158,30 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
         />
         <FormField
           control={form.control}
-          name="totalNet"
-          rules={{ required: "Total net is required" }}
+          name="netValue"
+          rules={{ required: "Net Value is required" }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Total Net</FormLabel>
+              <FormLabel>Net Value</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>Enter total net value</FormDescription>
+              <FormDescription>Enter net value</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
           control={form.control}
-          name="totalGross"
-          rules={{ required: "Total gross is required" }}
+          name="grossValue"
+          rules={{ required: "Gross Value is required" }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Total Gross</FormLabel>
+              <FormLabel>Gross Value</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>Enter total gross value</FormDescription>
+              <FormDescription>Enter gross value</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -167,7 +189,7 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
         <FormField
           control={form.control}
           name="invoiceNumber"
-          rules={{ required: "Invoice number is required" }}
+          rules={{ required: "Invoice Number is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Invoice Number</FormLabel>
@@ -182,7 +204,7 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
         <FormField
           control={form.control}
           name="invoiceDate"
-          rules={{ required: "Invoice date is required" }}
+          rules={{ required: "Invoice Date is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
