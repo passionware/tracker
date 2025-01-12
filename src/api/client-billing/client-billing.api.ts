@@ -12,10 +12,10 @@ import { Client } from "@/api/clients/clients.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import {
   ClientSpec,
-  routingUtils,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 
@@ -51,12 +51,12 @@ export const clientBillingQueryUtils = {
     clientId: ClientSpec,
   ): ClientBillingQuery => ({
     filters: {
-      clientId: routingUtils.client.mapSpecificOrElse(
+      clientId: idSpecUtils.mapSpecificOrElse(
         clientId,
         (x) => ({ operator: "oneOf", value: [x] }),
         null,
       ),
-      workspaceId: routingUtils.workspace.mapSpecificOrElse(
+      workspaceId: idSpecUtils.mapSpecificOrElse(
         workspaceId,
         (x) => ({ operator: "oneOf", value: [x] }),
         null,

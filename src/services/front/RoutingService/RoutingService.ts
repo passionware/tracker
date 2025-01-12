@@ -1,30 +1,20 @@
 import { Client } from "@/api/clients/clients.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { IdSpec, idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { maybe, Maybe } from "@passionware/monads";
 
-const all = Symbol("all");
-export type All = typeof all;
 export type WorkspacePathSegment = string | ":workspaceId";
-export type WorkspaceSpec = Workspace["id"] | All;
+export type WorkspaceSpec = IdSpec<Workspace["id"]>;
 type WorkspaceParam = Maybe<WorkspaceSpec>;
 export type ClientPathSegment = string | ":clientId";
-export type ClientSpec = Client["id"] | All;
+export type ClientSpec = IdSpec<Client["id"]>;
 type ClientParam = Maybe<ClientSpec>;
 
 export const routingUtils = {
   workspace: {
-    isAll: (value: unknown): value is All => value === all,
-    ofAll: (): All => all,
-    mapSpecificOrElse: <T>(
-      value: WorkspaceSpec,
-      map: (value: Workspace["id"]) => T,
-      orElse: T,
-    ) => (value === all ? orElse : map(value)),
-    switchAll: <T>(value: WorkspaceSpec, switchTo: T) =>
-      value === all ? switchTo : value,
     fromString: (value: WorkspacePathSegment): WorkspaceSpec => {
       if (value === "all") {
-        return all;
+        return idSpecUtils.ofAll();
       }
       return parseInt(value, 10);
     },
@@ -32,25 +22,16 @@ export const routingUtils = {
       if (maybe.isAbsent(value)) {
         return ":workspaceId";
       }
-      if (value === all) {
+      if (idSpecUtils.isAll(value)) {
         return "all";
       }
       return value.toString();
     },
   },
   client: {
-    isAll: (value: unknown): value is All => value === all,
-    ofAll: (): All => all,
-    mapSpecificOrElse: <T>(
-      value: ClientSpec,
-      map: (value: Client["id"]) => T,
-      orElse: T,
-    ) => (value === all ? orElse : map(value)),
-    switchAll: <T>(value: ClientSpec, switchTo: T) =>
-      value === all ? switchTo : value,
     fromString: (value: ClientPathSegment): ClientSpec => {
       if (value === "all") {
-        return all;
+        return idSpecUtils.ofAll();
       }
       return parseInt(value, 10);
     },
@@ -58,7 +39,7 @@ export const routingUtils = {
       if (maybe.isAbsent(value)) {
         return ":clientId";
       }
-      if (value === all) {
+      if (idSpecUtils.isAll(value)) {
         return "all";
       }
       return value.toString();

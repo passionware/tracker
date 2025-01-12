@@ -7,11 +7,9 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import {
-  routingUtils,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 
@@ -19,11 +17,11 @@ export function WorkspaceBreadcrumbLink(
   props: { workspaceId: WorkspaceSpec } & WithServices<[WithWorkspaceService]>,
 ) {
   const workspace = props.services.workspaceService.useWorkspace(
-    routingUtils.workspace.switchAll(props.workspaceId, null),
+    idSpecUtils.switchAll(props.workspaceId, null),
   );
   return (
     <BreadcrumbLink>
-      {routingUtils.workspace.isAll(props.workspaceId) ? (
+      {idSpecUtils.isAll(props.workspaceId) ? (
         <>All workspaces</>
       ) : (
         rd

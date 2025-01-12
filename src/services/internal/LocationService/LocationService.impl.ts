@@ -1,3 +1,4 @@
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   routingUtils,
@@ -76,14 +77,14 @@ export function createLocationService(
     },
     changeCurrentClientId: (id) => {
       tryPersistCurrentRoute(
-        api.getCurrentWorkspaceId() ?? routingUtils.workspace.ofAll(),
+        api.getCurrentWorkspaceId() ?? idSpecUtils.ofAll(),
         id,
       );
     },
     changeCurrentWorkspaceId: (id) => {
       tryPersistCurrentRoute(
         id,
-        api.getCurrentClientId() ?? routingUtils.client.ofAll(),
+        api.getCurrentClientId() ?? idSpecUtils.ofAll(),
       );
     },
   };

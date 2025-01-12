@@ -21,10 +21,8 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
-import {
-  routingUtils,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { ChevronsUpDown, Orbit, Plus } from "lucide-react";
 
 export type WorkspaceSwitcherProps = {
@@ -44,7 +42,7 @@ export function WorkspaceSwitcher({
     console.error("No workspaces found");
   }
 
-  const activeItem = routingUtils.workspace.isAll(activeWorkspace)
+  const activeItem = idSpecUtils.isAll(activeWorkspace)
     ? activeWorkspace
     : workspaces.find((workspace) => workspace.id === activeWorkspace);
 
@@ -61,7 +59,7 @@ export function WorkspaceSwitcher({
               className="rounded-xl py-7 border border-emerald-500/20 bg-gradient-to-tl from-sky-300/10 to-yellow-500/10 outline-none focus-visible:ring-2 focus:ring-emerald-500/20"
             >
               {activeItem ? (
-                routingUtils.workspace.isAll(activeItem) ? (
+                idSpecUtils.isAll(activeItem) ? (
                   <>
                     <Avatar asChild>
                       <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -119,7 +117,7 @@ export function WorkspaceSwitcher({
           >
             <DropdownMenuItem
               className="gap-2 p-2"
-              onClick={() => onWorkspaceSwitch(routingUtils.workspace.ofAll())}
+              onClick={() => onWorkspaceSwitch(idSpecUtils.ofAll())}
             >
               <Avatar asChild className="size-6">
                 <div className="flex size-4 items-center justify-center rounded-sm border border-slate-800">

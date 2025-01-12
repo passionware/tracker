@@ -11,9 +11,9 @@ import {
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import {
   ClientSpec,
-  routingUtils,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Maybe } from "@passionware/monads";
@@ -50,12 +50,12 @@ export const costQueryUtils = {
   ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): CostQuery => ({
     search: "",
     filters: {
-      workspaceId: routingUtils.workspace.mapSpecificOrElse(
+      workspaceId: idSpecUtils.mapSpecificOrElse(
         workspaceId,
         (x) => ({ operator: "oneOf", value: [x] }),
         null,
       ),
-      clientId: routingUtils.client.mapSpecificOrElse(
+      clientId: idSpecUtils.mapSpecificOrElse(
         clientId,
         (x) => ({ operator: "oneOf", value: [x] }),
         null,

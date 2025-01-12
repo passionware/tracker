@@ -21,10 +21,8 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
-import {
-  ClientSpec,
-  routingUtils,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { ChevronsUpDown, Plus, Users } from "lucide-react";
 
 export type ClientSwitcherProps = {
@@ -44,7 +42,7 @@ export function ClientSwitcher({
     console.error("No clients found");
   }
 
-  const activeItem = routingUtils.client.isAll(activeClient)
+  const activeItem = idSpecUtils.isAll(activeClient)
     ? activeClient
     : clients.find((client) => client.id === activeClient);
   const allClasses =
@@ -60,7 +58,7 @@ export function ClientSwitcher({
               className="rounded-xl py-7 border border-sky-900/10 bg-gradient-to-tl from-rose-300/5 to-blue-500/5 outline-none focus-visible:ring-2 focus:ring-rose-500/20"
             >
               {activeItem ? (
-                routingUtils.client.isAll(activeItem) ? (
+                idSpecUtils.isAll(activeItem) ? (
                   <>
                     <Avatar asChild>
                       <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -124,7 +122,7 @@ export function ClientSwitcher({
           >
             <DropdownMenuItem
               className="gap-2 p-2"
-              onClick={() => onClientSwitch(routingUtils.client.ofAll())}
+              onClick={() => onClientSwitch(idSpecUtils.ofAll())}
             >
               <Avatar asChild className="size-6">
                 <div className="flex size-4 items-center justify-center rounded-sm border border-slate-800">

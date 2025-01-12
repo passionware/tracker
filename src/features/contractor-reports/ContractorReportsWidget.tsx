@@ -38,12 +38,12 @@ import {
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import {
   ClientSpec,
-  routingUtils,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -132,7 +132,7 @@ export function ContractorReportsWidget(
                 <PopoverContent className="w-fit">
                   <PopoverHeader>Add new contractor report</PopoverHeader>
                   <NewContractorReportWidget
-                    defaultWorkspaceId={routingUtils.workspace.switchAll(
+                    defaultWorkspaceId={idSpecUtils.switchAll(
                       props.workspaceId,
                       undefined,
                     )}
@@ -155,7 +155,7 @@ export function ContractorReportsWidget(
                       ),
                     )}
                     defaultPeriodEnd={new Date()}
-                    defaultClientId={routingUtils.client.switchAll(
+                    defaultClientId={idSpecUtils.switchAll(
                       props.clientId,
                       undefined,
                     )}
