@@ -6,6 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -16,6 +17,7 @@ import {
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -28,6 +30,7 @@ export interface CostInfoProps
       WithReportDisplayService,
       WithPreferenceService,
       WithMutationService,
+      WithClientService,
     ]
   > {
   costEntry: CostEntry;
@@ -43,6 +46,10 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
         fromAmount={costEntry.remainingAmount}
         toAmount={costEntry.matchedAmount}
       />
+
+      <pre className="max-h-[200px] overflow-y-auto max-w-xl">
+        <code>{JSON.stringify(costEntry, null, 2)}</code>
+      </pre>
 
       {costEntry.remainingAmount.amount > 0 && (
         <div className="flex gap-2 flex-row self-end">
@@ -90,7 +97,7 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
         {costEntry.linkReports.map((link) => (
           <div className="flex items-stretch gap-2" key={link.id}>
             <div className="flex flex-col gap-3">
-              <div className="flex flex-row justify-between items-center gap-2">
+              <div className="flex flex-row justify-between items-center gap-2 items-center">
                 <Badge variant="positive">Report</Badge>
                 <Badge variant="secondary" size="sm">
                   {services.formatService.temporal.date(
@@ -102,23 +109,31 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
                   )}
                 </Badge>
               </div>
-              <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
+              <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2 items-center">
+                Cost's
+                {services.formatService.financial.currency(link.costAmount)}
+                <div className="text-gray-500">satisfies</div>
+                {services.formatService.financial.currency(link.reportAmount)}
+                of report's
                 {services.formatService.financial.amount(
-                  link.costAmount.amount,
-                  link.costAmount.currency,
+                  link.contractorReport.netValue,
+                  link.contractorReport.currency,
                 )}
-                <div className="text-gray-500">of</div>
-                {services.formatService.financial.amount(
-                  link.reportAmount.amount,
-                  link.reportAmount.currency,
-                )}
+                for
+                <ClientWidget
+                  services={services}
+                  size="sm"
+                  layout="avatar"
+                  clientId={link.contractorReport.clientId}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-xs text-slate-600">
                 {link.contractorReport.contractor?.fullName}
               </div>
-              <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
+              <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
+                &zwnj;
                 {link.description}
               </div>
             </div>

@@ -99,7 +99,9 @@ export type ClientBillingLinkView =
 
 export type CostLinkView = {
   id: number;
+  // how much of the cost is linked
   costAmount: CurrencyValue;
+  // what is the equivalent amount in the report
   reportAmount: CurrencyValue;
   description: string;
   contractorReport: ContractorReport;

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
@@ -212,9 +213,21 @@ export function CostsWidget(props: CostsWidgetProps) {
                     </Popover>
                   </TableCell>
                   <TableCell>
-                    {props.services.formatService.financial.currency(
-                      cost.matchedAmount,
-                    )}
+
+                    <div className="empty:hidden flex flex-row gap-1.5 items-center">
+                      {props.services.formatService.financial.currency(
+                          cost.matchedAmount,
+                      )}
+                      {cost.linkReports.map((link) => (
+                        <ClientWidget
+                          layout="avatar"
+                          size="xs"
+                          key={link.id}
+                          clientId={link.contractorReport.clientId}
+                          services={props.services}
+                        />
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.currency(

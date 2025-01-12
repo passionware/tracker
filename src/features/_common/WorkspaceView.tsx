@@ -6,20 +6,38 @@ import {
 } from "@/components/ui/avatar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd, RemoteData } from "@passionware/monads";
+import { cva, VariantProps } from "class-variance-authority";
 import { TriangleAlert } from "lucide-react";
 
-export interface WorkspaceViewProps {
+export interface WorkspaceViewProps
+  extends VariantProps<typeof workspaceViewVariants> {
   workspace: RemoteData<Workspace>;
   layout?: "full" | "avatar";
+  className?: string;
 }
 
-export function WorkspaceView({ workspace, layout }: WorkspaceViewProps) {
+const workspaceViewVariants = cva("", {
+  variants: {
+    size: { xs: "size-4", sm: "size-6", md: "size-8", lg: "size-12" },
+  },
+  defaultVariants: {
+    size: "md",
+  },
+});
+
+export function WorkspaceView({
+  workspace,
+  layout,
+  className,
+  size,
+}: WorkspaceViewProps) {
   const avatar = (
-    <Avatar className="size-8">
+    <Avatar className={cn(workspaceViewVariants({ size }), className)}>
       {rd
         .journey(workspace)
         .wait(<Skeleton className="size-8 rounded-full" />)
@@ -69,31 +87,3 @@ export function WorkspaceWidget({
   const workspace = props.services.workspaceService.useWorkspace(workspaceId);
   return <WorkspaceView workspace={workspace} {...props} />;
 }
-
-/**
- *
- *
- * Todo:
- * przemyśleć niezależne sidebary (różne tryby):
- * * workspace scoped -> company scoped -> wszystko z Atellio na spółce zoo
- *   -> /workspace/1/company/2
- * * company scoped -> all workspaces -> wszystko z Atellio na spółce i na JDG etc
- *   -> /workspace/all/company/1
- * * workspace scoped -> all companies -> wszystkie sprawy spółki, albo wszystkie sprawy mojego JDG
- *   -> /workspace/1/company/all
- * * all workspaces -> all companies -> wszystkie sprawy wszystkich podmiotów, np time tracker
- *   -> /workspace/all/company/all
- *
- * * główny dashboard - wybór trybu
- *   -> /
- *
- *   co więcej, np sprawy pojedynczego kontraktora dla spółki zoo
- *   -> /workspace/1/contractor/2
- *   lub dla wszystkich spółek
- *   -> /workspace/all/contractor/2
- *
- *   jeszcze specjalny tryb time trackera
- *
- *   -> raczej nie, uzyjemy /workspace/all/company/all/tracker
- *   -> /time-tracker/workspace/1/company/2 (naliczanie czasu dla klienta 2 w ramach workspace 1), z możliwością przełączania się między workspace'ami i klientami (zmiana path segmentów)
- */

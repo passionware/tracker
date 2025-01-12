@@ -128,7 +128,7 @@ export function ContractorReportsWidget(
                     Add report
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-fit">
+                <PopoverContent className="w-fit" >
                   <PopoverHeader>Add new contractor report</PopoverHeader>
                   <NewContractorReportWidget
                     defaultCurrency={rd.tryMap(

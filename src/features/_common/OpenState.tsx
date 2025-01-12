@@ -5,10 +5,16 @@ export interface OpenStateProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     close: () => void;
+    setOpen: () => void;
   }) => ReactNode;
 }
 
 export function OpenState(props: OpenStateProps) {
   const [open, setOpen] = useState(false);
-  return props.children({ open, onOpenChange: setOpen, close: () => setOpen(false) });
+  return props.children({
+    open,
+    onOpenChange: setOpen,
+    close: () => setOpen(false),
+    setOpen: () => setOpen(true),
+  });
 }
