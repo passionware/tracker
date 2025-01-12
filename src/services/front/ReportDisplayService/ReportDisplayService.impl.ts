@@ -186,30 +186,59 @@ function calculateReportEntry(
     );
   }
 
-  const sumOfLinkedAmounts = sumBy(
+  const chargedAmount = sumBy(
     report.linkBillingReport,
     (link) => link.linkAmount,
   );
-  const remainingAmount = report.netValue - sumOfLinkedAmounts;
+  const remainingChargeAmount = report.netValue - chargedAmount;
   const hasAtLeastOneClarification = report.linkBillingReport?.some(
     (link) => link.linkType === "clarify",
   );
-  const sumOfBillingAmounts = sumBy(
+  const sumOfChargeAmounts = sumBy(
     report.linkBillingReport?.filter((link) => link.linkType === "reconcile"),
     (link) => link.linkAmount,
   );
 
-  function getStatus() {
-    if (remainingAmount === 0) {
+  function getBillingStatus() {
+    if (remainingChargeAmount === 0) {
       if (hasAtLeastOneClarification) {
         return "clarified";
       } else {
         return "billed";
       }
-    } else if (remainingAmount > 0 && sumOfBillingAmounts > 0) {
+    } else if (remainingChargeAmount > 0 && sumOfChargeAmounts > 0) {
       return "partially-billed";
     } else {
       return "uncovered";
+    }
+  }
+  ////
+
+  const compensationAmount = sumBy(
+    report.linkCostReport,
+    (link) => link.reportAmount,
+  );
+  const remainingCompensationAmount =
+    remainingChargeAmount + sumOfChargeAmounts - compensationAmount;
+  const remainingFullCompensationAmount = report.netValue - compensationAmount;
+
+  function getCompensationStatus() {
+    if (remainingCompensationAmount === 0) {
+      return "compensated";
+    } else if (remainingCompensationAmount > 0 && compensationAmount > 0) {
+      return "partially-compensated";
+    } else {
+      return "uncompensated";
+    }
+  }
+
+  function getFullCompensationStatus() {
+    if (remainingFullCompensationAmount === 0) {
+      return "compensated";
+    } else if (remainingFullCompensationAmount > 0 && compensationAmount > 0) {
+      return "partially-compensated";
+    } else {
+      return "uncompensated";
     }
   }
 
@@ -224,20 +253,45 @@ function calculateReportEntry(
     periodStart: report.periodStart,
     periodEnd: report.periodEnd,
     description: report.description,
-    status: getStatus(),
+    // statuses
+    status: getBillingStatus(),
+    compensationStatus: getCompensationStatus(),
+    fullCompensationStatus: getFullCompensationStatus(),
+    //
     reconciledAmount: {
-      amount: sumOfLinkedAmounts,
+      amount: chargedAmount,
       currency: report.currency,
     },
     billedAmount: {
-      amount: sumOfBillingAmounts,
+      amount: sumOfChargeAmounts,
       currency: report.currency,
     },
     remainingAmount: {
-      amount: remainingAmount,
+      amount: remainingChargeAmount,
       currency: report.currency,
     },
-    reportLinks: (report.linkBillingReport ?? [])?.map((link) => {
+    compensatedAmount: {
+      amount: compensationAmount,
+      currency: report.currency,
+    },
+    remainingCompensationAmount: {
+      amount: remainingCompensationAmount,
+      currency: report.currency,
+    },
+    remainingFullCompensationAmount: {
+      amount: remainingFullCompensationAmount,
+      currency: report.currency,
+    },
+    costLinks: (report.linkCostReport ?? [])?.map((link) => ({
+      id: link.id,
+      amount: {
+        amount: link.costAmount,
+        currency: report.currency,
+      },
+      description: link.description,
+      cost: maybe.getOrThrow(link.cost, "Cost is required to calculate report"),
+    })),
+    billingLinks: (report.linkBillingReport ?? [])?.map((link) => {
       switch (link.linkType) {
         case "reconcile":
           return {
@@ -388,25 +442,30 @@ function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
       currency: cost.currency,
     })),
     description: cost.description,
-    linkReports: cost.linkReports.map((link) => {
-      const contractorReport = maybe.getOrThrow(
-        link.contractorReport,
-        "Contractor report must be present in link to calculate report display view",
-      );
-      return {
-        id: link.id,
-        costAmount: {
-          amount: link.costAmount,
-          currency: cost.currency,
-        },
-        reportAmount: {
-          amount: link.reportAmount,
-          currency: contractorReport.currency,
-        },
-        description: link.description,
-        contractorReport: contractorReport,
-      };
-    }),
+    linkReports: maybe
+      .getOrThrow(
+        cost.linkReports,
+        "Link reports are missing to calculate cost",
+      )
+      .map((link) => {
+        const contractorReport = maybe.getOrThrow(
+          link.contractorReport,
+          "Contractor report must be present in link to calculate report display view",
+        );
+        return {
+          id: link.id,
+          costAmount: {
+            amount: link.costAmount,
+            currency: cost.currency,
+          },
+          reportAmount: {
+            amount: link.reportAmount,
+            currency: contractorReport.currency,
+          },
+          description: link.description,
+          contractorReport: contractorReport,
+        };
+      }),
     matchedAmount: {
       amount: sumOfLinkedAmounts,
       currency: cost.currency,

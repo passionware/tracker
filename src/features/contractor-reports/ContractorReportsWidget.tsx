@@ -209,7 +209,7 @@ export function ContractorReportsWidget(
           })}
         </TableCaption>
         <TableHeader>
-          <TableRow>
+          <TableRow className="*:whitespace-pre">
             <TableHead className="">Id</TableHead>
             <TableHead>Issuer</TableHead>
             <TableHead>Contractor</TableHead>
@@ -245,13 +245,39 @@ export function ContractorReportsWidget(
                 Charge Status <Info className="inline size-4" />
               </TableHead>
             </SimpleTooltip>
-            <TableHead>Compensation&nbsp;Status</TableHead>
-            <TableHead>Full&nbsp;Compensation</TableHead>
+            <SimpleTooltip
+              title={
+                <div className="space-y-4">
+                  <PopoverHeader>Compensation status</PopoverHeader>
+                  <div>
+                    <Badge variant="positive">Compensated</Badge> - The
+                    contractor was compensated for the entire work value
+                    reported by the contractor
+                  </div>
+                  <div>
+                    <Badge variant="warning">Partially compensated</Badge> - The
+                    contractor was compensated for some work, but there is still
+                    some work we should compensate the contractor for.
+                  </div>
+                  <div>
+                    <Badge variant="destructive">Uncompensated</Badge> - The
+                    contractor was not compensated for any work reported by the
+                    contractor yet.
+                  </div>
+                </div>
+              }
+            >
+              <TableHead className="whitespace-pre">
+                Compensation Status <Info className="inline size-4" />
+              </TableHead>
+            </SimpleTooltip>
+            <TableHead>Full Compensation</TableHead>
             <TableHead>Net value</TableHead>
-            <TableHead>Charged&nbsp;value</TableHead>
-            <TableHead>To&nbsp;charge</TableHead>
-            <TableHead>To&nbsp;refund&nbsp;now</TableHead>
-            <TableHead>To&nbsp;refund&nbsp;later</TableHead>
+            <TableHead>Charged value</TableHead>
+            <TableHead>To charge</TableHead>
+            <TableHead>Compensated</TableHead>
+            <TableHead>To compensate (charged)</TableHead>
+            <TableHead>To compensate (reported)</TableHead>
             <TableHead>Period</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
@@ -336,13 +362,61 @@ export function ContractorReportsWidget(
                     </Popover>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" size="md">
-                      TODO
-                    </Badge>
+                    {/*  Compensation status*/}
+                    <Popover>
+                      <PopoverTrigger>
+                        <Badge
+                          tone="solid"
+                          variant={
+                            (
+                              {
+                                compensated: "positive",
+                                "partially-compensated": "warning",
+                                uncompensated: "destructive",
+                              } as const
+                            )[report.compensationStatus]
+                          }
+                        >
+                          {
+                            {
+                              compensated: "Compensated",
+                              "partially-compensated": "Partially compensated",
+                              uncompensated: "Uncompensated",
+                            }[report.compensationStatus]
+                          }
+                        </Badge>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-fit">
+                        <PopoverHeader>Compensation details</PopoverHeader>
+                        {/*TODO ContractorCompensationInfo??*/}
+                        <ContractorReportInfo
+                          report={report}
+                          services={props.services}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" size="md">
-                      TODO
+                    {/* Full compensation status */}
+                    <Badge
+                      tone="outline"
+                      variant={
+                        (
+                          {
+                            compensated: "positive",
+                            "partially-compensated": "warning",
+                            uncompensated: "destructive",
+                          } as const
+                        )[report.fullCompensationStatus]
+                      }
+                    >
+                      {
+                        {
+                          compensated: "Compensated",
+                          "partially-compensated": "Partially compensated",
+                          uncompensated: "Uncompensated",
+                        }[report.fullCompensationStatus]
+                      }
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -363,8 +437,21 @@ export function ContractorReportsWidget(
                       report.remainingAmount.currency,
                     )}
                   </TableCell>
-                  <TableCell>-1</TableCell>
-                  <TableCell>-1</TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.currency(
+                      report.compensatedAmount,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.currency(
+                      report.remainingCompensationAmount,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.currency(
+                      report.remainingFullCompensationAmount,
+                    )}
+                  </TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
                       report.periodStart,

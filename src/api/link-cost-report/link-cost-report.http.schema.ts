@@ -20,13 +20,13 @@ const linkCostReportBase$ = z.object({
 });
 
 export type LinkCostReport$ = z.input<typeof linkCostReportBase$> & {
-  cost?: Cost$ | null;
+  costs?: Cost$ | null;
   contractor_reports?: ContractorReport$ | null;
 };
 
 export const linkCostReport$: ZodType<LinkCostReport$> =
   linkCostReportBase$.extend({
-    costs: z.lazy(() => z.array(cost$).optional()),
+    costs: z.lazy(() => cost$.optional()),
     contractor: z.lazy(() => contractor$.optional()),
   });
 
@@ -36,7 +36,7 @@ export function linkCostReportFromHttp(
   return {
     ...camelcaseKeys(linkCostReport),
     description: linkCostReport.description ?? "",
-    cost: maybe.mapOrNull(linkCostReport.cost, costFromHttp),
+    cost: maybe.mapOrNull(linkCostReport.costs, costFromHttp),
     contractorReport: maybe.mapOrNull(
       linkCostReport.contractor_reports,
       contractorReportFromHttp,

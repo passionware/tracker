@@ -32,7 +32,7 @@ export type LinkCostReportPayload = {
 
 export type CreateContractorReportPayload = Omit<
   ContractorReport,
-  "id" | "createdAt" | "linkBillingReport" | "contractor"
+  "id" | "createdAt" | "linkBillingReport" | "linkCostReport" | "contractor"
 >;
 
 export type CreateClientBillingPayload = Omit<

@@ -7,7 +7,7 @@ import {
   ContractorReportQuery,
 } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
-import { CostQuery } from "@/api/cost/cost.api.ts";
+import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { Maybe, RemoteData } from "@passionware/monads";
@@ -35,13 +35,25 @@ export interface ContractorReportViewEntry {
   reconciledAmount: CurrencyValue;
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
-  reportLinks: ContractorReportLinkView[];
+  billingLinks: ContractorReportBillingLinkView[];
+  costLinks: ContractorReportCostLinkView[];
+  compensationStatus: "compensated" | "partially-compensated" | "uncompensated";
+  fullCompensationStatus:
+    | "compensated"
+    | "partially-compensated"
+    | "uncompensated";
+  compensatedAmount: CurrencyValue;
+  // how much to compensate against money actually charged
+  remainingCompensationAmount: CurrencyValue;
+  // how much to compensate against reported work value
+  remainingFullCompensationAmount: CurrencyValue;
+
   contractor: Contractor;
   workspace: Workspace;
   clientId: number;
 }
 
-export type ContractorReportLinkView = {
+export type ContractorReportBillingLinkView = {
   id: number;
   amount: CurrencyValue;
 } & (
@@ -54,6 +66,13 @@ export type ContractorReportLinkView = {
       justification: string;
     }
 );
+
+export type ContractorReportCostLinkView = {
+  id: number;
+  amount: CurrencyValue;
+  description: string;
+  cost: Cost;
+};
 
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];

@@ -9,6 +9,11 @@ import {
   linkBillingReport$,
   linkBillingReportFromHttp,
 } from "@/api/link-billing-report/link-billing.report.http.schema.ts";
+import {
+  linkCostReport$,
+  LinkCostReport$,
+  linkCostReportFromHttp,
+} from "@/api/link-cost-report/link-cost-report.http.schema.ts";
 import { maybe } from "@passionware/monads";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
@@ -29,11 +34,13 @@ export const contractorReportBase$ = z.object({
 
 export type ContractorReport$ = z.input<typeof contractorReportBase$> & {
   link_billing_report?: LinkBillingReport$[];
+  link_cost_report?: LinkCostReport$[];
 };
 
 export const contractorReport$: z.ZodType<ContractorReport$> =
   contractorReportBase$.extend({
     link_billing_report: z.lazy(() => z.array(linkBillingReport$).optional()),
+    link_cost_report: z.lazy(() => z.array(linkCostReport$).optional()),
   });
 
 export function contractorReportFromHttp(
@@ -48,6 +55,9 @@ export function contractorReportFromHttp(
     linkBillingReport: maybe.mapOrNull(
       contractorReport.link_billing_report,
       (x) => x.map(linkBillingReportFromHttp),
+    ),
+    linkCostReport: maybe.mapOrNull(contractorReport.link_cost_report, (x) =>
+      x.map(linkCostReportFromHttp),
     ),
     contractor: maybe.mapOrNull(
       contractorReport.contractors,

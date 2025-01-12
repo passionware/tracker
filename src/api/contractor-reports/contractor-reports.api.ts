@@ -11,6 +11,7 @@ import {
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -30,6 +31,7 @@ export interface ContractorReport {
   currency: string;
   clientId: number;
   linkBillingReport: LinkBillingReport[] | null;
+  linkCostReport: LinkCostReport[] | null;
   contractor: Contractor | null;
   workspaceId: number;
 }
