@@ -11,6 +11,8 @@ export interface TransferViewProps extends WithServices<[WithFormatService]> {
   toAmount: CurrencyValue;
   fromLabel?: ReactNode;
   toLabel?: ReactNode;
+  extraAmount?: CurrencyValue;
+  extraLabel?: ReactNode;
 }
 export function TransferView({
   services,
@@ -18,6 +20,8 @@ export function TransferView({
   fromAmount,
   fromLabel,
   toLabel,
+  extraLabel,
+  extraAmount,
 }: TransferViewProps) {
   return (
     <div className="flex justify-center gap-4">
@@ -33,12 +37,33 @@ export function TransferView({
         {services.formatService.financial.currency(fromAmount)}
       </div>
       <ChevronsRight className="size-10" strokeWidth={1} />
-      <div className="text-green-700 flex flex-col gap-2 items-start">
+      <div
+        className={cn(
+          "flex flex-col gap-2 items-start",
+          toAmount.amount === 0 ? "text-gray-800" : "text-green-800",
+        )}
+      >
         <Badge tone="outline" variant="positive">
           {toLabel ?? "Reconciled"}
         </Badge>{" "}
         {services.formatService.financial.currency(toAmount)}
       </div>
+      {extraAmount && extraLabel && (
+        <>
+          <ChevronsRight className="size-10" strokeWidth={1} />
+          <div
+            className={cn(
+              "flex flex-col gap-2 items-start",
+              extraAmount.amount === 0 ? "text-gray-800" : "text-green-800",
+            )}
+          >
+            <Badge tone="outline" variant="positive">
+              {extraLabel}
+            </Badge>{" "}
+            {services.formatService.financial.currency(extraAmount)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

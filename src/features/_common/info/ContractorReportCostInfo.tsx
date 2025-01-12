@@ -46,10 +46,14 @@ export function ContractorReportCostInfo({
   const linkingState = promiseState.useRemoteData();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-w-4xl">
       <TransferView
-        fromAmount={report.remainingAmount}
-        toAmount={report.reconciledAmount}
+        fromAmount={report.remainingCompensationAmount}
+        toAmount={report.compensatedAmount}
+        // extraAmount={report.remainingFullCompensationAmount}
+        fromLabel="Remaining"
+        toLabel="Paid"
+        // extraLabel="Compensated"
         services={services}
       />
 
