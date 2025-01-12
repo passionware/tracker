@@ -63,6 +63,11 @@ const workspaceService = createWorkspaceService(
   messageService,
 );
 const preferenceService = createPreferenceService();
+const costService = createCostService(
+  createCostApi(mySupabase),
+  myQueryClient,
+  messageService,
+);
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
@@ -85,6 +90,7 @@ export const myServices = {
       contractorReportService,
       clientBillingService,
       workspaceService,
+      costService,
     },
   }),
   messageService,
@@ -103,11 +109,7 @@ export const myServices = {
     messageService,
   ),
   workspaceService,
-  costService: createCostService(
-    createCostApi(mySupabase),
-    myQueryClient,
-    messageService,
-  ),
+  costService,
   preferenceService,
 } satisfies MergeServices<
   [

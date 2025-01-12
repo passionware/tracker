@@ -1,5 +1,6 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { Cost } from "@/api/cost/cost.api.ts";
 import {
   Workspace,
   workspaceQueryUtils,
@@ -8,12 +9,15 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientBillingViewEntry,
   ContractorReportViewEntry,
+  CostEntry,
   ReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.ts";
 import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
+import { groupBy } from "lodash";
 
 export function createReportDisplayService(
   config: WithServices<
@@ -21,6 +25,7 @@ export function createReportDisplayService(
       WithContractorReportService,
       WithClientBillingService,
       WithWorkspaceService,
+      WithCostService,
     ]
   >,
 ): ReportDisplayService {
@@ -142,6 +147,56 @@ export function createReportDisplayService(
           }),
         ),
       );
+    },
+    useCostView: (query) => {
+      const costs = config.services.costService.useCosts(query);
+      const workspaces = config.services.workspaceService.useWorkspaces(
+        workspaceQueryUtils.ofEmpty(),
+      );
+      return rd.useMemoMap(rd.combine({ costs, workspaces }), (data) => {
+        const entries = data.costs.map((cost) =>
+          calculateCost(cost, data.workspaces),
+        );
+
+        const costGroupsByCurrency = groupBy(
+          entries,
+          (cost) => cost.netAmount.currency,
+        );
+        const total = {
+          netAmount: Object.entries(costGroupsByCurrency).map(
+            ([currency, costs]) => ({
+              amount: costs.reduce(
+                (acc, cost) => acc + cost.netAmount.amount,
+                0,
+              ),
+              currency,
+            }),
+          ),
+          matchedAmount: Object.entries(costGroupsByCurrency).map(
+            ([currency, costs]) => ({
+              amount: costs.reduce(
+                (acc, cost) => acc + cost.matchedAmount.amount,
+                0,
+              ),
+              currency,
+            }),
+          ),
+          remainingAmount: Object.entries(costGroupsByCurrency).map(
+            ([currency, costs]) => ({
+              amount: costs.reduce(
+                (acc, cost) => acc + cost.remainingAmount.amount,
+                0,
+              ),
+              currency,
+            }),
+          ),
+        };
+
+        return {
+          entries,
+          total,
+        };
+      });
     },
   };
 }
@@ -325,6 +380,74 @@ function calculateBilling(
     status: status,
     workspace: maybe.getOrThrow(
       workspaces.find((workspace) => workspace.id === billing.workspaceId),
+      "Workspace is missing",
+    ),
+  };
+}
+
+function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
+  const sumOfLinkedAmounts =
+    cost.linkReports?.reduce((acc, link) => acc + link.costAmount, 0) ?? 0;
+  const remainingAmount = cost.netValue - sumOfLinkedAmounts;
+
+  function getStatus() {
+    if (remainingAmount === 0) {
+      return "matched";
+    } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
+      return "partially-matched";
+    } else {
+      return "unmatched";
+    }
+  }
+
+  const status = getStatus();
+
+  return {
+    id: cost.id,
+    invoiceNumber: cost.invoiceNumber,
+    invoiceDate: cost.invoiceDate,
+    contractor: cost.contractor,
+    counterparty: cost.counterparty,
+    createdAt: cost.createdAt,
+    netAmount: {
+      amount: cost.netValue,
+      currency: cost.currency,
+    },
+    grossAmount: maybe.map(cost.grossValue, (grossValue) => ({
+      amount: grossValue,
+      currency: cost.currency,
+    })),
+    description: cost.description,
+    linkReports: cost.linkReports.map((link) => {
+      const contractorReport = maybe.getOrThrow(
+        link.contractorReport,
+        "Contractor report must be present in link to calculate report display view",
+      );
+      return {
+        id: link.id,
+        costAmount: {
+          amount: link.costAmount,
+          currency: cost.currency,
+        },
+        reportAmount: {
+          amount: link.reportAmount,
+          currency: contractorReport.currency,
+        },
+        description: link.description,
+        contractorReport: contractorReport,
+      };
+    }),
+    matchedAmount: {
+      amount: sumOfLinkedAmounts,
+      currency: cost.currency,
+    },
+    remainingAmount: {
+      amount: remainingAmount,
+      currency: cost.currency,
+    },
+    status: status,
+    workspace: maybe.getOrThrow(
+      workspaces.find((workspace) => workspace.id === cost.workspaceId),
       "Workspace is missing",
     ),
   };

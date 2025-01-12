@@ -12,7 +12,9 @@ import { z, ZodType } from "zod";
 const linkCostReportBase$ = z.object({
   id: z.number(),
   created_at: z.coerce.date(),
-  amount: z.number(),
+  cost_amount: z.number(),
+  report_amount: z.number(),
+  description: z.string().nullable(),
   cost_id: z.number(),
   contractor_report_id: z.number(),
 });
@@ -33,6 +35,7 @@ export function linkCostReportFromHttp(
 ): LinkCostReport {
   return {
     ...camelcaseKeys(linkCostReport),
+    description: linkCostReport.description ?? "",
     cost: maybe.mapOrNull(linkCostReport.cost, costFromHttp),
     contractorReport: maybe.mapOrNull(
       linkCostReport.contractor_reports,

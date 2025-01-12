@@ -7,6 +7,7 @@ import {
   ContractorReportQuery,
 } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { CostQuery } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { Maybe, RemoteData } from "@passionware/monads";
@@ -96,6 +97,47 @@ export type ClientBillingLinkView =
       justification: string;
     };
 
+export type CostLinkView = {
+  id: number;
+  costAmount: CurrencyValue;
+  reportAmount: CurrencyValue;
+  description: string;
+  contractorReport: ContractorReport;
+};
+
+export type CostEntry = {
+  id: number;
+  createdAt: Date;
+  invoiceNumber: Maybe<string>;
+  counterparty: Maybe<string>;
+  description: Maybe<string>;
+  invoiceDate: Date;
+  netAmount: CurrencyValue;
+  grossAmount: Maybe<CurrencyValue>;
+  contractor: Contractor | null;
+  // foreign references
+  linkReports: CostLinkView[];
+  workspace: Workspace;
+  /**
+   * Status of cost:
+   * matched: we have linked all constractor reports to this cost
+   * unmatched: we have not linked any contractor reports to this cost
+   * partially-matched: we have linked some contractor reports to this cost
+   */
+  status: "matched" | "unmatched" | "partially-matched"; //| "clarified";
+  matchedAmount: CurrencyValue;
+  remainingAmount: CurrencyValue;
+};
+
+export type CostView = {
+  entries: CostEntry[];
+  total: {
+    netAmount: CurrencyValue[]; // each for each currency
+    matchedAmount: CurrencyValue[]; // each for each currency
+    remainingAmount: CurrencyValue[]; // each for each currency
+  };
+};
+
 export interface ReportDisplayService {
   /**
    * Returns a list of reports, with all links and billing information.
@@ -108,6 +150,11 @@ export interface ReportDisplayService {
    * @param query
    */
   useBillingView: (query: ClientBillingQuery) => RemoteData<ClientBillingView>;
+  /**
+   * Returns a list of costs, with all links and contractor report information.
+   * @param query
+   */
+  useCostView: (query: CostQuery) => RemoteData<CostView>;
 }
 
 export interface WithReportDisplayService {

@@ -4,7 +4,9 @@ import { Cost } from "@/api/cost/cost.api.ts";
 export type LinkCostReport = {
   id: number;
   createdAt: Date;
-  amount: number;
+  costAmount: number;
+  reportAmount: number;
+  description: string;
   costId: number;
   contractorReportId: number;
   // references to the linked entities

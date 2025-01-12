@@ -1,5 +1,12 @@
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
+import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -12,30 +19,36 @@ import {
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
-import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithCostService } from "@/services/io/CostService/CostService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
+import { startCase } from "lodash";
 
 export interface CostsWidgetProps
   extends WithServices<
     [
-      WithCostService,
+      WithReportDisplayService,
       WithFormatService,
       WithContractorService,
       WithClientService,
       WithWorkspaceService,
+      WithPreferenceService,
+      WithMutationService,
     ]
   > {
   workspaceId: WorkspaceSpec;
@@ -43,7 +56,7 @@ export interface CostsWidgetProps
 }
 
 export function CostsWidget(props: CostsWidgetProps) {
-  const costs = props.services.costService.useCosts(
+  const costs = props.services.reportDisplayService.useCostView(
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
@@ -70,7 +83,9 @@ export function CostsWidget(props: CostsWidgetProps) {
             <TableHead>Invoice Date</TableHead>
             <TableHead>Net Value</TableHead>
             <TableHead>Gross Value</TableHead>
-            <TableHead>Currency</TableHead>
+            <TableHead>status</TableHead>
+            <TableHead>Matched</TableHead>
+            <TableHead>Remaining</TableHead>
             <TableHead className="text-right">Description</TableHead>
           </TableRow>
         </TableHeader>
@@ -90,28 +105,27 @@ export function CostsWidget(props: CostsWidgetProps) {
             )
             .catch(renderError)
             .map((costs) => {
-              if (costs.length === 0) {
+              if (costs.entries.length === 0) {
                 return (
                   <TableRow>
                     <TableCell colSpan={8}>No costs found.</TableCell>
                   </TableRow>
                 );
               }
-              return costs.map((cost) => (
+              return costs.entries.map((cost) => (
                 <TableRow key={cost.id}>
                   <TableCell className="font-medium">{cost.id}</TableCell>
                   <TableCell className="py-0">
-                    <WorkspaceWidget
+                    <WorkspaceView
                       layout="avatar"
-                      workspaceId={cost.workspaceId}
-                      services={props.services}
+                      workspace={rd.of(cost.workspace)}
                     />
                   </TableCell>
                   <TableCell className="py-0">
-                    {cost.contractorId ? (
+                    {cost.contractor ? (
                       <>
                         <ContractorPicker
-                          value={cost.contractorId}
+                          value={cost.contractor.id}
                           onSelect={null}
                           services={props.services}
                           size="xs"
@@ -128,20 +142,51 @@ export function CostsWidget(props: CostsWidgetProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    {props.services.formatService.financial.amount(
-                      cost.netValue,
-                      cost.currency,
+                    {props.services.formatService.financial.currency(
+                      cost.netAmount,
                     )}
                   </TableCell>
                   <TableCell>
-                    {cost.grossValue
-                      ? props.services.formatService.financial.amount(
-                          cost.grossValue,
-                          cost.currency,
+                    {cost.grossAmount
+                      ? props.services.formatService.financial.currency(
+                          cost.grossAmount,
                         )
                       : "N/A"}
                   </TableCell>
-                  <TableCell>{cost.currency}</TableCell>
+                  <TableCell>
+                    <Popover>
+                      <PopoverTrigger>
+                        <Badge
+                          variant={
+                            (
+                              {
+                                matched: "positive",
+                                unmatched: "destructive",
+                                "partially-matched": "warning",
+                              } as const
+                            )[cost.status]
+                          }
+                          className=""
+                        >
+                          {startCase(cost.status)}
+                        </Badge>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-fit">
+                        <PopoverHeader>Cost details</PopoverHeader>
+                        <CostInfo costEntry={cost} services={props.services} />
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.currency(
+                      cost.matchedAmount,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {props.services.formatService.financial.currency(
+                      cost.remainingAmount,
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {cost.description || "N/A"}
                   </TableCell>
