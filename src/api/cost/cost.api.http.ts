@@ -1,6 +1,8 @@
+import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { sumBy } from "lodash";
 import { z } from "zod";
 
 export function createCostApi(client: SupabaseClient): CostApi {
@@ -54,30 +56,61 @@ export function createCostApi(client: SupabaseClient): CostApi {
       }
 
       if (query.filters.contractorId) {
-        switch (query.filters.contractorId.operator) {
+        const { operator, value } = query.filters.contractorId;
+
+        if (!Array.isArray(value)) {
+          throw new Error("contractorId.value must be an array");
+        }
+
+        const filteredValues = value.filter((v) => v !== null);
+
+        switch (operator) {
           case "oneOf": {
-            request = request.in(
-              "contractor_id",
-              query.filters.contractorId.value,
-            );
+            if (value.includes(null)) {
+              // Tworzymy zapytanie `or` dla wartości w tablicy oraz `null`
+              const orFilter = [
+                `contractor_id.in.(${filteredValues.join(",")})`,
+                `contractor_id.is.null`,
+              ].join(",");
+
+              request = request.or(orFilter);
+            } else {
+              request = request.in("contractor_id", filteredValues);
+            }
             break;
           }
           case "matchNone": {
-            request = request.not(
-              "contractor_id",
-              "in",
-              query.filters.contractorId.value,
-            );
+            if (value.includes(null)) {
+              // Tworzymy zapytanie `or` dla wykluczenia wartości oraz `null`
+              const orFilter = [
+                `contractor_id.notin.(${filteredValues.join(",")})`,
+                `contractor_id.not.is.null`,
+              ].join(",");
+
+              request = request.or(orFilter);
+            } else {
+              request = request.not("contractor_id", "in", filteredValues);
+            }
             break;
           }
+          default:
+            throw new Error(`Unsupported operator: ${operator}`);
         }
       }
-
       const { data, error } = await request;
       if (error) {
         throw error;
       }
-      return z.array(cost$).parse(data).map(costFromHttp);
+      return z
+        .array(cost$)
+        .parse(data)
+        .map(costFromHttp)
+        .filter((cost) =>
+          numberFilter.matches(
+            query.filters.remainingAmount,
+            cost.netValue - sumBy(cost.linkReports, (x) => x.costAmount),
+          ),
+        );
     },
     getCost: async (id) => {
       const { data, error } = await client

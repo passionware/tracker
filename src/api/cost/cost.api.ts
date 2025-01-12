@@ -1,4 +1,5 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
+import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
   WithFilters,
@@ -40,6 +41,7 @@ export type CostQuery = WithSearch &
     workspaceId: Maybe<EnumFilter<Workspace["id"]>>;
     clientId: Maybe<EnumFilter<Contractor["id"]>>;
     contractorId: Maybe<EnumFilter<Contractor["id"] | null>>;
+    remainingAmount: Maybe<NumberFilter>;
   }> &
   WithPagination;
 
@@ -61,6 +63,7 @@ export const costQueryUtils = {
         null,
       ),
       contractorId: null,
+      remainingAmount: null,
     },
     page: paginationUtils.ofDefault(),
   }),

@@ -23,7 +23,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { partial } from "lodash";
+import { chain, partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface ContractorReportCostInfoProps
@@ -87,10 +87,29 @@ export function ContractorReportCostInfo({
                     }),
                   )
                 }
-                query={costQueryUtils.ofDefault(
-                  report.workspace.id,
-                  report.clientId,
-                )}
+                query={chain(
+                  costQueryUtils.ofDefault(
+                    report.workspace.id,
+                    report.clientId,
+                  ),
+                )
+                  .thru((x) =>
+                    costQueryUtils.setFilter(x, "remainingAmount", {
+                      operator: "greaterThan",
+                      value: 0,
+                    }),
+                  )
+                  .thru((x) =>
+                    costQueryUtils.setFilter(x, "contractorId", {
+                      operator: "oneOf",
+                      value: [
+                        report.contractor.id,
+                        null /* null to see unanchored invoices too */,
+                      ],
+                    }),
+                  )
+                  .thru((x) => costQueryUtils.removeFilter(x, "clientId")) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients
+                  .value()}
               />
             </PopoverContent>
           </Popover>
