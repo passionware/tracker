@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -21,7 +22,7 @@ import {
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
@@ -126,24 +127,48 @@ export function ContractorReportCostInfo({
         Linked costs
       </div>
       <Separator className="my-2" />
-      <div className="space-y-8">
+      <div className="space-y-2">
         {report.costLinks.map((link) => (
-          <div className="flex items-center gap-2" key={link.id}>
+          <div
+            className="flex items-center gap-2 bg-slate-50 p-1 border border-slate-200 rounded"
+            key={link.id}
+          >
             <Badge variant="positive">Cost</Badge>
-            <div className="text-sm font-medium leading-none flex flex-row gap-2">
-              {services.formatService.financial.currency(link.costAmount)}
-              <div className="contents text-gray-500">
-                satisfies
-                {services.formatService.financial.currency(link.reportAmount)}
+            <div className="flex flex-col gap-2">
+              <div className="text-sm font-medium leading-none flex flex-row gap-2">
+                {services.formatService.financial.currency(link.costAmount)}
+                <div className="contents text-gray-500">
+                  satisfies
+                  {services.formatService.financial.currency(link.reportAmount)}
+                </div>
+              </div>
+              <div className="flex flex-row gap-2">
+                <span className="text-xs text-slate-600">invoiced at</span>
+                <Badge variant="secondary" size="sm">
+                  {services.formatService.temporal.date(link.cost.invoiceDate)}
+                </Badge>
               </div>
             </div>
-            <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
-              <div className="text-gray-600 text-xs mr-1.5">
-                {link.cost.description || "No description"}
-              </div>
-              <Badge variant="secondary" size="sm">
-                {services.formatService.temporal.date(link.cost.invoiceDate)}
-              </Badge>
+
+            <div className="flex flex-col items-end gap-1 ml-auto">
+              <div className="text-xs text-slate-500">Linking description</div>
+              <SimpleTooltip title={link.description}>
+                <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
+                  {maybe.getOrElse(
+                    maybe.fromTruthy(link.description),
+                    <div className="text-slate-400">No description</div>,
+                  )}
+                </div>
+              </SimpleTooltip>
+              <div className="text-xs text-slate-500">Cost description</div>
+              <SimpleTooltip title={link.cost.description}>
+                <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
+                  {maybe.getOrElse(
+                    maybe.fromTruthy(link.cost.description),
+                    <div className="text-slate-400">No description</div>,
+                  )}
+                </div>
+              </SimpleTooltip>
             </div>
             <DeleteButtonWidget
               services={services}
