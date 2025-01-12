@@ -27,7 +27,7 @@ export const cost$ = z.object({
   contractor_id: z.number().nullable(),
   currency: z.string(),
   // foreign references
-  contractors: contractor$.optional(),
+  contractor: contractor$.nullable(),
   workspace_id: z.number(),
   contractor_reports: z.array(
     z.object({
@@ -42,7 +42,7 @@ export type Cost$ = z.input<typeof cost$>;
 export function costFromHttp(cost: Cost$): Cost {
   return {
     ...camelcaseKeys(cost),
-    contractor: maybe.mapOrNull(cost.contractors, contractorFromHttp),
+    contractor: maybe.mapOrNull(cost.contractor, contractorFromHttp),
     linkReports: cost.contractor_reports.map((report) => ({
       ...linkCostReportFromHttp(report.link_cost_report),
       contractorReport: contractorReportFromHttp(report.contractor_report),

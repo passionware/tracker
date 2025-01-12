@@ -54,7 +54,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
-import { chain, partialRight, uniqBy } from "lodash";
+import { chain, partialRight } from "lodash";
 import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -289,27 +289,13 @@ export function ContractorReportsWidget(
                     {report.contractor.fullName}
                   </TableCell>
                   <TableCell>
-                    <div className="empty:hidden flex flex-row gap-1.5 items-center">
-                      {maybe.getOrElse(
-                        maybe.fromArray(
-                          uniqBy(
-                            report.links.filter(
-                              (x) => x.linkType === "clientBilling",
-                            ),
-                            (x) => x.billing.clientId,
-                          ).map((link) => (
-                            <ClientWidget
-                              key={link.id}
-                              layout="avatar"
-                              size="xs"
-                              clientId={link.billing.clientId}
-                              services={props.services}
-                            />
-                          )),
-                        ),
-                        "-",
-                      )}
-                    </div>
+                    <ClientWidget
+                      key={report.id}
+                      layout="avatar"
+                      size="xs"
+                      clientId={report.clientId}
+                      services={props.services}
+                    />
                   </TableCell>
                   <TableCell>
                     <Popover>

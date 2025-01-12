@@ -208,15 +208,19 @@ export function CostsWidget(props: CostsWidgetProps) {
                       </PopoverTrigger>
                       <PopoverContent className="w-fit">
                         <PopoverHeader>Cost details</PopoverHeader>
-                        <CostInfo costEntry={cost} services={props.services} />
+                        <CostInfo
+                          costEntry={cost}
+                          services={props.services}
+                          clientId={props.clientId}
+                          workspaceId={props.workspaceId}
+                        />
                       </PopoverContent>
                     </Popover>
                   </TableCell>
                   <TableCell>
-
                     <div className="empty:hidden flex flex-row gap-1.5 items-center">
                       {props.services.formatService.financial.currency(
-                          cost.matchedAmount,
+                        cost.matchedAmount,
                       )}
                       {cost.linkReports.map((link) => (
                         <ClientWidget

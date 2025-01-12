@@ -18,11 +18,8 @@ import {
   ClientBillingViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -37,18 +34,12 @@ export interface ChargeInfoProps
       WithMutationService,
       WithPreferenceService,
       WithReportDisplayService,
+      WithClientService,
     ]
   > {
   billing: ClientBillingViewEntry;
-  clientId: ClientSpec;
-  workspaceId: WorkspaceSpec;
 }
-export function ChargeInfo({
-  billing,
-  services,
-  clientId,
-  workspaceId,
-}: ChargeInfoProps) {
+export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
 
@@ -77,7 +68,7 @@ export function ChargeInfo({
             </PopoverTrigger>
             <PopoverContent className="w-fit">
               <InlineContractorReportSearch
-                maxAmount={billing.remainingAmount.amount}
+                maxSourceAmount={billing.remainingAmount}
                 services={services}
                 onSelect={(report) =>
                   linkingState.track(
@@ -85,12 +76,17 @@ export function ChargeInfo({
                       type: "reconcile",
                       clientBillingId: billing.id,
                       contractorReportId: report.contractorReportId,
-                      linkAmount: report.value,
+                      linkAmount: report.value.source,
                     }),
                   )
                 }
+                showDescription={false}
+                showTargetValue={false}
                 query={chain(
-                  contractorReportQueryUtils.ofDefault(clientId, workspaceId),
+                  contractorReportQueryUtils.ofDefault(
+                    billing.workspace.id, // we want only reports from the same workspace
+                    billing.clientId, // we want only reports from the same client
+                  ),
                 )
                   .thru((x) =>
                     contractorReportQueryUtils.setFilter(x, "remainingAmount", {

@@ -1,8 +1,11 @@
-import { LinkPayload, MutationApi } from "@/api/mutation/mutation.api.ts";
+import {
+  LinkReportBillingPayload,
+  MutationApi,
+} from "@/api/mutation/mutation.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
-  function getInsertPayload(payload: LinkPayload) {
+  function getInsertPayload(payload: LinkReportBillingPayload) {
     switch (payload.type) {
       case "clarify":
         return {
@@ -32,6 +35,18 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    linkCostAndReport: async (payload) => {
+      const response = await client.from("link_cost_report").insert({
+        cost_id: payload.costId,
+        contractor_report_id: payload.contractorReportId,
+        cost_amount: payload.costAmount,
+        report_amount: payload.reportAmount,
+        description: payload.description,
+      });
+      if (response.error) {
+        throw response.error;
+      }
+    },
     createContractorReport: async (report) => {
       const response = await client
         .from("contractor_reports")
@@ -57,6 +72,15 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     deleteBillingReportLink: async (linkId) => {
       const response = await client
         .from("link_billing_report")
+        .delete()
+        .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    deleteCostReportLink: async (linkId) => {
+      const response = await client
+        .from("link_cost_report")
         .delete()
         .eq("id", linkId);
       if (response.error) {

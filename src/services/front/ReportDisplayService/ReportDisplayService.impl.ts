@@ -182,7 +182,7 @@ function calculateReportEntry(
   );
   if (!haveSameClient) {
     throw new Error(
-      "Invalid report. All linked billing reports must have the same currency and client.",
+      "Invalid report. All linked billing reports must have the same client.",
     );
   }
 
@@ -215,6 +215,7 @@ function calculateReportEntry(
 
   return {
     id: report.id,
+    clientId: report.clientId,
     contractor: maybe.getOrThrow(report.contractor, "Contractor is missing"),
     netAmount: {
       amount: report.netValue,
@@ -300,6 +301,7 @@ function calculateBilling(
 
   return {
     id: billing.id,
+    clientId: billing.clientId,
     netAmount: {
       amount: billing.totalNet,
       currency: billing.currency,

@@ -15,6 +15,12 @@ export function createMutationService(
         scope: "Linking report and billing",
       });
     },
+    linkCostAndReport: async (payload) => {
+      await api.linkCostAndReport(payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Linking cost and report",
+      });
+    },
     createContractorReport: async (report) => {
       const response = await api.createContractorReport(report);
       await config.services.messageService.reportSystemEffect.sendRequest({
@@ -27,6 +33,16 @@ export function createMutationService(
         await api.deleteBillingReportLink(linkId);
         await config.services.messageService.reportSystemEffect.sendRequest({
           scope: "Deleting billing report link",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
+    deleteCostReportLink: async (linkId) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.deleteCostReportLink(linkId);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Deleting cost report link",
         });
       } else {
         throw new Error("Danger mode is not enabled");

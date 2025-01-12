@@ -1,3 +1,4 @@
+import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -8,6 +9,8 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -17,11 +20,16 @@ import {
   CostEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { chain } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface CostInfoProps
@@ -35,9 +43,11 @@ export interface CostInfoProps
     ]
   > {
   costEntry: CostEntry;
+  clientId: ClientSpec;
+  workspaceId: WorkspaceSpec;
 }
 
-export function CostInfo({ costEntry, services }: CostInfoProps) {
+export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
   const linkingState = promiseState.useRemoteData();
 
   return (
@@ -64,20 +74,49 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-fit">
-              {/*<InlineContractorReportSearch*/}
-              {/*    query=*/}
-              {/*  maxAmount={costEntry.remainingAmount.amount}*/}
-              {/*  services={services}*/}
-              {/*  onSelect={(report) =>*/}
-              {/*    // linkingState.track(*/}
-              {/*    //   services.mutationService.linkReportAndCost({*/}
-              {/*    //     costId: costEntry.id,*/}
-              {/*    //     contractorReportId: report.id,*/}
-              {/*    //     linkAmount: report.netValue,*/}
-              {/*    //   }),*/}
-              {/*    // )*/}
-              {/*  }*/}
-              {/*/>*/}
+              <InlineContractorReportSearch
+                showTargetValue
+                showDescription
+                services={services}
+                maxSourceAmount={costEntry.remainingAmount}
+                onSelect={(report) =>
+                  linkingState.track(
+                    services.mutationService.linkCostAndReport({
+                      costId: costEntry.id,
+                      contractorReportId: report.contractorReportId,
+                      reportAmount: report.value.target,
+                      costAmount: report.value.source, // todo: secondary input optionally
+                      description: report.value.description,
+                    }),
+                  )
+                }
+                query={chain(
+                  contractorReportQueryUtils.ofDefault(
+                    costEntry.workspace.id, // we want to search in the same workspace only!
+                    clientId,
+                  ),
+                )
+                  .thru((x) =>
+                    costEntry.contractor
+                      ? // if the cost is already assigned to a contractor, just allow to search his reports
+                        contractorReportQueryUtils.setFilter(
+                          x,
+                          "contractorId",
+                          {
+                            operator: "oneOf",
+                            value: [costEntry.contractor.id],
+                          },
+                        )
+                      : x,
+                  )
+                  .thru((x) =>
+                    contractorReportQueryUtils.setFilter(x, "remainingAmount", {
+                      operator: "greaterThan",
+                      value: 0,
+                    }),
+                  )
+                  .value()}
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -146,6 +185,12 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
                   </div>
                 </SimpleTooltip>
               </div>
+              <DeleteButtonWidget
+                services={services}
+                onDelete={() =>
+                  services.mutationService.deleteCostReportLink(link.id)
+                }
+              />
             </div>
           </li>
         ))}

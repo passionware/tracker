@@ -1,6 +1,6 @@
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
 
-export type LinkPayload =
+export type LinkReportBillingPayload =
   | ({
       type: "clarify";
       clarifyJustification: string;
@@ -20,15 +20,25 @@ export type LinkPayload =
       linkAmount: number;
     };
 
+export type LinkCostReportPayload = {
+  costId: number;
+  contractorReportId: number;
+  costAmount: number;
+  reportAmount: number;
+  description: string;
+};
+
 export type CreateContractorReportPayload = Omit<
   ContractorReport,
   "id" | "createdAt" | "linkBillingReport" | "contractor"
 >;
 
 export interface MutationApi {
-  linkReportAndBilling: (payload: LinkPayload) => Promise<void>;
+  linkReportAndBilling: (payload: LinkReportBillingPayload) => Promise<void>;
+  linkCostAndReport: (payload: LinkCostReportPayload) => Promise<void>;
   createContractorReport: (
     report: CreateContractorReportPayload,
   ) => Promise<{ id: ContractorReport["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
+  deleteCostReportLink: (linkId: number) => Promise<void>;
 }

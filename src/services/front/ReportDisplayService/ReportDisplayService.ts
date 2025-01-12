@@ -38,6 +38,7 @@ export interface ContractorReportViewEntry {
   links: ContractorReportLinkView[];
   contractor: Contractor;
   workspace: Workspace;
+  clientId: number;
 }
 
 export type ContractorReportLinkView = {
@@ -69,6 +70,7 @@ export interface ClientBillingViewEntry {
   netAmount: CurrencyValue;
   grossAmount: CurrencyValue;
   invoiceNumber: string;
+  clientId: number;
   invoiceDate: Date;
   description: string | null;
   links: ClientBillingLinkView[];

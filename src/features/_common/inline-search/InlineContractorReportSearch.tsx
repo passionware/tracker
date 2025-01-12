@@ -15,20 +15,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { Maybe, rd } from "@passionware/monads";
+import { ChevronRight } from "lucide-react";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 
 export interface InlineContractorReportSearchProps
-  extends WithServices<[WithReportDisplayService, WithFormatService]> {
+  extends WithServices<
+    [WithReportDisplayService, WithFormatService, WithClientService]
+  > {
   query: ContractorReportQuery;
-  onSelect: (data: { contractorReportId: number; value: number }) => void;
-  maxAmount: Maybe<number>;
+  onSelect: (data: { contractorReportId: number; value: LinkValue }) => void;
+  maxSourceAmount: Maybe<CurrencyValue>;
+  showDescription: boolean;
+  showTargetValue: boolean;
 }
 
 export function InlineContractorReportSearch(
@@ -71,7 +80,20 @@ export function InlineContractorReportSearch(
                         workspace={rd.of(report.workspace)}
                       />
                     </TableCell>
-                    <TableCell>{report.contractor.fullName}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {report.contractor.fullName}
+                        {report.links.length > 0 && (
+                          <ChevronRight className="size-2" />
+                        )}
+                        <ClientWidget
+                          layout="avatar"
+                          size="xs"
+                          clientId={report.clientId}
+                          services={props.services}
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
                         report.reconciledAmount.amount,
@@ -91,10 +113,35 @@ export function InlineContractorReportSearch(
                         </PopoverTrigger>
                         <PopoverContent className="w-fit">
                           <EnterValue
-                            initialValue={Math.min(
-                              report.remainingAmount.amount,
-                              props.maxAmount ?? 0,
-                            )}
+                            services={props.services}
+                            initialSourceValue={{
+                              currency:
+                                props.maxSourceAmount?.currency ??
+                                report.remainingAmount.currency,
+                              amount: Math.min(
+                                props.maxSourceAmount?.amount ?? 0,
+                              ),
+                            }}
+                            initialDescription={[
+                              report.remainingAmount.currency !==
+                              props.maxSourceAmount?.currency
+                                ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join("\n")}
+                            initialTargetValue={{
+                              ...report.remainingAmount,
+                              amount:
+                                props.maxSourceAmount?.currency ===
+                                report.remainingAmount.currency
+                                  ? // we have same currency, so probably we don't need to exchange
+                                    props.maxSourceAmount?.amount
+                                  : // this won't be same, so let's assume that cost  = remaining report but in target currency
+                                    report.remainingAmount.amount,
+                            }}
+                            showDescription={props.showDescription}
+                            showTargetValue={props.showTargetValue}
                             onValueChange={(value) =>
                               props.onSelect({
                                 contractorReportId: report.id,
@@ -115,19 +162,72 @@ export function InlineContractorReportSearch(
   );
 }
 
-function EnterValue(props: {
-  initialValue: number;
-  onValueChange: (value: number) => void;
-}) {
-  const form = useForm({ defaultValues: { value: props.initialValue } });
-  const valueId = useId();
+type LinkValue = {
+  source: number;
+  target: number;
+  description: string;
+};
+
+function EnterValue(
+  props: WithServices<[WithFormatService]> & {
+    initialDescription: string;
+    initialSourceValue: CurrencyValue;
+    initialTargetValue: CurrencyValue;
+    showTargetValue: boolean;
+    showDescription: boolean;
+    onValueChange: (value: LinkValue) => void;
+  },
+) {
+  const form = useForm({
+    defaultValues: {
+      source: props.initialSourceValue.amount,
+      target: props.initialTargetValue.amount,
+      description: props.initialDescription,
+    },
+  });
+  const sourceId = useId();
+  const targetId = useId();
+  const descriptionId = useId();
   return (
     <form
       className="flex flex-col gap-2"
-      onSubmit={form.handleSubmit((data) => props.onValueChange(data.value))}
+      onSubmit={form.handleSubmit((data) =>
+        props.onValueChange({
+          source: Number(data.source),
+          target: Number(data.target),
+          description: data.description,
+        }),
+      )}
     >
-      <label htmlFor={valueId}>Enter linked amount:</label>
-      <Input id={valueId} {...form.register("value")} />
+      <label htmlFor={sourceId}>
+        Enter linked amount (
+        {props.services.formatService.financial.currencySymbol(
+          props.initialSourceValue.currency,
+        )}
+        )
+      </label>
+      <Input id={sourceId} {...form.register("source")} />
+
+      {props.showTargetValue && (
+        <>
+          <label htmlFor={targetId}>
+            Enter target amount (
+            {props.services.formatService.financial.currencySymbol(
+              props.initialTargetValue.currency,
+            )}
+            )
+          </label>
+          <Input id={targetId} {...form.register("target")} />
+        </>
+      )}
+
+      {props.showDescription && (
+        <>
+          <label htmlFor={descriptionId}>Enter description:</label>
+          <Textarea id={descriptionId} {...form.register("description")} />
+        </>
+      )}
+
       <Button variant="default" type="submit">
         Submit
       </Button>

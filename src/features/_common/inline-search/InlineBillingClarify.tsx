@@ -1,4 +1,4 @@
-import { LinkPayload } from "@/api/mutation/mutation.api.ts";
+import { LinkReportBillingPayload } from "@/api/mutation/mutation.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 
 export interface InlineClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
-  onSelect: (data: LinkPayload) => void;
+  onSelect: (data: LinkReportBillingPayload) => void;
   maxAmount: number;
   context: { contractorReportId: number } | { clientBillingId: number };
 }

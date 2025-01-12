@@ -120,6 +120,15 @@ export function createFormatService(clock: () => Date): FormatService {
 
         return formattedValue;
       },
+      currencySymbol: (currency: string) => {
+        const formatter = new Intl.NumberFormat("de-DE", {
+          style: "currency",
+          currency,
+          currencyDisplay: "symbol",
+          minimumFractionDigits: 2,
+        });
+        return formatter.format(0).split(" ")[1];
+      },
     },
   };
 }

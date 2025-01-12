@@ -105,6 +105,7 @@ export function BillingWidget(
           <TableRow>
             <TableHead className="">Id</TableHead>
             <TableHead>Issuer</TableHead>
+            <TableHead>Client</TableHead>
             <TableHead>Invoice Number</TableHead>
             <TableHead>Invoice Date</TableHead>
             <TableHead>Status</TableHead>
@@ -147,6 +148,14 @@ export function BillingWidget(
                       workspace={rd.of(billing.workspace)}
                     />
                   </TableCell>
+                  <TableCell>
+                    <ClientWidget
+                      layout="avatar"
+                      size="xs"
+                      clientId={billing.clientId}
+                      services={props.services}
+                    />
+                  </TableCell>
                   <TableCell>{billing.invoiceNumber}</TableCell>
                   <TableCell>
                     {props.services.formatService.temporal.date(
@@ -186,8 +195,6 @@ export function BillingWidget(
                         <ChargeInfo
                           services={props.services}
                           billing={billing}
-                          clientId={props.clientId}
-                          workspaceId={props.workspaceId}
                         />
                       </PopoverContent>
                     </Popover>
