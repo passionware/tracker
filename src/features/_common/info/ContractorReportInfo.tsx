@@ -20,11 +20,8 @@ import {
   ContractorReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -38,18 +35,15 @@ export interface ContractorReportInfoProps
       WithMutationService,
       WithPreferenceService,
       WithReportDisplayService,
+      WithClientService,
     ]
   > {
   report: ContractorReportViewEntry;
-  clientId: ClientSpec;
-  workspaceId: WorkspaceSpec;
 }
 
 export function ContractorReportInfo({
   services,
   report,
-  clientId,
-  workspaceId,
 }: ContractorReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
@@ -78,6 +72,9 @@ export function ContractorReportInfo({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-fit">
+              <PopoverHeader>
+                Match the report with a client billing
+              </PopoverHeader>
               <InlineBillingSearch
                 maxAmount={report.remainingAmount.amount}
                 services={services}
@@ -92,7 +89,10 @@ export function ContractorReportInfo({
                   )
                 }
                 query={clientBillingQueryUtils.setFilter(
-                  clientBillingQueryUtils.ofDefault(workspaceId, clientId),
+                  clientBillingQueryUtils.ofDefault(
+                    report.workspace.id, // we want to search for client billing in the same workspace as the report
+                    report.clientId, // we want to search for client billing for the same client as the report
+                  ),
                   "remainingAmount",
                   { operator: "greaterThan", value: 0 },
                 )}

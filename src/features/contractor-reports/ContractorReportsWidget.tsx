@@ -131,6 +131,7 @@ export function ContractorReportsWidget(
               <>
                 <PopoverHeader>Add new contractor report</PopoverHeader>
                 <NewContractorReportWidget
+                  onCancel={bag.close}
                   defaultWorkspaceId={idSpecUtils.switchAll(
                     props.workspaceId,
                     undefined,
@@ -329,8 +330,6 @@ export function ContractorReportsWidget(
                         <PopoverHeader>Report details</PopoverHeader>
                         <ContractorReportInfo
                           report={report}
-                          clientId={props.clientId}
-                          workspaceId={props.workspaceId}
                           services={props.services}
                         />
                       </PopoverContent>

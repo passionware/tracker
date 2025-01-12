@@ -15,17 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 
 export interface InlineBillingSearchProps
-  extends WithServices<[WithReportDisplayService, WithFormatService]> {
+  extends WithServices<
+    [WithReportDisplayService, WithFormatService, WithClientService]
+  > {
   query: ClientBillingQuery;
   onSelect: (data: { billingId: number; value: number }) => void;
   maxAmount: number;
@@ -53,6 +57,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                 <TableRow>
                   <TableHead>Id</TableHead>
                   <TableHead>Issuer</TableHead>
+                  <TableHead>Client</TableHead>
                   <TableHead>Invoice number</TableHead>
                   <TableHead>Invoice date</TableHead>
                   <TableHead>Net Amount</TableHead>
@@ -68,6 +73,13 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                       <WorkspaceView
                         layout="avatar"
                         workspace={rd.of(billing.workspace)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <ClientWidget
+                        layout="avatar"
+                        clientId={billing.clientId}
+                        services={props.services}
                       />
                     </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>

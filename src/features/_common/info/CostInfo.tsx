@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
+  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
@@ -74,6 +75,9 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-fit">
+              <PopoverHeader>
+                Match the cost with a contractor report
+              </PopoverHeader>
               <InlineContractorReportSearch
                 showTargetValue
                 showDescription

@@ -1,5 +1,4 @@
-import { Client } from "@/api/clients/clients.api.ts";
-import { CreateContractorReportPayload } from "@/api/mutation/mutation.api.ts";
+import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -14,79 +13,67 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
-export interface NewContractorReportWidgetProps
-  extends WithServices<
-    [
-      WithMutationService,
-      WithClientService,
-      WithContractorService,
-      WithWorkspaceService,
-    ]
-  > {
-  // initialLink: LinkPayload; todo: think about this
-  defaultClientId?: Client["id"];
+export interface NewClientBillingWidgetProps
+  extends WithServices<[WithClientService, WithWorkspaceService]> {
+  defaultClientId?: number;
   defaultWorkspaceId?: number;
-  defaultContractorId?: number;
   defaultCurrency?: string;
-  defaultPeriodStart?: Date;
-  defaultPeriodEnd?: Date;
-  onSubmit: (data: CreateContractorReportPayload) => void;
+  defaultInvoiceDate?: Date;
+  onSubmit: (
+    data: Omit<
+      ClientBilling,
+      "id" | "createdAt" | "linkBillingReport" | "client"
+    >,
+  ) => void;
   onCancel: () => void;
 }
 
 type FormModel = {
-  contractorId: number | null;
   clientId: number | null;
-  periodStart: Date | null;
-  periodEnd: Date | null;
-  currency: string | null;
-  description: string;
-  netValue: string;
   workspaceId: number | null;
+  currency: string | null;
+  totalNet: string;
+  totalGross: string;
+  invoiceNumber: string;
+  invoiceDate: Date | null;
+  description: string;
 };
 
-export function NewContractorReportWidget(
-  props: NewContractorReportWidgetProps,
-) {
+export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
   const form = useForm<FormModel>({
     defaultValues: {
-      contractorId: props.defaultContractorId,
-      workspaceId: props.defaultWorkspaceId,
       clientId: props.defaultClientId,
-      periodStart: props.defaultPeriodStart,
-      periodEnd: props.defaultPeriodEnd,
+      workspaceId: props.defaultWorkspaceId,
       currency: props.defaultCurrency,
+      totalNet: "0",
+      totalGross: "0",
+      invoiceNumber: "",
+      invoiceDate: props.defaultInvoiceDate,
       description: "",
-      netValue: "0",
     },
   });
+
   function handleSubmit(data: FormModel) {
     props.onSubmit({
-      contractorId: maybe.getOrThrow(
-        data.contractorId,
-        "Contractor is required",
-      ),
-      netValue: parseFloat(data.netValue),
-      description: data.description,
-      currency: maybe.getOrThrow(data.currency, "Currency is required"),
-      periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
-      periodStart: maybe.getOrThrow(
-        data.periodStart,
-        "Period start is required",
-      ),
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
+      currency: maybe.getOrThrow(data.currency, "Currency is required"),
+      totalNet: parseFloat(data.totalNet),
+      totalGross: parseFloat(data.totalGross),
+      invoiceNumber: data.invoiceNumber,
+      invoiceDate: maybe.getOrThrow(
+        data.invoiceDate,
+        "Invoice date is required",
+      ),
+      description: data.description,
     });
   }
 
@@ -109,7 +96,7 @@ export function NewContractorReportWidget(
                   services={props.services}
                 />
               </FormControl>
-              <FormDescription>Select client</FormDescription>
+              <FormDescription>Select workspace</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -134,60 +121,6 @@ export function NewContractorReportWidget(
         />
         <FormField
           control={form.control}
-          name="contractorId"
-          render={({ field }) => (
-            <FormItem className="col-span-2">
-              <FormLabel>Contractor</FormLabel>
-              <FormControl>
-                <ContractorPicker
-                  value={field.value}
-                  onSelect={field.onChange}
-                  services={props.services}
-                />
-              </FormControl>
-              <FormDescription>Select contractor</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="periodStart"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Period start</FormLabel>
-              <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Pick a date"
-                />
-              </FormControl>
-              <FormDescription>Period start</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="periodEnd"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Period end</FormLabel>
-              <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Pick a date"
-                />
-              </FormControl>
-              {/*<FormDescription>Period end</FormDescription>*/}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="currency"
           render={({ field }) => (
             <FormItem>
@@ -195,21 +128,65 @@ export function NewContractorReportWidget(
               <FormControl>
                 <CurrencyPicker value={field.value} onSelect={field.onChange} />
               </FormControl>
-              {/*<FormDescription>Currency</FormDescription>*/}
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
           control={form.control}
-          name="netValue"
+          name="totalNet"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Net value</FormLabel>
+              <FormLabel>Total Net</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>Enter net value</FormDescription>
+              <FormDescription>Enter total net value</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="totalGross"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Total Gross</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormDescription>Enter total gross value</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="invoiceNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Invoice Number</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormDescription>Enter invoice number</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="invoiceDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Invoice Date</FormLabel>
+              <FormControl>
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Pick a date"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

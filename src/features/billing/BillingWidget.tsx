@@ -1,6 +1,7 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
@@ -21,7 +22,11 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
-import { renderError } from "@/features/_common/renderError.tsx";
+import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import {
   Summary,
   SummaryEntry,
@@ -29,6 +34,8 @@ import {
 } from "@/features/_common/Summary.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
+import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -41,6 +48,8 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
+import { Check, Loader2, PlusCircle } from "lucide-react";
 
 export function BillingWidget(
   props: { clientId: ClientSpec; workspaceId: WorkspaceSpec } & WithServices<
@@ -58,8 +67,60 @@ export function BillingWidget(
     clientBillingQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
+  const addBillingState = promiseState.useRemoteData();
+
   return (
     <CommonPageContainer
+      tools={
+        <>
+          <InlinePopoverForm
+            trigger={
+              <Button variant="default" size="sm" className="flex">
+                {rd
+                  .fullJourney(addBillingState.state)
+                  .initially(<PlusCircle />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-6"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Add client billing
+              </Button>
+            }
+            content={(bag) => (
+              <>
+                <PopoverHeader>Add new contractor report</PopoverHeader>
+                <NewClientBillingWidget
+                  onCancel={bag.close}
+                  defaultWorkspaceId={idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  )}
+                  defaultCurrency={rd.tryMap(
+                    billings,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  )}
+                  defaultInvoiceDate={new Date()}
+                  defaultClientId={idSpecUtils.switchAll(
+                    props.clientId,
+                    undefined,
+                  )}
+                  services={props.services}
+                  onSubmit={(data) =>
+                    addBillingState.track(
+                      props.services.mutationService
+                        .createClientBilling(data)
+                        .then(bag.close),
+                    )
+                  }
+                />
+              </>
+            )}
+          />
+        </>
+      }
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,

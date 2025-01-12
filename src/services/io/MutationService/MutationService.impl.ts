@@ -28,6 +28,13 @@ export function createMutationService(
       });
       return response;
     },
+    createClientBilling: async (billing) => {
+      const response = await api.createClientBilling(billing);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating client billing",
+      });
+      return response;
+    },
     deleteBillingReportLink: async (linkId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteBillingReportLink(linkId);
