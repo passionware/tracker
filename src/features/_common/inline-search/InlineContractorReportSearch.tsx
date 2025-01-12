@@ -120,6 +120,7 @@ export function InlineContractorReportSearch(
                                 report.remainingAmount.currency,
                               amount: Math.min(
                                 props.maxSourceAmount?.amount ?? 0,
+                                report.remainingAmount.amount,
                               ),
                             }}
                             initialDescription={[

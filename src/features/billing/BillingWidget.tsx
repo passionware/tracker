@@ -89,7 +89,7 @@ export function BillingWidget(
             }
             content={(bag) => (
               <>
-                <PopoverHeader>Add new contractor report</PopoverHeader>
+                <PopoverHeader>Add new billing</PopoverHeader>
                 <NewClientBillingWidget
                   onCancel={bag.close}
                   defaultWorkspaceId={idSpecUtils.switchAll(

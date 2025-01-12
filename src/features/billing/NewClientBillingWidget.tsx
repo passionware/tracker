@@ -139,7 +139,7 @@ export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
           name="totalNet"
           rules={{ required: "Total net is required" }}
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="col-start-1">
               <FormLabel>Total Net</FormLabel>
               <FormControl>
                 <Input {...field} />

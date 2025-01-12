@@ -113,12 +113,6 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                         )
                       : x,
                   )
-                  .thru((x) =>
-                    contractorReportQueryUtils.setFilter(x, "remainingAmount", {
-                      operator: "greaterThan",
-                      value: 0,
-                    }),
-                  )
                   .value()}
               />
             </PopoverContent>
