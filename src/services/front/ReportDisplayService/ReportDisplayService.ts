@@ -35,7 +35,7 @@ export interface ContractorReportViewEntry {
   reconciledAmount: CurrencyValue;
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
-  links: ContractorReportLinkView[];
+  reportLinks: ContractorReportLinkView[];
   contractor: Contractor;
   workspace: Workspace;
   clientId: number;

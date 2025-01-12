@@ -237,7 +237,7 @@ function calculateReportEntry(
       amount: remainingAmount,
       currency: report.currency,
     },
-    links: (report.linkBillingReport ?? [])?.map((link) => {
+    reportLinks: (report.linkBillingReport ?? [])?.map((link) => {
       switch (link.linkType) {
         case "reconcile":
           return {

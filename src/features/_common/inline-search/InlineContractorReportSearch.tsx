@@ -83,7 +83,7 @@ export function InlineContractorReportSearch(
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {report.contractor.fullName}
-                        {report.links.length > 0 && (
+                        {report.reportLinks.length > 0 && (
                           <ChevronRight className="size-2" />
                         )}
                         <ClientWidget

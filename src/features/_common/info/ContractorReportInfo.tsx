@@ -141,7 +141,7 @@ export function ContractorReportInfo({
       </div>
       <Separator className="my-2" />
       <div className="space-y-8">
-        {report.links.map((link) => (
+        {report.reportLinks.map((link) => (
           <div className="flex items-center gap-2" key={link.id}>
             <Badge
               variant={
