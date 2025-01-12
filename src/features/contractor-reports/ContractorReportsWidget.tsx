@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
@@ -53,7 +54,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
-import { chain, partialRight } from "lodash";
+import { chain, partialRight, uniqBy } from "lodash";
 import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -128,7 +129,7 @@ export function ContractorReportsWidget(
                     Add report
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-fit" >
+                <PopoverContent className="w-fit">
                   <PopoverHeader>Add new contractor report</PopoverHeader>
                   <NewContractorReportWidget
                     defaultCurrency={rd.tryMap(
@@ -209,6 +210,7 @@ export function ContractorReportsWidget(
             <TableHead className="">Id</TableHead>
             <TableHead>Issuer</TableHead>
             <TableHead>Contractor</TableHead>
+            <TableHead>Client</TableHead>
             <SimpleTooltip
               title={
                 <div className="space-y-4">
@@ -285,6 +287,29 @@ export function ContractorReportsWidget(
                   </TableCell>
                   <TableCell className="text-xs">
                     {report.contractor.fullName}
+                  </TableCell>
+                  <TableCell>
+                    <div className="empty:hidden flex flex-row gap-1.5 items-center">
+                      {maybe.getOrElse(
+                        maybe.fromArray(
+                          uniqBy(
+                            report.links.filter(
+                              (x) => x.linkType === "clientBilling",
+                            ),
+                            (x) => x.billing.clientId,
+                          ).map((link) => (
+                            <ClientWidget
+                              key={link.id}
+                              layout="avatar"
+                              size="xs"
+                              clientId={link.billing.clientId}
+                              services={props.services}
+                            />
+                          )),
+                        ),
+                        "-",
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Popover>

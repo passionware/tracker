@@ -19,7 +19,7 @@ import {
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Link2, Loader2 } from "lucide-react";
 
@@ -46,11 +46,6 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
         fromAmount={costEntry.remainingAmount}
         toAmount={costEntry.matchedAmount}
       />
-
-      <pre className="max-h-[200px] overflow-y-auto max-w-xl">
-        <code>{JSON.stringify(costEntry, null, 2)}</code>
-      </pre>
-
       {costEntry.remainingAmount.amount > 0 && (
         <div className="flex gap-2 flex-row self-end">
           <Popover>
@@ -133,8 +128,10 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
                 {link.contractorReport.contractor?.fullName}
               </div>
               <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
-                &zwnj;
-                {link.description}
+                {maybe.getOrElse(
+                  maybe.fromTruthy(link.description),
+                  <div className="text-slate-400">No description</div>,
+                )}
               </div>
             </div>
             <DeleteButtonWidget

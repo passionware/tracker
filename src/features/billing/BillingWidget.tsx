@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
@@ -204,10 +205,23 @@ export function BillingWidget(
                     )}
                   </TableCell>
                   <TableCell>
-                    {props.services.formatService.financial.amount(
-                      billing.matchedAmount.amount,
-                      billing.matchedAmount.currency,
-                    )}
+                    <div className="empty:hidden flex flex-row gap-1.5 items-center">
+                      {props.services.formatService.financial.amount(
+                        billing.matchedAmount.amount,
+                        billing.matchedAmount.currency,
+                      )}
+                      {billing.links
+                        .filter((l) => l.type === "reconcile")
+                        .map((link) => (
+                          <ClientWidget
+                            layout="avatar"
+                            size="xs"
+                            key={link.id}
+                            clientId={link.contractorReport.clientId}
+                            services={props.services}
+                          />
+                        ))}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {props.services.formatService.financial.amount(
