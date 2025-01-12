@@ -185,6 +185,8 @@ export function ContractorReportsWidget(
               { label: "Charged", value: view.total.chargedAmount },
               { label: "Reconciled", value: view.total.reconciledAmount },
               { label: "To charge", value: view.total.toChargeAmount },
+              { label: "Compensated", value: view.total.compensatedAmount },
+              { label: "To compensate", value: view.total.toCompensateAmount },
             ];
 
             return (

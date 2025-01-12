@@ -77,6 +77,24 @@ export function createReportDisplayService(
                 currency,
               }),
             ),
+            compensatedAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.compensatedAmount.amount,
+                ),
+                currency,
+              }),
+            ),
+            toCompensateAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.remainingCompensationAmount.amount,
+                ),
+                currency,
+              }),
+            ),
           },
         };
       });
