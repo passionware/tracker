@@ -210,10 +210,12 @@ export function ContractorReportsWidget(
         </TableCaption>
         <TableHeader>
           <TableRow className="*:whitespace-pre">
-            <TableHead className="">Id</TableHead>
-            <TableHead>Issuer</TableHead>
-            <TableHead>Contractor</TableHead>
-            <TableHead>Client</TableHead>
+            <TableHead rowSpan={2} className="">
+              Id
+            </TableHead>
+            <TableHead rowSpan={2}>Issuer</TableHead>
+            <TableHead rowSpan={2}>Contractor</TableHead>
+            <TableHead rowSpan={2}>Client</TableHead>
             <SimpleTooltip
               title={
                 <div className="space-y-4">
@@ -241,7 +243,7 @@ export function ContractorReportsWidget(
                 </div>
               }
             >
-              <TableHead className="whitespace-pre">
+              <TableHead rowSpan={2} className="whitespace-pre">
                 Charge Status <Info className="inline size-4" />
               </TableHead>
             </SimpleTooltip>
@@ -267,19 +269,45 @@ export function ContractorReportsWidget(
                 </div>
               }
             >
-              <TableHead className="whitespace-pre">
+              <TableHead rowSpan={2} className="whitespace-pre">
                 Compensation Status <Info className="inline size-4" />
               </TableHead>
             </SimpleTooltip>
-            <TableHead>Full Compensation</TableHead>
-            <TableHead>Net value</TableHead>
-            <TableHead>Charged value</TableHead>
-            <TableHead>To charge</TableHead>
-            <TableHead>Compensated</TableHead>
-            <TableHead>To compensate (charged)</TableHead>
-            <TableHead>To compensate (reported)</TableHead>
-            <TableHead>Period</TableHead>
-            <TableHead className="text-right">Description</TableHead>
+            <TableHead rowSpan={2}>Full Compensation</TableHead>
+            <TableHead
+              rowSpan={2}
+              className="text-center bg-sky-50 border-x border-slate-800/10"
+            >
+              Net Amount
+            </TableHead>
+            <TableHead colSpan={2} className="text-center bg-rose-50">
+              Charging
+            </TableHead>
+            <TableHead
+              colSpan={3}
+              className="text-center bg-lime-50 border-x border-slate-800/10"
+            >
+              Compensation
+            </TableHead>
+            <TableHead rowSpan={2}>Period</TableHead>
+            <TableHead rowSpan={2} className="text-right">
+              Description
+            </TableHead>
+          </TableRow>
+          <TableRow className="*:whitespace-pre">
+            <TableCell className="bg-rose-50">Amount</TableCell>
+            <TableCell className="bg-rose-50">Remaining</TableCell>
+            <TableCell className="bg-lime-50 border-l border-slate-800/10">
+              Compensated
+            </TableCell>
+            <TableCell className="bg-lime-50 whitespace-normal w-min">
+              Remaining
+            </TableCell>
+            <SimpleTooltip title="How much to compensate against reported work value">
+              <TableCell className="bg-lime-50 border-r border-slate-800/10">
+                vs reported <Info className="inline size-4" />
+              </TableCell>
+            </SimpleTooltip>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -419,35 +447,35 @@ export function ContractorReportsWidget(
                       }
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-sky-50/40 border-x  border-slate-800/10">
                     {props.services.formatService.financial.amount(
                       report.netAmount.amount,
                       report.netAmount.currency,
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-rose-50/40">
                     {props.services.formatService.financial.amount(
                       report.billedAmount.amount,
                       report.billedAmount.currency,
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-rose-50/40 border-r border-slate-800/10">
                     {props.services.formatService.financial.amount(
                       report.remainingAmount.amount,
                       report.remainingAmount.currency,
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-lime-50/40">
                     {props.services.formatService.financial.currency(
                       report.compensatedAmount,
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-lime-50/40">
                     {props.services.formatService.financial.currency(
                       report.remainingCompensationAmount,
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-lime-50/40 border-r border-slate-800/10">
                     {props.services.formatService.financial.currency(
                       report.remainingFullCompensationAmount,
                     )}
