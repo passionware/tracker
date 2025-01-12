@@ -69,9 +69,10 @@ export function ContractorReportCostInfo({
                 Find & link cost
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-fit">
+            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
               <PopoverHeader>Match the report with a cost entry</PopoverHeader>
               <InlineCostSearch
+                className="overflow-y-auto h-full"
                 showTargetValue
                 showDescription
                 maxSourceAmount={report.remainingFullCompensationAmount}

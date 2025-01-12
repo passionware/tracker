@@ -74,11 +74,12 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 Find & link report
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-fit">
+            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
               <PopoverHeader>
                 Match the cost with a contractor report
               </PopoverHeader>
               <InlineContractorReportSearch
+                className="overflow-y-auto h-full"
                 showTargetValue
                 showDescription
                 services={services}

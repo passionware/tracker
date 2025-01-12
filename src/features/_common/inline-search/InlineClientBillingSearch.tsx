@@ -33,6 +33,7 @@ export interface InlineBillingSearchProps
   query: ClientBillingQuery;
   onSelect: (data: { billingId: number; value: number }) => void;
   maxAmount: number;
+  className?: string;
 }
 
 export function InlineBillingSearch(props: InlineBillingSearchProps) {
@@ -41,7 +42,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
   );
 
   return (
-    <div>
+    <div className={props.className}>
       {rd
         .journey(billings)
         .wait(<Skeleton className="h-6" />)

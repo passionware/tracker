@@ -38,6 +38,7 @@ export interface InlineContractorReportSearchProps
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
   showTargetValue: boolean;
+  className?: string;
 }
 
 export function InlineContractorReportSearch(
@@ -48,7 +49,7 @@ export function InlineContractorReportSearch(
   );
 
   return (
-    <div>
+    <div className={props.className}>
       {rd
         .journey(reports)
         .wait(<Skeleton className="h-6" />)

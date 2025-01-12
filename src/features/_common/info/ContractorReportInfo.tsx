@@ -71,11 +71,12 @@ export function ContractorReportInfo({
                 Find & link billing
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-fit">
+            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
               <PopoverHeader>
                 Match the report with a client billing
               </PopoverHeader>
               <InlineBillingSearch
+                className="overflow-y-auto h-full"
                 maxAmount={report.remainingAmount.amount}
                 services={services}
                 onSelect={(data) =>

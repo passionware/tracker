@@ -38,13 +38,14 @@ export interface InlineCostSearchProps
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
   showTargetValue: boolean;
+  className?: string;
 }
 
 export function InlineCostSearch(props: InlineCostSearchProps) {
   const costs = props.services.reportDisplayService.useCostView(props.query);
 
   return (
-    <div>
+    <div className={props.className}>
       {rd
         .journey(costs)
         .wait(<Skeleton className="h-6" />)
