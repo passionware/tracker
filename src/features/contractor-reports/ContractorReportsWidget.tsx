@@ -25,7 +25,7 @@ import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
-import { OpenState } from "@/features/_common/OpenState.tsx";
+import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import {
   renderError,
   renderSmallError,
@@ -113,65 +113,63 @@ export function ContractorReportsWidget(
               services={props.services}
             />
           </div>
-          <OpenState>
-            {(bag) => (
-              <Popover {...bag}>
-                <PopoverTrigger asChild>
-                  <Button variant="default" size="sm" className="flex">
-                    {rd
-                      .fullJourney(addReportState.state)
-                      .initially(<PlusCircle />)
-                      .wait(<Loader2 />)
-                      .catch(renderSmallError("w-6 h-6"))
-                      .map(() => (
-                        <Check />
-                      ))}
-                    Add report
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit">
-                  <PopoverHeader>Add new contractor report</PopoverHeader>
-                  <NewContractorReportWidget
-                    defaultWorkspaceId={idSpecUtils.switchAll(
-                      props.workspaceId,
-                      undefined,
-                    )}
-                    defaultCurrency={rd.tryMap(
-                      reports,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.netAmount
-                          .currency,
-                    )}
-                    defaultContractorId={rd.tryMap(
-                      reports,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.contractor
-                          .id,
-                    )}
-                    defaultPeriodStart={rd.tryMap(reports, (reports) =>
-                      maybe.map(
-                        reports.entries[reports.entries.length - 1]?.periodEnd,
-                        partialRight(addDays, 1),
-                      ),
-                    )}
-                    defaultPeriodEnd={new Date()}
-                    defaultClientId={idSpecUtils.switchAll(
-                      props.clientId,
-                      undefined,
-                    )}
-                    services={props.services}
-                    onSubmit={(data) =>
-                      addReportState.track(
-                        props.services.mutationService
-                          .createContractorReport(data)
-                          .then(bag.close),
-                      )
-                    }
-                  />
-                </PopoverContent>
-              </Popover>
+          <InlinePopoverForm
+            trigger={
+              <Button variant="default" size="sm" className="flex">
+                {rd
+                  .fullJourney(addReportState.state)
+                  .initially(<PlusCircle />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-6"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Add report
+              </Button>
+            }
+            content={(bag) => (
+              <>
+                <PopoverHeader>Add new contractor report</PopoverHeader>
+                <NewContractorReportWidget
+                  defaultWorkspaceId={idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  )}
+                  defaultCurrency={rd.tryMap(
+                    reports,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  )}
+                  defaultContractorId={rd.tryMap(
+                    reports,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.contractor
+                        .id,
+                  )}
+                  defaultPeriodStart={rd.tryMap(reports, (reports) =>
+                    maybe.map(
+                      reports.entries[reports.entries.length - 1]?.periodEnd,
+                      partialRight(addDays, 1),
+                    ),
+                  )}
+                  defaultPeriodEnd={new Date()}
+                  defaultClientId={idSpecUtils.switchAll(
+                    props.clientId,
+                    undefined,
+                  )}
+                  services={props.services}
+                  onSubmit={(data) =>
+                    addReportState.track(
+                      props.services.mutationService
+                        .createContractorReport(data)
+                        .then(bag.close),
+                    )
+                  }
+                />
+              </>
             )}
-          </OpenState>
+          />
         </>
       }
     >
