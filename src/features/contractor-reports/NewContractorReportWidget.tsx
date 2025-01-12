@@ -36,6 +36,7 @@ export interface NewContractorReportWidgetProps
   > {
   // initialLink: LinkPayload; todo: think about this
   defaultClientId?: Client["id"];
+  defaultWorkspaceId?: number;
   defaultContractorId?: number;
   defaultCurrency?: string;
   defaultPeriodStart?: Date;
@@ -60,6 +61,7 @@ export function NewContractorReportWidget(
   const form = useForm<FormModel>({
     defaultValues: {
       contractorId: props.defaultContractorId,
+      workspaceId: props.defaultWorkspaceId,
       clientId: props.defaultClientId,
       periodStart: props.defaultPeriodStart,
       periodEnd: props.defaultPeriodEnd,
@@ -133,7 +135,7 @@ export function NewContractorReportWidget(
           control={form.control}
           name="contractorId"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="col-span-2">
               <FormLabel>Contractor</FormLabel>
               <FormControl>
                 <ContractorPicker

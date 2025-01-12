@@ -132,6 +132,10 @@ export function ContractorReportsWidget(
                 <PopoverContent className="w-fit">
                   <PopoverHeader>Add new contractor report</PopoverHeader>
                   <NewContractorReportWidget
+                    defaultWorkspaceId={routingUtils.workspace.switchAll(
+                      props.workspaceId,
+                      undefined,
+                    )}
                     defaultCurrency={rd.tryMap(
                       reports,
                       (reports) =>
