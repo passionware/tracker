@@ -181,15 +181,17 @@ export function BillingWidget(
           {rd
             .journey(billings)
             .wait(
-              <TableRow>
-                {Array(9)
-                  .fill(null)
-                  .map((_, index) => (
-                    <TableCell key={index}>
-                      <Skeleton className="w-32 h-6" />
-                    </TableCell>
-                  ))}
-              </TableRow>,
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <TableRow key={index}>
+                    {Array.from({ length: 11 }).map((_, i) => (
+                      <TableCell key={i}>
+                        <Skeleton className="w-full h-8" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>,
             )
             .catch(renderError)
             .map((billings) => {

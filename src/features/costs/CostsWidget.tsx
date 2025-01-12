@@ -185,15 +185,17 @@ export function CostsWidget(props: CostsWidgetProps) {
           {rd
             .journey(costs)
             .wait(
-              <TableRow>
-                {Array(8)
-                  .fill(null)
-                  .map((_, index) => (
-                    <TableCell key={index}>
-                      <Skeleton className="w-32 h-6" />
-                    </TableCell>
-                  ))}
-              </TableRow>,
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <TableRow key={index}>
+                    {Array.from({ length: 11 }).map((_, i) => (
+                      <TableCell key={i}>
+                        <Skeleton className="w-full h-5" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>,
             )
             .catch(renderError)
             .map((costs) => {

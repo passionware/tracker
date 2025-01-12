@@ -54,7 +54,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { addDays } from "date-fns";
+import { addDays, formatDate } from "date-fns";
 import { chain, partialRight } from "lodash";
 import { Check, Info, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -326,14 +326,14 @@ export function ContractorReportsWidget(
                 Amount <Info className="inline size-4" />
               </TableCell>
             </SimpleTooltip>
-            <SimpleTooltip title="How much compensation is remaining to cover the reported amount, not only to the level of charging. Sometimes we charge the client less for the report, but still the contractor can be compensated, but from different money. In such case we link another cost with this report.">
+            <SimpleTooltip title="How much to pay against reported&charged amount">
               <TableCell className="bg-lime-50 whitespace-normal w-min">
-                Remaining <Info className="inline size-4" />
+                To pay <Info className="inline size-4" />
               </TableCell>
             </SimpleTooltip>
-            <SimpleTooltip title="How much to compensate against reported work value">
+            <SimpleTooltip title="How much compensation is remaining to cover the reported amount, no matter how much we actually charged the client. Sometimes we charge the client less for the report, but still the contractor can be compensated, but from different money. In such case we link another cost with this report.">
               <TableCell className="bg-lime-50 border-r border-slate-800/10">
-                vs reported <Info className="inline size-4" />
+                To comp. <Info className="inline size-4" />
               </TableCell>
             </SimpleTooltip>
           </TableRow>
@@ -342,13 +342,17 @@ export function ContractorReportsWidget(
           {rd
             .journey(reports)
             .wait(
-              <TableRow>
-                {Array.from({ length: 11 }).map((_, i) => (
-                  <TableCell key={i}>
-                    <Skeleton className="w-32 h-6" />
-                  </TableCell>
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <TableRow key={index}>
+                    {Array.from({ length: 14 }).map((_, i) => (
+                      <TableCell key={i}>
+                        <Skeleton className="w-full h-8" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>,
+              </>,
             )
             .catch(renderError)
             .map((reports) => {
@@ -507,15 +511,24 @@ export function ContractorReportsWidget(
                       report.remainingFullCompensationAmount,
                     )}
                   </TableCell>
-                  <TableCell>
-                    {props.services.formatService.temporal.date(
-                      report.periodStart,
-                    )}{" "}
-                    -{" "}
-                    {props.services.formatService.temporal.date(
-                      report.periodEnd,
-                    )}
-                  </TableCell>
+                  <SimpleTooltip title="Copy period range">
+                    <TableCell
+                      className="cursor-pointer"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(
+                          `range=${formatDate(report.periodStart, "yyyyMMdd")}-${formatDate(report.periodEnd, "yyyyMMdd")}`,
+                        );
+                      }}
+                    >
+                      {props.services.formatService.temporal.date(
+                        report.periodStart,
+                      )}{" "}
+                      -{" "}
+                      {props.services.formatService.temporal.date(
+                        report.periodEnd,
+                      )}
+                    </TableCell>
+                  </SimpleTooltip>
                   <TableCell className="text-left">
                     <SimpleTooltip title={report.description}>
                       <div className="line-clamp-6 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
