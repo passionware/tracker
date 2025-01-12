@@ -6,10 +6,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
-import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -88,66 +89,72 @@ export function CostInfo({ costEntry, services }: CostInfoProps) {
       </div>
       <Separator className="my-2" />
 
-      <div className="space-y-8">
+      <ul role="list" className="divide-y divide-gray-100">
         {costEntry.linkReports.map((link) => (
-          <div className="flex items-stretch gap-2" key={link.id}>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-row justify-between items-center gap-2 items-center">
-                <Badge variant="positive">Report</Badge>
-                <Badge variant="secondary" size="sm">
+          <li
+            key={link.id}
+            className="flex items-center justify-between gap-x-6 py-5"
+          >
+            <div className="min-w-0">
+              <div className="flex items-start gap-x-3">
+                <p className="text-sm/6 font-semibold text-gray-900">Report</p>
+                <Badge variant="positive" className={cn()}>
                   {services.formatService.temporal.date(
                     link.contractorReport.periodStart,
-                  )}
-                  -
+                  )}{" "}
+                  -{" "}
                   {services.formatService.temporal.date(
                     link.contractorReport.periodEnd,
                   )}
                 </Badge>
               </div>
-              <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2 items-center">
-                Cost's
-                {services.formatService.financial.currency(link.costAmount)}
-                <div className="text-gray-500">satisfies</div>
-                {services.formatService.financial.currency(link.reportAmount)}
-                of report's
-                {services.formatService.financial.amount(
-                  link.contractorReport.netValue,
-                  link.contractorReport.currency,
-                )}
-                for
+              <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
+                <div className="contents text-green-800 font-bold">
+                  Cost's{" "}
+                  {services.formatService.financial.currency(link.costAmount)}
+                </div>
+                <svg viewBox="0 0 2 2" className="size-0.5 fill-current">
+                  <circle r={1} cx={1} cy={1} />
+                </svg>
+                satisfies{" "}
+                {services.formatService.financial.currency(link.reportAmount)}{" "}
+                of{" "}
                 <ClientWidget
                   services={services}
                   size="sm"
                   layout="avatar"
                   clientId={link.contractorReport.clientId}
                 />
+                's report{" "}
+                {services.formatService.financial.amount(
+                  link.contractorReport.netValue,
+                  link.contractorReport.currency,
+                )}
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-none items-center gap-x-4">
               <div className="text-xs text-slate-600">
                 {link.contractorReport.contractor?.fullName}
               </div>
               <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
-                {maybe.getOrElse(
-                  maybe.fromTruthy(link.description),
-                  <div className="text-slate-400">No description</div>,
-                )}
+                <SimpleTooltip title={link.description}>
+                  <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
+                    {maybe.getOrElse(
+                      maybe.fromTruthy(link.description),
+                      <div className="text-slate-400">No description</div>,
+                    )}
+                  </div>
+                </SimpleTooltip>
               </div>
             </div>
-            <DeleteButtonWidget
-              services={services}
-              onDelete={async () => {
-                // services.mutationService.deleteCostReportLink(link.id);
-              }}
-            />
-          </div>
+          </li>
         ))}
         {costEntry.linkReports.length === 0 && (
           <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
             No linked contractor reports.
           </div>
         )}
-      </div>
+      </ul>
     </div>
   );
 }
