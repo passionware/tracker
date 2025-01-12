@@ -284,8 +284,15 @@ function calculateReportEntry(
     },
     costLinks: (report.linkCostReport ?? [])?.map((link) => ({
       id: link.id,
-      amount: {
+      costAmount: {
         amount: link.costAmount,
+        currency: maybe.getOrThrow(
+          link.cost,
+          "Cost is required to calculate report",
+        ).currency,
+      },
+      reportAmount: {
+        amount: link.reportAmount,
         currency: report.currency,
       },
       description: link.description,

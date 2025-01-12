@@ -23,6 +23,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ContractorReportCostInfo } from "@/features/_common/info/ContractorReportCostInfo.tsx";
 import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
@@ -443,8 +444,7 @@ export function ContractorReportsWidget(
                       </PopoverTrigger>
                       <PopoverContent className="w-fit">
                         <PopoverHeader>Compensation details</PopoverHeader>
-                        {/*TODO ContractorCompensationInfo??*/}
-                        <ContractorReportInfo
+                        <ContractorReportCostInfo
                           report={report}
                           services={props.services}
                         />

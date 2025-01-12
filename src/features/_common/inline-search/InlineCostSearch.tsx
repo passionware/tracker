@@ -1,4 +1,4 @@
-import { ContractorReportQuery } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { CostQuery } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import {
@@ -16,92 +16,88 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 
-export interface InlineContractorReportSearchProps
+export interface InlineCostSearchProps
   extends WithServices<
-    [WithReportDisplayService, WithFormatService, WithClientService]
+    [WithReportDisplayService, WithFormatService, WithContractorService]
   > {
-  query: ContractorReportQuery;
-  onSelect: (data: { contractorReportId: number; value: LinkValue }) => void;
+  query: CostQuery;
+  onSelect: (data: { costId: number; value: LinkValue }) => void;
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
   showTargetValue: boolean;
 }
 
-export function InlineContractorReportSearch(
-  props: InlineContractorReportSearchProps,
-) {
-  const reports = props.services.reportDisplayService.useReportView(
-    props.query,
-  );
+export function InlineCostSearch(props: InlineCostSearchProps) {
+  const costs = props.services.reportDisplayService.useCostView(props.query);
 
   return (
     <div>
       {rd
-        .journey(reports)
+        .journey(costs)
         .wait(<Skeleton className="h-6" />)
         .catch(renderError)
-        .map((reports) => {
-          if (reports.entries.length === 0) {
-            return <div>No contractor reports found.</div>;
+        .map((costs) => {
+          if (costs.entries.length === 0) {
+            return <div>No costs found.</div>;
           }
 
           return (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Id</TableHead>
-                  <TableHead>Issuer</TableHead>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Reconciled</TableHead>
+                  <TableHead>Cost</TableHead>
+                  <TableHead>Invoice Number</TableHead>
+                  <TableHead>Net Amount</TableHead>
                   <TableHead>Remaining</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.entries.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell>{report.id}</TableCell>
+                {costs.entries.map((cost) => (
+                  <TableRow key={cost.id}>
                     <TableCell>
-                      <WorkspaceView
-                        layout="avatar"
-                        workspace={rd.of(report.workspace)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {report.contractor.fullName}
-                        <ChevronRight className="size-3" />
-                        <ClientWidget
+                      <div className="flex flex-row gap-1 items-center">
+                        <WorkspaceView
                           layout="avatar"
-                          size="xs"
-                          clientId={report.clientId}
-                          services={props.services}
+                          workspace={rd.of(cost.workspace)}
                         />
+                        <ChevronRight className="size-3" />
+                        {cost.contractor ? (
+                          <ContractorPicker
+                            size="xs"
+                            value={cost.contractor.id}
+                            onSelect={() => {}}
+                            services={props.services}
+                          />
+                        ) : (
+                          cost.counterparty
+                        )}
                       </div>
                     </TableCell>
+                    <TableCell>{cost.invoiceNumber ?? "N/A"}</TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
-                        report.reconciledAmount.amount,
-                        report.reconciledAmount.currency,
+                        cost.netAmount.amount,
+                        cost.netAmount.currency,
                       )}
                     </TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
-                        report.remainingAmount.amount,
-                        report.remainingAmount.currency,
+                        cost.remainingAmount.amount,
+                        cost.remainingAmount.currency,
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -115,35 +111,33 @@ export function InlineContractorReportSearch(
                             initialSourceValue={{
                               currency:
                                 props.maxSourceAmount?.currency ??
-                                report.remainingAmount.currency,
+                                cost.remainingAmount.currency,
                               amount: Math.min(
                                 props.maxSourceAmount?.amount ?? 0,
-                                report.remainingAmount.amount,
+                                cost.remainingAmount.amount,
                               ),
                             }}
                             initialDescription={[
-                              report.remainingAmount.currency !==
+                              cost.remainingAmount.currency !==
                               props.maxSourceAmount?.currency
-                                ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
+                                ? `Currency exchange, 1 ${cost.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
                                 : null,
                             ]
                               .filter(Boolean)
                               .join("\n")}
                             initialTargetValue={{
-                              ...report.remainingAmount,
+                              ...cost.remainingAmount,
                               amount:
                                 props.maxSourceAmount?.currency ===
-                                report.remainingAmount.currency
-                                  ? // we have same currency, so probably we don't need to exchange
-                                    props.maxSourceAmount?.amount
-                                  : // this won't be same, so let's assume that cost  = remaining report but in target currency
-                                    report.remainingAmount.amount,
+                                cost.remainingAmount.currency
+                                  ? props.maxSourceAmount?.amount
+                                  : cost.remainingAmount.amount,
                             }}
                             showDescription={props.showDescription}
                             showTargetValue={props.showTargetValue}
                             onValueChange={(value) =>
                               props.onSelect({
-                                contractorReportId: report.id,
+                                costId: cost.id,
                                 value,
                               })
                             }
@@ -187,6 +181,7 @@ function EnterValue(
   const sourceId = useId();
   const targetId = useId();
   const descriptionId = useId();
+
   return (
     <form
       className="flex flex-col gap-2"

@@ -69,7 +69,8 @@ export type ContractorReportBillingLinkView = {
 
 export type ContractorReportCostLinkView = {
   id: number;
-  amount: CurrencyValue;
+  costAmount: CurrencyValue;
+  reportAmount: CurrencyValue;
   description: string;
   cost: Cost;
 };
