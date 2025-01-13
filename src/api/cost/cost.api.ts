@@ -19,6 +19,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Maybe } from "@passionware/monads";
+import { chain } from "lodash";
 
 export interface Cost {
   id: number;
@@ -50,24 +51,50 @@ export const costQueryUtils = {
   ...withFiltersUtils<CostQuery>(),
   ...withSearchUtils<CostQuery>(),
   ...withPaginationUtils<CostQuery>(),
-  ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): CostQuery => ({
-    search: "",
-    filters: {
-      workspaceId: idSpecUtils.mapSpecificOrElse(
-        workspaceId,
-        (x) => ({ operator: "oneOf", value: [x] }),
-        null,
-      ),
-      clientId: idSpecUtils.mapSpecificOrElse(
-        clientId,
-        (x) => ({ operator: "oneOf", value: [x] }),
-        null,
-      ),
-      contractorId: null,
-      remainingAmount: null,
-    },
-    page: paginationUtils.ofDefault(),
-  }),
+  ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): CostQuery =>
+    costQueryUtils.ensureDefault(
+      {
+        search: "",
+        filters: {
+          workspaceId: null,
+          clientId: null,
+          contractorId: null,
+          remainingAmount: null,
+        },
+        page: paginationUtils.ofDefault(),
+      },
+      workspaceId,
+      clientId,
+    ),
+  ensureDefault: (
+    query: CostQuery,
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): CostQuery =>
+    chain(query)
+      .thru((x) =>
+        costQueryUtils.setFilter(
+          x,
+          "workspaceId",
+          idSpecUtils.mapSpecificOrElse(
+            workspaceId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .thru((x) =>
+        costQueryUtils.setFilter(
+          x,
+          "clientId",
+          idSpecUtils.mapSpecificOrElse(
+            clientId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .value(),
 };
 
 export interface CostApi {

@@ -27,7 +27,9 @@ export function CostsWidget(props: CostsWidgetProps) {
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
-  const costs = props.services.reportDisplayService.useCostView(query);
+  const costs = props.services.reportDisplayService.useCostView(
+    costQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
+  );
 
   const addCostState = promiseState.useRemoteData();
 

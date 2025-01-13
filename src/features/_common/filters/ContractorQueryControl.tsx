@@ -26,7 +26,7 @@ function getValue(filter: Nullable<EnumFilter<Nullable<Contractor["id"]>>>) {
   if (filter.value.length != 1) {
     throw new Error("ContractorQueryControl only supports one value");
   }
-  return filter.value[0];
+  return unassignedUtils.fromMaybe(filter.value[0]);
 }
 
 export function ContractorQueryControl({

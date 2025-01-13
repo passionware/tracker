@@ -1,4 +1,4 @@
-import { Maybe } from "@passionware/monads";
+import { maybe, Maybe } from "@passionware/monads";
 
 /**
  * Special type representing the absence of a value or unassigned value.
@@ -35,4 +35,6 @@ export const unassignedUtils = {
     }
     return value;
   },
+  fromMaybe: <T>(value: Maybe<T>): T | Unassigned =>
+    maybe.getOrElse(value, unassignedUtils.ofUnassigned()),
 };
