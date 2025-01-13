@@ -17,11 +17,10 @@ export function TruncatedMultilineText({
     <SimpleTooltip title={children} delayDuration={1000}>
       <div
         style={{
-          // @ts-expect-error -webkit-line-clamp is not in the CSSStyleDeclaration
-          webkitLineClamp: maxLines?.toString(),
+          WebkitLineClamp: maxLines?.toString(),
         }}
         className={cn(
-          "line-clamp-1 overflow-hidden text-ellipsis break-all text-xs leading-3 text-slate-800",
+          "line-clamp-1 overflow-hidden text-ellipsis break-all text-xs leading-3 text-slate-700",
           className,
         )}
       >

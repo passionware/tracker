@@ -132,5 +132,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    deleteCostReport: async (reportId) => {
+      const response = await client
+        .from("contractor_reports")
+        .delete()
+        .eq("id", reportId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

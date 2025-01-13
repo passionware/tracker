@@ -62,5 +62,15 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    deleteCostReport: async (reportId) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.deleteCostReport(reportId);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Deleting cost report",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
   };
 }

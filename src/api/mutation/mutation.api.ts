@@ -57,4 +57,5 @@ export interface MutationApi {
   createCost: (cost: CreateCostPayload) => Promise<{ id: Cost["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
+  deleteCostReport: (reportId: number) => Promise<void>;
 }
