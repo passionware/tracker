@@ -1,14 +1,14 @@
-import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import {
+  ContractorReportQuery,
+  contractorReportQueryUtils,
+} from "@/api/contractor-reports/contractor-reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import {
-  ContractorPicker,
-  None,
-} from "@/features/_common/inline-search/ContractorPicker.tsx";
+import { FilterChip } from "@/features/_common/FilterChip.tsx";
+import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -19,7 +19,7 @@ import { useColumns } from "@/features/contractor-reports/ContractorReportsWidge
 import { ContractorReportsWidgetProps } from "@/features/contractor-reports/ContractorReportsWidget.types.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { maybe, Maybe, rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
 import { chain, partialRight } from "lodash";
@@ -28,8 +28,11 @@ import { useState } from "react";
 
 export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
   const [contractorFilter, setContractorFilter] = useState<
-    Maybe<None | Contractor["id"]>
-  >(maybe.ofAbsent());
+    ContractorReportQuery["filters"]["contractorId"]
+  >(
+    contractorReportQueryUtils.ofDefault(props.workspaceId, props.clientId)
+      .filters.contractorId,
+  );
   const reports = props.services.reportDisplayService.useReportView(
     chain(
       contractorReportQueryUtils.ofDefault(props.workspaceId, props.clientId),
@@ -38,10 +41,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
         contractorReportQueryUtils.setFilter(
           x,
           "contractorId",
-          maybe.map(contractorFilter, (x) => ({
-            operator: "oneOf",
-            value: [x],
-          })),
+          contractorFilter,
         ),
       )
       .value(),
@@ -60,16 +60,14 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
       ]}
       tools={
         <>
-          <div className="rounded-md border border-slate-300 bg-slate-50 p-2 w-fit flex flex-row gap-1 items-center text-xs text-slate-600">
-            Contractor:
-            <ContractorPicker
+          <FilterChip label="Contractor">
+            <ContractorQueryControl
               allowClear
-              size="xs"
-              value={contractorFilter}
-              onSelect={setContractorFilter}
+              filter={contractorFilter}
+              onFilterChange={setContractorFilter}
               services={props.services}
             />
-          </div>
+          </FilterChip>
           <InlinePopoverForm
             trigger={
               <Button variant="default" size="sm" className="flex">
