@@ -11,7 +11,7 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
     getContractors: async (query) => {
       let request = client.from("contractors").select("*");
       if (query.search) {
-        request = request.ilike("name", `%${query.search}%`);
+        request = request.ilike("full_name", `%${query.search}%`);
       }
 
       const { data, error } = await request;

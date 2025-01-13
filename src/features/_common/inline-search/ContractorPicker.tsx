@@ -39,8 +39,10 @@ export function ContractorPicker(props: ContractorPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const options = props.services.contractorService.useContractors(
-    contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
+  const options = rd.useLastWithPlaceholder(
+    props.services.contractorService.useContractors(
+      contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
+    ),
   );
   const lastOption = rd.useLastWithPlaceholder(
     props.services.contractorService.useContractor(props.value),
@@ -85,7 +87,6 @@ export function ContractorPicker(props: ContractorPickerProps) {
             onValueChange={setQuery}
           />
           <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
             <CommandGroup>
               {rd
                 .journey(options)
