@@ -36,6 +36,7 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
@@ -532,22 +533,14 @@ export function ContractorReportsWidget(
                     </TableCell>
                   </SimpleTooltip>
                   <TableCell className="text-left">
-                    <SimpleTooltip title={report.description}>
-                      <div className="line-clamp-6 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
-                        {report.description}
-                      </div>
-                    </SimpleTooltip>
+                    <TruncatedMultilineText>
+                      {report.description}
+                    </TruncatedMultilineText>
                   </TableCell>
                 </TableRow>
               ));
             })}
         </TableBody>
-        {/*<TableFooter>*/}
-        {/*  <TableRow>*/}
-        {/*    <TableCell colSpan={5}>Total</TableCell>*/}
-        {/*    <TableCell className="text-right">$2,500.00</TableCell>*/}
-        {/*  </TableRow>*/}
-        {/*</TableFooter>*/}
       </Table>
     </CommonPageContainer>
   );

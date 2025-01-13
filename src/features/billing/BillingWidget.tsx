@@ -32,6 +32,7 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
@@ -300,7 +301,9 @@ export function BillingWidget(
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {billing.description || "N/A"}
+                    <TruncatedMultilineText>
+                      {billing.description}
+                    </TruncatedMultilineText>
                   </TableCell>
                 </TableRow>
               ));

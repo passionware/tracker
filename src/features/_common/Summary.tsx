@@ -9,10 +9,8 @@ export const SummaryEntry = cf.div<{ label: ReactNode }>({
   className: "overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6",
   children: (props) => (
     <>
-      <dt className="truncate text-sm font-medium text-gray-500">
-        {props.label}
-      </dt>
-      <dd className="mt-1 text-xl font-semibold tracking-tight text-gray-900 flex flex-col gap-2 items-start">
+      <dt className="truncate text-sm font-medium">{props.label}</dt>
+      <dd className="mt-1 text-xl font-semibold tracking-tight flex flex-col gap-2 items-start">
         {props.children}
       </dd>
     </>
