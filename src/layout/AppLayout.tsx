@@ -11,7 +11,7 @@ export function Layout({
   return (
     <SidebarProvider>
       {sidebarSlot}
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="h-screen">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

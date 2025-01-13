@@ -94,6 +94,7 @@ export function ListView<TData>({
               className={cn(
                 get(header.column.columnDef.meta, "headerClassName"),
                 !header.column.getCanGroup() && "text-center",
+                "whitespace-pre",
               )}
             >
               {tooltip ? (
@@ -118,9 +119,11 @@ export function ListView<TData>({
     .journey(data)
     .wait(() => (
       // Wyświetlamy skeletony
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto">
         <Table>
-          <TableHeader>{columnsElement}</TableHeader>
+          <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
+            {columnsElement}
+          </TableHeader>
           <TableBody>
             {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
@@ -150,10 +153,12 @@ export function ListView<TData>({
       // Mamy faktyczne dane – tworzymy UI tabeli
 
       return (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-auto">
           <Table>
             {/* NAGŁÓWEK */}
-            <TableHeader>{columnsElement}</TableHeader>
+            <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
+              {columnsElement}
+            </TableHeader>
 
             {/* CIAŁO */}
             <TableBody className="border-b">
