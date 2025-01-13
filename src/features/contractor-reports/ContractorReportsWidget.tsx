@@ -58,7 +58,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
       tools={
         <>
           <div className="rounded-md border border-slate-300 bg-slate-50 p-2 w-fit flex flex-row gap-1 items-center text-xs text-slate-600">
-            Filters:
+            Contractor:
             <ContractorPicker
               allowClear
               size="xs"
