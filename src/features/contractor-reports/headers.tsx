@@ -29,8 +29,8 @@ export const headers = {
     <div className="space-y-4">
       <PopoverHeader>Compensation status</PopoverHeader>
       <div>
-        <Badge variant="positive">Paid</Badge> - The contractor was compensated
-        for the entire work value reported by the contractor
+        <Badge variant="positive">Paid</Badge> - The contractor was paid for the
+        value reported by the contractor to the amount charged to the client.
       </div>
       <div>
         <Badge variant="warning">Partially</Badge> - The contractor was
