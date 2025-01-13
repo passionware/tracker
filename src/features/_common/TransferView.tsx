@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
+
+import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { ChevronsRight } from "lucide-react";
 import { ReactNode } from "react";

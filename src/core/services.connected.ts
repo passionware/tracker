@@ -3,11 +3,13 @@ import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
+import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
+import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
@@ -91,6 +93,7 @@ export const myServices = {
       clientBillingService,
       workspaceService,
       costService,
+      exchangeService: createExchangeService(myExchangeApi, myQueryClient),
     },
   }),
   messageService,

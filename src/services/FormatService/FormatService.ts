@@ -1,4 +1,4 @@
-import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
+import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { ReactNode } from "react";
 
 export interface FormatService {

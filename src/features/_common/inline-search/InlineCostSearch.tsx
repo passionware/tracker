@@ -20,7 +20,8 @@ import { ContractorPicker } from "@/features/_common/inline-search/ContractorPic
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
+
+import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";

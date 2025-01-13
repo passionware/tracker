@@ -16,40 +16,42 @@ const exchangeRateSchema = z.object({
 
 export function createExchangeApi(fetchImpl: typeof fetch): ExchangeApi {
   return {
-    getExchangeRate: async (fromCurrency, toCurrency) => {
+    getExchangeRate: async (_fromCurrency, _toCurrency) => {
+      const fromCurrency = _fromCurrency.toUpperCase();
+      const toCurrency = _toCurrency.toUpperCase();
+      if (fromCurrency === toCurrency) {
+        return 1;
+      }
+
+      const getResponse = async (response: Response) => {
+        if (response.ok) {
+          const json = await response.json();
+          return exchangeRateSchema.parse(json).rates[0].mid;
+        }
+        throw new Error("Failed to fetch exchange rates");
+      };
+
       try {
         // Fetch rates for fromCurrency and toCurrency
-        const [fromResponse, toResponse] = await Promise.all([
-          fetchImpl(
-            `https://api.nbp.pl/api/exchangerates/rates/a/${fromCurrency}?format=json`,
-          ),
-          fetchImpl(
-            `https://api.nbp.pl/api/exchangerates/rates/a/${toCurrency}?format=json`,
-          ),
+        const [fromData, toData] = await Promise.all([
+          fromCurrency === "PLN"
+            ? 1
+            : await getResponse(
+                await fetchImpl(
+                  `https://api.nbp.pl/api/exchangerates/rates/a/${fromCurrency}?format=json`,
+                ),
+              ),
+          toCurrency === "PLN"
+            ? 1
+            : await getResponse(
+                await fetchImpl(
+                  `https://api.nbp.pl/api/exchangerates/rates/a/${toCurrency}?format=json`,
+                ),
+              ),
         ]);
 
-        if (!fromResponse.ok || !toResponse.ok) {
-          throw new Error("Failed to fetch exchange rates");
-        }
-
-        // Parse JSON responses
-        const fromData = await fromResponse.json();
-        const toData = await toResponse.json();
-
-        // Validate responses using Zod
-        const fromParsed = exchangeRateSchema.parse(fromData);
-        const toParsed = exchangeRateSchema.parse(toData);
-
-        // Extract mid values from the first rates entry
-        const fromMid = fromParsed.rates[0]?.mid;
-        const toMid = toParsed.rates[0]?.mid;
-
-        if (fromMid == null || toMid == null) {
-          throw new Error("Missing exchange rate data");
-        }
-
         // Calculate exchange rate
-        const exchangeRate = fromMid / toMid;
+        const exchangeRate = fromData / toData;
         return exchangeRate;
       } catch (error) {
         console.error("Error fetching exchange rate:", error);

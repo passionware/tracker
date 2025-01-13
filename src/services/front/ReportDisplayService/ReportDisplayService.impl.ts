@@ -6,6 +6,7 @@ import {
   workspaceQueryUtils,
 } from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientBillingViewEntry,
   ContractorReportViewEntry,
@@ -17,7 +18,12 @@ import { WithContractorReportService } from "@/services/io/ContractorReportServi
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { groupBy, sumBy } from "lodash";
+import { groupBy, sumBy, uniq } from "lodash";
+
+const prepareValues = <T>(data: T) => ({
+  values: data,
+  approximatedJointValue: { currency: "PLN", amount: 0 },
+});
 
 export function createReportDisplayService(
   config: WithServices<
@@ -26,6 +32,7 @@ export function createReportDisplayService(
       WithClientBillingService,
       WithWorkspaceService,
       WithCostService,
+      WithExchangeService,
     ]
   >,
 ): ReportDisplayService {
@@ -36,6 +43,7 @@ export function createReportDisplayService(
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
+
       return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) => {
         const entries = data.reports.map((report) =>
           calculateReportEntry(report, data.workspaces),
@@ -47,62 +55,62 @@ export function createReportDisplayService(
         return {
           entries,
           total: {
-            netAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            netAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(reports, (report) => report.netAmount.amount),
                 currency,
-              }),
+              })),
             ),
-            reconciledAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            reconciledAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(
                   reports,
                   (report) => report.reconciledAmount.amount,
                 ),
                 currency,
-              }),
+              })),
             ),
-            chargedAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            chargedAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(reports, (report) => report.billedAmount.amount),
                 currency,
-              }),
+              })),
             ),
-            toChargeAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            toChargeAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(
                   reports,
                   (report) => report.remainingAmount.amount,
                 ),
                 currency,
-              }),
+              })),
             ),
-            compensatedAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            compensatedAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(
                   reports,
                   (report) => report.compensatedAmount.amount,
                 ),
                 currency,
-              }),
+              })),
             ),
-            toCompensateAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            toCompensateAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(
                   reports,
                   (report) => report.remainingCompensationAmount.amount,
                 ),
                 currency,
-              }),
+              })),
             ),
-            toFullyCompensateAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
+            toFullyCompensateAmount: prepareValues(
+              Object.entries(groupedEntries).map(([currency, reports]) => ({
                 amount: sumBy(
                   reports,
                   (report) => report.remainingFullCompensationAmount.amount,
                 ),
                 currency,
-              }),
+              })),
             ),
           },
         };
@@ -114,46 +122,83 @@ export function createReportDisplayService(
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return rd.useMemoMap(rd.combine({ billings, workspaces }), (data) => {
-        const entries = data.billings.map((billing) =>
-          calculateBilling(billing, data.workspaces),
-        );
-        const groupedEntries = groupBy(
-          entries,
-          (cost) => cost.netAmount.currency,
-        );
-        return {
-          entries,
-          total: {
-            netAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
-                amount: sumBy(reports, (report) => report.netAmount.amount),
-                currency,
-              }),
+      const view = rd.useMemoMap(
+        rd.combine({ billings, workspaces }),
+        (data) => {
+          const entries = data.billings.map((billing) =>
+            calculateBilling(billing, data.workspaces),
+          );
+          const groupedEntries = groupBy(
+            entries,
+            (cost) => cost.netAmount.currency,
+          );
+          return {
+            entries,
+            total: {
+              netAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(reports, (report) => report.netAmount.amount),
+                  currency,
+                })),
+              ),
+              grossAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(reports, (report) => report.grossAmount.amount),
+                  currency,
+                })),
+              ),
+              matchedAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.matchedAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              remainingAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.remainingAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+            },
+          };
+        },
+      );
+
+      const currencies = rd.useMemoMap(view, (data) =>
+        uniq(data.total.netAmount.values.map((value) => value.currency)),
+      );
+
+      const exchangeRates = config.services.exchangeService.useExchangeRates(
+        rd.mapOrElse(
+          currencies,
+          (currencies) =>
+            currencies.map((currency) => ({ from: currency, to: "PLN" })),
+          [],
+        ),
+      );
+
+      return rd.useMemoMap(rd.combine({ view, exchangeRates }), (data) => {
+        const getCurrencyRate = (currency: string) =>
+          maybe.getOrThrow(
+            data.exchangeRates.find(
+              (rate) => rate.from === currency && rate.to === "PLN",
             ),
-            grossAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
-                amount: sumBy(reports, (report) => report.grossAmount.amount),
-                currency,
-              }),
-            ),
-            matchedAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
-                amount: sumBy(reports, (report) => report.matchedAmount.amount),
-                currency,
-              }),
-            ),
-            remainingAmount: Object.entries(groupedEntries).map(
-              ([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.remainingAmount.amount,
-                ),
-                currency,
-              }),
-            ),
-          },
-        };
+          );
+
+        Object.values(data.view.total).forEach((total) => {
+          total.approximatedJointValue.amount = sumBy(total.values, (value) => {
+            const rate = getCurrencyRate(value.currency);
+            return value.amount * rate.rate;
+          });
+        });
+
+        return data.view;
       });
     },
     useCostView: (query) => {
@@ -170,23 +215,23 @@ export function createReportDisplayService(
           (cost) => cost.netAmount.currency,
         );
         const total = {
-          netAmount: Object.entries(groupedEntries).map(
-            ([currency, costs]) => ({
+          netAmount: prepareValues(
+            Object.entries(groupedEntries).map(([currency, costs]) => ({
               amount: sumBy(costs, (cost) => cost.netAmount.amount),
               currency,
-            }),
+            })),
           ),
-          matchedAmount: Object.entries(groupedEntries).map(
-            ([currency, costs]) => ({
+          matchedAmount: prepareValues(
+            Object.entries(groupedEntries).map(([currency, costs]) => ({
               amount: sumBy(costs, (cost) => cost.matchedAmount.amount),
               currency,
-            }),
+            })),
           ),
-          remainingAmount: Object.entries(groupedEntries).map(
-            ([currency, costs]) => ({
+          remainingAmount: prepareValues(
+            Object.entries(groupedEntries).map(([currency, costs]) => ({
               amount: sumBy(costs, (cost) => cost.remainingAmount.amount),
               currency,
-            }),
+            })),
           ),
         };
 

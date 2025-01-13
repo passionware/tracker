@@ -1,7 +1,7 @@
 import { ExchangeApi } from "@/api/exchange/exchange.api.ts";
 import { ExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { rd } from "@passionware/monads";
-import { QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryClient, useQueries, useQuery } from "@tanstack/react-query";
 
 export function createExchangeService(
   api: ExchangeApi,
@@ -29,6 +29,23 @@ export function createExchangeService(
     },
     ensureExchange: async (from, to, amount) => {
       return (await fetchExchangeRate(from, to)) * amount;
+    },
+    useExchangeRates: (spec) => {
+      const queries = useQueries(
+        {
+          queries: spec.map(({ from, to }) => ({
+            queryKey: ["exchange", from, to],
+            queryFn: async () => ({
+              from,
+              to,
+              rate: await api.getExchangeRate(from, to),
+            }),
+          })),
+        },
+        queryClient,
+      );
+
+      return rd.combineAll(queries);
     },
   };
 }

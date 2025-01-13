@@ -9,11 +9,8 @@ import { ContractorPicker } from "@/features/_common/inline-search/ContractorPic
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import {
-  Summary,
-  SummaryEntry,
-  SummaryEntryValue,
-} from "@/features/_common/Summary.tsx";
+import { Summary } from "@/features/_common/Summary.tsx";
+import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { useColumns } from "@/features/contractor-reports/ContractorReportsWidget.columns.tsx";
 import { ContractorReportsWidgetProps } from "@/features/contractor-reports/ContractorReportsWidget.types.tsx";
@@ -157,15 +154,12 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                   <h3 className="my-3 text-base font-semibold ">Summary</h3>
                   <Summary>
                     {billingDetails.map((item) => (
-                      <SummaryEntry key={item.label} label={item.label}>
-                        {item.value.map((value, index) => (
-                          <SummaryEntryValue key={index}>
-                            {props.services.formatService.financial.currency(
-                              value,
-                            )}
-                          </SummaryEntryValue>
-                        ))}
-                      </SummaryEntry>
+                      <SummaryCurrencyGroup
+                        key={item.label}
+                        label={item.label}
+                        group={item.value}
+                        services={props.services}
+                      />
                     ))}
                   </Summary>
                 </>

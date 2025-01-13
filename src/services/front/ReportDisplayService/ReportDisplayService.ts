@@ -9,19 +9,23 @@ import {
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
-import { CurrencyValue } from "@/services/CurrencyService/CurrencyService.ts";
+
+import {
+  CurrencyValue,
+  CurrencyValueGroup,
+} from "@/services/ExchangeService/ExchangeService.ts";
 import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ContractorReportView {
   entries: ContractorReportViewEntry[];
   total: {
-    netAmount: CurrencyValue[];
-    reconciledAmount: CurrencyValue[];
-    chargedAmount: CurrencyValue[];
-    toChargeAmount: CurrencyValue[];
-    compensatedAmount: CurrencyValue[];
-    toCompensateAmount: CurrencyValue[];
-    toFullyCompensateAmount: CurrencyValue[];
+    netAmount: CurrencyValueGroup;
+    reconciledAmount: CurrencyValueGroup;
+    chargedAmount: CurrencyValueGroup;
+    toChargeAmount: CurrencyValueGroup;
+    compensatedAmount: CurrencyValueGroup;
+    toCompensateAmount: CurrencyValueGroup;
+    toFullyCompensateAmount: CurrencyValueGroup;
   };
 }
 
@@ -81,10 +85,10 @@ export type ContractorReportCostLinkView = {
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];
   total: {
-    netAmount: CurrencyValue[];
-    grossAmount: CurrencyValue[];
-    matchedAmount: CurrencyValue[];
-    remainingAmount: CurrencyValue[];
+    netAmount: CurrencyValueGroup;
+    grossAmount: CurrencyValueGroup;
+    matchedAmount: CurrencyValueGroup;
+    remainingAmount: CurrencyValueGroup;
   };
 }
 
@@ -159,9 +163,9 @@ export type CostEntry = {
 export type CostView = {
   entries: CostEntry[];
   total: {
-    netAmount: CurrencyValue[]; // each for each currency
-    matchedAmount: CurrencyValue[]; // each for each currency
-    remainingAmount: CurrencyValue[]; // each for each currency
+    netAmount: CurrencyValueGroup; // each for each currency
+    matchedAmount: CurrencyValueGroup; // each for each currency
+    remainingAmount: CurrencyValueGroup; // each for each currency
   };
 };
 
