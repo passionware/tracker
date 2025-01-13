@@ -1,4 +1,8 @@
 import {
+  Unassigned,
+  unassignedUtils,
+} from "@/api/_common/query/filters/Unassigned.ts";
+import {
   Contractor,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
@@ -26,13 +30,10 @@ import { CommandLoading } from "cmdk";
 import { Check, ChevronsUpDown, Unlink2, X } from "lucide-react";
 import { useState } from "react";
 
-export const none = Symbol("none");
-export type None = typeof none;
-
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
-  value: Maybe<None | Contractor["id"]>;
-  onSelect: Maybe<(contractorId: Maybe<None | Contractor["id"]>) => void>;
+  value: Maybe<Unassigned | Contractor["id"]>;
+  onSelect: Maybe<(contractorId: Maybe<Unassigned | Contractor["id"]>) => void>;
   allowClear?: boolean;
   allowNone?: boolean;
   size?: ButtonProps["size"];
@@ -50,16 +51,18 @@ export function ContractorPicker(props: ContractorPickerProps) {
   );
   const lastOption = rd.useLastWithPlaceholder(
     props.services.contractorService.useContractor(
-      props.value === none ? null : props.value,
+      unassignedUtils.getOrElse(props.value, null),
     ),
   );
 
-  const currentOption = rd.widen<Contractor | None>(
+  const currentOption = rd.widen<Contractor | Unassigned>(
     maybe.isAbsent(props.value)
       ? rd.ofIdle()
-      : props.value === none
-        ? rd.of(none)
-        : lastOption,
+      : unassignedUtils.mapOrElse(
+          props.value,
+          () => lastOption,
+          rd.of(unassignedUtils.ofUnassigned()),
+        ),
   );
 
   const button = (
@@ -75,17 +78,16 @@ export function ContractorPicker(props: ContractorPickerProps) {
         .initially("Select contractor...")
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
-        .map((contractor) => {
-          if (contractor === none) {
-            return (
-              <>
-                <Unlink2 />
-                Unassigned
-              </>
-            );
-          }
-          return contractor.fullName;
-        })}
+        .map((contractor) =>
+          unassignedUtils.mapOrElse(
+            contractor,
+            (c) => c.fullName,
+            <>
+              <Unlink2 />
+              Unassigned
+            </>,
+          ),
+        )}
       <ChevronsUpDown className="opacity-50" />
     </Button>
   );
@@ -129,7 +131,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
                       variant="info"
                       value={undefined}
                       onSelect={() => {
-                        props.onSelect?.(none);
+                        props.onSelect?.(unassignedUtils.ofUnassigned());
                         setQuery("");
                         setOpen(false);
                       }}
@@ -139,7 +141,9 @@ export function ContractorPicker(props: ContractorPickerProps) {
                       <Check
                         className={cn(
                           "ml-auto",
-                          props.value === none ? "opacity-100" : "opacity-0",
+                          unassignedUtils.isUnassigned(props.value)
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>

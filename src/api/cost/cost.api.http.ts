@@ -1,6 +1,8 @@
 import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
+
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sumBy } from "lodash";
 import { z } from "zod";
@@ -62,11 +64,13 @@ export function createCostApi(client: SupabaseClient): CostApi {
           throw new Error("contractorId.value must be an array");
         }
 
-        const filteredValues = value.filter((v) => v !== null);
+        const filteredValues = value.filter(
+          (v) => !unassignedUtils.isUnassigned(v),
+        );
 
         switch (operator) {
           case "oneOf": {
-            if (value.includes(null)) {
+            if (value.find(unassignedUtils.isUnassigned)) {
               // Tworzymy zapytanie `or` dla wartości w tablicy oraz `null`
               const orFilter = [
                 `contractor_id.in.(${filteredValues.join(",")})`,
@@ -80,7 +84,7 @@ export function createCostApi(client: SupabaseClient): CostApi {
             break;
           }
           case "matchNone": {
-            if (value.includes(null)) {
+            if (value.find(unassignedUtils.isUnassigned)) {
               // Tworzymy zapytanie `or` dla wykluczenia wartości oraz `null`
               const orFilter = [
                 `contractor_id.notin.(${filteredValues.join(",")})`,

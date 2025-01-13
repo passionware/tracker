@@ -1,3 +1,4 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -110,7 +111,7 @@ export function ContractorReportCostInfo({
                       operator: "oneOf",
                       value: [
                         report.contractor.id,
-                        null /* null to see unanchored invoices too */,
+                        unassignedUtils.ofUnassigned(),
                       ],
                     }),
                   )

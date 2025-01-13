@@ -5,6 +5,8 @@ import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { FilterChip } from "@/features/_common/FilterChip.tsx";
+import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -18,11 +20,14 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
+import { useState } from "react";
 
 export function CostsWidget(props: CostsWidgetProps) {
-  const costs = props.services.reportDisplayService.useCostView(
+  const [query, setQuery] = useState(
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
+
+  const costs = props.services.reportDisplayService.useCostView(query);
 
   const addCostState = promiseState.useRemoteData();
 
@@ -36,48 +41,61 @@ export function CostsWidget(props: CostsWidgetProps) {
         <BreadcrumbPage>Costs</BreadcrumbPage>,
       ]}
       tools={
-        <InlinePopoverForm
-          trigger={
-            <Button variant="default" size="sm" className="flex">
-              {rd
-                .fullJourney(addCostState.state)
-                .initially(<PlusCircle />)
-                .wait(<Loader2 />)
-                .catch(renderSmallError("w-6 h-6"))
-                .map(() => (
-                  <Check />
-                ))}
-              Add cost
-            </Button>
-          }
-          content={(bag) => (
-            <>
-              <PopoverHeader>Add new cost</PopoverHeader>
-              <NewCostWidget
-                onCancel={bag.close}
-                defaultWorkspaceId={idSpecUtils.switchAll(
-                  props.workspaceId,
-                  undefined,
-                )}
-                defaultCurrency={rd.tryMap(
-                  costs,
-                  (reports) =>
-                    reports.entries[reports.entries.length - 1]?.netAmount
-                      .currency,
-                )}
-                defaultInvoiceDate={new Date()}
-                services={props.services}
-                onSubmit={(data) =>
-                  addCostState.track(
-                    props.services.mutationService
-                      .createCost(data)
-                      .then(bag.close),
-                  )
-                }
-              />
-            </>
-          )}
-        />
+        <>
+          <FilterChip label="Contractor">
+            <ContractorQueryControl
+              allowClear
+              allowNone
+              filter={query.filters.contractorId}
+              onFilterChange={(x) =>
+                setQuery(costQueryUtils.setFilter(query, "contractorId", x))
+              }
+              services={props.services}
+            />
+          </FilterChip>
+          <InlinePopoverForm
+            trigger={
+              <Button variant="default" size="sm" className="flex">
+                {rd
+                  .fullJourney(addCostState.state)
+                  .initially(<PlusCircle />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-6"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Add cost
+              </Button>
+            }
+            content={(bag) => (
+              <>
+                <PopoverHeader>Add new cost</PopoverHeader>
+                <NewCostWidget
+                  onCancel={bag.close}
+                  defaultWorkspaceId={idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  )}
+                  defaultCurrency={rd.tryMap(
+                    costs,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  )}
+                  defaultInvoiceDate={new Date()}
+                  services={props.services}
+                  onSubmit={(data) =>
+                    addCostState.track(
+                      props.services.mutationService
+                        .createCost(data)
+                        .then(bag.close),
+                    )
+                  }
+                />
+              </>
+            )}
+          />
+        </>
       }
     >
       <ListView

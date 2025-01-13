@@ -1,5 +1,6 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import { Unassigned } from "@/api/_common/query/filters/Unassigned.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
   WithFilters,
@@ -13,6 +14,7 @@ import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { Nullable } from "@/platform/typescript/Nullable.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -38,10 +40,10 @@ export interface Cost {
 
 export type CostQuery = WithSearch &
   WithFilters<{
-    workspaceId: Maybe<EnumFilter<Workspace["id"]>>;
-    clientId: Maybe<EnumFilter<Contractor["id"]>>;
-    contractorId: Maybe<EnumFilter<Contractor["id"] | null>>;
-    remainingAmount: Maybe<NumberFilter>;
+    workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
+    clientId: Nullable<EnumFilter<Contractor["id"]>>;
+    contractorId: Nullable<EnumFilter<Contractor["id"] | Unassigned>>;
+    remainingAmount: Nullable<NumberFilter>;
   }> &
   WithPagination;
 
