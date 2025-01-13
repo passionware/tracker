@@ -21,6 +21,7 @@ export interface ContractorReportView {
     toChargeAmount: CurrencyValue[];
     compensatedAmount: CurrencyValue[];
     toCompensateAmount: CurrencyValue[];
+    toFullyCompensateAmount: CurrencyValue[];
   };
 }
 

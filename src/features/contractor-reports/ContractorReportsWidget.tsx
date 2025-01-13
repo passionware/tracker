@@ -144,10 +144,11 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                 { label: "Charged", value: view.total.chargedAmount },
                 { label: "Reconciled", value: view.total.reconciledAmount },
                 { label: "To charge", value: view.total.toChargeAmount },
-                { label: "Compensated", value: view.total.compensatedAmount },
+                { label: "To pay", value: view.total.toCompensateAmount },
+                { label: "Paid", value: view.total.compensatedAmount },
                 {
                   label: "To compensate",
-                  value: view.total.toCompensateAmount,
+                  value: view.total.toFullyCompensateAmount,
                 },
               ];
 

@@ -95,6 +95,15 @@ export function createReportDisplayService(
                 currency,
               }),
             ),
+            toFullyCompensateAmount: Object.entries(groupedEntries).map(
+              ([currency, reports]) => ({
+                amount: sumBy(
+                  reports,
+                  (report) => report.remainingFullCompensationAmount.amount,
+                ),
+                currency,
+              }),
+            ),
           },
         };
       });
