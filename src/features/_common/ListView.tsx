@@ -59,6 +59,7 @@ export function ListView<TData>({
   // Inicjalizacja tabeli z tanstack react table
   const table = useReactTable({
     data: tableData,
+    manualPagination: true,
     columns,
     state: {
       sorting,

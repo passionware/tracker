@@ -15,7 +15,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import { ColumnDefinition, ListView } from "@/features/_common/ListView.tsx";
+import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import {
   Summary,
@@ -42,8 +42,9 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { createColumnHelper } from "@tanstack/react-table";
 import { startCase } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 
@@ -175,56 +176,57 @@ export function CostsWidget(props: CostsWidgetProps) {
   );
 }
 
-function useColumns(props: CostsWidgetProps): ColumnDefinition<CostEntry>[] {
+const columnHelder = createColumnHelper<CostEntry>();
+function useColumns(props: CostsWidgetProps) {
   return [
-    {
-      label: "Id",
-      cellRenderer: (cost) => cost.id,
-    },
-    {
-      label: "Workspace",
-      cellRenderer: (cost) => (
-        <WorkspaceView layout="avatar" workspace={rd.of(cost.workspace)} />
+    columnHelder.accessor("workspace", {
+      header: "Workspace",
+      cell: (info) => (
+        <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
-    },
-    {
-      label: "Counterparty",
-      cellRenderer: (cost) =>
-        cost.contractor ? (
+    }),
+    columnHelder.accessor("contractor", {
+      header: "Contractor",
+      cell: (info) => {
+        const contractor = info.getValue();
+        return contractor ? (
           <ContractorPicker
-            value={cost.contractor.id}
+            value={contractor.id}
             onSelect={null}
             services={props.services}
             size="xs"
           />
         ) : (
-          cost.counterparty || "N/A"
+          info.row.original.counterparty
+        );
+      },
+    }),
+    columnHelder.accessor("invoiceNumber", {
+      header: "Invoice Number",
+      cell: (info) => info.getValue() || "N/A",
+    }),
+    columnHelder.accessor("invoiceDate", {
+      header: "Invoice Date",
+      cell: (info) =>
+        props.services.formatService.temporal.date(info.getValue()),
+    }),
+    columnHelder.accessor("netAmount", {
+      header: "Net Value",
+      cell: (info) =>
+        props.services.formatService.financial.currency(info.getValue()),
+    }),
+    columnHelder.accessor("grossAmount", {
+      header: "Gross Value",
+      cell: (info) =>
+        maybe.mapOrElse(
+          info.getValue(),
+          props.services.formatService.financial.currency,
+          "N/A",
         ),
-    },
-    {
-      label: "Invoice Number",
-      cellRenderer: (cost) => cost.invoiceNumber || "N/A",
-    },
-    {
-      label: "Invoice Date",
-      cellRenderer: (cost) =>
-        props.services.formatService.temporal.date(cost.invoiceDate),
-    },
-    {
-      label: "Net Value",
-      cellRenderer: (cost) =>
-        props.services.formatService.financial.currency(cost.netAmount),
-    },
-    {
-      label: "Gross Value",
-      cellRenderer: (cost) =>
-        cost.grossAmount
-          ? props.services.formatService.financial.currency(cost.grossAmount)
-          : "N/A",
-    },
-    {
-      label: "Status",
-      cellRenderer: (cost) => (
+    }),
+    columnHelder.accessor("status", {
+      header: "Status",
+      cell: (info) => (
         <Popover>
           <PopoverTrigger>
             <Badge
@@ -235,16 +237,16 @@ function useColumns(props: CostsWidgetProps): ColumnDefinition<CostEntry>[] {
                     unmatched: "destructive",
                     "partially-matched": "warning",
                   } as const
-                )[cost.status]
+                )[info.getValue()]
               }
             >
-              {startCase(cost.status)}
+              {startCase(info.getValue())}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Cost details</PopoverHeader>
             <CostInfo
-              costEntry={cost}
+              costEntry={info.row.original}
               services={props.services}
               clientId={props.clientId}
               workspaceId={props.workspaceId}
@@ -252,13 +254,13 @@ function useColumns(props: CostsWidgetProps): ColumnDefinition<CostEntry>[] {
           </PopoverContent>
         </Popover>
       ),
-    },
-    {
-      label: "Matched",
-      cellRenderer: (cost) => (
+    }),
+    columnHelder.accessor("matchedAmount", {
+      header: "Matched",
+      cell: (info) => (
         <div className="empty:hidden flex flex-row gap-1.5 items-center">
-          {props.services.formatService.financial.currency(cost.matchedAmount)}
-          {cost.linkReports.map((link) => (
+          {props.services.formatService.financial.currency(info.getValue())}
+          {info.row.original.linkReports.map((link) => (
             <ClientWidget
               layout="avatar"
               size="xs"
@@ -269,17 +271,17 @@ function useColumns(props: CostsWidgetProps): ColumnDefinition<CostEntry>[] {
           ))}
         </div>
       ),
-    },
-    {
-      label: "Remaining",
-      cellRenderer: (cost) =>
-        props.services.formatService.financial.currency(cost.remainingAmount),
-    },
-    {
-      label: "Description",
-      cellRenderer: (cost) => (
-        <TruncatedMultilineText>{cost.description}</TruncatedMultilineText>
+    }),
+    columnHelder.accessor("remainingAmount", {
+      header: "Remaining",
+      cell: (info) =>
+        props.services.formatService.financial.currency(info.getValue()),
+    }),
+    columnHelder.accessor("description", {
+      header: "Description",
+      cell: (info) => (
+        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
       ),
-    },
+    }),
   ];
 }
