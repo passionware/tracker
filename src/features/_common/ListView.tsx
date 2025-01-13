@@ -1,114 +1,225 @@
-import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
   TableCaption,
   TableCell,
+  TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table.tsx";
+} from "@/components/ui/table";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { cn } from "@/lib/utils.ts";
 import { rd, RemoteData } from "@passionware/monads";
-import { ComponentProps, ReactNode } from "react";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  Header,
+  SortingState,
+  TableOptions,
+  useReactTable,
+} from "@tanstack/react-table";
+import { get } from "lodash";
+import { Info } from "lucide-react";
+import * as React from "react";
+import { ReactNode } from "react";
 
-export interface ColumnDefinition<T> {
-  width?: string;
-  label: string;
-  headerProps?: Partial<ComponentProps<typeof TableCell>>;
-  cellProps?:
-    | Partial<ComponentProps<typeof TableCell>>
-    | ((item: T) => Partial<ComponentProps<typeof TableCell>>);
-  cellRenderer: (
-    item: T,
-    indexes: { row: number; column: number },
-  ) => ReactNode;
-  headerRenderer?: (
-    defaultContent: ReactNode,
-    indexes: { column: number },
-  ) => ReactNode;
-}
-
-export interface ListViewProps<T> {
-  data: RemoteData<T[]>;
-  columns: ColumnDefinition<T>[];
+// Typ wejściowy komponentu (co będzie wierszem w tabeli)
+export interface ListViewProps<TData> {
+  data: RemoteData<TData[]>;
+  columns: TableOptions<TData>["columns"];
   skeletonRows?: number;
-  caption?: ReactNode;
+  caption?: React.ReactNode;
 }
 
-export function ListView<T>({
+export type ColumnDefinition<TData> = ColumnDef<TData> & {};
+
+export function ListView<TData>({
   data,
   columns,
   skeletonRows = 6,
   caption,
-}: ListViewProps<T>) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {columns.map((col, colIndex) => (
-            <TableCell
-              key={colIndex}
-              style={{ width: col.width }}
-              {...col.headerProps}
+}: ListViewProps<TData>) {
+  // Stan lokalny do sortowania, filtrowania itp.
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  );
+  const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState({});
+
+  // W zależności od tego, czy mamy dane, w tablicy przekazujemy albo puste [],
+  // albo wartość z data (jeżeli jest w stanie success).
+  const tableData = rd.getOrElse(data, []);
+
+  // Inicjalizacja tabeli z tanstack react table
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    debugTable: false,
+  });
+
+  const columnsElement = table.getHeaderGroups().map((headerGroup) => (
+    <TableRow key={headerGroup.id}>
+      {headerGroup.headers.map((header) =>
+        renderHeaderCell(header, ({ rowSpan }) => {
+          const element = flexRender(
+            header.column.columnDef.header,
+            header.getContext(),
+          );
+          const tooltip = get(header.column.columnDef.meta, "tooltip");
+          return (
+            <TableHead
+              key={header.id}
+              colSpan={header.colSpan}
+              rowSpan={rowSpan}
+              className={cn(
+                get(header.column.columnDef.meta, "headerClassName"),
+                !header.column.getCanGroup() && "text-center",
+              )}
             >
-              {col.headerRenderer
-                ? col.headerRenderer(col.label, { column: colIndex })
-                : col.label}
-            </TableCell>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rd
-          .journey(data)
-          .wait(() =>
-            Array.from({ length: skeletonRows }).map((_, rowIndex) => (
+              {tooltip ? (
+                <SimpleTooltip title={tooltip}>
+                  <div className="whitespace-pre">
+                    {element} <Info className="inline size-4" />{" "}
+                  </div>
+                </SimpleTooltip>
+              ) : (
+                element
+              )}
+            </TableHead>
+          );
+        }),
+      )}
+    </TableRow>
+  ));
+  // Tu zarządzamy stanem:
+  // rd.journey(data) – czekanie, błąd, sukces.
+  // Możesz też użyć rd.match lub rd.fold – wedle preferencji.
+  return rd
+    .journey(data)
+    .wait(() => (
+      // Wyświetlamy skeletony
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>{columnsElement}</TableHeader>
+          <TableBody>
+            {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
-                {columns.map((_, colIndex) => (
+                {table.getVisibleLeafColumns().map((_, colIndex) => (
                   <TableCell key={colIndex}>
                     <Skeleton className="w-full h-5" />
                   </TableCell>
                 ))}
               </TableRow>
-            )),
-          )
-          .catch((error) => (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="text-center">
-                Error: {error.message}
-              </TableCell>
-            </TableRow>
-          ))
-          .map((data) =>
-            data.length > 0 ? (
-              data.map((item, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {columns.map((col, colIndex) => (
-                    <TableCell
-                      key={colIndex}
-                      {...(typeof col.cellProps === "function"
-                        ? col.cellProps(item)
-                        : col.cellProps)}
-                    >
-                      {col.cellRenderer(item, {
-                        row: rowIndex,
-                        column: colIndex,
-                      })}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
-                  No data available.
-                </TableCell>
-              </TableRow>
-            ),
+            ))}
+          </TableBody>
+          {caption && (
+            <TableCaption className="text-sm text-sky-900 text-left bg-sky-50 p-4 rounded-md border border-sky-400">
+              {caption}
+            </TableCaption>
           )}
-      </TableBody>
-      <TableCaption className="text-sm text-sky-900 text-left bg-sky-50 p-4 rounded-md border border-sky-400">
-        {caption}
-      </TableCaption>
-    </Table>
-  );
+        </Table>
+      </div>
+    ))
+    .catch((error) => (
+      // Wyświetlamy błąd
+      <div className="rounded-md border p-4 text-red-600">
+        Error: {error.message}
+      </div>
+    ))
+    .map(() => {
+      // Mamy faktyczne dane – tworzymy UI tabeli
+
+      return (
+        <div className="rounded-md border">
+          <Table>
+            {/* NAGŁÓWEK */}
+            <TableHeader>{columnsElement}</TableHeader>
+
+            {/* CIAŁO */}
+            <TableBody className="border-b">
+              {/* Sprawdź, czy mamy wiersze w modelu */}
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          get(cell.column.columnDef.meta, "cellClassName"),
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No data available.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+
+            {/* CAPTION */}
+            {caption && (
+              <TableCaption className="text-sm text-sky-900 text-left bg-sky-50 p-4 rounded-md border border-sky-400 m-4">
+                {caption}
+              </TableCaption>
+            )}
+          </Table>
+        </div>
+      );
+    });
+}
+
+function renderHeaderCell<TData>(
+  header: Header<TData, unknown>,
+  renderer: (props: { rowSpan: number }) => ReactNode,
+) {
+  const columnRelativeDepth = header.depth - header.column.depth;
+
+  if (
+    !header.isPlaceholder &&
+    columnRelativeDepth > 1 &&
+    header.id === header.column.id
+  ) {
+    return null;
+  }
+
+  let rowSpan = 1;
+  if (header.isPlaceholder) {
+    const leafs = header.getLeafHeaders();
+    rowSpan = leafs[leafs.length - 1].depth - header.depth;
+  }
+
+  return renderer({
+    rowSpan,
+  });
 }
