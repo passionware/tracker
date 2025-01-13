@@ -23,14 +23,18 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { CommandLoading } from "cmdk";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Unlink2, X } from "lucide-react";
 import { useState } from "react";
+
+export const none = Symbol("none");
+export type None = typeof none;
 
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
-  value: Maybe<Contractor["id"]>;
-  onSelect: Maybe<(contractorId: Maybe<Contractor["id"]>) => void>;
+  value: Maybe<None | Contractor["id"]>;
+  onSelect: Maybe<(contractorId: Maybe<None | Contractor["id"]>) => void>;
   allowClear?: boolean;
+  allowNone?: boolean;
   size?: ButtonProps["size"];
   className?: string;
 }
@@ -45,13 +49,17 @@ export function ContractorPicker(props: ContractorPickerProps) {
     ),
   );
   const lastOption = rd.useLastWithPlaceholder(
-    props.services.contractorService.useContractor(props.value),
+    props.services.contractorService.useContractor(
+      props.value === none ? null : props.value,
+    ),
   );
 
-  const currentOption = maybe.mapOrElse(
-    props.value,
-    () => lastOption,
-    rd.ofIdle(),
+  const currentOption = rd.widen<Contractor | None>(
+    maybe.isAbsent(props.value)
+      ? rd.ofIdle()
+      : props.value === none
+        ? rd.of(none)
+        : lastOption,
   );
 
   const button = (
@@ -67,7 +75,17 @@ export function ContractorPicker(props: ContractorPickerProps) {
         .initially("Select contractor...")
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
-        .map((contractor) => contractor.fullName)}
+        .map((contractor) => {
+          if (contractor === none) {
+            return (
+              <>
+                <Unlink2 />
+                Unassigned
+              </>
+            );
+          }
+          return contractor.fullName;
+        })}
       <ChevronsUpDown className="opacity-50" />
     </Button>
   );
@@ -88,6 +106,46 @@ export function ContractorPicker(props: ContractorPickerProps) {
           />
           <CommandList>
             <CommandGroup>
+              <div className="border-b pb-1 mb-1 space-y-1">
+                {props.allowClear && maybe.isPresent(props.value) && (
+                  <>
+                    <CommandItem
+                      value={undefined}
+                      onSelect={() => {
+                        props.onSelect?.(null);
+                        setQuery("");
+                        setOpen(false);
+                      }}
+                      variant="danger"
+                    >
+                      <X />
+                      Clear
+                    </CommandItem>
+                  </>
+                )}
+                {props.allowNone && (
+                  <>
+                    <CommandItem
+                      variant="info"
+                      value={undefined}
+                      onSelect={() => {
+                        props.onSelect?.(none);
+                        setQuery("");
+                        setOpen(false);
+                      }}
+                    >
+                      <Unlink2 />
+                      Unassigned
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          props.value === none ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                  </>
+                )}
+              </div>
               {rd
                 .journey(options)
                 .wait(<CommandLoading />)

@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
+import {
+  ContractorPicker,
+  None,
+} from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -25,7 +28,7 @@ import { useState } from "react";
 
 export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
   const [contractorFilter, setContractorFilter] = useState<
-    Maybe<Contractor["id"]>
+    Maybe<None | Contractor["id"]>
   >(maybe.ofAbsent());
   const reports = props.services.reportDisplayService.useReportView(
     chain(

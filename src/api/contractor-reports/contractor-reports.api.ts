@@ -13,6 +13,7 @@ import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { None } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import {
@@ -40,7 +41,7 @@ export type ContractorReportQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
-  contractorId: Nullable<EnumFilter<Contractor["id"]>>;
+  contractorId: Nullable<EnumFilter<None | Contractor["id"]>>;
 }> &
   WithPagination &
   WithSorter<"periodStart" | "periodEnd" | "netValue">;
