@@ -72,5 +72,25 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    deleteBilling: async (billingId) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.deleteBilling(billingId);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Deleting billing",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
+    deleteCost: async (costId) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.deleteCost(costId);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Deleting cost",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
   };
 }

@@ -58,4 +58,6 @@ export interface MutationApi {
   deleteBillingReportLink: (linkId: number) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
   deleteCostReport: (reportId: number) => Promise<void>;
+  deleteBilling: (billingId: number) => Promise<void>;
+  deleteCost: (costId: number) => Promise<void>;
 }

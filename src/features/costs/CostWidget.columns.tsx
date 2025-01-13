@@ -14,49 +14,68 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
-import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
+import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
+import { CostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { ClientBillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
+import { startCase } from "lodash";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 
-const columnHelper = createColumnHelper<ClientBillingViewEntry>();
-export function useColumns(props: BillingWidgetProps) {
+const columnHelper = createColumnHelper<CostEntry>();
+
+export function useColumns(props: CostsWidgetProps) {
   return [
-    columnHelper.accessor("id", {
-      header: "Id",
-      cell: (info) => <div className="font-medium">{info.getValue()}</div>,
-    }),
     columnHelper.accessor("workspace", {
-      header: "Issuer",
+      header: "Workspace",
       cell: (info) => (
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
     }),
-    columnHelper.accessor("clientId", {
-      header: "Client",
-      cell: (info) => (
-        <ClientWidget
-          layout="avatar"
-          size="xs"
-          clientId={info.getValue()}
-          services={props.services}
-        />
-      ),
+    columnHelper.accessor("contractor", {
+      header: "Contractor",
+      cell: (info) => {
+        const contractor = info.getValue();
+        return contractor ? (
+          <ContractorPicker
+            value={contractor.id}
+            onSelect={null}
+            services={props.services}
+            size="xs"
+          />
+        ) : (
+          info.row.original.counterparty
+        );
+      },
     }),
     columnHelper.accessor("invoiceNumber", {
       header: "Invoice Number",
+      cell: (info) => info.getValue() || "N/A",
     }),
     columnHelper.accessor("invoiceDate", {
       header: "Invoice Date",
       cell: (info) =>
         props.services.formatService.temporal.date(info.getValue()),
+    }),
+    columnHelper.accessor("netAmount", {
+      header: "Net Value",
+      cell: (info) =>
+        props.services.formatService.financial.currency(info.getValue()),
+    }),
+    columnHelper.accessor("grossAmount", {
+      header: "Gross Value",
+      cell: (info) =>
+        maybe.mapOrElse(
+          info.getValue(),
+          props.services.formatService.financial.currency,
+          "N/A",
+        ),
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -64,82 +83,52 @@ export function useColumns(props: BillingWidgetProps) {
         <Popover>
           <PopoverTrigger>
             <Badge
-              tone="solid"
               variant={
                 (
                   {
                     matched: "positive",
                     unmatched: "destructive",
                     "partially-matched": "warning",
-                    clarified: "secondary",
                   } as const
                 )[info.getValue()]
               }
             >
-              {
-                (
-                  {
-                    matched: "Matched",
-                    unmatched: "Unmatched",
-                    "partially-matched": "Partially Matched",
-                    clarified: "Clarified",
-                  } as const
-                )[info.getValue()]
-              }
+              {startCase(info.getValue())}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
-            <PopoverHeader>Invoice details</PopoverHeader>
-            <ChargeInfo services={props.services} billing={info.row.original} />
+            <PopoverHeader>Cost details</PopoverHeader>
+            <CostInfo
+              costEntry={info.row.original}
+              services={props.services}
+              clientId={props.clientId}
+              workspaceId={props.workspaceId}
+            />
           </PopoverContent>
         </Popover>
       ),
     }),
-    columnHelper.accessor("netAmount", {
-      header: "Net Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-    }),
-    columnHelper.accessor("grossAmount", {
-      header: "Gross Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-    }),
     columnHelper.accessor("matchedAmount", {
-      header: "Matched Amount",
+      header: "Matched",
       cell: (info) => (
         <div className="empty:hidden flex flex-row gap-1.5 items-center">
-          {props.services.formatService.financial.amount(
-            info.getValue().amount,
-            info.getValue().currency,
-          )}
-          {info.row.original.links
-            .filter((l) => l.type === "reconcile")
-            .map((link) => (
-              <ClientWidget
-                layout="avatar"
-                size="xs"
-                key={link.id}
-                clientId={link.contractorReport.clientId}
-                services={props.services}
-              />
-            ))}
+          {props.services.formatService.financial.currency(info.getValue())}
+          {info.row.original.linkReports.map((link) => (
+            <ClientWidget
+              layout="avatar"
+              size="xs"
+              key={link.id}
+              clientId={link.contractorReport.clientId}
+              services={props.services}
+            />
+          ))}
         </div>
       ),
     }),
     columnHelper.accessor("remainingAmount", {
-      header: "Remaining Amount",
+      header: "Remaining",
       cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
+        props.services.formatService.financial.currency(info.getValue()),
     }),
     columnHelper.accessor("description", {
       header: "Description",
@@ -158,7 +147,7 @@ export function useColumns(props: BillingWidgetProps) {
 
 function ActionMenu(
   props: WithServices<[WithPreferenceService, WithMutationService]> & {
-    entry: ClientBillingViewEntry;
+    entry: CostEntry;
   },
 ) {
   const isDangerMode = props.services.preferenceService.useIsDangerMode();
@@ -175,11 +164,11 @@ function ActionMenu(
         {isDangerMode && (
           <DropdownMenuItem
             onClick={() => {
-              void props.services.mutationService.deleteBilling(props.entry.id);
+              void props.services.mutationService.deleteCost(props.entry.id);
             }}
           >
             <Trash2 />
-            Delete Billing
+            Delete Cost
           </DropdownMenuItem>
         )}
         <DropdownMenuItem
@@ -187,7 +176,7 @@ function ActionMenu(
             navigator.clipboard.writeText(props.entry.id.toString())
           }
         >
-          Copy billing ID
+          Copy cost ID
         </DropdownMenuItem>
         {/*<DropdownMenuSeparator />*/}
         {/*<DropdownMenuItem>View customer</DropdownMenuItem>*/}
