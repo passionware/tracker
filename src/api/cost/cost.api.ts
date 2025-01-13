@@ -1,6 +1,5 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
-import { Unassigned } from "@/api/_common/query/filters/Unassigned.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
   WithFilters,
@@ -42,7 +41,7 @@ export type CostQuery = WithSearch &
   WithFilters<{
     workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
     clientId: Nullable<EnumFilter<Contractor["id"]>>;
-    contractorId: Nullable<EnumFilter<Contractor["id"] | Unassigned>>;
+    contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     remainingAmount: Nullable<NumberFilter>;
   }> &
   WithPagination;

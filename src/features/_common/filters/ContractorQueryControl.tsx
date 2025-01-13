@@ -1,5 +1,5 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { Unassigned } from "@/api/_common/query/filters/Unassigned.ts";
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import {
   ContractorPicker,
@@ -10,13 +10,13 @@ import { maybe } from "@passionware/monads";
 
 export interface ContractorQueryControlProps
   extends Omit<ContractorPickerProps, "value" | "onSelect"> {
-  filter: Nullable<EnumFilter<Unassigned | Contractor["id"]>>;
+  filter: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
   onFilterChange: (
-    filter: Nullable<EnumFilter<Unassigned | Contractor["id"]>>,
+    filter: Nullable<EnumFilter<Nullable<Contractor["id"]>>>,
   ) => void;
 }
 
-function getValue(filter: Nullable<EnumFilter<Unassigned | Contractor["id"]>>) {
+function getValue(filter: Nullable<EnumFilter<Nullable<Contractor["id"]>>>) {
   if (maybe.isAbsent(filter)) {
     return null;
   }
@@ -45,7 +45,7 @@ export function ContractorQueryControl({
         onFilterChange(
           maybe.mapOrNull(contractorId, (id) => ({
             operator: "oneOf",
-            value: [id],
+            value: [unassignedUtils.getOrElse(id, null)],
           })),
         );
       }}

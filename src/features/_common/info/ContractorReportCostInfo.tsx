@@ -1,4 +1,3 @@
-import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -109,10 +108,7 @@ export function ContractorReportCostInfo({
                   .thru((x) =>
                     costQueryUtils.setFilter(x, "contractorId", {
                       operator: "oneOf",
-                      value: [
-                        report.contractor.id,
-                        unassignedUtils.ofUnassigned(),
-                      ],
+                      value: [report.contractor.id, null],
                     }),
                   )
                   .thru((x) => costQueryUtils.removeFilter(x, "clientId")) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients

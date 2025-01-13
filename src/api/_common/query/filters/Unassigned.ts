@@ -6,16 +6,11 @@ import { Maybe } from "@passionware/monads";
  * For example - ContractorPicker.value === null/undefined - means no contractor filter is applied.
  * For example - ContractorPicker.value === none - means we want only items with no contractor assigned.
  */
-export type Unassigned = { is: "unassigned" };
-const unassigned: Unassigned = { is: "unassigned" };
+const unassigned = Symbol("unassigned");
+export type Unassigned = typeof unassigned;
 export const unassignedUtils = {
   isUnassigned: (value: unknown): value is Unassigned => {
-    return !!(
-      value &&
-      typeof value === "object" &&
-      "operator" in value &&
-      value.operator === "unassigned"
-    );
+    return value === unassigned;
   },
   ofUnassigned: (): Unassigned => unassigned,
   map: <T>(value: Maybe<T | Unassigned>, fn: () => T): Maybe<T> => {
