@@ -29,10 +29,6 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
 const columnHelper = createColumnHelper<ClientBillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
   return [
-    columnHelper.accessor("id", {
-      header: "Id",
-      cell: (info) => <div className="font-medium">{info.getValue()}</div>,
-    }),
     columnHelper.accessor("workspace", {
       header: "Issuer",
       cell: (info) => (
