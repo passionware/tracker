@@ -44,76 +44,112 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
 
-      return rd.useMemoMap(rd.combine({ reports, workspaces }), (data) => {
-        const entries = data.reports.map((report) =>
-          calculateReportEntry(report, data.workspaces),
-        );
-        const groupedEntries = groupBy(
-          entries,
-          (cost) => cost.netAmount.currency,
-        );
-        return {
-          entries,
-          total: {
-            netAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(reports, (report) => report.netAmount.amount),
-                currency,
-              })),
+      const view = rd.useMemoMap(
+        rd.combine({ reports, workspaces }),
+        (data) => {
+          const entries = data.reports.map((report) =>
+            calculateReportEntry(report, data.workspaces),
+          );
+          const groupedEntries = groupBy(
+            entries,
+            (cost) => cost.netAmount.currency,
+          );
+          return {
+            entries,
+            total: {
+              netAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(reports, (report) => report.netAmount.amount),
+                  currency,
+                })),
+              ),
+              reconciledAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.reconciledAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              chargedAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.billedAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              toChargeAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.remainingAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              compensatedAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.compensatedAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              toCompensateAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.remainingCompensationAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+              toFullyCompensateAmount: prepareValues(
+                Object.entries(groupedEntries).map(([currency, reports]) => ({
+                  amount: sumBy(
+                    reports,
+                    (report) => report.remainingFullCompensationAmount.amount,
+                  ),
+                  currency,
+                })),
+              ),
+            },
+          };
+        },
+      );
+      const currencies = rd.useMemoMap(view, (data) =>
+        uniq(data.total.netAmount.values.map((value) => value.currency)),
+      );
+
+      const exchangeRates = config.services.exchangeService.useExchangeRates(
+        rd.mapOrElse(
+          currencies,
+          (currencies) =>
+            currencies.map((currency) => ({ from: currency, to: "PLN" })),
+          [],
+        ),
+      );
+
+      return rd.useMemoMap(rd.combine({ view, exchangeRates }), (data) => {
+        const getCurrencyRate = (currency: string) =>
+          maybe.getOrThrow(
+            data.exchangeRates.find(
+              (rate) => rate.from === currency && rate.to === "PLN",
             ),
-            reconciledAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.reconciledAmount.amount,
-                ),
-                currency,
-              })),
-            ),
-            chargedAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(reports, (report) => report.billedAmount.amount),
-                currency,
-              })),
-            ),
-            toChargeAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.remainingAmount.amount,
-                ),
-                currency,
-              })),
-            ),
-            compensatedAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.compensatedAmount.amount,
-                ),
-                currency,
-              })),
-            ),
-            toCompensateAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.remainingCompensationAmount.amount,
-                ),
-                currency,
-              })),
-            ),
-            toFullyCompensateAmount: prepareValues(
-              Object.entries(groupedEntries).map(([currency, reports]) => ({
-                amount: sumBy(
-                  reports,
-                  (report) => report.remainingFullCompensationAmount.amount,
-                ),
-                currency,
-              })),
-            ),
-          },
-        };
+          );
+
+        Object.values(data.view.total).forEach((total) => {
+          total.approximatedJointValue.amount = sumBy(total.values, (value) => {
+            const rate = getCurrencyRate(value.currency);
+            return value.amount * rate.rate;
+          });
+        });
+
+        return data.view;
       });
     },
     useBillingView: (query) => {
@@ -206,7 +242,7 @@ export function createReportDisplayService(
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return rd.useMemoMap(rd.combine({ costs, workspaces }), (data) => {
+      const view = rd.useMemoMap(rd.combine({ costs, workspaces }), (data) => {
         const entries = data.costs.map((cost) =>
           calculateCost(cost, data.workspaces),
         );
@@ -239,6 +275,36 @@ export function createReportDisplayService(
           entries,
           total,
         };
+      });
+      const currencies = rd.useMemoMap(view, (data) =>
+        uniq(data.total.netAmount.values.map((value) => value.currency)),
+      );
+
+      const exchangeRates = config.services.exchangeService.useExchangeRates(
+        rd.mapOrElse(
+          currencies,
+          (currencies) =>
+            currencies.map((currency) => ({ from: currency, to: "PLN" })),
+          [],
+        ),
+      );
+
+      return rd.useMemoMap(rd.combine({ view, exchangeRates }), (data) => {
+        const getCurrencyRate = (currency: string) =>
+          maybe.getOrThrow(
+            data.exchangeRates.find(
+              (rate) => rate.from === currency && rate.to === "PLN",
+            ),
+          );
+
+        Object.values(data.view.total).forEach((total) => {
+          total.approximatedJointValue.amount = sumBy(total.values, (value) => {
+            const rate = getCurrencyRate(value.currency);
+            return value.amount * rate.rate;
+          });
+        });
+
+        return data.view;
       });
     },
   };
