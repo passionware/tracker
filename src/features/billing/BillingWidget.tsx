@@ -1,17 +1,9 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
-import { Badge } from "@/components/ui/badge.tsx";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
+import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -20,43 +12,14 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
-import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
-import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
+import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { WithServices } from "@/platform/typescript/services.ts";
-import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import {
-  ClientBillingViewEntry,
-  WithReportDisplayService,
-} from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { createColumnHelper } from "@tanstack/react-table";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-
-type BillingWidgetProps = {
-  clientId: ClientSpec;
-  workspaceId: WorkspaceSpec;
-} & WithServices<
-  [
-    WithReportDisplayService,
-    WithFormatService,
-    WithClientService,
-    WithMutationService /*todo use auth flow*/,
-    WithPreferenceService,
-    WithWorkspaceService,
-  ]
->;
+import { useColumns } from "./BillingWidget.columns";
 
 export function BillingWidget(props: BillingWidgetProps) {
   const billings = props.services.reportDisplayService.useBillingView(
@@ -166,128 +129,4 @@ export function BillingWidget(props: BillingWidgetProps) {
       />
     </CommonPageContainer>
   );
-}
-
-const columnHelper = createColumnHelper<ClientBillingViewEntry>();
-function useColumns(props: BillingWidgetProps) {
-  return [
-    columnHelper.accessor("id", {
-      header: "Id",
-      cell: (info) => <div className="font-medium">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor("workspace", {
-      header: "Issuer",
-      cell: (info) => (
-        <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
-      ),
-    }),
-    columnHelper.accessor("clientId", {
-      header: "Client",
-      cell: (info) => (
-        <ClientWidget
-          layout="avatar"
-          size="xs"
-          clientId={info.getValue()}
-          services={props.services}
-        />
-      ),
-    }),
-    columnHelper.accessor("invoiceNumber", {
-      header: "Invoice Number",
-    }),
-    columnHelper.accessor("invoiceDate", {
-      header: "Invoice Date",
-      cell: (info) =>
-        props.services.formatService.temporal.date(info.getValue()),
-    }),
-    columnHelper.accessor("status", {
-      header: "Status",
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <Badge
-              tone="solid"
-              variant={
-                (
-                  {
-                    matched: "positive",
-                    unmatched: "destructive",
-                    "partially-matched": "warning",
-                    clarified: "secondary",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                (
-                  {
-                    matched: "Matched",
-                    unmatched: "Unmatched",
-                    "partially-matched": "Partially Matched",
-                    clarified: "Clarified",
-                  } as const
-                )[info.getValue()]
-              }
-            </Badge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Invoice details</PopoverHeader>
-            <ChargeInfo services={props.services} billing={info.row.original} />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
-    columnHelper.accessor("netAmount", {
-      header: "Net Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-    }),
-    columnHelper.accessor("grossAmount", {
-      header: "Gross Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-    }),
-    columnHelper.accessor("matchedAmount", {
-      header: "Matched Amount",
-      cell: (info) => (
-        <div className="empty:hidden flex flex-row gap-1.5 items-center">
-          {props.services.formatService.financial.amount(
-            info.getValue().amount,
-            info.getValue().currency,
-          )}
-          {info.row.original.links
-            .filter((l) => l.type === "reconcile")
-            .map((link) => (
-              <ClientWidget
-                layout="avatar"
-                size="xs"
-                key={link.id}
-                clientId={link.contractorReport.clientId}
-                services={props.services}
-              />
-            ))}
-        </div>
-      ),
-    }),
-    columnHelper.accessor("remainingAmount", {
-      header: "Remaining Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-    }),
-    columnHelper.accessor("description", {
-      header: "Description",
-      cell: (info) => (
-        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
-      ),
-    }),
-  ];
 }
