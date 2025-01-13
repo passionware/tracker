@@ -108,7 +108,6 @@ export function CostsWidget(props: CostsWidgetProps) {
             <div className="mb-2 font-semibold text-gray-700">
               A list of all costs associated with the selected workspace.
             </div>
-            <h3 className="my-3 text-base font-semibold">Summary</h3>
             {rd.mapOrElse(
               costs,
               (view) => {
@@ -123,16 +122,21 @@ export function CostsWidget(props: CostsWidgetProps) {
                 ];
 
                 return (
-                  <Summary>
-                    {billingDetails.map((item) => (
-                      <SummaryCurrencyGroup
-                        key={item.label}
-                        label={item.label}
-                        group={item.value}
-                        services={props.services}
-                      />
-                    ))}
-                  </Summary>
+                  <>
+                    <h3 className="my-3 text-base font-semibold">
+                      Summary ({view.entries.length} costs)
+                    </h3>
+                    <Summary>
+                      {billingDetails.map((item) => (
+                        <SummaryCurrencyGroup
+                          key={item.label}
+                          label={item.label}
+                          group={item.value}
+                          services={props.services}
+                        />
+                      ))}
+                    </Summary>
+                  </>
                 );
               },
               <div className="grid grid-flow-col gap-3">

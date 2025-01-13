@@ -9,6 +9,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
+import { Contractor } from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -18,6 +19,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { chain } from "lodash";
 
 export interface ClientBilling {
   id: number;
@@ -38,6 +40,7 @@ export type ClientBillingQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
+  contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithPagination &
   WithSorter<"invoiceDate">;
@@ -49,23 +52,50 @@ export const clientBillingQueryUtils = {
   ofDefault: (
     workspaceId: WorkspaceSpec,
     clientId: ClientSpec,
-  ): ClientBillingQuery => ({
-    filters: {
-      clientId: idSpecUtils.mapSpecificOrElse(
-        clientId,
-        (x) => ({ operator: "oneOf", value: [x] }),
-        null,
-      ),
-      workspaceId: idSpecUtils.mapSpecificOrElse(
-        workspaceId,
-        (x) => ({ operator: "oneOf", value: [x] }),
-        null,
-      ),
-      remainingAmount: null,
-    },
-    page: { page: 0, pageSize: 10 },
-    sort: { field: "invoiceDate", order: "asc" },
-  }),
+  ): ClientBillingQuery =>
+    clientBillingQueryUtils.ensureDefault(
+      {
+        filters: {
+          clientId: null,
+          workspaceId: null,
+          remainingAmount: null,
+          contractorId: null,
+        },
+        page: { page: 0, pageSize: 10 },
+        sort: { field: "invoiceDate", order: "asc" },
+      },
+      workspaceId,
+      clientId,
+    ),
+  ensureDefault: (
+    query: ClientBillingQuery,
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): ClientBillingQuery =>
+    chain(query)
+      .thru((q) =>
+        clientBillingQueryUtils.setFilter(
+          q,
+          "workspaceId",
+          idSpecUtils.mapSpecificOrElse(
+            workspaceId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .thru((q) =>
+        clientBillingQueryUtils.setFilter(
+          q,
+          "clientId",
+          idSpecUtils.mapSpecificOrElse(
+            clientId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .value(),
 };
 
 export interface ClientBillingApi {

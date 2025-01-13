@@ -152,7 +152,9 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
 
               return (
                 <>
-                  <h3 className="my-3 text-base font-semibold ">Summary</h3>
+                  <h3 className="my-3 text-base font-semibold ">
+                    Summary ({view.entries.length} reports)
+                  </h3>
                   <Summary>
                     {billingDetails.map((item) => (
                       <SummaryCurrencyGroup

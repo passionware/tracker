@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { FilterChip } from "@/features/_common/FilterChip.tsx";
+import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -16,11 +18,19 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
+import { useState } from "react";
 import { useColumns } from "./BillingWidget.columns";
 
 export function BillingWidget(props: BillingWidgetProps) {
-  const billings = props.services.reportDisplayService.useBillingView(
+  const [query, setQuery] = useState(
     clientBillingQueryUtils.ofDefault(props.workspaceId, props.clientId),
+  );
+  const billings = props.services.reportDisplayService.useBillingView(
+    clientBillingQueryUtils.ensureDefault(
+      query,
+      props.workspaceId,
+      props.clientId,
+    ),
   );
 
   const addBillingState = promiseState.useRemoteData();
@@ -30,6 +40,19 @@ export function BillingWidget(props: BillingWidgetProps) {
     <CommonPageContainer
       tools={
         <>
+          <FilterChip label="Contractor">
+            <ContractorQueryControl
+              allowClear
+              allowNone
+              filter={query.filters.contractorId}
+              onFilterChange={(x) =>
+                setQuery(
+                  clientBillingQueryUtils.setFilter(query, "contractorId", x),
+                )
+              }
+              services={props.services}
+            />
+          </FilterChip>
           <InlinePopoverForm
             trigger={
               <Button variant="default" size="sm" className="flex">
@@ -103,7 +126,7 @@ export function BillingWidget(props: BillingWidgetProps) {
               return (
                 <div>
                   <h3 className="my-3 text-base font-semibold text-gray-900">
-                    Summary
+                    Summary ({view.entries.length} invoices)
                   </h3>
                   <Summary>
                     {billingDetails.map((item) => (

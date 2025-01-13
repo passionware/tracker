@@ -13,7 +13,7 @@ export function createClientBillingApi(
 ): ClientBillingApi {
   return {
     getClientBillings: async (query) => {
-      let request = client.from("client_billing").select(`
+      let request = client.from("client_billing_with_details").select(`
       *,
       link_billing_report (
         *,
@@ -23,6 +23,38 @@ export function createClientBillingApi(
         )
       )
     `);
+      if (query.filters.contractorId) {
+        switch (query.filters.contractorId.operator) {
+          case "oneOf":
+            if (query.filters.contractorId.value.includes(null)) {
+              const contractorIds = query.filters.contractorId.value.filter(
+                (id) => id !== null,
+              );
+              if (contractorIds.length > 0) {
+                request = request.or(
+                  `linked_contractors.cs.{${contractorIds.join(",")}},linked_contractors.eq.{}`,
+                );
+              } else {
+                // Jeśli jedyny element to `null`, filtruj tylko puste tablice
+                request = request.eq("linked_contractors", "{}");
+              }
+            } else {
+              request = request.contains(
+                "linked_contractors",
+                query.filters.contractorId.value,
+              );
+            }
+            break;
+          case "matchNone":
+            throw new Error("Operator matchNone not implemented");
+
+          default:
+            throw new Error(
+              `Operator ${query.filters.contractorId.operator} not implemented`,
+            );
+        }
+      }
+
       if (query.filters.workspaceId) {
         switch (query.filters.workspaceId.operator) {
           case "oneOf":
