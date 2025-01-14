@@ -60,4 +60,8 @@ export interface MutationApi {
   deleteCostReport: (reportId: number) => Promise<void>;
   deleteBilling: (billingId: number) => Promise<void>;
   deleteCost: (costId: number) => Promise<void>;
+  editCost: (
+    costId: number,
+    payload: Partial<CreateCostPayload>,
+  ) => Promise<void>;
 }

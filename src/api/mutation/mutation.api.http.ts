@@ -156,5 +156,24 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    editCost: async (costId, payload) => {
+      const response = await client
+        .from("costs")
+        .update({
+          invoice_number: payload.invoiceNumber,
+          counterparty: payload.counterparty,
+          contractor_id: payload.contractorId,
+          description: payload.description,
+          invoice_date: payload.invoiceDate,
+          net_value: payload.netValue,
+          gross_value: payload.grossValue,
+          currency: payload.currency,
+          workspace_id: payload.workspaceId,
+        })
+        .eq("id", costId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

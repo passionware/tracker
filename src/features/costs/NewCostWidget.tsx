@@ -1,4 +1,5 @@
 import { Cost } from "@/api/cost/cost.api.ts";
+import { CreateCostPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -15,20 +16,21 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
+import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
+import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 export interface NewCostWidgetProps
   extends WithServices<[WithWorkspaceService, WithContractorService]> {
-  defaultWorkspaceId?: number;
-  defaultCurrency?: string;
-  defaultInvoiceDate?: Date;
+  defaultValues?: Partial<CreateCostPayload>;
   onSubmit: (
     data: Omit<Cost, "createdAt" | "linkReports" | "id" | "contractor">,
-  ) => void;
+  ) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -45,37 +47,43 @@ type FormModel = {
 };
 
 export function NewCostWidget(props: NewCostWidgetProps) {
+  const promise = promiseState.useRemoteData();
   const form = useForm<FormModel>({
     defaultValues: {
-      contractorId: null,
-      counterparty: "",
-      workspaceId: props.defaultWorkspaceId,
-      currency: props.defaultCurrency,
-      netValue: "0",
-      grossValue: "0",
-      invoiceNumber: "",
-      invoiceDate: props.defaultInvoiceDate,
-      description: "",
+      contractorId: props.defaultValues?.contractorId ?? null,
+      counterparty: props.defaultValues?.counterparty ?? "",
+      workspaceId: props.defaultValues?.workspaceId ?? null,
+      currency: props.defaultValues?.currency ?? null,
+      netValue: maybe.mapOrElse(props.defaultValues?.netValue, String, "0"),
+      grossValue: maybe.mapOrElse(props.defaultValues?.grossValue, String, "0"),
+      invoiceNumber: props.defaultValues?.invoiceNumber ?? "",
+      invoiceDate: props.defaultValues?.invoiceDate ?? null,
+      description: props.defaultValues?.description ?? "",
     },
   });
 
   const watchContractorId = form.watch("contractorId");
 
   function handleSubmit(data: FormModel) {
-    props.onSubmit({
-      contractorId: data.contractorId,
-      counterparty: watchContractorId ? null : data.counterparty,
-      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
-      currency: maybe.getOrThrow(data.currency, "Currency is required"),
-      netValue: parseFloat(data.netValue),
-      grossValue: parseFloat(data.grossValue),
-      invoiceNumber: data.invoiceNumber,
-      invoiceDate: maybe.getOrThrow(
-        data.invoiceDate,
-        "Invoice date is required",
-      ),
-      description: data.description,
-    });
+    void promise.track(
+      props.onSubmit({
+        contractorId: data.contractorId,
+        counterparty: watchContractorId ? null : data.counterparty,
+        workspaceId: maybe.getOrThrow(
+          data.workspaceId,
+          "Workspace is required",
+        ),
+        currency: maybe.getOrThrow(data.currency, "Currency is required"),
+        netValue: parseFloat(data.netValue),
+        grossValue: parseFloat(data.grossValue),
+        invoiceNumber: data.invoiceNumber,
+        invoiceDate: maybe.getOrThrow(
+          data.invoiceDate,
+          "Invoice date is required",
+        ),
+        description: data.description,
+      }),
+    );
   }
 
   return (
@@ -236,7 +244,17 @@ export function NewCostWidget(props: NewCostWidgetProps) {
         <Button type="button" variant="outline" onClick={props.onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Submit</Button>
+        <Button type="submit">
+          {rd
+            .fullJourney(promise.state)
+            .initially(null)
+            .wait(<LoaderCircle className="w-5 animate-spin" />)
+            .catch(renderSmallError("size-6"))
+            .map(() => (
+              <CheckCircle2 />
+            ))}
+          Submit
+        </Button>
       </form>
     </Form>
   );

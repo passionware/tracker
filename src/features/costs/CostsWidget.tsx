@@ -31,7 +31,7 @@ export function CostsWidget(props: CostsWidgetProps) {
     costQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
   );
 
-  const addCostState = promiseState.useRemoteData();
+  const addCostState = promiseState.useRemoteData<void>();
 
   const columns = useColumns(props);
 
@@ -74,17 +74,19 @@ export function CostsWidget(props: CostsWidgetProps) {
                 <PopoverHeader>Add new cost</PopoverHeader>
                 <NewCostWidget
                   onCancel={bag.close}
-                  defaultWorkspaceId={idSpecUtils.switchAll(
-                    props.workspaceId,
-                    undefined,
-                  )}
-                  defaultCurrency={rd.tryMap(
-                    costs,
-                    (reports) =>
-                      reports.entries[reports.entries.length - 1]?.netAmount
-                        .currency,
-                  )}
-                  defaultInvoiceDate={new Date()}
+                  defaultValues={{
+                    workspaceId: idSpecUtils.switchAll(
+                      props.workspaceId,
+                      undefined,
+                    ),
+                    currency: rd.tryMap(
+                      costs,
+                      (reports) =>
+                        reports.entries[reports.entries.length - 1]?.netAmount
+                          .currency,
+                    ),
+                    invoiceDate: new Date(),
+                  }}
                   services={props.services}
                   onSubmit={(data) =>
                     addCostState.track(

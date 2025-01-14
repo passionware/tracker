@@ -92,5 +92,11 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    editCost: async (costId, payload) => {
+      await api.editCost(costId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Editing cost",
+      });
+    },
   };
 }
