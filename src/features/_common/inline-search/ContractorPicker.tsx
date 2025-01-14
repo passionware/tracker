@@ -28,7 +28,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { maybe, Maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CommandLoading } from "cmdk";
-import { Check, ChevronsUpDown, Unlink2, X } from "lucide-react";
+import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
 import { useState } from "react";
 
 export interface ContractorPickerProps
@@ -72,7 +72,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
   const handleSelect = (contractorId: Maybe<Unassigned | Contractor["id"]>) => {
     const result = props.onSelect?.(contractorId);
     if (result) {
-      promise.track(result);
+      void promise.track(result);
     }
     setOpen(false);
     setQuery("");
@@ -86,6 +86,12 @@ export function ContractorPicker(props: ContractorPickerProps) {
       aria-expanded={open}
       className={cn("justify-between", props.className)}
     >
+      {rd
+        .fullJourney(promise.state)
+        .initially(null)
+        .wait(<LoaderCircle className="!size-3 animate-spin" />)
+        .catch(renderSmallError("w-5 h-5"))
+        .map(() => null)}
       {rd
         .fullJourney(currentOption)
         .initially("Select contractor...")
