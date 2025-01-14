@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { maybe, Maybe, rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { CommandLoading } from "cmdk";
 import { Check, ChevronsUpDown, Unlink2, X } from "lucide-react";
 import { useState } from "react";
@@ -33,9 +34,11 @@ import { useState } from "react";
 export interface ContractorPickerProps
   extends WithServices<[WithContractorService]> {
   value: Maybe<Unassigned | Contractor["id"]>;
-  onSelect: Maybe<(contractorId: Maybe<Unassigned | Contractor["id"]>) => void>;
+  onSelect: Maybe<
+    (contractorId: Maybe<Unassigned | Contractor["id"]>) => void | Promise<void>
+  >;
   allowClear?: boolean;
-  allowNone?: boolean;
+  allowUnassigned?: boolean;
   size?: ButtonProps["size"];
   className?: string;
 }
@@ -43,6 +46,7 @@ export interface ContractorPickerProps
 export function ContractorPicker(props: ContractorPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const promise = promiseState.useRemoteData();
 
   const options = rd.useLastWithPlaceholder(
     props.services.contractorService.useContractors(
@@ -64,6 +68,15 @@ export function ContractorPicker(props: ContractorPickerProps) {
           rd.of(unassignedUtils.ofUnassigned()),
         ),
   );
+
+  const handleSelect = (contractorId: Maybe<Unassigned | Contractor["id"]>) => {
+    const result = props.onSelect?.(contractorId);
+    if (result) {
+      promise.track(result);
+    }
+    setOpen(false);
+    setQuery("");
+  };
 
   const button = (
     <Button
@@ -114,9 +127,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
                     <CommandItem
                       value={undefined}
                       onSelect={() => {
-                        props.onSelect?.(null);
-                        setQuery("");
-                        setOpen(false);
+                        handleSelect(null);
                       }}
                       variant="danger"
                     >
@@ -125,15 +136,13 @@ export function ContractorPicker(props: ContractorPickerProps) {
                     </CommandItem>
                   </>
                 )}
-                {props.allowNone && (
+                {props.allowUnassigned && (
                   <>
                     <CommandItem
                       variant="info"
                       value={undefined}
                       onSelect={() => {
-                        props.onSelect?.(unassignedUtils.ofUnassigned());
-                        setQuery("");
-                        setOpen(false);
+                        handleSelect(unassignedUtils.ofUnassigned());
                       }}
                     >
                       <Unlink2 />
@@ -165,14 +174,13 @@ export function ContractorPicker(props: ContractorPickerProps) {
                       onSelect={() => {
                         if (props.value === contractor.id) {
                           if (props.allowClear) {
-                            props.onSelect?.(null);
-                            setQuery("");
+                            handleSelect(null);
                           }
                           setOpen(false);
                           return;
                         }
 
-                        props.onSelect?.(contractor.id);
+                        handleSelect(contractor.id);
                         setOpen(false);
                       }}
                     >

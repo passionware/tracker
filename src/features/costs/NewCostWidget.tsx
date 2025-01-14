@@ -68,7 +68,7 @@ export function NewCostWidget(props: NewCostWidgetProps) {
     void promise.track(
       props.onSubmit({
         contractorId: data.contractorId,
-        counterparty: watchContractorId ? null : data.counterparty,
+        counterparty: data.counterparty,
         workspaceId: maybe.getOrThrow(
           data.workspaceId,
           "Workspace is required",

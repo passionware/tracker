@@ -43,7 +43,7 @@ export function BillingWidget(props: BillingWidgetProps) {
           <FilterChip label="Contractor">
             <ContractorQueryControl
               allowClear
-              allowNone
+              allowUnassigned
               filter={query.filters.contractorId}
               onFilterChange={(x) =>
                 setQuery(

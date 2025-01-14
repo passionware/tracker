@@ -47,7 +47,7 @@ export function CostsWidget(props: CostsWidgetProps) {
           <FilterChip label="Contractor">
             <ContractorQueryControl
               allowClear
-              allowNone
+              allowUnassigned
               filter={query.filters.contractorId}
               onFilterChange={(x) =>
                 setQuery(costQueryUtils.setFilter(query, "contractorId", x))

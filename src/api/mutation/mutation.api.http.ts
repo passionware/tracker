@@ -1,8 +1,10 @@
 import {
+  CreateCostPayload,
   LinkReportBillingPayload,
   MutationApi,
 } from "@/api/mutation/mutation.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { pickBy } from "lodash";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
   function getInsertPayload(payload: LinkReportBillingPayload) {
@@ -157,19 +159,26 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     editCost: async (costId, payload) => {
+      const takeIfPresent = (key: keyof CreateCostPayload) =>
+        key in payload ? payload[key] : undefined;
       const response = await client
         .from("costs")
-        .update({
-          invoice_number: payload.invoiceNumber,
-          counterparty: payload.counterparty,
-          contractor_id: payload.contractorId,
-          description: payload.description,
-          invoice_date: payload.invoiceDate,
-          net_value: payload.netValue,
-          gross_value: payload.grossValue,
-          currency: payload.currency,
-          workspace_id: payload.workspaceId,
-        })
+        .update(
+          pickBy(
+            {
+              invoice_number: takeIfPresent("invoiceNumber"),
+              counterparty: takeIfPresent("counterparty"),
+              contractor_id: takeIfPresent("contractorId"),
+              description: takeIfPresent("description"),
+              invoice_date: takeIfPresent("invoiceDate"),
+              net_value: takeIfPresent("netValue"),
+              gross_value: takeIfPresent("grossValue"),
+              currency: takeIfPresent("currency"),
+              workspace_id: takeIfPresent("workspaceId"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
         .eq("id", costId);
       if (response.error) {
         throw response.error;

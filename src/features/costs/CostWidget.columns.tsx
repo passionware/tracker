@@ -1,3 +1,4 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -48,19 +49,29 @@ export function useColumns(props: CostsWidgetProps) {
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
     }),
+    columnHelper.accessor("counterparty", {
+      header: "Counterparty",
+      cell: (info) => info.getValue() || "N/A",
+    }),
     columnHelper.accessor("contractor", {
       header: "Contractor",
       cell: (info) => {
         const contractor = info.getValue();
-        return contractor ? (
+        return (
           <ContractorPicker
-            value={contractor.id}
-            onSelect={null}
+            value={maybe.getOrElse(
+              contractor?.id,
+              unassignedUtils.ofUnassigned(),
+            )}
+            allowUnassigned
+            onSelect={(contractorId) =>
+              props.services.mutationService.editCost(info.row.original.id, {
+                contractorId: unassignedUtils.getOrElse(contractorId, null),
+              })
+            }
             services={props.services}
             size="xs"
           />
-        ) : (
-          info.row.original.counterparty
         );
       },
     }),
