@@ -41,7 +41,7 @@ export interface Cost {
 export type CostQuery = WithSearch &
   WithFilters<{
     workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
-    clientId: Nullable<EnumFilter<Contractor["id"]>>;
+    clientId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     remainingAmount: Nullable<NumberFilter>;
   }> &

@@ -34,27 +34,39 @@ export function createCostApi(client: SupabaseClient): CostApi {
         }
       }
       if (query.filters.clientId) {
-        switch (query.filters.clientId.operator) {
+        const { operator, value } = query.filters.clientId;
+
+        if (!Array.isArray(value)) {
+          throw new Error("clientId.value must be an array");
+        }
+
+        const filteredValues = value.filter((v) => v !== null);
+
+        switch (operator) {
           case "oneOf": {
-            // Sprawdzanie, czy client_ids zawiera przynajmniej jeden z podanych clientId
-            request = request.contains(
-              "client_ids",
-              `{${query.filters.clientId.value.join(",")}}`,
-            );
+            if (value.includes(null)) {
+              // Tworzymy zapytanie `or` dla wartości w tablicy oraz pustych `client_ids`
+              const orFilter = [
+                `client_ids.cs.{${filteredValues.join(",")}}`,
+                `client_ids.eq.{}`, // lub `client_ids.eq.{}'` w zależności od implementacji
+              ].join(",");
+
+              request = request.or(orFilter);
+            } else {
+              request = request.contains(
+                "client_ids",
+                `{${filteredValues.join(",")}}`,
+              );
+            }
             break;
           }
           case "matchNone": {
-            // Sprawdzanie, czy client_ids NIE zawiera żadnego z podanych clientId
-            request = request.not(
-              "client_ids",
-              "contains",
-              `{${query.filters.clientId.value.join(",")}}`,
-            );
-            break;
+            throw new Error("Unsupported operator: matchNone");
           }
+          default:
+            throw new Error(`Unsupported operator: ${operator}`);
         }
       }
-
       if (query.filters.contractorId) {
         const { operator, value } = query.filters.contractorId;
 
