@@ -36,32 +36,34 @@ export function createCostApi(client: SupabaseClient): CostApi {
       if (query.filters.clientId) {
         const { operator, value } = query.filters.clientId;
 
-        if (!Array.isArray(value)) {
-          throw new Error("clientId.value must be an array");
-        }
-
-        const filteredValues = value.filter((v) => v !== null);
+        const arrayToken = `{${value.map((v) => (v === null ? -1 : v)).join(",")}}`;
 
         switch (operator) {
           case "oneOf": {
-            if (value.includes(null)) {
-              // Tworzymy zapytanie `or` dla wartości w tablicy oraz pustych `client_ids`
-              const orFilter = [
-                `client_ids.cs.{${filteredValues.join(",")}}`,
-                `client_ids.eq.{}`, // lub `client_ids.eq.{}'` w zależności od implementacji
-              ].join(",");
-
-              request = request.or(orFilter);
-            } else {
-              request = request.contains(
-                "client_ids",
-                `{${filteredValues.join(",")}}`,
-              );
-            }
+            request = request.filter("client_ids", "ov", arrayToken);
             break;
           }
           case "matchNone": {
-            throw new Error("Unsupported operator: matchNone");
+            request = request.not("client_ids", "ov", arrayToken);
+            break;
+          }
+          default:
+            throw new Error(`Unsupported operator: ${operator}`);
+        }
+      }
+      if (query.filters.potentialClientId) {
+        const { operator, value } = query.filters.potentialClientId;
+
+        const arrayToken = `{${value.map((v) => (v === null ? -1 : v)).join(",")}}`;
+
+        switch (operator) {
+          case "oneOf": {
+            request = request.filter("potential_clients", "ov", arrayToken);
+            break;
+          }
+          case "matchNone": {
+            request = request.not("potential_clients", "ov", arrayToken);
+            break;
           }
           default:
             throw new Error(`Unsupported operator: ${operator}`);

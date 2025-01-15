@@ -42,6 +42,10 @@ export type CostQuery = WithSearch &
   WithFilters<{
     workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
     clientId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
+    /**
+     * We want to see costs that are either linked to the client via contractor report, or linked to contractors that have any report linked to the client
+     */
+    potentialClientId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     remainingAmount: Nullable<NumberFilter>;
   }> &
@@ -60,6 +64,7 @@ export const costQueryUtils = {
           clientId: null,
           contractorId: null,
           remainingAmount: null,
+          potentialClientId: null,
         },
         page: paginationUtils.ofDefault(),
       },
