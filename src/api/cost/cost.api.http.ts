@@ -113,21 +113,21 @@ export function createCostApi(client: SupabaseClient): CostApi {
         const { operator, value } = query.filters.linkedRemainder;
         switch (operator) {
           case "greaterThan": {
-            request = request.gt("linked_remainder", value);
+            request = request.gt("linked_reports_remainder", value);
             break;
           }
           case "lessThan": {
-            request = request.lt("linked_remainder", value);
+            request = request.lt("linked_reports_remainder", value);
             break;
           }
           case "between": {
             request = request
-              .lt("linked_remainder", value.to)
-              .gt("linked_remainder", value.from);
+              .lt("linked_reports_remainder", value.to)
+              .gt("linked_reports_remainder", value.from);
             break;
           }
           case "equal": {
-            request = request.eq("linked_remainder", value);
+            request = request.eq("linked_reports_remainder", value);
             break;
           }
           default:
@@ -139,21 +139,21 @@ export function createCostApi(client: SupabaseClient): CostApi {
         const { operator, value } = query.filters.linkedAmount;
         switch (operator) {
           case "greaterThan": {
-            request = request.gt("linked_amount", value);
+            request = request.gt("linked_reports_amount", value);
             break;
           }
           case "lessThan": {
-            request = request.lt("linked_amount", value);
+            request = request.lt("linked_reports_amount", value);
             break;
           }
           case "between": {
             request = request
-              .lt("linked_amount", value.to)
-              .gt("linked_amount", value.from);
+              .lt("linked_reports_amount", value.to)
+              .gt("linked_reports_amount", value.from);
             break;
           }
           case "equal": {
-            request = request.eq("linked_amount", value);
+            request = request.eq("linked_reports_amount", value);
             break;
           }
           default:

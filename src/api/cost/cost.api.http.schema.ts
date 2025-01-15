@@ -34,14 +34,14 @@ export const costBase$ = z.object({
 });
 
 export type Cost$ = z.input<typeof costBase$> & {
-  contractor_reports?: {
+  linked_reports?: {
     link_cost_report: LinkCostReport$;
     contractor_report: ContractorReport$;
   }[];
 };
 
 export const cost$: z.ZodType<Cost$> = costBase$.extend({
-  contractor_reports: z.lazy(() =>
+  linked_reports: z.lazy(() =>
     z
       .array(
         z.object({
@@ -57,7 +57,7 @@ export function costFromHttp(cost: Cost$): Cost {
   return {
     ...camelcaseKeys(cost),
     contractor: maybe.mapOrNull(cost.contractor, contractorFromHttp),
-    linkReports: maybe.mapOrNull(cost.contractor_reports, (reports) =>
+    linkReports: maybe.mapOrNull(cost.linked_reports, (reports) =>
       reports.map((report) => ({
         ...linkCostReportFromHttp(report.link_cost_report),
         contractorReport: contractorReportFromHttp(report.contractor_report),
