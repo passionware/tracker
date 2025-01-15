@@ -37,11 +37,26 @@ export function PotentialCostsWidget(props: PotentialCostsWidgetProps) {
       ),
     )
       .thru((x) =>
-        costQueryUtils.setFilter(x, "potentialClientId", {
-          operator: "oneOf",
-          value: [idSpecUtils.switchAll(props.clientId, -1)],
-        }),
+        idSpecUtils.mapSpecificOrElse(
+          props.clientId,
+          (clientId) =>
+            costQueryUtils.setFilter(x, "potentialClientId", {
+              operator: "oneOf",
+              value: [clientId],
+            }),
+          x,
+        ),
       )
+      /**
+       * TODO: we can have a special place in the app, where we can see all unmatched costs that couldn't be even potentially matched
+       * Now, when we go to potential costs for all companies, we simply show all unmatched costs
+       * thru((x) =>
+       *         costQueryUtils.setFilter(x, "potentialClientId", {
+       *           operator: "oneOf",
+       *           value: [idSpecUtils.switchAll(props.clientId, -1)],
+       *         }),
+       *       )
+       */
       .thru((x) =>
         costQueryUtils.setFilter(x, "linkedRemainder", {
           operator: "greaterThan",
