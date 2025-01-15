@@ -5,6 +5,7 @@ import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
+import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -140,6 +141,27 @@ export function RootWidget(
               <IdResolver services={props.services}>
                 {(workspaceId, clientId) => (
                   <CostsWidget
+                    workspaceId={workspaceId}
+                    clientId={clientId}
+                    services={props.services}
+                  />
+                )}
+              </IdResolver>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={props.services.routingService
+          .forWorkspace()
+          .forClient()
+          .potentialCosts()}
+        element={
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              <IdResolver services={props.services}>
+                {(workspaceId, clientId) => (
+                  <PotentialCostsWidget
                     workspaceId={workspaceId}
                     clientId={clientId}
                     services={props.services}

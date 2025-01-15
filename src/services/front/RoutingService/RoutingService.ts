@@ -54,6 +54,7 @@ export interface RoutingService {
       reports: () => string;
       charges: () => string;
       costs: () => string;
+      potentialCosts: () => string;
       root: () => string;
     };
   };

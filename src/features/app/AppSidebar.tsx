@@ -68,6 +68,10 @@ function useData(
               title: "Costs",
               url: routing.costs(),
             },
+            {
+              title: "Potential Costs",
+              url: routing.potentialCosts(),
+            },
           ],
         },
         {

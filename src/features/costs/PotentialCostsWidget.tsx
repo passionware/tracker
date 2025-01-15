@@ -19,16 +19,36 @@ import { NewCostWidget } from "@/features/costs/NewCostWidget.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { chain } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
-export function CostsWidget(props: PotentialCostsWidgetProps) {
+export function PotentialCostsWidget(props: PotentialCostsWidgetProps) {
   const [query, setQuery] = useState(
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
   const costs = props.services.reportDisplayService.useCostView(
-    costQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
+    chain(
+      costQueryUtils.ensureDefault(
+        query,
+        props.workspaceId,
+        idSpecUtils.ofAll(),
+      ),
+    )
+      .thru((x) =>
+        costQueryUtils.setFilter(x, "potentialClientId", {
+          operator: "oneOf",
+          value: [idSpecUtils.switchAll(props.clientId, -1)],
+        }),
+      )
+      .thru((x) =>
+        costQueryUtils.setFilter(x, "linkedRemainder", {
+          operator: "greaterThan",
+          value: 0,
+        }),
+      )
+      .value(),
   );
 
   const addCostState = promiseState.useRemoteData<void>();

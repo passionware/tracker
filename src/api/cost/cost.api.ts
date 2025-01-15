@@ -47,7 +47,8 @@ export type CostQuery = WithSearch &
      */
     potentialClientId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
-    remainingAmount: Nullable<NumberFilter>;
+    linkedRemainder: Nullable<NumberFilter>;
+    linkedAmount: Nullable<NumberFilter>;
   }> &
   WithPagination;
 
@@ -63,7 +64,8 @@ export const costQueryUtils = {
           workspaceId: null,
           clientId: null,
           contractorId: null,
-          remainingAmount: null,
+          linkedRemainder: null,
+          linkedAmount: null,
           potentialClientId: null,
         },
         page: paginationUtils.ofDefault(),

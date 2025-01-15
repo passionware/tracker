@@ -25,7 +25,7 @@ import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { CostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
+import { PotentialCostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
 import { NewCostWidget } from "@/features/costs/NewCostWidget.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -41,7 +41,7 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<CostEntry>();
 
-export function useColumns(props: CostsWidgetProps) {
+export function useColumns(props: PotentialCostsWidgetProps) {
   return [
     columnHelper.accessor("workspace", {
       header: "Workspace",

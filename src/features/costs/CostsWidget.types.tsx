@@ -11,7 +11,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 
-export interface CostsWidgetProps
+export interface PotentialCostsWidgetProps
   extends WithServices<
     [
       WithReportDisplayService,

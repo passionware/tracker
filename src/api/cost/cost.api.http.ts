@@ -1,8 +1,6 @@
-import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { sumBy } from "lodash";
 import { z } from "zod";
 
 export function createCostApi(client: SupabaseClient): CostApi {
@@ -111,20 +109,63 @@ export function createCostApi(client: SupabaseClient): CostApi {
             throw new Error(`Unsupported operator: ${operator}`);
         }
       }
+      if (query.filters.linkedRemainder) {
+        const { operator, value } = query.filters.linkedRemainder;
+        switch (operator) {
+          case "greaterThan": {
+            request = request.gt("linked_remainder", value);
+            break;
+          }
+          case "lessThan": {
+            request = request.lt("linked_remainder", value);
+            break;
+          }
+          case "between": {
+            request = request
+              .lt("linked_remainder", value.to)
+              .gt("linked_remainder", value.from);
+            break;
+          }
+          case "equal": {
+            request = request.eq("linked_remainder", value);
+            break;
+          }
+          default:
+            throw new Error(`Unsupported operator: ${operator}`);
+        }
+      }
+
+      if (query.filters.linkedAmount) {
+        const { operator, value } = query.filters.linkedAmount;
+        switch (operator) {
+          case "greaterThan": {
+            request = request.gt("linked_amount", value);
+            break;
+          }
+          case "lessThan": {
+            request = request.lt("linked_amount", value);
+            break;
+          }
+          case "between": {
+            request = request
+              .lt("linked_amount", value.to)
+              .gt("linked_amount", value.from);
+            break;
+          }
+          case "equal": {
+            request = request.eq("linked_amount", value);
+            break;
+          }
+          default:
+            throw new Error(`Unsupported operator: ${operator}`);
+        }
+      }
+
       const { data, error } = await request;
       if (error) {
         throw error;
       }
-      return z
-        .array(cost$)
-        .parse(data)
-        .map(costFromHttp)
-        .filter((cost) =>
-          numberFilter.matches(
-            query.filters.remainingAmount,
-            cost.netValue - sumBy(cost.linkReports, (x) => x.costAmount),
-          ),
-        );
+      return z.array(cost$).parse(data).map(costFromHttp);
     },
     getCost: async (id) => {
       const { data, error } = await client

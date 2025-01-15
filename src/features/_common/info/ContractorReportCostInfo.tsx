@@ -100,7 +100,7 @@ export function ContractorReportCostInfo({
                   ),
                 )
                   .thru((x) =>
-                    costQueryUtils.setFilter(x, "remainingAmount", {
+                    costQueryUtils.setFilter(x, "linkedRemainder", {
                       operator: "greaterThan",
                       value: 0,
                     }),
