@@ -22,13 +22,21 @@ export type LinkReportBillingPayload =
       linkAmount: number;
     };
 
-export type LinkCostReportPayload = {
-  costId: number;
-  contractorReportId: number;
-  costAmount: number;
-  reportAmount: number;
-  description: string;
-};
+export type LinkCostReportPayload =
+  | {
+      type: "link";
+      costId: number;
+      reportId: number;
+      costAmount: number;
+      reportAmount: number;
+      description: string;
+    }
+  | {
+      type: "clarify-report";
+      reportId: number;
+      reportAmount: number;
+      description: string;
+    };
 
 export type CreateContractorReportPayload = Omit<
   ContractorReport,
@@ -63,5 +71,9 @@ export interface MutationApi {
   editCost: (
     costId: number,
     payload: Partial<CreateCostPayload>,
+  ) => Promise<void>;
+  editClientBilling: (
+    billingId: number,
+    payload: Partial<CreateClientBillingPayload>,
   ) => Promise<void>;
 }

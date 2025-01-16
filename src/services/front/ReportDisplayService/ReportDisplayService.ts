@@ -76,12 +76,18 @@ export type ContractorReportBillingLinkView = {
 
 export type ContractorReportCostLinkView = {
   id: number;
-  costAmount: CurrencyValue;
-  reportAmount: CurrencyValue;
   description: string;
-  cost: Cost;
-};
-
+  reportAmount: CurrencyValue;
+} & (
+  | {
+      type: "link";
+      costAmount: CurrencyValue;
+      cost: Cost;
+    }
+  | {
+      type: "clarification";
+    }
+);
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];
   total: {

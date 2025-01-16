@@ -9,6 +9,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientBillingViewEntry,
+  ContractorReportCostLinkView,
   ContractorReportViewEntry,
   CostEntry,
   ReportDisplayService,
@@ -420,22 +421,44 @@ function calculateReportEntry(
       amount: remainingFullCompensationAmount,
       currency: report.currency,
     },
-    costLinks: (report.linkCostReport ?? [])?.map((link) => ({
-      id: link.id,
-      costAmount: {
-        amount: link.costAmount,
-        currency: maybe.getOrThrow(
-          link.cost,
-          "Cost is required to calculate report",
-        ).currency,
+    costLinks: (report.linkCostReport ?? [])?.map(
+      (link): ContractorReportCostLinkView => {
+        const linkType = maybe.isPresent(link.costId)
+          ? "link"
+          : "clarification";
+
+        const base = {
+          id: link.id,
+          reportAmount: {
+            amount: link.reportAmount,
+            currency: report.currency,
+          },
+          description: link.description,
+        } satisfies Partial<ContractorReportCostLinkView>;
+        switch (linkType) {
+          case "link": {
+            const cost = maybe.getOrThrow(
+              link.cost,
+              "[ReportDisplayService] Cost is required for link",
+            );
+            return {
+              ...base,
+              type: "link",
+              costAmount: {
+                amount: link.costAmount,
+                currency: cost.currency,
+              },
+              cost: cost,
+            };
+          }
+          case "clarification":
+            return {
+              type: "clarification",
+              ...base,
+            };
+        }
       },
-      reportAmount: {
-        amount: link.reportAmount,
-        currency: report.currency,
-      },
-      description: link.description,
-      cost: maybe.getOrThrow(link.cost, "Cost is required to calculate report"),
-    })),
+    ),
     billingLinks: (report.linkBillingReport ?? [])?.map((link) => {
       switch (link.linkType) {
         case "reconcile":

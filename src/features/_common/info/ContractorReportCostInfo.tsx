@@ -10,9 +10,12 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
+import { assert } from "@/platform/lang/assert.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -45,6 +48,7 @@ export function ContractorReportCostInfo({
   report,
 }: ContractorReportCostInfoProps) {
   const linkingState = promiseState.useRemoteData();
+  const clarifyState = promiseState.useRemoteData();
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
@@ -85,8 +89,9 @@ export function ContractorReportCostInfo({
                 onSelect={(data) =>
                   linkingState.track(
                     services.mutationService.linkCostAndReport({
+                      type: "link",
                       costId: data.costId,
-                      contractorReportId: report.id,
+                      reportId: report.id,
                       reportAmount: data.value.source,
                       costAmount: data.value.target,
                       description: data.value.description,
@@ -116,6 +121,43 @@ export function ContractorReportCostInfo({
               />
             </PopoverContent>
           </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="warning" size="xs">
+                {rd
+                  .fullJourney(clarifyState.state)
+                  .initially(<Link2 />)
+                  .wait(<Loader2 />)
+                  .catch(renderSmallError("w-6 h-4"))
+                  .map(() => (
+                    <Check />
+                  ))}
+                Clarify
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-fit max-w-md"
+              align="center"
+              side="right"
+            >
+              <InlineBillingClarify
+                maxAmount={report.remainingAmount.amount}
+                services={services}
+                onSelect={(data) => {
+                  assert(data.type === "clarify");
+                  void clarifyState.track(
+                    services.mutationService.linkCostAndReport({
+                      type: "clarify-report",
+                      reportId: report.id,
+                      reportAmount: data.linkAmount,
+                      description: data.clarifyJustification,
+                    }),
+                  );
+                }}
+                context={{ contractorReportId: report.id, clientBillingId: -1 }} // stop reusing InlineBilingClarify for cost clarifications
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 
@@ -125,57 +167,109 @@ export function ContractorReportCostInfo({
       </div>
       <Separator className="my-2" />
       <div className="space-y-2">
-        {report.costLinks.map((link) => (
-          <div
-            className="flex items-center gap-2 bg-slate-50 p-1 border border-slate-200 rounded"
-            key={link.id}
-          >
-            <Badge variant="positive">Cost</Badge>
-            <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium leading-none flex flex-row gap-2">
-                {services.formatService.financial.currency(link.costAmount)}
-                <div className="contents text-gray-500">
-                  satisfies
-                  {services.formatService.financial.currency(link.reportAmount)}
-                </div>
-              </div>
-              <div className="flex flex-row gap-2">
-                <span className="text-xs text-slate-600">invoiced at</span>
-                <Badge variant="secondary" size="sm">
-                  {services.formatService.temporal.date(link.cost.invoiceDate)}
-                </Badge>
-              </div>
-            </div>
+        {report.costLinks.map((link) => {
+          function getContent() {
+            switch (link.type) {
+              case "link": {
+                return (
+                  <>
+                    <Badge variant="positive">Cost</Badge>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-sm font-medium leading-none flex flex-row gap-2">
+                        {services.formatService.financial.currency(
+                          link.costAmount,
+                        )}
+                        <div className="contents text-gray-500">
+                          satisfies
+                          {services.formatService.financial.currency(
+                            link.reportAmount,
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-row gap-2">
+                        <span className="text-xs text-slate-600">
+                          invoiced at
+                        </span>
+                        <Badge variant="secondary" size="sm">
+                          {services.formatService.temporal.date(
+                            link.cost.invoiceDate,
+                          )}
+                        </Badge>
+                      </div>
+                    </div>
 
-            <div className="flex flex-col items-end gap-1 ml-auto">
-              <div className="text-xs text-slate-500">Linking description</div>
-              <SimpleTooltip title={link.description}>
-                <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
-                  {maybe.getOrElse(
-                    maybe.fromTruthy(link.description),
-                    <div className="text-slate-400">No description</div>,
-                  )}
-                </div>
-              </SimpleTooltip>
-              <div className="text-xs text-slate-500">Cost description</div>
-              <SimpleTooltip title={link.cost.description}>
-                <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
-                  {maybe.getOrElse(
-                    maybe.fromTruthy(link.cost.description),
-                    <div className="text-slate-400">No description</div>,
-                  )}
-                </div>
-              </SimpleTooltip>
+                    <div className="flex flex-col items-end gap-1 ml-auto">
+                      <div className="text-xs text-slate-500">
+                        Linking description
+                      </div>
+                      <SimpleTooltip title={link.description}>
+                        <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
+                          {maybe.getOrElse(
+                            maybe.fromTruthy(link.description),
+                            <div className="text-slate-400">
+                              No description
+                            </div>,
+                          )}
+                        </div>
+                      </SimpleTooltip>
+                      <div className="text-xs text-slate-500">
+                        Cost description
+                      </div>
+                      <SimpleTooltip title={link.cost.description}>
+                        <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
+                          {maybe.getOrElse(
+                            maybe.fromTruthy(link.cost.description),
+                            <div className="text-slate-400">
+                              No description
+                            </div>,
+                          )}
+                        </div>
+                      </SimpleTooltip>
+                    </div>
+                  </>
+                );
+              }
+              case "clarification": {
+                return (
+                  <>
+                    <Badge variant="secondary" tone="secondary">
+                      Clarification
+                    </Badge>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-sm font-medium leading-none flex flex-row gap-2">
+                        {services.formatService.financial.currency(
+                          link.reportAmount,
+                        )}
+                        <div className="contents text-gray-500">
+                          is clarified
+                        </div>
+                        <TruncatedMultilineText>
+                          {link.description}
+                        </TruncatedMultilineText>
+                      </div>
+                    </div>
+                  </>
+                );
+              }
+            }
+          }
+
+          return (
+            <div
+              className="flex items-center gap-2 bg-slate-50 p-1 border border-slate-200 rounded"
+              key={link.id}
+            >
+              {getContent()}
+              <DeleteButtonWidget
+                services={services}
+                onDelete={partial(
+                  services.mutationService.deleteCostReportLink,
+                  link.id,
+                )}
+              />
             </div>
-            <DeleteButtonWidget
-              services={services}
-              onDelete={partial(
-                services.mutationService.deleteCostReportLink,
-                link.id,
-              )}
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-4 text-sm text-gray-600">
         Ensure all costs are correctly linked to this report to maintain

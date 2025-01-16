@@ -1,4 +1,5 @@
 import {
+  CreateClientBillingPayload,
   CreateCostPayload,
   LinkReportBillingPayload,
   MutationApi,
@@ -39,10 +40,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     linkCostAndReport: async (payload) => {
       const response = await client.from("link_cost_report").insert({
-        cost_id: payload.costId,
-        contractor_report_id: payload.contractorReportId,
-        cost_amount: payload.costAmount,
+        contractor_report_id: payload.reportId,
         report_amount: payload.reportAmount,
+        cost_id: payload.type === "link" ? payload.costId : null,
+        cost_amount: payload.type === "link" ? payload.costAmount : null,
         description: payload.description,
       });
       if (response.error) {
@@ -180,6 +181,32 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           ),
         )
         .eq("id", costId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    editClientBilling: async (billingId, payload) => {
+      const takeIfPresent = (key: keyof CreateClientBillingPayload) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+
+        .from("client_billing")
+        .update(
+          pickBy(
+            {
+              total_net: takeIfPresent("totalNet"),
+              currency: takeIfPresent("currency"),
+              total_gross: takeIfPresent("totalGross"),
+              client_id: takeIfPresent("clientId"),
+              invoice_number: takeIfPresent("invoiceNumber"),
+              invoice_date: takeIfPresent("invoiceDate"),
+              description: takeIfPresent("description"),
+              workspace_id: takeIfPresent("workspaceId"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", billingId);
       if (response.error) {
         throw response.error;
       }

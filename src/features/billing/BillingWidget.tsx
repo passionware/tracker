@@ -72,21 +72,20 @@ export function BillingWidget(props: BillingWidgetProps) {
                 <PopoverHeader>Add new billing</PopoverHeader>
                 <NewClientBillingWidget
                   onCancel={bag.close}
-                  defaultWorkspaceId={idSpecUtils.switchAll(
-                    props.workspaceId,
-                    undefined,
-                  )}
-                  defaultCurrency={rd.tryMap(
-                    billings,
-                    (reports) =>
-                      reports.entries[reports.entries.length - 1]?.netAmount
-                        .currency,
-                  )}
-                  defaultInvoiceDate={new Date()}
-                  defaultClientId={idSpecUtils.switchAll(
-                    props.clientId,
-                    undefined,
-                  )}
+                  defaultValues={{
+                    workspaceId: idSpecUtils.switchAll(
+                      props.workspaceId,
+                      undefined,
+                    ),
+                    currency: rd.tryMap(
+                      billings,
+                      (reports) =>
+                        reports.entries[reports.entries.length - 1]?.netAmount
+                          .currency,
+                    ),
+                    invoiceDate: new Date(),
+                    clientId: idSpecUtils.switchAll(props.clientId, undefined),
+                  }}
                   services={props.services}
                   onSubmit={(data) =>
                     addBillingState.track(

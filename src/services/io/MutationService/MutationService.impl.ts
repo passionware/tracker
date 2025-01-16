@@ -98,5 +98,11 @@ export function createMutationService(
         scope: "Editing cost",
       });
     },
+    editClientBilling: async (billingId, payload) => {
+      await api.editClientBilling(billingId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Editing client billing",
+      });
+    },
   };
 }

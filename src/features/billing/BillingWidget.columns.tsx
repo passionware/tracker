@@ -1,6 +1,12 @@
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog.tsx";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -18,13 +24,17 @@ import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
+import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
+import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { ClientBillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<ClientBillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
@@ -153,42 +163,83 @@ export function useColumns(props: BillingWidgetProps) {
 }
 
 function ActionMenu(
-  props: WithServices<[WithPreferenceService, WithMutationService]> & {
+  props: WithServices<
+    [
+      WithPreferenceService,
+      WithMutationService,
+      WithClientService,
+      WithWorkspaceService,
+    ]
+  > & {
     entry: ClientBillingViewEntry;
   },
 ) {
   const isDangerMode = props.services.preferenceService.useIsDangerMode();
+  const editModalState = useOpenState();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {isDangerMode && (
-          <DropdownMenuItem
-            onClick={() => {
-              void props.services.mutationService.deleteBilling(props.entry.id);
+    <>
+      <Dialog {...editModalState.dialogProps}>
+        <DialogContent>
+          <DialogTitle>Edit billing</DialogTitle>
+          <DialogDescription></DialogDescription>
+          <NewClientBillingWidget
+            onCancel={editModalState.close}
+            defaultValues={{
+              workspaceId: props.entry.workspace.id,
+              currency: props.entry.netAmount.currency,
+              totalNet: props.entry.netAmount.amount,
+              totalGross: props.entry.grossAmount.amount,
+              invoiceNumber: props.entry.invoiceNumber,
+              invoiceDate: props.entry.invoiceDate,
+              description: props.entry.description,
+              clientId: props.entry.clientId,
             }}
-          >
-            <Trash2 />
-            Delete Billing
+            services={props.services}
+            onSubmit={(data) =>
+              props.services.mutationService
+                .editClientBilling(props.entry.id, data)
+                .then(editModalState.close)
+            }
+          />
+        </DialogContent>
+      </Dialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          {isDangerMode && (
+            <DropdownMenuItem
+              onClick={() => {
+                void props.services.mutationService.deleteBilling(
+                  props.entry.id,
+                );
+              }}
+            >
+              <Trash2 />
+              Delete Billing
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={editModalState.open}>
+            <Pencil />
+            Edit Billing
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          onClick={() =>
-            navigator.clipboard.writeText(props.entry.id.toString())
-          }
-        >
-          Copy billing ID
-        </DropdownMenuItem>
-        {/*<DropdownMenuSeparator />*/}
-        {/*<DropdownMenuItem>View customer</DropdownMenuItem>*/}
-        {/*<DropdownMenuItem>View payment details</DropdownMenuItem>*/}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem
+            onClick={() =>
+              navigator.clipboard.writeText(props.entry.id.toString())
+            }
+          >
+            Copy billing ID
+          </DropdownMenuItem>
+          {/*<DropdownMenuSeparator />*/}
+          {/*<DropdownMenuItem>View customer</DropdownMenuItem>*/}
+          {/*<DropdownMenuItem>View payment details</DropdownMenuItem>*/}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

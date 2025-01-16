@@ -1,4 +1,5 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
+import { CreateClientBillingPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -23,10 +24,7 @@ import { useForm } from "react-hook-form";
 
 export interface NewClientBillingWidgetProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
-  defaultClientId?: number;
-  defaultWorkspaceId?: number;
-  defaultCurrency?: string;
-  defaultInvoiceDate?: Date;
+  defaultValues?: Partial<CreateClientBillingPayload>;
   onSubmit: (
     data: Omit<
       ClientBilling,
@@ -50,14 +48,14 @@ type FormModel = {
 export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
   const form = useForm<FormModel>({
     defaultValues: {
-      clientId: props.defaultClientId,
-      workspaceId: props.defaultWorkspaceId,
-      currency: props.defaultCurrency,
-      totalNet: "0",
-      totalGross: "0",
-      invoiceNumber: "",
-      invoiceDate: props.defaultInvoiceDate,
-      description: "",
+      clientId: props.defaultValues?.clientId,
+      workspaceId: props.defaultValues?.workspaceId,
+      currency: props.defaultValues?.currency,
+      totalNet: maybe.mapOrElse(props.defaultValues?.totalNet, String, "0"),
+      totalGross: maybe.mapOrElse(props.defaultValues?.totalGross, String, "0"),
+      invoiceNumber: props.defaultValues?.invoiceNumber,
+      invoiceDate: props.defaultValues?.invoiceDate,
+      description: props.defaultValues?.description ?? "",
     },
   });
 

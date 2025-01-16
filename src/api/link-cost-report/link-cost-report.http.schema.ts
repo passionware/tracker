@@ -15,8 +15,8 @@ const linkCostReportBase$ = z.object({
   cost_amount: z.number(),
   report_amount: z.number(),
   description: z.string().nullable(),
-  cost_id: z.number(),
-  contractor_report_id: z.number(),
+  cost_id: z.number().nullable(),
+  contractor_report_id: z.number().nullable(),
 });
 
 export type LinkCostReport$ = z.input<typeof linkCostReportBase$> & {
@@ -26,7 +26,7 @@ export type LinkCostReport$ = z.input<typeof linkCostReportBase$> & {
 
 export const linkCostReport$: ZodType<LinkCostReport$> =
   linkCostReportBase$.extend({
-    costs: z.lazy(() => cost$.optional()),
+    costs: z.lazy(() => cost$.optional().nullable()),
     contractor: z.lazy(() => contractor$.optional()),
   });
 

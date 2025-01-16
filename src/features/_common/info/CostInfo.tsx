@@ -87,8 +87,9 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 onSelect={(report) =>
                   linkingState.track(
                     services.mutationService.linkCostAndReport({
+                      type: "link",
                       costId: costEntry.id,
-                      contractorReportId: report.contractorReportId,
+                      reportId: report.contractorReportId,
                       reportAmount: report.value.target,
                       costAmount: report.value.source, // todo: secondary input optionally
                       description: report.value.description,

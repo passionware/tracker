@@ -1,5 +1,6 @@
 import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Cost } from "@/api/cost/cost.api.ts";
+import { Nullable } from "@/platform/typescript/Nullable.ts";
 
 export type LinkCostReport = {
   id: number;
@@ -7,9 +8,9 @@ export type LinkCostReport = {
   costAmount: number;
   reportAmount: number;
   description: string;
-  costId: number;
-  contractorReportId: number;
+  costId: Nullable<number>;
+  contractorReportId: Nullable<number>;
   // references to the linked entities
   cost: Cost | null;
-  contractorReport: ContractorReport | null;
+  contractorReport: Nullable<ContractorReport>;
 };
