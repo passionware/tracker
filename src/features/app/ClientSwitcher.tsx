@@ -56,7 +56,7 @@ export function ClientSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="rounded-xl py-7 border border-sky-900/10 bg-gradient-to-tl from-rose-300/5 to-blue-500/5 outline-none focus-visible:ring-2 focus:ring-rose-500/20"
+              className="rounded-xl py-7 border border-sky-900 border-opacity-10 dark:border-opacity-50  bg-gradient-to-tl from-rose-300/5 to-blue-500/5 dark:from-rose-300/15 dark:to-blue-500/15 outline-none focus-visible:ring-2 focus:ring-rose-500/20"
             >
               {activeItem ? (
                 idSpecUtils.isAll(activeItem) ? (
