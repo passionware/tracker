@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -96,9 +97,11 @@ export function WorkspaceSwitcher({
                       </div>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">
-                        {activeItem.name}
-                      </span>
+                      <OverflowTooltip title={activeItem.name}>
+                        <span className="truncate font-semibold">
+                          {activeItem.name}
+                        </span>
+                      </OverflowTooltip>
                       {/*<span className="truncate text-xs">{activeItem.plan}</span>*/}
                     </div>
                   </>

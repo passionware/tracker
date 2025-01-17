@@ -10,7 +10,7 @@ export function Layout({
 }) {
   return (
     <SidebarProvider>
-      {sidebarSlot}
+      <div className="dark contents">{sidebarSlot}</div>
       <SidebarInset className="h-screen">{children}</SidebarInset>
     </SidebarProvider>
   );

@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -102,9 +103,11 @@ export function ClientSwitcher({
                       <span className="text-slate-500 text-xs truncate font-light">
                         Client
                       </span>
-                      <span className="truncate font-semibold">
-                        {activeItem.name}
-                      </span>
+                      <OverflowTooltip title={activeItem.name}>
+                        <span className="truncate font-semibold">
+                          {activeItem.name}
+                        </span>
+                      </OverflowTooltip>
                     </div>
                   </>
                 )
