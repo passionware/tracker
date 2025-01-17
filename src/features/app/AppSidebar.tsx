@@ -187,7 +187,7 @@ export function AppSidebar({
         {maybe.map(currentWorkspaceId, (currentWorkspaceId) =>
           rd
             .journey(workspaces)
-            .wait(<Skeleton className="w-20 h-4" />)
+            .wait(<Skeleton className="w-full h-[3.63rem]" />)
             .catch(renderError)
             .map((workspaces) => (
               <WorkspaceSwitcher
@@ -202,7 +202,7 @@ export function AppSidebar({
         {maybe.map(currentClientId, (currentClientId) =>
           rd
             .journey(clients)
-            .wait(<Skeleton className="w-20 h-4" />)
+            .wait(<Skeleton className="w-full h-[3.63rem]" />)
             .catch(renderError)
             .map((clients) => (
               <ClientSwitcher
