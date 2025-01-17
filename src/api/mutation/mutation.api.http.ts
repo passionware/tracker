@@ -43,7 +43,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         contractor_report_id: payload.reportId,
         report_amount: payload.reportAmount,
         cost_id: payload.type === "link" ? payload.costId : null,
-        cost_amount: payload.type === "link" ? payload.costAmount : null,
+        cost_amount: payload.type === "link" ? payload.costAmount : 0,
         description: payload.description,
       });
       if (response.error) {

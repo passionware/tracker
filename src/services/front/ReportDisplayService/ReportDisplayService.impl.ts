@@ -362,7 +362,7 @@ function calculateReportEntry(
   const remainingFullCompensationAmount = report.netValue - compensationAmount;
 
   function getCompensationStatus() {
-    if (remainingCompensationAmount === 0) {
+    if (remainingCompensationAmount <= 0) {
       return "compensated";
     } else if (remainingCompensationAmount > 0 && compensationAmount > 0) {
       return "partially-compensated";
@@ -414,7 +414,7 @@ function calculateReportEntry(
       currency: report.currency,
     },
     remainingCompensationAmount: {
-      amount: remainingCompensationAmount,
+      amount: Math.max(0, remainingCompensationAmount),
       currency: report.currency,
     },
     remainingFullCompensationAmount: {
