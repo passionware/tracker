@@ -87,7 +87,7 @@ export function ClientSwitcher({
                         activeItem.avatarUrl /* Remount Avatar if conditional rendering issues occur */
                       }
                     >
-                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary dark:bg-sidebar-accent text-sidebar-primary-foreground">
                         {activeItem.avatarUrl && (
                           <AvatarImage
                             src={activeItem.avatarUrl}
