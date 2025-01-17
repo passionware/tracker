@@ -28,7 +28,14 @@ export interface NewClientBillingWidgetProps
   onSubmit: (
     data: Omit<
       ClientBilling,
-      "id" | "createdAt" | "linkBillingReport" | "client"
+      | "id"
+      | "createdAt"
+      | "linkBillingReport"
+      | "client"
+      | "billingReportValue"
+      | "totalBillingValue"
+      | "billingBalance"
+      | "remainingBalance"
     >,
   ) => void;
   onCancel: () => void;

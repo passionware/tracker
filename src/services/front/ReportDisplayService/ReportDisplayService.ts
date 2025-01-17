@@ -42,8 +42,8 @@ export interface ContractorReportViewEntry {
   reconciledAmount: CurrencyValue;
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
-  billingLinks: ContractorReportBillingLinkView[];
-  costLinks: ContractorReportCostLinkView[];
+  billingLinks: ContractorReport["linkBillingReport"];
+  costLinks: ContractorReport["linkCostReport"];
   compensationStatus: "compensated" | "partially-compensated" | "uncompensated";
   fullCompensationStatus:
     | "compensated"
@@ -60,34 +60,6 @@ export interface ContractorReportViewEntry {
   clientId: number;
 }
 
-export type ContractorReportBillingLinkView = {
-  id: number;
-  amount: CurrencyValue;
-} & (
-  | {
-      linkType: "clientBilling";
-      billing: ClientBilling;
-    }
-  | {
-      linkType: "clarification";
-      justification: string;
-    }
-);
-
-export type ContractorReportCostLinkView = {
-  id: number;
-  description: string;
-  reportAmount: CurrencyValue;
-} & (
-  | {
-      type: "link";
-      costAmount: CurrencyValue;
-      cost: Cost;
-    }
-  | {
-      type: "clarification";
-    }
-);
 export interface ClientBillingView {
   entries: ClientBillingViewEntry[];
   total: {
@@ -106,7 +78,7 @@ export interface ClientBillingViewEntry {
   clientId: number;
   invoiceDate: Date;
   description: string | null;
-  links: ClientBillingLinkView[];
+  links: ClientBilling["linkBillingReport"];
   matchedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
   /**
@@ -117,30 +89,6 @@ export interface ClientBillingViewEntry {
   status: "matched" | "unmatched" | "partially-matched" | "clarified";
   workspace: Workspace;
 }
-
-export type ClientBillingLinkView =
-  | {
-      id: number;
-      type: "reconcile";
-      amount: CurrencyValue;
-      contractorReport: ContractorReport;
-    }
-  | {
-      id: number;
-      type: "clarify";
-      amount: CurrencyValue;
-      justification: string;
-    };
-
-export type CostLinkView = {
-  id: number;
-  // how much of the cost is linked
-  costAmount: CurrencyValue;
-  // what is the equivalent amount in the report
-  reportAmount: CurrencyValue;
-  description: string;
-  contractorReport: ContractorReport;
-};
 
 export type CostEntry = {
   id: number;
@@ -153,7 +101,7 @@ export type CostEntry = {
   grossAmount: Maybe<CurrencyValue>;
   contractor: Contractor | null;
   // foreign references
-  linkReports: CostLinkView[];
+  linkReports: Cost["linkReports"];
   workspace: Workspace;
   /**
    * Status of cost:

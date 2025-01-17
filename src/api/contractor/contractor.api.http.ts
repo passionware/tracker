@@ -9,7 +9,7 @@ import { z } from "zod";
 export function createContractorApi(client: SupabaseClient): ContractorApi {
   return {
     getContractors: async (query) => {
-      let request = client.from("contractors").select("*");
+      let request = client.from("contractor").select("*");
       if (query.search) {
         request = request.ilike("full_name", `%${query.search}%`);
       }
@@ -22,7 +22,7 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
     },
     getContractor: async (id) => {
       const { data, error } = await client
-        .from("contractors")
+        .from("contractor")
         .select("*")
         .eq("id", id);
       if (error) {

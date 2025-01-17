@@ -1,4 +1,5 @@
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { linkBillingReportUtils } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -21,6 +23,7 @@ import {
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -36,6 +39,7 @@ export interface ChargeInfoProps
       WithPreferenceService,
       WithReportDisplayService,
       WithClientService,
+      WithContractorService,
     ]
   > {
   billing: ClientBillingViewEntry;
@@ -144,7 +148,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
       <Separator className="my-2" />
       <div className="space-y-8">
         {billing.links.map((link) => {
-          switch (link.type) {
+          switch (link.linkType) {
             case "reconcile":
               return (
                 <div className="flex items-stretch gap-2" key={link.id}>
@@ -153,34 +157,36 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       <Badge variant="positive">Report</Badge>
                       <Badge variant="secondary" size="sm">
                         {services.formatService.temporal.date(
-                          link.contractorReport.periodStart,
+                          link.report.periodStart,
                         )}
                         -
                         {services.formatService.temporal.date(
-                          link.contractorReport.periodEnd,
+                          link.report.periodEnd,
                         )}
                       </Badge>
                     </div>
                     <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
-                      {services.formatService.financial.amount(
-                        link.amount.amount,
-                        link.amount.currency,
+                      {services.formatService.financial.currency(
+                        linkBillingReportUtils.getLinkValue("billing", link),
                       )}
                       <div className="text-gray-500">of</div>
                       <Slot className="text-gray-500">
-                        {services.formatService.financial.amount(
-                          link.contractorReport.netValue,
-                          link.contractorReport.currency,
+                        {services.formatService.financial.currency(
+                          linkBillingReportUtils.getLinkValue("report", link),
                         )}
                       </Slot>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-xs text-slate-600">
-                      {link.contractorReport.contractor?.fullName}
+                      <ContractorPicker
+                        services={services}
+                        value={link.report.contractorId}
+                        onSelect={undefined}
+                      />
                     </div>
                     <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                      {link.contractorReport.description}
+                      {link.report.description}
                     </div>
                   </div>
                   <DeleteButtonWidget
@@ -199,13 +205,12 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                     <Badge variant="warning">Clarification</Badge>
                   </div>
                   <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
-                    {services.formatService.financial.amount(
-                      link.amount.amount,
-                      link.amount.currency,
+                    {services.formatService.financial.currency(
+                      linkBillingReportUtils.getLinkValue("billing", link),
                     )}
                   </div>
                   <div className="self-stretch text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                    {link.justification}
+                    {link.description}
                   </div>
                   <DeleteButtonWidget
                     services={services}

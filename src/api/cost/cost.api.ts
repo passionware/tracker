@@ -21,7 +21,7 @@ import {
 import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
 
-export interface Cost {
+export interface CostBase {
   id: number;
   createdAt: Date;
   invoiceNumber: Maybe<string>;
@@ -32,10 +32,12 @@ export interface Cost {
   grossValue: Maybe<number>;
   contractorId: Maybe<Contractor["id"]>;
   currency: string;
-  // foreign references
-  contractor: Contractor | null;
-  linkReports: LinkCostReport[] | null;
   workspaceId: Workspace["id"];
+}
+
+export interface Cost extends CostBase {
+  contractor: Contractor;
+  linkReports: LinkCostReport[];
 }
 
 export type CostQuery = WithSearch &

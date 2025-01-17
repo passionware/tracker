@@ -21,7 +21,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { chain } from "lodash";
 
-export interface ClientBilling {
+export interface ClientBillingBase {
   id: number;
   createdAt: Date;
   currency: string;
@@ -31,9 +31,22 @@ export interface ClientBilling {
   invoiceNumber: string;
   invoiceDate: Date;
   description: string | null;
-  client: Client | null;
-  linkBillingReport: LinkBillingReport[] | null;
   workspaceId: Workspace["id"];
+  // how much of billing value is already linked to reports
+  billingReportValue: number;
+  //contractors are present in the sql view
+  // how much billing is actually linked to reports
+  // ie. billing of 6000eur is currently linked to reports of sum 4000eur
+  totalBillingValue: number;
+  // how much of billing is still not linked to reports
+  billingBalance: number;
+  // difference between billed amount and report amount
+  remainingBalance: number;
+  client: Client;
+}
+
+export interface ClientBilling extends ClientBillingBase {
+  linkBillingReport: LinkBillingReport[];
 }
 
 export type ClientBillingQuery = WithFilters<{

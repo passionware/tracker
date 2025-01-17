@@ -9,7 +9,7 @@ import { z } from "zod";
 export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
   return {
     getWorkspaces: async (query) => {
-      let request = client.from("workspaces").select("*");
+      let request = client.from("workspace").select("*");
 
       if (query.search) {
         request = request
@@ -25,7 +25,7 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
     },
     getWorkspace: async (id) => {
       const { data, error } = await client
-        .from("workspaces")
+        .from("workspace")
         .select("*")
         .eq("id", id);
       if (error) {

@@ -20,21 +20,36 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 
-export interface ContractorReport {
+export interface ContractorReportBase {
   id: number;
   createdAt: string;
   contractorId: number;
-  description: string;
-  netValue: number;
   periodStart: Date;
   periodEnd: Date;
-  currency: string;
   clientId: number;
-  linkBillingReport: LinkBillingReport[] | null;
-  linkCostReport: LinkCostReport[] | null;
-  contractor: Contractor | null;
   workspaceId: number;
+
+  description: string;
+  netValue: number;
+  // Total billing value linked to the report
+  reportBillingValue: number; // total_billing_billing_value
+  // Remaining report value that should be billed (positive = to bill, negative = overbilled)
+  reportBillingBalance: number; // report_billing_balance
+  // Total cost value linked to the report
+  reportCostValue: number; // total_cost_cost_value
+  // Remaining report value that should be costed (positive = to cost, negative = overcosted)
+  reportCostBalance: number; // report_cost_balance
+  // Difference between billing and cost values (positive = profit, negative = loss)
+  billingCostBalance: number; // billing_cost_balance
+
+  currency: string;
 }
+
+export type ContractorReport = ContractorReportBase & {
+  contractor: Contractor;
+  linkBillingReport: LinkBillingReport[];
+  linkCostReport: LinkCostReport[];
+};
 
 export type ContractorReportQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;

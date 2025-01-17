@@ -52,7 +52,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     createContractorReport: async (report) => {
       const response = await client
-        .from("contractor_reports")
+        .from("report")
         .insert({
           contractor_id: report.contractorId,
           description: report.description,
@@ -74,7 +74,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     createClientBilling: async (billing) => {
       const response = await client
-        .from("client_billing")
+        .from("billing")
         .insert({
           total_net: billing.totalNet,
           currency: billing.currency,
@@ -96,7 +96,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     createCost: async (cost) => {
       const response = await client
-        .from("costs")
+        .from("cost")
         .insert({
           invoice_number: cost.invoiceNumber,
           counterparty: cost.counterparty,
@@ -136,17 +136,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     deleteCostReport: async (reportId) => {
-      const response = await client
-        .from("contractor_reports")
-        .delete()
-        .eq("id", reportId);
+      const response = await client.from("report").delete().eq("id", reportId);
       if (response.error) {
         throw response.error;
       }
     },
     deleteBilling: async (billingId) => {
       const response = await client
-        .from("client_billing")
+        .from("billing")
         .delete()
         .eq("id", billingId);
       if (response.error) {
@@ -154,7 +151,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     deleteCost: async (costId) => {
-      const response = await client.from("costs").delete().eq("id", costId);
+      const response = await client.from("cost").delete().eq("id", costId);
       if (response.error) {
         throw response.error;
       }
@@ -163,7 +160,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       const takeIfPresent = (key: keyof CreateCostPayload) =>
         key in payload ? payload[key] : undefined;
       const response = await client
-        .from("costs")
+        .from("cost")
         .update(
           pickBy(
             {
@@ -190,7 +187,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         key in payload ? payload[key] : undefined;
       const response = await client
 
-        .from("client_billing")
+        .from("billing")
         .update(
           pickBy(
             {

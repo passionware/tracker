@@ -1,37 +1,83 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
-import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { assert } from "@/platform/lang/assert.ts";
+import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 
-export type LinkBillingReport = {
+export type LinkBillingReportBase = {
   id: number;
   createdAt: string;
 } & (
   | {
       linkType: "reconcile";
-      clientBillingId: number;
-      contractorReportId: number;
-      linkAmount: number;
-      // references to the linked entities
-      contractorReport: ContractorReport | null;
-      clientBilling: ClientBilling | null;
+      billingId: number;
+      reportId: number;
+      reportAmount: number;
+      billingAmount: number;
+      description: string;
     }
-  | ({
-      linkType: "clarify";
-      clarifyJustification: string;
-      linkAmount: number;
-    } & (
-      | {
-          contractorReportId: number;
-          // references to the linked entities
-          contractorReport: ContractorReport | null;
-          clientBillingId: null;
-          clientBilling: null;
-        }
-      | {
-          clientBillingId: number;
-          // references to the linked entities
-          clientBilling: ClientBilling | null;
-          contractorReportId: null;
-          contractorReport: null;
-        }
-    ))
+  | {
+      linkType: "clarify"; // todo we want clarify-report and clarify-billing
+      description: string;
+      reportId: number;
+      reportAmount: number;
+      billingId: null;
+    }
+  | {
+      linkType: "clarify"; // todo we want clarify-report and clarify-billing
+      description: string;
+      billingId: number;
+      // references to the linked entities
+      billingAmount: number;
+      reportId: null;
+    }
 );
+
+export type LinkBillingReport =
+  | (Extract<LinkBillingReportBase, { linkType: "reconcile" }> & {
+      billing: ClientBilling;
+      report: ContractorReportBase;
+    })
+  | (Extract<
+      LinkBillingReportBase,
+      { linkType: "clarify"; billingId: number; reportId: null }
+    > & {
+      billing: ClientBilling;
+      report: null;
+    })
+  | (Extract<
+      LinkBillingReportBase,
+      { linkType: "clarify"; reportId: number; billingId: null }
+    > & {
+      billing: null;
+      report: ContractorReportBase;
+    });
+
+export const linkBillingReportUtils = {
+  getLinkValue(
+    side: "report" | "billing",
+    link: LinkBillingReport,
+  ): CurrencyValue {
+    if (link.linkType === "reconcile") {
+      return side === "report"
+        ? {
+            amount: link.reportAmount,
+            currency: link.report.currency,
+          }
+        : {
+            amount: link.billingAmount,
+            currency: link.billing.currency,
+          };
+    } else {
+      assert(link.linkType === "clarify");
+      if (side === "report") {
+        // when asking for report links, we do not expect clarifications of billing
+        assert(link.reportId !== null);
+        return { amount: link.reportAmount, currency: link.report.currency };
+      } else {
+        // when asking for billing links, we do not expect clarifications of report
+        assert(link.billingId !== null);
+        return { amount: link.billingAmount, currency: link.billing.currency };
+      }
+    }
+  },
+};

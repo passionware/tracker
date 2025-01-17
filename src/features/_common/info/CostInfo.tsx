@@ -11,10 +11,12 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
+import { assert } from "@/platform/lang/assert.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -27,6 +29,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -41,6 +44,7 @@ export interface CostInfoProps
       WithPreferenceService,
       WithMutationService,
       WithClientService,
+      WithContractorService,
     ]
   > {
   costEntry: CostEntry;
@@ -129,71 +133,87 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
       <Separator className="my-2" />
 
       <ul role="list" className="divide-y divide-gray-100">
-        {costEntry.linkReports.map((link) => (
-          <li
-            key={link.id}
-            className="flex items-center justify-between gap-x-6 py-5"
-          >
-            <div className="min-w-0">
-              <div className="flex items-start gap-x-3">
-                <p className="text-sm/6 font-semibold text-gray-900">Report</p>
-                <Badge variant="positive" className={cn()}>
-                  {services.formatService.temporal.date(
-                    link.contractorReport.periodStart,
-                  )}{" "}
-                  -{" "}
-                  {services.formatService.temporal.date(
-                    link.contractorReport.periodEnd,
-                  )}
-                </Badge>
-              </div>
-              <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
-                <div className="contents text-green-800 font-bold">
-                  Cost's{" "}
-                  {services.formatService.financial.currency(link.costAmount)}
+        {costEntry.linkReports.map((link) => {
+          assert(link.report, "link.report is not null work on types");
+          assert(link.cost, "link.cost is not null work on types");
+          return (
+            <li
+              key={link.id}
+              className="flex items-center justify-between gap-x-6 py-5"
+            >
+              <div className="min-w-0">
+                <div className="flex items-start gap-x-3">
+                  <p className="text-sm/6 font-semibold text-gray-900">
+                    Report
+                  </p>
+                  <Badge variant="positive" className={cn()}>
+                    {services.formatService.temporal.date(
+                      link.report.periodStart,
+                    )}{" "}
+                    -{" "}
+                    {services.formatService.temporal.date(
+                      link.report.periodEnd,
+                    )}
+                  </Badge>
                 </div>
-                <svg viewBox="0 0 2 2" className="size-0.5 fill-current">
-                  <circle r={1} cx={1} cy={1} />
-                </svg>
-                satisfies{" "}
-                {services.formatService.financial.currency(link.reportAmount)}{" "}
-                of{" "}
-                <ClientWidget
-                  services={services}
-                  size="sm"
-                  layout="avatar"
-                  clientId={link.contractorReport.clientId}
-                />
-                's report{" "}
-                {services.formatService.financial.amount(
-                  link.contractorReport.netValue,
-                  link.contractorReport.currency,
-                )}
-              </div>
-            </div>
-            <div className="flex flex-none items-center gap-x-4">
-              <div className="text-xs text-slate-600">
-                {link.contractorReport.contractor?.fullName}
-              </div>
-              <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
-                <SimpleTooltip title={link.description}>
-                  <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
-                    {maybe.getOrElse(
-                      maybe.fromTruthy(link.description),
-                      <div className="text-slate-400">No description</div>,
+                <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
+                  <div className="contents text-green-800 font-bold">
+                    Cost's{" "}
+                    {services.formatService.financial.amount(
+                      link.costAmount,
+                      link.cost.currency,
                     )}
                   </div>
-                </SimpleTooltip>
+                  <svg viewBox="0 0 2 2" className="size-0.5 fill-current">
+                    <circle r={1} cx={1} cy={1} />
+                  </svg>
+                  satisfies{" "}
+                  {services.formatService.financial.amount(
+                    link.reportAmount,
+                    link.report.currency,
+                  )}{" "}
+                  of{" "}
+                  <ClientWidget
+                    services={services}
+                    size="sm"
+                    layout="avatar"
+                    clientId={link.report.clientId}
+                  />
+                  's report{" "}
+                  {services.formatService.financial.amount(
+                    link.report.netValue,
+                    link.report.currency,
+                  )}
+                </div>
               </div>
-              <DeleteButtonWidget
-                services={services}
-                onDelete={() =>
-                  services.mutationService.deleteCostReportLink(link.id)
-                }
-              />
-            </div>
-          </li>
-        ))}
+              <div className="flex flex-none items-center gap-x-4">
+                <div className="text-xs text-slate-600">
+                  <ContractorPicker
+                    onSelect={undefined}
+                    value={link.report.contractorId}
+                    services={services}
+                  />
+                </div>
+                <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
+                  <SimpleTooltip title={link.description}>
+                    <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
+                      {maybe.getOrElse(
+                        maybe.fromTruthy(link.description),
+                        <div className="text-slate-400">No description</div>,
+                      )}
+                    </div>
+                  </SimpleTooltip>
+                </div>
+                <DeleteButtonWidget
+                  services={services}
+                  onDelete={() =>
+                    services.mutationService.deleteCostReportLink(link.id)
+                  }
+                />
+              </div>
+            </li>
+          );
+        })}
         {costEntry.linkReports.length === 0 && (
           <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
             No linked contractor reports.

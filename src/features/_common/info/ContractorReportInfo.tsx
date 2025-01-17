@@ -1,4 +1,5 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
+import { linkBillingReportUtils } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -148,8 +149,8 @@ export function ContractorReportInfo({
               variant={
                 (
                   {
-                    clientBilling: "positive",
-                    clarification: "warning",
+                    reconcile: "positive",
+                    clarify: "warning",
                   } as const
                 )[link.linkType]
               }
@@ -157,28 +158,24 @@ export function ContractorReportInfo({
             >
               {
                 {
-                  clientBilling: "Client billing",
-                  clarification: "Clarification",
+                  reconcile: "Client billing",
+                  clarify: "Clarification",
                 }[link.linkType]
               }
             </Badge>
             <div className="text-sm font-medium leading-none flex flex-row gap-2">
-              {services.formatService.financial.amount(
-                link.amount.amount,
-                link.amount.currency,
+              {services.formatService.financial.currency(
+                linkBillingReportUtils.getLinkValue("report", link),
               )}
-              {link.linkType === "clientBilling" && (
-                <div className="contents text-gray-500">
-                  of
-                  {services.formatService.financial.amount(
-                    link.billing.totalNet,
-                    link.billing.currency,
-                  )}
-                </div>
-              )}
+              <div className="contents text-gray-500">
+                of
+                {services.formatService.financial.currency(
+                  linkBillingReportUtils.getLinkValue("billing", link),
+                )}
+              </div>
             </div>
             <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
-              {link.linkType === "clientBilling" && (
+              {link.linkType === "reconcile" && (
                 <>
                   <div className="text-gray-600 text-xs mr-1.5">
                     {link.billing.invoiceNumber}
@@ -190,7 +187,7 @@ export function ContractorReportInfo({
                   </Badge>
                 </>
               )}
-              {link.linkType === "clarification" && (
+              {link.linkType === "clarify" && (
                 <Popover>
                   <PopoverTrigger>
                     <Badge size="sm" variant="secondary">
@@ -206,7 +203,7 @@ export function ContractorReportInfo({
                       Justification for unmatched amount
                     </PopoverHeader>
                     <div className="text-xs text-gray-900">
-                      {link.justification}
+                      {link.description}
                     </div>
                   </PopoverContent>
                 </Popover>

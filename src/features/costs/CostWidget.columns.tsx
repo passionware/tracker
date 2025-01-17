@@ -27,6 +27,7 @@ import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineTex
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { PotentialCostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
 import { NewCostWidget } from "@/features/costs/NewCostWidget.tsx";
+import { assert } from "@/platform/lang/assert";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -134,15 +135,18 @@ export function useColumns(props: PotentialCostsWidgetProps) {
       cell: (info) => (
         <div className="empty:hidden flex flex-row gap-1.5 items-center">
           {props.services.formatService.financial.currency(info.getValue())}
-          {info.row.original.linkReports.map((link) => (
-            <ClientWidget
-              layout="avatar"
-              size="xs"
-              key={link.id}
-              clientId={link.contractorReport.clientId}
-              services={props.services}
-            />
-          ))}
+          {info.row.original.linkReports.map((link) => {
+            assert(link.report, "link.report is not null work on types");
+            return (
+              <ClientWidget
+                layout="avatar"
+                size="xs"
+                key={link.id}
+                clientId={link.report.clientId}
+                services={props.services}
+              />
+            );
+          })}
         </div>
       ),
     }),

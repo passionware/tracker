@@ -9,7 +9,6 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientBillingViewEntry,
-  ContractorReportCostLinkView,
   ContractorReportViewEntry,
   CostEntry,
   ReportDisplayService,
@@ -316,36 +315,28 @@ function calculateReportEntry(
 ): ContractorReportViewEntry {
   const haveSameClient = report.linkBillingReport?.every(
     (link) =>
-      link.linkType === "clarify" ||
-      link.clientBilling?.clientId === report.clientId,
+      link.linkType === "clarify" || link.billing?.clientId === report.clientId,
   );
   if (!haveSameClient) {
+    debugger;
     throw new Error(
       "Invalid report. All linked billing reports must have the same client.",
     );
   }
 
-  const chargedAmount = sumBy(
-    report.linkBillingReport,
-    (link) => link.linkAmount,
-  );
-  const remainingChargeAmount = report.netValue - chargedAmount;
-  const hasAtLeastOneClarification = report.linkBillingReport?.some(
-    (link) => link.linkType === "clarify",
-  );
-  const sumOfChargeAmounts = sumBy(
-    report.linkBillingReport?.filter((link) => link.linkType === "reconcile"),
-    (link) => link.linkAmount,
-  );
-
   function getBillingStatus() {
-    if (remainingChargeAmount === 0) {
-      if (hasAtLeastOneClarification) {
+    if (report.reportBillingBalance === 0) {
+      if (
+        report.linkBillingReport?.some((link) => link.linkType === "clarify")
+      ) {
         return "clarified";
       } else {
         return "billed";
       }
-    } else if (remainingChargeAmount > 0 && sumOfChargeAmounts > 0) {
+    } else if (
+      report.reportBillingBalance > 0 &&
+      report.reportBillingValue > 0
+    ) {
       return "partially-billed";
     } else {
       return "uncovered";
@@ -353,28 +344,19 @@ function calculateReportEntry(
   }
   ////
 
-  const compensationAmount = sumBy(
-    report.linkCostReport,
-    (link) => link.reportAmount,
-  );
-  const remainingCompensationAmount =
-    remainingChargeAmount + sumOfChargeAmounts - compensationAmount;
-  const remainingFullCompensationAmount = report.netValue - compensationAmount;
-
   function getCompensationStatus() {
-    if (remainingCompensationAmount <= 0) {
+    if (report.reportCostBalance === 0) {
       return "compensated";
-    } else if (remainingCompensationAmount > 0 && compensationAmount > 0) {
-      return "partially-compensated";
-    } else {
+    } else if (report.reportCostValue === 0) {
       return "uncompensated";
     }
+    return "partially-compensated";
   }
 
   function getFullCompensationStatus() {
-    if (remainingFullCompensationAmount === 0) {
+    if (report.billingCostBalance <= 0) {
       return "compensated";
-    } else if (remainingFullCompensationAmount > 0 && compensationAmount > 0) {
+    } else if (report.billingCostBalance > 0 && report.reportCostValue > 0) {
       return "partially-compensated";
     } else {
       return "uncompensated";
@@ -398,94 +380,32 @@ function calculateReportEntry(
     fullCompensationStatus: getFullCompensationStatus(),
     //
     reconciledAmount: {
-      amount: chargedAmount,
+      amount: report.reportBillingValue,
       currency: report.currency,
     },
     billedAmount: {
-      amount: sumOfChargeAmounts,
+      // todo probably reconciled and billed will be the same
+      amount: report.reportBillingValue,
       currency: report.currency,
     },
     remainingAmount: {
-      amount: remainingChargeAmount,
+      amount: report.reportBillingBalance,
       currency: report.currency,
     },
     compensatedAmount: {
-      amount: compensationAmount,
+      amount: report.reportCostValue,
       currency: report.currency,
     },
     remainingCompensationAmount: {
-      amount: Math.max(0, remainingCompensationAmount),
+      amount: Math.max(0, report.reportBillingBalance),
       currency: report.currency,
     },
     remainingFullCompensationAmount: {
-      amount: remainingFullCompensationAmount,
+      amount: report.billingCostBalance,
       currency: report.currency,
     },
-    costLinks: (report.linkCostReport ?? [])?.map(
-      (link): ContractorReportCostLinkView => {
-        const linkType = maybe.isPresent(link.costId)
-          ? "link"
-          : "clarification";
-
-        const base = {
-          id: link.id,
-          reportAmount: {
-            amount: link.reportAmount,
-            currency: report.currency,
-          },
-          description: link.description,
-        } satisfies Partial<ContractorReportCostLinkView>;
-        switch (linkType) {
-          case "link": {
-            const cost = maybe.getOrThrow(
-              link.cost,
-              "[ReportDisplayService] Cost is required for link",
-            );
-            return {
-              ...base,
-              type: "link",
-              costAmount: {
-                amount: link.costAmount,
-                currency: cost.currency,
-              },
-              cost: cost,
-            };
-          }
-          case "clarification":
-            return {
-              type: "clarification",
-              ...base,
-            };
-        }
-      },
-    ),
-    billingLinks: (report.linkBillingReport ?? [])?.map((link) => {
-      switch (link.linkType) {
-        case "reconcile":
-          return {
-            id: link.id,
-            amount: {
-              amount: link.linkAmount ?? 0,
-              currency: link.clientBilling?.currency ?? report.currency,
-            },
-            linkType: "clientBilling",
-            billing: maybe.getOrThrow(
-              link.clientBilling,
-              "Client billing is required to calculate report",
-            ),
-          };
-        case "clarify":
-          return {
-            id: link.id,
-            amount: {
-              amount: link.linkAmount ?? 0,
-              currency: report.currency,
-            },
-            linkType: "clarification",
-            justification: link.clarifyJustification,
-          };
-      }
-    }),
+    costLinks: report.linkCostReport,
+    billingLinks: report.linkBillingReport,
     workspace: maybe.getOrThrow(
       workspaces.find((workspace) => workspace.id === report.workspaceId),
       "Workspace is missing",
@@ -497,11 +417,8 @@ function calculateBilling(
   billing: ClientBilling,
   workspaces: Workspace[],
 ): ClientBillingViewEntry {
-  const sumOfLinkedAmounts = sumBy(
-    billing.linkBillingReport,
-    (link) => link.linkAmount,
-  );
-  const remainingAmount = billing.totalNet - sumOfLinkedAmounts;
+  const sumOfLinkedAmounts = billing.totalBillingValue;
+  const remainingAmount = billing.remainingBalance;
 
   function getStatus() {
     if (remainingAmount === 0) {
@@ -535,33 +452,7 @@ function calculateBilling(
     invoiceNumber: billing.invoiceNumber,
     invoiceDate: billing.invoiceDate,
     description: billing.description,
-    links: (billing.linkBillingReport ?? [])?.map((link) => {
-      switch (link.linkType) {
-        case "reconcile":
-          return {
-            id: link.id,
-            type: "reconcile",
-            amount: {
-              amount: link.linkAmount ?? 0,
-              currency: billing.currency,
-            },
-            contractorReport: maybe.getOrThrow(
-              link.contractorReport,
-              "Contractor report link is required to calculate billing reconcile link",
-            ),
-          };
-        case "clarify":
-          return {
-            id: link.id,
-            type: "clarify",
-            amount: {
-              amount: link.linkAmount ?? 0,
-              currency: billing.currency,
-            },
-            justification: link.clarifyJustification,
-          };
-      }
-    }),
+    links: billing.linkBillingReport,
     matchedAmount: {
       amount: sumOfLinkedAmounts,
       currency: billing.currency,
@@ -610,30 +501,7 @@ function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
       currency: cost.currency,
     })),
     description: cost.description,
-    linkReports: maybe
-      .getOrThrow(
-        cost.linkReports,
-        "Link reports are missing to calculate cost",
-      )
-      .map((link) => {
-        const contractorReport = maybe.getOrThrow(
-          link.contractorReport,
-          "Contractor report must be present in link to calculate report display view",
-        );
-        return {
-          id: link.id,
-          costAmount: {
-            amount: link.costAmount,
-            currency: cost.currency,
-          },
-          reportAmount: {
-            amount: link.reportAmount,
-            currency: contractorReport.currency,
-          },
-          description: link.description,
-          contractorReport: contractorReport,
-        };
-      }),
+    linkReports: cost.linkReports,
     matchedAmount: {
       amount: sumOfLinkedAmounts,
       currency: cost.currency,

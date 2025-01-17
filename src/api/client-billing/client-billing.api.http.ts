@@ -1,4 +1,4 @@
-import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import {
   clientBilling$,
   clientBillingFromHttp,
@@ -13,16 +13,7 @@ export function createClientBillingApi(
 ): ClientBillingApi {
   return {
     getClientBillings: async (query) => {
-      let request = client.from("client_billing_with_details").select(`
-      *,
-      link_billing_report (
-        *,
-        contractor_reports (
-          *,
-          contractors (*)
-        )
-      )
-    `);
+      let request = client.from("billing_with_details").select("*");
       if (query.filters.contractorId) {
         switch (query.filters.contractorId.operator) {
           case "oneOf":
@@ -53,6 +44,14 @@ export function createClientBillingApi(
               `Operator ${query.filters.contractorId.operator} not implemented`,
             );
         }
+      }
+
+      if (query.filters.remainingAmount) {
+        request = numberFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.remainingAmount,
+          "remaining_balance",
+        );
       }
 
       if (query.filters.workspaceId) {
@@ -96,20 +95,7 @@ export function createClientBillingApi(
       if (error) {
         throw error;
       }
-      return z
-        .array(clientBilling$)
-        .parse(data)
-        .map(clientBillingFromHttp)
-        .filter((clientBilling) =>
-          numberFilter.matches(
-            query.filters.remainingAmount,
-            clientBilling.totalNet -
-              (clientBilling.linkBillingReport?.reduce(
-                (acc, link) => acc + (link.linkAmount ?? 0),
-                0,
-              ) ?? 0),
-          ),
-        );
+      return z.array(clientBilling$).parse(data).map(clientBillingFromHttp);
     },
   };
 }

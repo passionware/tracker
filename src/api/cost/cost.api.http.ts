@@ -6,7 +6,7 @@ import { z } from "zod";
 export function createCostApi(client: SupabaseClient): CostApi {
   return {
     getCosts: async (query) => {
-      let request = client.from("costs_with_details").select("*");
+      let request = client.from("cost_with_details").select("*");
       if (query.search) {
         request = request
           .ilike("invoice_number", `%${query.search}%`)
@@ -169,7 +169,7 @@ export function createCostApi(client: SupabaseClient): CostApi {
     },
     getCost: async (id) => {
       const { data, error } = await client
-        .from("costs")
+        .from("cost")
         .select("*")
         .eq("id", id);
       if (error) {

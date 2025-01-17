@@ -126,13 +126,13 @@ export function useColumns(props: BillingWidgetProps) {
             info.getValue().currency,
           )}
           {info.row.original.links
-            .filter((l) => l.type === "reconcile")
+            .filter((l) => l.linkType === "reconcile")
             .map((link) => (
               <ClientWidget
                 layout="avatar"
                 size="xs"
                 key={link.id}
-                clientId={link.contractorReport.clientId}
+                clientId={link.report.clientId}
                 services={props.services}
               />
             ))}

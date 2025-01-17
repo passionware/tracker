@@ -1,46 +1,29 @@
 import {
-  ContractorReport$,
-  contractorReportFromHttp,
-} from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
-import { contractor$ } from "@/api/contractor/contractor.api.http.schema.ts";
-import { Cost$, cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
+  contractorReportBase$,
+  contractorReportBaseFromHttp,
+} from "@/api/contractor-reports/contractor-report.api.http.schema.base.ts";
+import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
+import {
+  linkCostReportBase$,
+  linkCostReportBaseFromHttp,
+} from "@/api/link-cost-report/link-cost-report.http.schema.base.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
-import { maybe } from "@passionware/monads";
-import camelcaseKeys from "camelcase-keys";
-import { z, ZodType } from "zod";
+import { z } from "zod";
 
-const linkCostReportBase$ = z.object({
-  id: z.number(),
-  created_at: z.coerce.date(),
-  cost_amount: z.number(),
-  report_amount: z.number(),
-  description: z.string().nullable(),
-  cost_id: z.number().nullable(),
-  contractor_report_id: z.number().nullable(),
+export const linkCostReport$ = linkCostReportBase$.extend({
+  cost: cost$,
+  report: contractorReportBase$,
 });
 
-export type LinkCostReport$ = z.input<typeof linkCostReportBase$> & {
-  costs?: Cost$ | null;
-  contractor_reports?: ContractorReport$ | null;
-};
-
-export const linkCostReport$: ZodType<LinkCostReport$> =
-  linkCostReportBase$.extend({
-    costs: z.lazy(() => cost$.optional().nullable()),
-    contractor: z.lazy(() => contractor$.optional()),
-  });
+export type LinkCostReport$ = z.infer<typeof linkCostReport$>;
 
 export function linkCostReportFromHttp(
   linkCostReport: LinkCostReport$,
 ): LinkCostReport {
   return {
-    ...camelcaseKeys(linkCostReport),
-    description: linkCostReport.description ?? "",
-    cost: maybe.mapOrNull(linkCostReport.costs, costFromHttp),
-    contractorReport: maybe.mapOrNull(
-      linkCostReport.contractor_reports,
-      contractorReportFromHttp,
-    ),
+    ...linkCostReportBaseFromHttp(linkCostReport),
+    cost: costFromHttp(linkCostReport.cost),
+    report: contractorReportBaseFromHttp(linkCostReport.report),
   };
 }
 
