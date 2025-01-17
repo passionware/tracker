@@ -15,8 +15,8 @@ export const createErrorRenderer = (className: string) => (error: Error) => {
   return (
     <div
       className={cn(
-        "min-w-20 w-fit min-h-[1lh] text-red-800 bg-red-100 px-1 text-sm",
-        "rounded p-2",
+        "min-w-20 w-fit min-h-[1lh] text-red-800 bg-red-100 dark:bg-red-950 dark:text-white/60 px-1 text-sm",
+        "rounded-lg p-2",
         className,
       )}
     >
@@ -33,9 +33,9 @@ export const renderSmallError =
       <SimpleTooltip title={message}>
         <div
           className={cn(
-            "text-red-800 bg-red-300 border border-red-800 px-1 text-sm h-[1lh]",
+            "text-red-800 bg-red-200 border border-red-800 px-1 text-sm h-[1lh] dark:bg-red-950 dark:text-white/60",
             "flex flex-row justify-center items-center",
-            "rounded-sm",
+            "rounded-lg",
             className,
           )}
         >
