@@ -1,11 +1,5 @@
 import { ClientBillingQuery } from "@/api/client-billing/client-billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { Input } from "@/components/ui/input.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -16,25 +10,30 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { ClientView } from "@/features/_common/ClientView.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
-import { useId } from "react";
-import { useForm } from "react-hook-form";
 
 export interface InlineBillingSearchProps
   extends WithServices<
     [WithReportDisplayService, WithFormatService, WithClientService]
   > {
   query: ClientBillingQuery;
-  onSelect: (data: { billingId: number; value: number }) => void;
-  maxAmount: number;
+  onSelect: (data: { billingId: number; value: LinkValue }) => void;
+  maxAmount: CurrencyValue;
   className?: string;
 }
+type LinkValue = {
+  source: number;
+  target: number;
+  description: string;
+};
 
 export function InlineBillingSearch(props: InlineBillingSearchProps) {
   const billings = props.services.reportDisplayService.useBillingView(
@@ -101,27 +100,19 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Popover>
-                        <PopoverTrigger>
-                          <Button>Select</Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-4 space-y-2">
-                          <EnterValue
-                            initialValue={
-                              Math.min(
-                                props.maxAmount,
-                                billing.remainingAmount.amount,
-                              ) || 0
-                            }
-                            onValueChange={(value) =>
-                              props.onSelect({
-                                billingId: billing.id,
-                                value,
-                              })
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <LinkPopover
+                        sourceCurrency={billing.remainingAmount.currency}
+                        targetCurrency={props.maxAmount.currency}
+                        services={props.services}
+                        onValueChange={(value) =>
+                          props.onSelect({
+                            billingId: billing.id,
+                            value,
+                          })
+                        }
+                      >
+                        <Button>Select</Button>
+                      </LinkPopover>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -130,25 +121,5 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
           );
         })}
     </div>
-  );
-}
-
-function EnterValue(props: {
-  initialValue: number;
-  onValueChange: (value: number) => void;
-}) {
-  const form = useForm({ defaultValues: { value: props.initialValue } });
-  const valueId = useId();
-  return (
-    <form
-      className="flex flex-col gap-2"
-      onSubmit={form.handleSubmit((data) => props.onValueChange(data.value))}
-    >
-      <label htmlFor={valueId}>Enter linked amount:</label>
-      <Input id={valueId} {...form.register("value")} />
-      <Button variant="default" type="submit">
-        Submit
-      </Button>
-    </form>
   );
 }

@@ -14,19 +14,21 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     switch (payload.type) {
       case "clarify":
         return {
-          description: payload.clarifyJustification,
+          description: payload.description,
           link_type: "clarify",
-          report_id:
-            "contractorReportId" in payload ? payload.contractorReportId : null,
-          billing_id:
-            "clientBillingId" in payload ? payload.clientBillingId : null,
-          reconcile_amount: payload.linkAmount,
+          report_id: "reportId" in payload ? payload.reportId : null,
+          billing_id: "billingId" in payload ? payload.billingId : null,
+          report_amount:
+            "reportAmount" in payload ? payload.reportAmount : null,
+          billing_amount:
+            "billingAmount" in payload ? payload.billingAmount : null,
         };
       case "reconcile":
         return {
-          billing_id: payload.clientBillingId,
-          report_id: payload.contractorReportId,
-          reconcile_amount: payload.linkAmount,
+          billing_id: payload.billingId,
+          report_id: payload.reportId,
+          report_amount: payload.reportAmount,
+          billing_amount: payload.billingAmount,
         };
     }
   }

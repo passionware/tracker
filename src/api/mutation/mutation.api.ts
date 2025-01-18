@@ -11,21 +11,24 @@ import { Cost, CostBase } from "@/api/cost/cost.api.ts";
 export type LinkReportBillingPayload =
   | ({
       type: "clarify";
-      clarifyJustification: string;
-      linkAmount: number;
+      description: string;
     } & (
       | {
-          contractorReportId: number;
+          reportId: number;
+          reportAmount: number;
         }
       | {
-          clientBillingId: number;
+          billingId: number;
+          billingAmount: number;
         }
     ))
   | {
       type: "reconcile";
-      clientBillingId: number;
-      contractorReportId: number;
-      linkAmount: number;
+      billingId: number;
+      reportId: number;
+      reportAmount: number;
+      billingAmount: number;
+      description: string;
     };
 
 export type LinkCostReportPayload =

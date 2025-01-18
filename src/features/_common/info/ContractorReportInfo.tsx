@@ -81,15 +81,17 @@ export function ContractorReportInfo({
               </PopoverHeader>
               <InlineBillingSearch
                 className="overflow-y-auto h-full"
-                maxAmount={report.remainingAmount.amount}
+                maxAmount={report.remainingAmount}
                 services={services}
                 onSelect={(data) =>
                   linkingState.track(
                     services.mutationService.linkReportAndBilling({
                       type: "reconcile",
-                      contractorReportId: report.id,
-                      clientBillingId: data.billingId,
-                      linkAmount: data.value,
+                      reportId: report.id,
+                      reportAmount: data.value.source,
+                      billingId: data.billingId,
+                      billingAmount: data.value.target,
+                      description: data.value.description,
                     }),
                   )
                 }
@@ -132,7 +134,7 @@ export function ContractorReportInfo({
                   )
                 }
                 context={{
-                  contractorReportId: report.id,
+                  reportId: report.id,
                 }}
               />
             </PopoverContent>

@@ -1,11 +1,5 @@
 import { ContractorReportQuery } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { Input } from "@/components/ui/input.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -15,8 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientView } from "@/features/_common/ClientView.tsx";
+import {
+  LinkPopover,
+  LinkValue,
+} from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -27,8 +24,6 @@ import { WithReportDisplayService } from "@/services/front/ReportDisplayService/
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
-import { useId } from "react";
-import { useForm } from "react-hook-form";
 
 export interface InlineContractorReportSearchProps
   extends WithServices<
@@ -106,51 +101,43 @@ export function InlineContractorReportSearch(
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button>Select</Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-fit">
-                          <EnterValue
-                            services={props.services}
-                            initialSourceValue={{
-                              currency:
-                                props.maxSourceAmount?.currency ??
-                                report.remainingAmount.currency,
-                              amount: Math.min(
-                                props.maxSourceAmount?.amount ?? 0,
+                      <LinkPopover
+                        services={props.services}
+                        sourceCurrency={report.remainingAmount.currency}
+                        targetCurrency={
+                          props.maxSourceAmount?.currency ??
+                          report.remainingAmount.currency
+                        }
+                        initialValues={{
+                          source: Math.min(
+                            props.maxSourceAmount?.amount ?? 0,
+                            report.remainingAmount.amount,
+                          ),
+                          target:
+                            props.maxSourceAmount?.currency ===
+                            report.remainingAmount.currency
+                              ? // we have same currency, so probably we don't need to exchange
+                                props.maxSourceAmount?.amount
+                              : // this won't be same, so let's assume that cost  = remaining report but in target currency
                                 report.remainingAmount.amount,
-                              ),
-                            }}
-                            initialDescription={[
-                              report.remainingAmount.currency !==
-                              props.maxSourceAmount?.currency
-                                ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join("\n")}
-                            initialTargetValue={{
-                              ...report.remainingAmount,
-                              amount:
-                                props.maxSourceAmount?.currency ===
-                                report.remainingAmount.currency
-                                  ? // we have same currency, so probably we don't need to exchange
-                                    props.maxSourceAmount?.amount
-                                  : // this won't be same, so let's assume that cost  = remaining report but in target currency
-                                    report.remainingAmount.amount,
-                            }}
-                            showDescription={props.showDescription}
-                            showTargetValue={props.showTargetValue}
-                            onValueChange={(value) =>
-                              props.onSelect({
-                                contractorReportId: report.id,
-                                value,
-                              })
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
+                          description: [
+                            report.remainingAmount.currency !==
+                            props.maxSourceAmount?.currency
+                              ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join("\n"),
+                        }}
+                        onValueChange={(value) =>
+                          props.onSelect({
+                            contractorReportId: report.id,
+                            value,
+                          })
+                        }
+                      >
+                        <Button>Select</Button>
+                      </LinkPopover>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -159,78 +146,5 @@ export function InlineContractorReportSearch(
           );
         })}
     </div>
-  );
-}
-
-type LinkValue = {
-  source: number;
-  target: number;
-  description: string;
-};
-
-function EnterValue(
-  props: WithServices<[WithFormatService]> & {
-    initialDescription: string;
-    initialSourceValue: CurrencyValue;
-    initialTargetValue: CurrencyValue;
-    showTargetValue: boolean;
-    showDescription: boolean;
-    onValueChange: (value: LinkValue) => void;
-  },
-) {
-  const form = useForm({
-    defaultValues: {
-      source: props.initialSourceValue.amount,
-      target: props.initialTargetValue.amount,
-      description: props.initialDescription,
-    },
-  });
-  const sourceId = useId();
-  const targetId = useId();
-  const descriptionId = useId();
-  return (
-    <form
-      className="flex flex-col gap-2"
-      onSubmit={form.handleSubmit((data) =>
-        props.onValueChange({
-          source: Number(data.source),
-          target: Number(data.target),
-          description: data.description,
-        }),
-      )}
-    >
-      <label htmlFor={sourceId}>
-        Enter linked amount (
-        {props.services.formatService.financial.currencySymbol(
-          props.initialSourceValue.currency,
-        )}
-        )
-      </label>
-      <Input id={sourceId} {...form.register("source")} />
-
-      {props.showTargetValue && (
-        <>
-          <label htmlFor={targetId}>
-            Enter target amount (
-            {props.services.formatService.financial.currencySymbol(
-              props.initialTargetValue.currency,
-            )}
-            )
-          </label>
-          <Input id={targetId} {...form.register("target")} />
-        </>
-      )}
-
-      {props.showDescription && (
-        <>
-          <label htmlFor={descriptionId}>Enter description:</label>
-          <Textarea id={descriptionId} {...form.register("description")} />
-        </>
-      )}
-
-      <Button variant="default" type="submit">
-        Submit
-      </Button>
-    </form>
   );
 }

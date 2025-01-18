@@ -19,7 +19,7 @@ export interface InlineClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
   onSelect: (data: LinkReportBillingPayload) => void;
   maxAmount: number;
-  context: { contractorReportId: number } | { clientBillingId: number };
+  context: { reportId: number } | { billingId: number };
 }
 
 export function InlineBillingClarify(props: InlineClarifyProps) {
@@ -31,14 +31,26 @@ export function InlineBillingClarify(props: InlineClarifyProps) {
   return (
     <form
       className="flex flex-col gap-2"
-      onSubmit={form.handleSubmit((data) =>
-        props.onSelect({
-          ...props.context,
-          type: "clarify",
-          linkAmount: data.clarifyAmount,
-          clarifyJustification: data.clarifyJustification,
-        }),
-      )}
+      onSubmit={form.handleSubmit((data) => {
+        switch (true) {
+          case "reportId" in props.context:
+            props.onSelect({
+              type: "clarify",
+              reportId: props.context.reportId,
+              reportAmount: data.clarifyAmount,
+              description: data.clarifyJustification,
+            });
+            break;
+          case "billingId" in props.context:
+            props.onSelect({
+              type: "clarify",
+              billingId: props.context.billingId,
+              billingAmount: data.clarifyAmount,
+              description: data.clarifyJustification,
+            });
+            break;
+        }
+      })}
     >
       <label htmlFor={justificationId}>
         Enter justification for uncovered report:

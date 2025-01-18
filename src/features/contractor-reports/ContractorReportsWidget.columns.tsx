@@ -38,7 +38,6 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { startCase } from "lodash";
 import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
 
 const columnHelper = createColumnHelper<ContractorReportViewEntry>();
@@ -93,7 +92,21 @@ export function useColumns(props: ContractorReportsWidgetProps) {
                 )[info.getValue()]
               }
             >
-              {startCase(info.getValue())}
+              {
+                {
+                  billed: "Billed",
+                  "partially-billed": (
+                    <>
+                      Bill{" "}
+                      {props.services.formatService.financial.currency(
+                        info.row.original.remainingAmount,
+                      )}
+                    </>
+                  ),
+                  uncovered: "Uncovered",
+                  clarified: "Clarified",
+                }[info.getValue()]
+              }
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
@@ -130,7 +143,14 @@ export function useColumns(props: ContractorReportsWidgetProps) {
                 (
                   {
                     compensated: "Paid",
-                    "partially-compensated": "Partially",
+                    "partially-compensated": (
+                      <>
+                        Pay{" "}
+                        {props.services.formatService.financial.currency(
+                          info.row.original.remainingCompensationAmount,
+                        )}
+                      </>
+                    ),
                     uncompensated: "Unpaid",
                   } as const
                 )[info.getValue()]

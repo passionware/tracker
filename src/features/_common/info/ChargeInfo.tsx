@@ -82,9 +82,11 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                   linkingState.track(
                     services.mutationService.linkReportAndBilling({
                       type: "reconcile",
-                      clientBillingId: billing.id,
-                      contractorReportId: report.contractorReportId,
-                      linkAmount: report.value.source,
+                      billingId: billing.id,
+                      billingAmount: report.value.source,
+                      reportId: report.contractorReportId,
+                      reportAmount: report.value.target,
+                      description: report.value.description,
                     }),
                   )
                 }
@@ -133,7 +135,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                     services.mutationService.linkReportAndBilling(data),
                   )
                 }
-                context={{ clientBillingId: billing.id }}
+                context={{ billingId: billing.id }}
               />
             </PopoverContent>
           </Popover>

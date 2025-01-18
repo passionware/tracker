@@ -145,16 +145,20 @@ export function ContractorReportCostInfo({
                 services={services}
                 onSelect={(data) => {
                   assert(data.type === "clarify");
+                  assert(
+                    "reportId" in data,
+                    "Only report clarifications are allowed",
+                  );
                   void clarifyState.track(
                     services.mutationService.linkCostAndReport({
                       type: "clarify-report",
                       reportId: report.id,
-                      reportAmount: data.linkAmount,
-                      description: data.clarifyJustification,
+                      reportAmount: data.reportAmount,
+                      description: data.description,
                     }),
                   );
                 }}
-                context={{ contractorReportId: report.id, clientBillingId: -1 }} // stop reusing InlineBilingClarify for cost clarifications
+                context={{ reportId: report.id, billingId: -1 }} // stop reusing InlineBilingClarify for cost clarifications
               />
             </PopoverContent>
           </Popover>

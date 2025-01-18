@@ -14,15 +14,17 @@ export interface SummaryCurrencyGroupProps
   extends WithServices<[WithFormatService]> {
   group: CurrencyValueGroup;
   label: ReactNode;
+  description?: ReactNode;
 }
 
 export function SummaryCurrencyGroup({
   group,
   label,
   services,
+  description,
 }: SummaryCurrencyGroupProps) {
   return (
-    <SummaryEntry label={label}>
+    <SummaryEntry label={label} description={description}>
       {maybe.map(group, (group) => {
         if (group.values.length === 1) {
           const summaryEntryValue = (
@@ -38,7 +40,7 @@ export function SummaryCurrencyGroup({
           ) {
             return (
               <SimpleTooltip
-                  light
+                light
                 title={
                   <div className="space-y-2">
                     <PopoverHeader>
