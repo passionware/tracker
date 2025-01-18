@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { pickBy } from "lodash";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
-  const formatDateForSupabase = (date) => format(new Date(date), "yyyy-MM-dd");
+  const formatDateForSupabase = (date:Date) => format(new Date(date), "yyyy-MM-dd");
 
   function getInsertPayload(payload: LinkReportBillingPayload) {
     switch (payload.type) {
