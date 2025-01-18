@@ -64,5 +64,5 @@ export const headers = {
   amount: "How much the contractor was compensated for reported work",
   toPay: "How much to pay against reported&charged amount",
   toCompensate:
-    "How much compensation is remaining to cover the reported amount, no matter how much we actually charged the client. Sometimes we charge the client less for the report, but still the contractor can be compensated, but from different money. In such case we link another cost with this report.",
+    "[report_cost_balance] remainingFullCompensationAmount. How much compensation is remaining to cover the reported amount, no matter how much we actually charged the client. Sometimes we charge the client less for the report, but still the contractor can be compensated, but from different money. In such case we link another cost with this report.",
 };

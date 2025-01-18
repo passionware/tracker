@@ -91,41 +91,40 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         tooltip: headers.compensationStatus,
       },
       cell: (info) => (
-          <Popover>
-            <PopoverTrigger>
-              <Badge
-                  tone="secondary"
-                  className="border border-slate-950/20"
-
-                  variant={
-                    (
-                        {
-                          compensated: "positive",
-                          "partially-compensated": "warning",
-                          uncompensated: "destructive",
-                        } as const
-                    )[info.getValue()]
-                  }
-              >
-                {
-                  (
-                      {
-                        compensated: "Matching",
-                        "partially-compensated": "Partially",
-                        uncompensated: "Unmatched",
-                      } as const
-                  )[info.getValue()]
-                }
-              </Badge>
-            </PopoverTrigger>
-            <PopoverContent className="w-fit">
-              <PopoverHeader>Compensation details</PopoverHeader>
-              <ContractorReportCostInfo
-                  report={info.row.original}
-                  services={props.services}
-              />
-            </PopoverContent>
-          </Popover>
+        <Popover>
+          <PopoverTrigger>
+            <Badge
+              tone="secondary"
+              className="border border-slate-950/20"
+              variant={
+                (
+                  {
+                    compensated: "positive",
+                    "partially-compensated": "warning",
+                    uncompensated: "destructive",
+                  } as const
+                )[info.getValue()]
+              }
+            >
+              {
+                (
+                  {
+                    compensated: "Paid",
+                    "partially-compensated": "Partially",
+                    uncompensated: "Unpaid",
+                  } as const
+                )[info.getValue()]
+              }
+            </Badge>
+          </PopoverTrigger>
+          <PopoverContent className="w-fit">
+            <PopoverHeader>Compensation details</PopoverHeader>
+            <ContractorReportCostInfo
+              report={info.row.original}
+              services={props.services}
+            />
+          </PopoverContent>
+        </Popover>
       ),
     }),
     columnHelper.accessor("deferredEarnings", {
@@ -188,6 +187,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
           meta: {
             headerClassName: "bg-rose-50 border-x border-slate-800/10",
             cellClassName: "bg-rose-50/50 border-x border-slate-800/10",
+            tooltip: "[total_billing_billing_value] billedAmount",
           },
         }),
         columnHelper.accessor("remainingAmount", {

@@ -347,22 +347,30 @@ function calculateReportEntry(
   ////
 
   function getInstantEarningsStatus() {
-    if (report.reportCostBalance === 0 && report.billingCostBalance <= 0) {
-      return "compensated";
-    } else if (report.reportCostValue === 0) {
+    // compensation amount: reportCostValue
+    // to pay: billingCostBalance
+    if (report.reportCostValue === report.billingCostBalance) {
+      // reported costs
       return "uncompensated";
     }
-    return "partially-compensated";
+    if (report.billingCostBalance > 0) {
+      return "partially-compensated";
+    }
+    return "compensated";
   }
 
   function getDeferredEarningStatus() {
-    if (report.billingCostBalance <= 0) {
+    if (report.reportCostBalance <= 0) {
       return "compensated";
-    } else if (report.billingCostBalance > 0 && report.reportCostValue > 0) {
-      return "partially-compensated";
-    } else {
+    }
+
+    if (
+      report.reportCostBalance >
+      report.netValue - report.reportBillingValue
+    ) {
       return "uncompensated";
     }
+    return "partially-compensated";
   }
 
   return {
@@ -399,11 +407,11 @@ function calculateReportEntry(
       currency: report.currency,
     },
     remainingCompensationAmount: {
-      amount: Math.max(0, report.reportBillingBalance),
+      amount: Math.max(0, report.billingCostBalance),
       currency: report.currency,
     },
     remainingFullCompensationAmount: {
-      amount: report.billingCostBalance,
+      amount: report.reportCostBalance,
       currency: report.currency,
     },
     costLinks: report.linkCostReport,
