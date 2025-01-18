@@ -12,7 +12,7 @@ import { ClientBillingBase } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { CostBase } from "@/api/cost/cost.api.ts";
-import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { LinkCostReportBase } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -41,7 +41,7 @@ export type ContractorReport = ContractorReportBase & {
   contractor: Contractor;
   client: Client;
   linkBillingReport: {
-    link: LinkBillingReportBase;
+    link: LinkBillingReport;
     billing: Nullable<ClientBillingBase>;
   }[];
   linkCostReport: { link: LinkCostReportBase; cost: CostBase }[];

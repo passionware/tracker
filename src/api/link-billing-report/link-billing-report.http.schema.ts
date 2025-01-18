@@ -1,86 +1,85 @@
-import { contractorReportBaseFromHttp } from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
-import {
-  ContractorReport$,
-  contractorReport$,
-} from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
-import {
-  linkBillingReportBase$,
-  linkBillingReportBaseFromHttp,
-} from "@/api/link-billing-report/link-billing-report.http.schema.base.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { maybe } from "@passionware/monads";
 import { z } from "zod";
-import {
-  ClientBilling$,
-  clientBilling$,
-  clientBillingFromHttp,
-} from "../client-billing/client-billing.api.http.schema.ts";
-import { LinkBillingReport } from "./link-billing-report.api.ts";
 
-export type LinkBillingReport$ = z.input<typeof linkBillingReportBase$> & {
-  billing?: ClientBilling$ | null;
-  report?: ContractorReport$ | null;
-};
-
-export const linkBillingReport$ = linkBillingReportBase$.extend({
-  billing: z.lazy(() => clientBilling$.nullable()),
-  reports: z.lazy(() => contractorReport$.nullable()),
+export const linkBillingReport$ = z.object({
+  id: z.number(),
+  created_at: z.string(),
+  billing_id: z.number().nullable(),
+  report_id: z.number().nullable(),
+  report_amount: z.number().nullable(),
+  billing_amount: z.number().nullable(),
+  description: z.string().nullable(),
 });
+
+export type LinkBillingReport$ = z.input<typeof linkBillingReport$>;
 
 export function linkBillingReportFromHttp(
   linkBillingReport: LinkBillingReport$,
 ): LinkBillingReport {
-  const base = linkBillingReportBaseFromHttp(linkBillingReport);
-  switch (base.linkType) {
-    case "reconcile": {
-      return {
-        ...base,
-        report: maybe.mapOrThrow(
-          linkBillingReport.report,
-          contractorReportBaseFromHttp,
-          "A report is required for reconcile link type",
-        ),
-        billing: maybe.mapOrThrow(
-          linkBillingReport.billing,
-          clientBillingFromHttp,
-          "A billing is required for reconcile link type",
-        ),
-      };
-    }
-    case "clarify": {
-      if (maybe.isPresent(linkBillingReport.billing_id)) {
-        return {
-          ...base,
-          billing: maybe.mapOrThrow(
-            linkBillingReport.billing,
-            clientBillingFromHttp,
-            "A billing is required for clarify link type",
-          ),
-          billingAmount: maybe.getOrThrow(
-            linkBillingReport.billing_amount,
-            "billing_amount is required for clarify link type",
-          ),
-          billingId: linkBillingReport.billing_id,
-          reportId: null,
-          report: null,
-        };
-      } else if (maybe.isPresent(linkBillingReport.report_id)) {
-        return {
-          ...base,
-          report: maybe.mapOrThrow(
-            linkBillingReport.report,
-            contractorReportBaseFromHttp,
-            "A report is required for clarify link type",
-          ),
-          reportAmount: maybe.getOrThrow(
-            linkBillingReport.report_amount,
-            "report_amount is required for clarify link type",
-          ),
-          reportId: linkBillingReport.report_id,
-          billingId: null,
-          billing: null,
-        };
-      }
-      throw new Error("Invalid linkBillingReport");
-    }
+  if (
+    maybe.isPresent(linkBillingReport.billing_id) &&
+    maybe.isPresent(linkBillingReport.report_id)
+  ) {
+    // reconcile
+    return {
+      id: linkBillingReport.id,
+      createdAt: linkBillingReport.created_at,
+      linkType: "reconcile",
+      reportAmount: maybe.getOrThrow(
+        linkBillingReport.report_amount,
+        'report_amount is required for linkType "reconcile"',
+      ),
+      billingAmount: maybe.getOrThrow(
+        linkBillingReport.billing_amount,
+        'billing_amount is required for linkType "reconcile"',
+      ),
+      billingId: maybe.getOrThrow(
+        linkBillingReport.billing_id,
+        'client_billing_id is required for linkType "reconcile"',
+      ),
+      reportId: maybe.getOrThrow(
+        linkBillingReport.report_id,
+        'report_id is required for linkType "reconcile"',
+      ),
+      description: linkBillingReport.description ?? "",
+    };
   }
+  if (linkBillingReport.billing_id !== null) {
+    return {
+      id: linkBillingReport.id,
+      createdAt: linkBillingReport.created_at,
+      linkType: "clarify",
+      description: maybe.getOrThrow(
+        linkBillingReport.description,
+        'description is required for linkType "clarify"',
+      ),
+      billingId: linkBillingReport.billing_id,
+      billingAmount: maybe.getOrThrow(
+        linkBillingReport.billing_amount,
+        'billing_amount is required for linkType "clarify"',
+      ),
+      reportId: null,
+      reportAmount: null,
+    };
+  }
+  if (linkBillingReport.report_id !== null) {
+    return {
+      id: linkBillingReport.id,
+      createdAt: linkBillingReport.created_at,
+      linkType: "clarify",
+      description: maybe.getOrThrow(
+        linkBillingReport.description,
+        'description is required for linkType "clarify"',
+      ),
+      reportId: linkBillingReport.report_id,
+      reportAmount: maybe.getOrThrow(
+        linkBillingReport.report_amount,
+        'report_amount is required for linkType "clarify"',
+      ),
+      billingId: null,
+      billingAmount: null,
+    };
+  }
+  throw new Error("Invalid linkBillingReport");
 }

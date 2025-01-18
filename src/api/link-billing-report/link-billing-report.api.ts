@@ -1,10 +1,4 @@
-import {
-  ClientBilling,
-  ClientBillingBase,
-} from "@/api/client-billing/client-billing.api.ts";
-import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
-
-export type LinkBillingReportBase = {
+export type LinkBillingReport = {
   id: number;
   createdAt: string;
 } & (
@@ -34,23 +28,3 @@ export type LinkBillingReportBase = {
       reportId: null;
     }
 );
-
-export type LinkBillingReport =
-  | (Extract<LinkBillingReportBase, { linkType: "reconcile" }> & {
-      billing: ClientBillingBase;
-      report: ContractorReportBase;
-    })
-  | (Extract<
-      LinkBillingReportBase,
-      { linkType: "clarify"; billingId: number; reportId: null }
-    > & {
-      billing: ClientBilling;
-      report: null;
-    })
-  | (Extract<
-      LinkBillingReportBase,
-      { linkType: "clarify"; reportId: number; billingId: null }
-    > & {
-      billing: null;
-      report: ContractorReportBase;
-    });

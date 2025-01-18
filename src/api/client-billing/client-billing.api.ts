@@ -12,7 +12,7 @@ import { Client } from "@/api/clients/clients.api.ts";
 import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 
-import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -48,7 +48,7 @@ export interface ClientBilling extends ClientBillingBase {
   remainingBalance: number;
   client: Client;
   linkBillingReport: {
-    link: LinkBillingReportBase;
+    link: LinkBillingReport;
     report: ContractorReportBase;
   }[];
   contractors: Contractor[];
