@@ -70,7 +70,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
           </FilterChip>
           <InlinePopoverForm
             trigger={
-              <Button variant="default" size="sm" className="flex">
+              <Button variant="accent1" size="sm" className="flex">
                 {rd
                   .fullJourney(addReportState.state)
                   .initially(<PlusCircle />)

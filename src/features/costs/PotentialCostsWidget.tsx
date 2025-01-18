@@ -92,7 +92,7 @@ export function PotentialCostsWidget(props: PotentialCostsWidgetProps) {
           </FilterChip>
           <InlinePopoverForm
             trigger={
-              <Button variant="default" size="sm" className="flex">
+              <Button variant="accent1" size="sm" className="flex">
                 {rd
                   .fullJourney(addCostState.state)
                   .initially(<PlusCircle />)

@@ -55,7 +55,7 @@ export function BillingWidget(props: BillingWidgetProps) {
           </FilterChip>
           <InlinePopoverForm
             trigger={
-              <Button variant="default" size="sm" className="flex">
+              <Button variant="accent1" size="sm" className="flex">
                 {rd
                   .fullJourney(addBillingState.state)
                   .initially(<PlusCircle />)
