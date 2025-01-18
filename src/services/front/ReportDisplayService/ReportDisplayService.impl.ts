@@ -351,6 +351,9 @@ function calculateReportEntry(
     // compensation amount: reportCostValue
     // to pay: billingCostBalance
     if (report.reportBillingValue === report.immediatePaymentDue) {
+      if (report.netValue === 0) {
+        return "compensated";
+      }
       // reported costs
       return "uncompensated";
     }
