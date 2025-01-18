@@ -116,6 +116,12 @@ export function ContractorReportCostInfo({
                       value: [report.contractor.id, null],
                     }),
                   )
+                  .thru((x) =>
+                    costQueryUtils.setFilter(x, "potentialClientId", {
+                      operator: "oneOf",
+                      value: [report.client.id, null],
+                    }),
+                  ) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients
                   .thru((x) => costQueryUtils.removeFilter(x, "clientId")) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients
                   .value()}
               />
