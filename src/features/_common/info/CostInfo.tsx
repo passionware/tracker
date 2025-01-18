@@ -136,7 +136,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
         {costEntry.linkReports.map((link) => {
           return (
             <li
-              key={link.id}
+              key={link.link.id}
               className="flex items-center justify-between gap-x-6 py-5"
             >
               <div className="min-w-0">
@@ -167,7 +167,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                       <div className="contents text-green-800 font-bold">
                         Cost's{" "}
                         {services.formatService.financial.amount(
-                          link.costAmount,
+                          link.link.costAmount,
                           costEntry.netAmount.currency,
                         )}
                       </div>
@@ -176,7 +176,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                       </svg>
                       satisfies{" "}
                       {services.formatService.financial.amount(
-                        link.reportAmount,
+                        link.link.reportAmount,
                         link.report.currency,
                       )}{" "}
                       of{" "}
@@ -206,10 +206,10 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                   </div>
                 )}
                 <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
-                  <SimpleTooltip title={link.description}>
+                  <SimpleTooltip title={link.link.description}>
                     <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
                       {maybe.getOrElse(
-                        maybe.fromTruthy(link.description),
+                        maybe.fromTruthy(link.link.description),
                         <div className="text-slate-400">No description</div>,
                       )}
                     </div>
@@ -218,7 +218,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 <DeleteButtonWidget
                   services={services}
                   onDelete={() =>
-                    services.mutationService.deleteCostReportLink(link.id)
+                    services.mutationService.deleteCostReportLink(link.link.id)
                   }
                 />
               </div>

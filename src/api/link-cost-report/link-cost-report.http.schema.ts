@@ -1,8 +1,8 @@
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
-import { LinkCostReportBase } from "./link-cost-report.ts";
+import { LinkCostReport } from "./link-cost-report.ts";
 
-export const linkCostReportBase$ = z.object({
+export const linkCostReport$ = z.object({
   id: z.number(),
   created_at: z.coerce.date(),
   cost_amount: z.number(),
@@ -11,11 +11,11 @@ export const linkCostReportBase$ = z.object({
   cost_id: z.number().nullable(),
   report_id: z.number().nullable(),
 });
-export type LinkCostReportBase$ = z.input<typeof linkCostReportBase$>;
+export type LinkCostReport$ = z.input<typeof linkCostReport$>;
 
-export function linkCostReportBaseFromHttp(
-  linkCostReport: LinkCostReportBase$,
-): LinkCostReportBase {
+export function linkCostReportFromHttp(
+  linkCostReport: LinkCostReport$,
+): LinkCostReport {
   return {
     ...camelcaseKeys(linkCostReport),
     description: linkCostReport.description ?? "",

@@ -142,7 +142,7 @@ export function useColumns(props: PotentialCostsWidgetProps) {
               <ClientWidget
                 layout="avatar"
                 size="xs"
-                key={link.id}
+                key={link.link.id}
                 clientId={link.report.clientId}
                 services={props.services}
               />

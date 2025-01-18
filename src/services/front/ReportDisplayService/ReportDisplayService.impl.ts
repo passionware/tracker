@@ -484,7 +484,10 @@ function calculateBilling(
 }
 
 function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
-  const sumOfLinkedAmounts = sumBy(cost.linkReports, (link) => link.costAmount);
+  const sumOfLinkedAmounts = sumBy(
+    cost.linkReports,
+    (link) => link.link.costAmount,
+  );
   const remainingAmount = cost.netValue - sumOfLinkedAmounts;
 
   function getStatus() {

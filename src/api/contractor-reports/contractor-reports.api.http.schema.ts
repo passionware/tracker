@@ -22,9 +22,9 @@ import {
   linkBillingReportFromHttp,
 } from "@/api/link-billing-report/link-billing-report.http.schema.ts";
 import {
-  linkCostReportBase$,
-  linkCostReportBaseFromHttp,
-} from "@/api/link-cost-report/link-cost-report.http.schema.base.ts";
+  linkCostReport$,
+  linkCostReportFromHttp,
+} from "@/api/link-cost-report/link-cost-report.http.schema.ts";
 import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
@@ -37,7 +37,7 @@ export const contractorReport$ = contractorReportBase$.extend({
   ),
   link_cost_reports: z.array(
     z.object({
-      link: linkCostReportBase$,
+      link: linkCostReport$,
       cost: costBase$,
     }),
   ),
@@ -63,7 +63,7 @@ export function contractorReportFromHttp(
       billing: maybe.mapOrNull(value.billing, clientBillingBaseFromHttp),
     })),
     linkCostReport: contractorReport.link_cost_reports.map((value) => ({
-      link: linkCostReportBaseFromHttp(value.link),
+      link: linkCostReportFromHttp(value.link),
       cost: costBaseFromHttp(value.cost),
     })),
     contractor: contractorFromHttp(contractorReport.contractor),
