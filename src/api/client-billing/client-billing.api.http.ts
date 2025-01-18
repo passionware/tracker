@@ -4,6 +4,7 @@ import {
   clientBillingFromHttp,
 } from "@/api/client-billing/client-billing.api.http.schema.ts";
 import { ClientBillingApi } from "@/api/client-billing/client-billing.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { snakeCase } from "lodash";
 import { z } from "zod";
@@ -95,7 +96,9 @@ export function createClientBillingApi(
       if (error) {
         throw error;
       }
-      return z.array(clientBilling$).parse(data).map(clientBillingFromHttp);
+      return parseWithDataError(z.array(clientBilling$), data).map(
+        clientBillingFromHttp,
+      );
     },
   };
 }

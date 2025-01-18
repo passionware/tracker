@@ -1,4 +1,4 @@
-import { numberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import {
   contractorReport$,
   contractorReportFromHttp,
@@ -13,20 +13,9 @@ export function createContractorReportsApi(
 ): ContractorReportApi {
   return {
     getContractorReports: async (query) => {
-      let request = client.from("contractor_reports").select(`
-      *,
-      link_billing_report (
-        *,
-        client_billing (*)
-      ),
-      link_cost_report (
-        *,
-        costs (
-          *
-        )
-      ),
-      contractors (*)
-    `);
+      let request = client
+        .from("report_with_details")
+        .select("*, contractor (*)");
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {
           case "oneOf":
@@ -75,6 +64,15 @@ export function createContractorReportsApi(
             break;
         }
       }
+
+      if (query.filters.remainingAmount) {
+        request = numberFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.remainingAmount,
+          "report_billing_balance",
+        );
+      }
+
       if (query.sort) {
         request = request.order(snakeCase(query.sort.field), {
           ascending: query.sort.order === "asc",
@@ -88,21 +86,11 @@ export function createContractorReportsApi(
       return z
         .array(contractorReport$)
         .parse(data)
-        .map(contractorReportFromHttp)
-        .filter((report) =>
-          numberFilter.matches(
-            query.filters.remainingAmount,
-            report.netValue -
-              (report.linkBillingReport?.reduce(
-                (acc, link) => acc + (link.linkAmount ?? 0),
-                0,
-              ) ?? 0),
-          ),
-        );
+        .map(contractorReportFromHttp);
     },
     getContractorReport: async (id) => {
       const { data, error } = await client
-        .from("clients")
+        .from("client")
         .select("*")
         .eq("id", id);
       if (error) {
