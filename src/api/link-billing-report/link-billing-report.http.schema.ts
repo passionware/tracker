@@ -1,4 +1,4 @@
-import { contractorReportBaseFromHttp } from "@/api/contractor-reports/contractor-report.api.http.schema.base.ts";
+import { contractorReportBaseFromHttp } from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
 import {
   ContractorReport$,
   contractorReport$,
@@ -22,8 +22,8 @@ export type LinkBillingReport$ = z.input<typeof linkBillingReportBase$> & {
 };
 
 export const linkBillingReport$ = linkBillingReportBase$.extend({
-  billing: z.lazy(() => clientBilling$),
-  reports: z.lazy(() => contractorReport$),
+  billing: z.lazy(() => clientBilling$.nullable()),
+  reports: z.lazy(() => contractorReport$.nullable()),
 });
 
 export function linkBillingReportFromHttp(

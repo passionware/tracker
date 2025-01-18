@@ -1,7 +1,7 @@
 import {
   contractorReportBase$,
   contractorReportBaseFromHttp,
-} from "@/api/contractor-reports/contractor-report.api.http.schema.base.ts";
+} from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import {
   linkCostReportBase$,

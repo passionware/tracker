@@ -9,7 +9,7 @@ export const linkCostReportBase$ = z.object({
   report_amount: z.number(),
   description: z.string().nullable(),
   cost_id: z.number().nullable(),
-  contractor_report_id: z.number().nullable(),
+  report_id: z.number().nullable(),
 });
 export type LinkCostReportBase$ = z.input<typeof linkCostReportBase$>;
 

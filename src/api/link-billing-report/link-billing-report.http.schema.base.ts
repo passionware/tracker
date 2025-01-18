@@ -40,7 +40,7 @@ export function linkBillingReportBaseFromHttp(
       ),
       reportId: maybe.getOrThrow(
         linkBillingReport.report_id,
-        'contractor_report_id is required for linkType "reconcile"',
+        'report_id is required for linkType "reconcile"',
       ),
       description: linkBillingReport.description ?? "",
     };

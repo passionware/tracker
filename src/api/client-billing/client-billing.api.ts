@@ -32,6 +32,9 @@ export interface ClientBillingBase {
   invoiceDate: Date;
   description: string | null;
   workspaceId: Workspace["id"];
+}
+
+export interface ClientBilling extends ClientBillingBase {
   // how much of billing value is already linked to reports
   billingReportValue: number;
   //contractors are present in the sql view
@@ -43,9 +46,6 @@ export interface ClientBillingBase {
   // difference between billed amount and report amount
   remainingBalance: number;
   client: Client;
-}
-
-export interface ClientBilling extends ClientBillingBase {
   linkBillingReport: LinkBillingReport[];
 }
 

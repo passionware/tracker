@@ -10,8 +10,8 @@ import {
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
-import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
-import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
+import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { LinkCostReportBase } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -47,8 +47,9 @@ export interface ContractorReportBase {
 
 export type ContractorReport = ContractorReportBase & {
   contractor: Contractor;
-  linkBillingReport: LinkBillingReport[];
-  linkCostReport: LinkCostReport[];
+  linkBillingReport: LinkBillingReportBase[];
+  linkCostReport: LinkCostReportBase[];
+  // todo: add billingById, costById - relevant entities in a map
 };
 
 export type ContractorReportQuery = WithFilters<{

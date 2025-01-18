@@ -313,16 +313,16 @@ function calculateReportEntry(
   report: ContractorReport,
   workspaces: Workspace[],
 ): ContractorReportViewEntry {
-  const haveSameClient = report.linkBillingReport?.every(
-    (link) =>
-      link.linkType === "clarify" || link.billing?.clientId === report.clientId,
-  );
-  if (!haveSameClient) {
-    debugger;
-    throw new Error(
-      "Invalid report. All linked billing reports must have the same client.",
-    );
-  }
+  // const haveSameClient = report.linkBillingReport?.every(
+  //   (link) =>
+  //     link.linkType === "clarify" || link.billing?.clientId === report.clientId,
+  // );
+  // if (!haveSameClient) {
+  //   debugger;
+  //   throw new Error(
+  //     "Invalid report. All linked billing reports must have the same client.",
+  //   );
+  // }
 
   function getBillingStatus() {
     if (report.reportBillingBalance === 0) {

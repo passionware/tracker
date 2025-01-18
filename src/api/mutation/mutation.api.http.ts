@@ -12,18 +12,18 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     switch (payload.type) {
       case "clarify":
         return {
-          clarify_justification: payload.clarifyJustification,
+          description: payload.clarifyJustification,
           link_type: "clarify",
-          contractor_report_id:
+          report_id:
             "contractorReportId" in payload ? payload.contractorReportId : null,
-          client_billing_id:
+          billing_id:
             "clientBillingId" in payload ? payload.clientBillingId : null,
           reconcile_amount: payload.linkAmount,
         };
       case "reconcile":
         return {
-          client_billing_id: payload.clientBillingId,
-          contractor_report_id: payload.contractorReportId,
+          billing_id: payload.clientBillingId,
+          report_id: payload.contractorReportId,
           reconcile_amount: payload.linkAmount,
         };
     }
@@ -40,7 +40,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     linkCostAndReport: async (payload) => {
       const response = await client.from("link_cost_report").insert({
-        contractor_report_id: payload.reportId,
+        report_id: payload.reportId,
         report_amount: payload.reportAmount,
         cost_id: payload.type === "link" ? payload.costId : null,
         cost_amount: payload.type === "link" ? payload.costAmount : 0,

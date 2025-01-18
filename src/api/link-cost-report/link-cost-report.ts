@@ -12,7 +12,7 @@ export type LinkCostReportBase = {
   contractorReportId: Nullable<number>;
 };
 
-export interface LinkCostReport extends LinkCostReportBase {
+export interface LinkCostReport extends LinkCostReportBase { // todo lets not use this one, just add relevant costs/reports to view, level up
   cost: CostBase | null;
   report: ContractorReportBase | null;
 }
