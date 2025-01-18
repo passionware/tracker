@@ -11,6 +11,7 @@ import {
 import { ClientBillingBase } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { CostBase } from "@/api/cost/cost.api.ts";
 import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { LinkCostReportBase } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -42,7 +43,7 @@ export type ContractorReport = ContractorReportBase & {
     link: LinkBillingReportBase;
     billing: Nullable<ClientBillingBase>;
   }[];
-  linkCostReport: LinkCostReportBase[];
+  linkCostReport: { link: LinkCostReportBase; cost: CostBase }[];
   // todo: add billingById, costById - relevant entities in a map
   // Total billing value linked to the report
   reportBillingValue: number; // total_billing_billing_value

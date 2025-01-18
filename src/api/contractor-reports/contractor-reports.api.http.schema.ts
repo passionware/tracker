@@ -11,7 +11,10 @@ import {
   contractor$,
   contractorFromHttp,
 } from "@/api/contractor/contractor.api.http.schema.ts";
-import { costBase$ } from "@/api/cost/cost.api.http.schema.base.ts";
+import {
+  costBase$,
+  costBaseFromHttp,
+} from "@/api/cost/cost.api.http.schema.base.ts";
 import {
   linkBillingReportBase$,
   linkBillingReportBaseFromHttp,
@@ -32,8 +35,8 @@ export const contractorReport$ = contractorReportBase$.extend({
   ),
   link_cost_reports: z.array(
     z.object({
-      cost: costBase$,
       link: linkCostReportBase$,
+      cost: costBase$,
     }),
   ),
   contractor: contractor$,
@@ -55,9 +58,10 @@ export function contractorReportFromHttp(
       link: linkBillingReportBaseFromHttp(value.link),
       billing: maybe.mapOrNull(value.billing, clientBillingBaseFromHttp),
     })),
-    linkCostReport: contractorReport.link_cost_reports
-      .map((value) => ({ ...value.link, cost: value.cost }))
-      .map(linkCostReportBaseFromHttp),
+    linkCostReport: contractorReport.link_cost_reports.map((value) => ({
+      link: linkCostReportBaseFromHttp(value.link),
+      cost: costBaseFromHttp(value.cost),
+    })),
     contractor: contractorFromHttp(contractorReport.contractor),
     reportBillingValue: contractorReport.total_billing_billing_value,
     reportCostValue: contractorReport.total_cost_cost_value,

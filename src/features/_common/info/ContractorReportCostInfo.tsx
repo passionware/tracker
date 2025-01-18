@@ -170,8 +170,8 @@ export function ContractorReportCostInfo({
         {report.costLinks.map((link) => {
           function getContent() {
             if (
-              maybe.isPresent(link.reportId) &&
-              maybe.isAbsent(link.costId)
+              maybe.isPresent(link.link.reportId) &&
+              maybe.isPresent(link.link.costId)
             ) {
               return (
                 <>
@@ -179,7 +179,7 @@ export function ContractorReportCostInfo({
                   <div className="flex flex-col gap-2">
                     <div className="text-sm font-medium leading-none flex flex-row gap-2">
                       {services.formatService.financial.amount(
-                        link.costAmount,
+                        link.link.costAmount,
                         maybe.getOrThrow(
                           link.cost?.currency,
                           "todo fix types - discriminated union?",
@@ -188,9 +188,9 @@ export function ContractorReportCostInfo({
                       <div className="contents text-gray-500">
                         satisfies
                         {services.formatService.financial.amount(
-                          link.reportAmount,
+                          link.link.reportAmount,
                           maybe.getOrThrow(
-                            link.report?.currency,
+                            report.netAmount.currency,
                             "todo fix types - discriminated union?",
                           ),
                         )}
@@ -215,10 +215,10 @@ export function ContractorReportCostInfo({
                     <div className="text-xs text-slate-500">
                       Linking description
                     </div>
-                    <SimpleTooltip title={link.description}>
+                    <SimpleTooltip title={link.link.description}>
                       <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
                         {maybe.getOrElse(
-                          maybe.fromTruthy(link.description),
+                          maybe.fromTruthy(link.link.description),
                           <div className="text-slate-400">No description</div>,
                         )}
                       </div>
@@ -226,21 +226,18 @@ export function ContractorReportCostInfo({
                     <div className="text-xs text-slate-500">
                       Cost description
                     </div>
-                    {
-                      maybe.isPresent(link.costId) && (
-                        <div>Todo need to include cost here?</div>
-                      )
-                      // <SimpleTooltip title={link.cost.description}>
-                      //   <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
-                      //     {maybe.getOrElse(
-                      //       maybe.fromTruthy(link.cost.description),
-                      //       <div className="text-slate-400">
-                      //         No description
-                      //       </div>,
-                      //     )}
-                      //   </div>
-                      // </SimpleTooltip>
-                    }
+                    {link.cost && (
+                      <SimpleTooltip title={link.cost.description}>
+                        <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800 p-2 bg-slate-100 rounded">
+                          {maybe.getOrElse(
+                            maybe.fromTruthy(link.cost.description),
+                            <div className="text-slate-400">
+                              No description
+                            </div>,
+                          )}
+                        </div>
+                      </SimpleTooltip>
+                    )}
                   </div>
                 </>
               );
@@ -253,15 +250,12 @@ export function ContractorReportCostInfo({
                 <div className="flex flex-col gap-2">
                   <div className="text-sm font-medium leading-none flex flex-row gap-2">
                     {services.formatService.financial.amount(
-                      link.reportAmount,
-                      maybe.getOrThrow(
-                        link.report,
-                        "todo fix types - discriminated union?",
-                      ).currency,
+                      link.link.reportAmount,
+                      report.netAmount.currency,
                     )}
                     <div className="contents text-gray-500">is clarified</div>
                     <TruncatedMultilineText>
-                      {link.description}
+                      {link.link.description}
                     </TruncatedMultilineText>
                   </div>
                 </div>
@@ -272,14 +266,14 @@ export function ContractorReportCostInfo({
           return (
             <div
               className="flex items-center gap-2 bg-slate-50 p-1 border border-slate-200 rounded"
-              key={link.id}
+              key={link.link.id}
             >
               {getContent()}
               <DeleteButtonWidget
                 services={services}
                 onDelete={partial(
                   services.mutationService.deleteCostReportLink,
-                  link.id,
+                  link.link.id,
                 )}
               />
             </div>
