@@ -3,6 +3,7 @@ import {
   contractorFromHttp,
 } from "@/api/contractor/contractor.api.http.schema.ts";
 import { ContractorApi } from "@/api/contractor/contractor.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -18,7 +19,9 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       if (error) {
         throw error;
       }
-      return z.array(contractor$).parse(data).map(contractorFromHttp);
+      return parseWithDataError(z.array(contractor$), data).map(
+        contractorFromHttp,
+      );
     },
     getContractor: async (id) => {
       const { data, error } = await client
@@ -28,7 +31,7 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       if (error) {
         throw error;
       }
-      return contractorFromHttp(data[0]);
+      return contractorFromHttp(parseWithDataError(data[0], contractor$));
     },
   };
 }

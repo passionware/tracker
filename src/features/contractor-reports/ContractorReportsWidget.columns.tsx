@@ -94,8 +94,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         <Popover>
           <PopoverTrigger>
             <Badge
-              tone="secondary"
-              className="border border-slate-950/20"
+              tone="solid"
               variant={
                 (
                   {
@@ -136,7 +135,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         <Popover>
           <PopoverTrigger>
             <Badge
-              tone="outline"
+              tone="secondary"
               variant={
                 (
                   {

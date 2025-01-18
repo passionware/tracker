@@ -349,11 +349,11 @@ function calculateReportEntry(
   function getInstantEarningsStatus() {
     // compensation amount: reportCostValue
     // to pay: billingCostBalance
-    if (report.reportCostValue === report.billingCostBalance) {
+    if (report.reportBillingValue === report.immediatePaymentDue) {
       // reported costs
       return "uncompensated";
     }
-    if (report.billingCostBalance > 0) {
+    if (report.immediatePaymentDue > 0) {
       return "partially-compensated";
     }
     return "compensated";
@@ -365,7 +365,7 @@ function calculateReportEntry(
     }
 
     if (
-      report.reportCostBalance >
+      report.reportCostBalance >=
       report.netValue - report.reportBillingValue
     ) {
       return "uncompensated";
@@ -407,7 +407,7 @@ function calculateReportEntry(
       currency: report.currency,
     },
     remainingCompensationAmount: {
-      amount: Math.max(0, report.billingCostBalance),
+      amount: Math.max(0, report.immediatePaymentDue),
       currency: report.currency,
     },
     remainingFullCompensationAmount: {

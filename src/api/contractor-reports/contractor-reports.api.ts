@@ -55,6 +55,8 @@ export type ContractorReport = ContractorReportBase & {
   reportCostBalance: number; // report_cost_balance
   // Difference between billing and cost values (positive = profit, negative = loss)
   billingCostBalance: number; // billing_cost_balance
+  // Whether the report has immediate payment due (it is billingCostBalance but clamped to the reported value, if reported value is less than billed value)
+  immediatePaymentDue: number; // immediate_payment_due
 };
 
 export type ContractorReportQuery = WithFilters<{

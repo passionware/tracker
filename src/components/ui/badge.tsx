@@ -101,19 +101,19 @@ const badgeVariants = cva(
         tone: "secondary",
         variant: "positive",
         class:
-          "border-transparent bg-green-100 text-green-700 hover:bg-green-100/80 dark:bg-green-800 dark:text-green-300 dark:hover:bg-green-800/80",
+          "border-slate-950/20 bg-green-100 text-green-700 hover:bg-green-100/80 dark:bg-green-800 dark:text-green-300 dark:hover:bg-green-800/80",
       },
       {
         tone: "secondary",
         variant: "destructive",
         class:
-          "border-transparent bg-red-100 text-red-700 hover:bg-red-100/80 dark:bg-red-800 dark:text-red-300 dark:hover:bg-red-800/80",
+          "border-slate-950/20 bg-red-100 text-red-700 hover:bg-red-100/80 dark:bg-red-800 dark:text-red-300 dark:hover:bg-red-800/80",
       },
       {
         tone: "secondary",
         variant: "warning",
         class:
-          "border-transparent bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 dark:bg-yellow-800 dark:text-yellow-300 dark:hover:bg-yellow-800/80",
+          "border-slate-950/20 bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 dark:bg-yellow-800 dark:text-yellow-300 dark:hover:bg-yellow-800/80",
       },
     ],
     defaultVariants: {

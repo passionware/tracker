@@ -146,24 +146,24 @@ export function ContractorReportInfo({
       <div className="space-y-8">
         {report.billingLinks.map((link) => (
           <div className="flex items-center gap-2" key={link.link.id}>
-            <Badge
-              variant={
-                (
-                  {
-                    reconcile: "positive",
-                    clarify: "warning",
-                  } as const
-                )[link.link.linkType]
-              }
-              className=""
-            >
-              {
-                {
-                  reconcile: "Client billing",
-                  clarify: "Clarification",
-                }[link.link.linkType]
-              }
-            </Badge>
+            {link.link.linkType === "clarify" && (
+              <Badge variant="warning" size="sm">
+                Clarification
+              </Badge>
+            )}
+            {link.link.linkType === "reconcile" &&
+              link.billing &&
+              link.billing.currency === report.netAmount.currency &&
+              (link.link.reportAmount < link.link.billingAmount ? (
+                <Badge variant="warning" size="sm">
+                  Overbilling
+                </Badge>
+              ) : link.link.reportAmount > link.link.billingAmount ? (
+                <Badge variant="destructive">Underbilling</Badge>
+              ) : (
+                <Badge variant="positive">Billing</Badge>
+              ))}
+
             <div className="text-sm font-medium leading-none flex flex-row gap-2">
               {services.formatService.financial.amount(
                 linkBillingReportUtils.getLinkValue("report", link.link),
