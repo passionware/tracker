@@ -74,6 +74,7 @@ export function useColumns(props: BillingWidgetProps) {
                     unmatched: "destructive",
                     "partially-matched": "warning",
                     clarified: "secondary",
+                    overmatched: "accent1",
                   } as const
                 )[info.getValue()]
               }
@@ -85,6 +86,7 @@ export function useColumns(props: BillingWidgetProps) {
                     unmatched: "Unmatched",
                     "partially-matched": "Partially Matched",
                     clarified: "Clarified",
+                    overmatched: "Overmatched",
                   } as const
                 )[info.getValue()]
               }

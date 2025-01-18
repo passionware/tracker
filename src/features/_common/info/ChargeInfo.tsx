@@ -54,7 +54,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         fromAmount={billing.remainingAmount}
         toAmount={billing.matchedAmount}
       />
-      {billing.remainingAmount.amount > 0 && (
+      {billing.remainingAmount.amount !== 0 && (
         <div className="flex gap-2 flex-row self-end">
           <Popover>
             <PopoverTrigger asChild>

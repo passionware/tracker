@@ -111,6 +111,7 @@ export function useColumns(props: PotentialCostsWidgetProps) {
                     matched: "positive",
                     unmatched: "destructive",
                     "partially-matched": "warning",
+                    overmatched: "warning",
                   } as const
                 )[info.getValue()]
               }

@@ -2,6 +2,7 @@ import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import CircleProgress from "@/components/ui/circle-progress.tsx";
 import {
   Popover,
   PopoverContent,
@@ -54,6 +55,8 @@ export function ContractorReportInfo({
         fromAmount={report.remainingAmount}
         toAmount={report.reconciledAmount}
         services={services}
+        fromLabel="Unlinked to billing"
+        toLabel="Linked to billing"
       />
 
       {report.remainingAmount.amount > 0 && (
@@ -171,6 +174,14 @@ export function ContractorReportInfo({
                 ),
                 report.netAmount.currency,
               )}
+              /{services.formatService.financial.currency(report.netAmount)}
+              <CircleProgress
+                className="w-6 h-6"
+                value={
+                  ((link.link.reportAmount ?? 0) / report.netAmount.amount) *
+                  100
+                }
+              />
               {link.billing && (
                 <div className="contents text-gray-500">
                   of work billed as

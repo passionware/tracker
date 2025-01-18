@@ -18,6 +18,7 @@ const badgeVariants = cva(
         positive: "",
         destructive: "",
         warning: "",
+        accent1: "", // violet-red gradient tl-br
       },
       size: {
         md: "px-2.5 py-0.5 text-xs font-semibold",
@@ -56,6 +57,12 @@ const badgeVariants = cva(
           "border-yellow-700 bg-yellow-600 text-white/95 hover:bg-yellow-500/80 dark:bg-yellow-900 dark:text-slate-50 dark:hover:bg-yellow-900/80",
       },
       {
+        tone: "solid",
+        variant: "accent1",
+        class:
+          "border-violet-700 bg-gradient-to-br from-violet-500 to-red-500 text-white/95 hover:bg-gradient-to-br hover:from-violet-400 hover:to-red-400 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
+      },
+      {
         tone: "outline",
         variant: "primary",
         class:
@@ -86,6 +93,12 @@ const badgeVariants = cva(
           "border-yellow-800 bg-white text-yellow-800 dark:border-yellow-400 dark:bg-slate-900 dark:text-yellow-400",
       },
       {
+        tone: "outline",
+        variant: "accent1",
+        class:
+          "border-violet-800 bg-white text-violet-800 dark:border-violet-400 dark:bg-slate-900 dark:text-violet-400",
+      },
+      {
         tone: "secondary",
         variant: "primary",
         class:
@@ -114,6 +127,12 @@ const badgeVariants = cva(
         variant: "warning",
         class:
           "border-slate-950/20 bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 dark:bg-yellow-800 dark:text-yellow-300 dark:hover:bg-yellow-800/80",
+      },
+      {
+        tone: "secondary",
+        variant: "accent1",
+        class:
+          "border-slate-950/20 bg-gradient-to-br from-violet-100 to-red-100 text-white/95 hover:bg-gradient-to-br hover:from-violet-100 hover:to-red-100 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
       },
     ],
     defaultVariants: {

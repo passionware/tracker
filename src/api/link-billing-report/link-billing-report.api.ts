@@ -3,7 +3,6 @@ import {
   ClientBillingBase,
 } from "@/api/client-billing/client-billing.api.ts";
 import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
-import { assert } from "@/platform/lang/assert.ts";
 
 export type LinkBillingReportBase = {
   id: number;

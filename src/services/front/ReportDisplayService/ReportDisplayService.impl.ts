@@ -442,6 +442,9 @@ function calculateBilling(
     } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
       return "partially-matched";
     } else {
+      if (remainingAmount < 0) {
+        return "overmatched";
+      }
       return "unmatched";
     }
   }

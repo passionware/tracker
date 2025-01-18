@@ -85,7 +85,12 @@ export interface ClientBillingViewEntry {
    * If unmatched, this means we still did not link all reports to this billing and as such we can't say it is a reliable source of information.
    * If clarified, this means we have some clarifications on this billing, so not everything is linked to reports, but there is a remainder value that has a reason and we no longer look for more reports to link.
    */
-  status: "matched" | "unmatched" | "partially-matched" | "clarified";
+  status:
+    | "matched"
+    | "unmatched"
+    | "partially-matched"
+    | "clarified"
+    | "overmatched";
   workspace: Workspace;
 }
 
@@ -107,8 +112,10 @@ export type CostEntry = {
    * matched: we have linked all constractor reports to this cost
    * unmatched: we have not linked any contractor reports to this cost
    * partially-matched: we have linked some contractor reports to this cost
+   * overmatched: billing value is less than the sum of report link's billing values
+   * This can happen when we put too much reports to one cost
    */
-  status: "matched" | "unmatched" | "partially-matched"; //| "clarified";
+  status: "matched" | "unmatched" | "partially-matched" | "overmatched";
   matchedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
 };
