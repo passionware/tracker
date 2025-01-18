@@ -44,11 +44,8 @@ export interface ContractorReportViewEntry {
   remainingAmount: CurrencyValue;
   billingLinks: ContractorReport["linkBillingReport"];
   costLinks: ContractorReport["linkCostReport"];
-  compensationStatus: "compensated" | "partially-compensated" | "uncompensated";
-  fullCompensationStatus:
-    | "compensated"
-    | "partially-compensated"
-    | "uncompensated";
+  instantEarnings: "compensated" | "partially-compensated" | "uncompensated";
+  deferredEarnings: "compensated" | "partially-compensated" | "uncompensated";
   compensatedAmount: CurrencyValue;
   // how much to compensate against money actually charged
   remainingCompensationAmount: CurrencyValue;

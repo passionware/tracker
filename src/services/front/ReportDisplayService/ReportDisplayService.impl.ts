@@ -344,8 +344,8 @@ function calculateReportEntry(
   }
   ////
 
-  function getCompensationStatus() {
-    if (report.reportCostBalance === 0) {
+  function getInstantEarningsStatus() {
+    if (report.reportCostBalance <= 0) {
       return "compensated";
     } else if (report.reportCostValue === 0) {
       return "uncompensated";
@@ -353,7 +353,7 @@ function calculateReportEntry(
     return "partially-compensated";
   }
 
-  function getFullCompensationStatus() {
+  function getDeferredEarningStatus() {
     if (report.billingCostBalance <= 0) {
       return "compensated";
     } else if (report.billingCostBalance > 0 && report.reportCostValue > 0) {
@@ -376,8 +376,8 @@ function calculateReportEntry(
     description: report.description,
     // statuses
     status: getBillingStatus(),
-    compensationStatus: getCompensationStatus(),
-    fullCompensationStatus: getFullCompensationStatus(),
+    instantEarnings: getInstantEarningsStatus(),
+    deferredEarnings: getDeferredEarningStatus(),
     //
     reconciledAmount: {
       amount: report.reportBillingValue,

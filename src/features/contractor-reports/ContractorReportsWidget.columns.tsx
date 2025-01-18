@@ -85,50 +85,51 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         </Popover>
       ),
     }),
-    columnHelper.accessor("compensationStatus", {
-      header: "Compensation",
+    columnHelper.accessor("instantEarnings", {
+      header: "Instant earn",
       meta: {
         tooltip: headers.compensationStatus,
       },
       cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <Badge
-              tone="secondary"
-              className="border border-slate-950/20"
-              variant={
-                (
-                  {
-                    compensated: "positive",
-                    "partially-compensated": "warning",
-                    uncompensated: "destructive",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                (
-                  {
-                    compensated: "Paid",
-                    "partially-compensated": "Partially",
-                    uncompensated: "Unpaid",
-                  } as const
-                )[info.getValue()]
-              }
-            </Badge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Compensation details</PopoverHeader>
-            <ContractorReportCostInfo
-              report={info.row.original}
-              services={props.services}
-            />
-          </PopoverContent>
-        </Popover>
+          <Popover>
+            <PopoverTrigger>
+              <Badge
+                  tone="secondary"
+                  className="border border-slate-950/20"
+
+                  variant={
+                    (
+                        {
+                          compensated: "positive",
+                          "partially-compensated": "warning",
+                          uncompensated: "destructive",
+                        } as const
+                    )[info.getValue()]
+                  }
+              >
+                {
+                  (
+                      {
+                        compensated: "Matching",
+                        "partially-compensated": "Partially",
+                        uncompensated: "Unmatched",
+                      } as const
+                  )[info.getValue()]
+                }
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent className="w-fit">
+              <PopoverHeader>Compensation details</PopoverHeader>
+              <ContractorReportCostInfo
+                  report={info.row.original}
+                  services={props.services}
+              />
+            </PopoverContent>
+          </Popover>
       ),
     }),
-    columnHelper.accessor("fullCompensationStatus", {
-      header: "Full Comp.",
+    columnHelper.accessor("deferredEarnings", {
+      header: "Deferred earn",
       meta: {
         tooltip: headers.fullCompensationStatus,
       },
@@ -150,7 +151,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
               {
                 (
                   {
-                    compensated: "Compensated",
+                    compensated: "Paid",
                     "partially-compensated": "Partially",
                     uncompensated: "Unpaid",
                   } as const
