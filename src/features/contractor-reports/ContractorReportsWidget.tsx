@@ -137,10 +137,23 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
             or clarifications.
             {rd.tryMap(reports, (view) => {
               const billingDetails = [
-                { label: "Reported", value: view.total.netAmount },
-                { label: "Charged", value: view.total.chargedAmount },
+                {
+                  label: "Reported",
+                  description: "Total value of reported work",
+                  value: view.total.netAmount,
+                },
+                {
+                  label: "Billed",
+                  description: "How much billed value is linked to reports",
+                  value: view.total.chargedAmount,
+                },
                 { label: "Reconciled", value: view.total.reconciledAmount },
-                { label: "To charge", value: view.total.toChargeAmount },
+                {
+                  label: "To link",
+                  description:
+                    "Report amount that is not yet linked to any billing",
+                  value: view.total.toChargeAmount,
+                },
                 { label: "To pay", value: view.total.toCompensateAmount },
                 { label: "Paid", value: view.total.compensatedAmount },
                 {
@@ -159,6 +172,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                       <SummaryCurrencyGroup
                         key={item.label}
                         label={item.label}
+                        description={item.description}
                         group={item.value}
                         services={props.services}
                       />
