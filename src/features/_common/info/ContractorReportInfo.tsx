@@ -164,13 +164,15 @@ export function ContractorReportInfo({
               }
             </Badge>
             <div className="text-sm font-medium leading-none flex flex-row gap-2">
-              {services.formatService.financial.currency(
+              {services.formatService.financial.amount(
                 linkBillingReportUtils.getLinkValue("report", link),
+                report.netAmount.currency,
               )}
               <div className="contents text-gray-500">
                 of
-                {services.formatService.financial.currency(
+                {services.formatService.financial.amount(
                   linkBillingReportUtils.getLinkValue("billing", link),
+                  "TODO GET BILLING CURRENCY",
                 )}
               </div>
             </div>
@@ -178,12 +180,14 @@ export function ContractorReportInfo({
               {link.linkType === "reconcile" && (
                 <>
                   <div className="text-gray-600 text-xs mr-1.5">
-                    {link.billing.invoiceNumber}
+                      TODO CLIENT LINK
+                    {/*{link.billing.invoiceNumber}*/}
                   </div>
                   <Badge variant="secondary" size="sm">
-                    {services.formatService.temporal.date(
-                      link.billing.invoiceDate,
-                    )}
+                      TODO CLIENT LINK
+                    {/*{services.formatService.temporal.date(*/}
+                    {/*  link.billing.invoiceDate,*/}
+                    {/*)}*/}
                   </Badge>
                 </>
               )}

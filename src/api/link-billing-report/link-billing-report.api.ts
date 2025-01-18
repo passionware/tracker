@@ -56,30 +56,19 @@ export type LinkBillingReport =
     });
 
 export const linkBillingReportUtils = {
-  getLinkValue(
-    side: "report" | "billing",
-    link: LinkBillingReport,
-  ): CurrencyValue {
+  getLinkValue(side: "report" | "billing", link: LinkBillingReportBase) {
     if (link.linkType === "reconcile") {
-      return side === "report"
-        ? {
-            amount: link.reportAmount,
-            currency: link.report.currency,
-          }
-        : {
-            amount: link.billingAmount,
-            currency: link.billing.currency,
-          };
+      return side === "report" ? link.reportAmount : link.billingAmount;
     } else {
       assert(link.linkType === "clarify");
       if (side === "report") {
         // when asking for report links, we do not expect clarifications of billing
         assert(link.reportId !== null);
-        return { amount: link.reportAmount, currency: link.report.currency };
+        return link.reportAmount;
       } else {
         // when asking for billing links, we do not expect clarifications of report
         assert(link.billingId !== null);
-        return { amount: link.billingAmount, currency: link.billing.currency };
+        return link.billingAmount;
       }
     }
   },
