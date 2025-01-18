@@ -345,7 +345,7 @@ function calculateReportEntry(
   ////
 
   function getInstantEarningsStatus() {
-    if (report.reportCostBalance <= 0) {
+    if (report.reportCostBalance === 0 && report.billingCostBalance <= 0) {
       return "compensated";
     } else if (report.reportCostValue === 0) {
       return "uncompensated";
