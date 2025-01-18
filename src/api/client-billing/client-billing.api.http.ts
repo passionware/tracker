@@ -24,15 +24,15 @@ export function createClientBillingApi(
               );
               if (contractorIds.length > 0) {
                 request = request.or(
-                  `linked_contractors.cs.{${contractorIds.join(",")}},linked_contractors.eq.{}`,
+                  `linked_contractor_ids.cs.{${contractorIds.join(",")}},linked_contractor_ids.eq.{}`,
                 );
               } else {
                 // Jeśli jedyny element to `null`, filtruj tylko puste tablice
-                request = request.eq("linked_contractors", "{}");
+                request = request.eq("linked_contractor_ids", "{}");
               }
             } else {
               request = request.contains(
-                "linked_contractors",
+                "linked_contractor_ids",
                 query.filters.contractorId.value,
               );
             }

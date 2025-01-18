@@ -22,6 +22,7 @@ export type LinkBillingReportBase = {
       description: string;
       reportId: number;
       reportAmount: number;
+      billingAmount: null;
       billingId: null;
     }
   | {
@@ -30,6 +31,7 @@ export type LinkBillingReportBase = {
       billingId: number;
       // references to the linked entities
       billingAmount: number;
+      reportAmount: null;
       reportId: null;
     }
 );
@@ -53,22 +55,3 @@ export type LinkBillingReport =
       billing: null;
       report: ContractorReportBase;
     });
-
-export const linkBillingReportUtils = {
-  getLinkValue(side: "report" | "billing", link: LinkBillingReportBase) {
-    if (link.linkType === "reconcile") {
-      return side === "report" ? link.reportAmount : link.billingAmount;
-    } else {
-      assert(link.linkType === "clarify");
-      if (side === "report") {
-        // when asking for report links, we do not expect clarifications of billing
-        assert(link.reportId !== null);
-        return link.reportAmount;
-      } else {
-        // when asking for billing links, we do not expect clarifications of report
-        assert(link.billingId !== null);
-        return link.billingAmount;
-      }
-    }
-  },
-};

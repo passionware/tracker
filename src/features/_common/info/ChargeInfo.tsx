@@ -1,5 +1,4 @@
 import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
-import { linkBillingReportUtils } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -25,7 +24,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Slot } from "@radix-ui/react-slot";
 import { chain, partial } from "lodash";
@@ -148,10 +147,11 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
       <Separator className="my-2" />
       <div className="space-y-8">
         {billing.links.map((link) => {
-          switch (link.linkType) {
+          const actualLink = link.link;
+          switch (actualLink.linkType) {
             case "reconcile":
               return (
-                <div className="flex items-stretch gap-2" key={link.id}>
+                <div className="flex items-stretch gap-2" key={actualLink.id}>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-row justify-between items-center gap-2">
                       <Badge variant="positive">Report</Badge>
@@ -166,13 +166,15 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       </Badge>
                     </div>
                     <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
-                      {services.formatService.financial.currency(
-                        linkBillingReportUtils.getLinkValue("billing", link),
+                      {services.formatService.financial.amount(
+                        actualLink.billingAmount,
+                        billing.netAmount.currency,
                       )}
                       <div className="text-gray-500">of</div>
                       <Slot className="text-gray-500">
-                        {services.formatService.financial.currency(
-                          linkBillingReportUtils.getLinkValue("report", link),
+                        {services.formatService.financial.amount(
+                          actualLink.reportAmount,
+                          link.report.currency,
                         )}
                       </Slot>
                     </div>
@@ -193,30 +195,34 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                     services={services}
                     onDelete={partial(
                       services.mutationService.deleteBillingReportLink,
-                      link.id,
+                      actualLink.id,
                     )}
                   />
                 </div>
               );
             case "clarify":
               return (
-                <div className="flex items-center gap-2" key={link.id}>
+                <div className="flex items-center gap-2" key={actualLink.id}>
                   <div className="flex flex-row justify-between items-center gap-2">
                     <Badge variant="warning">Clarification</Badge>
                   </div>
                   <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
-                    {services.formatService.financial.currency(
-                      linkBillingReportUtils.getLinkValue("billing", link),
+                    {services.formatService.financial.amount(
+                      maybe.getOrThrow(
+                        actualLink.reportAmount,
+                        "Amount is missing",
+                      ),
+                      billing.netAmount.currency,
                     )}
                   </div>
                   <div className="self-stretch text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                    {link.description}
+                    {actualLink.description}
                   </div>
                   <DeleteButtonWidget
                     services={services}
                     onDelete={partial(
                       services.mutationService.deleteBillingReportLink,
-                      link.id,
+                      actualLink.id,
                     )}
                   />
                 </div>

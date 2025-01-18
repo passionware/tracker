@@ -433,7 +433,7 @@ function calculateBilling(
   function getStatus() {
     if (remainingAmount === 0) {
       const hasAtLeastOneClarification = billing.linkBillingReport?.some(
-        (link) => link.linkType === "clarify",
+        (link) => link.link.linkType === "clarify",
       );
       if (hasAtLeastOneClarification) {
         return "clarified";

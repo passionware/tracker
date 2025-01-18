@@ -9,6 +9,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
+import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
@@ -46,7 +47,10 @@ export interface ClientBilling extends ClientBillingBase {
   // difference between billed amount and report amount
   remainingBalance: number;
   client: Client;
-  linkBillingReport: LinkBillingReportBase[];
+  linkBillingReport: {
+    link: LinkBillingReportBase;
+    report: ContractorReportBase;
+  }[];
   contractors: Contractor[];
 }
 

@@ -61,7 +61,7 @@ function useData(
               url: routing.reports(),
             },
             {
-              title: "Charges",
+              title: "Client Charges",
               url: routing.charges(),
             },
             {

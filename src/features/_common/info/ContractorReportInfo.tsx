@@ -1,5 +1,4 @@
 import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
-import { linkBillingReportUtils } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -25,7 +24,7 @@ import {
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
@@ -166,14 +165,20 @@ export function ContractorReportInfo({
 
             <div className="text-sm font-medium leading-none flex flex-row gap-2">
               {services.formatService.financial.amount(
-                linkBillingReportUtils.getLinkValue("report", link.link),
+                maybe.getOrThrow(
+                  link.link.reportAmount,
+                  "reportAmount is missing",
+                ),
                 report.netAmount.currency,
               )}
               {link.billing && (
                 <div className="contents text-gray-500">
                   of work billed as
                   {services.formatService.financial.amount(
-                    linkBillingReportUtils.getLinkValue("billing", link.link),
+                    maybe.getOrThrow(
+                      link.link.billingAmount,
+                      "billingAmount is missing",
+                    ),
                     link.billing.currency,
                   )}
                   to

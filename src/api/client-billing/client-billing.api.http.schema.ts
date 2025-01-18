@@ -5,7 +5,10 @@ import {
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
-import { contractorReportBase$ } from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
+import {
+  contractorReportBase$,
+  contractorReportBaseFromHttp,
+} from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
 import {
   contractor$,
   contractorFromHttp,
@@ -14,7 +17,6 @@ import {
   linkBillingReportBase$,
   linkBillingReportBaseFromHttp,
 } from "@/api/link-billing-report/link-billing-report.http.schema.base.ts";
-import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
 export const clientBilling$ = clientBillingBase$.extend({
@@ -51,10 +53,9 @@ export function clientBillingFromHttp(
     contractors: clientBilling.contractors.map((c) =>
       contractorFromHttp(c.contractor),
     ),
-    linkBillingReport: maybe.mapOrElse(
-      clientBilling.link_billing_reports,
-      (x) => x.map((x) => linkBillingReportBaseFromHttp({ ...x.link })),
-      [],
-    ),
+    linkBillingReport: clientBilling.link_billing_reports.map((x) => ({
+      link: linkBillingReportBaseFromHttp({ ...x.link }),
+      report: contractorReportBaseFromHttp({ ...x.report }),
+    })),
   };
 }
