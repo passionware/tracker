@@ -94,7 +94,7 @@ export function ContractorReportInfo({
                 query={clientBillingQueryUtils.setFilter(
                   clientBillingQueryUtils.ofDefault(
                     report.workspace.id, // we want to search for client billing in the same workspace as the report
-                    report.clientId, // we want to search for client billing for the same client as the report
+                    report.client.id, // we want to search for client billing for the same client as the report
                   ),
                   "remainingAmount",
                   { operator: "greaterThan", value: 0 },

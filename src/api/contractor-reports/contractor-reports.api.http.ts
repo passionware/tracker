@@ -16,7 +16,7 @@ export function createContractorReportsApi(
     getContractorReports: async (query) => {
       let request = client
         .from("report_with_details")
-        .select("*, contractor (*)");
+        .select("*, contractor (*), client (*)");
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {
           case "oneOf":
@@ -88,17 +88,8 @@ export function createContractorReportsApi(
         contractorReportFromHttp,
       );
     },
-    getContractorReport: async (id) => {
-      const { data, error } = await client
-        .from("client")
-        .select("*")
-        .eq("id", id);
-      if (error) {
-        throw error;
-      }
-      return contractorReportFromHttp(
-        parseWithDataError(z.array(contractorReport$), data)[0],
-      );
+    getContractorReport: async () => {
+      throw new Error("Not implemented");
     },
   };
 }

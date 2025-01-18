@@ -55,7 +55,7 @@ export interface ContractorReportViewEntry {
 
   contractor: Contractor;
   workspace: Workspace;
-  clientId: number;
+  client: Client;
 }
 
 export interface ClientBillingView {

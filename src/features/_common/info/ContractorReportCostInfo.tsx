@@ -101,7 +101,7 @@ export function ContractorReportCostInfo({
                 query={chain(
                   costQueryUtils.ofDefault(
                     report.workspace.id,
-                    report.clientId,
+                    report.client.id,
                   ),
                 )
                   .thru((x) =>

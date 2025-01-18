@@ -13,7 +13,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ClientView } from "@/features/_common/ClientView.tsx";
 import { ContractorReportCostInfo } from "@/features/_common/info/ContractorReportCostInfo.tsx";
 import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
@@ -41,15 +41,10 @@ export function useColumns(props: ContractorReportsWidgetProps) {
       ),
     }),
     columnHelper.accessor("contractor.fullName", { header: "Contractor" }),
-    columnHelper.accessor("clientId", {
+    columnHelper.accessor("client", {
       header: "Client",
       cell: (info) => (
-        <ClientWidget
-          layout="avatar"
-          size="xs"
-          clientId={info.getValue()}
-          services={props.services}
-        />
+        <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
       ),
     }),
     columnHelper.accessor("status", {

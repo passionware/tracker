@@ -2,6 +2,8 @@ import {
   clientBillingBase$,
   clientBillingBaseFromHttp,
 } from "@/api/client-billing/client-billing.api.http.schema.base.ts";
+import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
+import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import {
   contractorReportBase$,
   contractorReportBaseFromHttp,
@@ -40,6 +42,7 @@ export const contractorReport$ = contractorReportBase$.extend({
     }),
   ),
   contractor: contractor$,
+  client: client$,
   total_billing_billing_value: z.number(),
   total_cost_cost_value: z.number(),
   report_billing_balance: z.number(),
@@ -64,6 +67,7 @@ export function contractorReportFromHttp(
       cost: costBaseFromHttp(value.cost),
     })),
     contractor: contractorFromHttp(contractorReport.contractor),
+    client: clientFromHttp(contractorReport.client),
     reportBillingValue: contractorReport.total_billing_billing_value,
     reportCostValue: contractorReport.total_cost_cost_value,
     reportCostBalance: contractorReport.report_cost_balance,

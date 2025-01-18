@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ClientView } from "@/features/_common/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -86,11 +86,10 @@ export function InlineContractorReportSearch(
                       <div className="flex items-center gap-2">
                         {report.contractor.fullName}
                         <ChevronRight className="size-3" />
-                        <ClientWidget
+                        <ClientView
                           layout="avatar"
                           size="xs"
-                          clientId={report.clientId}
-                          services={props.services}
+                          client={rd.of(report.client)}
                         />
                       </div>
                     </TableCell>

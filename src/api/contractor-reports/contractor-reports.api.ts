@@ -39,6 +39,7 @@ export interface ContractorReportBase {
 
 export type ContractorReport = ContractorReportBase & {
   contractor: Contractor;
+  client: Client;
   linkBillingReport: {
     link: LinkBillingReportBase;
     billing: Nullable<ClientBillingBase>;

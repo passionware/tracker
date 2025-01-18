@@ -375,7 +375,7 @@ function calculateReportEntry(
 
   return {
     id: report.id,
-    clientId: report.clientId,
+    client: report.client,
     contractor: maybe.getOrThrow(report.contractor, "Contractor is missing"),
     netAmount: {
       amount: report.netValue,
