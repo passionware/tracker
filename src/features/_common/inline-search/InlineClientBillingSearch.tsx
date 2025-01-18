@@ -101,8 +101,13 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <LinkPopover
-                        sourceCurrency={billing.remainingAmount.currency}
-                        targetCurrency={props.maxAmount.currency}
+                        sourceCurrency={props.maxAmount.currency}
+                        targetCurrency={billing.remainingAmount.currency}
+                        initialValues={{
+                          source: props.maxAmount.amount,
+                          target: billing.remainingAmount.amount,
+                          description: "",
+                        }}
                         services={props.services}
                         onValueChange={(value) =>
                           props.onSelect({

@@ -19,6 +19,7 @@ const badgeVariants = cva(
         destructive: "",
         warning: "",
         accent1: "", // violet-red gradient tl-br
+        accent2: "", // orange-blue tl-br
       },
       size: {
         md: "px-2.5 py-0.5 text-xs font-semibold",
@@ -63,6 +64,12 @@ const badgeVariants = cva(
           "border-violet-700 bg-gradient-to-br from-violet-500 to-red-500 text-white/95 hover:bg-gradient-to-br hover:from-violet-400 hover:to-red-400 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
       },
       {
+        tone: "solid",
+        variant: "accent2",
+        class:
+          "border-orange-700 bg-gradient-to-br from-orange-500 to-blue-500 text-white/95 hover:bg-gradient-to-br hover:from-orange-400 hover:to-blue-400 dark:bg-gradient-to-br dark:from-orange-900 dark:to-blue-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-orange-800 dark:hover:to-blue-800",
+      },
+      {
         tone: "outline",
         variant: "primary",
         class:
@@ -99,6 +106,12 @@ const badgeVariants = cva(
           "border-violet-800 bg-white text-violet-800 dark:border-violet-400 dark:bg-slate-900 dark:text-violet-400",
       },
       {
+        tone: "outline",
+        variant: "accent2",
+        class:
+          "border-orange-800 bg-white text-orange-800 dark:border-orange-400 dark:bg-slate-900 dark:text-orange-400",
+      },
+      {
         tone: "secondary",
         variant: "primary",
         class:
@@ -133,6 +146,12 @@ const badgeVariants = cva(
         variant: "accent1",
         class:
           "border-slate-950/20 bg-gradient-to-br from-violet-100 to-red-100 text-white/95 hover:bg-gradient-to-br hover:from-violet-100 hover:to-red-100 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
+      },
+      {
+        tone: "secondary",
+        variant: "accent2",
+        class:
+          "border-slate-950/20 bg-gradient-to-br from-orange-300 to-rose-300 text-white hover:bg-gradient-to-br hover:from-orange-300 hover:to-rose-200 dark:bg-gradient-to-br dark:from-orange-900 dark:to-rose-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-orange-800 dark:hover:to-rose-800",
       },
     ],
     defaultVariants: {

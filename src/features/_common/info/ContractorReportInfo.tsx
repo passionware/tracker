@@ -168,7 +168,7 @@ export function ContractorReportInfo({
                 <Badge variant="positive">Billing</Badge>
               ))}
 
-            <div className="text-sm font-medium leading-none flex flex-row gap-2">
+            <div className="text-sm font-medium leading-none flex flex-row gap-2 items-center">
               {services.formatService.financial.amount(
                 maybe.getOrThrow(
                   link.link.reportAmount,
@@ -178,7 +178,7 @@ export function ContractorReportInfo({
               )}
               /{services.formatService.financial.currency(report.netAmount)}
               <CircleProgress
-                className="w-6 h-6"
+                className="w-6 h-6 border rounded-full"
                 value={
                   ((link.link.reportAmount ?? 0) / report.netAmount.amount) *
                   100

@@ -182,7 +182,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
                   {
                     compensated: "positive",
                     "partially-compensated": "warning",
-                    uncompensated: "destructive",
+                    uncompensated: "accent2",
                   } as const
                 )[info.getValue()]
               }
