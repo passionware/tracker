@@ -1,13 +1,18 @@
 import {
   CreateClientBillingPayload,
+  CreateContractorReportPayload,
   CreateCostPayload,
   LinkReportBillingPayload,
   MutationApi,
 } from "@/api/mutation/mutation.api.ts";
+import { maybe } from "@passionware/monads";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { format } from "date-fns";
 import { pickBy } from "lodash";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
+  const formatDateForSupabase = (date) => format(new Date(date), "yyyy-MM-dd");
+
   function getInsertPayload(payload: LinkReportBillingPayload) {
     switch (payload.type) {
       case "clarify":
@@ -204,6 +209,37 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           ),
         )
         .eq("id", billingId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    editReport: async (reportId, payload) => {
+      const takeIfPresent = (key: keyof CreateContractorReportPayload) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("report")
+        .update(
+          pickBy(
+            {
+              contractor_id: takeIfPresent("contractorId"),
+              description: takeIfPresent("description"),
+              net_value: takeIfPresent("netValue"),
+              period_start: maybe.map(
+                takeIfPresent("periodStart"),
+                formatDateForSupabase,
+              ),
+              period_end: maybe.map(
+                takeIfPresent("periodEnd"),
+                formatDateForSupabase,
+              ),
+              currency: takeIfPresent("currency"),
+              client_id: takeIfPresent("clientId"),
+              workspace_id: takeIfPresent("workspaceId"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", reportId);
       if (response.error) {
         throw response.error;
       }

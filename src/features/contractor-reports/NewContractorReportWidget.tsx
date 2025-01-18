@@ -1,4 +1,3 @@
-import { Client } from "@/api/clients/clients.api.ts";
 import { CreateContractorReportPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
@@ -17,12 +16,15 @@ import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx"
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
+import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
+import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 export interface NewContractorReportWidgetProps
@@ -34,14 +36,8 @@ export interface NewContractorReportWidgetProps
       WithWorkspaceService,
     ]
   > {
-  // initialLink: LinkPayload; todo: think about this
-  defaultClientId?: Client["id"];
-  defaultWorkspaceId?: number;
-  defaultContractorId?: number;
-  defaultCurrency?: string;
-  defaultPeriodStart?: Date;
-  defaultPeriodEnd?: Date;
-  onSubmit: (data: CreateContractorReportPayload) => void;
+  defaultValues?: Partial<CreateContractorReportPayload>;
+  onSubmit: (data: CreateContractorReportPayload) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -61,33 +57,41 @@ export function NewContractorReportWidget(
 ) {
   const form = useForm<FormModel>({
     defaultValues: {
-      contractorId: props.defaultContractorId,
-      workspaceId: props.defaultWorkspaceId,
-      clientId: props.defaultClientId,
-      periodStart: props.defaultPeriodStart,
-      periodEnd: props.defaultPeriodEnd,
-      currency: props.defaultCurrency,
-      description: "",
-      netValue: "0",
+      contractorId: props.defaultValues?.contractorId,
+      workspaceId: props.defaultValues?.workspaceId,
+      clientId: props.defaultValues?.clientId,
+      periodStart: props.defaultValues?.periodStart,
+      periodEnd: props.defaultValues?.periodEnd,
+      currency: props.defaultValues?.currency,
+      description: props.defaultValues?.description ?? "",
+      netValue: props.defaultValues?.netValue?.toString() ?? "",
     },
   });
+
+  const processingPromise = promiseState.useRemoteData();
+
   function handleSubmit(data: FormModel) {
-    props.onSubmit({
-      contractorId: maybe.getOrThrow(
-        data.contractorId,
-        "Contractor is required",
-      ),
-      netValue: parseFloat(data.netValue),
-      description: data.description,
-      currency: maybe.getOrThrow(data.currency, "Currency is required"),
-      periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
-      periodStart: maybe.getOrThrow(
-        data.periodStart,
-        "Period start is required",
-      ),
-      clientId: maybe.getOrThrow(data.clientId, "Client is required"),
-      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
-    });
+    void processingPromise.track(
+      props.onSubmit({
+        contractorId: maybe.getOrThrow(
+          data.contractorId,
+          "Contractor is required",
+        ),
+        netValue: parseFloat(data.netValue),
+        description: data.description,
+        currency: maybe.getOrThrow(data.currency, "Currency is required"),// somehow ensure dates are correct against timezones// then check why gaps is not rendered as alert triangle
+        periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
+        periodStart: maybe.getOrThrow(
+          data.periodStart,
+          "Period start is required",
+        ),
+        clientId: maybe.getOrThrow(data.clientId, "Client is required"),
+        workspaceId: maybe.getOrThrow(
+          data.workspaceId,
+          "Workspace is required",
+        ),
+      }) ?? Promise.resolve(),
+    );
   }
 
   return (
@@ -238,7 +242,17 @@ export function NewContractorReportWidget(
         <Button type="button" variant="outline" onClick={props.onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Submit</Button>
+        <Button type="submit">
+          {rd
+            .fullJourney(processingPromise.state)
+            .initially(null)
+            .wait(<LoaderCircle className="w-5 animate-spin" />)
+            .catch(renderSmallError("size-6"))
+            .map(() => (
+              <CheckCircle2 />
+            ))}
+          Submit
+        </Button>
       </form>
     </Form>
   );

@@ -47,7 +47,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
       .value(),
   );
 
-  const addReportState = promiseState.useRemoteData();
+  const addReportState = promiseState.useRemoteData<void>();
 
   const columns = useColumns(props);
 
@@ -87,33 +87,32 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                 <PopoverHeader>Add new contractor report</PopoverHeader>
                 <NewContractorReportWidget
                   onCancel={bag.close}
-                  defaultWorkspaceId={idSpecUtils.switchAll(
-                    props.workspaceId,
-                    undefined,
-                  )}
-                  defaultCurrency={rd.tryMap(
-                    reports,
-                    (reports) =>
-                      reports.entries[reports.entries.length - 1]?.netAmount
-                        .currency,
-                  )}
-                  defaultContractorId={rd.tryMap(
-                    reports,
-                    (reports) =>
-                      reports.entries[reports.entries.length - 1]?.contractor
-                        .id,
-                  )}
-                  defaultPeriodStart={rd.tryMap(reports, (reports) =>
-                    maybe.map(
-                      reports.entries[reports.entries.length - 1]?.periodEnd,
-                      partialRight(addDays, 1),
+                  defaultValues={{
+                    workspaceId: idSpecUtils.switchAll(
+                      props.workspaceId,
+                      undefined,
                     ),
-                  )}
-                  defaultPeriodEnd={new Date()}
-                  defaultClientId={idSpecUtils.switchAll(
-                    props.clientId,
-                    undefined,
-                  )}
+                    currency: rd.tryMap(
+                      reports,
+                      (reports) =>
+                        reports.entries[reports.entries.length - 1]?.netAmount
+                          .currency,
+                    ),
+                    contractorId: rd.tryMap(
+                      reports,
+                      (reports) =>
+                        reports.entries[reports.entries.length - 1]?.contractor
+                          .id,
+                    ),
+                    periodStart: rd.tryMap(reports, (reports) =>
+                      maybe.map(
+                        reports.entries[reports.entries.length - 1]?.periodEnd,
+                        partialRight(addDays, 1),
+                      ),
+                    ),
+                    periodEnd: new Date(),
+                    clientId: idSpecUtils.switchAll(props.clientId, undefined),
+                  }}
                   services={props.services}
                   onSubmit={(data) =>
                     addReportState.track(

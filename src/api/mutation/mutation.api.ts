@@ -79,4 +79,8 @@ export interface MutationApi {
     billingId: number,
     payload: Partial<CreateClientBillingPayload>,
   ) => Promise<void>;
+  editReport: (
+    reportId: number,
+    payload: Partial<CreateContractorReportPayload>,
+  ) => Promise<void>;
 }

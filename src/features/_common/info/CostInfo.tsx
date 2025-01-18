@@ -12,7 +12,6 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -198,9 +197,8 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
               <div className="flex flex-none items-center gap-x-4">
                 {link.report?.contractorId && (
                   <div className="text-xs text-slate-600">
-                    <ContractorPicker
-                      onSelect={undefined}
-                      value={link.report.contractorId}
+                    <ContractorWidget
+                      contractorId={link.report.contractorId}
                       services={services}
                     />
                   </div>
