@@ -36,7 +36,7 @@ export interface CostBase {
 }
 
 export interface Cost extends CostBase {
-  contractor: Contractor;
+  contractor: Nullable<Contractor>;
   linkReports: LinkCostReport[];
 }
 

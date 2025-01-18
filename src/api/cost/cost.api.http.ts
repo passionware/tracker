@@ -1,5 +1,6 @@
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -165,7 +166,7 @@ export function createCostApi(client: SupabaseClient): CostApi {
       if (error) {
         throw error;
       }
-      return z.array(cost$).parse(data).map(costFromHttp);
+      return parseWithDataError(z.array(cost$), data).map(costFromHttp);
     },
     getCost: async (id) => {
       const { data, error } = await client
@@ -175,7 +176,7 @@ export function createCostApi(client: SupabaseClient): CostApi {
       if (error) {
         throw error;
       }
-      return costFromHttp(cost$.parse(data[0]));
+      return costFromHttp(parseWithDataError(cost$, data[0]));
     },
   };
 }

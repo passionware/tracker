@@ -15,10 +15,11 @@ import {
   linkCostReportBase$,
   linkCostReportBaseFromHttp,
 } from "@/api/link-cost-report/link-cost-report.http.schema.base.ts";
+import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
 export const cost$ = costBase$.extend({
-  contractor: contractor$,
+  contractor: contractor$.nullable(),
   linked_reports: z.array(
     z.object({
       link_cost_report: linkCostReportBase$,
@@ -31,7 +32,7 @@ export type Cost$ = z.infer<typeof cost$>;
 export function costFromHttp(cost: Cost$): Cost {
   return {
     ...costBaseFromHttp(cost),
-    contractor: contractorFromHttp(cost.contractor),
+    contractor: maybe.mapOrNull(cost.contractor, contractorFromHttp),
     linkReports: cost.linked_reports.map((report) => ({
       ...linkCostReportBaseFromHttp(report.link_cost_report),
       report: contractorReportBaseFromHttp(report.contractor_report),
