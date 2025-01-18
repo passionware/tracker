@@ -426,12 +426,23 @@ function calculateReportEntry(
     ),
     previousReportInfo: maybe.mapOrNull(
       report.previousReport,
-      (previousReport) => ({
-        isAdjacent: isSameDay(
-          addDays(previousReport.periodEnd, 1),
-          report.periodStart,
-        ),
-      }),
+      (previousReport) => {
+        if (
+          isSameDay(addDays(previousReport.periodEnd, 1), report.periodStart)
+        ) {
+          return {
+            adjacency: "adjacent",
+          };
+        }
+        if (previousReport.periodEnd < report.periodStart) {
+          return {
+            adjacency: "separated",
+          };
+        }
+        return {
+          adjacency: "overlaps",
+        };
+      },
     ),
   };
 }

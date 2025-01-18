@@ -17,6 +17,7 @@ import { ContractorPicker } from "@/features/_common/inline-search/ContractorPic
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -37,7 +38,10 @@ export interface NewContractorReportWidgetProps
     ]
   > {
   defaultValues?: Partial<CreateContractorReportPayload>;
-  onSubmit: (data: CreateContractorReportPayload) => void | Promise<void>;
+  onSubmit: (
+    data: CreateContractorReportPayload,
+    changedFields: Partial<CreateContractorReportPayload>,
+  ) => Promise<void> | void;
   onCancel: () => void;
 }
 
@@ -71,26 +75,25 @@ export function NewContractorReportWidget(
   const processingPromise = promiseState.useRemoteData();
 
   function handleSubmit(data: FormModel) {
+    const transformedData = {
+      contractorId: maybe.getOrThrow(
+        data.contractorId,
+        "Contractor is required",
+      ),
+      netValue: parseFloat(data.netValue),
+      description: data.description,
+      currency: maybe.getOrThrow(data.currency, "Currency is required"), // somehow ensure dates are correct against timezones// then check why gaps is not rendered as alert triangle
+      periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
+      periodStart: maybe.getOrThrow(
+        data.periodStart,
+        "Period start is required",
+      ),
+      clientId: maybe.getOrThrow(data.clientId, "Client is required"),
+      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
+    };
     void processingPromise.track(
-      props.onSubmit({
-        contractorId: maybe.getOrThrow(
-          data.contractorId,
-          "Contractor is required",
-        ),
-        netValue: parseFloat(data.netValue),
-        description: data.description,
-        currency: maybe.getOrThrow(data.currency, "Currency is required"),// somehow ensure dates are correct against timezones// then check why gaps is not rendered as alert triangle
-        periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
-        periodStart: maybe.getOrThrow(
-          data.periodStart,
-          "Period start is required",
-        ),
-        clientId: maybe.getOrThrow(data.clientId, "Client is required"),
-        workspaceId: maybe.getOrThrow(
-          data.workspaceId,
-          "Workspace is required",
-        ),
-      }) ?? Promise.resolve(),
+      props.onSubmit(transformedData, getDirtyFields(transformedData, form)) ??
+        Promise.resolve(),
     );
   }
 

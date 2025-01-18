@@ -6,9 +6,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { omitBy } from "lodash";
 import { ReactElement, ReactNode, useId } from "react";
 import { useForm } from "react-hook-form";
 
@@ -58,11 +58,7 @@ export function LinkPopover(props: LinkPopoverProps) {
               target: Number(data.target),
               description: data.description,
             };
-            const changedFields = omitBy(
-              allFields,
-              (_, key) => !form.getFieldState(key as never).isDirty,
-            );
-            props.onValueChange(allFields, changedFields);
+            props.onValueChange(allFields, getDirtyFields(allFields, form));
           })}
         >
           <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50">

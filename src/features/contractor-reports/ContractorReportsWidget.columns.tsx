@@ -55,8 +55,15 @@ export function useColumns(props: ContractorReportsWidgetProps) {
       header: "Contractor",
       cell: (info) => (
         <>
-          {info.row.original.previousReportInfo?.isAdjacent === false && (
+          {info.row.original.previousReportInfo?.adjacency === "separated" && (
             <SimpleTooltip light title="Report is not adjacent to previous">
+              <Button size="icon-xs" variant="ghost">
+                <TriangleAlert className="text-rose-500" />
+              </Button>
+            </SimpleTooltip>
+          )}
+          {info.row.original.previousReportInfo?.adjacency === "overlaps" && (
+            <SimpleTooltip light title="Report is overlapping with previous">
               <Button size="icon-xs" variant="ghost">
                 <TriangleAlert className="text-rose-500" />
               </Button>
@@ -344,9 +351,9 @@ function ActionMenu(
               workspaceId: props.entry.workspace.id,
             }}
             services={props.services}
-            onSubmit={(data) =>
+            onSubmit={(_, updates) =>
               props.services.mutationService
-                .editReport(props.entry.id, data)
+                .editReport(props.entry.id, updates)
                 .then(editModalState.close)
             }
           />

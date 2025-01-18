@@ -58,7 +58,7 @@ export interface ContractorReportViewEntry {
   workspace: Workspace;
   client: Client;
   previousReportInfo: Nullable<{
-    isAdjacent: boolean;
+    adjacency: "overlaps" | "adjacent" | "separated";
   }>;
 }
 
