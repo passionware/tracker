@@ -10,9 +10,8 @@ import {
 } from "@/components/ui/table";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
-import { extractZodErrorsWithData } from "@/platform/zod/parseWithDataError.ts";
-import { ZodErrorDisplay } from "@/platform/zod/ZodErrorDisplay.tsx";
-import { maybe, rd, RemoteData } from "@passionware/monads";
+import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
+import { rd, RemoteData } from "@passionware/monads";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -148,14 +147,7 @@ export function ListView<TData>({
     .catch((error) => (
       // Wyświetlamy błąd
       <div className="rounded-md border p-4 text-red-600">
-        {maybe.mapOrElse(
-          extractZodErrorsWithData(error),
-          (errors) =>
-            errors.map((error) => (
-              <ZodErrorDisplay zodError={error} json={error.data} />
-            )),
-          <>Error: {error.message}</>,
-        )}
+        <ErrorMessageRenderer error={error} />
       </div>
     ))
     .map(() => {
