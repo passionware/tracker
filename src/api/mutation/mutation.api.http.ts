@@ -1,7 +1,4 @@
 import {
-  CreateClientBillingPayload,
-  CreateContractorReportPayload,
-  CreateCostPayload,
   LinkReportBillingPayload,
   MutationApi,
 } from "@/api/mutation/mutation.api.ts";
@@ -11,7 +8,7 @@ import { format } from "date-fns";
 import { pickBy } from "lodash";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
-  const formatDateForSupabase = (date:Date) => format(new Date(date), "yyyy-MM-dd");
+  const formatDateForSupabase = (date: Date) => format(date, "yyyy-MM-dd");
 
   function getInsertPayload(payload: LinkReportBillingPayload) {
     switch (payload.type) {
@@ -162,7 +159,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     editCost: async (costId, payload) => {
-      const takeIfPresent = (key: keyof CreateCostPayload) =>
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
       const response = await client
         .from("cost")
@@ -188,7 +185,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     editClientBilling: async (billingId, payload) => {
-      const takeIfPresent = (key: keyof CreateClientBillingPayload) =>
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
       const response = await client
 
@@ -214,7 +211,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     editReport: async (reportId, payload) => {
-      const takeIfPresent = (key: keyof CreateContractorReportPayload) =>
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
       const response = await client
         .from("report")
