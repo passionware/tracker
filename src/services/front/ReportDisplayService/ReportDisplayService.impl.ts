@@ -450,7 +450,7 @@ function calculateBilling(
 
   return {
     id: billing.id,
-    clientId: billing.clientId,
+    client: billing.client,
     netAmount: {
       amount: billing.totalNet,
       currency: billing.currency,
@@ -476,6 +476,7 @@ function calculateBilling(
       workspaces.find((workspace) => workspace.id === billing.workspaceId),
       "Workspace is missing",
     ),
+    contractors: billing.contractors,
   };
 }
 

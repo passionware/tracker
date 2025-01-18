@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ClientView } from "@/features/_common/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -77,10 +77,9 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                       />
                     </TableCell>
                     <TableCell>
-                      <ClientWidget
+                      <ClientView
                         layout="avatar"
-                        clientId={billing.clientId}
-                        services={props.services}
+                        client={rd.of(billing.client)}
                       />
                     </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>

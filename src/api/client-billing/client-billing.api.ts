@@ -47,6 +47,7 @@ export interface ClientBilling extends ClientBillingBase {
   remainingBalance: number;
   client: Client;
   linkBillingReport: LinkBillingReportBase[];
+  contractors: Contractor[];
 }
 
 export type ClientBillingQuery = WithFilters<{

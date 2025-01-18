@@ -94,7 +94,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 query={chain(
                   contractorReportQueryUtils.ofDefault(
                     billing.workspace.id, // we want only reports from the same workspace
-                    billing.clientId, // we want only reports from the same client
+                    billing.client.id, // we want only reports from the same client
                   ),
                 )
                   .thru((x) =>

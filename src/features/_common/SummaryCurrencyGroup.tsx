@@ -38,6 +38,7 @@ export function SummaryCurrencyGroup({
           ) {
             return (
               <SimpleTooltip
+                  light
                 title={
                   <div className="space-y-2">
                     <PopoverHeader>

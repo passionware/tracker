@@ -19,7 +19,8 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ClientView } from "@/features/_common/ClientView.tsx";
+import { ContractorView } from "@/features/_common/ContractorView.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
@@ -45,15 +46,10 @@ export function useColumns(props: BillingWidgetProps) {
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
     }),
-    columnHelper.accessor("clientId", {
+    columnHelper.accessor("client", {
       header: "Client",
       cell: (info) => (
-        <ClientWidget
-          layout="avatar"
-          size="xs"
-          clientId={info.getValue()}
-          services={props.services}
-        />
+        <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
       ),
     }),
     columnHelper.accessor("invoiceNumber", {
@@ -125,18 +121,14 @@ export function useColumns(props: BillingWidgetProps) {
             info.getValue().amount,
             info.getValue().currency,
           )}
-          TODO CLIENT WIDGET
-          {/*{info.row.original.links*/}
-          {/*  .filter((l) => l.linkType === "reconcile")*/}
-          {/*  .map((link) => (*/}
-          {/*    <ClientWidget*/}
-          {/*      layout="avatar"*/}
-          {/*      size="xs"*/}
-          {/*      key={link.id}*/}
-          {/*      clientId={link.report.clientId}*/}
-          {/*      services={props.services}*/}
-          {/*    />*/}
-          {/*  ))}*/}
+          {info.row.original.contractors.map((contractor) => (
+            <ContractorView
+              size="sm"
+              layout="avatar"
+              key={contractor.id}
+              contractor={rd.of(contractor)}
+            />
+          ))}
         </div>
       ),
     }),
@@ -193,7 +185,7 @@ function ActionMenu(
               invoiceNumber: props.entry.invoiceNumber,
               invoiceDate: props.entry.invoiceDate,
               description: props.entry.description,
-              clientId: props.entry.clientId,
+              clientId: props.entry.client.id,
             }}
             services={props.services}
             onSubmit={(data) =>

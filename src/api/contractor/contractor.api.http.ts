@@ -31,7 +31,7 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       if (error) {
         throw error;
       }
-      return contractorFromHttp(parseWithDataError(data[0], contractor$));
+      return contractorFromHttp(parseWithDataError(contractor$, data[0]));
     },
   };
 }

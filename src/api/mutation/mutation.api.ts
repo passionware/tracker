@@ -1,5 +1,11 @@
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
-import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+import {
+  ClientBilling,
+  ClientBillingBase,
+} from "@/api/client-billing/client-billing.api.ts";
+import {
+  ContractorReport,
+  ContractorReportBase,
+} from "@/api/contractor-reports/contractor-reports.api.ts";
 import { Cost, CostBase } from "@/api/cost/cost.api.ts";
 
 export type LinkReportBillingPayload =
@@ -39,29 +45,13 @@ export type LinkCostReportPayload =
     };
 
 export type CreateContractorReportPayload = Omit<
-  ContractorReport,
-  | "id"
-  | "createdAt"
-  | "linkBillingReport"
-  | "linkCostReport"
-  | "reportBillingValue"
-  | "reportBillingBalance"
-  | "reportCostValue"
-  | "reportCostBalance"
-  | "billingCostBalance"
-  | "contractor"
+  ContractorReportBase,
+  "id" | "createdAt" | "linkBillingReport" | "linkCostReport"
 >;
 
 export type CreateClientBillingPayload = Omit<
-  ClientBilling,
-  | "client"
-  | "linkBillingReport"
-  | "createdAt"
-  | "id"
-  | "billingBalance"
-  | "remainingBalance"
-  | "billingReportValue"
-  | "totalBillingValue"
+  ClientBillingBase,
+  "createdAt" | "id"
 >;
 
 export type CreateCostPayload = Omit<CostBase, "createdAt" | "id">;

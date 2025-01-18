@@ -7,6 +7,10 @@ import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import { contractorReportBase$ } from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
 import {
+  contractor$,
+  contractorFromHttp,
+} from "@/api/contractor/contractor.api.http.schema.ts";
+import {
   linkBillingReportBase$,
   linkBillingReportBaseFromHttp,
 } from "@/api/link-billing-report/link-billing-report.http.schema.base.ts";
@@ -29,6 +33,7 @@ export const clientBilling$ = clientBillingBase$.extend({
       report: contractorReportBase$,
     }),
   ),
+  contractors: z.array(z.object({ contractor: contractor$ })),
 });
 
 export type ClientBilling$ = z.infer<typeof clientBilling$>;
@@ -43,6 +48,9 @@ export function clientBillingFromHttp(
     billingReportValue: clientBilling.total_report_value,
     remainingBalance: clientBilling.remaining_balance,
     client: clientFromHttp(clientBilling.client),
+    contractors: clientBilling.contractors.map((c) =>
+      contractorFromHttp(c.contractor),
+    ),
     linkBillingReport: maybe.mapOrElse(
       clientBilling.link_billing_reports,
       (x) => x.map((x) => linkBillingReportBaseFromHttp({ ...x.link })),

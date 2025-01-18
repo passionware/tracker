@@ -2,6 +2,7 @@ import {
   ClientBilling,
   ClientBillingQuery,
 } from "@/api/client-billing/client-billing.api.ts";
+import { Client } from "@/api/clients/clients.api.ts";
 import {
   ContractorReport,
   ContractorReportQuery,
@@ -71,8 +72,9 @@ export interface ClientBillingViewEntry {
   id: number;
   netAmount: CurrencyValue;
   grossAmount: CurrencyValue;
+  contractors: Contractor[];
   invoiceNumber: string;
-  clientId: number;
+  client: Client;
   invoiceDate: Date;
   description: string | null;
   links: ClientBilling["linkBillingReport"];
