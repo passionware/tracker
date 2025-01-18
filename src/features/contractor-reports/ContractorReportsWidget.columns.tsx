@@ -47,7 +47,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         <>
           {info.row.original.previousReportInfo?.isAdjacent === false && (
             <SimpleTooltip light title="Report is not adjacent to previous">
-              <Button size="icon-xs" className="inline" variant="ghost">
+              <Button size="icon-xs" variant="ghost">
                 <TriangleAlert className="text-rose-500" />
               </Button>
             </SimpleTooltip>
