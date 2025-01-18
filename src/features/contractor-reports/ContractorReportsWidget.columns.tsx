@@ -117,7 +117,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
-            <PopoverHeader>Report details</PopoverHeader>
+            <PopoverHeader>Link billings to report</PopoverHeader>
             <ContractorReportInfo
               report={info.row.original}
               services={props.services}
