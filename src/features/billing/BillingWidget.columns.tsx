@@ -125,17 +125,18 @@ export function useColumns(props: BillingWidgetProps) {
             info.getValue().amount,
             info.getValue().currency,
           )}
-          {info.row.original.links
-            .filter((l) => l.linkType === "reconcile")
-            .map((link) => (
-              <ClientWidget
-                layout="avatar"
-                size="xs"
-                key={link.id}
-                clientId={link.report.clientId}
-                services={props.services}
-              />
-            ))}
+          TODO CLIENT WIDGET
+          {/*{info.row.original.links*/}
+          {/*  .filter((l) => l.linkType === "reconcile")*/}
+          {/*  .map((link) => (*/}
+          {/*    <ClientWidget*/}
+          {/*      layout="avatar"*/}
+          {/*      size="xs"*/}
+          {/*      key={link.id}*/}
+          {/*      clientId={link.report.clientId}*/}
+          {/*      services={props.services}*/}
+          {/*    />*/}
+          {/*  ))}*/}
         </div>
       ),
     }),

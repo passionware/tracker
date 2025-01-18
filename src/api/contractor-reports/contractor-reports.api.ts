@@ -31,6 +31,15 @@ export interface ContractorReportBase {
 
   description: string;
   netValue: number;
+
+  currency: string;
+}
+
+export type ContractorReport = ContractorReportBase & {
+  contractor: Contractor;
+  linkBillingReport: LinkBillingReportBase[];
+  linkCostReport: LinkCostReportBase[];
+  // todo: add billingById, costById - relevant entities in a map
   // Total billing value linked to the report
   reportBillingValue: number; // total_billing_billing_value
   // Remaining report value that should be billed (positive = to bill, negative = overbilled)
@@ -41,15 +50,6 @@ export interface ContractorReportBase {
   reportCostBalance: number; // report_cost_balance
   // Difference between billing and cost values (positive = profit, negative = loss)
   billingCostBalance: number; // billing_cost_balance
-
-  currency: string;
-}
-
-export type ContractorReport = ContractorReportBase & {
-  contractor: Contractor;
-  linkBillingReport: LinkBillingReportBase[];
-  linkCostReport: LinkCostReportBase[];
-  // todo: add billingById, costById - relevant entities in a map
 };
 
 export type ContractorReportQuery = WithFilters<{

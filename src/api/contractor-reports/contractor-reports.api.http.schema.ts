@@ -33,6 +33,11 @@ export const contractorReport$ = contractorReportBase$.extend({
     }),
   ),
   contractor: contractor$,
+  total_billing_billing_value: z.number(),
+  total_cost_cost_value: z.number(),
+  report_billing_balance: z.number(),
+  report_cost_balance: z.number(),
+  billing_cost_balance: z.number(),
 });
 
 export type ContractorReport$ = z.infer<typeof contractorReport$>;
@@ -49,5 +54,10 @@ export function contractorReportFromHttp(
       .map((value) => ({ ...value.link, cost: value.cost }))
       .map(linkCostReportBaseFromHttp),
     contractor: contractorFromHttp(contractorReport.contractor),
+    reportBillingValue: contractorReport.total_billing_billing_value,
+    reportCostValue: contractorReport.total_cost_cost_value,
+    reportCostBalance: contractorReport.report_cost_balance,
+    reportBillingBalance: contractorReport.report_billing_balance,
+    billingCostBalance: contractorReport.billing_cost_balance,
   };
 }

@@ -1,4 +1,7 @@
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
+import {
+  ClientBilling,
+  ClientBillingBase,
+} from "@/api/client-billing/client-billing.api.ts";
 import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
 import { assert } from "@/platform/lang/assert.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
@@ -34,7 +37,7 @@ export type LinkBillingReportBase = {
 
 export type LinkBillingReport =
   | (Extract<LinkBillingReportBase, { linkType: "reconcile" }> & {
-      billing: ClientBilling;
+      billing: ClientBillingBase;
       report: ContractorReportBase;
     })
   | (Extract<

@@ -44,7 +44,7 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
                 path === "" ? index.toString() : `${path}.${index}`;
               return (
                 <li key={index} className="mt-1" data-error-path={itemPath}>
-                  {renderNode(item, itemPath)}
+                  {renderNode(item, itemPath, index.toString())}
                 </li>
               );
             })}
@@ -65,17 +65,18 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
         );
       }
     } else {
-      return renderNode(data, path);
+      return renderNode(data, path, "root");
     }
   };
 
   const renderNode = (
     value: unknown,
     path: string,
-    label: string | null = null,
+    label: string,
   ): React.ReactNode => {
     const errors = issuesByPath[path];
     const hasError = Boolean(errors);
+    const labelElement = <span className="text-blue-500">{label}: </span>;
     const element = (
       <div
         className={cn("inline-block p-1", {
@@ -83,7 +84,32 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
         })}
         data-error-path={path}
       >
-        {label && <span className="text-blue-500">{label}: </span>}
+        {hasError ? (
+          <SimpleTooltip
+            title={errors.map((error) => (
+              <div>
+                {error.path.join(".")}: {error.message}
+              </div>
+            ))}
+            delayDuration={0}
+          >
+            <Slot className="bg-rose-200 text-rose-800 p-1 cursor-pointer hover:bg-rose-400 transition-colors rounded">
+              {labelElement}
+            </Slot>
+          </SimpleTooltip>
+        ) : (
+          labelElement
+        )}
+        {errors?.map((error) => {
+          return (
+            <div
+              key={error.message}
+              className="text-red-500 text-sm font-thin m-2"
+            >
+              {makePathLocal(error.path.join("."), path)}: {error.message}
+            </div>
+          );
+        })}
         {typeof value === "object" && value !== null
           ? Array.isArray(value)
             ? renderTree(value, path)
@@ -93,15 +119,9 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
     );
 
     return hasError ? (
-      <SimpleTooltip
-        title={errors.map((error) => (
-          <div>
-            {error.path.join(".")}: {error.message}
-          </div>
-        ))}
-      >
-        <Slot className="border border-dotted border-rose-400 rounded-lg p-3">{element}</Slot>
-      </SimpleTooltip>
+      <Slot className="border border-dotted border-rose-400 rounded-lg p-3">
+        {element}
+      </Slot>
     ) : (
       element
     );
@@ -125,3 +145,10 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
     </div>
   );
 };
+
+function makePathLocal(path: string, basePath: string): string {
+  if (path.startsWith(basePath)) {
+    return path.slice(basePath.length);
+  }
+  return path;
+}

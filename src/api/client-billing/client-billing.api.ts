@@ -11,7 +11,7 @@ import {
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 
-import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { LinkBillingReportBase } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -46,7 +46,7 @@ export interface ClientBilling extends ClientBillingBase {
   // difference between billed amount and report amount
   remainingBalance: number;
   client: Client;
-  linkBillingReport: LinkBillingReport[];
+  linkBillingReport: LinkBillingReportBase[];
 }
 
 export type ClientBillingQuery = WithFilters<{

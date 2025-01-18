@@ -9,10 +9,11 @@ export type LinkCostReportBase = {
   reportAmount: number;
   description: string;
   costId: Nullable<number>;
-  contractorReportId: Nullable<number>;
+  reportId: Nullable<number>;
 };
 
-export interface LinkCostReport extends LinkCostReportBase { // todo lets not use this one, just add relevant costs/reports to view, level up
+export interface LinkCostReport extends LinkCostReportBase {
+  // todo lets not use this one, just add relevant costs/reports to view, level up
   cost: CostBase | null;
   report: ContractorReportBase | null;
 }

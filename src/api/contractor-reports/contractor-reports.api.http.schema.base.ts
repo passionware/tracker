@@ -13,11 +13,6 @@ export const contractorReportBase$ = z.object({
   currency: z.string(),
   client_id: z.number(),
   workspace_id: z.number(),
-  total_billing_billing_value: z.number(),
-  total_cost_cost_value: z.number(),
-  report_billing_balance: z.number(),
-  report_cost_balance: z.number(),
-  billing_cost_balance: z.number(),
 });
 export type ContractorReportBase$ = z.input<typeof contractorReportBase$>;
 
@@ -27,10 +22,5 @@ export function contractorReportBaseFromHttp(
   return {
     ...camelcaseKeys(contractorReport),
     description: contractorReport.description ?? "",
-    reportBillingValue: contractorReport.total_billing_billing_value,
-    reportCostValue: contractorReport.total_cost_cost_value,
-    reportCostBalance: contractorReport.report_cost_balance,
-    reportBillingBalance: contractorReport.report_billing_balance,
-    billingCostBalance: contractorReport.billing_cost_balance,
   };
 }

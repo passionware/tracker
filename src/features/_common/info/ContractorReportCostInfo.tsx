@@ -170,7 +170,7 @@ export function ContractorReportCostInfo({
         {report.costLinks.map((link) => {
           function getContent() {
             if (
-              maybe.isPresent(link.contractorReportId) &&
+              maybe.isPresent(link.reportId) &&
               maybe.isAbsent(link.costId)
             ) {
               return (
