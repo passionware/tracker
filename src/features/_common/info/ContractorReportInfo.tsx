@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
@@ -144,7 +145,7 @@ export function ContractorReportInfo({
       <Separator className="my-2" />
       <div className="space-y-8">
         {report.billingLinks.map((link) => (
-          <div className="flex items-center gap-2" key={link.id}>
+          <div className="flex items-center gap-2" key={link.link.id}>
             <Badge
               variant={
                 (
@@ -152,7 +153,7 @@ export function ContractorReportInfo({
                     reconcile: "positive",
                     clarify: "warning",
                   } as const
-                )[link.linkType]
+                )[link.link.linkType]
               }
               className=""
             >
@@ -160,38 +161,45 @@ export function ContractorReportInfo({
                 {
                   reconcile: "Client billing",
                   clarify: "Clarification",
-                }[link.linkType]
+                }[link.link.linkType]
               }
             </Badge>
             <div className="text-sm font-medium leading-none flex flex-row gap-2">
               {services.formatService.financial.amount(
-                linkBillingReportUtils.getLinkValue("report", link),
+                linkBillingReportUtils.getLinkValue("report", link.link),
                 report.netAmount.currency,
               )}
-              <div className="contents text-gray-500">
-                of
-                {services.formatService.financial.amount(
-                  linkBillingReportUtils.getLinkValue("billing", link),
-                  "TODO GET BILLING CURRENCY",
-                )}
-              </div>
+              {link.billing && (
+                <div className="contents text-gray-500">
+                  of work billed as
+                  {services.formatService.financial.amount(
+                    linkBillingReportUtils.getLinkValue("billing", link.link),
+                    link.billing.currency,
+                  )}
+                  to
+                  <ClientWidget
+                    size="xs"
+                    clientId={link.billing.clientId}
+                    services={services}
+                  />
+                  as
+                </div>
+              )}
             </div>
             <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
-              {link.linkType === "reconcile" && (
+              {link.billing && (
                 <>
                   <div className="text-gray-600 text-xs mr-1.5">
-                      TODO CLIENT LINK
-                    {/*{link.billing.invoiceNumber}*/}
+                    {link.billing.invoiceNumber}
                   </div>
                   <Badge variant="secondary" size="sm">
-                      TODO CLIENT LINK
-                    {/*{services.formatService.temporal.date(*/}
-                    {/*  link.billing.invoiceDate,*/}
-                    {/*)}*/}
+                    {services.formatService.temporal.date(
+                      link.billing.invoiceDate,
+                    )}
                   </Badge>
                 </>
               )}
-              {link.linkType === "clarify" && (
+              {link.link.linkType === "clarify" && (
                 <Popover>
                   <PopoverTrigger>
                     <Badge size="sm" variant="secondary">
@@ -207,7 +215,7 @@ export function ContractorReportInfo({
                       Justification for unmatched amount
                     </PopoverHeader>
                     <div className="text-xs text-gray-900">
-                      {link.description}
+                      {link.link.description}
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -217,7 +225,7 @@ export function ContractorReportInfo({
               services={services}
               onDelete={partial(
                 services.mutationService.deleteBillingReportLink,
-                link.id,
+                link.link.id,
               )}
             />
           </div>

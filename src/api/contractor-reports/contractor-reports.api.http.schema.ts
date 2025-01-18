@@ -1,4 +1,7 @@
-import { clientBillingBase$ } from "@/api/client-billing/client-billing.api.http.schema.base.ts";
+import {
+  clientBillingBase$,
+  clientBillingBaseFromHttp,
+} from "@/api/client-billing/client-billing.api.http.schema.base.ts";
 import {
   contractorReportBase$,
   contractorReportBaseFromHttp,
@@ -17,6 +20,7 @@ import {
   linkCostReportBase$,
   linkCostReportBaseFromHttp,
 } from "@/api/link-cost-report/link-cost-report.http.schema.base.ts";
+import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
 export const contractorReport$ = contractorReportBase$.extend({
@@ -47,9 +51,10 @@ export function contractorReportFromHttp(
 ): ContractorReport {
   return {
     ...contractorReportBaseFromHttp(contractorReport),
-    linkBillingReport: contractorReport.link_billing_reports
-      .map((value) => value.link)
-      .map(linkBillingReportBaseFromHttp),
+    linkBillingReport: contractorReport.link_billing_reports.map((value) => ({
+      link: linkBillingReportBaseFromHttp(value.link),
+      billing: maybe.mapOrNull(value.billing, clientBillingBaseFromHttp),
+    })),
     linkCostReport: contractorReport.link_cost_reports
       .map((value) => ({ ...value.link, cost: value.cost }))
       .map(linkCostReportBaseFromHttp),

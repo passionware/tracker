@@ -327,7 +327,9 @@ function calculateReportEntry(
   function getBillingStatus() {
     if (report.reportBillingBalance === 0) {
       if (
-        report.linkBillingReport?.some((link) => link.linkType === "clarify")
+        report.linkBillingReport?.some(
+          (link) => link.link.linkType === "clarify",
+        )
       ) {
         return "clarified";
       } else {
