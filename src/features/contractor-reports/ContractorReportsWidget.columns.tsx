@@ -13,6 +13,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientView } from "@/features/_common/ClientView.tsx";
 import { ContractorReportCostInfo } from "@/features/_common/info/ContractorReportCostInfo.tsx";
 import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
@@ -27,7 +28,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { startCase } from "lodash";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, TriangleAlert } from "lucide-react";
 
 const columnHelper = createColumnHelper<ContractorReportViewEntry>();
 
@@ -40,7 +41,21 @@ export function useColumns(props: ContractorReportsWidgetProps) {
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
     }),
-    columnHelper.accessor("contractor.fullName", { header: "Contractor" }),
+    columnHelper.accessor("contractor.fullName", {
+      header: "Contractor",
+      cell: (info) => (
+        <>
+          {info.row.original.previousReportInfo?.isAdjacent === false && (
+            <SimpleTooltip light title="Report is not adjacent to previous">
+              <Button size="icon-xs" className="inline" variant="ghost">
+                <TriangleAlert className="text-rose-500" />
+              </Button>
+            </SimpleTooltip>
+          )}
+          <span className="inline">{info.getValue()}</span>
+        </>
+      ),
+    }),
     columnHelper.accessor("client", {
       header: "Client",
       cell: (info) => (

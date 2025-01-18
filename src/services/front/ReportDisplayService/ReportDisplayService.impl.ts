@@ -18,6 +18,7 @@ import { WithContractorReportService } from "@/services/io/ContractorReportServi
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
+import { addDays, isSameDay } from "date-fns";
 import { groupBy, sumBy, uniq } from "lodash";
 
 const prepareValues = <T>(data: T) => ({
@@ -419,6 +420,15 @@ function calculateReportEntry(
     workspace: maybe.getOrThrow(
       workspaces.find((workspace) => workspace.id === report.workspaceId),
       "Workspace is missing",
+    ),
+    previousReportInfo: maybe.mapOrNull(
+      report.previousReport,
+      (previousReport) => ({
+        isAdjacent: isSameDay(
+          addDays(previousReport.periodEnd, 1),
+          report.periodStart,
+        ),
+      }),
     ),
   };
 }

@@ -10,6 +10,7 @@ import {
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { Nullable } from "@/platform/typescript/Nullable.ts";
 
 import {
   CurrencyValue,
@@ -56,6 +57,9 @@ export interface ContractorReportViewEntry {
   contractor: Contractor;
   workspace: Workspace;
   client: Client;
+  previousReportInfo: Nullable<{
+    isAdjacent: boolean;
+  }>;
 }
 
 export interface ClientBillingView {

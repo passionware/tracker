@@ -49,6 +49,7 @@ export const contractorReport$ = contractorReportBase$.extend({
   report_cost_balance: z.number(),
   billing_cost_balance: z.number(),
   immediate_payment_due: z.number(),
+  previous_report: contractorReportBase$.nullable(),
 });
 
 export type ContractorReport$ = z.infer<typeof contractorReport$>;
@@ -74,5 +75,9 @@ export function contractorReportFromHttp(
     reportBillingBalance: contractorReport.report_billing_balance,
     billingCostBalance: contractorReport.billing_cost_balance,
     immediatePaymentDue: contractorReport.immediate_payment_due,
+    previousReport: maybe.mapOrNull(
+      contractorReport.previous_report,
+      contractorReportBaseFromHttp,
+    ),
   };
 }
