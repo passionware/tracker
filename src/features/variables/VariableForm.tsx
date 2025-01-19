@@ -126,6 +126,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
               <FormLabel>Contractor</FormLabel>
               <FormControl>
                 <ContractorPicker
+                  allowClear
                   services={props.services}
                   value={field.value}
                   onSelect={field.onChange}

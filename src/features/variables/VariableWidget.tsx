@@ -20,6 +20,7 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbL
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { VariableForm } from "@/features/variables/VariableForm.tsx";
 import { ActionMenu } from "@/features/variables/VariableWidget.menu.tsx";
+import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -185,7 +186,16 @@ export function VariableWidget(props: VariableWidgetProps) {
             header: "Value",
             cell: (info) => (
               <OverflowTooltip title={info.getValue()}>
-                <div className="p-1 border border-sky-800/50 rounded bg-sky-50 text-sky-800 max-w-xl w-min truncate">
+                <div
+                  className={cn(
+                    "p-1 border max-w-xl w-min truncate",
+                    {
+                      const: "border-sky-800/50 rounded bg-sky-50 text-sky-800",
+                      expression:
+                        "border-lime-800/50 rounded bg-lime-50 text-lime-900",
+                    }[info.row.original.type],
+                  )}
+                >
                   {info.getValue()}
                 </div>
               </OverflowTooltip>
