@@ -22,9 +22,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { chain } from "lodash";
 
-export interface BillingBase {
-  id: number;
-  createdAt: Date;
+export interface BillingPayload {
   currency: string;
   totalNet: number;
   totalGross: number;
@@ -33,6 +31,11 @@ export interface BillingBase {
   invoiceDate: Date;
   description: string | null;
   workspaceId: Workspace["id"];
+}
+
+export interface BillingBase extends BillingPayload {
+  id: number;
+  createdAt: Date;
 }
 
 export interface Billing extends BillingBase {

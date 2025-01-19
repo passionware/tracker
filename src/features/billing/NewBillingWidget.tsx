@@ -1,5 +1,4 @@
-import { BillingBase } from "@/api/billing/billing.api.ts";
-import { CreateBillingPayload } from "@/api/mutation/mutation.api.ts";
+import { BillingBase, BillingPayload } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -24,7 +23,7 @@ import { useForm } from "react-hook-form";
 
 export interface NewBillingWidgetProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
-  defaultValues?: Partial<CreateBillingPayload>;
+  defaultValues?: Partial<BillingPayload>;
   onSubmit: (data: Omit<BillingBase, "id" | "createdAt">) => void;
   onCancel: () => void;
 }
