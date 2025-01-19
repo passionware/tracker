@@ -12,8 +12,8 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
-import { NewBillingWidget } from "@/features/billing/NewBillingWidget.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -64,7 +64,7 @@ export function BillingWidget(props: BillingWidgetProps) {
             content={(bag) => (
               <>
                 <PopoverHeader>Add new billing</PopoverHeader>
-                <NewBillingWidget
+                <BillingForm
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -103,6 +103,20 @@ export function BillingWidget(props: BillingWidgetProps) {
       <ListView
         data={rd.map(billings, (x) => x.entries)}
         columns={columns}
+        onRowDoubleClick={async (x) => {
+          const result =
+            await props.services.messageService.editBilling.sendRequest({
+              defaultValues: x.originalBilling,
+            });
+          switch (result.action) {
+            case "confirm":
+              await props.services.mutationService.editBilling(
+                x.id,
+                result.changes,
+              );
+              break;
+          }
+        }}
         caption={
           <>
             <div className="mb-2 font-semibold text-gray-700">

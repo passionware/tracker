@@ -4,24 +4,21 @@ import { createClientService } from "@/services/io/ClientService/ClientService.m
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
 import type { StoryObj } from "@storybook/react";
 
-import {
-  NewBillingWidget,
-  NewBillingWidgetProps,
-} from "./NewBillingWidget.tsx";
+import { BillingForm, BillingFormProps } from "./BillingForm.tsx";
 
 const meta = {
-  component: NewBillingWidget,
+  component: BillingForm,
   args: {
     services: {
       workspaceService: createWorkspaceService(),
       clientService: createClientService(),
     },
   },
-} satisfies FixedMeta<NewBillingWidgetProps>;
+} satisfies FixedMeta<BillingFormProps>;
 
 export default meta;
 
-type Story = StoryObj<NewBillingWidgetProps>;
+type Story = StoryObj<BillingFormProps>;
 
 export const Default = {} satisfies Story;
 export const WithDefaultValues = {

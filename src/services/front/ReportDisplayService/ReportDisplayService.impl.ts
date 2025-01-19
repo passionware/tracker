@@ -471,6 +471,7 @@ function calculateBilling(
   const status = getStatus();
 
   return {
+    originalBilling: billing,
     id: billing.id,
     client: billing.client,
     netAmount: {

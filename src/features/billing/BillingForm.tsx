@@ -1,4 +1,4 @@
-import { BillingBase, BillingPayload } from "@/api/billing/billing.api.ts";
+import { BillingPayload } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -15,16 +15,17 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
+import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
-export interface NewBillingWidgetProps
+export interface BillingFormProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
   defaultValues?: Partial<BillingPayload>;
-  onSubmit: (data: Omit<BillingBase, "id" | "createdAt">) => void;
+  onSubmit: (data: BillingPayload, changes: Partial<BillingPayload>) => void;
   onCancel: () => void;
 }
 
@@ -39,7 +40,7 @@ type FormModel = {
   description: string;
 };
 
-export function NewBillingWidget(props: NewBillingWidgetProps) {
+export function BillingForm(props: BillingFormProps) {
   const form = useForm<FormModel>({
     defaultValues: {
       clientId: props.defaultValues?.clientId,
@@ -54,7 +55,7 @@ export function NewBillingWidget(props: NewBillingWidgetProps) {
   });
 
   function handleSubmit(data: FormModel) {
-    props.onSubmit({
+    const allData = {
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
       currency: maybe.getOrThrow(data.currency, "Currency is required"),
@@ -66,7 +67,8 @@ export function NewBillingWidget(props: NewBillingWidgetProps) {
         "Invoice date is required",
       ),
       description: data.description,
-    });
+    };
+    props.onSubmit(allData, getDirtyFields(allData, form));
   }
 
   return (

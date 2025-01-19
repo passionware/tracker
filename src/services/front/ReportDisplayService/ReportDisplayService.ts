@@ -67,6 +67,7 @@ export interface BillingView {
 }
 
 export interface BillingViewEntry {
+  originalBilling: Billing;
   id: number;
   netAmount: CurrencyValue;
   grossAmount: CurrencyValue;

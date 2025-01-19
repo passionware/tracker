@@ -28,6 +28,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
+import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
@@ -124,6 +125,7 @@ export const myServices = {
     client: myQueryClient,
     api: createVariableApi(mySupabase),
   }),
+  billingService,
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -141,6 +143,7 @@ export const myServices = {
     WithCostService,
     WithPreferenceService,
     WithVariableService,
+    WithBillingService,
   ]
 >;
 

@@ -5,6 +5,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -23,5 +24,6 @@ export type BillingWidgetProps = {
     WithPreferenceService,
     WithWorkspaceService,
     WithContractorService,
+    WithMessageService,
   ]
 >;

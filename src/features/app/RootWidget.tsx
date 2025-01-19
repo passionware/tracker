@@ -5,6 +5,7 @@ import {
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
+import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
@@ -28,6 +29,7 @@ import { WithMessageService } from "@/services/internal/MessageService/MessageSe
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
+import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -70,6 +72,7 @@ export function RootWidget(
       WithVariableService,
       WithMessageService,
       WithReportService,
+      WithBillingService,
     ]
   >,
 ) {
@@ -218,6 +221,7 @@ export function RootWidget(
         <VariableEditModalWidget services={props.services} />
         <ReportEditModalWidget services={props.services} />
         <CostEditModalWidget services={props.services} />
+        <BillingEditModalWidget services={props.services} />
       </RenderIfAuthenticated>
     </>
   );
