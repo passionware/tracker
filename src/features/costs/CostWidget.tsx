@@ -13,16 +13,16 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
-import { PotentialCostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
+import { CostForm } from "@/features/costs/CostForm.tsx";
 import { useColumns } from "@/features/costs/CostWidget.columns.tsx";
-import { NewCostWidget } from "@/features/costs/NewCostWidget.tsx";
+import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
-export function CostsWidget(props: PotentialCostsWidgetProps) {
+export function CostWidget(props: PotentialCostWidgetProps) {
   const [query, setQuery] = useState(
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
@@ -72,7 +72,7 @@ export function CostsWidget(props: PotentialCostsWidgetProps) {
             content={(bag) => (
               <>
                 <PopoverHeader>Add new cost</PopoverHeader>
-                <NewCostWidget
+                <CostForm
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -105,6 +105,22 @@ export function CostsWidget(props: PotentialCostsWidgetProps) {
       <ListView
         data={rd.map(costs, (x) => x.entries)}
         columns={columns}
+        onRowDoubleClick={async (x) => {
+          const result =
+            await props.services.messageService.editCost.sendRequest({
+              defaultValues: x.originalCost,
+            });
+          switch (result.action) {
+            case "confirm":
+              await props.services.mutationService.editCost(
+                x.id,
+                result.changes,
+              );
+              break;
+            default:
+              break;
+          }
+        }}
         caption={
           <>
             <div className="mb-2 font-semibold text-gray-700">

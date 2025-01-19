@@ -93,6 +93,7 @@ export interface BillingViewEntry {
 }
 
 export type CostEntry = {
+  originalCost: Cost;
   id: number;
   createdAt: Date;
   invoiceNumber: Maybe<string>;

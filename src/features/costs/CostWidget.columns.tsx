@@ -2,12 +2,6 @@ import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -25,12 +19,11 @@ import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { PotentialCostsWidgetProps } from "@/features/costs/CostsWidget.types.tsx";
-import { NewCostWidget } from "@/features/costs/NewCostWidget.tsx";
+import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { assert } from "@/platform/lang/assert";
-import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
@@ -42,7 +35,7 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<CostEntry>();
 
-export function useColumns(props: PotentialCostsWidgetProps) {
+export function useColumns(props: PotentialCostWidgetProps) {
   return [
     columnHelper.accessor("workspace", {
       header: "Workspace",
@@ -178,41 +171,15 @@ function ActionMenu(
       WithMutationService,
       WithContractorService,
       WithWorkspaceService,
+      WithMessageService,
     ]
   > & {
     entry: CostEntry;
   },
 ) {
   const isDangerMode = props.services.preferenceService.useIsDangerMode();
-  const editCostModalState = useOpenState();
   return (
     <>
-      <Dialog {...editCostModalState.dialogProps}>
-        <DialogContent>
-          <DialogTitle>Edit cost</DialogTitle>
-          <DialogDescription></DialogDescription>
-          <NewCostWidget
-            onCancel={editCostModalState.close}
-            defaultValues={{
-              workspaceId: props.entry.workspace.id,
-              currency: props.entry.netAmount.currency,
-              invoiceDate: props.entry.invoiceDate,
-              netValue: props.entry.netAmount.amount,
-              grossValue: props.entry.grossAmount?.amount,
-              invoiceNumber: props.entry.invoiceNumber,
-              contractorId: props.entry.contractor?.id,
-              counterparty: props.entry.counterparty,
-              description: props.entry.description,
-            }}
-            services={props.services}
-            onSubmit={(data) =>
-              props.services.mutationService
-                .editCost(props.entry.id, data)
-                .then(editCostModalState.close)
-            }
-          />
-        </DialogContent>
-      </Dialog>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -236,7 +203,24 @@ function ActionMenu(
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem onClick={editCostModalState.open}>
+          <DropdownMenuItem
+            onClick={async () => {
+              const result =
+                await props.services.messageService.editCost.sendRequest({
+                  defaultValues: props.entry.originalCost,
+                });
+              switch (result.action) {
+                case "confirm":
+                  await props.services.mutationService.editCost(
+                    props.entry.id,
+                    result.changes,
+                  );
+                  break;
+                case "cancel":
+                  break;
+              }
+            }}
+          >
             <Pencil />
             Edit Cost
           </DropdownMenuItem>

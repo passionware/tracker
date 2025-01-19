@@ -5,13 +5,14 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 
-export interface PotentialCostsWidgetProps
+export interface PotentialCostWidgetProps
   extends WithServices<
     [
       WithReportDisplayService,
@@ -21,6 +22,7 @@ export interface PotentialCostsWidgetProps
       WithWorkspaceService,
       WithPreferenceService,
       WithMutationService,
+      WithMessageService,
     ]
   > {
   workspaceId: WorkspaceSpec;

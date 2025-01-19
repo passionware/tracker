@@ -1,4 +1,4 @@
-import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
+import { CostPayload } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -16,6 +16,7 @@ import { ContractorPicker } from "@/features/_common/inline-search/ContractorPic
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
@@ -24,12 +25,13 @@ import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
-export interface NewCostWidgetProps
+export interface CostFormProps
   extends WithServices<[WithWorkspaceService, WithContractorService]> {
   defaultValues?: Partial<CostPayload>;
   onSubmit: (
-    data: Omit<Cost, "createdAt" | "linkReports" | "id" | "contractor">,
-  ) => Promise<void>;
+    data: CostPayload,
+    changes: Partial<CostPayload>,
+  ) => Promise<void> | void;
   onCancel: () => void;
 }
 
@@ -45,7 +47,7 @@ type FormModel = {
   description: string;
 };
 
-export function NewCostWidget(props: NewCostWidgetProps) {
+export function CostForm(props: CostFormProps) {
   const promise = promiseState.useRemoteData();
   const form = useForm<FormModel>({
     defaultValues: {
@@ -64,24 +66,23 @@ export function NewCostWidget(props: NewCostWidgetProps) {
   const watchContractorId = form.watch("contractorId");
 
   function handleSubmit(data: FormModel) {
+    const allData = {
+      contractorId: data.contractorId,
+      counterparty: data.counterparty,
+      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
+      currency: maybe.getOrThrow(data.currency, "Currency is required"),
+      netValue: parseFloat(data.netValue),
+      grossValue: parseFloat(data.grossValue),
+      invoiceNumber: data.invoiceNumber,
+      invoiceDate: maybe.getOrThrow(
+        data.invoiceDate,
+        "Invoice date is required",
+      ),
+      description: data.description,
+    };
     void promise.track(
-      props.onSubmit({
-        contractorId: data.contractorId,
-        counterparty: data.counterparty,
-        workspaceId: maybe.getOrThrow(
-          data.workspaceId,
-          "Workspace is required",
-        ),
-        currency: maybe.getOrThrow(data.currency, "Currency is required"),
-        netValue: parseFloat(data.netValue),
-        grossValue: parseFloat(data.grossValue),
-        invoiceNumber: data.invoiceNumber,
-        invoiceDate: maybe.getOrThrow(
-          data.invoiceDate,
-          "Invoice date is required",
-        ),
-        description: data.description,
-      }),
+      props.onSubmit(allData, getDirtyFields(allData, form)) ??
+        Promise.resolve(),
     );
   }
 

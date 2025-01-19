@@ -522,6 +522,7 @@ function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
   const status = getStatus();
 
   return {
+    originalCost: cost,
     id: cost.id,
     invoiceNumber: cost.invoiceNumber,
     invoiceDate: cost.invoiceDate,

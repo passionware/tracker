@@ -6,8 +6,9 @@ import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
-import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
-import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
+import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
+import { CostWidget } from "@/features/costs/CostWidget.tsx";
+import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
@@ -159,7 +160,7 @@ export function RootWidget(
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <CostsWidget
+                    <CostWidget
                       workspaceId={workspaceId}
                       clientId={clientId}
                       services={props.services}
@@ -180,7 +181,7 @@ export function RootWidget(
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <PotentialCostsWidget
+                    <PotentialCostWidget
                       workspaceId={workspaceId}
                       clientId={clientId}
                       services={props.services}
@@ -216,6 +217,7 @@ export function RootWidget(
       <RenderIfAuthenticated services={props.services}>
         <VariableEditModalWidget services={props.services} />
         <ReportEditModalWidget services={props.services} />
+        <CostEditModalWidget services={props.services} />
       </RenderIfAuthenticated>
     </>
   );

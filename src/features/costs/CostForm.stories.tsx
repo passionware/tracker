@@ -4,21 +4,21 @@ import { createContractorService } from "@/services/io/ContractorService/Contrac
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
 import type { StoryObj } from "@storybook/react";
 
-import { NewCostWidget, NewCostWidgetProps } from "./NewCostWidget";
+import { CostForm, CostFormProps } from "./CostForm.tsx";
 
 const meta = {
-  component: NewCostWidget,
+  component: CostForm,
   args: {
     services: {
       workspaceService: createWorkspaceService(),
       contractorService: createContractorService(),
     },
   },
-} satisfies FixedMeta<NewCostWidgetProps>;
+} satisfies FixedMeta<CostFormProps>;
 
 export default meta;
 
-type Story = StoryObj<NewCostWidgetProps>;
+type Story = StoryObj<CostFormProps>;
 
 export const Default = {} satisfies Story;
 export const WithDefaultValues = {
