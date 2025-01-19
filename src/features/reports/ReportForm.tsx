@@ -11,8 +11,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { ExpressionChooser } from "@/features/_common/ExpressionChooser.tsx";
 import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
@@ -21,6 +27,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -37,6 +44,7 @@ export interface ReportWidgetFormProps
       WithContractorService,
       WithWorkspaceService,
       WithExpressionService,
+      WithFormatService,
     ]
   > {
   defaultValues?: Partial<ReportPayload>;
@@ -224,29 +232,45 @@ export function ReportForm(props: ReportWidgetFormProps) {
                 <Input {...field} />
               </FormControl>
               <FormDescription>Enter net value</FormDescription>
-              <SimpleTooltip title="Define `hours_to_report_value` variable to calculate this value automatically. First, enter the expression input in the field above.">
-                <Button
-                  variant="accent2"
-                  onClick={async () => {
-                    const hours_to_report_value =
-                      await props.services.expressionService.ensureExpressionValue(
-                        {
-                          workspaceId:
-                            form.watch("workspaceId") ?? idSpecUtils.ofAll(),
-                          clientId:
-                            form.watch("clientId") ?? idSpecUtils.ofAll(),
-                          contractorId:
-                            form.watch("contractorId") ?? idSpecUtils.ofAll(),
-                        },
-                        "vars.hours_to_report_value",
-                        { input: form.watch("netValue") },
-                      );
-                    form.setValue("netValue", String(hours_to_report_value));
-                  }}
-                >
-                  Take from `hours_to_report_value`
-                </Button>
-              </SimpleTooltip>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="accent2"
+                    size="xs"
+                    onClick={async () => {
+                      const hours_to_report_value =
+                        await props.services.expressionService.ensureExpressionValue(
+                          {
+                            workspaceId:
+                              form.watch("workspaceId") ?? idSpecUtils.ofAll(),
+                            clientId:
+                              form.watch("clientId") ?? idSpecUtils.ofAll(),
+                            contractorId:
+                              form.watch("contractorId") ?? idSpecUtils.ofAll(),
+                          },
+                          "vars.hours_to_report_value",
+                          { input: form.watch("netValue") },
+                        );
+                      form.setValue("netValue", String(hours_to_report_value));
+                    }}
+                  >
+                    Variables
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="max-w-3xl w-fit overflow-x-auto">
+                  <PopoverHeader>Calculate net value</PopoverHeader>
+                  <ExpressionChooser
+                    services={props.services}
+                    context={{
+                      workspaceId:
+                        form.watch("workspaceId") ?? idSpecUtils.ofAll(),
+                      clientId: form.watch("clientId") ?? idSpecUtils.ofAll(),
+                      contractorId:
+                        form.watch("contractorId") ?? idSpecUtils.ofAll(),
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}

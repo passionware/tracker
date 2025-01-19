@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -23,6 +24,7 @@ export type ReportEditModalWidgetProps = WithServices<
     WithWorkspaceService,
     WithMessageService,
     WithExpressionService,
+    WithFormatService,
   ]
 >;
 export function ReportEditModalWidget(props: ReportEditModalWidgetProps) {

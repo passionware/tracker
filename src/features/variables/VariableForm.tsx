@@ -108,6 +108,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
               <FormLabel>Client</FormLabel>
               <FormControl>
                 <ClientPicker
+                  allowClear
                   services={props.services}
                   value={field.value}
                   onSelect={field.onChange}

@@ -36,6 +36,7 @@ export interface ListViewProps<TData> {
   skeletonRows?: number;
   caption?: React.ReactNode;
   onRowDoubleClick?: (row: TData) => void;
+  className?: string;
 }
 
 export type ColumnDefinition<TData> = ColumnDef<TData> & {};
@@ -46,6 +47,7 @@ export function ListView<TData>({
   skeletonRows = 6,
   caption,
   onRowDoubleClick,
+  className,
 }: ListViewProps<TData>) {
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -122,7 +124,7 @@ export function ListView<TData>({
     .journey(data)
     .wait(() => (
       // Wyświetlamy skeletony
-      <div className="rounded-md border overflow-auto">
+      <div className={cn("rounded-md border overflow-auto", className)}>
         <Table>
           <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
             {columnsElement}
@@ -148,7 +150,7 @@ export function ListView<TData>({
     ))
     .catch((error) => (
       // Wyświetlamy błąd
-      <div className="rounded-md border p-4 text-red-600">
+      <div className={cn("rounded-md border p-4 text-red-600", className)}>
         <ErrorMessageRenderer error={error} />
       </div>
     ))
@@ -156,7 +158,7 @@ export function ListView<TData>({
       // Mamy faktyczne dane – tworzymy UI tabeli
 
       return (
-        <div className="rounded-md border overflow-auto">
+        <div className={cn("rounded-md border overflow-auto", className)}>
           <Table>
             {/* NAGŁÓWEK */}
             <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
