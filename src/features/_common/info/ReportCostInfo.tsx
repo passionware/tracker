@@ -372,7 +372,6 @@ Koszt AB: 800+350 = 1150 eur
 // można zrobić stats, gdzie mamy ile firma jest na plusie (faktura net - podłączone raporty sum billingAmount) a ile ma jeszcze długu (raporty - costy)
 // todo: musimy umiec zobaczyc ze na danej fakturze jest zysk spółki, np 2x80eur daje 40+115+5(zysk) = 160 eur
 // todo: jak dodamy nowy koszt, to chcemy zrobić tak, żeby był polinkowany z raportem, ale powinno być widać w UI ze raport opłacony jest!
-// todo: ujemny clarify w work report compensation - (-35 eur) - sprawdzic dlaczego
 // todo: możliwość clarify kosztów (np koszt niepowiązany z kontraktorem, koszt inny) (wtedy cost status clarified vs matched + kolumna clarified)
 // todo: widok kontraktora - jego zarobki, raporty, etc (m.in widok ciągłości raportów dla każdego klienta)
 //       - w tym widoku chcemy zobaczyć czy koszty Dawida zostały całkowicie rozliczone, tak samo jego raporty
@@ -382,10 +381,8 @@ Koszt AB: 800+350 = 1150 eur
 // todo: linkowanie raportów do faktur draft cost - opcja powiększenia kwoty faktury o kwotę linka
 // todo: sortowanie kolumn!
 // todo: ładne query toolbary edytowalne, w listach i inline search tez!
-// todo: edycja elementów
-// todo: lista kontraktorów
+// todo: lista kontraktorów, z możliwością opcji "mam x kasy w firmie, komu ile moge zaplacic aby sprawiedliwie podzielic"
 // todo: flow stream chart
 // todo: zarządzanie użytkownikami (role, uprawnienia, etc)
 // todo: zarządzanie workspace'ami
-// todo: row level security aktualizować aby odzwierciedlać uprawnienia
 // todo: jak dodamy nowy aport etc, to upewnijmy się że jesteśmy na kliencie/workspace, który dotyczy nowo dodanego raportu inaczej nie będzie widoczny
