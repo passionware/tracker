@@ -1,5 +1,4 @@
-import { CreateReportPayload } from "@/api/mutation/mutation.api.ts";
-import { ReportQuery } from "@/api/reports/reports.api.ts";
+import { ReportPayload, ReportQuery } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Dialog,
@@ -50,7 +49,7 @@ export interface InlineReportSearchProps
     ]
   > {
   query: ReportQuery;
-  initialNewReportValues?: Partial<CreateReportPayload>;
+  initialNewReportValues?: Partial<ReportPayload>;
   onSelect: (data: { reportId: number; value: LinkValue }) => void;
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;

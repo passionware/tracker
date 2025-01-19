@@ -1,4 +1,4 @@
-import { CreateReportPayload } from "@/api/mutation/mutation.api.ts";
+import { ReportPayload } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -37,10 +37,10 @@ export interface ReportWidgetFormProps
       WithWorkspaceService,
     ]
   > {
-  defaultValues?: Partial<CreateReportPayload>;
+  defaultValues?: Partial<ReportPayload>;
   onSubmit: (
-    data: CreateReportPayload,
-    changedFields: Partial<CreateReportPayload>,
+    data: ReportPayload,
+    changedFields: Partial<ReportPayload>,
   ) => Promise<void> | void;
   onCancel: () => void;
 }

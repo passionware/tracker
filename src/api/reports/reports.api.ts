@@ -22,9 +22,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 
-export interface ReportBase {
-  id: number;
-  createdAt: string;
+export interface ReportPayload {
   contractorId: number;
   periodStart: Date;
   periodEnd: Date;
@@ -35,6 +33,11 @@ export interface ReportBase {
   netValue: number;
 
   currency: string;
+}
+
+export interface ReportBase extends ReportPayload {
+  id: number;
+  createdAt: string;
 }
 
 export type Report = ReportBase & {
