@@ -1,4 +1,4 @@
-import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
+import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -13,7 +13,7 @@ import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
-import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
+import { NewBillingWidget } from "@/features/billing/NewBillingWidget.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -23,14 +23,10 @@ import { useColumns } from "./BillingWidget.columns";
 
 export function BillingWidget(props: BillingWidgetProps) {
   const [query, setQuery] = useState(
-    clientBillingQueryUtils.ofDefault(props.workspaceId, props.clientId),
+    billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
   const billings = props.services.reportDisplayService.useBillingView(
-    clientBillingQueryUtils.ensureDefault(
-      query,
-      props.workspaceId,
-      props.clientId,
-    ),
+    billingQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
   );
 
   const addBillingState = promiseState.useRemoteData();
@@ -46,9 +42,7 @@ export function BillingWidget(props: BillingWidgetProps) {
               allowUnassigned
               filter={query.filters.contractorId}
               onFilterChange={(x) =>
-                setQuery(
-                  clientBillingQueryUtils.setFilter(query, "contractorId", x),
-                )
+                setQuery(billingQueryUtils.setFilter(query, "contractorId", x))
               }
               services={props.services}
             />
@@ -70,7 +64,7 @@ export function BillingWidget(props: BillingWidgetProps) {
             content={(bag) => (
               <>
                 <PopoverHeader>Add new billing</PopoverHeader>
-                <NewClientBillingWidget
+                <NewBillingWidget
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -90,7 +84,7 @@ export function BillingWidget(props: BillingWidgetProps) {
                   onSubmit={(data) =>
                     addBillingState.track(
                       props.services.mutationService
-                        .createClientBilling(data)
+                        .createBilling(data)
                         .then(bag.close),
                     )
                   }

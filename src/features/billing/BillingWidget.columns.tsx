@@ -25,10 +25,10 @@ import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
-import { NewClientBillingWidget } from "@/features/billing/NewClientBillingWidget.tsx";
+import { NewBillingWidget } from "@/features/billing/NewBillingWidget.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { ClientBillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
@@ -37,7 +37,7 @@ import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-const columnHelper = createColumnHelper<ClientBillingViewEntry>();
+const columnHelper = createColumnHelper<BillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
   return [
     columnHelper.accessor("workspace", {
@@ -166,7 +166,7 @@ function ActionMenu(
       WithWorkspaceService,
     ]
   > & {
-    entry: ClientBillingViewEntry;
+    entry: BillingViewEntry;
   },
 ) {
   const isDangerMode = props.services.preferenceService.useIsDangerMode();
@@ -177,7 +177,7 @@ function ActionMenu(
         <DialogContent>
           <DialogTitle>Edit billing</DialogTitle>
           <DialogDescription></DialogDescription>
-          <NewClientBillingWidget
+          <NewBillingWidget
             onCancel={editModalState.close}
             defaultValues={{
               workspaceId: props.entry.workspace.id,
@@ -192,7 +192,7 @@ function ActionMenu(
             services={props.services}
             onSubmit={(data) =>
               props.services.mutationService
-                .editClientBilling(props.entry.id, data)
+                .editBilling(props.entry.id, data)
                 .then(editModalState.close)
             }
           />

@@ -1,25 +1,25 @@
-import { ClientBillingApi } from "@/api/client-billing/client-billing.api.ts";
+import { BillingApi } from "@/api/billing/billing.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.ts";
+import { BillingService } from "@/services/io/BillingService/BillingService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
-export function createClientBillingService(
-  api: ClientBillingApi,
+export function createBillingService(
+  api: BillingApi,
   client: QueryClient,
   messageService: MessageService,
-): ClientBillingService {
+): BillingService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
-      queryKey: ["client_billings"],
+      queryKey: ["billings"],
     });
     request.sendResponse();
   });
   return {
-    useClientBillings: (query) => {
+    useBillings: (query) => {
       return useQuery(
         {
-          queryKey: ["client_billings", "list", query],
-          queryFn: () => api.getClientBillings(query),
+          queryKey: ["billings", "list", query],
+          queryFn: () => api.getBillings(query),
         },
         client,
       );

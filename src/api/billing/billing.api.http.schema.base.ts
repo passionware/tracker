@@ -1,8 +1,8 @@
-import { ClientBillingBase } from "./client-billing.api.ts";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
+import { BillingBase } from "./billing.api.ts";
 
-export const clientBillingBase$ = z.object({
+export const billingBase$ = z.object({
   id: z.number(),
   created_at: z.coerce.date(),
   currency: z.string(),
@@ -15,12 +15,10 @@ export const clientBillingBase$ = z.object({
   workspace_id: z.number(),
 });
 
-export type ClientBillingBase$ = z.input<typeof clientBillingBase$>;
+export type BillingBase$ = z.input<typeof billingBase$>;
 
-export function clientBillingBaseFromHttp(
-  clientBilling: ClientBillingBase$,
-): ClientBillingBase {
+export function billingBaseFromHttp(billing: BillingBase$): BillingBase {
   return {
-    ...camelcaseKeys(clientBilling),
+    ...camelcaseKeys(billing),
   };
 }

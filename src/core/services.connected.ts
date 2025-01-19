@@ -1,10 +1,10 @@
-import { createClientBillingApi } from "@/api/client-billing/client-billing.api.http.ts";
+import { createBillingApi } from "@/api/billing/billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
-import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
@@ -27,17 +27,17 @@ import { createPreferenceService } from "@/services/internal/PreferenceService/P
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
-import { createClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.impl.ts";
+import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
-import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
+import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
@@ -57,8 +57,8 @@ const reportService = createReportService(
   myQueryClient,
   messageService,
 );
-const clientBillingService = createClientBillingService(
-  createClientBillingApi(mySupabase),
+const billingService = createBillingService(
+  createBillingApi(mySupabase),
   myQueryClient,
   messageService,
 );
@@ -93,7 +93,7 @@ export const myServices = {
   reportDisplayService: createReportDisplayService({
     services: {
       reportService: reportService,
-      clientBillingService,
+      billingService: billingService,
       workspaceService,
       costService,
       exchangeService: createExchangeService(myExchangeApi, myQueryClient),

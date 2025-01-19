@@ -1,4 +1,4 @@
-import { clientBillingQueryUtils } from "@/api/client-billing/client-billing.api.ts";
+import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
-import { InlineBillingSearch } from "@/features/_common/inline-search/InlineClientBillingSearch.tsx";
+import { InlineBillingSearch } from "@/features/_common/inline-search/InlineBillingSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -92,8 +92,8 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                     }),
                   )
                 }
-                query={clientBillingQueryUtils.setFilter(
-                  clientBillingQueryUtils.ofDefault(
+                query={billingQueryUtils.setFilter(
+                  billingQueryUtils.ofDefault(
                     report.workspace.id, // we want to search for client billing in the same workspace as the report
                     report.client.id, // we want to search for client billing for the same client as the report
                   ),

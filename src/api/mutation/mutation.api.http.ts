@@ -76,7 +76,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
       return { id: response.data[0].id };
     },
-    createClientBilling: async (billing) => {
+    createBilling: async (billing) => {
       const response = await client
         .from("billing")
         .insert({
@@ -186,7 +186,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
-    editClientBilling: async (billingId, payload) => {
+    editBilling: async (billingId, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
       const response = await client

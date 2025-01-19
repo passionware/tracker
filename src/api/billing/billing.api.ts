@@ -9,10 +9,10 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -22,7 +22,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { chain } from "lodash";
 
-export interface ClientBillingBase {
+export interface BillingBase {
   id: number;
   createdAt: Date;
   currency: string;
@@ -35,7 +35,7 @@ export interface ClientBillingBase {
   workspaceId: Workspace["id"];
 }
 
-export interface ClientBilling extends ClientBillingBase {
+export interface Billing extends BillingBase {
   // how much of billing value is already linked to reports
   billingReportValue: number;
   //contractors are present in the sql view
@@ -54,7 +54,7 @@ export interface ClientBilling extends ClientBillingBase {
   contractors: Contractor[];
 }
 
-export type ClientBillingQuery = WithFilters<{
+export type BillingQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
@@ -63,15 +63,12 @@ export type ClientBillingQuery = WithFilters<{
   WithPagination &
   WithSorter<"invoiceDate">;
 
-export const clientBillingQueryUtils = {
-  ...withFiltersUtils<ClientBillingQuery>(),
-  ...withPaginationUtils<ClientBillingQuery>(),
-  ...withSorterUtils<ClientBillingQuery>(),
-  ofDefault: (
-    workspaceId: WorkspaceSpec,
-    clientId: ClientSpec,
-  ): ClientBillingQuery =>
-    clientBillingQueryUtils.ensureDefault(
+export const billingQueryUtils = {
+  ...withFiltersUtils<BillingQuery>(),
+  ...withPaginationUtils<BillingQuery>(),
+  ...withSorterUtils<BillingQuery>(),
+  ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): BillingQuery =>
+    billingQueryUtils.ensureDefault(
       {
         filters: {
           clientId: null,
@@ -86,13 +83,13 @@ export const clientBillingQueryUtils = {
       clientId,
     ),
   ensureDefault: (
-    query: ClientBillingQuery,
+    query: BillingQuery,
     workspaceId: WorkspaceSpec,
     clientId: ClientSpec,
-  ): ClientBillingQuery =>
+  ): BillingQuery =>
     chain(query)
       .thru((q) =>
-        clientBillingQueryUtils.setFilter(
+        billingQueryUtils.setFilter(
           q,
           "workspaceId",
           idSpecUtils.mapSpecificOrElse(
@@ -103,7 +100,7 @@ export const clientBillingQueryUtils = {
         ),
       )
       .thru((q) =>
-        clientBillingQueryUtils.setFilter(
+        billingQueryUtils.setFilter(
           q,
           "clientId",
           idSpecUtils.mapSpecificOrElse(
@@ -116,6 +113,6 @@ export const clientBillingQueryUtils = {
       .value(),
 };
 
-export interface ClientBillingApi {
-  getClientBillings: (query: ClientBillingQuery) => Promise<ClientBilling[]>;
+export interface BillingApi {
+  getBillings: (query: BillingQuery) => Promise<Billing[]>;
 }

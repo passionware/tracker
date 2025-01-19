@@ -17,7 +17,7 @@ import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
-  ClientBillingViewEntry,
+  BillingViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -44,7 +44,7 @@ export interface ChargeInfoProps
       WithWorkspaceService,
     ]
   > {
-  billing: ClientBillingViewEntry;
+  billing: BillingViewEntry;
 }
 export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const linkingState = promiseState.useRemoteData();

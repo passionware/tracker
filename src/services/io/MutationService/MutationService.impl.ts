@@ -28,8 +28,8 @@ export function createMutationService(
       });
       return response;
     },
-    createClientBilling: async (billing) => {
-      const response = await api.createClientBilling(billing);
+    createBilling: async (billing) => {
+      const response = await api.createBilling(billing);
       await config.services.messageService.reportSystemEffect.sendRequest({
         scope: "Creating client billing",
       });
@@ -98,8 +98,8 @@ export function createMutationService(
         scope: "Editing cost",
       });
     },
-    editClientBilling: async (billingId, payload) => {
-      await api.editClientBilling(billingId, payload);
+    editBilling: async (billingId, payload) => {
+      await api.editBilling(billingId, payload);
       await config.services.messageService.reportSystemEffect.sendRequest({
         scope: "Editing client billing",
       });

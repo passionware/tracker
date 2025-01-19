@@ -1,19 +1,17 @@
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import {
-  clientBilling$,
-  clientBillingFromHttp,
-} from "@/api/client-billing/client-billing.api.http.schema.ts";
-import { ClientBillingApi } from "@/api/client-billing/client-billing.api.ts";
+  billing$,
+  billingFromHttp,
+} from "@/api/billing/billing.api.http.schema.ts";
+import { BillingApi } from "@/api/billing/billing.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { snakeCase } from "lodash";
 import { z } from "zod";
 
-export function createClientBillingApi(
-  client: SupabaseClient,
-): ClientBillingApi {
+export function createBillingApi(client: SupabaseClient): BillingApi {
   return {
-    getClientBillings: async (query) => {
+    getBillings: async (query) => {
       let request = client.from("billing_with_details").select("*");
       if (query.filters.contractorId) {
         switch (query.filters.contractorId.operator) {
@@ -96,9 +94,7 @@ export function createClientBillingApi(
       if (error) {
         throw error;
       }
-      return parseWithDataError(z.array(clientBilling$), data).map(
-        clientBillingFromHttp,
-      );
+      return parseWithDataError(z.array(billing$), data).map(billingFromHttp);
     },
   };
 }

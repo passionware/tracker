@@ -1,7 +1,7 @@
 import {
-  clientBillingBase$,
-  clientBillingBaseFromHttp,
-} from "@/api/client-billing/client-billing.api.http.schema.base.ts";
+  billingBase$,
+  billingBaseFromHttp,
+} from "@/api/billing/billing.api.http.schema.base.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import {
@@ -32,7 +32,7 @@ export const report$ = reportBase$.extend({
   link_billing_reports: z.array(
     z.object({
       link: linkBillingReport$,
-      billing: clientBillingBase$.nullable(),
+      billing: billingBase$.nullable(),
     }),
   ),
   link_cost_reports: z.array(
@@ -59,7 +59,7 @@ export function reportFromHttp(report: Report$): Report {
     ...reportBaseFromHttp(report),
     linkBillingReport: report.link_billing_reports.map((value) => ({
       link: linkBillingReportFromHttp(value.link),
-      billing: maybe.mapOrNull(value.billing, clientBillingBaseFromHttp),
+      billing: maybe.mapOrNull(value.billing, billingBaseFromHttp),
     })),
     linkCostReport: report.link_cost_reports.map((value) => ({
       link: linkCostReportFromHttp(value.link),

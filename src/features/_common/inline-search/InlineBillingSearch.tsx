@@ -1,4 +1,4 @@
-import { ClientBillingQuery } from "@/api/client-billing/client-billing.api.ts";
+import { BillingQuery } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
@@ -24,7 +24,7 @@ export interface InlineBillingSearchProps
   extends WithServices<
     [WithReportDisplayService, WithFormatService, WithClientService]
   > {
-  query: ClientBillingQuery;
+  query: BillingQuery;
   onSelect: (data: { billingId: number; value: LinkValue }) => void;
   maxAmount: CurrencyValue;
   className?: string;

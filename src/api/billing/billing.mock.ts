@@ -1,9 +1,9 @@
-import { ClientBillingBase } from "@/api/client-billing/client-billing.api.ts";
+import { BillingBase } from "@/api/billing/billing.api.ts";
 import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
 import { faker } from "@faker-js/faker";
 import { createMockFactory } from "@passionware/entities";
 
-export const clientBillingMock = createMockFactory<ClientBillingBase>(
+export const billingMock = createMockFactory<BillingBase>(
   () => ({
     clientId: faker.number.int(),
     totalGross: faker.number.float(),

@@ -8,7 +8,7 @@ import {
   WithSorter,
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { ClientBillingBase } from "@/api/client-billing/client-billing.api.ts";
+import { BillingBase } from "@/api/billing/billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { CostBase } from "@/api/cost/cost.api.ts";
@@ -42,7 +42,7 @@ export type Report = ReportBase & {
   client: Client;
   linkBillingReport: {
     link: LinkBillingReport;
-    billing: Nullable<ClientBillingBase>;
+    billing: Nullable<BillingBase>;
   }[];
   linkCostReport: { link: LinkCostReport; cost: CostBase }[];
   // todo: add billingById, costById - relevant entities in a map

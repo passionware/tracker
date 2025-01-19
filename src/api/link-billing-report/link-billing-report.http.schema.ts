@@ -36,7 +36,7 @@ export function linkBillingReportFromHttp(
       ),
       billingId: maybe.getOrThrow(
         linkBillingReport.billing_id,
-        'client_billing_id is required for linkType "reconcile"',
+        'billing_id is required for linkType "reconcile"',
       ),
       reportId: maybe.getOrThrow(
         linkBillingReport.report_id,

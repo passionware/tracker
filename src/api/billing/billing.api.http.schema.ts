@@ -1,14 +1,10 @@
 import {
-  clientBillingBase$,
-  clientBillingBaseFromHttp,
-} from "@/api/client-billing/client-billing.api.http.schema.base.ts";
-import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
+  billingBase$,
+  billingBaseFromHttp,
+} from "@/api/billing/billing.api.http.schema.base.ts";
+import { Billing } from "@/api/billing/billing.api.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
-import {
-  reportBase$,
-  reportBaseFromHttp,
-} from "@/api/reports/reports.api.http.schema.base.ts";
 import {
   contractor$,
   contractorFromHttp,
@@ -17,9 +13,13 @@ import {
   linkBillingReport$,
   linkBillingReportFromHttp,
 } from "@/api/link-billing-report/link-billing-report.http.schema.ts";
+import {
+  reportBase$,
+  reportBaseFromHttp,
+} from "@/api/reports/reports.api.http.schema.base.ts";
 import { z } from "zod";
 
-export const clientBilling$ = clientBillingBase$.extend({
+export const billing$ = billingBase$.extend({
   // todo it should not be now circular, so maybe we can just make normal zod here
   total_report_value: z.number(),
   // how much billing is actually linked to reports
@@ -38,22 +38,20 @@ export const clientBilling$ = clientBillingBase$.extend({
   contractors: z.array(z.object({ contractor: contractor$ })),
 });
 
-export type ClientBilling$ = z.infer<typeof clientBilling$>;
+export type Billing$ = z.infer<typeof billing$>;
 
-export function clientBillingFromHttp(
-  clientBilling: ClientBilling$,
-): ClientBilling {
+export function billingFromHttp(billing: Billing$): Billing {
   return {
-    ...clientBillingBaseFromHttp(clientBilling),
-    billingBalance: clientBilling.billing_balance,
-    totalBillingValue: clientBilling.total_billing_value,
-    billingReportValue: clientBilling.total_report_value,
-    remainingBalance: clientBilling.remaining_balance,
-    client: clientFromHttp(clientBilling.client),
-    contractors: clientBilling.contractors.map((c) =>
+    ...billingBaseFromHttp(billing),
+    billingBalance: billing.billing_balance,
+    totalBillingValue: billing.total_billing_value,
+    billingReportValue: billing.total_report_value,
+    remainingBalance: billing.remaining_balance,
+    client: clientFromHttp(billing.client),
+    contractors: billing.contractors.map((c) =>
       contractorFromHttp(c.contractor),
     ),
-    linkBillingReport: clientBilling.link_billing_reports.map((x) => ({
+    linkBillingReport: billing.link_billing_reports.map((x) => ({
       link: linkBillingReportFromHttp({ ...x.link }),
       report: reportBaseFromHttp({ ...x.report }),
     })),

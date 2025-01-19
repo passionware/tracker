@@ -1,5 +1,5 @@
-import { ClientBillingBase } from "@/api/client-billing/client-billing.api.ts";
-import { CreateClientBillingPayload } from "@/api/mutation/mutation.api.ts";
+import { BillingBase } from "@/api/billing/billing.api.ts";
+import { CreateBillingPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -22,10 +22,10 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
-export interface NewClientBillingWidgetProps
+export interface NewBillingWidgetProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
-  defaultValues?: Partial<CreateClientBillingPayload>;
-  onSubmit: (data: Omit<ClientBillingBase, "id" | "createdAt">) => void;
+  defaultValues?: Partial<CreateBillingPayload>;
+  onSubmit: (data: Omit<BillingBase, "id" | "createdAt">) => void;
   onCancel: () => void;
 }
 
@@ -40,7 +40,7 @@ type FormModel = {
   description: string;
 };
 
-export function NewClientBillingWidget(props: NewClientBillingWidgetProps) {
+export function NewBillingWidget(props: NewBillingWidgetProps) {
   const form = useForm<FormModel>({
     defaultValues: {
       clientId: props.defaultValues?.clientId,
