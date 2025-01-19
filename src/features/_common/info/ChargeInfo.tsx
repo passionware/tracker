@@ -16,6 +16,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   BillingViewEntry,
   WithReportDisplayService,
@@ -42,6 +43,7 @@ export interface ChargeInfoProps
       WithClientService,
       WithContractorService,
       WithWorkspaceService,
+      WithExpressionService,
     ]
   > {
   billing: BillingViewEntry;

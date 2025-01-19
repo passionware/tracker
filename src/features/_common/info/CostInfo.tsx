@@ -18,6 +18,7 @@ import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   CostEntry,
   WithReportDisplayService,
@@ -46,6 +47,7 @@ export interface CostInfoProps
       WithClientService,
       WithContractorService,
       WithWorkspaceService,
+      WithExpressionService,
     ]
   > {
   costEntry: CostEntry;
