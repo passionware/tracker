@@ -83,7 +83,7 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                 onSelect={(data) =>
                   linkingState.track(
                     services.mutationService.linkReportAndBilling({
-                      type: "reconcile",
+                      linkType: "reconcile",
                       reportId: report.id,
                       reportAmount: data.value.source,
                       billingId: data.billingId,

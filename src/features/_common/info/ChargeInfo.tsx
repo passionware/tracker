@@ -115,7 +115,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 onSelect={(report) => {
                   linkingState.track(
                     services.mutationService.linkReportAndBilling({
-                      type: "reconcile",
+                      linkType: "reconcile",
                       billingId: billing.id,
                       billingAmount: report.value.source,
                       reportId: report.reportId,

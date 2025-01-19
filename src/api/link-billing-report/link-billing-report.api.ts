@@ -1,7 +1,4 @@
-export type LinkBillingReport = {
-  id: number;
-  createdAt: string;
-} & (
+export type LinkBillingReportPayload =
   | {
       linkType: "reconcile";
       billingId: number;
@@ -26,5 +23,9 @@ export type LinkBillingReport = {
       billingAmount: number;
       reportAmount: null;
       reportId: null;
-    }
-);
+    };
+
+export type LinkBillingReport = {
+  id: number;
+  createdAt: string;
+} & LinkBillingReportPayload;

@@ -1,4 +1,4 @@
-import { LinkReportBillingPayload } from "@/api/mutation/mutation.api.ts";
+import { LinkReportBillingPayloadDep } from "@/api/mutation/mutation.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 
 export interface InlineClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
-  onSelect: (data: LinkReportBillingPayload) => void;
+  onSelect: (data: LinkReportBillingPayloadDep) => void;
   maxAmount: number;
   context: { reportId: number } | { billingId: number };
 }
@@ -35,18 +35,22 @@ export function InlineBillingClarify(props: InlineClarifyProps) {
         switch (true) {
           case "reportId" in props.context:
             props.onSelect({
-              type: "clarify",
+              linkType: "clarify",
               reportId: props.context.reportId,
               reportAmount: data.clarifyAmount,
               description: data.clarifyJustification,
+              billingId: null,
+              billingAmount: null,
             });
             break;
           case "billingId" in props.context:
             props.onSelect({
-              type: "clarify",
+              linkType: "clarify",
               billingId: props.context.billingId,
               billingAmount: data.clarifyAmount,
               description: data.clarifyJustification,
+              reportId: null,
+              reportAmount: null,
             });
             break;
         }

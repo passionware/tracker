@@ -1,5 +1,5 @@
 import {
-  LinkReportBillingPayload,
+  LinkReportBillingPayloadDep,
   MutationApi,
 } from "@/api/mutation/mutation.api.ts";
 import { maybe } from "@passionware/monads";
@@ -10,8 +10,8 @@ import { pickBy } from "lodash";
 export function createMutationApi(client: SupabaseClient): MutationApi {
   const formatDateForSupabase = (date: Date) => format(date, "yyyy-MM-dd");
 
-  function getInsertPayload(payload: LinkReportBillingPayload) {
-    switch (payload.type) {
+  function getInsertPayload(payload: LinkReportBillingPayloadDep) {
+    switch (payload.linkType) {
       case "clarify":
         return {
           description: payload.description,

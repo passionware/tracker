@@ -147,9 +147,9 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                 maxAmount={report.remainingAmount.amount}
                 services={services}
                 onSelect={(data) => {
-                  assert(data.type === "clarify");
+                  assert(data.linkType === "clarify");
                   assert(
-                    "reportId" in data,
+                    data.reportAmount,
                     "Only report clarifications are allowed",
                   );
                   void clarifyState.track(
