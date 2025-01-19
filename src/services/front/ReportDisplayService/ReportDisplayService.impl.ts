@@ -64,11 +64,11 @@ export function createReportDisplayService(
                   currency,
                 })),
               ),
-              reconciledAmount: prepareValues(
+              billedAmount: prepareValues(
                 Object.entries(groupedEntries).map(([currency, reports]) => ({
                   amount: sumBy(
                     reports,
-                    (report) => report.reconciledAmount.amount,
+                    (report) => report.billedAmount.amount,
                   ),
                   currency,
                 })),
@@ -393,10 +393,6 @@ function calculateReportEntry(
     instantEarnings: getInstantEarningsStatus(),
     deferredEarnings: getDeferredEarningStatus(),
     //
-    reconciledAmount: {
-      amount: report.reportBillingValue,
-      currency: report.currency,
-    },
     billedAmount: {
       // todo probably reconciled and billed will be the same
       amount: report.reportBillingValue,

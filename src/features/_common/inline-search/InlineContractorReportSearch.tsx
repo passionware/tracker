@@ -134,12 +134,6 @@ export function InlineContractorReportSearch(
                     </TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(
-                        report.reconciledAmount.amount,
-                        report.reconciledAmount.currency,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {props.services.formatService.financial.amount(
                         report.remainingAmount.amount,
                         report.remainingAmount.currency,
                       )}

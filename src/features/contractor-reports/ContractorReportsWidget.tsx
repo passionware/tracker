@@ -147,7 +147,6 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                   description: "How much billed value is linked to reports",
                   value: view.total.chargedAmount,
                 },
-                { label: "Reconciled", value: view.total.reconciledAmount },
                 {
                   label: "To link",
                   description:

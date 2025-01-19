@@ -22,7 +22,7 @@ export interface ContractorReportView {
   entries: ContractorReportViewEntry[];
   total: {
     netAmount: CurrencyValueGroup;
-    reconciledAmount: CurrencyValueGroup;
+    billedAmount: CurrencyValueGroup;
     chargedAmount: CurrencyValueGroup;
     toChargeAmount: CurrencyValueGroup;
     compensatedAmount: CurrencyValueGroup;
@@ -41,7 +41,6 @@ export interface ContractorReportViewEntry {
    * Whether the reported work has been already billed or not.
    */
   status: "billed" | "partially-billed" | "clarified" | "uncovered";
-  reconciledAmount: CurrencyValue;
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
   billingLinks: ContractorReport["linkBillingReport"];

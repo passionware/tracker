@@ -53,7 +53,7 @@ export function ContractorReportInfo({
     <div className="flex flex-col gap-4">
       <TransferView
         fromAmount={report.remainingAmount}
-        toAmount={report.reconciledAmount}
+        toAmount={report.billedAmount}
         services={services}
         fromLabel="Unlinked to billing"
         toLabel="Linked to billing"

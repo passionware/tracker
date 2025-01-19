@@ -30,6 +30,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain } from "lodash";
@@ -44,6 +45,7 @@ export interface CostInfoProps
       WithMutationService,
       WithClientService,
       WithContractorService,
+      WithWorkspaceService,
     ]
   > {
   costEntry: CostEntry;
