@@ -7,11 +7,11 @@ export const variable$ = z.object({
   name: z.string(),
   type: z.enum(["const", "expression"]),
   value: z.string(),
-  workspaceId: z.number().nullable(),
-  clientId: z.number().nullable(),
-  contractorId: z.number().nullable(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  workspace_id: z.number().nullable(),
+  client_id: z.number().nullable(),
+  contractor_id: z.number().nullable(),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
 });
 
 export type Variable$ = z.infer<typeof variable$>;

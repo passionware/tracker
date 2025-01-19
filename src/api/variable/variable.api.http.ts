@@ -1,5 +1,8 @@
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
-import { variable$ } from "@/api/variable/variable.api.http.schema.ts";
+import {
+  variable$,
+  variableFromHttp,
+} from "@/api/variable/variable.api.http.schema.ts";
 import { VariableApi } from "@/api/variable/variable.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -10,30 +13,30 @@ import { z } from "zod";
 export function createVariableApi(client: SupabaseClient): VariableApi {
   return {
     getVariables: async (query) => {
-      let request = client.from("variables").select("*");
+      let request = client.from("variable").select("*");
       if (query.filters.type) {
-        request = enumFilterSupabaseUtils.filterBy.arrayColumn(
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
           query.filters.type,
           "type",
         );
       }
       if (query.filters.workspaceId) {
-        request = enumFilterSupabaseUtils.filterBy.arrayColumn(
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
           query.filters.workspaceId,
           "workspace_id",
         );
       }
       if (query.filters.clientId) {
-        request = enumFilterSupabaseUtils.filterBy.arrayColumn(
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
           query.filters.clientId,
           "client_id",
         );
       }
       if (query.filters.contractorId) {
-        request = enumFilterSupabaseUtils.filterBy.arrayColumn(
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
           query.filters.contractorId,
           "contractor_id",
@@ -56,11 +59,11 @@ export function createVariableApi(client: SupabaseClient): VariableApi {
         throw error;
       }
 
-      return parseWithDataError(z.array(variable$), data);
+      return parseWithDataError(z.array(variable$), data).map(variableFromHttp);
     },
     createVariable: async (variable) => {
       const { data, error } = await client
-        .from("variables")
+        .from("variable")
         // @ts-expect-error - for some reason Variable is not assignable to Record<string, unknown>???
         .insert(snakecaseKeys(variable));
       if (error) {
@@ -70,16 +73,16 @@ export function createVariableApi(client: SupabaseClient): VariableApi {
     },
     updateVariable: async (id, variable) => {
       const { data, error } = await client
-        .from("variables")
+        .from("variable")
         .update(snakecaseKeys(variable))
         .match({ id });
       if (error) {
         throw error;
       }
-      return parseWithDataError(variable$, data);
+      parseWithDataError(variable$.pick({ id: true }), data);
     },
     deleteVariable: async (id) => {
-      const { error } = await client.from("variables").delete().match({ id });
+      const { error } = await client.from("variable").delete().match({ id });
       if (error) {
         throw error;
       }

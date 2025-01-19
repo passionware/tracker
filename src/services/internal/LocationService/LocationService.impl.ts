@@ -24,6 +24,7 @@ export function createLocationService(
       "charges",
       "costs",
       "potentialCosts",
+      "variables",
       "root",
     ] satisfies (keyof typeof routing)[];
 

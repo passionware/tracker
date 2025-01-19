@@ -1,9 +1,9 @@
-import { ZodError, ZodType } from "zod";
+import { z, ZodError, ZodType } from "zod";
 
 export function parseWithDataError<Schema extends ZodType>(
   schema: Schema,
   data: unknown,
-) {
+): z.infer<Schema> {
   try {
     return schema.parse(data);
   } catch (error) {

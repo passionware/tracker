@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
+import {EnumFilter} from "@/api/_common/query/filters/EnumFilter.ts";
+import {PostgrestFilterBuilder} from "@supabase/postgrest-js";
 
 type Builder = PostgrestFilterBuilder<any, any, any, unknown, unknown>;
 
@@ -14,10 +14,10 @@ export const enumFilterSupabaseUtils = {
     ): S {
       switch (filter.operator) {
         case "oneOf":
-          builder = builder.filter(column, "in", filter.value);
+          builder = builder.filter(column, "in", `(${filter.value.join(",")})`);
           break;
         case "matchNone":
-          builder = builder.not(column, "in", filter.value);
+          builder = builder.not(column, "in", `(${filter.value.join(",")})`);
           break;
       }
       return builder;
@@ -29,10 +29,10 @@ export const enumFilterSupabaseUtils = {
     ): S {
       switch (filter.operator) {
         case "oneOf":
-          builder = builder.filter(column, "ov", filter.value);
+          builder = builder.filter(column, "ov", `{${filter.value.join(",")}}`);
           break;
         case "matchNone":
-          builder = builder.not(column, "ov", filter.value);
+          builder = builder.not(column, "ov", `{${filter.value.join(",")}}`);
           break;
       }
       return builder;
