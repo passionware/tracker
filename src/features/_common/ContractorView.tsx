@@ -8,7 +8,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { cva, VariantProps } from "class-variance-authority";
-import { TriangleAlert } from "lucide-react";
+import { CircleSlash, TriangleAlert } from "lucide-react";
 
 export interface ContractorViewProps
   extends VariantProps<typeof contractorViewVariants> {
@@ -40,7 +40,12 @@ export function ContractorView({
   const avatar = (
     <Avatar className={cn(contractorViewVariants({ size }), className)}>
       {rd
-        .journey(contractor)
+        .fullJourney(contractor)
+        .initially(
+          <SimpleTooltip title="No contractor">
+            <CircleSlash className="w-full h-full text-slate-400" />
+          </SimpleTooltip>,
+        )
         .wait(<Skeleton className="size-8 rounded-full" />)
         .catch(() => (
           <AvatarFallback>
@@ -70,7 +75,8 @@ export function ContractorView({
     <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
       {avatar}
       {rd
-        .journey(contractor)
+        .fullJourney(contractor)
+        .initially("No contractor")
         .wait(<Skeleton className="w-20" />)
         .catch(() => "error")
         .map((contractor) => contractor.name)}

@@ -18,6 +18,8 @@ import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
+import { VariableForm } from "@/features/variables/VariableForm.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -58,7 +60,7 @@ export function VariablesWidget(props: VariablesWidget) {
     variableQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
   );
 
-  const addVariableState = promiseState.useRemoteData();
+  const addVariableState = promiseState.useRemoteData<void>();
 
   return (
     <CommonPageContainer
@@ -89,10 +91,31 @@ export function VariablesWidget(props: VariablesWidget) {
                 Add variable
               </Button>
             }
-            content={() => (
+            content={(bag) => (
               <>
                 <PopoverHeader>Add new variable</PopoverHeader>
-                TODO: Implement NewVariableWidget
+                <VariableForm
+                  services={props.services}
+                  defaultValues={{
+                    workspaceId: idSpecUtils.switchAll(props.workspaceId, null),
+                    contractorId:
+                      query.filters.contractorId?.operator === "oneOf"
+                        ? idSpecUtils.switchAll(
+                            query.filters.contractorId.value[0],
+                            null,
+                          )
+                        : null,
+                    clientId: idSpecUtils.switchAll(props.clientId, null),
+                  }}
+                  onCancel={() => addVariableState.reset()}
+                  onSubmit={(data) =>
+                    addVariableState.track(
+                      props.services.variableService
+                        .createVariable(data)
+                        .then(() => void bag.close()),
+                    )
+                  }
+                />
               </>
             )}
           />

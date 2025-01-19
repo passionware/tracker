@@ -12,7 +12,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd, RemoteData } from "@passionware/monads";
 import { cva, VariantProps } from "class-variance-authority";
-import { TriangleAlert } from "lucide-react";
+import { CircleSlash, TriangleAlert } from "lucide-react";
 
 export interface WorkspaceViewProps
   extends VariantProps<typeof workspaceViewVariants> {
@@ -39,7 +39,12 @@ export function WorkspaceView({
   const avatar = (
     <Avatar className={cn(workspaceViewVariants({ size }), className)}>
       {rd
-        .journey(workspace)
+        .fullJourney(workspace)
+        .initially(
+          <SimpleTooltip title="No workspace">
+            <CircleSlash className="w-full h-full text-slate-400" />
+          </SimpleTooltip>,
+        )
         .wait(<Skeleton className="size-8 rounded-full" />)
         .catch(() => (
           <AvatarFallback>
@@ -67,7 +72,8 @@ export function WorkspaceView({
     <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
       {avatar}
       {rd
-        .journey(workspace)
+        .fullJourney(workspace)
+        .initially("No workspace")
         .wait(<Skeleton className="w-20" />)
         .catch(() => "error")
         .map((workspace) => workspace.name)}

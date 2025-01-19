@@ -11,7 +11,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { cva, VariantProps } from "class-variance-authority";
-import { TriangleAlert } from "lucide-react";
+import { CircleSlash, TriangleAlert } from "lucide-react";
 
 export interface Client {
   id: number;
@@ -44,7 +44,12 @@ export function ClientView({
   const avatar = (
     <Avatar className={cn(clientViewVariants({ size }), className)}>
       {rd
-        .journey(client)
+        .fullJourney(client)
+        .initially(
+          <SimpleTooltip title="No client">
+            <CircleSlash className="w-full h-full text-slate-400" />
+          </SimpleTooltip>,
+        )
         .wait(<Skeleton className="size-8 rounded-full" />)
         .catch(() => (
           <AvatarFallback>
@@ -72,7 +77,8 @@ export function ClientView({
     <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
       {avatar}
       {rd
-        .journey(client)
+        .fullJourney(client)
+        .initially("No client")
         .wait(<Skeleton className="w-20" />)
         .catch(() => "error")
         .map((client) => client.name)}

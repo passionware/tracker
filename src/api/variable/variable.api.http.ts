@@ -7,7 +7,7 @@ import { VariableApi } from "@/api/variable/variable.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { snakeCase } from "lodash";
-import * as snakecaseKeys from "snakecase-keys";
+import snakecaseKeys from "snakecase-keys";
 import { z } from "zod";
 
 export function createVariableApi(client: SupabaseClient): VariableApi {
@@ -65,7 +65,9 @@ export function createVariableApi(client: SupabaseClient): VariableApi {
       const { data, error } = await client
         .from("variable")
         // @ts-expect-error - for some reason Variable is not assignable to Record<string, unknown>???
-        .insert(snakecaseKeys(variable));
+        .insert(snakecaseKeys(variable))
+        .select("*")
+        .single();
       if (error) {
         throw error;
       }
@@ -75,7 +77,9 @@ export function createVariableApi(client: SupabaseClient): VariableApi {
       const { data, error } = await client
         .from("variable")
         .update(snakecaseKeys(variable))
-        .match({ id });
+        .match({ id })
+        .select("*")
+        .single();
       if (error) {
         throw error;
       }
