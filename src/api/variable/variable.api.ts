@@ -35,8 +35,8 @@ export interface Variable extends VariablePayload {
 
 export type VariableQuery = WithFilters<{
   type: Nullable<EnumFilter<VariablePayload["type"]>>;
-  workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
-  clientId: Nullable<EnumFilter<Client["id"]>>;
+  workspaceId: Nullable<EnumFilter<Nullable<Workspace["id"]>>>;
+  clientId: Nullable<EnumFilter<Nullable<Client["id"]>>>;
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithSorter<
@@ -87,7 +87,7 @@ export const variableQueryUtils = {
           "workspaceId",
           idSpecUtils.mapSpecificOrElse(
             workspaceId,
-            (x) => ({ operator: "oneOf", value: [x] }),
+            (x) => ({ operator: "oneOf", value: [x, null] }),
             null,
           ),
         ),
@@ -98,7 +98,7 @@ export const variableQueryUtils = {
           "clientId",
           idSpecUtils.mapSpecificOrElse(
             clientId,
-            (x) => ({ operator: "oneOf", value: [x] }),
+            (x) => ({ operator: "oneOf", value: [x, null] }),
             null,
           ),
         ),
