@@ -71,9 +71,7 @@ export type ReportQuery = WithFilters<{
   WithSorter<"periodStart" | "periodEnd" | "netValue">;
 
 export interface ReportApi {
-  getReports: (
-    query: ReportQuery,
-  ) => Promise<Report[]>;
+  getReports: (query: ReportQuery) => Promise<Report[]>;
   getReport: (id: number) => Promise<Report>;
 }
 

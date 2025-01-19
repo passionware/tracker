@@ -1,7 +1,4 @@
-import {
-  Report,
-  ReportQuery,
-} from "@/api/reports/reports.api.ts";
+import { Report, ReportQuery } from "@/api/reports/reports.api.ts";
 import { RemoteData } from "@passionware/monads";
 
 export interface ReportService {

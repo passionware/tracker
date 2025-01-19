@@ -18,8 +18,8 @@ const meta = {
     sourceCurrency: "PLN",
     targetCurrency: "EUR",
     title: "Link to report",
-    sourceLabel:"Report amount",
-    targetLabel:"Contributes to billing amount",
+    sourceLabel: "Report amount",
+    targetLabel: "Contributes to billing amount",
   },
   argTypes: {
     onValueChange: { action: "onValueChange" },

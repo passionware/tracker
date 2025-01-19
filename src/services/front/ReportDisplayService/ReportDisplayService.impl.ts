@@ -1,6 +1,6 @@
 import { ClientBilling } from "@/api/client-billing/client-billing.api.ts";
-import { Report } from "@/api/reports/reports.api.ts";
 import { Cost } from "@/api/cost/cost.api.ts";
+import { Report } from "@/api/reports/reports.api.ts";
 import {
   Workspace,
   workspaceQueryUtils,
@@ -9,13 +9,13 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientBillingViewEntry,
-  ReportViewEntry,
   CostEntry,
   ReportDisplayService,
+  ReportViewEntry,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.ts";
-import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
+import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { addDays, isSameDay } from "date-fns";
@@ -39,8 +39,7 @@ export function createReportDisplayService(
 ): ReportDisplayService {
   return {
     useReportView: (query) => {
-      const reports =
-        config.services.reportService.useReports(query);
+      const reports = config.services.reportService.useReports(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );

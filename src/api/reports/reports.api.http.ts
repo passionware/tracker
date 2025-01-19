@@ -9,9 +9,7 @@ import { snakeCase } from "lodash";
 import { z } from "zod";
 import { ReportApi } from "./reports.api.ts";
 
-export function createReportsApi(
-  client: SupabaseClient,
-): ReportApi {
+export function createReportsApi(client: SupabaseClient): ReportApi {
   return {
     getReports: async (query) => {
       let request = client
@@ -84,9 +82,7 @@ export function createReportsApi(
       if (error) {
         throw error;
       }
-      return parseWithDataError(z.array(report$), data).map(
-        reportFromHttp,
-      );
+      return parseWithDataError(z.array(report$), data).map(reportFromHttp);
     },
     getReport: async () => {
       throw new Error("Not implemented");

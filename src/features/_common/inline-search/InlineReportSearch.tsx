@@ -1,5 +1,5 @@
-import { ReportQuery } from "@/api/reports/reports.api.ts";
 import { CreateReportPayload } from "@/api/mutation/mutation.api.ts";
+import { ReportQuery } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Dialog,
@@ -58,9 +58,7 @@ export interface InlineReportSearchProps
   className?: string;
 }
 
-export function InlineReportSearch(
-  props: InlineReportSearchProps,
-) {
+export function InlineReportSearch(props: InlineReportSearchProps) {
   const reports = props.services.reportDisplayService.useReportView(
     props.query,
   );

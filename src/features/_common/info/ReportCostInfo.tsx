@@ -43,10 +43,7 @@ export interface ReportCostInfoProps
   report: ReportViewEntry;
 }
 
-export function ReportCostInfo({
-  services,
-  report,
-}: ReportCostInfoProps) {
+export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
 

@@ -1,7 +1,4 @@
-import {
-  ReportQuery,
-  reportQueryUtils,
-} from "@/api/reports/reports.api.ts";
+import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -30,19 +27,13 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const [contractorFilter, setContractorFilter] = useState<
     ReportQuery["filters"]["contractorId"]
   >(
-    reportQueryUtils.ofDefault(props.workspaceId, props.clientId)
-      .filters.contractorId,
+    reportQueryUtils.ofDefault(props.workspaceId, props.clientId).filters
+      .contractorId,
   );
   const reports = props.services.reportDisplayService.useReportView(
-    chain(
-      reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
-    )
+    chain(reportQueryUtils.ofDefault(props.workspaceId, props.clientId))
       .thru((x) =>
-        reportQueryUtils.setFilter(
-          x,
-          "contractorId",
-          contractorFilter,
-        ),
+        reportQueryUtils.setFilter(x, "contractorId", contractorFilter),
       )
       .value(),
   );

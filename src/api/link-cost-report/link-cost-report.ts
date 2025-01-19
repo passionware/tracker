@@ -1,6 +1,6 @@
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 
-export type LinkCostReport   = {
+export type LinkCostReport = {
   id: number;
   createdAt: Date;
   costAmount: number;

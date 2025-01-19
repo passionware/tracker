@@ -110,14 +110,10 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                   .thru((x) =>
                     costEntry.contractor
                       ? // if the cost is already assigned to a contractor, just allow to search his reports
-                        reportQueryUtils.setFilter(
-                          x,
-                          "contractorId",
-                          {
-                            operator: "oneOf",
-                            value: [costEntry.contractor.id],
-                          },
-                        )
+                        reportQueryUtils.setFilter(x, "contractorId", {
+                          operator: "oneOf",
+                          value: [costEntry.contractor.id],
+                        })
                       : x,
                   )
                   .value()}

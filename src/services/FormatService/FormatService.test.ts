@@ -74,7 +74,7 @@ describe("FormatService", () => {
 
         it("should handle same-day target correctly", () => {
           vi.useFakeTimers();
-          let currentTime = new Date("2024-10-01T10:00:00");
+          const currentTime = new Date("2024-10-01T10:00:00");
           const clock = () => currentTime; // Custom clock function
           const formatService = createFormatService(clock);
           const targetDate = new Date("2024-10-01T23:59:59");

@@ -5,11 +5,6 @@ import {
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import {
-  reportBase$,
-  reportBaseFromHttp,
-} from "@/api/reports/reports.api.http.schema.base.ts";
-import { Report } from "@/api/reports/reports.api.ts";
-import {
   contractor$,
   contractorFromHttp,
 } from "@/api/contractor/contractor.api.http.schema.ts";
@@ -25,6 +20,11 @@ import {
   linkCostReport$,
   linkCostReportFromHttp,
 } from "@/api/link-cost-report/link-cost-report.http.schema.ts";
+import {
+  reportBase$,
+  reportBaseFromHttp,
+} from "@/api/reports/reports.api.http.schema.base.ts";
+import { Report } from "@/api/reports/reports.api.ts";
 import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
@@ -54,9 +54,7 @@ export const report$ = reportBase$.extend({
 
 export type Report$ = z.infer<typeof report$>;
 
-export function reportFromHttp(
-  report: Report$,
-): Report {
+export function reportFromHttp(report: Report$): Report {
   return {
     ...reportBaseFromHttp(report),
     linkBillingReport: report.link_billing_reports.map((value) => ({
@@ -75,9 +73,6 @@ export function reportFromHttp(
     reportBillingBalance: report.report_billing_balance,
     billingCostBalance: report.billing_cost_balance,
     immediatePaymentDue: report.immediate_payment_due,
-    previousReport: maybe.mapOrNull(
-      report.previous_report,
-      reportBaseFromHttp,
-    ),
+    previousReport: maybe.mapOrNull(report.previous_report, reportBaseFromHttp),
   };
 }

@@ -25,8 +25,8 @@ import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { headers } from "@/features/reports/headers.tsx";
+import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -118,10 +118,7 @@ export function useColumns(props: ReportsWidgetProps) {
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Link billings to report</PopoverHeader>
-            <ReportInfo
-              report={info.row.original}
-              services={props.services}
-            />
+            <ReportInfo report={info.row.original} services={props.services} />
           </PopoverContent>
         </Popover>
       ),

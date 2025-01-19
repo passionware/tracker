@@ -3,12 +3,9 @@ import {
   ClientBillingQuery,
 } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import {
-  Report,
-  ReportQuery,
-} from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
+import { Report, ReportQuery } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 
@@ -136,9 +133,7 @@ export interface ReportDisplayService {
   /**
    * Returns a list of reports, with all links and billing information.
    */
-  useReportView: (
-    query: ReportQuery,
-  ) => RemoteData<ReportView>;
+  useReportView: (query: ReportQuery) => RemoteData<ReportView>;
   /**
    * Returns a list of billing information, with all links and contractor report information.
    * @param query

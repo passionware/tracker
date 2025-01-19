@@ -1,7 +1,6 @@
-import * as React from "react";
-import * as PopoverPrimitive from "@radix-ui/react-popover";
-
 import { cn } from "@/lib/utils";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import * as React from "react";
 
 const Popover = PopoverPrimitive.Root;
 
@@ -27,7 +26,11 @@ const PopoverContent = React.forwardRef<
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 function PopoverHeader({ children }: { children: React.ReactNode }) {
-  return <div className="text-lg text-gray-700 mb-4 pb-3 font-semibold border-b">{children}</div>;
+  return (
+    <div className="text-lg text-gray-700 mb-4 pb-3 font-semibold border-b">
+      {children}
+    </div>
+  );
 }
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverHeader };

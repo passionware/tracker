@@ -1,7 +1,12 @@
-import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator,} from "@/components/ui/breadcrumb.tsx";
-import {Separator} from "@/components/ui/separator.tsx";
-import {SidebarTrigger} from "@/components/ui/sidebar.tsx";
-import {Fragment, PropsWithChildren, ReactNode} from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
+import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
+import { Fragment, PropsWithChildren, ReactNode } from "react";
 
 /**
  * Experimental
@@ -51,7 +56,9 @@ export function CommonPageContainer(
           )}
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">{props.children}</div>
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
+        {props.children}
+      </div>
     </>
   );
 }

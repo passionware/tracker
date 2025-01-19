@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import {Maybe, rd} from "@passionware/monads";
+import { Maybe, rd } from "@passionware/monads";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 

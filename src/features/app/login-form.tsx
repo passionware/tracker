@@ -13,8 +13,8 @@ import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, Send } from "lucide-react";
 import { ComponentProps } from "react";
 import { useForm } from "react-hook-form";
-import placeholder from "./placeholder.png";
 import tracker from "../../../public/tracker.png";
+import placeholder from "./placeholder.png";
 
 export function LoginForm({
   className,
@@ -147,9 +147,9 @@ export function LoginForm({
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
             <img
-                src={tracker}
-                alt="Image"
-                className="absolute top-5 -left-12 size-24 object-cover"
+              src={tracker}
+              alt="Image"
+              className="absolute top-5 -left-12 size-24 object-cover"
             />
           </div>
         </CardContent>
