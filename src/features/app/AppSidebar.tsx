@@ -90,13 +90,13 @@ function useData(
           ],
         },
         {
-          title: "Documentation",
-          url: "#",
+          title: "Environment",
+          url: "",
           icon: BookOpen,
           items: [
             {
-              title: "Introduction",
-              url: "#",
+              title: "Variables",
+              url: routing.variables(),
             },
             {
               title: "Get Started",

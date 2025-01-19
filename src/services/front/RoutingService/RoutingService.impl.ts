@@ -15,6 +15,8 @@ export function createRoutingService(): RoutingService {
             reports: () => `/w/${workspaceSlot}/clients/${clientSlot}/reports`,
             charges: () => `/w/${workspaceSlot}/clients/${clientSlot}/charges`,
             costs: () => `/w/${workspaceSlot}/clients/${clientSlot}/costs`,
+            variables: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/variables`,
             potentialCosts: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/potentialCosts`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,

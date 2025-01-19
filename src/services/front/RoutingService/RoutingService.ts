@@ -77,6 +77,7 @@ export interface RoutingService {
       reports: () => string;
       charges: () => string;
       costs: () => string;
+      variables: () => string;
       potentialCosts: () => string;
       root: () => string;
       forContractor: (contractorId?: ContractorParam) => {

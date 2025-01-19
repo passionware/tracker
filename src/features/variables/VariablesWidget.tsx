@@ -17,7 +17,6 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbL
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
-  ContractorSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -41,7 +40,6 @@ export interface VariablesWidget
   > {
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
-  contractId: ContractorSpec;
 }
 
 const columnHelper = createColumnHelper<Variable>();

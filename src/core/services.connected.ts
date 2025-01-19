@@ -5,6 +5,7 @@ import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
@@ -37,6 +38,8 @@ import { createCostService } from "@/services/io/CostService/CostService.impl.ts
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
+import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
@@ -114,6 +117,13 @@ export const myServices = {
   workspaceService,
   costService,
   preferenceService,
+  variableService: createVariableService({
+    services: {
+      messageService,
+    },
+    client: myQueryClient,
+    api: createVariableApi(mySupabase),
+  }),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -130,6 +140,7 @@ export const myServices = {
     WithWorkspaceService,
     WithCostService,
     WithPreferenceService,
+    WithVariableService,
   ]
 >;
 

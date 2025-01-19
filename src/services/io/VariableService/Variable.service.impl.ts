@@ -18,11 +18,14 @@ export function createVariableService(
 
   return {
     useVariables: (query) =>
-      useQuery({
-        queryKey: ["variables", query],
-        enabled: !!query,
-        queryFn: () => config.api.getVariables(query!),
-      }),
+      useQuery(
+        {
+          queryKey: ["variables", query],
+          enabled: !!query,
+          queryFn: () => config.api.getVariables(query!),
+        },
+        config.client,
+      ),
     ensureVariables: (query) =>
       config.client.fetchQuery({
         queryKey: ["variables", query],

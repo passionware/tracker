@@ -7,6 +7,7 @@ import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { VariablesWidget } from "@/features/variables/VariablesWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -24,6 +25,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";
@@ -57,6 +59,7 @@ export function RootWidget(
       WithWorkspaceService,
       WithCostService,
       WithPreferenceService,
+      WithVariableService,
     ]
   >,
 ) {
@@ -164,6 +167,27 @@ export function RootWidget(
                   <PotentialCostsWidget
                     workspaceId={workspaceId}
                     clientId={clientId}
+                    services={props.services}
+                  />
+                )}
+              </IdResolver>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={props.services.routingService
+          .forWorkspace()
+          .forClient()
+          .variables()}
+        element={
+          <ProtectedRoute services={props.services}>
+            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+              <IdResolver services={props.services}>
+                {(workspaceId, clientId) => (
+                  <VariablesWidget
+                    clientId={clientId}
+                    workspaceId={workspaceId}
                     services={props.services}
                   />
                 )}
