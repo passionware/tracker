@@ -18,6 +18,14 @@ export function createRoutingService(): RoutingService {
             potentialCosts: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/potentialCosts`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,
+            forContractor: (contractorId) => {
+              const contractorSlot =
+                routingUtils.contractor.toString(contractorId);
+              return {
+                root: () =>
+                  `/w/${workspaceSlot}/clients/${clientSlot}/contractors/${contractorSlot}`,
+              };
+            },
           };
         },
       };

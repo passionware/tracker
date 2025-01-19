@@ -12,3 +12,7 @@ export interface VariableService {
   updateVariable: VariableApi["updateVariable"];
   deleteVariable: VariableApi["deleteVariable"];
 }
+
+export interface WithVariableService {
+  variableService: VariableService;
+}

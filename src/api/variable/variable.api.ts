@@ -10,7 +10,13 @@ import {
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
+import { chain } from "lodash";
 
 export interface VariablePayload {
   name: string;
@@ -31,7 +37,7 @@ export type VariableQuery = WithFilters<{
   type: Nullable<EnumFilter<VariablePayload["type"]>>;
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   clientId: Nullable<EnumFilter<Client["id"]>>;
-  contractorId: Nullable<EnumFilter<Contractor["id"]>>;
+  contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithSorter<
     Exclude<keyof Variable, "id" | "workspaceId" | "clientId" | "contractorId">
@@ -52,16 +58,50 @@ export const variableQueryUtils = {
   ...withFiltersUtils<VariableQuery>(),
   ...withSorterUtils<VariableQuery>(),
   ofDefault: (
-    workspaceId: Workspace["id"],
-    clientId: Client["id"],
-  ): VariableQuery => ({
-    filters: {
-      workspaceId: { operator: "oneOf", value: [workspaceId] },
-      clientId: { operator: "oneOf", value: [clientId] },
-      contractorId: null,
-      type: null,
-    },
-    sort: { field: "updatedAt", order: "asc" },
-    page: paginationUtils.ofDefault(),
-  }),
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): VariableQuery =>
+    variableQueryUtils.ensureDefault(
+      {
+        filters: {
+          workspaceId: null,
+          clientId: null,
+          contractorId: null,
+          type: null,
+        },
+        sort: { field: "updatedAt", order: "asc" },
+        page: paginationUtils.ofDefault(),
+      },
+      workspaceId,
+      clientId,
+    ),
+  ensureDefault: (
+    query: VariableQuery,
+    workspaceId: WorkspaceSpec,
+    clientId: ClientSpec,
+  ): VariableQuery =>
+    chain(query)
+      .thru((q) =>
+        variableQueryUtils.setFilter(
+          q,
+          "workspaceId",
+          idSpecUtils.mapSpecificOrElse(
+            workspaceId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .thru((q) =>
+        variableQueryUtils.setFilter(
+          q,
+          "clientId",
+          idSpecUtils.mapSpecificOrElse(
+            clientId,
+            (x) => ({ operator: "oneOf", value: [x] }),
+            null,
+          ),
+        ),
+      )
+      .value(),
 };
