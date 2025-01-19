@@ -12,7 +12,7 @@ export function createReportService(
     await client.invalidateQueries({
       queryKey: ["contractor_reports"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
 
   return {

@@ -14,7 +14,7 @@ export function createWorkspaceService(
     await queryClient.invalidateQueries({
       queryKey: ["workspaces"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
 
   const findWorkspaceInCache = (id: Workspace["id"]) => {

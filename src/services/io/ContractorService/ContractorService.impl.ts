@@ -14,7 +14,7 @@ export function createContractorService(
     await client.invalidateQueries({
       queryKey: ["contractors", "list"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
 
   return {

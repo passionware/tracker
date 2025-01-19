@@ -14,7 +14,7 @@ export function createClientService(
     await client.invalidateQueries({
       queryKey: ["clients"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
 
   // Funkcja do wyszukiwania klienta w pamięci podręcznej

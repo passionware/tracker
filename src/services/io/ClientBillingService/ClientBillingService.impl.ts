@@ -12,7 +12,7 @@ export function createClientBillingService(
     await client.invalidateQueries({
       queryKey: ["client_billings"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
   return {
     useClientBillings: (query) => {

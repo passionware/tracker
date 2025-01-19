@@ -12,7 +12,7 @@ export function createVariableService(
   config.services.messageService.reportSystemEffect.subscribeToRequest(
     async (payload) => {
       await config.client.invalidateQueries({ queryKey: ["variables"] });
-      payload.resolveCallback();
+      payload.sendResponse();
     },
   );
 

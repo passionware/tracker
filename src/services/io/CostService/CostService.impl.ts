@@ -14,7 +14,7 @@ export function createCostService(
     await queryClient.invalidateQueries({
       queryKey: ["costs"],
     });
-    request.resolveCallback();
+    request.sendResponse();
   });
   return {
     useCosts: (query) =>
