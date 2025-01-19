@@ -13,7 +13,7 @@ import { CircleSlash, TriangleAlert } from "lucide-react";
 export interface ContractorViewProps
   extends VariantProps<typeof contractorViewVariants> {
   contractor: RemoteData<Contractor>;
-  layout?: "full" | "avatar";
+  layout?: "full" | "avatar" | "fullName";
   className?: string;
 }
 
@@ -38,7 +38,7 @@ export function ContractorView({
   className,
 }: ContractorViewProps) {
   const avatar = (
-    <Avatar className={cn(contractorViewVariants({ size }), className)}>
+    <Avatar className={cn(contractorViewVariants({ size }))}>
       {rd
         .fullJourney(contractor)
         .initially(
@@ -72,14 +72,21 @@ export function ContractorView({
   }
 
   return (
-    <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
+    <div
+      className={cn(
+        "flex items-center flex-row gap-2 text-xs whitespace-pre",
+        className,
+      )}
+    >
       {avatar}
       {rd
         .fullJourney(contractor)
         .initially("No contractor")
         .wait(<Skeleton className="w-20" />)
         .catch(() => "error")
-        .map((contractor) => contractor.name)}
+        .map((contractor) =>
+          layout === "fullName" ? contractor.fullName : contractor.name,
+        )}
     </div>
   );
 }

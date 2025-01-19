@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { ContractorView } from "@/features/_common/ContractorView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -84,7 +85,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
       variant="outline"
       role="combobox"
       aria-expanded={open}
-      className={cn("justify-between", props.className)}
+      className={cn("justify-between w-auto", props.className)}
     >
       {rd
         .fullJourney(promise.state)
@@ -100,7 +101,7 @@ export function ContractorPicker(props: ContractorPickerProps) {
         .map((contractor) =>
           unassignedUtils.mapOrElse(
             contractor,
-            (c) => c.fullName,
+            (c) => <ContractorView layout="fullName"  contractor={rd.of(c)} />,
             <>
               <Unlink2 />
               Unassigned
