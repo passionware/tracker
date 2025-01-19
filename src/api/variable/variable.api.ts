@@ -1,5 +1,12 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { WithFilters, WithSorter } from "@/api/_common/query/queryUtils.ts";
+import { paginationUtils } from "@/api/_common/query/pagination.ts";
+import {
+  WithFilters,
+  withFiltersUtils,
+  WithPagination,
+  WithSorter,
+  withSorterUtils,
+} from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -28,7 +35,8 @@ export type VariableQuery = WithFilters<{
 }> &
   WithSorter<
     Exclude<keyof Variable, "id" | "workspaceId" | "clientId" | "contractorId">
-  >;
+  > &
+  WithPagination;
 
 export interface VariableApi {
   getVariables(query: VariableQuery): Promise<Variable[]>;
@@ -39,3 +47,21 @@ export interface VariableApi {
   ): Promise<void>;
   deleteVariable(id: Variable["id"]): Promise<void>;
 }
+
+export const variableQueryUtils = {
+  ...withFiltersUtils<VariableQuery>(),
+  ...withSorterUtils<VariableQuery>(),
+  ofDefault: (
+    workspaceId: Workspace["id"],
+    clientId: Client["id"],
+  ): VariableQuery => ({
+    filters: {
+      workspaceId: { operator: "oneOf", value: [workspaceId] },
+      clientId: { operator: "oneOf", value: [clientId] },
+      contractorId: null,
+      type: null,
+    },
+    sort: { field: "updatedAt", order: "asc" },
+    page: paginationUtils.ofDefault(),
+  }),
+};
