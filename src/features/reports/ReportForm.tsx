@@ -12,13 +12,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
@@ -29,7 +32,12 @@ import { useForm } from "react-hook-form";
 
 export interface ReportWidgetFormProps
   extends WithServices<
-    [WithClientService, WithContractorService, WithWorkspaceService]
+    [
+      WithClientService,
+      WithContractorService,
+      WithWorkspaceService,
+      WithExpressionService,
+    ]
   > {
   defaultValues?: Partial<ReportPayload>;
   onSubmit: (
@@ -216,6 +224,29 @@ export function ReportForm(props: ReportWidgetFormProps) {
                 <Input {...field} />
               </FormControl>
               <FormDescription>Enter net value</FormDescription>
+              <SimpleTooltip title="Define `hours_to_report_value` variable to calculate this value automatically. First, enter the expression input in the field above.">
+                <Button
+                  variant="accent2"
+                  onClick={async () => {
+                    const hours_to_report_value =
+                      await props.services.expressionService.ensureExpressionValue(
+                        {
+                          workspaceId:
+                            form.watch("workspaceId") ?? idSpecUtils.ofAll(),
+                          clientId:
+                            form.watch("clientId") ?? idSpecUtils.ofAll(),
+                          contractorId:
+                            form.watch("contractorId") ?? idSpecUtils.ofAll(),
+                        },
+                        "vars.hours_to_report_value",
+                        { input: form.watch("netValue") },
+                      );
+                    form.setValue("netValue", String(hours_to_report_value));
+                  }}
+                >
+                  Take from `hours_to_report_value`
+                </Button>
+              </SimpleTooltip>
               <FormMessage />
             </FormItem>
           )}
