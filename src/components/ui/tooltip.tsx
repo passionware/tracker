@@ -55,7 +55,7 @@ export function SimpleTooltip({
     >
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPrimitive.Portal>
-        <TooltipContent light={light} className="max-w-96">
+        <TooltipContent light={light} className="max-w-96 break-words">
           {title}
         </TooltipContent>
       </TooltipPrimitive.Portal>
@@ -105,7 +105,7 @@ export function OverflowTooltip({
       open={isOverflowing ? undefined : false}
       {...rest}
     >
-      <Slot ref={triggerRef}>{children}</Slot>
+      <Slot className="cursor-default" ref={triggerRef}>{children}</Slot>
     </SimpleTooltip>
   );
 }

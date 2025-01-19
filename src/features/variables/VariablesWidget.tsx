@@ -6,15 +6,20 @@ import {
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
+import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { FilterChip } from "@/features/_common/FilterChip.tsx";
 import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -36,6 +41,7 @@ export interface VariablesWidget
       WithContractorService,
       WithClientService,
       WithWorkspaceService,
+      WithFormatService,
     ]
   > {
   clientId: ClientSpec;
@@ -101,8 +107,53 @@ export function VariablesWidget(props: VariablesWidget) {
       <ListView
         data={variables}
         columns={[
+          columnHelper.accessor("workspaceId", {
+            header: "Workspace",
+            cell: (info) => (
+              <WorkspaceWidget
+                layout="avatar"
+                workspaceId={info.getValue()}
+                services={props.services}
+              />
+            ),
+          }),
+          columnHelper.accessor("clientId", {
+            header: "Client",
+            cell: (info) => (
+              <ClientWidget
+                layout="avatar"
+                clientId={info.getValue()}
+                services={props.services}
+              />
+            ),
+          }),
+          columnHelper.accessor("contractorId", {
+            header: "Contractor",
+            cell: (info) => (
+              <ContractorWidget
+                layout="avatar"
+                contractorId={info.getValue()}
+                services={props.services}
+              />
+            ),
+          }),
           columnHelper.accessor("name", { header: "Name" }),
-          columnHelper.accessor("value", { header: "Value" }),
+          columnHelper.accessor("value", {
+            header: "Value",
+            cell: (info) => (
+              <OverflowTooltip title={info.getValue()}>
+                <div className="p-1 border border-sky-800/50 rounded bg-sky-50 text-sky-800 max-w-xl w-min truncate">
+                  {info.getValue()}
+                </div>
+              </OverflowTooltip>
+            ),
+          }),
+          columnHelper.accessor("type", { header: "Type" }),
+          columnHelper.accessor("updatedAt", {
+            header: "Last updated",
+            cell: (info) =>
+              props.services.formatService.temporal.datetime(info.getValue()),
+          }),
         ]}
         caption={
           <>
