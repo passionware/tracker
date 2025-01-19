@@ -9,9 +9,9 @@ import {
   WithSearch,
   withSearchUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
+import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -22,9 +22,7 @@ import {
 import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
 
-export interface CostBase {
-  id: number;
-  createdAt: Date;
+export interface CostPayload {
   invoiceNumber: Maybe<string>;
   counterparty: Maybe<string>;
   description: Maybe<string>;
@@ -34,6 +32,11 @@ export interface CostBase {
   contractorId: Maybe<Contractor["id"]>;
   currency: string;
   workspaceId: Workspace["id"];
+}
+
+export interface CostBase extends CostPayload {
+  id: number;
+  createdAt: Date;
 }
 
 export interface Cost extends CostBase {

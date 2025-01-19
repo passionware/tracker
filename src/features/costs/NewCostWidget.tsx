@@ -1,5 +1,4 @@
-import { Cost } from "@/api/cost/cost.api.ts";
-import { CreateCostPayload } from "@/api/mutation/mutation.api.ts";
+import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -27,7 +26,7 @@ import { useForm } from "react-hook-form";
 
 export interface NewCostWidgetProps
   extends WithServices<[WithWorkspaceService, WithContractorService]> {
-  defaultValues?: Partial<CreateCostPayload>;
+  defaultValues?: Partial<CostPayload>;
   onSubmit: (
     data: Omit<Cost, "createdAt" | "linkReports" | "id" | "contractor">,
   ) => Promise<void>;
