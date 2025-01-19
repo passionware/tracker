@@ -90,6 +90,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
               <FormLabel>Workspace</FormLabel>
               <FormControl>
                 <WorkspacePicker
+                  allowUnassigned
                   services={props.services}
                   value={field.value}
                   onSelect={field.onChange}
@@ -108,7 +109,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
               <FormLabel>Client</FormLabel>
               <FormControl>
                 <ClientPicker
-                  allowClear
+                  allowUnassigned
                   services={props.services}
                   value={field.value}
                   onSelect={field.onChange}
@@ -127,7 +128,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
               <FormLabel>Contractor</FormLabel>
               <FormControl>
                 <ContractorPicker
-                  allowClear
+                  allowUnassigned
                   services={props.services}
                   value={field.value}
                   onSelect={field.onChange}
