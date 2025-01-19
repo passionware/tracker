@@ -16,7 +16,7 @@ export type ExpressionContext = {
   contractorId: ContractorSpec;
 };
 
-export type ExpressionArguments = Record<string, string>;
+export type VariableContainer = Record<string, unknown>;
 
 /**
  * A service to calculate the value of an expression.
@@ -50,7 +50,7 @@ export interface ExpressionService {
   useExpressionValue: (
     context: ExpressionContext,
     expression: string,
-    args: ExpressionArguments,
+    args: VariableContainer,
   ) => RemoteData<string>;
   /**
    * Ensure that the expression value is calculated and return the result
@@ -60,7 +60,7 @@ export interface ExpressionService {
   ensureExpressionValue: (
     context: ExpressionContext,
     expression: string,
-    args: ExpressionArguments,
+    args: VariableContainer,
   ) => Promise<unknown>;
 }
 

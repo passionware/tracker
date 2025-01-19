@@ -32,7 +32,6 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
 import { z } from "zod";
 
@@ -378,8 +377,8 @@ function ActionMenu(
                 },
                 "vars.report_url",
                 {
-                  reportStart: format(props.entry.periodStart, "yyyy-MM-dd"),
-                  reportEnd: format(props.entry.periodEnd, "yyyy-MM-dd"),
+                  reportStart: props.entry.periodStart,
+                  reportEnd: props.entry.periodEnd,
                 },
               );
             window.open(z.string().parse(url), "_blank");

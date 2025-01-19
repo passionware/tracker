@@ -1,3 +1,6 @@
+import { expressionEnv } from "@/services/front/ExpressionService/_private/expressionEnv.ts";
+import { VariableContainer } from "@/services/front/ExpressionService/ExpressionService.ts";
+
 export type Expression = {
   type: "const" | "expression";
   /**
@@ -26,7 +29,7 @@ export type Expression = {
  */
 export function evaluateExpression(
   effectiveVariables: Record<string, Expression>,
-  argsContext: Record<string, string>,
+  argsContext: VariableContainer,
   expression: string,
 ): string {
   const cache: Record<string, string> = {};
@@ -78,12 +81,13 @@ export function evaluateExpression(
 
       const wrappedExpression = wrapExpression(variable.value);
 
-      const fn = new Function("vars", "args", wrappedExpression) as (
+      const fn = new Function("vars", "args", "api", wrappedExpression) as (
         vars: typeof varsProxy,
         args: typeof argsProxy,
+        api: typeof expressionEnv,
       ) => string;
 
-      result = fn(varsProxy, argsProxy);
+      result = fn(varsProxy, argsProxy, expressionEnv);
     } else {
       throw new Error(`Unsupported variable type: ${variable.type}`);
     }
@@ -95,9 +99,10 @@ export function evaluateExpression(
 
   const wrappedExpression = wrapExpression(expression);
 
-  const fn = new Function("vars", "args", wrappedExpression) as (
+  const fn = new Function("vars", "args", "api", wrappedExpression) as (
     vars: Record<string, string | undefined>,
-    args: Record<string, string>,
+    args: VariableContainer,
+    api: typeof expressionEnv,
   ) => string;
 
   return fn(
@@ -114,6 +119,7 @@ export function evaluateExpression(
       },
     ),
     argsContext,
+    expressionEnv,
   );
 }
 
