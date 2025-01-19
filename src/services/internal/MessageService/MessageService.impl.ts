@@ -8,5 +8,8 @@ export function createMessageService(): MessageService {
   return {
     reportSystemEffect: createRequestCollectMessaging(),
     editVariable: createRequestResponseMessaging(),
+    editBilling: createRequestResponseMessaging(),
+    editCost: createRequestResponseMessaging(),
+    editReport: createRequestResponseMessaging(),
   };
 }

@@ -9,6 +9,7 @@ import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
@@ -30,6 +31,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
@@ -66,6 +68,7 @@ export function RootWidget(
       WithPreferenceService,
       WithVariableService,
       WithMessageService,
+      WithReportService,
     ]
   >,
 ) {
@@ -212,6 +215,7 @@ export function RootWidget(
       </Routes>
       <RenderIfAuthenticated services={props.services}>
         <VariableEditModalWidget services={props.services} />
+        <ReportEditModalWidget services={props.services} />
       </RenderIfAuthenticated>
     </>
   );

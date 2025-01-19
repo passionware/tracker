@@ -21,7 +21,6 @@ import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -30,12 +29,7 @@ import { useForm } from "react-hook-form";
 
 export interface ReportWidgetFormProps
   extends WithServices<
-    [
-      WithMutationService,
-      WithClientService,
-      WithContractorService,
-      WithWorkspaceService,
-    ]
+    [WithClientService, WithContractorService, WithWorkspaceService]
   > {
   defaultValues?: Partial<ReportPayload>;
   onSubmit: (
@@ -56,7 +50,7 @@ type FormModel = {
   workspaceId: number | null;
 };
 
-export function ReportWidgetForm(props: ReportWidgetFormProps) {
+export function ReportForm(props: ReportWidgetFormProps) {
   const form = useForm<FormModel>({
     defaultValues: {
       contractorId: props.defaultValues?.contractorId,

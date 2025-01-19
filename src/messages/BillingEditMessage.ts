@@ -10,7 +10,7 @@ export interface BillingEditMessage {
       }
     | {
         action: "confirm";
-        variable: BillingPayload;
+        payload: BillingPayload;
         changes: Partial<BillingPayload>;
       };
 }

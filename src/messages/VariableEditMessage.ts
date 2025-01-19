@@ -10,7 +10,7 @@ export interface VariableEditMessage {
       }
     | {
         action: "confirm";
-        variable: VariablePayload;
+        payload: VariablePayload;
         changes: Partial<VariablePayload>;
       };
 }

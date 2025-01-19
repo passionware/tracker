@@ -23,7 +23,7 @@ import {
 } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
+import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 
@@ -75,7 +75,7 @@ export function InlineReportSearch(props: InlineReportSearchProps) {
         <DialogContent>
           <DialogTitle>Edit report</DialogTitle>
           <DialogDescription className="sr-only" />
-          <ReportWidgetForm
+          <ReportForm
             onCancel={editModalState.close}
             defaultValues={props.initialNewReportValues}
             services={props.services}

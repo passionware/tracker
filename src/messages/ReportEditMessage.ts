@@ -10,7 +10,7 @@ export interface ReportEditMessage {
       }
     | {
         action: "confirm";
-        variable: ReportPayload;
+        payload: ReportPayload;
         changes: Partial<ReportPayload>;
       };
 }

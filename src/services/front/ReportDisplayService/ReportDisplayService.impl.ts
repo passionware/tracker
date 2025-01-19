@@ -376,6 +376,7 @@ function calculateReportEntry(
   }
 
   return {
+    originalReport: report,
     id: report.id,
     client: report.client,
     contractor: maybe.getOrThrow(report.contractor, "Contractor is missing"),

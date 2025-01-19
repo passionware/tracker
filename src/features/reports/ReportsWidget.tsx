@@ -12,9 +12,9 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
-import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -76,7 +76,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             content={(bag) => (
               <>
                 <PopoverHeader>Add new contractor report</PopoverHeader>
-                <ReportWidgetForm
+                <ReportForm
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -121,6 +121,20 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     >
       <ListView
         data={rd.map(reports, (r) => r.entries)}
+        onRowDoubleClick={async (row) => {
+          const result =
+            await props.services.messageService.editReport.sendRequest({
+              defaultValues: row.originalReport,
+            });
+          switch (result.action) {
+            case "confirm": {
+              await props.services.mutationService.editReport(
+                row.id,
+                result.changes,
+              );
+            }
+          }
+        }}
         columns={columns}
         caption={
           <>

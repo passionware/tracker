@@ -10,7 +10,7 @@ export interface CostEditMessage {
       }
     | {
         action: "confirm";
-        variable: CostPayload;
+        payload: CostPayload;
         changes: Partial<CostPayload>;
       };
 }

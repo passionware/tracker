@@ -1,44 +1,44 @@
-import { VariablePayload } from "@/api/variable/variable.api.ts";
+import { ReportPayload } from "@/api/reports/reports.api.ts";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog.tsx";
-import { VariableForm } from "@/features/variables/VariableForm.tsx";
+import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithVariableService } from "@/services/io/VariableService/VariableService";
+import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { useSubscribedMessage } from "@passionware/messaging-react";
 
-export type VariableEditModalWidgetProps = WithServices<
+export type ReportEditModalWidgetProps = WithServices<
   [
-    WithVariableService,
+    WithReportService,
     WithClientService,
     WithContractorService,
     WithWorkspaceService,
     WithMessageService,
   ]
 >;
-export function VariableEditModalWidget(props: VariableEditModalWidgetProps) {
+export function ReportEditModalWidget(props: ReportEditModalWidgetProps) {
   const message = useSubscribedMessage(
-    props.services.messageService.editVariable.subscribeToRequest,
+    props.services.messageService.editReport.subscribeToRequest,
   );
   const handleCancel = () => message?.sendResponse({ action: "cancel" });
   const handleConfirm = (
-    payload: VariablePayload,
-    changes: Partial<VariablePayload>,
+    payload: ReportPayload,
+    changes: Partial<ReportPayload>,
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
-        <DialogTitle>Edit variable</DialogTitle>
+        <DialogTitle>Edit report</DialogTitle>
         <DialogDescription></DialogDescription>
-        <VariableForm
+        <ReportForm
           onCancel={handleCancel}
           defaultValues={message?.request.defaultValues}
           services={props.services}

@@ -26,6 +26,7 @@ export interface ReportView {
 }
 
 export interface ReportViewEntry {
+  originalReport: Report;
   id: number;
   netAmount: CurrencyValue;
   periodStart: Date;
