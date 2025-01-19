@@ -13,6 +13,8 @@ import { MergeServices } from "@/platform/typescript/services.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
@@ -74,6 +76,13 @@ const costService = createCostService(
   myQueryClient,
   messageService,
 );
+const variableService = createVariableService({
+  services: {
+    messageService,
+  },
+  client: myQueryClient,
+  api: createVariableApi(mySupabase),
+});
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
@@ -118,14 +127,13 @@ export const myServices = {
   workspaceService,
   costService,
   preferenceService,
-  variableService: createVariableService({
-    services: {
-      messageService,
-    },
-    client: myQueryClient,
-    api: createVariableApi(mySupabase),
-  }),
+  variableService,
   billingService,
+  expressionService: createExpressionService({
+    services: {
+      variableService,
+    },
+  }),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -144,6 +152,7 @@ export const myServices = {
     WithPreferenceService,
     WithVariableService,
     WithBillingService,
+    WithExpressionService,
   ]
 >;
 

@@ -22,6 +22,7 @@ import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -31,7 +32,9 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { z } from "zod";
 
 const columnHelper = createColumnHelper<ReportViewEntry>();
 
@@ -315,6 +318,7 @@ function ActionMenu(
       WithContractorService,
       WithWorkspaceService,
       WithMessageService,
+      WithExpressionService,
     ]
   > & {
     entry: ReportViewEntry;
@@ -362,6 +366,26 @@ function ActionMenu(
         >
           <Pencil />
           Edit Report
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            const url =
+              await props.services.expressionService.ensureExpressionValue(
+                {
+                  clientId: props.entry.client.id,
+                  contractorId: props.entry.contractor.id,
+                  workspaceId: props.entry.workspace.id,
+                },
+                "vars.report_url",
+                {
+                  reportStart: format(props.entry.periodStart, "yyyy-MM-dd"),
+                  reportEnd: format(props.entry.periodEnd, "yyyy-MM-dd"),
+                },
+              );
+            window.open(z.string().parse(url), "_blank");
+          }}
+        >
+          Navigate to report
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>

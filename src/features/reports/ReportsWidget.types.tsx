@@ -1,5 +1,6 @@
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import {
   ClientSpec,
@@ -24,6 +25,7 @@ export interface ReportsWidgetProps
       WithPreferenceService,
       WithWorkspaceService,
       WithMessageService,
+      WithExpressionService,
     ]
   > {
   clientId: ClientSpec;
