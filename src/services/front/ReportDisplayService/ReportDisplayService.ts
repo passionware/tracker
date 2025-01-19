@@ -4,9 +4,9 @@ import {
 } from "@/api/client-billing/client-billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
 import {
-  ContractorReport,
-  ContractorReportQuery,
-} from "@/api/contractor-reports/contractor-reports.api.ts";
+  Report,
+  ReportQuery,
+} from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -18,8 +18,8 @@ import {
 } from "@/services/ExchangeService/ExchangeService.ts";
 import { Maybe, RemoteData } from "@passionware/monads";
 
-export interface ContractorReportView {
-  entries: ContractorReportViewEntry[];
+export interface ReportView {
+  entries: ReportViewEntry[];
   total: {
     netAmount: CurrencyValueGroup;
     billedAmount: CurrencyValueGroup;
@@ -31,7 +31,7 @@ export interface ContractorReportView {
   };
 }
 
-export interface ContractorReportViewEntry {
+export interface ReportViewEntry {
   id: number;
   netAmount: CurrencyValue;
   periodStart: Date;
@@ -43,8 +43,8 @@ export interface ContractorReportViewEntry {
   status: "billed" | "partially-billed" | "clarified" | "uncovered";
   billedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
-  billingLinks: ContractorReport["linkBillingReport"];
-  costLinks: ContractorReport["linkCostReport"];
+  billingLinks: Report["linkBillingReport"];
+  costLinks: Report["linkCostReport"];
   instantEarnings: "compensated" | "partially-compensated" | "uncompensated";
   deferredEarnings: "compensated" | "partially-compensated" | "uncompensated";
   compensatedAmount: CurrencyValue;
@@ -137,8 +137,8 @@ export interface ReportDisplayService {
    * Returns a list of reports, with all links and billing information.
    */
   useReportView: (
-    query: ContractorReportQuery,
-  ) => RemoteData<ContractorReportView>;
+    query: ReportQuery,
+  ) => RemoteData<ReportView>;
   /**
    * Returns a list of billing information, with all links and contractor report information.
    * @param query

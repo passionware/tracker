@@ -1,5 +1,5 @@
-import { ContractorReportQuery } from "@/api/contractor-reports/contractor-reports.api.ts";
-import { CreateContractorReportPayload } from "@/api/mutation/mutation.api.ts";
+import { ReportQuery } from "@/api/reports/reports.api.ts";
+import { CreateReportPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
 } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
+import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 
@@ -38,7 +38,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 
-export interface InlineContractorReportSearchProps
+export interface InlineReportSearchProps
   extends WithServices<
     [
       WithReportDisplayService,
@@ -49,17 +49,17 @@ export interface InlineContractorReportSearchProps
       WithWorkspaceService,
     ]
   > {
-  query: ContractorReportQuery;
-  initialNewReportValues?: Partial<CreateContractorReportPayload>;
-  onSelect: (data: { contractorReportId: number; value: LinkValue }) => void;
+  query: ReportQuery;
+  initialNewReportValues?: Partial<CreateReportPayload>;
+  onSelect: (data: { reportId: number; value: LinkValue }) => void;
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
   showTargetValue: boolean;
   className?: string;
 }
 
-export function InlineContractorReportSearch(
-  props: InlineContractorReportSearchProps,
+export function InlineReportSearch(
+  props: InlineReportSearchProps,
 ) {
   const reports = props.services.reportDisplayService.useReportView(
     props.query,
@@ -78,13 +78,13 @@ export function InlineContractorReportSearch(
         <DialogContent>
           <DialogTitle>Edit report</DialogTitle>
           <DialogDescription className="sr-only" />
-          <NewContractorReportWidget
+          <ReportWidgetForm
             onCancel={editModalState.close}
             defaultValues={props.initialNewReportValues}
             services={props.services}
             onSubmit={(data) =>
               props.services.mutationService
-                .createContractorReport(data)
+                .createReport(data)
                 .then(editModalState.close)
             }
           />
@@ -171,7 +171,7 @@ export function InlineContractorReportSearch(
                         }}
                         onValueChange={(value) =>
                           props.onSelect({
-                            contractorReportId: report.id,
+                            reportId: report.id,
                             value,
                           })
                         }

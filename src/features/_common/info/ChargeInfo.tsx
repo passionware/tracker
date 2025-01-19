@@ -1,4 +1,4 @@
-import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
-import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
+import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -51,13 +51,13 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const clarifyState = promiseState.useRemoteData();
 
   const query = chain(
-    contractorReportQueryUtils.ofDefault(
+    reportQueryUtils.ofDefault(
       billing.workspace.id, // we want only reports from the same workspace
       billing.client.id, // we want only reports from the same client
     ),
   )
     .thru((x) =>
-      contractorReportQueryUtils.setFilter(x, "remainingAmount", {
+      reportQueryUtils.setFilter(x, "remainingAmount", {
         operator: "greaterThan",
         value: 0,
       }),
@@ -65,7 +65,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
     .value();
 
   const matchedReports = services.reportDisplayService.useReportView(
-    contractorReportQueryUtils.setFilter(query, "remainingAmount", {
+    reportQueryUtils.setFilter(query, "remainingAmount", {
       operator: "equal",
       value: 0,
     }),
@@ -108,7 +108,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
               <PopoverHeader>
                 Match the billing with a contractor report
               </PopoverHeader>
-              <InlineContractorReportSearch
+              <InlineReportSearch
                 className="overflow-y-auto h-full"
                 maxSourceAmount={billing.remainingAmount}
                 services={services}
@@ -118,7 +118,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       type: "reconcile",
                       billingId: billing.id,
                       billingAmount: report.value.source,
-                      reportId: report.contractorReportId,
+                      reportId: report.reportId,
                       reportAmount: report.value.target,
                       description: report.value.description,
                     }),

@@ -1,7 +1,7 @@
 import {
-  ContractorReportQuery,
-  contractorReportQueryUtils,
-} from "@/api/contractor-reports/contractor-reports.api.ts";
+  ReportQuery,
+  reportQueryUtils,
+} from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -15,9 +15,9 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
-import { useColumns } from "@/features/contractor-reports/ContractorReportsWidget.columns.tsx";
-import { ContractorReportsWidgetProps } from "@/features/contractor-reports/ContractorReportsWidget.types.tsx";
-import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
+import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
+import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
+import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -26,19 +26,19 @@ import { chain, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
-export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
+export function ReportsWidget(props: ReportsWidgetProps) {
   const [contractorFilter, setContractorFilter] = useState<
-    ContractorReportQuery["filters"]["contractorId"]
+    ReportQuery["filters"]["contractorId"]
   >(
-    contractorReportQueryUtils.ofDefault(props.workspaceId, props.clientId)
+    reportQueryUtils.ofDefault(props.workspaceId, props.clientId)
       .filters.contractorId,
   );
   const reports = props.services.reportDisplayService.useReportView(
     chain(
-      contractorReportQueryUtils.ofDefault(props.workspaceId, props.clientId),
+      reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
     )
       .thru((x) =>
-        contractorReportQueryUtils.setFilter(
+        reportQueryUtils.setFilter(
           x,
           "contractorId",
           contractorFilter,
@@ -85,7 +85,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
             content={(bag) => (
               <>
                 <PopoverHeader>Add new contractor report</PopoverHeader>
-                <NewContractorReportWidget
+                <ReportWidgetForm
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -117,7 +117,7 @@ export function ContractorReportsWidget(props: ContractorReportsWidgetProps) {
                   onSubmit={(data) =>
                     addReportState.track(
                       props.services.mutationService
-                        .createContractorReport(data)
+                        .createReport(data)
                         .then(bag.close),
                     )
                   }

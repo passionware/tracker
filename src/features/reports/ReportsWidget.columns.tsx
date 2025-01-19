@@ -21,16 +21,16 @@ import {
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientView } from "@/features/_common/ClientView.tsx";
-import { ContractorReportCostInfo } from "@/features/_common/info/ContractorReportCostInfo.tsx";
-import { ContractorReportInfo } from "@/features/_common/info/ContractorReportInfo.tsx";
+import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
+import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
-import { ContractorReportsWidgetProps } from "@/features/contractor-reports/ContractorReportsWidget.types.tsx";
-import { headers } from "@/features/contractor-reports/headers.tsx";
-import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
+import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
+import { headers } from "@/features/reports/headers.tsx";
+import { ReportWidgetForm } from "@/features/reports/ReportWidgetForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { ContractorReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -40,9 +40,9 @@ import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
 
-const columnHelper = createColumnHelper<ContractorReportViewEntry>();
+const columnHelper = createColumnHelper<ReportViewEntry>();
 
-export function useColumns(props: ContractorReportsWidgetProps) {
+export function useColumns(props: ReportsWidgetProps) {
   return [
     columnHelper.accessor("workspace", {
       header: "Issuer",
@@ -118,7 +118,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Link billings to report</PopoverHeader>
-            <ContractorReportInfo
+            <ReportInfo
               report={info.row.original}
               services={props.services}
             />
@@ -166,7 +166,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Compensation details</PopoverHeader>
-            <ContractorReportCostInfo
+            <ReportCostInfo
               report={info.row.original}
               services={props.services}
             />
@@ -207,7 +207,7 @@ export function useColumns(props: ContractorReportsWidgetProps) {
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Compensation details</PopoverHeader>
-            <ContractorReportCostInfo
+            <ReportCostInfo
               report={info.row.original}
               services={props.services}
             />
@@ -326,7 +326,7 @@ function ActionMenu(
       WithWorkspaceService,
     ]
   > & {
-    entry: ContractorReportViewEntry;
+    entry: ReportViewEntry;
   },
 ) {
   const isDangerMode = props.services.preferenceService.useIsDangerMode();
@@ -338,7 +338,7 @@ function ActionMenu(
         <DialogContent>
           <DialogTitle>Edit report</DialogTitle>
           <DialogDescription className="sr-only" />
-          <NewContractorReportWidget
+          <ReportWidgetForm
             onCancel={editModalState.close}
             defaultValues={{
               contractorId: props.entry.contractor.id,

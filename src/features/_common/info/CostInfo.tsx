@@ -1,4 +1,4 @@
-import { contractorReportQueryUtils } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -12,7 +12,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
-import { InlineContractorReportSearch } from "@/features/_common/inline-search/InlineContractorReportSearch.tsx";
+import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -83,7 +83,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
               <PopoverHeader>
                 Match the cost with a contractor report
               </PopoverHeader>
-              <InlineContractorReportSearch
+              <InlineReportSearch
                 className="overflow-y-auto h-full"
                 showTargetValue
                 showDescription
@@ -94,7 +94,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                     services.mutationService.linkCostAndReport({
                       type: "link",
                       costId: costEntry.id,
-                      reportId: report.contractorReportId,
+                      reportId: report.reportId,
                       reportAmount: report.value.target,
                       costAmount: report.value.source, // todo: secondary input optionally
                       description: report.value.description,
@@ -102,7 +102,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                   )
                 }
                 query={chain(
-                  contractorReportQueryUtils.ofDefault(
+                  reportQueryUtils.ofDefault(
                     costEntry.workspace.id, // we want to search in the same workspace only!
                     clientId,
                   ),
@@ -110,7 +110,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                   .thru((x) =>
                     costEntry.contractor
                       ? // if the cost is already assigned to a contractor, just allow to search his reports
-                        contractorReportQueryUtils.setFilter(
+                        reportQueryUtils.setFilter(
                           x,
                           "contractorId",
                           {

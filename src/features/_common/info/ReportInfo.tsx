@@ -19,7 +19,7 @@ import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
-  ContractorReportViewEntry,
+  ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -30,7 +30,7 @@ import { promiseState } from "@passionware/platform-react";
 import { partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
-export interface ContractorReportInfoProps
+export interface ReportInfoProps
   extends WithServices<
     [
       WithFormatService,
@@ -40,13 +40,10 @@ export interface ContractorReportInfoProps
       WithClientService,
     ]
   > {
-  report: ContractorReportViewEntry;
+  report: ReportViewEntry;
 }
 
-export function ContractorReportInfo({
-  services,
-  report,
-}: ContractorReportInfoProps) {
+export function ReportInfo({ services, report }: ReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
   return (

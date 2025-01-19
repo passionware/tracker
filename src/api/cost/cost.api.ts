@@ -9,7 +9,7 @@ import {
   WithSearch,
   withSearchUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -38,7 +38,7 @@ export interface CostBase {
 
 export interface Cost extends CostBase {
   contractor: Nullable<Contractor>;
-  linkReports: { link: LinkCostReport; report: ContractorReportBase }[];
+  linkReports: { link: LinkCostReport; report: ReportBase }[];
 }
 
 export type CostQuery = WithSearch &

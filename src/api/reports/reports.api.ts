@@ -22,7 +22,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 
-export interface ContractorReportBase {
+export interface ReportBase {
   id: number;
   createdAt: string;
   contractorId: number;
@@ -37,7 +37,7 @@ export interface ContractorReportBase {
   currency: string;
 }
 
-export type ContractorReport = ContractorReportBase & {
+export type Report = ReportBase & {
   contractor: Contractor;
   client: Client;
   linkBillingReport: {
@@ -58,10 +58,10 @@ export type ContractorReport = ContractorReportBase & {
   billingCostBalance: number; // billing_cost_balance
   // Whether the report has immediate payment due (it is billingCostBalance but clamped to the reported value, if reported value is less than billed value)
   immediatePaymentDue: number; // immediate_payment_due
-  previousReport: Nullable<ContractorReportBase>;
+  previousReport: Nullable<ReportBase>;
 };
 
-export type ContractorReportQuery = WithFilters<{
+export type ReportQuery = WithFilters<{
   clientId: Nullable<EnumFilter<Client["id"]>>;
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
@@ -70,21 +70,21 @@ export type ContractorReportQuery = WithFilters<{
   WithPagination &
   WithSorter<"periodStart" | "periodEnd" | "netValue">;
 
-export interface ContractorReportApi {
-  getContractorReports: (
-    query: ContractorReportQuery,
-  ) => Promise<ContractorReport[]>;
-  getContractorReport: (id: number) => Promise<ContractorReport>;
+export interface ReportApi {
+  getReports: (
+    query: ReportQuery,
+  ) => Promise<Report[]>;
+  getReport: (id: number) => Promise<Report>;
 }
 
-export const contractorReportQueryUtils = {
-  ...withFiltersUtils<ContractorReportQuery>(),
-  ...withPaginationUtils<ContractorReportQuery>(),
-  ...withSorterUtils<ContractorReportQuery>(),
+export const reportQueryUtils = {
+  ...withFiltersUtils<ReportQuery>(),
+  ...withPaginationUtils<ReportQuery>(),
+  ...withSorterUtils<ReportQuery>(),
   ofDefault: (
     workspaceId: WorkspaceSpec,
     clientId: ClientSpec,
-  ): ContractorReportQuery => ({
+  ): ReportQuery => ({
     filters: {
       workspaceId: idSpecUtils.mapSpecificOrElse(
         workspaceId,

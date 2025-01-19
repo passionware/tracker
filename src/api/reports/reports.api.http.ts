@@ -1,19 +1,19 @@
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import {
-  contractorReport$,
-  contractorReportFromHttp,
-} from "@/api/contractor-reports/contractor-reports.api.http.schema.ts";
+  report$,
+  reportFromHttp,
+} from "@/api/reports/reports.api.http.schema.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { snakeCase } from "lodash";
 import { z } from "zod";
-import { ContractorReportApi } from "./contractor-reports.api.ts";
+import { ReportApi } from "./reports.api.ts";
 
-export function createContractorReportsApi(
+export function createReportsApi(
   client: SupabaseClient,
-): ContractorReportApi {
+): ReportApi {
   return {
-    getContractorReports: async (query) => {
+    getReports: async (query) => {
       let request = client
         .from("report_with_details")
         .select("*, contractor (*), client (*)");
@@ -84,11 +84,11 @@ export function createContractorReportsApi(
       if (error) {
         throw error;
       }
-      return parseWithDataError(z.array(contractorReport$), data).map(
-        contractorReportFromHttp,
+      return parseWithDataError(z.array(report$), data).map(
+        reportFromHttp,
       );
     },
-    getContractorReport: async () => {
+    getReport: async () => {
       throw new Error("Not implemented");
     },
   };

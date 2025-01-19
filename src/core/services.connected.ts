@@ -1,6 +1,6 @@
 import { createClientBillingApi } from "@/api/client-billing/client-billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
-import { createContractorReportsApi } from "@/api/contractor-reports/contractor-reports.api.http.ts";
+import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
@@ -29,8 +29,8 @@ import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { createClientBillingService } from "@/services/io/ClientBillingService/ClientBillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { createContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.impl.ts";
-import { WithContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
+import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
@@ -49,8 +49,8 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
-const contractorReportService = createContractorReportService(
-  createContractorReportsApi(mySupabase),
+const reportService = createReportService(
+  createReportsApi(mySupabase),
   myQueryClient,
   messageService,
 );
@@ -77,7 +77,7 @@ export const myServices = {
     myQueryClient,
     messageService,
   ),
-  contractorReportService,
+  reportService: reportService,
   routingService,
   navigationService,
   locationService: createLocationService({
@@ -89,7 +89,7 @@ export const myServices = {
   formatService: createFormatService(() => new Date()),
   reportDisplayService: createReportDisplayService({
     services: {
-      contractorReportService,
+      reportService: reportService,
       clientBillingService,
       workspaceService,
       costService,
@@ -118,7 +118,7 @@ export const myServices = {
   [
     WithAuthService,
     WithClientService,
-    WithContractorReportService,
+    WithReportService,
     WithLocationService,
     WithNavigationService,
     WithRoutingService,

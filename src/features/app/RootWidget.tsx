@@ -3,7 +3,7 @@ import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
-import { ContractorReportsWidget } from "@/features/contractor-reports/ContractorReportsWidget.tsx";
+import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
@@ -101,7 +101,7 @@ export function RootWidget(
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <IdResolver services={props.services}>
                 {(workspaceId, clientId) => (
-                  <ContractorReportsWidget
+                  <ReportsWidget
                     clientId={clientId}
                     workspaceId={workspaceId}
                     services={props.services}

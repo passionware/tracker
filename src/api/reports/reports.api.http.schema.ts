@@ -5,10 +5,10 @@ import {
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import {
-  contractorReportBase$,
-  contractorReportBaseFromHttp,
-} from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
-import { ContractorReport } from "@/api/contractor-reports/contractor-reports.api.ts";
+  reportBase$,
+  reportBaseFromHttp,
+} from "@/api/reports/reports.api.http.schema.base.ts";
+import { Report } from "@/api/reports/reports.api.ts";
 import {
   contractor$,
   contractorFromHttp,
@@ -28,7 +28,7 @@ import {
 import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
-export const contractorReport$ = contractorReportBase$.extend({
+export const report$ = reportBase$.extend({
   link_billing_reports: z.array(
     z.object({
       link: linkBillingReport$,
@@ -49,35 +49,35 @@ export const contractorReport$ = contractorReportBase$.extend({
   report_cost_balance: z.number(),
   billing_cost_balance: z.number(),
   immediate_payment_due: z.number(),
-  previous_report: contractorReportBase$.nullable(),
+  previous_report: reportBase$.nullable(),
 });
 
-export type ContractorReport$ = z.infer<typeof contractorReport$>;
+export type Report$ = z.infer<typeof report$>;
 
-export function contractorReportFromHttp(
-  contractorReport: ContractorReport$,
-): ContractorReport {
+export function reportFromHttp(
+  report: Report$,
+): Report {
   return {
-    ...contractorReportBaseFromHttp(contractorReport),
-    linkBillingReport: contractorReport.link_billing_reports.map((value) => ({
+    ...reportBaseFromHttp(report),
+    linkBillingReport: report.link_billing_reports.map((value) => ({
       link: linkBillingReportFromHttp(value.link),
       billing: maybe.mapOrNull(value.billing, clientBillingBaseFromHttp),
     })),
-    linkCostReport: contractorReport.link_cost_reports.map((value) => ({
+    linkCostReport: report.link_cost_reports.map((value) => ({
       link: linkCostReportFromHttp(value.link),
       cost: costBaseFromHttp(value.cost),
     })),
-    contractor: contractorFromHttp(contractorReport.contractor),
-    client: clientFromHttp(contractorReport.client),
-    reportBillingValue: contractorReport.total_billing_billing_value,
-    reportCostValue: contractorReport.total_cost_cost_value,
-    reportCostBalance: contractorReport.report_cost_balance,
-    reportBillingBalance: contractorReport.report_billing_balance,
-    billingCostBalance: contractorReport.billing_cost_balance,
-    immediatePaymentDue: contractorReport.immediate_payment_due,
+    contractor: contractorFromHttp(report.contractor),
+    client: clientFromHttp(report.client),
+    reportBillingValue: report.total_billing_billing_value,
+    reportCostValue: report.total_cost_cost_value,
+    reportCostBalance: report.report_cost_balance,
+    reportBillingBalance: report.report_billing_balance,
+    billingCostBalance: report.billing_cost_balance,
+    immediatePaymentDue: report.immediate_payment_due,
     previousReport: maybe.mapOrNull(
-      contractorReport.previous_report,
-      contractorReportBaseFromHttp,
+      report.previous_report,
+      reportBaseFromHttp,
     ),
   };
 }

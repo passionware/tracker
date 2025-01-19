@@ -21,8 +21,8 @@ export function createMutationService(
         scope: "Linking cost and report",
       });
     },
-    createContractorReport: async (report) => {
-      const response = await api.createContractorReport(report);
+    createReport: async (report) => {
+      const response = await api.createReport(report);
       await config.services.messageService.reportSystemEffect.sendRequest({
         scope: "Creating contractor report",
       });

@@ -9,7 +9,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { ContractorReportBase } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
@@ -49,7 +49,7 @@ export interface ClientBilling extends ClientBillingBase {
   client: Client;
   linkBillingReport: {
     link: LinkBillingReport;
-    report: ContractorReportBase;
+    report: ReportBase;
   }[];
   contractors: Contractor[];
 }

@@ -1,7 +1,7 @@
 import {
-  contractorReportBase$,
-  contractorReportBaseFromHttp,
-} from "@/api/contractor-reports/contractor-reports.api.http.schema.base.ts";
+  reportBase$,
+  reportBaseFromHttp,
+} from "@/api/reports/reports.api.http.schema.base.ts";
 import {
   contractor$,
   contractorFromHttp,
@@ -23,7 +23,7 @@ export const cost$ = costBase$.extend({
   linked_reports: z.array(
     z.object({
       link: linkCostReport$,
-      report: contractorReportBase$,
+      report: reportBase$,
     }),
   ),
 });
@@ -35,7 +35,7 @@ export function costFromHttp(cost: Cost$): Cost {
     contractor: maybe.mapOrNull(cost.contractor, contractorFromHttp),
     linkReports: cost.linked_reports.map((link) => ({
       link: linkCostReportFromHttp(link.link),
-      report: contractorReportBaseFromHttp(link.report),
+      report: reportBaseFromHttp(link.report),
     })),
   };
 }

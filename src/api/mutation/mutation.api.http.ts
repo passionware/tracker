@@ -54,7 +54,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
-    createContractorReport: async (report) => {
+    createReport: async (report) => {
       const response = await client
         .from("report")
         .insert({

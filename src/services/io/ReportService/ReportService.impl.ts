@@ -1,13 +1,13 @@
-import { ContractorReportApi } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { ReportApi } from "@/api/reports/reports.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ContractorReportService } from "@/services/io/ContractorReportService/ContractorReportService.ts";
+import { ReportService } from "@/services/io/ReportService/ReportService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
-export function createContractorReportService(
-  api: ContractorReportApi,
+export function createReportService(
+  api: ReportApi,
   client: QueryClient,
   messageService: MessageService,
-): ContractorReportService {
+): ReportService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
       queryKey: ["contractor_reports"],
@@ -16,20 +16,20 @@ export function createContractorReportService(
   });
 
   return {
-    useContractorReports: (query) => {
+    useReports: (query) => {
       return useQuery(
         {
           queryKey: ["contractor_reports", "list", query],
-          queryFn: () => api.getContractorReports(query),
+          queryFn: () => api.getReports(query),
         },
         client,
       );
     },
-    useContractorReport: (id) => {
+    useReport: (id) => {
       return useQuery(
         {
           queryKey: ["contractor_reports", "item", id],
-          queryFn: () => api.getContractorReport(id),
+          queryFn: () => api.getReport(id),
         },
         client,
       );

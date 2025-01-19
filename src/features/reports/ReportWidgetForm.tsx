@@ -1,4 +1,4 @@
-import { CreateContractorReportPayload } from "@/api/mutation/mutation.api.ts";
+import { CreateReportPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -28,7 +28,7 @@ import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
-export interface NewContractorReportWidgetProps
+export interface ReportWidgetFormProps
   extends WithServices<
     [
       WithMutationService,
@@ -37,10 +37,10 @@ export interface NewContractorReportWidgetProps
       WithWorkspaceService,
     ]
   > {
-  defaultValues?: Partial<CreateContractorReportPayload>;
+  defaultValues?: Partial<CreateReportPayload>;
   onSubmit: (
-    data: CreateContractorReportPayload,
-    changedFields: Partial<CreateContractorReportPayload>,
+    data: CreateReportPayload,
+    changedFields: Partial<CreateReportPayload>,
   ) => Promise<void> | void;
   onCancel: () => void;
 }
@@ -56,9 +56,7 @@ type FormModel = {
   workspaceId: number | null;
 };
 
-export function NewContractorReportWidget(
-  props: NewContractorReportWidgetProps,
-) {
+export function ReportWidgetForm(props: ReportWidgetFormProps) {
   const form = useForm<FormModel>({
     defaultValues: {
       contractorId: props.defaultValues?.contractorId,
