@@ -24,10 +24,12 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Slot } from "@radix-ui/react-slot";
-import { chain, partial } from "lodash";
+import { addDays, startOfDay } from "date-fns";
+import { chain, partial, sortBy } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface ChargeInfoProps
@@ -39,6 +41,7 @@ export interface ChargeInfoProps
       WithReportDisplayService,
       WithClientService,
       WithContractorService,
+      WithWorkspaceService,
     ]
   > {
   billing: ClientBillingViewEntry;
@@ -46,6 +49,37 @@ export interface ChargeInfoProps
 export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
+
+  const query = chain(
+    contractorReportQueryUtils.ofDefault(
+      billing.workspace.id, // we want only reports from the same workspace
+      billing.client.id, // we want only reports from the same client
+    ),
+  )
+    .thru((x) =>
+      contractorReportQueryUtils.setFilter(x, "remainingAmount", {
+        operator: "greaterThan",
+        value: 0,
+      }),
+    )
+    .value();
+
+  const matchedReports = services.reportDisplayService.useReportView(
+    contractorReportQueryUtils.setFilter(query, "remainingAmount", {
+      operator: "equal",
+      value: 0,
+    }),
+  );
+
+  const lastReportData = rd.map(matchedReports, (reports) =>
+    maybe.getOrUndefined(
+      sortBy(reports.entries, (report) => -report.periodEnd.getTime())[0],
+    ),
+  );
+
+  const newReportStartDate = rd.map(lastReportData, (report) =>
+    maybe.mapOrUndefined(report, (r) => startOfDay(addDays(r.periodEnd, 1))),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,7 +112,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 className="overflow-y-auto h-full"
                 maxSourceAmount={billing.remainingAmount}
                 services={services}
-                onSelect={(report) =>
+                onSelect={(report) => {
                   linkingState.track(
                     services.mutationService.linkReportAndBilling({
                       type: "reconcile",
@@ -88,23 +122,21 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       reportAmount: report.value.target,
                       description: report.value.description,
                     }),
-                  )
-                }
+                  );
+                }}
+                initialNewReportValues={{
+                  workspaceId: billing.workspace.id,
+                  clientId: billing.client.id,
+                  currency: billing.netAmount.currency,
+                  contractorId:
+                    billing.contractors[billing.contractors.length - 1]?.id,
+                  netValue: billing.remainingAmount.amount,
+                  periodStart: rd.getOrElse(newReportStartDate, undefined),
+                  periodEnd: startOfDay(new Date()),
+                }}
                 showDescription={false}
                 showTargetValue={false}
-                query={chain(
-                  contractorReportQueryUtils.ofDefault(
-                    billing.workspace.id, // we want only reports from the same workspace
-                    billing.client.id, // we want only reports from the same client
-                  ),
-                )
-                  .thru((x) =>
-                    contractorReportQueryUtils.setFilter(x, "remainingAmount", {
-                      operator: "greaterThan",
-                      value: 0,
-                    }),
-                  )
-                  .value()}
+                query={query}
               />
             </PopoverContent>
           </Popover>

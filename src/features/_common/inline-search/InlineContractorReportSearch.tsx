@@ -1,5 +1,13 @@
 import { ContractorReportQuery } from "@/api/contractor-reports/contractor-reports.api.ts";
+import { CreateContractorReportPayload } from "@/api/mutation/mutation.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   Table,
@@ -16,20 +24,33 @@ import {
 } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
+import { NewContractorReportWidget } from "@/features/contractor-reports/NewContractorReportWidget.tsx";
+import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 
 export interface InlineContractorReportSearchProps
   extends WithServices<
-    [WithReportDisplayService, WithFormatService, WithClientService]
+    [
+      WithReportDisplayService,
+      WithFormatService,
+      WithClientService,
+      WithMutationService,
+      WithContractorService,
+      WithWorkspaceService,
+    ]
   > {
   query: ContractorReportQuery;
+  initialNewReportValues?: Partial<CreateContractorReportPayload>;
   onSelect: (data: { contractorReportId: number; value: LinkValue }) => void;
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
@@ -44,8 +65,31 @@ export function InlineContractorReportSearch(
     props.query,
   );
 
+  const editModalState = useOpenState();
+
   return (
     <div className={props.className}>
+      <Dialog {...editModalState.dialogProps}>
+        <DialogTrigger asChild>
+          <Button variant="accent1" size="xs" className="float-right my-1 mr-1">
+            Create new report
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogTitle>Edit report</DialogTitle>
+          <DialogDescription className="sr-only" />
+          <NewContractorReportWidget
+            onCancel={editModalState.close}
+            defaultValues={props.initialNewReportValues}
+            services={props.services}
+            onSubmit={(data) =>
+              props.services.mutationService
+                .createContractorReport(data)
+                .then(editModalState.close)
+            }
+          />
+        </DialogContent>
+      </Dialog>
       {rd
         .journey(reports)
         .wait(<Skeleton className="h-6" />)
@@ -104,16 +148,18 @@ export function InlineContractorReportSearch(
                       <LinkPopover
                         services={props.services}
                         sourceCurrency={report.remainingAmount.currency}
+                        title="Link contractor report"
+                        targetLabel="Report value"
                         targetCurrency={
                           props.maxSourceAmount?.currency ??
                           report.remainingAmount.currency
                         }
                         initialValues={{
-                          source: Math.min(
+                          target: Math.min(
                             props.maxSourceAmount?.amount ?? 0,
                             report.remainingAmount.amount,
                           ),
-                          target:
+                          source:
                             props.maxSourceAmount?.currency ===
                             report.remainingAmount.currency
                               ? // we have same currency, so probably we don't need to exchange
