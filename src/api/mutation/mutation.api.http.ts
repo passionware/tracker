@@ -1,7 +1,5 @@
-import {
-  LinkReportBillingPayloadDep,
-  MutationApi,
-} from "@/api/mutation/mutation.api.ts";
+import { LinkBillingReportPayload } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { MutationApi } from "@/api/mutation/mutation.api.ts";
 import { maybe } from "@passionware/monads";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { format } from "date-fns";
@@ -10,7 +8,7 @@ import { pickBy } from "lodash";
 export function createMutationApi(client: SupabaseClient): MutationApi {
   const formatDateForSupabase = (date: Date) => format(date, "yyyy-MM-dd");
 
-  function getInsertPayload(payload: LinkReportBillingPayloadDep) {
+  function getInsertPayload(payload: LinkBillingReportPayload) {
     switch (payload.linkType) {
       case "clarify":
         return {
@@ -46,8 +44,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       const response = await client.from("link_cost_report").insert({
         report_id: payload.reportId,
         report_amount: payload.reportAmount,
-        cost_id: payload.type === "link" ? payload.costId : null,
-        cost_amount: payload.type === "link" ? payload.costAmount : 0,
+        cost_id: payload.costId,
+        cost_amount: payload.costAmount,
         description: payload.description,
       });
       if (response.error) {

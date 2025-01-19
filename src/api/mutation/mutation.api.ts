@@ -1,28 +1,11 @@
 import { Billing, BillingPayload } from "@/api/billing/billing.api.ts";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
+import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
 import { LinkBillingReportPayload } from "../link-billing-report/link-billing-report.api";
 
-export type LinkReportBillingPayloadDep = LinkBillingReportPayload;
-
-export type LinkCostReportPayload =
-  | {
-      type: "link";
-      costId: number;
-      reportId: number;
-      costAmount: number;
-      reportAmount: number;
-      description: string;
-    }
-  | {
-      type: "clarify-report";
-      reportId: number;
-      reportAmount: number;
-      description: string;
-    };
-
 export interface MutationApi {
-  linkReportAndBilling: (payload: LinkReportBillingPayloadDep) => Promise<void>;
+  linkReportAndBilling: (payload: LinkBillingReportPayload) => Promise<void>;
   linkCostAndReport: (payload: LinkCostReportPayload) => Promise<void>;
   createReport: (report: ReportPayload) => Promise<{ id: Report["id"] }>;
   createBilling: (billing: BillingPayload) => Promise<{ id: Billing["id"] }>;

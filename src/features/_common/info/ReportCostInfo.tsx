@@ -86,7 +86,6 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                 onSelect={(data) =>
                   linkingState.track(
                     services.mutationService.linkCostAndReport({
-                      type: "link",
                       costId: data.costId,
                       reportId: report.id,
                       reportAmount: data.value.source,
@@ -154,10 +153,11 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                   );
                   void clarifyState.track(
                     services.mutationService.linkCostAndReport({
-                      type: "clarify-report",
                       reportId: report.id,
                       reportAmount: data.reportAmount,
                       description: data.description,
+                      costId: null,
+                      costAmount: 0,
                     }),
                   );
                 }}
