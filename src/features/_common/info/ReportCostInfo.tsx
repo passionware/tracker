@@ -365,8 +365,9 @@ Koszt AB: 800+350 = 1150 eur
 
 
  */
-// todo: custom variables - per contrator, per client, per workspace (np stawka godzinowa, stawka flat rate, etc)
-//        możliwość odwoływania się do tych zmiennych
+// done: custom variables - per contrator, per client, per workspace (np stawka godzinowa, stawka flat rate, etc)
+// done:  możliwość odwoływania się do tych zmiennych
+// done: hard link raportu do zmiennych - new page
 //.       custom linki per workspace - funkcja od zmiennych powyżej - np generowanie linku do raportu TMetric
 // todo: w widoku billingu dać kolumnę, ile firma traci a ile zarabia (w stosunku do podłączonych kosztów)
 // można zrobić stats, gdzie mamy ile firma jest na plusie (faktura net - podłączone raporty sum billingAmount) a ile ma jeszcze długu (raporty - costy)

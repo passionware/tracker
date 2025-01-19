@@ -186,7 +186,7 @@ export function VariableForm(props: VariableWidgetFormProps) {
             <FormItem className="col-span-2">
               <FormLabel>Value</FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Textarea rows={16} {...field} />
               </FormControl>
               <FormDescription>Enter variable value</FormDescription>
               <FormMessage />

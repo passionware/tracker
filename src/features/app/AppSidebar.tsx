@@ -27,13 +27,12 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
-  BookOpen,
+  AudioLines,
   Frame,
   HandCoins,
   HardHat,
-  Map,
+  Leaf,
   PieChart,
-  Settings2,
 } from "lucide-react";
 import { ComponentProps, useMemo } from "react";
 
@@ -92,65 +91,65 @@ function useData(
         {
           title: "Environment",
           url: "",
-          icon: BookOpen,
+          icon: Leaf,
           items: [
             {
               title: "Variables",
               url: routing.variables(),
             },
-            {
-              title: "Get Started",
-              url: "#",
-            },
-            {
-              title: "Tutorials",
-              url: "#",
-            },
-            {
-              title: "Changelog",
-              url: "#",
-            },
+            // {
+            //   title: "Get Started",
+            //   url: "#",
+            // },
+            // {
+            //   title: "Tutorials",
+            //   url: "#",
+            // },
+            // {
+            //   title: "Changelog",
+            //   url: "#",
+            // },
           ],
         },
-        {
-          title: "Settings",
-          url: "#",
-          icon: Settings2,
-          items: [
-            {
-              title: "General",
-              url: "#",
-            },
-            {
-              title: "Team",
-              url: "#",
-            },
-            {
-              title: "Billing",
-              url: "#",
-            },
-            {
-              title: "Limits",
-              url: "#",
-            },
-          ],
-        },
+        // {
+        //   title: "Settings",
+        //   url: "#",
+        //   icon: Settings2,
+        //   items: [
+        //     {
+        //       title: "General",
+        //       url: "#",
+        //     },
+        //     {
+        //       title: "Team",
+        //       url: "#",
+        //     },
+        //     {
+        //       title: "Billing",
+        //       url: "#",
+        //     },
+        //     {
+        //       title: "Limits",
+        //       url: "#",
+        //     },
+        //   ],
+        // },
       ],
       projects: [
         {
-          name: "Contractor reports",
+          name: "Time tracking",
           url: "#",
-          icon: Frame,
+          icon: AudioLines,
         },
         {
-          name: "Sales & Marketing",
+          name: "Client cockpit",
           url: "#",
           icon: PieChart,
         },
         {
-          name: "Travel",
+          name: "Display settings",
           url: "#",
-          icon: Map,
+          icon: Frame,
         },
       ],
     };
