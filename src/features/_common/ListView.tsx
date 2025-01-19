@@ -171,6 +171,11 @@ export function ListView<TData>({
                   <TableRow
                     key={row.id}
                     onDoubleClick={(e) => {
+                      if (
+                        e.target instanceof Element &&
+                        e.target.closest("a, button")
+                      )
+                        return;
                       onRowDoubleClick?.(row.original);
                       if (onRowDoubleClick && !e.defaultPrevented) {
                         window.getSelection?.()?.removeAllRanges();
