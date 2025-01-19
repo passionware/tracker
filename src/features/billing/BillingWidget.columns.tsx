@@ -92,7 +92,7 @@ export function useColumns(props: BillingWidgetProps) {
               }
             </Badge>
           </PopoverTrigger>
-          <PopoverContent className="w-fit">
+          <PopoverContent className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto">
             <PopoverHeader>Invoice details</PopoverHeader>
             <ChargeInfo services={props.services} billing={info.row.original} />
           </PopoverContent>
