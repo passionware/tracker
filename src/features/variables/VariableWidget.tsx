@@ -27,6 +27,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -47,6 +48,7 @@ export interface VariableWidgetProps
       WithWorkspaceService,
       WithFormatService,
       WithPreferenceService,
+      WithMessageService,
     ]
   > {
   clientId: ClientSpec;
@@ -132,6 +134,21 @@ export function VariableWidget(props: VariableWidgetProps) {
     >
       <ListView
         data={variables}
+        onRowDoubleClick={async (row) => {
+          const result =
+            await props.services.messageService.editVariable.sendRequest({
+              defaultValues: row,
+            });
+          switch (result.action) {
+            case "confirm": {
+              await props.services.variableService.updateVariable(
+                row.id,
+                result.changes,
+              );
+              break;
+            }
+          }
+        }}
         columns={[
           columnHelper.accessor("workspaceId", {
             header: "Workspace",

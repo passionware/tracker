@@ -1,4 +1,7 @@
-import { ProtectedRoute } from "@/features/_common/ProtectedRoute.tsx";
+import {
+  ProtectedRoute,
+  RenderIfAuthenticated,
+} from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
@@ -7,6 +10,7 @@ import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
+import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -18,6 +22,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
+import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
@@ -60,142 +65,154 @@ export function RootWidget(
       WithCostService,
       WithPreferenceService,
       WithVariableService,
+      WithMessageService,
     ]
   >,
 ) {
   return (
-    <Routes>
-      <Route
-        path={props.services.routingService.forGlobal().root()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <SelectClientPage services={props.services} />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/login" element={<LoginPage services={props.services} />} />
-      <Route
-        path={props.services.routingService.forWorkspace().forClient().root()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <Dashboard
-                    clientId={clientId}
-                    workspaceId={workspaceId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={props.services.routingService
-          .forWorkspace()
-          .forClient()
-          .reports()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <ReportsWidget
-                    clientId={clientId}
-                    workspaceId={workspaceId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={props.services.routingService
-          .forWorkspace()
-          .forClient()
-          .charges()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <BillingWidget
-                    clientId={clientId}
-                    workspaceId={workspaceId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={props.services.routingService.forWorkspace().forClient().costs()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <CostsWidget
-                    workspaceId={workspaceId}
-                    clientId={clientId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={props.services.routingService
-          .forWorkspace()
-          .forClient()
-          .potentialCosts()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <PotentialCostsWidget
-                    workspaceId={workspaceId}
-                    clientId={clientId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={props.services.routingService
-          .forWorkspace()
-          .forClient()
-          .variables()}
-        element={
-          <ProtectedRoute services={props.services}>
-            <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-              <IdResolver services={props.services}>
-                {(workspaceId, clientId) => (
-                  <VariableWidget
-                    clientId={clientId}
-                    workspaceId={workspaceId}
-                    services={props.services}
-                  />
-                )}
-              </IdResolver>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <>
+      <Routes>
+        <Route
+          path={props.services.routingService.forGlobal().root()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <SelectClientPage services={props.services} />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={<LoginPage services={props.services} />}
+        />
+        <Route
+          path={props.services.routingService.forWorkspace().forClient().root()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <Dashboard
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .reports()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ReportsWidget
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .charges()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <BillingWidget
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .costs()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <CostsWidget
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .potentialCosts()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <PotentialCostsWidget
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .variables()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <VariableWidget
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <RenderIfAuthenticated services={props.services}>
+        <VariableEditModalWidget services={props.services} />
+      </RenderIfAuthenticated>
+    </>
   );
 }

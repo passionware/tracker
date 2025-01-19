@@ -37,3 +37,14 @@ export function ProtectedRoute(
     ))
     .map(() => props.children);
 }
+
+export function RenderIfAuthenticated(
+  props: PropsWithChildren<WithServices<[WithAuthService]>>,
+) {
+  const auth = props.services.authService.useAuth();
+  return rd
+    .journey(auth)
+    .wait(null)
+    .catch(() => null)
+    .map(() => props.children);
+}
