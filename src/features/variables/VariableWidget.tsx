@@ -19,6 +19,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { VariableForm } from "@/features/variables/VariableForm.tsx";
+import { ActionMenu } from "@/features/variables/VariableWidget.menu.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -26,6 +27,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
@@ -36,7 +38,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
-export interface VariablesWidget
+export interface VariableWidgetProps
   extends WithServices<
     [
       WithVariableService,
@@ -44,6 +46,7 @@ export interface VariablesWidget
       WithClientService,
       WithWorkspaceService,
       WithFormatService,
+      WithPreferenceService,
     ]
   > {
   clientId: ClientSpec;
@@ -52,7 +55,7 @@ export interface VariablesWidget
 
 const columnHelper = createColumnHelper<Variable>();
 
-export function VariablesWidget(props: VariablesWidget) {
+export function VariableWidget(props: VariableWidgetProps) {
   const [query, setQuery] = useState<VariableQuery>(
     variableQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
@@ -176,6 +179,12 @@ export function VariablesWidget(props: VariablesWidget) {
             header: "Last updated",
             cell: (info) =>
               props.services.formatService.temporal.datetime(info.getValue()),
+          }),
+          columnHelper.display({
+            id: "actions",
+            cell: (info) => (
+              <ActionMenu entry={info.row.original} services={props.services} />
+            ),
           }),
         ]}
         caption={

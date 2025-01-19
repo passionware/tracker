@@ -3,11 +3,11 @@ import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
-import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { CostsWidget } from "@/features/costs/CostsWidget.tsx";
 import { PotentialCostsWidget } from "@/features/costs/PotentialCostsWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
-import { VariablesWidget } from "@/features/variables/VariablesWidget.tsx";
+import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
+import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -185,7 +185,7 @@ export function RootWidget(
             <Layout sidebarSlot={<AppSidebar services={props.services} />}>
               <IdResolver services={props.services}>
                 {(workspaceId, clientId) => (
-                  <VariablesWidget
+                  <VariableWidget
                     clientId={clientId}
                     workspaceId={workspaceId}
                     services={props.services}

@@ -35,6 +35,7 @@ export interface ListViewProps<TData> {
   columns: TableOptions<TData>["columns"];
   skeletonRows?: number;
   caption?: React.ReactNode;
+  onRowDoubleClick?: (row: TData) => void;
 }
 
 export type ColumnDefinition<TData> = ColumnDef<TData> & {};
@@ -44,6 +45,7 @@ export function ListView<TData>({
   columns,
   skeletonRows = 6,
   caption,
+  onRowDoubleClick,
 }: ListViewProps<TData>) {
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -166,7 +168,15 @@ export function ListView<TData>({
               {/* Sprawdź, czy mamy wiersze w modelu */}
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    onDoubleClick={(e) => {
+                      onRowDoubleClick?.(row.original);
+                      if (onRowDoubleClick && !e.defaultPrevented) {
+                        window.getSelection?.()?.removeAllRanges();
+                      }
+                    }}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
