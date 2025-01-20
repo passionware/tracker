@@ -71,7 +71,9 @@ export type ReportQuery = WithFilters<{
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithPagination &
-  WithSorter<"periodStart" | "periodEnd" | "netValue">;
+  WithSorter<
+    "periodStart" | "periodEnd" | "netValue" | "contractor" | "workspace"
+  >;
 
 export interface ReportApi {
   getReports: (query: ReportQuery) => Promise<Report[]>;
@@ -82,11 +84,29 @@ export const reportQueryUtils = {
   ...withFiltersUtils<ReportQuery>(),
   ...withPaginationUtils<ReportQuery>(),
   ...withSorterUtils<ReportQuery>(),
-  ofDefault: (
+  ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): ReportQuery =>
+    reportQueryUtils.ensureDefault(
+      {
+        filters: {
+          workspaceId: null,
+          clientId: null,
+          remainingAmount: null,
+          contractorId: null,
+        },
+        page: { page: 0, pageSize: 10 },
+        sort: { field: "periodStart", order: "asc" },
+      },
+      workspaceId,
+      clientId,
+    ),
+  ensureDefault: (
+    query: ReportQuery,
     workspaceId: WorkspaceSpec,
     clientId: ClientSpec,
   ): ReportQuery => ({
+    ...query,
     filters: {
+      ...query.filters,
       workspaceId: idSpecUtils.mapSpecificOrElse(
         workspaceId,
         (x) => ({
@@ -103,10 +123,6 @@ export const reportQueryUtils = {
         }),
         null,
       ),
-      remainingAmount: null,
-      contractorId: null,
     },
-    page: { page: 0, pageSize: 10 },
-    sort: { field: "periodStart", order: "asc" },
   }),
 };

@@ -103,6 +103,8 @@ export function CostWidget(props: PotentialCostWidgetProps) {
       }
     >
       <ListView
+        query={query}
+        onQueryChange={setQuery}
         data={rd.map(costs, (x) => x.entries)}
         columns={columns}
         onRowDoubleClick={async (x) => {

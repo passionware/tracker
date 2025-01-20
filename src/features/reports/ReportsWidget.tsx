@@ -1,4 +1,4 @@
-import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -24,16 +24,14 @@ import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
-  const [contractorFilter, setContractorFilter] = useState<
-    ReportQuery["filters"]["contractorId"]
-  >(
-    reportQueryUtils.ofDefault(props.workspaceId, props.clientId).filters
-      .contractorId,
+  const [query, setQuery] = useState(
+    reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
+
   const reports = props.services.reportDisplayService.useReportView(
-    chain(reportQueryUtils.ofDefault(props.workspaceId, props.clientId))
+    chain(query)
       .thru((x) =>
-        reportQueryUtils.setFilter(x, "contractorId", contractorFilter),
+        reportQueryUtils.ensureDefault(x, props.workspaceId, props.clientId),
       )
       .value(),
   );
@@ -54,8 +52,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           <FilterChip label="Contractor">
             <ContractorQueryControl
               allowClear
-              filter={contractorFilter}
-              onFilterChange={setContractorFilter}
+              filter={query.filters.contractorId}
+              onFilterChange={(filter) =>
+                setQuery(
+                  reportQueryUtils.setFilter(query, "contractorId", filter),
+                )
+              }
               services={props.services}
             />
           </FilterChip>
@@ -120,6 +122,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       }
     >
       <ListView
+        query={query}
+        onQueryChange={setQuery}
         data={rd.map(reports, (r) => r.entries)}
         onRowDoubleClick={async (row) => {
           const result =

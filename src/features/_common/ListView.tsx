@@ -9,11 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import {
+  SortableQueryBase,
+  SorterWidget,
+} from "@/features/_common/filters/SorterWidget.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { rd, RemoteData } from "@passionware/monads";
 import {
-  ColumnDef,
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
@@ -30,25 +33,27 @@ import * as React from "react";
 import { ReactNode } from "react";
 
 // Typ wejściowy komponentu (co będzie wierszem w tabeli)
-export interface ListViewProps<TData> {
+export interface ListViewProps<TData, Query extends SortableQueryBase> {
   data: RemoteData<TData[]>;
   columns: TableOptions<TData>["columns"];
   skeletonRows?: number;
   caption?: React.ReactNode;
   onRowDoubleClick?: (row: TData) => void;
   className?: string;
+  query: Query;
+  onQueryChange: (query: Query, sorter: Query["sort"]) => void;
 }
 
-export type ColumnDefinition<TData> = ColumnDef<TData> & {};
-
-export function ListView<TData>({
+export function ListView<TData, Query extends SortableQueryBase>({
   data,
   columns,
   skeletonRows = 6,
   caption,
   onRowDoubleClick,
   className,
-}: ListViewProps<TData>) {
+  query,
+  onQueryChange,
+}: ListViewProps<TData, Query>) {
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -66,6 +71,8 @@ export function ListView<TData>({
     data: tableData,
     manualPagination: true,
     columns,
+    manualSorting: true,
+    enableSorting: true,
     state: {
       sorting,
       columnFilters,
@@ -110,6 +117,18 @@ export function ListView<TData>({
                 </SimpleTooltip>
               ) : (
                 element
+              )}
+              {get(header.column.columnDef.meta, "sortKey") && (
+                <SorterWidget // check if this is sortable
+                  query={query} // we need to know the sorting key somehow
+                  field={
+                    get(
+                      header.column.columnDef.meta,
+                      "sortKey",
+                    ) as unknown as string
+                  } // this is the sorting key
+                  onQueryChange={onQueryChange}
+                />
               )}
             </TableHead>
           );

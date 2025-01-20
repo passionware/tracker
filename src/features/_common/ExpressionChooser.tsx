@@ -1,3 +1,4 @@
+import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import { Variable } from "@/api/variable/variable.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -76,6 +77,8 @@ function XExpressionChooser({
   );
   return (
     <ListView
+      query={{ sort: null, page: paginationUtils.ofDefault() }}
+      onQueryChange={() => void 0}
       className={className}
       data={vars}
       columns={[

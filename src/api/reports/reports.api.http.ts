@@ -1,11 +1,11 @@
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   report$,
   reportFromHttp,
 } from "@/api/reports/reports.api.http.schema.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { snakeCase } from "lodash";
 import { z } from "zod";
 import { ReportApi } from "./reports.api.ts";
 
@@ -14,7 +14,7 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
     getReports: async (query) => {
       let request = client
         .from("report_with_details")
-        .select("*, contractor (*), client (*)");
+        .select("*, contractor (*), client (*), workspace (name)");
       if (query.filters.clientId) {
         switch (query.filters.clientId.operator) {
           case "oneOf":
@@ -73,8 +73,18 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
       }
 
       if (query.sort) {
-        request = request.order(snakeCase(query.sort.field), {
-          ascending: query.sort.order === "asc",
+        request = sorterSupabaseUtils.sort(request, query.sort, {
+          contractor: {
+            foreignTable: "contractor",
+            foreignColumn: "full_name",
+          },
+          netValue: "net_value",
+          periodEnd: "period_end",
+          periodStart: "period_start",
+          workspace: {
+            foreignColumn: "name",
+            foreignTable: "workspace",
+          },
         });
       }
 

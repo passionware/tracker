@@ -101,6 +101,8 @@ export function BillingWidget(props: BillingWidgetProps) {
       ]}
     >
       <ListView
+        query={query}
+        onQueryChange={setQuery}
         data={rd.map(billings, (x) => x.entries)}
         columns={columns}
         onRowDoubleClick={async (x) => {

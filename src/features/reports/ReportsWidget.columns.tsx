@@ -44,6 +44,9 @@ export function useColumns(props: ReportsWidgetProps) {
       cell: (info) => (
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
+      meta: {
+        sortKey: "workspace",
+      },
     }),
     columnHelper.accessor("contractor.fullName", {
       header: "Contractor",
@@ -66,6 +69,9 @@ export function useColumns(props: ReportsWidgetProps) {
           <span className="inline">{info.getValue()}</span>
         </>
       ),
+      meta: {
+        sortKey: "contractor",
+      },
     }),
     columnHelper.accessor("client", {
       header: "Client",
