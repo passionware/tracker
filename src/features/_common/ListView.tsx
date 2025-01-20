@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { getDimmedClasses } from "@/features/_common/DimmedContainer.tsx";
 import {
   SortableQueryBase,
   SorterWidget,
@@ -64,7 +65,8 @@ export function ListView<TData, Query extends SortableQueryBase>({
 
   // W zależności od tego, czy mamy dane, w tablicy przekazujemy albo puste [],
   // albo wartość z data (jeżeli jest w stanie success).
-  const tableData = rd.getOrElse(data, []);
+  const dataWithPlaceholder = rd.useLastWithPlaceholder(data);
+  const tableData = rd.getOrElse(dataWithPlaceholder, []);
 
   // Inicjalizacja tabeli z tanstack react table
   const table = useReactTable({
@@ -140,7 +142,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
   // rd.journey(data) – czekanie, błąd, sukces.
   // Możesz też użyć rd.match lub rd.fold – wedle preferencji.
   return rd
-    .journey(data)
+    .journey(dataWithPlaceholder)
     .wait(() => (
       // Wyświetlamy skeletony
       <div className={cn("rounded-md border overflow-auto", className)}>
@@ -185,7 +187,12 @@ export function ListView<TData, Query extends SortableQueryBase>({
             </TableHeader>
 
             {/* CIAŁO */}
-            <TableBody className="border-b">
+            <TableBody
+              className={cn(
+                "border-b",
+                getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
+              )}
+            >
               {/* Sprawdź, czy mamy wiersze w modelu */}
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (

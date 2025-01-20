@@ -47,11 +47,17 @@ export function useColumns(props: BillingWidgetProps) {
     }),
     columnHelper.accessor("invoiceNumber", {
       header: "Invoice Number",
+      meta: {
+        sortKey: "invoiceNumber",
+      },
     }),
     columnHelper.accessor("invoiceDate", {
       header: "Invoice Date",
       cell: (info) =>
         props.services.formatService.temporal.date(info.getValue()),
+      meta: {
+        sortKey: "invoiceDate",
+      },
     }),
     columnHelper.accessor("status", {
       header: "Status",
