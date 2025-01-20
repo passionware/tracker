@@ -57,6 +57,7 @@ export interface ExpressionChooserProps
     args: VariableContainer,
     result: unknown,
   ) => void;
+  className?: string;
 }
 
 const columnHelper = createColumnHelper<Variable>();
@@ -67,6 +68,7 @@ function XExpressionChooser({
   context,
   onChoose,
   defaultArgs,
+  className,
 }: ExpressionChooserProps) {
   const vars = rd.useMemoMap(
     services.expressionService.useEffectiveVariables(context),
@@ -74,7 +76,7 @@ function XExpressionChooser({
   );
   return (
     <ListView
-      className="w-full"
+      className={className}
       data={vars}
       columns={[
         columnHelper.accessor("workspaceId", {
