@@ -74,7 +74,7 @@ export function useColumns(props: ReportsWidgetProps) {
       ),
     }),
     columnHelper.accessor("status", {
-      header: "Charge Status",
+      header: "Charge",
       meta: {
         tooltip: headers.chargeStatus,
       },
