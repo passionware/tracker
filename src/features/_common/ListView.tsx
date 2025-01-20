@@ -104,7 +104,7 @@ export function ListView<TData>({
             >
               {tooltip ? (
                 <SimpleTooltip title={tooltip}>
-                  <div className="whitespace-pre">
+                  <div className="whitespace-pre flex flex-row items-center">
                     {element} <Info className="inline size-4" />{" "}
                   </div>
                 </SimpleTooltip>
