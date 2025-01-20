@@ -394,3 +394,16 @@ Koszt AB: 800+350 = 1150 eur
 // todo: w widoku billingu dać kolumnę, ile firma traci a ile zarabia (w stosunku do podłączonych kosztów)
 // todo: lista kontraktorów, z możliwością opcji "mam x kasy w firmie, komu ile moge zaplacic aby sprawiedliwie podzielic"
 // todo: flow stream chart
+// todo: pluginy (i market place)
+//  - plugin pointy: np custom list action (go to tmetric report)
+//  - pluginy - dodają elementy do plugin pointów,
+//    - np: custom list action:
+//.     - label: "Go to TMetric report"
+//.     - action: custom function
+//.     - url: expression api.openPage("https://app.tmetric.com/#/reports/${await vars.tmetricReportId}/detailed?range=${await vars.startDate}-${await vars.endDate}&user=${await vars.tmetricUserId}&project=${await vars.tmetricProjectIds}&client=${await vars.clientId}&groupby=description")
+//   - pluginy zarządzają custom variables (np tmetricReportId, tmetricUserId, tmetricProjectIds)
+//             jakoś wpływają na to, że w variables można wybrać nazwę nie z palca tylko wskazać myPlugin.tmetricReportId = "12345"
+//.  - inny plugin point - auto variables w formularzach: np wpisujesz 67h43min -> 7790,1 eur, można wskazać dla którego pola wywołujemy plugin, oraz na jakie pola wynikowe ma wpływać
+//.  - ogólnie to co mamy teraz zahardcodowane (open raport, oraz button variables) - to będą plugin pointy,
+//      a my będziemy mieć core plugins, które np pozwalają na użycie env vars, expressions (sam plugin point nic nie wie o envach etc - komunikuje sie z pluginami nie wiedzac co robią)
+//.  - generowanie linku między raportem a billingiem - tam też będzie plugin point, i będzie plugin pozwalający na wybranie funkcji konwertującej, albo będzie plugin własny, który skonwertuje wartości bez UI
