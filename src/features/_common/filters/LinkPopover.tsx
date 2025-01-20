@@ -6,12 +6,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { ExportChooserPopover } from "@/features/_common/ExpressionChooser.tsx";
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import {
+  ExpressionContext,
+  WithExpressionService,
+} from "@/services/front/ExpressionService/ExpressionService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { Leaf } from "lucide-react";
 import { ReactElement, ReactNode, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -21,7 +30,16 @@ export type LinkValue = {
   description: string;
 };
 
-export type LinkPopoverProps = WithServices<[WithFormatService]> & {
+export type LinkPopoverProps = WithServices<
+  [
+    WithFormatService,
+    WithFormatService,
+    WithExpressionService,
+    WithWorkspaceService,
+    WithClientService,
+    WithContractorService,
+  ]
+> & {
   initialValues?: Partial<LinkValue>;
   onValueChange: (
     value: LinkValue,
@@ -34,6 +52,7 @@ export type LinkPopoverProps = WithServices<[WithFormatService]> & {
   targetLabel?: string;
   descriptionLabel?: string;
   children: ReactElement;
+  context: ExpressionContext;
 };
 
 export function LinkPopover(props: LinkPopoverProps) {
@@ -75,7 +94,7 @@ export function LinkPopover(props: LinkPopoverProps) {
             setOpen(false);
           })}
         >
-          <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50">
+          <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50 empty:hidden">
             {props.title}
           </h3>
 
@@ -85,6 +104,22 @@ export function LinkPopover(props: LinkPopoverProps) {
               props.sourceCurrency,
             )}
             )
+            <ExportChooserPopover
+              header="Choose variable"
+              services={props.services}
+              context={props.context}
+              defaultArgs={{
+                input: form.watch("source"),
+              }}
+              onChoose={async (_variable, _args, result) => {
+                form.setValue("source", Number(result));
+                form.setFocus("source");
+              }}
+            >
+              <Button variant="accent2" size="icon-xs" className="self-end">
+                <Leaf />
+              </Button>
+            </ExportChooserPopover>
           </label>
           <Input id={sourceId} {...form.register("source")} />
 
@@ -94,6 +129,22 @@ export function LinkPopover(props: LinkPopoverProps) {
               props.targetCurrency,
             )}
             )
+            <ExportChooserPopover
+              header="Choose variable"
+              services={props.services}
+              context={props.context}
+              defaultArgs={{
+                input: form.watch("target"),
+              }}
+              onChoose={async (_variable, _args, result) => {
+                form.setValue("target", Number(result));
+                form.setFocus("target");
+              }}
+            >
+              <Button variant="accent2" size="icon-xs" className="self-end">
+                <Leaf />
+              </Button>
+            </ExportChooserPopover>
           </label>
           <Input id={targetId} {...form.register("target")} />
 

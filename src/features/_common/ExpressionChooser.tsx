@@ -15,13 +15,12 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { LoadingSpinner } from "@/components/ui/spinner.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
-import { renderSmallError } from "@/features/_common/renderError.tsx";
+import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ensureError } from "@/platform/lang/ensureError.ts";
@@ -35,7 +34,7 @@ import {
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd, RemoteData } from "@passionware/monads";
+import { mt, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { memo, PropsWithChildren, ReactNode } from "react";
@@ -274,12 +273,7 @@ function AdjustArgs(props: {
 
         {/* Submit Button */}
         <Button type="submit" variant="default">
-          {rd
-            .fullJourney(props.mutation)
-            .initially("Evaluate")
-            .wait(<LoadingSpinner />)
-            .catch(renderSmallError("w-6 h-4"))
-            .map(() => null)}
+          {renderSpinnerMutation(mt.fromRemoteData(props.mutation))}
           Adjust
         </Button>
       </form>

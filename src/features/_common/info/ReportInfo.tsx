@@ -19,13 +19,16 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
@@ -40,6 +43,9 @@ export interface ReportInfoProps
       WithPreferenceService,
       WithReportDisplayService,
       WithClientService,
+      WithExpressionService,
+      WithWorkspaceService,
+      WithContractorService,
     ]
   > {
   report: ReportViewEntry;
@@ -79,6 +85,11 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                 Match the report with a client billing
               </PopoverHeader>
               <InlineBillingSearch
+                context={{
+                  clientId: report.client.id,
+                  workspaceId: report.workspace.id,
+                  contractorId: report.contractor.id,
+                }}
                 className="overflow-y-auto h-full"
                 maxAmount={report.remainingAmount}
                 services={services}
@@ -158,6 +169,11 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
               link.billing &&
               link.billing.currency === report.netAmount.currency && (
                 <LinkPopover
+                  context={{
+                    contractorId: report.contractor.id,
+                    workspaceId: report.workspace.id,
+                    clientId: report.client.id,
+                  }}
                   services={services}
                   sourceLabel="Report amount"
                   targetLabel="Billing amount"

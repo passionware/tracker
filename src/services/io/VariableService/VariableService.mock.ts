@@ -4,7 +4,7 @@ import { VariableService } from "@/services/io/VariableService/VariableService.t
 import { rd, RemoteData } from "@passionware/monads";
 import { ArgsAccessor } from "@passionware/platform-storybook";
 
-export function createVariableService(config: {
+export function createVariableService(config?: {
   onAction?: (action: string, ...rest: unknown[]) => void;
   data?:
     | {
@@ -15,7 +15,7 @@ export function createVariableService(config: {
       };
 }): VariableService {
   function createUseVariables() {
-    const data = config.data;
+    const data = config?.data;
     if (!data) {
       return () => rd.of(variableMock.static.list);
     }
@@ -27,7 +27,7 @@ export function createVariableService(config: {
   }
 
   function createEnsureVariables() {
-    const data = config.data;
+    const data = config?.data;
     if (!data) {
       return () => Promise.resolve(variableMock.static.list);
     }
@@ -43,15 +43,15 @@ export function createVariableService(config: {
     useVariables: createUseVariables(),
     ensureVariables: createEnsureVariables(),
     createVariable: (variable) => {
-      config.onAction?.("createVariable", variable);
+      config?.onAction?.("createVariable", variable);
       return Promise.resolve({ id: 1 });
     },
     deleteVariable: (id) => {
-      config.onAction?.("deleteVariable", id);
+      config?.onAction?.("deleteVariable", id);
       return Promise.resolve();
     },
     updateVariable: (id, variable) => {
-      config.onAction?.("updateVariable", { id, variable });
+      config?.onAction?.("updateVariable", { id, variable });
       return Promise.resolve();
     },
   };

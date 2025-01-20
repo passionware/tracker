@@ -21,7 +21,7 @@ const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
 >(({ className, ...props }, ref) => (
-  <img // AvatarPrimitive.Image todo: wait for https://github.com/radix-ui/primitives/issues/2044
+  <AvatarPrimitive.Image // todo: wait for https://github.com/radix-ui/primitives/issues/2044
     ref={ref}
     className={cn("aspect-square object-cover h-full w-full", className)}
     {...props}

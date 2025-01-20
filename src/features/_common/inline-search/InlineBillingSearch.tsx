@@ -16,18 +16,32 @@ import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import {
+  ExpressionContext,
+  WithExpressionService,
+} from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 
 export interface InlineBillingSearchProps
   extends WithServices<
-    [WithReportDisplayService, WithFormatService, WithClientService]
+    [
+      WithReportDisplayService,
+      WithFormatService,
+      WithClientService,
+      WithExpressionService,
+      WithWorkspaceService,
+      WithContractorService,
+    ]
   > {
   query: BillingQuery;
   onSelect: (data: { billingId: number; value: LinkValue }) => void;
   maxAmount: CurrencyValue;
   className?: string;
+  context: ExpressionContext;
 }
 type LinkValue = {
   source: number;
@@ -101,6 +115,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <LinkPopover
+                        context={props.context}
                         sourceCurrency={props.maxAmount.currency}
                         targetCurrency={billing.remainingAmount.currency}
                         initialValues={{

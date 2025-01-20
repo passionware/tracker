@@ -139,6 +139,11 @@ export function InlineReportSearch(props: InlineReportSearchProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <LinkPopover
+                        context={{
+                          contractorId: report.contractor.id,
+                          workspaceId: report.workspace.id,
+                          clientId: report.client.id,
+                        }}
                         services={props.services}
                         sourceCurrency={report.remainingAmount.currency}
                         title="Link contractor report"
