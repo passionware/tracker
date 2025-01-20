@@ -369,21 +369,28 @@ Koszt AB: 800+350 = 1150 eur
 // done:  możliwość odwoływania się do tych zmiennych
 // done: hard link raportu do zmiennych - new page
 //.       custom linki per workspace - funkcja od zmiennych powyżej - np generowanie linku do raportu TMetric
-// todo: w widoku billingu dać kolumnę, ile firma traci a ile zarabia (w stosunku do podłączonych kosztów)
+
+// todo: asysta przy wpisywaniu formularza - variables
+//.       - np przeliczanie raportu godznowego (plugin flow - click na idź do raportu - copy - enter 67h43min -> wpisuje sie 7790,1 eur)
+//.       - można to zrobić troche bardziej generycznie, np wybierz raport, zdecyduj co zrobić z wynikiem (copy, enter field, open url)
+//        - jedna z opcji pluginu to api call do tmetrica??
+// todo: sortowanie kolumn!
+// todo: stwórz fakturę draft (nowa kolumna) (charge) na podstawie zaznaczonych raportów (default values)
+// todo: stwórz fakturę draft (nowa kolumna) (cost) na podstawie zaznaczonych raportów (default values)
+//.       - tutaj też można zastosować custom variables, aby np wygenerować linki na podstawie raportu tmetric
+// todo: ładne query toolbary edytowalne, w listach i inline search tez!
+// todo: zarządzanie użytkownikami (role, uprawnienia, etc)
+// todo: zarządzanie workspace'ami
+// todo: jak dodamy nowy raport etc, to upewnijmy się że jesteśmy na kliencie/workspace, który dotyczy nowo dodanego raportu inaczej nie będzie widoczny
 // można zrobić stats, gdzie mamy ile firma jest na plusie (faktura net - podłączone raporty sum billingAmount) a ile ma jeszcze długu (raporty - costy)
 // todo: musimy umiec zobaczyc ze na danej fakturze jest zysk spółki, np 2x80eur daje 40+115+5(zysk) = 160 eur
 // todo: jak dodamy nowy koszt, to chcemy zrobić tak, żeby był polinkowany z raportem, ale powinno być widać w UI ze raport opłacony jest!
 // todo: możliwość clarify kosztów (np koszt niepowiązany z kontraktorem, koszt inny) (wtedy cost status clarified vs matched + kolumna clarified)
 // todo: widok kontraktora - jego zarobki, raporty, etc (m.in widok ciągłości raportów dla każdego klienta)
 //       - w tym widoku chcemy zobaczyć czy koszty Dawida zostały całkowicie rozliczone, tak samo jego raporty
-// todo: stwórz fakturę draft (nowa kolumna) (charge) na podstawie zaznaczonych raportów (default values)
-// todo: stwórz fakturę draft (nowa kolumna) (cost) na podstawie zaznaczonych raportów (default values)
+
 // todo: linkowanie raportów do faktur draft charge - opcja powiększenia kwoty faktury o kwotę linka
 // todo: linkowanie raportów do faktur draft cost - opcja powiększenia kwoty faktury o kwotę linka
-// todo: sortowanie kolumn!
-// todo: ładne query toolbary edytowalne, w listach i inline search tez!
+// todo: w widoku billingu dać kolumnę, ile firma traci a ile zarabia (w stosunku do podłączonych kosztów)
 // todo: lista kontraktorów, z możliwością opcji "mam x kasy w firmie, komu ile moge zaplacic aby sprawiedliwie podzielic"
 // todo: flow stream chart
-// todo: zarządzanie użytkownikami (role, uprawnienia, etc)
-// todo: zarządzanie workspace'ami
-// todo: jak dodamy nowy aport etc, to upewnijmy się że jesteśmy na kliencie/workspace, który dotyczy nowo dodanego raportu inaczej nie będzie widoczny

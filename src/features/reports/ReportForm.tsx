@@ -234,30 +234,11 @@ export function ReportForm(props: ReportWidgetFormProps) {
               <FormDescription>Enter net value</FormDescription>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="accent2"
-                    size="xs"
-                    onClick={async () => {
-                      const hours_to_report_value =
-                        await props.services.expressionService.ensureExpressionValue(
-                          {
-                            workspaceId:
-                              form.watch("workspaceId") ?? idSpecUtils.ofAll(),
-                            clientId:
-                              form.watch("clientId") ?? idSpecUtils.ofAll(),
-                            contractorId:
-                              form.watch("contractorId") ?? idSpecUtils.ofAll(),
-                          },
-                          "vars.hours_to_report_value",
-                          { input: form.watch("netValue") },
-                        );
-                      form.setValue("netValue", String(hours_to_report_value));
-                    }}
-                  >
+                  <Button variant="accent2" size="xs">
                     Variables
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="max-w-3xl w-fit overflow-x-auto">
+                <PopoverContent className="max-w-4xl w-fit overflow-x-auto">
                   <PopoverHeader>Calculate net value</PopoverHeader>
                   <ExpressionChooser
                     services={props.services}
@@ -267,6 +248,22 @@ export function ReportForm(props: ReportWidgetFormProps) {
                       clientId: form.watch("clientId") ?? idSpecUtils.ofAll(),
                       contractorId:
                         form.watch("contractorId") ?? idSpecUtils.ofAll(),
+                    }}
+                    defaultArgs={{
+                      input: form.getValues("netValue"),
+                      reportStart: form.getValues("periodStart"),
+                      reportEnd: form.getValues("periodEnd"),
+                    }}
+                    onChoose={async (_variable, _args, result) => {
+                      if (
+                        typeof result === "string" &&
+                        result.trim().match(/https?:\/\/[^\s]+/)
+                      ) {
+                        // todo: this is just a hack, but we should define a proper way to decide the action after the expression is evaluated
+                        window.open(result, "_blank");
+                        return;
+                      }
+                      form.setValue("netValue", String(result));
                     }}
                   />
                 </PopoverContent>

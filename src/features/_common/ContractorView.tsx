@@ -33,7 +33,7 @@ const contractorViewVariants = cva("border border-slate-950/10", {
 
 export function ContractorView({
   contractor,
-  layout,
+  layout = "fullName",
   size,
   className,
 }: ContractorViewProps) {
