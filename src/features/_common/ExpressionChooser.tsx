@@ -20,6 +20,7 @@ import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { OpenState } from "@/features/_common/OpenState.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -37,7 +38,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { memo } from "react";
+import { memo, PropsWithChildren, ReactNode } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 export interface ExpressionChooserProps
@@ -283,5 +284,31 @@ function AdjustArgs(props: {
         </Button>
       </form>
     </Form>
+  );
+}
+
+export function ExportChooserPopover({
+  children,
+  header,
+  ...props
+}: PropsWithChildren<ExpressionChooserProps> & { header: ReactNode }) {
+  return (
+    <OpenState>
+      {(bag) => (
+        <Popover {...bag}>
+          <PopoverTrigger asChild>{children}</PopoverTrigger>
+          <PopoverContent className="max-w-4xl w-fit overflow-x-auto">
+            <PopoverHeader>{header}</PopoverHeader>
+            <ExpressionChooser
+              {...props}
+              onChoose={(variable, args, result) => {
+                bag.close();
+                props.onChoose(variable, args, result);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+    </OpenState>
   );
 }
