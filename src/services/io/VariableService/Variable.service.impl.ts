@@ -27,7 +27,7 @@ export function createVariableService(
         config.client,
       ),
     ensureVariables: (query) =>
-      config.client.fetchQuery({
+      config.client.ensureQueryData({
         queryKey: ["variables", query],
         queryFn: () => config.api.getVariables(query),
       }),

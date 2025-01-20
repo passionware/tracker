@@ -17,7 +17,7 @@ export function createExchangeService(
     );
   }
   function fetchExchangeRate(from: string, to: string) {
-    return queryClient.fetchQuery({
+    return queryClient.ensureQueryData({
       queryKey: ["exchange", from, to],
       queryFn: () => api.getExchangeRate(from, to),
     });
