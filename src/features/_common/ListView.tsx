@@ -173,11 +173,16 @@ export function ListView<TData>({
                   <TableRow
                     key={row.id}
                     onDoubleClick={(e) => {
-                      if (
-                        e.target instanceof Element &&
-                        e.target.closest("a, button")
-                      )
-                        return;
+                      if (e.target instanceof Element) {
+                        if (e.target.closest("a, button")) {
+                          return;
+                        }
+                        // check if the click was physically inside, not via react portal:
+                        if (!e.currentTarget.contains(e.target)) {
+                          return;
+                        }
+                      }
+
                       onRowDoubleClick?.(row.original);
                       if (onRowDoubleClick && !e.defaultPrevented) {
                         window.getSelection?.()?.removeAllRanges();
