@@ -10,23 +10,30 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { assert } from "@/platform/lang/assert.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { mapKeys } from "@passionware/platform-ts";
 import { chain, partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
@@ -38,6 +45,10 @@ export interface ReportCostInfoProps
       WithReportDisplayService,
       WithPreferenceService,
       WithContractorService,
+      WithExpressionService,
+      WithWorkspaceService,
+      WithClientService,
+      WithRoutingService,
     ]
   > {
   report: ReportViewEntry;
@@ -182,7 +193,37 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
             ) {
               return (
                 <>
-                  <Badge variant="positive">Cost</Badge>
+                  <LinkPopover
+                    context={{
+                      contractorId: report.contractor.id,
+                      workspaceId: report.workspace.id,
+                      clientId: idSpecUtils.ofAll(),
+                    }}
+                    services={services}
+                    sourceLabel="Report amount"
+                    targetLabel="Cost amount"
+                    sourceCurrency={report.netAmount.currency}
+                    targetCurrency={link.cost.currency}
+                    title="Update linked report"
+                    initialValues={{
+                      source: link.link.reportAmount ?? undefined,
+                      target: link.link.costAmount ?? undefined,
+                      description: link.link.description,
+                    }}
+                    onValueChange={(_all, updates) =>
+                      services.mutationService.updateCostReportLink(
+                        link.link.id,
+                        mapKeys(updates, {
+                          source: "reportAmount",
+                          target: "costAmount",
+                        }),
+                      )
+                    }
+                  >
+                    <Button variant="headless" size="headless">
+                      <Badge variant="positive">Cost</Badge>
+                    </Button>
+                  </LinkPopover>
                   <div className="flex flex-col gap-2">
                     <div className="text-sm font-medium leading-none flex flex-row gap-2">
                       {services.formatService.financial.amount(
