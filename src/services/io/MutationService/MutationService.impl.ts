@@ -110,5 +110,17 @@ export function createMutationService(
         scope: "Editing report",
       });
     },
+    updateBillingReportLink: async (linkId, payload) => {
+      await api.updateBillingReportLink(linkId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating billing report link",
+      });
+    },
+    updateCostReportLink: async (linkId, payload) => {
+      await api.updateCostReportLink(linkId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating cost report link",
+      });
+    },
   };
 }

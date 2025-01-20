@@ -1,14 +1,14 @@
-import * as React from "react";
+import { cn } from "@/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-
-import { cn } from "@/lib/utils";
+import * as React from "react";
 
 const buttonVariants = cva(
-  "flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
+  "flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
   {
     variants: {
       variant: {
+        headless: "",
         default:
           "bg-slate-900 text-slate-50 hover:bg-slate-900/90 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-50/90",
         destructive:
@@ -34,12 +34,13 @@ const buttonVariants = cva(
         ],
       },
       size: {
-        default: "text-sm h-10 px-4 py-2",
+        headless: "rounded-full",
+        default: "text-sm h-10 rounded-md px-4 py-2",
         sm: "text-sm h-9 rounded-md px-3",
         xs: "text-xs h-6 rounded px-2",
         lg: "text-sm h-11 rounded-md px-8",
-        icon: "text-sm h-10 w-10",
-        "icon-xs": "text-xs h-6 w-6",
+        icon: "text-sm h-10 rounded-md  w-10",
+        "icon-xs": "text-xs h-6 rounded-md w-6",
       },
     },
     defaultVariants: {

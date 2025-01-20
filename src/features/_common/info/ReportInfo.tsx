@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineBillingSearch } from "@/features/_common/inline-search/InlineBillingSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -27,6 +28,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { mapKeys } from "@passionware/platform-ts";
 import { partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
@@ -154,16 +156,48 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
             )}
             {link.link.linkType === "reconcile" &&
               link.billing &&
-              link.billing.currency === report.netAmount.currency &&
-              (link.link.reportAmount < link.link.billingAmount ? (
-                <Badge variant="warning" size="sm">
-                  Overbilling
-                </Badge>
-              ) : link.link.reportAmount > link.link.billingAmount ? (
-                <Badge variant="destructive">Underbilling</Badge>
-              ) : (
-                <Badge variant="positive">Billing</Badge>
-              ))}
+              link.billing.currency === report.netAmount.currency && (
+                <LinkPopover
+                  services={services}
+                  sourceLabel="Report amount"
+                  targetLabel="Billing amount"
+                  sourceCurrency={report.netAmount.currency}
+                  targetCurrency={link.billing.currency}
+                  title="Update linked billing"
+                  initialValues={{
+                    source: link.link.reportAmount,
+                    target: link.link.billingAmount,
+                    description: link.link.description,
+                  }}
+                  onValueChange={(_all, updates) =>
+                    services.mutationService.updateBillingReportLink(
+                      link.link.id,
+                      mapKeys(updates, {
+                        source: "reportAmount",
+                        target: "billingAmount",
+                      }),
+                    )
+                  }
+                >
+                  <Button variant="headless" size="headless">
+                    {(() => {
+                      if (link.link.reportAmount < link.link.billingAmount) {
+                        return (
+                          <Badge variant="warning" size="sm">
+                            Overbilling
+                          </Badge>
+                        );
+                      }
+                      if (link.link.reportAmount > link.link.billingAmount) {
+                        return (
+                          <Badge variant="destructive">Underbilling</Badge>
+                        );
+                      }
+                      return <Badge variant="positive">Billing</Badge>;
+                    })()}
+                  </Button>
+                </LinkPopover>
+              )}
 
             <div className="text-sm font-medium leading-none flex flex-row gap-2 items-center">
               {services.formatService.financial.amount(

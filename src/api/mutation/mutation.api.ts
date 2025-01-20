@@ -15,6 +15,15 @@ export interface MutationApi {
   deleteCostReport: (reportId: number) => Promise<void>;
   deleteBilling: (billingId: number) => Promise<void>;
   deleteCost: (costId: number) => Promise<void>;
+  updateCostReportLink: (
+    linkId: number,
+    payload: Partial<LinkCostReportPayload>,
+  ) => Promise<void>;
+  updateBillingReportLink: (
+    linkId: number,
+    payload: Partial<LinkBillingReportPayload>,
+  ) => Promise<void>;
+
   editCost: (costId: number, payload: Partial<CostPayload>) => Promise<void>;
   editBilling: (
     billingId: number,

@@ -241,5 +241,49 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    updateBillingReportLink: async (linkId, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("link_billing_report")
+        .update(
+          pickBy(
+            {
+              description: takeIfPresent("description"),
+              report_id: takeIfPresent("reportId"),
+              billing_id: takeIfPresent("billingId"),
+              report_amount: takeIfPresent("reportAmount"),
+              billing_amount: takeIfPresent("billingAmount"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    updateCostReportLink: async (linkId, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("link_cost_report")
+        .update(
+          pickBy(
+            {
+              report_id: takeIfPresent("reportId"),
+              report_amount: takeIfPresent("reportAmount"),
+              cost_id: takeIfPresent("costId"),
+              cost_amount: takeIfPresent("costAmount"),
+              description: takeIfPresent("description"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }
