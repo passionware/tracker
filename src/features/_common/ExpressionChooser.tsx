@@ -8,19 +8,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
+import { Input } from "@/components/ui/input.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
+import { ensureError } from "@/platform/lang/ensureError.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -33,7 +34,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 
 export interface ExpressionChooserProps
   extends WithServices<
@@ -195,23 +196,33 @@ export function ExpressionChooser({
 
 function AdjustArgs(props: {
   args: VariableContainer;
-  onAdjust: (args: VariableContainer) => void;
+  onAdjust: (args: VariableContainer) => Promise<void>;
 }) {
   const form = useForm({
     defaultValues: {
-      args: JSON.stringify(props.args, null, 2),
+      args: Object.entries(props.args).map(([key, value]) => ({ key, value })),
     },
   });
 
-  function handleSubmit(data: { args: string }) {
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: "args",
+  });
+
+  async function handleSubmit(data: {
+    args: { key: string; value: unknown }[];
+  }) {
     try {
-      const args = JSON.parse(data.args);
-      props.onAdjust(args);
+      const args = data.args.reduce(
+        (acc, { key, value }) => {
+          acc[key] = value;
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      );
+      await props.onAdjust(args);
     } catch (e) {
-      form.setError("args", {
-        type: "manual",
-        message: "Invalid JSON",
-      });
+      form.setError("args", { message: ensureError(e).message });
     }
   }
 
@@ -220,29 +231,34 @@ function AdjustArgs(props: {
       <form
         onSubmit={(e) => {
           e.stopPropagation();
+          e.preventDefault();
           form.handleSubmit(handleSubmit)(e);
         }}
         className="grid grid-cols-1 gap-4 min-w-[20rem]"
       >
-        {/* Textarea Field */}
-        <FormField
-          control={form.control}
-          name="args"
-          rules={{ required: "This field is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Textarea</FormLabel>
-              <FormControl>
-                <Textarea
-                  rows={10}
-                  {...field}
-                  placeholder="Enter your text here..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Display general error */}
+        {form.formState.errors.args && (
+          <div className="text-red-500 text-sm">
+            {form.formState.errors.args.message}
+          </div>
+        )}
+
+        {fields.map((field, index) => (
+          <FormField
+            key={field.id}
+            control={form.control}
+            name={`args.${index}.value`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{form.getValues(`args.${index}.key`)}</FormLabel>
+                <FormControl>
+                  <Input {...field} value={String(field.value)} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ))}
 
         {/* Submit Button */}
         <Button type="submit" variant="default">
