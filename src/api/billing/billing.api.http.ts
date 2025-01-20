@@ -1,4 +1,5 @@
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   billing$,
   billingFromHttp,
@@ -6,13 +7,14 @@ import {
 import { BillingApi } from "@/api/billing/billing.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { snakeCase } from "lodash";
 import { z } from "zod";
 
 export function createBillingApi(client: SupabaseClient): BillingApi {
   return {
     getBillings: async (query) => {
-      let request = client.from("billing_with_details").select("*");
+      let request = client
+        .from("billing_with_details")
+        .select("*, client(*), workspace(*)");
       if (query.filters.contractorId) {
         switch (query.filters.contractorId.operator) {
           case "oneOf":
@@ -85,8 +87,17 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
         }
       }
       if (query.sort) {
-        request = request.order(snakeCase(query.sort.field), {
-          ascending: query.sort.order === "asc",
+        request = sorterSupabaseUtils.sort(request, query.sort, {
+          invoiceDate: "invoice_date",
+          invoiceNumber: "invoice_number",
+          client: "client(name)",
+          workspace: "workspace(name)",
+          billingBalance: "billing_balance",
+          billingReportValue: "total_report_value",
+          remainingBalance: "remaining_balance",
+          totalBillingValue: "total_billing_value",
+          totalGross: "total_gross",
+          totalNet: "total_net",
         });
       }
 

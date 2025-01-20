@@ -64,7 +64,19 @@ export type BillingQuery = WithFilters<{
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithPagination &
-  WithSorter<"invoiceDate">;
+  WithSorter<
+    | "invoiceDate"
+    | "invoiceNumber"
+    | "workspace"
+    | "client"
+    | "totalNet"
+    | "totalGross"
+    | "billingReportValue"
+    | "totalBillingValue"
+    | "billingBalance"
+    | "remainingBalance"
+    | "description"
+  >;
 
 export const billingQueryUtils = {
   ...withFiltersUtils<BillingQuery>(),

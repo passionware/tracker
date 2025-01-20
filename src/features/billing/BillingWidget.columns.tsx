@@ -38,12 +38,18 @@ export function useColumns(props: BillingWidgetProps) {
       cell: (info) => (
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
+      meta: {
+        sortKey: "workspace",
+      },
     }),
     columnHelper.accessor("client", {
       header: "Client",
       cell: (info) => (
         <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
       ),
+      meta: {
+        sortKey: "client",
+      },
     }),
     columnHelper.accessor("invoiceNumber", {
       header: "Invoice Number",
@@ -105,6 +111,7 @@ export function useColumns(props: BillingWidgetProps) {
           info.getValue().amount,
           info.getValue().currency,
         ),
+      meta: { sortKey: "totalNet" },
     }),
     columnHelper.accessor("grossAmount", {
       header: "Gross Amount",
@@ -113,6 +120,9 @@ export function useColumns(props: BillingWidgetProps) {
           info.getValue().amount,
           info.getValue().currency,
         ),
+      meta: {
+        sortKey: "totalGross",
+      },
     }),
     columnHelper.accessor("matchedAmount", {
       header: "Matched Amount",
@@ -132,6 +142,9 @@ export function useColumns(props: BillingWidgetProps) {
           ))}
         </div>
       ),
+      meta: {
+        sortKey: "billingReportValue",
+      },
     }),
     columnHelper.accessor("remainingAmount", {
       header: "Remaining Amount",
@@ -140,12 +153,18 @@ export function useColumns(props: BillingWidgetProps) {
           info.getValue().amount,
           info.getValue().currency,
         ),
+      meta: {
+        sortKey: "remainingBalance",
+      },
     }),
     columnHelper.accessor("description", {
       header: "Description",
       cell: (info) => (
         <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
       ),
+      meta: {
+        sortKey: "description",
+      },
     }),
     columnHelper.display({
       id: "actions",
