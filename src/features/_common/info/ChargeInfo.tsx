@@ -8,8 +8,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -178,7 +178,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
 
       <Separator className="my-2" />
       <div className="text-sm text-gray-700 font-medium my-1 text-center">
-        Linked Contractor Reports
+        Linked Reports
       </div>
       <Separator className="my-2" />
       <div className="space-y-8">
@@ -217,10 +217,9 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                   </div>
                   <div className="space-y-2">
                     <div className="text-xs text-slate-600">
-                      <ContractorPicker
+                      <ContractorWidget
                         services={services}
-                        value={link.report.contractorId}
-                        onSelect={undefined}
+                        contractorId={link.report.contractorId}
                       />
                     </div>
                     <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">

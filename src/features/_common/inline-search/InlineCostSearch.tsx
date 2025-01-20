@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
+import { ContractorView } from "@/features/_common/ContractorView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -78,11 +78,9 @@ export function InlineCostSearch(props: InlineCostSearchProps) {
                         />
                         <ChevronRight className="size-3" />
                         {cost.contractor ? (
-                          <ContractorPicker
+                          <ContractorView
                             size="xs"
-                            value={cost.contractor.id}
-                            onSelect={() => {}}
-                            services={props.services}
+                            contractor={rd.of(cost.contractor)}
                           />
                         ) : (
                           cost.counterparty

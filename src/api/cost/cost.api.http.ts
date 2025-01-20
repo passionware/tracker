@@ -1,7 +1,9 @@
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { snakeCase } from "lodash";
 import { z } from "zod";
 
 export function createCostApi(client: SupabaseClient): CostApi {
@@ -160,6 +162,9 @@ export function createCostApi(client: SupabaseClient): CostApi {
           default:
             throw new Error(`Unsupported operator: ${operator}`);
         }
+      }
+      if (query.sort) {
+        request = sorterSupabaseUtils.sort(request, query.sort, snakeCase);
       }
 
       const { data, error } = await request;

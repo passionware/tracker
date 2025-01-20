@@ -8,6 +8,8 @@ import {
   withPaginationUtils,
   WithSearch,
   withSearchUtils,
+  WithSorter,
+  withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
@@ -56,10 +58,12 @@ export type CostQuery = WithSearch &
     linkedRemainder: Nullable<NumberFilter>;
     linkedAmount: Nullable<NumberFilter>;
   }> &
-  WithPagination;
+  WithPagination &
+  WithSorter<keyof CostPayload>;
 
 export const costQueryUtils = {
   ...withFiltersUtils<CostQuery>(),
+  ...withSorterUtils<CostQuery>(),
   ...withSearchUtils<CostQuery>(),
   ...withPaginationUtils<CostQuery>(),
   ofDefault: (workspaceId: WorkspaceSpec, clientId: ClientSpec): CostQuery =>
@@ -75,6 +79,7 @@ export const costQueryUtils = {
           potentialClientId: null,
         },
         page: paginationUtils.ofDefault(),
+        sort: { field: "contractorId", order: "asc" },
       },
       workspaceId,
       clientId,

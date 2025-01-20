@@ -1,3 +1,4 @@
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   contractor$,
   contractorFromHttp,
@@ -13,6 +14,13 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       let request = client.from("contractor").select("*");
       if (query.search) {
         request = request.ilike("full_name", `%${query.search}%`);
+      }
+
+      if (query.sort) {
+        request = sorterSupabaseUtils.sort(request, query.sort, {
+          createdAt: "created_at",
+          fullName: "full_name",
+        });
       }
 
       const { data, error } = await request;

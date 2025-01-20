@@ -25,7 +25,7 @@ export const contractorQueryUtils = {
   ...withPaginationUtils<ContractorQuery>(),
   ofEmpty: (): ContractorQuery => ({
     search: "",
-    sort: null,
+    sort: { field: "fullName", order: "asc" },
     page: paginationUtils.ofDefault(),
   }),
 };
