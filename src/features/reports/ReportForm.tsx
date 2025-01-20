@@ -23,6 +23,7 @@ import { ClientPicker } from "@/features/_common/inline-search/ClientPicker.tsx"
 import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
+import { OpenState } from "@/features/_common/OpenState.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
@@ -232,42 +233,49 @@ export function ReportForm(props: ReportWidgetFormProps) {
                 <Input {...field} />
               </FormControl>
               <FormDescription>Enter net value</FormDescription>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="accent2" size="xs">
-                    Variables
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="max-w-4xl w-fit overflow-x-auto">
-                  <PopoverHeader>Calculate net value</PopoverHeader>
-                  <ExpressionChooser
-                    services={props.services}
-                    context={{
-                      workspaceId:
-                        form.watch("workspaceId") ?? idSpecUtils.ofAll(),
-                      clientId: form.watch("clientId") ?? idSpecUtils.ofAll(),
-                      contractorId:
-                        form.watch("contractorId") ?? idSpecUtils.ofAll(),
-                    }}
-                    defaultArgs={{
-                      input: form.getValues("netValue"),
-                      reportStart: form.getValues("periodStart"),
-                      reportEnd: form.getValues("periodEnd"),
-                    }}
-                    onChoose={async (_variable, _args, result) => {
-                      if (
-                        typeof result === "string" &&
-                        result.trim().match(/https?:\/\/[^\s]+/)
-                      ) {
-                        // todo: this is just a hack, but we should define a proper way to decide the action after the expression is evaluated
-                        window.open(result, "_blank");
-                        return;
-                      }
-                      form.setValue("netValue", String(result));
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+              <OpenState>
+                {(bag) => (
+                  <Popover {...bag}>
+                    <PopoverTrigger asChild>
+                      <Button variant="accent2" size="xs">
+                        Variables
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="max-w-4xl w-fit overflow-x-auto">
+                      <PopoverHeader>Calculate net value</PopoverHeader>
+                      <ExpressionChooser
+                        services={props.services}
+                        context={{
+                          workspaceId:
+                            form.watch("workspaceId") ?? idSpecUtils.ofAll(),
+                          clientId:
+                            form.watch("clientId") ?? idSpecUtils.ofAll(),
+                          contractorId:
+                            form.watch("contractorId") ?? idSpecUtils.ofAll(),
+                        }}
+                        defaultArgs={{
+                          input: form.getValues("netValue"),
+                          reportStart: form.getValues("periodStart"),
+                          reportEnd: form.getValues("periodEnd"),
+                        }}
+                        onChoose={async (_variable, _args, result) => {
+                          if (
+                            typeof result === "string" &&
+                            result.trim().match(/https?:\/\/[^\s]+/)
+                          ) {
+                            // todo: this is just a hack, but we should define a proper way to decide the action after the expression is evaluated
+                            window.open(result, "_blank");
+                            return;
+                          }
+                          form.setValue("netValue", String(result));
+                          form.setFocus("netValue");
+                          bag.close();
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </OpenState>
               <FormMessage />
             </FormItem>
           )}

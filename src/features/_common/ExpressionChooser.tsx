@@ -162,7 +162,7 @@ export function ExpressionChooser({
                 <PopoverTrigger asChild>
                   <Button variant="default">Evaluate</Button>
                 </PopoverTrigger>
-                <PopoverContent>
+                <PopoverContent className="max-w-4xl w-fit">
                   <PopoverHeader>Adjust input</PopoverHeader>
                   <AdjustArgs
                     args={defaultArgs}
@@ -218,7 +218,10 @@ function AdjustArgs(props: {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleSubmit)}
+        onSubmit={(e) => {
+          e.stopPropagation();
+          form.handleSubmit(handleSubmit)(e);
+        }}
         className="grid grid-cols-1 gap-4 min-w-[20rem]"
       >
         {/* Textarea Field */}
