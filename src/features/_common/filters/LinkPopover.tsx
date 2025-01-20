@@ -1,4 +1,12 @@
 import { Button } from "@/components/ui/button.tsx";
+import {
+  FormControl,
+  FormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import {
   Popover,
@@ -21,7 +29,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Leaf } from "lucide-react";
-import { ReactElement, ReactNode, useId, useState } from "react";
+import { ReactElement, ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export type LinkValue = {
@@ -67,97 +75,133 @@ export function LinkPopover(props: LinkPopoverProps) {
 
   const [open, setOpen] = useState(false);
 
-  const sourceId = useId();
-  const targetId = useId();
-  const descriptionId = useId();
-
   const promise = promiseState.useRemoteData<void>();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{props.children}</PopoverTrigger>
       <PopoverContent>
-        <form
-          className="flex flex-col gap-2"
-          onSubmit={form.handleSubmit(async () => {
-            const data = form.getValues();
+        <Form {...form}>
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={form.handleSubmit(async () => {
+              const data = form.getValues();
 
-            const allFields = {
-              source: Number(data.source),
-              target: Number(data.target),
-              description: data.description,
-            };
-            await promise.track(
-              props.onValueChange(allFields, getDirtyFields(allFields, form)) ||
-                Promise.resolve(),
-            );
-            setOpen(false);
-          })}
-        >
-          <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50 empty:hidden">
-            {props.title}
-          </h3>
+              const allFields = {
+                source: Number(data.source),
+                target: Number(data.target),
+                description: data.description,
+              };
+              await promise.track(
+                props.onValueChange(
+                  allFields,
+                  getDirtyFields(allFields, form),
+                ) || Promise.resolve(),
+              );
+              setOpen(false);
+            })}
+          >
+            <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50 empty:hidden">
+              {props.title}
+            </h3>
 
-          <label htmlFor={sourceId}>
-            {props.sourceLabel ?? "Enter source amount"} (
-            {props.services.formatService.financial.currencySymbol(
-              props.sourceCurrency,
-            )}
-            )
-            <ExportChooserPopover
-              header="Choose variable"
-              services={props.services}
-              context={props.context}
-              defaultArgs={{
-                input: form.watch("source"),
-              }}
-              onChoose={async (_variable, _args, result) => {
-                form.setValue("source", Number(result));
-                form.setFocus("source");
-              }}
-            >
-              <Button variant="accent2" size="icon-xs" className="self-end">
-                <Leaf />
-              </Button>
-            </ExportChooserPopover>
-          </label>
-          <Input id={sourceId} {...form.register("source")} />
+            <FormField
+              control={form.control}
+              name="source"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {props.sourceLabel ?? "Enter source amount"} (
+                    {props.services.formatService.financial.currencySymbol(
+                      props.sourceCurrency,
+                    )}
+                    )
+                  </FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input {...field} />
+                      <ExportChooserPopover
+                        header="Choose variable"
+                        services={props.services}
+                        context={props.context}
+                        defaultArgs={{ input: form.watch("source") }}
+                        onChoose={async (_variable, _args, result) => {
+                          form.setValue("source", Number(result));
+                          form.setFocus("source");
+                        }}
+                      >
+                        <Button variant="accent2" size="icon-xs">
+                          <Leaf />
+                        </Button>
+                      </ExportChooserPopover>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <label htmlFor={targetId}>
-            {props.targetLabel ?? "Enter target amount"} (
-            {props.services.formatService.financial.currencySymbol(
-              props.targetCurrency,
-            )}
-            )
-            <ExportChooserPopover
-              header="Choose variable"
-              services={props.services}
-              context={props.context}
-              defaultArgs={{
-                input: form.watch("target"),
-              }}
-              onChoose={async (_variable, _args, result) => {
-                form.setValue("target", Number(result));
-                form.setFocus("target");
-              }}
-            >
-              <Button variant="accent2" size="icon-xs" className="self-end">
-                <Leaf />
-              </Button>
-            </ExportChooserPopover>
-          </label>
-          <Input id={targetId} {...form.register("target")} />
+            <div
+            className="text-lime-700 bg-lime-100 text-md p-2 rounded-lg my-2 "
+            >Corresponds to</div>
 
-          <label htmlFor={descriptionId}>
-            {props.descriptionLabel ?? "Enter description"}:
-          </label>
-          <Textarea id={descriptionId} {...form.register("description")} />
+            <FormField
+              control={form.control}
+              name="target"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {props.targetLabel ?? "Enter target amount"} (
+                    {props.services.formatService.financial.currencySymbol(
+                      props.targetCurrency,
+                    )}
+                    )
+                  </FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input {...field} />
+                      <ExportChooserPopover
+                        header="Choose variable"
+                        services={props.services}
+                        context={props.context}
+                        defaultArgs={{ input: form.watch("target") }}
+                        onChoose={async (_variable, _args, result) => {
+                          form.setValue("target", Number(result));
+                          form.setFocus("target");
+                        }}
+                      >
+                        <Button variant="accent2" size="icon-xs">
+                          <Leaf />
+                        </Button>
+                      </ExportChooserPopover>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Button variant="default" type="submit">
-            {renderSpinnerMutation(mt.fromRemoteData(promise.state))}
-            Submit
-          </Button>
-        </form>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {props.descriptionLabel ?? "Enter description"}
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button variant="default" type="submit">
+              {renderSpinnerMutation(mt.fromRemoteData(promise.state))}
+              Submit
+            </Button>
+          </form>
+        </Form>
       </PopoverContent>
     </Popover>
   );
