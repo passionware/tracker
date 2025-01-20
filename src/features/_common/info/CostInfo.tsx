@@ -12,10 +12,12 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -34,6 +36,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { mapKeys } from "@passionware/platform-ts";
 import { chain } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
@@ -140,10 +143,38 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
               <div className="min-w-0">
                 {link.report && (
                   <div className="flex items-start gap-x-3">
-                    <p className="text-sm/6 font-semibold text-gray-900">
-                      Report
-                    </p>
-                    <Badge variant="positive" className={cn()}>
+                    <LinkPopover
+                      context={{
+                        contractorId: link.report.contractorId,
+                        workspaceId: link.report.workspaceId,
+                        clientId: idSpecUtils.ofAll(),
+                      }}
+                      services={services}
+                      sourceLabel="Cost amount"
+                      targetLabel="Report amount"
+                      sourceCurrency={costEntry.netAmount.currency}
+                      targetCurrency={link.report.currency}
+                      title="Update linked report"
+                      initialValues={{
+                        source: link.link.costAmount ?? undefined,
+                        target: link.link.reportAmount ?? undefined,
+                        description: link.link.description,
+                      }}
+                      onValueChange={(_all, updates) =>
+                        services.mutationService.updateCostReportLink(
+                          link.link.id,
+                          mapKeys(updates, {
+                            source: "costAmount",
+                            target: "reportAmount",
+                          }),
+                        )
+                      }
+                    >
+                      <Button variant="headless" size="headless">
+                        <Badge variant="positive">Report</Badge>
+                      </Button>
+                    </LinkPopover>
+                    <Badge variant="primary" tone="secondary" className={cn()}>
                       {services.formatService.temporal.date(
                         link.report.periodStart,
                       )}{" "}
