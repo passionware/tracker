@@ -111,27 +111,29 @@ export function ListView<TData, Query extends SortableQueryBase>({
                 "whitespace-pre",
               )}
             >
-              {tooltip ? (
-                <SimpleTooltip title={tooltip}>
-                  <div className="whitespace-pre flex flex-row items-center">
-                    {element} <Info className="inline size-4" />{" "}
-                  </div>
-                </SimpleTooltip>
-              ) : (
-                element
-              )}
-              {get(header.column.columnDef.meta, "sortKey") && (
-                <SorterWidget // check if this is sortable
-                  query={query} // we need to know the sorting key somehow
-                  field={
-                    get(
-                      header.column.columnDef.meta,
-                      "sortKey",
-                    ) as unknown as string
-                  } // this is the sorting key
-                  onQueryChange={onQueryChange}
-                />
-              )}
+              <div className="flex flex-row items-center gap-0.5">
+                {tooltip ? (
+                  <SimpleTooltip title={tooltip}>
+                    <div className="whitespace-pre flex flex-row items-center">
+                      {element} <Info className="inline size-4" />{" "}
+                    </div>
+                  </SimpleTooltip>
+                ) : (
+                  element
+                )}
+                {get(header.column.columnDef.meta, "sortKey") && (
+                  <SorterWidget // check if this is sortable
+                    query={query} // we need to know the sorting key somehow
+                    field={
+                      get(
+                        header.column.columnDef.meta,
+                        "sortKey",
+                      ) as unknown as string
+                    } // this is the sorting key
+                    onQueryChange={onQueryChange}
+                  />
+                )}
+              </div>
             </TableHead>
           );
         }),

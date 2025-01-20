@@ -3,13 +3,14 @@ import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { snakeCase } from "lodash";
 import { z } from "zod";
 
 export function createCostApi(client: SupabaseClient): CostApi {
   return {
     getCosts: async (query) => {
-      let request = client.from("cost_with_details").select("*");
+      let request = client
+        .from("cost_with_details")
+        .select("*,contractor(*), workspace(*)");
       if (query.search) {
         request = request
           .ilike("invoice_number", `%${query.search}%`)
@@ -164,7 +165,15 @@ export function createCostApi(client: SupabaseClient): CostApi {
         }
       }
       if (query.sort) {
-        request = sorterSupabaseUtils.sort(request, query.sort, snakeCase);
+        request = sorterSupabaseUtils.sort(request, query.sort, {
+          createdAt: "created_at",
+          contractor: "contractor(name)",
+          workspace: "workspace(name)",
+          invoiceDate: "invoice_date",
+          netValue: "net_value",
+          grossValue: "gross_value",
+          invoiceNumber: "invoice_number",
+        });
       }
 
       const { data, error } = await request;

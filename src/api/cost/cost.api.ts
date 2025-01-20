@@ -59,7 +59,17 @@ export type CostQuery = WithSearch &
     linkedAmount: Nullable<NumberFilter>;
   }> &
   WithPagination &
-  WithSorter<keyof CostPayload>;
+  WithSorter<
+    | "workspace"
+    | "contractor"
+    | "counterparty"
+    | "invoiceNumber"
+    | "invoiceDate"
+    | "createdAt"
+    | "netValue"
+    | "grossValue"
+    | "description"
+  >;
 
 export const costQueryUtils = {
   ...withFiltersUtils<CostQuery>(),
@@ -79,7 +89,7 @@ export const costQueryUtils = {
           potentialClientId: null,
         },
         page: paginationUtils.ofDefault(),
-        sort: { field: "contractorId", order: "asc" },
+        sort: { field: "contractor", order: "asc" },
       },
       workspaceId,
       clientId,

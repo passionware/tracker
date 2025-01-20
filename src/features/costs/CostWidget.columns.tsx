@@ -42,10 +42,16 @@ export function useColumns(props: PotentialCostWidgetProps) {
       cell: (info) => (
         <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
       ),
+      meta: {
+        sortKey: "workspace",
+      },
     }),
     columnHelper.accessor("counterparty", {
       header: "Counterparty",
       cell: (info) => info.getValue() || "N/A",
+      meta: {
+        sortKey: "counterparty",
+      },
     }),
     columnHelper.accessor("contractor", {
       header: "Contractor",
@@ -68,20 +74,32 @@ export function useColumns(props: PotentialCostWidgetProps) {
           />
         );
       },
+      meta: {
+        sortKey: "contractor",
+      },
     }),
     columnHelper.accessor("invoiceNumber", {
       header: "Invoice Number",
       cell: (info) => info.getValue() || "N/A",
+      meta: {
+        sortKey: "invoiceNumber",
+      },
     }),
     columnHelper.accessor("invoiceDate", {
       header: "Invoice Date",
       cell: (info) =>
         props.services.formatService.temporal.date(info.getValue()),
+      meta: {
+        sortKey: "invoiceDate",
+      },
     }),
     columnHelper.accessor("netAmount", {
       header: "Net Value",
       cell: (info) =>
         props.services.formatService.financial.currency(info.getValue()),
+      meta: {
+        sortKey: "netValue",
+      },
     }),
     columnHelper.accessor("grossAmount", {
       header: "Gross Value",
@@ -91,6 +109,9 @@ export function useColumns(props: PotentialCostWidgetProps) {
           props.services.formatService.financial.currency,
           "N/A",
         ),
+      meta: {
+        sortKey: "grossValue",
+      },
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -154,6 +175,9 @@ export function useColumns(props: PotentialCostWidgetProps) {
       cell: (info) => (
         <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
       ),
+      meta: {
+        sortKey: "description",
+      },
     }),
     columnHelper.display({
       id: "actions",
