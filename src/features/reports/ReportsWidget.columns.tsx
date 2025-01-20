@@ -91,6 +91,7 @@ export function useColumns(props: ReportsWidgetProps) {
         <Popover>
           <PopoverTrigger>
             <Badge
+              className="max-w-24 overflow-hidden"
               variant={
                 (
                   {
@@ -135,6 +136,7 @@ export function useColumns(props: ReportsWidgetProps) {
         <Popover>
           <PopoverTrigger>
             <Badge
+              className="max-w-24 overflow-hidden"
               tone="solid"
               variant={
                 (
