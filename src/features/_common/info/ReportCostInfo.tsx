@@ -407,3 +407,4 @@ Koszt AB: 800+350 = 1150 eur
 //.  - ogólnie to co mamy teraz zahardcodowane (open raport, oraz button variables) - to będą plugin pointy,
 //      a my będziemy mieć core plugins, które np pozwalają na użycie env vars, expressions (sam plugin point nic nie wie o envach etc - komunikuje sie z pluginami nie wiedzac co robią)
 //.  - generowanie linku między raportem a billingiem - tam też będzie plugin point, i będzie plugin pozwalający na wybranie funkcji konwertującej, albo będzie plugin własny, który skonwertuje wartości bez UI
+// todo: plugin vs addon - addon rejestruje wiele pluginów, plugin to jest jeden konkretny element dorzucany potem do plugin pointu
