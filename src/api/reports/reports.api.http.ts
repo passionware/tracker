@@ -74,17 +74,15 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
 
       if (query.sort) {
         request = sorterSupabaseUtils.sort(request, query.sort, {
-          contractor: {
-            foreignTable: "contractor",
-            foreignColumn: "full_name",
-          },
+          contractor: "contractor(full_name)",
           netValue: "net_value",
-          periodEnd: "period_end",
-          periodStart: "period_start",
-          workspace: {
-            foreignColumn: "name",
-            foreignTable: "workspace",
-          },
+          period: "period_end",
+          workspace: "workspace(name)",
+          client: "client(name)",
+          reportBillingValue: "total_billing_billing_value",
+          remainingAmount: "report_billing_balance",
+          immediatePaymentDue: "immediate_payment_due",
+          reportCostBalance: "report_cost_balance",
         });
       }
 

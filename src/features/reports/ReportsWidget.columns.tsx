@@ -78,6 +78,9 @@ export function useColumns(props: ReportsWidgetProps) {
       cell: (info) => (
         <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
       ),
+      meta: {
+        sortKey: "client",
+      },
     }),
     columnHelper.accessor("status", {
       header: "Charge",
@@ -219,6 +222,7 @@ export function useColumns(props: ReportsWidgetProps) {
       meta: {
         headerClassName: "bg-sky-50 border-x border-slate-800/10",
         cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
+        sortKey: "netValue",
       },
     }),
     columnHelper.group({
@@ -232,6 +236,7 @@ export function useColumns(props: ReportsWidgetProps) {
             headerClassName: "bg-rose-50 border-x border-slate-800/10",
             cellClassName: "bg-rose-50/50 border-x border-slate-800/10",
             tooltip: "[total_billing_billing_value] billedAmount",
+            sortKey: "reportBillingValue",
           },
         }),
         columnHelper.accessor("remainingAmount", {
@@ -241,6 +246,7 @@ export function useColumns(props: ReportsWidgetProps) {
           meta: {
             headerClassName: "bg-rose-50 border-x border-slate-800/10",
             cellClassName: "bg-rose-50/50 border-x border-slate-800/10",
+            sortKey: "remainingAmount",
           },
         }),
       ],
@@ -270,6 +276,7 @@ export function useColumns(props: ReportsWidgetProps) {
             headerClassName: "bg-lime-50 border-x border-slate-800/10",
             cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
             tooltip: headers.toPay,
+            sortKey: "immediatePaymentDue",
           },
         }),
         columnHelper.accessor("remainingFullCompensationAmount", {
@@ -280,6 +287,7 @@ export function useColumns(props: ReportsWidgetProps) {
             headerClassName: "bg-lime-50 border-x border-slate-800/10",
             cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
             tooltip: headers.toCompensate,
+            sortKey: "reportCostBalance",
           },
         }),
       ],
@@ -296,12 +304,18 @@ export function useColumns(props: ReportsWidgetProps) {
         )} - ${props.services.formatService.temporal.date(
           info.row.original.periodEnd,
         )}`,
+      meta: {
+        sortKey: "period",
+      },
     }),
     columnHelper.accessor("description", {
       header: "Description",
       cell: (info) => (
         <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
       ),
+      meta: {
+        sortKey: "description",
+      },
     }),
     columnHelper.display({
       id: "actions",

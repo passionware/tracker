@@ -24,7 +24,7 @@ export function SorterWidget<T extends SortableQueryBase<Field>, Field>({
   const order = sorter.ensureField(query.sort, field)?.order;
   return (
     <Button
-      variant="ghost"
+      variant="headless"
       type="button"
       size="icon-xs"
       onClick={() => {
@@ -32,13 +32,13 @@ export function SorterWidget<T extends SortableQueryBase<Field>, Field>({
         const newQuery = withSorterUtils<T>().setSort(query, newSorter);
         onQueryChange(newQuery, newSorter);
       }}
-      className="inline-flex flex-col gap-0.5 rounded-sm text-slate-400"
+      className="inline-flex flex-col gap-1 size-5 rounded-sm text-slate-400 hover:bg-slate-900/10"
     >
       <ChevronUp
-        className={clsx("w-4 h-4 -mb-2", order === "asc" && "text-black")}
+        className={clsx("!size-3 -mb-2", order === "asc" && "text-black")}
       />
       <ChevronDown
-        className={clsx("w-4 h-4", order === "desc" && "text-black")}
+        className={clsx("!size-3", order === "desc" && "text-black")}
       />
     </Button>
   );

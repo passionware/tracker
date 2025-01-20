@@ -72,7 +72,16 @@ export type ReportQuery = WithFilters<{
 }> &
   WithPagination &
   WithSorter<
-    "periodStart" | "periodEnd" | "netValue" | "contractor" | "workspace"
+    | "period"
+    | "netValue"
+    | "contractor"
+    | "workspace"
+    | "client"
+    | "reportBillingValue"
+    | "remainingAmount"
+    | "immediatePaymentDue"
+    | "reportCostBalance"
+    | "description"
   >;
 
 export interface ReportApi {
@@ -94,7 +103,7 @@ export const reportQueryUtils = {
           contractorId: null,
         },
         page: { page: 0, pageSize: 10 },
-        sort: { field: "periodStart", order: "asc" },
+        sort: { field: "period", order: "asc" },
       },
       workspaceId,
       clientId,
