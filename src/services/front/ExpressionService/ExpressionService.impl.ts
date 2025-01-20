@@ -5,6 +5,7 @@ import { selectEffectiveVariables } from "@/services/front/ExpressionService/_pr
 import { ExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 
 export function createExpressionService(
   config: WithServices<[WithVariableService]>,
@@ -23,13 +24,17 @@ export function createExpressionService(
       const effectiveVariables = config.services.variableService.useVariables(
         variableQueryUtils.ofDefault(context.workspaceId, context.clientId),
       );
-      return rd.useMemoMap(effectiveVariables, (variableDefinitions) => {
+      const promise = promiseState.useRemoteData<string>();
+      rd.useMemoMap(effectiveVariables, (variableDefinitions) => {
         const effectiveVariables = selectEffectiveVariables(
           context,
           variableDefinitions,
         );
-        return evaluateExpression(effectiveVariables, args, expression);
+        void promise.track(
+          evaluateExpression(effectiveVariables, args, expression),
+        );
       });
+      return promise.state;
     },
     ensureExpressionValue: async (context, value, args) => {
       const variableDefinitions =

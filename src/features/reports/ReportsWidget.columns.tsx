@@ -33,7 +33,6 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
-import { z } from "zod";
 
 const columnHelper = createColumnHelper<ReportViewEntry>();
 
@@ -368,20 +367,19 @@ function ActionMenu(
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
-            const url =
-              await props.services.expressionService.ensureExpressionValue(
-                {
-                  clientId: props.entry.client.id,
-                  contractorId: props.entry.contractor.id,
-                  workspaceId: props.entry.workspace.id,
-                },
-                "vars.report_url",
-                {
-                  reportStart: props.entry.periodStart,
-                  reportEnd: props.entry.periodEnd,
-                },
-              );
-            window.open(z.string().parse(url), "_blank");
+            // calling some action, hopefully it opens a report
+            await props.services.expressionService.ensureExpressionValue(
+              {
+                clientId: props.entry.client.id,
+                contractorId: props.entry.contractor.id,
+                workspaceId: props.entry.workspace.id,
+              },
+              "vars.open_report_action", // in the future we will just enable plugin point so user defines what should happen and from where it should be sourced
+              {
+                reportStart: props.entry.periodStart,
+                reportEnd: props.entry.periodEnd,
+              },
+            );
           }}
         >
           Navigate to report

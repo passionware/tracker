@@ -19,6 +19,9 @@ export type Expression = {
    */
   value: string;
 };
+
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
 /**
  * For given vars, args, and expression, evaluate the expression and return the result.
  * Supports references between variables.
@@ -27,18 +30,18 @@ export type Expression = {
  * @param expression Expression string to evaluate.
  * @returns Evaluated result of the expression.
  */
-export function evaluateExpression(
+export async function evaluateExpression(
   effectiveVariables: Record<string, Expression>,
   argsContext: VariableContainer,
   expression: string,
-): string {
+): Promise<string> {
   const cache: Record<string, string> = {};
   const currentlyEvaluating: Set<string> = new Set();
 
-  function resolveVariable(
+  async function resolveVariable(
     variableName: string,
     rootVariableName: string = variableName,
-  ): string {
+  ): Promise<string> {
     if (currentlyEvaluating.has(variableName)) {
       throw new Error(
         `Circular reference detected for variable "${rootVariableName}"`,
@@ -81,13 +84,18 @@ export function evaluateExpression(
 
       const wrappedExpression = wrapExpression(variable.value);
 
-      const fn = new Function("vars", "args", "api", wrappedExpression) as (
+      const fn = new AsyncFunction(
+        "vars",
+        "args",
+        "api",
+        wrappedExpression,
+      ) as (
         vars: typeof varsProxy,
         args: typeof argsProxy,
         api: typeof expressionEnv,
-      ) => string;
+      ) => string | Promise<string>;
 
-      result = fn(varsProxy, argsProxy, expressionEnv);
+      result = await fn(varsProxy, argsProxy, expressionEnv);
     } else {
       throw new Error(`Unsupported variable type: ${variable.type}`);
     }
@@ -99,13 +107,13 @@ export function evaluateExpression(
 
   const wrappedExpression = wrapExpression(expression);
 
-  const fn = new Function("vars", "args", "api", wrappedExpression) as (
+  const fn = new AsyncFunction("vars", "args", "api", wrappedExpression) as (
     vars: Record<string, string | undefined>,
     args: VariableContainer,
     api: typeof expressionEnv,
-  ) => string;
+  ) => string | Promise<string>;
 
-  return fn(
+  const result = await fn(
     new Proxy(
       // also: consider making proxy on an empty object
       effectiveVariables as unknown as Record<string, string | undefined>,
@@ -121,6 +129,7 @@ export function evaluateExpression(
     argsContext,
     expressionEnv,
   );
+  return result;
 }
 
 /**

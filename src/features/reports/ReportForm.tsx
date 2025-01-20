@@ -259,14 +259,8 @@ export function ReportForm(props: ReportWidgetFormProps) {
                           reportEnd: form.getValues("periodEnd"),
                         }}
                         onChoose={async (_variable, _args, result) => {
-                          if (
-                            typeof result === "string" &&
-                            result.trim().match(/https?:\/\/[^\s]+/)
-                          ) {
-                            // todo: this is just a hack, but we should define a proper way to decide the action after the expression is evaluated
-                            window.open(result, "_blank");
-                            return;
-                          }
+                          // remember - expression can call side effect for now
+                          // in the future we will define `procedures` (for plugin system)F so the are expected to be have side effects
                           form.setValue("netValue", String(result));
                           form.setFocus("netValue");
                           bag.close();
