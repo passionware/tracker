@@ -15,10 +15,12 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { LoadingSpinner } from "@/components/ui/spinner.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { ClientWidget } from "@/features/_common/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceWidget } from "@/features/_common/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ensureError } from "@/platform/lang/ensureError.ts";
@@ -32,8 +34,10 @@ import {
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { rd, RemoteData } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
+import { memo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 export interface ExpressionChooserProps
@@ -57,7 +61,8 @@ export interface ExpressionChooserProps
 
 const columnHelper = createColumnHelper<Variable>();
 
-export function ExpressionChooser({
+export const ExpressionChooser = memo(XExpressionChooser);
+function XExpressionChooser({
   services,
   context,
   onChoose,
@@ -141,6 +146,7 @@ export function ExpressionChooser({
         columnHelper.display({
           header: "Select",
           cell: (info) => {
+            const evaluatePromise = promiseState.useRemoteData();
             if (info.row.original.type === "const") {
               return (
                 <Button
@@ -166,14 +172,16 @@ export function ExpressionChooser({
                 <PopoverContent className="max-w-4xl w-fit">
                   <PopoverHeader>Adjust input</PopoverHeader>
                   <AdjustArgs
+                    mutation={evaluatePromise.state}
                     args={defaultArgs}
                     onAdjust={async (args) => {
-                      const result =
-                        await services.expressionService.ensureExpressionValue(
+                      const result = await evaluatePromise.track(
+                        services.expressionService.ensureExpressionValue(
                           context,
                           info.row.original.value,
                           args,
-                        );
+                        ),
+                      );
                       onChoose(info.row.original, args, result);
                     }}
                   />
@@ -196,6 +204,7 @@ export function ExpressionChooser({
 
 function AdjustArgs(props: {
   args: VariableContainer;
+  mutation: RemoteData<unknown>;
   onAdjust: (args: VariableContainer) => Promise<void>;
 }) {
   const form = useForm({
@@ -262,6 +271,12 @@ function AdjustArgs(props: {
 
         {/* Submit Button */}
         <Button type="submit" variant="default">
+          {rd
+            .fullJourney(props.mutation)
+            .initially("Evaluate")
+            .wait(<LoadingSpinner />)
+            .catch(renderSmallError("w-6 h-4"))
+            .map(() => null)}
           Adjust
         </Button>
       </form>
