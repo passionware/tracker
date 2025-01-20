@@ -10,6 +10,7 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -28,6 +29,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { mapKeys } from "@passionware/platform-ts";
 import { Slot } from "@radix-ui/react-slot";
 import { addDays, startOfDay } from "date-fns";
 import { chain, partial, sortBy } from "lodash";
@@ -190,7 +192,37 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 <div className="flex items-stretch gap-2" key={actualLink.id}>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-row justify-between items-center gap-2">
-                      <Badge variant="positive">Report</Badge>
+                      <LinkPopover
+                        context={{
+                          contractorId: link.report.contractorId,
+                          workspaceId: link.report.workspaceId,
+                          clientId: billing.client.id,
+                        }}
+                        services={services}
+                        sourceLabel="Billing amount"
+                        targetLabel="Report amount"
+                        sourceCurrency={billing.netAmount.currency}
+                        targetCurrency={link.report.currency}
+                        title="Update linked report"
+                        initialValues={{
+                          source: link.link.billingAmount ?? undefined,
+                          target: link.link.reportAmount ?? undefined,
+                          description: link.link.description,
+                        }}
+                        onValueChange={(_all, updates) =>
+                          services.mutationService.updateBillingReportLink(
+                            link.link.id,
+                            mapKeys(updates, {
+                              source: "billingAmount",
+                              target: "reportAmount",
+                            }),
+                          )
+                        }
+                      >
+                        <Button variant="headless" size="headless">
+                          <Badge variant="positive">Report</Badge>
+                        </Button>
+                      </LinkPopover>
                       <Badge variant="secondary" size="sm">
                         {services.formatService.temporal.date(
                           link.report.periodStart,
