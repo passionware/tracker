@@ -158,7 +158,7 @@ export const myServices = {
 
 export function NavigationServiceInject() {
   const navigate = useNavigate();
-  const ref = useRef<NavigateFunction>();
+  const ref = useRef<NavigateFunction>(null);
   if (maybe.isAbsent(ref.current)) {
     ref.current = navigate;
     navigationInjectEvent.emit(navigate);

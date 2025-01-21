@@ -21,6 +21,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { Overwrite } from "@passionware/platform-ts";
 import { CommandLoading } from "cmdk";
 import { partialRight } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
@@ -38,38 +39,52 @@ export interface AbstractPickerConfig<Id, Data, Props> {
   placeholder?: string;
 }
 
-export interface AbstractPickerProps<Id, Data> {
-  value: Maybe<Unassigned | Id>;
-  onSelect: Maybe<(item: Maybe<Unassigned | Id>) => void | Promise<void>>;
-  config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
-  allowClear?: boolean;
-  allowUnassigned?: boolean;
-  size?: ButtonProps["size"];
-  className?: string;
-}
+export type AbstractPickerProps<Id, Data> = Overwrite<
+  ButtonProps,
+  {
+    value: Maybe<Unassigned | Id>;
+    onSelect: Maybe<(item: Maybe<Unassigned | Id>) => void | Promise<void>>;
+    config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
+    allowClear?: boolean;
+    allowUnassigned?: boolean;
+  }
+>;
 
-export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
+export function AbstractPicker<Id, Data>(
+  _props: AbstractPickerProps<Id, Data>,
+) {
+  const {
+    value,
+    onSelect,
+    config,
+    size,
+    variant,
+    className,
+    allowUnassigned,
+    allowClear,
+    ...rest
+  } = _props;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const promise = promiseState.useRemoteData();
 
-  const options = rd.useLastWithPlaceholder(props.config.useItems(query));
+  const options = rd.useLastWithPlaceholder(config.useItems(query));
   const lastOption = rd.useLastWithPlaceholder(
-    props.config.useItem(unassignedUtils.getOrElse(props.value, null)),
+    config.useItem(unassignedUtils.getOrElse(value, null)),
   );
 
   const currentOption = rd.widen<Data | Unassigned>(
-    maybe.isAbsent(props.value)
+    maybe.isAbsent(value)
       ? rd.ofIdle()
       : unassignedUtils.mapOrElse(
-          props.value,
+          value,
           () => lastOption,
           rd.of(unassignedUtils.ofUnassigned()),
         ),
   );
 
   const handleSelect = (itemId: Maybe<Unassigned | Id>) => {
-    const result = props.onSelect?.(itemId);
+    const result = onSelect?.(itemId);
     if (result) {
       void promise.track(result);
     }
@@ -79,11 +94,12 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
 
   const button = (
     <Button
-      size={props.size}
-      variant="outline"
+      variant={variant ?? "outline"}
       role="combobox"
       aria-expanded={open}
-      className={cn("pl-1 pr-2 justify-between", props.className)}
+      className={cn("pl-1 pr-2 justify-between", className)}
+      size={size}
+      {...rest}
     >
       {rd
         .fullJourney(promise.state)
@@ -93,13 +109,13 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
         .map(() => null)}
       {rd
         .fullJourney(currentOption)
-        .initially(props.config.placeholder ?? "Select item")
+        .initially(config.placeholder ?? "Select item")
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
         .map((data) =>
           unassignedUtils.mapOrElse(
             data,
-            partialRight(props.config.renderItem, props),
+            partialRight(config.renderItem, _props),
             <>
               <Unlink2 />
               Unassigned
@@ -110,7 +126,7 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
     </Button>
   );
 
-  if (!props.onSelect) {
+  if (!onSelect) {
     return button;
   }
 
@@ -120,14 +136,14 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
       <PopoverContent className="max-w-md w-fit p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder={props.config.searchPlaceholder || "Search item"}
+            placeholder={config.searchPlaceholder || "Search item"}
             value={query}
             onValueChange={setQuery}
           />
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
-                {props.allowClear && maybe.isPresent(props.value) && (
+                {allowClear && maybe.isPresent(value) && (
                   <CommandItem
                     value={undefined}
                     onSelect={() => {
@@ -139,7 +155,7 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
                     Clear
                   </CommandItem>
                 )}
-                {props.allowUnassigned && (
+                {allowUnassigned && (
                   <CommandItem
                     variant="info"
                     value={undefined}
@@ -148,11 +164,11 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
                     }}
                   >
                     <Unlink2 />
-                    {props.config.unassignedLabel || "Unassigned"}
+                    {config.unassignedLabel || "Unassigned"}
                     <Check
                       className={cn(
                         "ml-auto",
-                        props.value === null ? "opacity-100" : "opacity-0",
+                        value === null ? "opacity-100" : "opacity-0",
                       )}
                     />
                   </CommandItem>
@@ -168,29 +184,29 @@ export function AbstractPicker<Id, Data>(props: AbstractPickerProps<Id, Data>) {
                   }
                   return options.map((data) => (
                     <CommandItem
-                      key={props.config.getKey(data)}
-                      value={props.config.getKey(data)}
+                      key={config.getKey(data)}
+                      value={config.getKey(data)}
                       onSelect={() => {
-                        if (props.value === props.config.getItemId(data)) {
-                          if (props.allowClear) {
+                        if (value === config.getItemId(data)) {
+                          if (allowClear) {
                             handleSelect(null);
                           }
                           setOpen(false);
                           return;
                         }
 
-                        handleSelect(props.config.getItemId(data));
+                        handleSelect(config.getItemId(data));
                         setOpen(false);
                       }}
                     >
                       {partialRight(
-                        props.config.renderOption ?? props.config.renderItem,
-                        props,
+                        config.renderOption ?? config.renderItem,
+                        _props,
                       )(data)}
                       <Check
                         className={cn(
                           "ml-auto",
-                          props.value === props.config.getItemId(data)
+                          value === config.getItemId(data)
                             ? "opacity-100"
                             : "opacity-0",
                         )}
