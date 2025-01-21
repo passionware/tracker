@@ -70,38 +70,40 @@ Zadania Ukończone (DONE)
 
 Zadania do Wykonania (TODO)
 
+1. inline search - kolumny, filtery, ...
+
 1. Asysta przy wpisywaniu formularza (variables)
    • Przykładowo: przeliczanie raportu godzinowego przy użyciu pluginów (wybór raportu, automatyczne obliczenie wartości EUR, itp.).
    • Można to rozwiązać bardziej generycznie, np. wybór raportu, decyzja co zrobić z wynikiem (skopiować, wprowadzić w pole, otworzyć URL).
    • Jeden z pluginów mógłby wykonywać wywołanie API do TMetric.
-2. Sortowanie kolumn
+1. Sortowanie kolumn
    • Umożliwienie sortowania w interfejsie według wybranych pól (np. daty, kontraktora, kwoty).
-3. Tworzenie faktury w trybie draft (nowa kolumna charge) na podstawie zaznaczonych raportów
+1. Tworzenie faktury w trybie draft (nowa kolumna charge) na podstawie zaznaczonych raportów
    • Automatyczne pobieranie domyślnych wartości z raportów.
-4. Tworzenie faktury w trybie draft (nowa kolumna cost) na podstawie zaznaczonych raportów
+1. Tworzenie faktury w trybie draft (nowa kolumna cost) na podstawie zaznaczonych raportów
    • Analogicznie do punktu wyżej, w tym również integracja z custom variables (np. raport TMetric).
-5. Ładne “query toolbary” – edytowalne listy i wyszukiwanie “inline”.
-6. Zarządzanie użytkownikami (role, uprawnienia itp.).
-7. Zarządzanie workspace’ami.
-8. Kontrola widoczności nowo dodanych raportów – automatyczne ustawianie, aby raport wyświetlał się w odpowiednim kliencie/workspace.
-9. Statystyki – np. ile firma jest “na plusie” (wartości faktur netto - powiązane raporty, suma billingAmount) i ile jest jeszcze długu (raporty - koszty).
-10. Wyświetlanie zysku spółki na danej fakturze – np. 2×80 EUR to 160 EUR, z czego koszty to 40 + 115 + 5 (zysk) itd.
-11. Rozliczanie kosztów – gdy dodajemy nowy koszt, łączyć go z raportem i wizualnie zaznaczać, czy raport został w pełni opłacony.
-12. Clarify kosztów (gdy koszt nie jest powiązany z konkretnym kontraktorem, albo to inny rodzaj kosztu) – można wprowadzić statusy jak clarified vs matched + kolumna clarified.
-13. Widok kontraktora – prezentujący jego zarobki, raporty, stan rozliczenia (czy koszty zostały całkowicie pokryte, a raporty opłacone). Możliwe zestawienie ciągłości raportów dla klienta.
-14. Linkowanie raportów do faktur draft (charge i cost) – opcja automatycznego powiększenia kwoty faktury o wartość linka.
-15. Widok billingów – kolumna wskazująca, ile firma traci, a ile zarabia w stosunku do podłączonych kosztów.
-16. Lista kontraktorów z możliwością symulacji „Mam X środków w firmie, jak je rozdzielić, by spłacić długi sprawiedliwie?”.
-17. Flow stream chart – reprezentacja przepływów w formie wykresu.
-18. System wtyczek (pluginy) i marketplace:
-    • Plugin point np. “custom list action” – link do TMetric report.
-    • Wtyczki, które dodają elementy do plugin pointów (akcje, nazwy zmiennych, integracje z zewnętrznymi systemami).
-    • Zarządzanie zmiennymi (np. tmetricReportId, tmetricUserId) oraz podpowiedzi do wartości tych zmiennych.
-    • Możliwość automatycznego przeliczania wartości w formularzu (np. wpisanie 67h43min → 7790,1 EUR).
-    • Koncepcja core plugins (podstawowe integracje z env vars, expressions).
-    • Generowanie linku między raportem a billingiem (funkcja konwertująca wartości raport/billing).
-19. Różnica między plugin a addon – addon może rejestrować wiele pluginów, a plugin jest pojedynczym elementem.
-20. Wykres osi czasu – prezentujący faktury i raporty w jednym widoku.
+1. Ładne “query toolbary” – edytowalne listy i wyszukiwanie “inline”.
+1. Zarządzanie użytkownikami (role, uprawnienia itp.).
+1. Zarządzanie workspace’ami.
+1. Kontrola widoczności nowo dodanych raportów – automatyczne ustawianie, aby raport wyświetlał się w odpowiednim kliencie/workspace.
+1. Statystyki – np. ile firma jest “na plusie” (wartości faktur netto - powiązane raporty, suma billingAmount) i ile jest jeszcze długu (raporty - koszty).
+1. Wyświetlanie zysku spółki na danej fakturze – np. 2×80 EUR to 160 EUR, z czego koszty to 40 + 115 + 5 (zysk) itd.
+1. Rozliczanie kosztów – gdy dodajemy nowy koszt, łączyć go z raportem i wizualnie zaznaczać, czy raport został w pełni opłacony.
+1. Clarify kosztów (gdy koszt nie jest powiązany z konkretnym kontraktorem, albo to inny rodzaj kosztu) – można wprowadzić statusy jak clarified vs matched + kolumna clarified.
+1. Widok kontraktora – prezentujący jego zarobki, raporty, stan rozliczenia (czy koszty zostały całkowicie pokryte, a raporty opłacone). Możliwe zestawienie ciągłości raportów dla klienta.
+1. Linkowanie raportów do faktur draft (charge i cost) – opcja automatycznego powiększenia kwoty faktury o wartość linka.
+1. Widok billingów – kolumna wskazująca, ile firma traci, a ile zarabia w stosunku do podłączonych kosztów.
+1. Lista kontraktorów z możliwością symulacji „Mam X środków w firmie, jak je rozdzielić, by spłacić długi sprawiedliwie?”.
+1. Flow stream chart – reprezentacja przepływów w formie wykresu.
+1. System wtyczek (pluginy) i marketplace:
+   • Plugin point np. “custom list action” – link do TMetric report.
+   • Wtyczki, które dodają elementy do plugin pointów (akcje, nazwy zmiennych, integracje z zewnętrznymi systemami).
+   • Zarządzanie zmiennymi (np. tmetricReportId, tmetricUserId) oraz podpowiedzi do wartości tych zmiennych.
+   • Możliwość automatycznego przeliczania wartości w formularzu (np. wpisanie 67h43min → 7790,1 EUR).
+   • Koncepcja core plugins (podstawowe integracje z env vars, expressions).
+   • Generowanie linku między raportem a billingiem (funkcja konwertująca wartości raport/billing).
+1. Różnica między plugin a addon – addon może rejestrować wiele pluginów, a plugin jest pojedynczym elementem.
+1. Wykres osi czasu – prezentujący faktury i raporty w jednym widoku.
 
 Dodatkowe Uwagi
 • Rozważana jest metoda scalania nadwyżek z faktur i długów raportów w formie wspólnej puli dla każdego klienta.
