@@ -108,3 +108,7 @@ Dodatkowe Uwagi
 • Clarification jest rozpatrywane głównie tam, gdzie występują rozbieżności między sumą raportów a kwotą wystawioną na fakturze.
 • Zalecane jest raczej używanie dwuwartościowych linków (reportValue, billingValue) zamiast jednowartościowych.
 • W planach jest rozbudowany system wtyczek (pluginów) pozwalający automatyzować m.in. pobieranie danych z TMetric i przeliczanie różnych stawek (np. stawka godzinowa, marże, flat rate).
+
+TODO:
+
+- Dla każdego linka można by jakoś zdefiniować funkcję konwertującą, aby przy każdorazowej aktualizacji linka, ją wykonać, oraz wyświetlić to.
