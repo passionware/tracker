@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "c": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",
     "update:dev:passionware": "npx update-by-scope @passionware npm install --tag dev",
