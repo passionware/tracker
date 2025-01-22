@@ -1,11 +1,10 @@
-import {Badge, RollingBadge} from "@/components/ui/badge.tsx";
+import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import {
@@ -16,9 +15,9 @@ import {
 } from "@/components/ui/popover.tsx";
 import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -71,7 +70,8 @@ export function useColumns(props: BillingWidgetProps) {
       cell: (info) => (
         <Popover>
           <PopoverTrigger>
-            <RollingBadge className="max-w-24"
+            <RollingBadge
+              className="max-w-24"
               tone="solid"
               variant={
                 (
@@ -99,9 +99,10 @@ export function useColumns(props: BillingWidgetProps) {
             </RollingBadge>
           </PopoverTrigger>
           <PopoverContent
-              side="bottom"
-              align="start"
-              className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto">
+            side="bottom"
+            align="start"
+            className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto"
+          >
             <PopoverHeader>Invoice details</PopoverHeader>
             <ChargeInfo services={props.services} billing={info.row.original} />
           </PopoverContent>

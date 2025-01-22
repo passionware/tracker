@@ -1,5 +1,5 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
-import { Badge, RollingBadge } from "@/components/ui/badge.tsx";
+import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -15,10 +15,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
-import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { assert } from "@/platform/lang/assert";
 import { WithServices } from "@/platform/typescript/services.ts";
