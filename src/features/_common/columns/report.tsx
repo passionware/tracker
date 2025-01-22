@@ -9,6 +9,7 @@ import {
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { headers } from "@/features/reports/headers.tsx";
@@ -29,7 +30,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { truthy } from "@passionware/monads";
+import { maybe, rd, truthy } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
 
@@ -62,10 +63,15 @@ export const reportColumns = {
       },
     }),
   contractor: {
-    withAdjacency: columnHelper.accessor("contractor.fullName", {
+    withAdjacency: columnHelper.accessor("contractor", {
       header: "Contractor",
       cell: (info) => (
-        <>
+        <div className="flex flex-row items-center gap-2">
+          <ContractorView
+            contractor={maybe.mapOrElse(info.getValue(), rd.of, rd.ofIdle())}
+            layout="full"
+            size="sm"
+          />
           {info.row.original.previousReportInfo?.adjacency === "separated" && (
             <SimpleTooltip light title="Report is not adjacent to previous">
               <Button size="icon-xs" variant="ghost">
@@ -80,8 +86,7 @@ export const reportColumns = {
               </Button>
             </SimpleTooltip>
           )}
-          <span className="inline">{info.getValue()}</span>
-        </>
+        </div>
       ),
       meta: {
         sortKey: "contractor",

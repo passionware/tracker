@@ -16,6 +16,7 @@ import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
+import { ExpressionContext } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -124,6 +125,37 @@ export const billingQueryUtils = {
             null,
           ),
         ),
+      )
+      .value(),
+  // todo candidate for promotion
+  narrowContext: (
+    query: BillingQuery,
+    context: ExpressionContext,
+  ): BillingQuery =>
+    chain(query)
+      .thru((x) =>
+        idSpecUtils.isAll(context.workspaceId)
+          ? x
+          : billingQueryUtils.setFilter(x, "workspaceId", {
+              operator: "oneOf",
+              value: [context.workspaceId],
+            }),
+      )
+      .thru((x) =>
+        idSpecUtils.isAll(context.clientId)
+          ? x
+          : billingQueryUtils.setFilter(x, "clientId", {
+              operator: "oneOf",
+              value: [context.clientId],
+            }),
+      )
+      .thru((x) =>
+        idSpecUtils.isAll(context.contractorId)
+          ? x
+          : billingQueryUtils.setFilter(x, "contractorId", {
+              operator: "oneOf",
+              value: [context.contractorId],
+            }),
       )
       .value(),
 };

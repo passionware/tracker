@@ -5,7 +5,6 @@ import {
   ReportSearchBaseModel,
 } from "@/features/_common/columns/report.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -49,15 +48,7 @@ export function ReportList(props: ReportListProps) {
     <ListView<ReportSearchBaseModel, ReportQuery>
       data={props.data}
       columns={[
-        idSpecUtils.isAll(props.context.workspaceId)
-          ? foreignColumns.workspace
-          : null,
-        idSpecUtils.isAll(props.context.clientId)
-          ? foreignColumns.client
-          : null,
-        idSpecUtils.isAll(props.context.contractorId)
-          ? foreignColumns.contractor
-          : null,
+        ...reportColumns.getContextual(props.context),
         reportColumns.billing.linkingStatus.read(props.services),
         reportColumns.netAmount(props.services),
         reportColumns.billing.linkedValue(props.services),
