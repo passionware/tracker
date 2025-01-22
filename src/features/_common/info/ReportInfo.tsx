@@ -102,7 +102,8 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                 services={services}
                 renderSelect={(billing, button, track) => {
                   const isSameCurrency =
-                    report.remainingAmount.currency === billing.currency;
+                    report.remainingAmount.currency ===
+                    billing.remainingAmount.currency;
                   return (
                     <LinkPopover
                       context={{
@@ -114,7 +115,7 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                       align="center"
                       services={services}
                       sourceCurrency={report.remainingAmount.currency}
-                      targetCurrency={billing.currency}
+                      targetCurrency={billing.remainingAmount.currency}
                       title="Link contractor report"
                       sourceLabel="Report value"
                       targetLabel="Billing value"
@@ -123,7 +124,7 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                         source: isSameCurrency
                           ? // we have same currency, so probably we don't need to exchange
                             Math.min(
-                              billing.billingBalance,
+                              billing.remainingAmount.amount,
                               report.remainingAmount.amount,
                             )
                           : // this won't be same, so let's assume that cost  = remaining report but in target currency
@@ -131,12 +132,12 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                         target: isSameCurrency
                           ? Math.min(
                               report.remainingAmount.amount,
-                              billing.billingBalance,
+                              billing.remainingAmount.amount,
                             )
-                          : billing.billingBalance,
+                          : billing.remainingAmount.amount,
                         description: [
                           isSameCurrency
-                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${billing.currency}, exchange cost: [...]`
+                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${billing.remainingAmount.currency}, exchange cost: [...]`
                             : null,
                         ]
                           .filter(Boolean)

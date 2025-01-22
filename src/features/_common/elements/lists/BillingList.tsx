@@ -1,4 +1,4 @@
-import { Billing, BillingQuery } from "@/api/billing/billing.api.ts";
+import { BillingQuery } from "@/api/billing/billing.api.ts";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
@@ -41,7 +41,7 @@ export type BillingListProps = WithServices<
       onQueryChange: (query: BillingQuery) => void;
       context: Omit<ExpressionContext, "contractorId">;
       renderSelect?: (
-        billing: Billing,
+        billing: BillingViewEntry,
         button: ReactElement,
         // this will be connected to local promiseState
         track: (promise: Promise<void>) => Promise<void>,
@@ -62,7 +62,7 @@ export function BillingList(props: BillingListProps) {
         billingColumns.netAmount(props.services),
         billingColumns.report.remainingValue(props.services),
         props.renderSelect &&
-          foreignColumns.select<Billing>((info, button, track) => {
+          foreignColumns.select<BillingViewEntry>((info, button, track) => {
             const billing = info.row.original;
             return props.renderSelect?.(billing, button, track);
           }),
