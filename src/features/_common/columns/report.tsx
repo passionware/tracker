@@ -57,7 +57,6 @@ export const reportColumns = {
     }),
   workspace: baseColumnHelper.accessor("workspace", {
     header: "Issuer",
-
     cell: (info) => (
       <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
     ),

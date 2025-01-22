@@ -22,6 +22,7 @@ import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -31,13 +32,14 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { maybe } from "@passionware/monads";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
   return [
-    reportColumns.workspace,
+    idSpecUtils.isAll(props.workspaceId) ? reportColumns.workspace : null,
     reportColumns.contractor.withAdjacency,
-    reportColumns.client,
+    idSpecUtils.isAll(props.clientId) ? reportColumns.client : null,
     reportColumns.billing.linkingStatus.allowModify(props.services),
     columnHelper.accessor("instantEarnings", {
       header: "Instant earn",
@@ -213,7 +215,7 @@ export function useColumns(props: ReportsWidgetProps) {
         <ActionMenu services={props.services} entry={row.original} />
       ),
     }),
-  ];
+  ].filter(maybe.isPresent);
 }
 
 function ActionMenu(
