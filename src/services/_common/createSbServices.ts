@@ -4,10 +4,14 @@ import { createFormatService } from "@/services/FormatService/FormatService.impl
 import { FormatService } from "@/services/FormatService/FormatService.ts";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { ExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
+import { PreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
 import { ClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.mock.ts";
 import { ContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { createMutationService } from "@/services/io/MutationService/MutationService.mock.ts";
+import { MutationService } from "@/services/io/MutationService/MutationService.ts";
 import { createVariableService } from "@/services/io/VariableService/VariableService.mock.ts";
 import { VariableService } from "@/services/io/VariableService/VariableService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
@@ -23,6 +27,7 @@ const factories = {
   client: createClientService,
   contractor: createContractorService,
   variable: createVariableService,
+  preference: createPreferenceService,
 } as const;
 
 type FactoryArgs = {
@@ -36,6 +41,7 @@ type SbServiceConfig = {
   variable?: true | FactoryArgs["variable"]["accessor"];
   format?: true;
   expression?: true;
+  preference?: true | FactoryArgs["preference"];
 };
 
 type OutputServices<C extends SbServiceConfig> = {
@@ -49,6 +55,10 @@ type OutputServices<C extends SbServiceConfig> = {
   expressionService: C["expression"] extends true
     ? ExpressionService
     : undefined;
+  preferenceService: C["preference"] extends true
+    ? PreferenceService
+    : undefined;
+  mutationService: MutationService;
 };
 
 /**
@@ -59,6 +69,7 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
   const decorator = createArgsDecorator<{
     onAction: () => void;
     variables: RemoteData<Variable[]>;
+    dangerMode: boolean;
   }>();
 
   const variableService =
@@ -84,6 +95,15 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
             services: { variableService: maybe.getOrThrow(variableService) },
           })
         : undefined,
+      mutationService: createMutationService(
+        createArgsAccessor(decorator).forArg("onAction"),
+      ),
+      preferenceService: config?.preference
+        ? createPreferenceService({
+            dangerMode: createArgsAccessor(decorator).forArg("dangerMode"),
+            onAction: createArgsAccessor(decorator).forArg("onAction"),
+          })
+        : undefined,
     } as unknown as OutputServices<SC>,
     workspace: config?.workspace ? factories.workspace() : undefined,
     client: config?.client ? factories.client() : undefined,
@@ -92,6 +112,7 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
       config?.variable === true
         ? rd.of(variableMock.static.list)
         : config?.variable,
+    dangerMode: false,
   };
 
   return {

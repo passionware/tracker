@@ -1,9 +1,9 @@
 import { workspaceQueryUtils } from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
-import { generateBillingView } from "@/services/front/ReportDisplayService/_private/generateBillingView.ts";
-import { generateCostView } from "@/services/front/ReportDisplayService/_private/generateCostView.ts";
-import { generateReportView } from "@/services/front/ReportDisplayService/_private/generateReportView.ts";
+import { useBillingView } from "@/services/front/ReportDisplayService/_private/billing.ts";
+import { useCostView } from "@/services/front/ReportDisplayService/_private/cost.ts";
+import { useReportView } from "@/services/front/ReportDisplayService/_private/report.ts";
 import { ReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -28,21 +28,21 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
 
-      return generateReportView(reports, workspaces, config);
+      return useReportView(reports, workspaces, config);
     },
     useBillingView: (query) => {
       const billings = config.services.billingService.useBillings(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return generateBillingView(billings, workspaces, config);
+      return useBillingView(billings, workspaces, config);
     },
     useCostView: (query) => {
       const costs = config.services.costService.useCosts(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return generateCostView(costs, workspaces, config);
+      return useCostView(costs, workspaces, config);
     },
   };
 }

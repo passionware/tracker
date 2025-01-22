@@ -10,13 +10,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
-import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
-import { InlineBillingSearch } from "@/features/_common/inline-search/InlineBillingSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -80,7 +81,15 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                 Find & link billing
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
+            {/* TODO candidate for inline search popover layout?*/}
+            <PopoverContent
+              className={cn(
+                "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
+                "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-opacity-50 backdrop-blur-xl",
+              )}
+              side="bottom"
+              align="start"
+            >
               <PopoverHeader>
                 Match the report with a client billing
               </PopoverHeader>
@@ -91,20 +100,66 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                   contractorId: report.contractor.id,
                 }}
                 className="overflow-y-auto h-full"
-                maxAmount={report.remainingAmount}
                 services={services}
-                onSelect={(data) =>
-                  linkingState.track(
-                    services.mutationService.linkReportAndBilling({
-                      linkType: "reconcile",
-                      reportId: report.id,
-                      reportAmount: data.value.source,
-                      billingId: data.billingId,
-                      billingAmount: data.value.target,
-                      description: data.value.description,
-                    }),
-                  )
-                }
+                renderSelect={(billing, button, track) => {
+                  const isSameCurrency =
+                    report.remainingAmount.currency === billing.currency;
+                  return (
+                    <LinkPopover
+                      context={{
+                        contractorId: report.contractor.id,
+                        workspaceId: report.workspace.id,
+                        clientId: report.client.id,
+                      }}
+                      side="right"
+                      align="center"
+                      services={services}
+                      sourceCurrency={report.remainingAmount.currency}
+                      targetCurrency={billing.currency}
+                      title="Link contractor report"
+                      sourceLabel="Report value"
+                      targetLabel="Billing value"
+                      initialValues={{
+                        // billing
+                        source: isSameCurrency
+                          ? // we have same currency, so probably we don't need to exchange
+                            Math.min(
+                              billing.billingBalance,
+                              report.remainingAmount.amount,
+                            )
+                          : // this won't be same, so let's assume that cost  = remaining report but in target currency
+                            report.remainingAmount.amount,
+                        target: isSameCurrency
+                          ? Math.min(
+                              report.remainingAmount.amount,
+                              billing.billingBalance,
+                            )
+                          : billing.billingBalance,
+                        description: [
+                          isSameCurrency
+                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${billing.currency}, exchange cost: [...]`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join("\n"),
+                      }}
+                      onValueChange={(value) =>
+                        track(
+                          services.mutationService.linkReportAndBilling({
+                            linkType: "reconcile",
+                            billingId: billing.id,
+                            billingAmount: value.target,
+                            reportId: report.id,
+                            reportAmount: value.source,
+                            description: value.description,
+                          }),
+                        )
+                      }
+                    >
+                      {button}
+                    </LinkPopover>
+                  );
+                }}
                 query={billingQueryUtils.setFilter(
                   billingQueryUtils.ofDefault(
                     report.workspace.id, // we want to search for client billing in the same workspace as the report

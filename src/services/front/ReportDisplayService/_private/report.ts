@@ -12,7 +12,7 @@ import { maybe, rd, RemoteData } from "@passionware/monads";
 import { addDays, isSameDay } from "date-fns";
 import { groupBy, sumBy, uniq } from "lodash";
 
-export function generateReportView(
+export function useReportView(
   reports: RemoteData<Report[]>,
   workspaces: RemoteData<Workspace[]>,
   config: WithServices<
