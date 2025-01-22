@@ -108,7 +108,7 @@ export const costColumns = {
                         matched: "positive",
                         unmatched: "destructive",
                         "partially-matched": "warning",
-                        overmatched: "warning",
+                        overmatched: "accent1",
                       } as const
                     )[info.getValue()]
                   }

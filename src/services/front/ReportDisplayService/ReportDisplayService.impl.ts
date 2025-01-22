@@ -519,6 +519,9 @@ function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
     } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
       return "partially-matched";
     } else {
+      if (sumOfLinkedAmounts > cost.netValue) {
+        return "overmatched";
+      }
       return "unmatched";
     }
   }
