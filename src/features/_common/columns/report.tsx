@@ -393,6 +393,21 @@ export const reportColumns = {
         },
       ),
   },
+  period: (services: WithFormatService) =>
+    getColumnHelper<ReportViewEntry>().display({
+      header: "Period",
+      cell: (info) => (
+        <div className="whitespace-pre">
+          {services.formatService.temporal.range.compact(
+            info.row.original.periodStart,
+            info.row.original.periodEnd,
+          )}
+        </div>
+      ),
+      meta: {
+        sortKey: "period",
+      },
+    }),
   getContextual: (context: ExpressionContext) =>
     [
       idSpecUtils.isAll(context.workspaceId) ? foreignColumns.workspace : null,

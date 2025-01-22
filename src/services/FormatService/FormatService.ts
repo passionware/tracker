@@ -27,6 +27,9 @@ export interface FormatService {
        */
       useDaysLeft: (date: Date) => number;
     };
+    range: {
+      compact: (start: Date, end: Date) => ReactNode;
+    };
   };
 }
 

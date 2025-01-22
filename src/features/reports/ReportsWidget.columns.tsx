@@ -59,18 +59,7 @@ export function useColumns(props: ReportsWidgetProps) {
         cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
       },
     }),
-    columnHelper.accessor("periodStart", {
-      header: "Period",
-      cell: (info) =>
-        `${props.services.formatService.temporal.date(
-          info.getValue(),
-        )} - ${props.services.formatService.temporal.date(
-          info.row.original.periodEnd,
-        )}`,
-      meta: {
-        sortKey: "period",
-      },
-    }),
+    reportColumns.period(props.services),
     columnHelper.accessor("description", {
       header: "Description",
       cell: (info) => (
