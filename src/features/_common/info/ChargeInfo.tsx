@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
-import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
+import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -113,7 +113,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
               <PopoverHeader>
                 Match the billing with a contractor report
               </PopoverHeader>
-              <InlineReportSearchWidget
+              <InlineReportSearch
                 context={{
                   workspaceId: billing.workspace.id,
                   clientId: billing.client.id,

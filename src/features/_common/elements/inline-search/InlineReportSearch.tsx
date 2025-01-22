@@ -53,7 +53,7 @@ export interface InlineReportSearchWidgetProps
   context: ExpressionContext;
 }
 
-export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
+export function InlineReportSearch(props: InlineReportSearchWidgetProps) {
   const [_query, setQuery] = useState<ReportQuery>(props.query);
   const query = reportQueryUtils.narrowContext(_query, props.context);
   const editModalState = useOpenState();

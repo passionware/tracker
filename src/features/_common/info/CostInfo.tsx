@@ -13,7 +13,7 @@ import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
-import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
+import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -87,7 +87,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
               <PopoverHeader>
                 Match the cost with a contractor report
               </PopoverHeader>
-              <InlineReportSearchWidget
+              <InlineReportSearch
                 context={{
                   clientId,
                   workspaceId: costEntry.workspace.id,
