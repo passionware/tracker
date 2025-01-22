@@ -116,3 +116,4 @@ TODO:
 - Dla każdego linka można by jakoś zdefiniować funkcję konwertującą, aby przy każdorazowej aktualizacji linka, ją wykonać, oraz wyświetlić to.
 - variables - copy to workspace/client/contractor
 - pokazywanie długości okresu, dla którego jest raport (i faktura tez - na podstawie linked reports - moze tez wykres fragmentacji? lub gantta)
+- expandable table row zamiast popovera - linki
