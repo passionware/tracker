@@ -89,6 +89,11 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 Match the cost with a contractor report
               </PopoverHeader>
               <InlineReportSearchWidget
+                context={{
+                  clientId,
+                  workspaceId: costEntry.workspace.id,
+                  contractorId: idSpecUtils.ofAll(),
+                }}
                 className="overflow-y-auto h-full"
                 showTargetValue
                 showDescription

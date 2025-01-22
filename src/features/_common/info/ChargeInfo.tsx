@@ -15,6 +15,7 @@ import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBil
 import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -113,6 +114,11 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 Match the billing with a contractor report
               </PopoverHeader>
               <InlineReportSearchWidget
+                context={{
+                  workspaceId: billing.workspace.id,
+                  clientId: billing.client.id,
+                  contractorId: idSpecUtils.ofAll(),
+                }}
                 className="overflow-y-auto h-full"
                 maxSourceAmount={billing.remainingAmount}
                 services={services}
