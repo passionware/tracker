@@ -1,3 +1,5 @@
+import { RollingText } from "@/features/_common/RollingText.tsx";
+import { ComponentPropsWithRef } from "react";
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -176,3 +178,18 @@ function Badge({ className, tone, variant, size, ...props }: BadgeProps) {
 }
 
 export { Badge, badgeVariants };
+
+export const RollingBadge: typeof Badge = (
+  props: ComponentPropsWithRef<typeof Badge>,
+) => {
+  return (
+    <Badge {...props} className={cn("p-0 overflow-hidden", props.className)}>
+      <RollingText
+        textClassName="px-1 py-0.5"
+        containerClassName="min-h-0 w-full"
+      >
+        {props.children}
+      </RollingText>
+    </Badge>
+  );
+};

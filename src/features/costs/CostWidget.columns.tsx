@@ -1,5 +1,5 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
-import { Badge } from "@/components/ui/badge.tsx";
+import { Badge, RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -118,7 +118,8 @@ export function useColumns(props: PotentialCostWidgetProps) {
       cell: (info) => (
         <Popover>
           <PopoverTrigger>
-            <Badge
+            <RollingBadge
+              className="max-w-24"
               variant={
                 (
                   {
@@ -131,7 +132,7 @@ export function useColumns(props: PotentialCostWidgetProps) {
               }
             >
               {startCase(info.getValue())}
-            </Badge>
+            </RollingBadge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Cost details</PopoverHeader>

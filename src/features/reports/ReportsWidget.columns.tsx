@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge.tsx";
+import { Badge, RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -47,8 +47,8 @@ export function useColumns(props: ReportsWidgetProps) {
       cell: (info) => (
         <Popover>
           <PopoverTrigger>
-            <Badge
-              className="max-w-24 overflow-hidden"
+            <RollingBadge
+              className="max-w-24"
               tone="solid"
               variant={
                 (
@@ -78,7 +78,7 @@ export function useColumns(props: ReportsWidgetProps) {
                   } as const
                 )[info.getValue()]
               }
-            </Badge>
+            </RollingBadge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Compensation details</PopoverHeader>
@@ -98,7 +98,8 @@ export function useColumns(props: ReportsWidgetProps) {
       cell: (info) => (
         <Popover>
           <PopoverTrigger>
-            <Badge
+            <RollingBadge
+              className="max-w-24"
               tone="secondary"
               variant={
                 (
@@ -119,7 +120,7 @@ export function useColumns(props: ReportsWidgetProps) {
                   } as const
                 )[info.getValue()]
               }
-            </Badge>
+            </RollingBadge>
           </PopoverTrigger>
           <PopoverContent className="w-fit">
             <PopoverHeader>Compensation details</PopoverHeader>

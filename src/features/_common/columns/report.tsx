@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge.tsx";
+import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
@@ -123,8 +123,8 @@ export const reportColumns = {
           cell: (info) => (
             <Popover>
               <PopoverTrigger>
-                <Badge
-                  className="max-w-24 overflow-hidden"
+                <RollingBadge
+                  className="max-w-24"
                   variant={
                     (
                       {
@@ -151,7 +151,7 @@ export const reportColumns = {
                       clarified: "Clarified",
                     }[info.getValue()]
                   }
-                </Badge>
+                </RollingBadge>
               </PopoverTrigger>
               <PopoverContent className="w-fit">
                 <PopoverHeader>Link billings to report</PopoverHeader>
@@ -167,8 +167,8 @@ export const reportColumns = {
             tooltip: headers.chargeStatus,
           },
           cell: (info) => (
-            <Badge
-              className="max-w-24 overflow-hidden"
+            <RollingBadge
+              className="max-w-24"
               variant={
                 (
                   {
@@ -195,7 +195,7 @@ export const reportColumns = {
                   clarified: "Clarified",
                 }[info.getValue()]
               }
-            </Badge>
+            </RollingBadge>
           ),
         }),
     },

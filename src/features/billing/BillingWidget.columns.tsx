@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge.tsx";
+import {Badge, RollingBadge} from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -70,7 +70,7 @@ export function useColumns(props: BillingWidgetProps) {
       cell: (info) => (
         <Popover>
           <PopoverTrigger>
-            <Badge
+            <RollingBadge className="max-w-24"
               tone="solid"
               variant={
                 (
@@ -95,7 +95,7 @@ export function useColumns(props: BillingWidgetProps) {
                   } as const
                 )[info.getValue()]
               }
-            </Badge>
+            </RollingBadge>
           </PopoverTrigger>
           <PopoverContent
               side="bottom"
