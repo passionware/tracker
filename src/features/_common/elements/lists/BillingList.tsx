@@ -55,10 +55,12 @@ export function BillingList(props: BillingListProps) {
       data={props.data}
       columns={[
         ...billingColumns.getContextual(props.context),
+        billingColumns.invoiceNumber,
+        billingColumns.invoiceDate(props.services),
+        billingColumns.report.linkingStatus.read,
         billingColumns.report.linkedValue(props.services),
-        billingColumns.report.linkingStatus(props.services),
-        // what else?
-
+        billingColumns.netAmount(props.services),
+        billingColumns.report.remainingValue(props.services),
         props.renderSelect &&
           foreignColumns.select<Billing>((info, button, track) => {
             const billing = info.row.original;

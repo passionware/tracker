@@ -72,60 +72,94 @@ export const billingColumns = {
       },
     ),
   report: {
-    linkingStatus: (
-      services: WithFormatService &
-        WithMutationService &
-        WithPreferenceService &
-        WithReportDisplayService &
-        WithClientService &
-        WithContractorService &
-        WithWorkspaceService &
-        WithExpressionService,
-    ) =>
-      getColumnHelper<BillingViewEntry>().accessor("status", {
+    linkingStatus: {
+      allowModify: (
+        services: WithFormatService &
+          WithMutationService &
+          WithPreferenceService &
+          WithReportDisplayService &
+          WithClientService &
+          WithContractorService &
+          WithWorkspaceService &
+          WithExpressionService,
+      ) =>
+        getColumnHelper<BillingViewEntry>().accessor("status", {
+          header: "Status",
+          cell: (info) => (
+            <Popover>
+              <PopoverTrigger>
+                <RollingBadge
+                  className="max-w-24"
+                  tone="solid"
+                  variant={
+                    (
+                      {
+                        matched: "positive",
+                        unmatched: "destructive",
+                        "partially-matched": "warning",
+                        clarified: "secondary",
+                        overmatched: "accent1",
+                      } as const
+                    )[info.getValue()]
+                  }
+                >
+                  {
+                    (
+                      {
+                        matched: "Matched",
+                        unmatched: "Unmatched",
+                        "partially-matched": "Partially Matched",
+                        clarified: "Clarified",
+                        overmatched: "Overmatched",
+                      } as const
+                    )[info.getValue()]
+                  }
+                </RollingBadge>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="start"
+                className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto"
+              >
+                <PopoverHeader>Invoice details</PopoverHeader>
+                <ChargeInfo services={services} billing={info.row.original} />
+              </PopoverContent>
+            </Popover>
+          ),
+        }),
+      read: getColumnHelper<BillingViewEntry>().accessor("status", {
         header: "Status",
         cell: (info) => (
-          <Popover>
-            <PopoverTrigger>
-              <RollingBadge
-                className="max-w-24"
-                tone="solid"
-                variant={
-                  (
-                    {
-                      matched: "positive",
-                      unmatched: "destructive",
-                      "partially-matched": "warning",
-                      clarified: "secondary",
-                      overmatched: "accent1",
-                    } as const
-                  )[info.getValue()]
-                }
-              >
+          <RollingBadge
+            className="max-w-24"
+            tone="solid"
+            variant={
+              (
                 {
-                  (
-                    {
-                      matched: "Matched",
-                      unmatched: "Unmatched",
-                      "partially-matched": "Partially Matched",
-                      clarified: "Clarified",
-                      overmatched: "Overmatched",
-                    } as const
-                  )[info.getValue()]
-                }
-              </RollingBadge>
-            </PopoverTrigger>
-            <PopoverContent
-              side="bottom"
-              align="start"
-              className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto"
-            >
-              <PopoverHeader>Invoice details</PopoverHeader>
-              <ChargeInfo services={services} billing={info.row.original} />
-            </PopoverContent>
-          </Popover>
+                  matched: "positive",
+                  unmatched: "destructive",
+                  "partially-matched": "warning",
+                  clarified: "secondary",
+                  overmatched: "accent1",
+                } as const
+              )[info.getValue()]
+            }
+          >
+            {
+              (
+                {
+                  matched: "Matched",
+                  unmatched: "Unmatched",
+                  "partially-matched": "Partially Matched",
+                  clarified: "Clarified",
+                  overmatched: "Overmatched",
+                } as const
+              )[info.getValue()]
+            }
+          </RollingBadge>
         ),
       }),
+    },
     linkedValue: (services: WithFormatService) =>
       getColumnHelper<BillingViewEntry>().accessor("matchedAmount", {
         header: "Matched Amount",

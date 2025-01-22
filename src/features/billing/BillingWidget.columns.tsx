@@ -28,7 +28,7 @@ export function useColumns(props: BillingWidgetProps) {
     }),
     billingColumns.invoiceNumber,
     billingColumns.invoiceDate(props.services),
-    billingColumns.report.linkingStatus(props.services),
+    billingColumns.report.linkingStatus.allowModify(props.services),
     billingColumns.netAmount(props.services),
     billingColumns.grossAmount(props.services),
     billingColumns.report.linkedValue(props.services),
