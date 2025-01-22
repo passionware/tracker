@@ -38,7 +38,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 
-export interface InlineReportSearchProps
+export interface InlineReportSearchWidgetProps
   extends WithServices<
     [
       WithReportDisplayService,
@@ -59,7 +59,7 @@ export interface InlineReportSearchProps
   className?: string;
 }
 
-export function InlineReportSearch(props: InlineReportSearchProps) {
+export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
   const reports = props.services.reportDisplayService.useReportView(
     props.query,
   );

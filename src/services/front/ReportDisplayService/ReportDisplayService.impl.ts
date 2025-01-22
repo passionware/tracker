@@ -358,6 +358,9 @@ function calculateReportEntry(
     if (report.immediatePaymentDue > 0) {
       return "partially-compensated";
     }
+    if (report.linkCostReport?.some((link) => maybe.isAbsent(link.cost))) {
+      return "clarified";
+    }
     return "compensated";
   }
 

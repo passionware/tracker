@@ -1,4 +1,5 @@
 import { Variable } from "@/api/variable/variable.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import {
   ClientSpec,
   ContractorSpec,
@@ -7,6 +8,7 @@ import {
 import { RemoteData } from "@passionware/monads";
 
 /**
+ * Todo: promote to a system level concept
  * Context for expression calculation.
  * Different context may result in different effective variables.
  */
@@ -14,6 +16,48 @@ export type ExpressionContext = {
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
   contractorId: ContractorSpec;
+};
+
+export const expressionContextUtils = {
+  ofGlobal: () => {
+    const context: ExpressionContext = {
+      workspaceId: idSpecUtils.ofAll(),
+      clientId: idSpecUtils.ofAll(),
+      contractorId: idSpecUtils.ofAll(),
+    };
+
+    const setWorkspace = (workspaceId: WorkspaceSpec) => {
+      context.workspaceId = workspaceId;
+      return api;
+    };
+
+    const setClient = (clientId: ClientSpec) => {
+      context.clientId = clientId;
+      return api;
+    };
+
+    const setContractor = (contractorId: ContractorSpec) => {
+      context.contractorId = contractorId;
+      return api;
+    };
+
+    const build = (): ExpressionContext => {
+      return {
+        workspaceId: context.workspaceId,
+        clientId: context.clientId,
+        contractorId: context.contractorId,
+      };
+    };
+
+    const api = {
+      setWorkspace,
+      setClient,
+      setContractor,
+      build,
+    };
+
+    return api;
+  },
 };
 
 export type VariableContainer = Record<string, unknown>;

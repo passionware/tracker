@@ -1,3 +1,4 @@
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Preview } from "@storybook/react";
 import "../src/index.css";
 
@@ -10,6 +11,13 @@ const preview: Preview = {
       },
     },
   },
+  decorators: [
+    (Story) => (
+      <TooltipProvider delayDuration={0}>
+        <Story />
+      </TooltipProvider>
+    ),
+  ],
 };
 
 export default preview;

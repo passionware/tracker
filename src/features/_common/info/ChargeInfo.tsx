@@ -12,7 +12,7 @@ import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
-import { InlineReportSearch } from "@/features/_common/inline-search/InlineReportSearch.tsx";
+import { InlineReportSearchWidget } from "@/features/_common/inline-search/report/InlineReportSearchWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -112,7 +112,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
               <PopoverHeader>
                 Match the billing with a contractor report
               </PopoverHeader>
-              <InlineReportSearch
+              <InlineReportSearchWidget
                 className="overflow-y-auto h-full"
                 maxSourceAmount={billing.remainingAmount}
                 services={services}

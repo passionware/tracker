@@ -4,6 +4,7 @@ export type IdSpec<Id> = Id | All;
 
 export const idSpecUtils = {
   isAll: (value: unknown): value is All => value === all,
+  isSpecific: <V>(value: unknown): value is V => value !== all,
   ofAll: (): All => all,
   mapSpecificOrElse: <V, M, E>(
     value: V,

@@ -1,28 +1,23 @@
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
-import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
-import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
-import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
-import { createContractorService } from "@/services/io/ContractorService/ContractorService.mock.ts";
-import { createVariableService } from "@/services/io/VariableService/VariableService.mock.ts";
-import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
+import { createSbServices } from "@/services/_common/createSbServices.ts";
 import type { StoryObj } from "@storybook/react";
 
 import { LinkPopover, LinkPopoverProps } from "./LinkPopover";
 
+const sbServices = createSbServices({
+  client: true,
+  contractor: true,
+  workspace: true,
+  variable: true,
+  format: true,
+  expression: true,
+});
+
 const meta = {
+  decorators: [sbServices.decorator.argsDecorator],
   component: LinkPopover,
   args: {
-    services: {
-      formatService: createFormatService(() => new Date()),
-      expressionService: createExpressionService({
-        services: {
-          variableService: createVariableService(),
-        },
-      }),
-      clientService: createClientService(),
-      contractorService: createContractorService(),
-      workspaceService: createWorkspaceService(),
-    },
+    ...sbServices.args,
     initialValues: {
       source: 100,
       target: 427,

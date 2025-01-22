@@ -154,12 +154,12 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
               side="right"
             >
               <InlineBillingClarify
-                maxAmount={report.remainingAmount.amount}
+                maxAmount={report.remainingCompensationAmount.amount}
                 services={services}
                 onSelect={(data) => {
                   assert(data.linkType === "clarify");
                   assert(
-                    data.reportAmount,
+                    maybe.isPresent(data.reportAmount),
                     "Only report clarifications are allowed",
                   );
                   void clarifyState.track(
@@ -203,7 +203,7 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                     sourceLabel="Report amount"
                     targetLabel="Cost amount"
                     sourceCurrency={report.netAmount.currency}
-                    targetCurrency={link.cost.currency}
+                    targetCurrency={maybe.getOrThrow(link.cost).currency}
                     title="Update linked report"
                     initialValues={{
                       source: link.link.reportAmount ?? undefined,

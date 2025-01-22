@@ -144,6 +144,7 @@ export function useColumns(props: ReportsWidgetProps) {
                     compensated: "positive",
                     "partially-compensated": "warning",
                     uncompensated: "destructive",
+                    clarified: "secondary",
                   } as const
                 )[info.getValue()]
               }
@@ -161,6 +162,7 @@ export function useColumns(props: ReportsWidgetProps) {
                       </>
                     ),
                     uncompensated: "Unpaid",
+                    clarified: "Clarified",
                   } as const
                 )[info.getValue()]
               }

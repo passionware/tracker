@@ -40,7 +40,11 @@ export interface ReportViewEntry {
   remainingAmount: CurrencyValue;
   billingLinks: Report["linkBillingReport"];
   costLinks: Report["linkCostReport"];
-  instantEarnings: "compensated" | "partially-compensated" | "uncompensated";
+  instantEarnings:
+    | "compensated"
+    | "partially-compensated"
+    | "uncompensated"
+    | "clarified";
   deferredEarnings: "compensated" | "partially-compensated" | "uncompensated";
   compensatedAmount: CurrencyValue;
   // how much to compensate against money actually charged
