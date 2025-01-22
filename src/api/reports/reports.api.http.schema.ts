@@ -38,7 +38,7 @@ export const report$ = reportBase$.extend({
   link_cost_reports: z.array(
     z.object({
       link: linkCostReport$,
-      cost: costBase$,
+      cost: costBase$.nullable(),
     }),
   ),
   contractor: contractor$,
@@ -63,7 +63,7 @@ export function reportFromHttp(report: Report$): Report {
     })),
     linkCostReport: report.link_cost_reports.map((value) => ({
       link: linkCostReportFromHttp(value.link),
-      cost: costBaseFromHttp(value.cost),
+      cost: maybe.mapOrNull(value.cost, costBaseFromHttp),
     })),
     contractor: contractorFromHttp(report.contractor),
     client: clientFromHttp(report.client),

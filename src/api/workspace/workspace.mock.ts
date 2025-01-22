@@ -17,5 +17,12 @@ export const workspaceMock = createMockFactory<Workspace>(
       avatarUrl:
         "https://passionware.eu/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.15435745.png&w=256&q=75",
     },
+    {
+      id: 2,
+      slug: "codin",
+      name: "Code Institute",
+      avatarUrl:
+        "https://passionware.eu/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.15435745.png&w=256&q=75",
+    },
   ],
 );

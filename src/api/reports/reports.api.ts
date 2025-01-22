@@ -47,7 +47,7 @@ export type Report = ReportBase & {
     link: LinkBillingReport;
     billing: Nullable<BillingBase>;
   }[];
-  linkCostReport: { link: LinkCostReport; cost: CostBase }[];
+  linkCostReport: { link: LinkCostReport; cost: Nullable<CostBase> }[];
   // todo: add billingById, costById - relevant entities in a map
   // Total billing value linked to the report
   reportBillingValue: number; // total_billing_billing_value
