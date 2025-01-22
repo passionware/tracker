@@ -12,7 +12,6 @@ import {
   columnHelper,
   reportColumns,
 } from "@/features/_common/columns/report.tsx";
-import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
