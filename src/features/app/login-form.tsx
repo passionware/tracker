@@ -13,7 +13,7 @@ import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, Send } from "lucide-react";
 import { ComponentProps } from "react";
 import { useForm } from "react-hook-form";
-import tracker from "../../../public/tracker.png";
+import tracker from "/tracker.png?url";
 import placeholder from "./placeholder.png";
 
 export function LoginForm({
