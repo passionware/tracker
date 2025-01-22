@@ -351,9 +351,47 @@ export const reportColumns = {
         ),
       }),
     },
-    linkedValue: null,
-    immediateRemainingValue: null,
-    remainingValue: null,
+    linkedValue: (services: WithFormatService) =>
+      getColumnHelper<ReportViewEntry>().accessor("compensatedAmount", {
+        header: "Amount",
+        cell: (info) =>
+          services.formatService.financial.currency(info.getValue()),
+        meta: {
+          headerClassName: "bg-lime-50 border-x border-slate-800/10",
+          cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
+          tooltip: headers.amount,
+        },
+      }),
+    immediateRemainingValue: (services: WithFormatService) =>
+      getColumnHelper<ReportViewEntry>().accessor(
+        "remainingCompensationAmount",
+        {
+          header: "To pay",
+          cell: (info) =>
+            services.formatService.financial.currency(info.getValue()),
+          meta: {
+            headerClassName: "bg-lime-50 border-x border-slate-800/10",
+            cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
+            tooltip: headers.toPay,
+            sortKey: "immediatePaymentDue",
+          },
+        },
+      ),
+    remainingValue: (services: WithFormatService) =>
+      getColumnHelper<ReportViewEntry>().accessor(
+        "remainingFullCompensationAmount",
+        {
+          header: "To comp.",
+          cell: (info) =>
+            services.formatService.financial.currency(info.getValue()),
+          meta: {
+            headerClassName: "bg-lime-50 border-x border-slate-800/10",
+            cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
+            tooltip: headers.toCompensate,
+            sortKey: "reportCostBalance",
+          },
+        },
+      ),
   },
   getContextual: (context: ExpressionContext) =>
     [

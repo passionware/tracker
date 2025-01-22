@@ -12,7 +12,6 @@ import {
   reportColumns,
 } from "@/features/_common/columns/report.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -51,38 +50,9 @@ export function useColumns(props: ReportsWidgetProps) {
     columnHelper.group({
       header: "Compensation",
       columns: [
-        columnHelper.accessor("compensatedAmount", {
-          header: "Amount",
-          cell: (info) =>
-            props.services.formatService.financial.currency(info.getValue()),
-          meta: {
-            headerClassName: "bg-lime-50 border-x border-slate-800/10",
-            cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
-            tooltip: headers.amount,
-          },
-        }),
-        columnHelper.accessor("remainingCompensationAmount", {
-          header: "To pay",
-          cell: (info) =>
-            props.services.formatService.financial.currency(info.getValue()),
-          meta: {
-            headerClassName: "bg-lime-50 border-x border-slate-800/10",
-            cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
-            tooltip: headers.toPay,
-            sortKey: "immediatePaymentDue",
-          },
-        }),
-        columnHelper.accessor("remainingFullCompensationAmount", {
-          header: "To comp.",
-          cell: (info) =>
-            props.services.formatService.financial.currency(info.getValue()),
-          meta: {
-            headerClassName: "bg-lime-50 border-x border-slate-800/10",
-            cellClassName: "bg-lime-50/50 border-x border-slate-800/10",
-            tooltip: headers.toCompensate,
-            sortKey: "reportCostBalance",
-          },
-        }),
+        reportColumns.cost.linkedValue(props.services),
+        reportColumns.cost.immediateRemainingValue(props.services),
+        reportColumns.cost.remainingValue(props.services),
       ],
       meta: {
         headerClassName: "bg-lime-50 border-x border-slate-800/10",
