@@ -7,10 +7,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import {
+  ExpressionContext,
+  WithExpressionService,
+} from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   BillingViewEntry,
   WithReportDisplayService,
@@ -20,7 +25,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd, truthy } from "@passionware/monads";
 
 export const billingColumns = {
   invoiceNumber: getColumnHelper<Pick<Cost, "invoiceNumber">>().accessor(
@@ -157,4 +162,13 @@ export const billingColumns = {
         },
       }),
   },
+  getContextual: (context: Partial<ExpressionContext>) =>
+    [
+      maybe.isPresent(context.workspaceId) &&
+        idSpecUtils.isAll(context.workspaceId) &&
+        foreignColumns.workspace,
+      maybe.isPresent(context.clientId) &&
+        idSpecUtils.isAll(context.clientId) &&
+        foreignColumns.client,
+    ].filter(truthy.isTruthy),
 };

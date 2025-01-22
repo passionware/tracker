@@ -26,7 +26,7 @@ export function RollingText({
   React.useEffect(() => {
     if (containerRef.current && textRef.current) {
       // Szerokość widocznego kontenera
-      const containerWidth = containerRef.current.clientWidth;
+      const containerWidth = containerRef.current.offsetWidth;
       // Całkowita szerokość zawartości
       const textWidth = textRef.current.scrollWidth;
 

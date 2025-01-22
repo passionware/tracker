@@ -130,7 +130,7 @@ export const billingQueryUtils = {
   // todo candidate for promotion
   narrowContext: (
     query: BillingQuery,
-    context: ExpressionContext,
+    context: Omit<ExpressionContext, "contractorId">,
   ): BillingQuery =>
     chain(query)
       .thru((x) =>
@@ -147,14 +147,6 @@ export const billingQueryUtils = {
           : billingQueryUtils.setFilter(x, "clientId", {
               operator: "oneOf",
               value: [context.clientId],
-            }),
-      )
-      .thru((x) =>
-        idSpecUtils.isAll(context.contractorId)
-          ? x
-          : billingQueryUtils.setFilter(x, "contractorId", {
-              operator: "oneOf",
-              value: [context.contractorId],
             }),
       )
       .value(),

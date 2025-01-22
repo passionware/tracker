@@ -80,7 +80,7 @@ export function AbstractEntityView({
       <span className="min-w-0 truncate">
         {rd
           .fullJourney(entity)
-          .initially("No workspace")
+          .initially("Not assigned")
           .wait(<Skeleton className="w-20" />)
           .catch(() => "error")
           .map((entity) => entity.name)}

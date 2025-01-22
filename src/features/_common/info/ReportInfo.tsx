@@ -97,7 +97,6 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                 context={{
                   clientId: report.client.id,
                   workspaceId: report.workspace.id,
-                  contractorId: report.contractor.id,
                 }}
                 className="overflow-y-auto h-full"
                 services={services}

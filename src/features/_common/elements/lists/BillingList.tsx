@@ -39,7 +39,7 @@ export type BillingListProps = WithServices<
       data: RemoteData<BillingViewEntry[]>;
       query: BillingQuery;
       onQueryChange: (query: BillingQuery) => void;
-      context: ExpressionContext;
+      context: Omit<ExpressionContext, "contractorId">;
       renderSelect?: (
         billing: Billing,
         button: ReactElement,
@@ -54,7 +54,8 @@ export function BillingList(props: BillingListProps) {
     <ListView<BillingViewEntry, BillingQuery>
       data={props.data}
       columns={[
-        ...foreignColumns.getContextual(props.context),
+        ...billingColumns.getContextual(props.context),
+        billingColumns.report.linkedValue(props.services),
         billingColumns.report.linkingStatus(props.services),
         // what else?
 

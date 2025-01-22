@@ -1,5 +1,5 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
-import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { BillingQuery, billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
@@ -15,26 +15,26 @@ import { maybe } from "@passionware/monads";
 import { Overwrite } from "@passionware/platform-ts";
 import { ComponentProps } from "react";
 
-export type ReportQueryBarProps = WithServices<
+export type BillingQueryBarProps = WithServices<
   [WithWorkspaceService, WithClientService, WithContractorService]
 > &
   Overwrite<
     ComponentProps<"div">,
     {
-      query: ReportQuery;
-      onQueryChange: (query: ReportQuery) => void;
-      context: ExpressionContext;
+      query: BillingQuery;
+      onQueryChange: (query: BillingQuery) => void;
+      context: Omit<ExpressionContext, "contractorId">;
     }
   >;
 
-export function ReportQueryBar(props: ReportQueryBarProps) {
-  function handleChange<T extends keyof ReportQuery["filters"], X>(
+export function BillingQueryBar(props: BillingQueryBarProps) {
+  function handleChange<T extends keyof BillingQuery["filters"], X>(
     key: T,
-    transform: (value: X) => ReportQuery["filters"][T],
+    transform: (value: X) => BillingQuery["filters"][T],
   ): (value: Nullable<X>) => void {
     return (value) =>
       props.onQueryChange(
-        reportQueryUtils.setFilter(
+        billingQueryUtils.setFilter(
           props.query,
           key,
           maybe.map(value, transform),
@@ -82,10 +82,7 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
       <ContractorPicker
         size="sm"
         allowClear
-        disabled={idSpecUtils.isSpecific(props.context.contractorId)}
-        layout={
-          idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"
-        }
+        layout={"full"}
         services={props.services}
         value={props.query.filters.contractorId?.value[0]}
         onSelect={handleChange("contractorId", (contractorId) =>

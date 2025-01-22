@@ -15,6 +15,7 @@ import {
   BillingList,
   BillingListProps,
 } from "@/features/_common/elements/lists/BillingList.tsx";
+import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
@@ -51,7 +52,7 @@ export interface InlineBillingSearchWidgetProps
   initialNewBillingValues?: Partial<BillingPayload>;
   renderSelect: BillingListProps["renderSelect"];
   className?: string;
-  context: ExpressionContext;
+  context: Omit<ExpressionContext, "contractorId">;
 }
 
 export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
@@ -67,13 +68,12 @@ export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
         className={props.className}
         filters={
           <>
-            {/*<BillingQueryBar*/}
-            {/*  query={query}*/}
-            {/*  onQueryChange={setQuery}*/}
-            {/*  context={props.context}*/}
-            {/*  services={props.services}*/}
-            {/*/>*/}
-            TODO TOOLBAR
+            <BillingQueryBar
+              query={query}
+              onQueryChange={setQuery}
+              context={props.context}
+              services={props.services}
+            />
             <Dialog {...editModalState.dialogProps}>
               <DialogTrigger asChild>
                 <Button variant="secondary" size="icon-sm" className="">
