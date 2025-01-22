@@ -50,8 +50,8 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
     allowClear?: boolean;
     allowUnassigned?: boolean;
-    align: PopoverContentProps["align"];
-    side: PopoverContentProps["side"];
+    align?: PopoverContentProps["align"];
+    side?: PopoverContentProps["side"];
   }
 >;
 
