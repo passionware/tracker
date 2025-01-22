@@ -16,12 +16,8 @@ export type WorkspaceViewProps = SwitchProps<
   }
 >;
 
-export function WorkspaceView({
-  workspace,
-  layout,
-  ...props
-}: WorkspaceViewProps) {
-  return <AbstractEntityView entity={workspace} layout={layout} {...props} />;
+export function WorkspaceView({ workspace, ...props }: WorkspaceViewProps) {
+  return <AbstractEntityView entity={workspace} {...props} />;
 }
 
 export type WorkspaceWidgetProps = WithServices<[WithWorkspaceService]> &
