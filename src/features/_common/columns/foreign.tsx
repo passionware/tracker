@@ -87,7 +87,7 @@ export const foreignColumns = {
       cellContext: CellContext<T, unknown>,
       button: ReactElement,
       // this will be connected to local promiseState
-      track: (promise: Promise<void>) => void,
+      track: (promise: Promise<void>) => Promise<void>,
     ) => ReactNode,
   ) =>
     getColumnHelper<T>().display({

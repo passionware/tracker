@@ -94,20 +94,19 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                   contractorId: idSpecUtils.ofAll(),
                 }}
                 className="overflow-y-auto h-full"
-                showTargetValue
-                showDescription
                 services={services}
-                maxSourceAmount={costEntry.remainingAmount}
                 onSelect={(report) =>
-                  linkingState.track(
-                    services.mutationService.linkCostAndReport({
-                      costId: costEntry.id,
-                      reportId: report.reportId,
-                      reportAmount: report.value.target,
-                      costAmount: report.value.source,
-                      description: report.value.description,
-                    }),
-                  )
+                  linkingState
+                    .track(
+                      services.mutationService.linkCostAndReport({
+                        costId: costEntry.id,
+                        reportId: report.reportId,
+                        reportAmount: report.value.target,
+                        costAmount: report.value.source,
+                        description: report.value.description,
+                      }),
+                    )
+                    .then(null)
                 }
                 query={reportQueryUtils.ofDefault(
                   costEntry.workspace.id,

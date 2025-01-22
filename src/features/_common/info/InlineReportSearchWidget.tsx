@@ -11,15 +11,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
-import { ReportList } from "@/features/_common/elements/lists/ReportList.tsx";
+import {
+  ReportList,
+  ReportListProps,
+} from "@/features/_common/elements/lists/ReportList.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
-import { LinkValue } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-
-import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ExpressionContext,
@@ -30,7 +30,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { Maybe, rd } from "@passionware/monads";
+import { rd } from "@passionware/monads";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -48,10 +48,7 @@ export interface InlineReportSearchWidgetProps
   > {
   query: ReportQuery;
   initialNewReportValues?: Partial<ReportPayload>;
-  onSelect: (data: { reportId: number; value: LinkValue }) => void;
-  maxSourceAmount: Maybe<CurrencyValue>;
-  showDescription: boolean;
-  showTargetValue: boolean;
+  renderSelect: ReportListProps["renderSelect"];
   className?: string;
   context: ExpressionContext;
 }
@@ -105,6 +102,7 @@ export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
           data={rd.map(reports, (x) => x.entries)}
           query={query}
           onQueryChange={setQuery}
+          renderSelect={props.renderSelect}
         />
       </InlineSearchLayout>
     </>
