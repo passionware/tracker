@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -95,19 +95,65 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 }}
                 className="overflow-y-auto h-full"
                 services={services}
-                onSelect={(report) =>
-                  linkingState
-                    .track(
-                      services.mutationService.linkCostAndReport({
-                        costId: costEntry.id,
-                        reportId: report.reportId,
-                        reportAmount: report.value.target,
-                        costAmount: report.value.source,
-                        description: report.value.description,
-                      }),
-                    )
-                    .then(null)
-                }
+                renderSelect={(report, button, track) => {
+                  const isSameCurrency =
+                    report.remainingAmount.currency ===
+                    costEntry.remainingAmount.currency;
+                  return (
+                    <LinkPopover
+                      context={{
+                        contractorId: report.contractor.id,
+                        workspaceId: report.workspace.id,
+                        clientId: report.client.id,
+                      }}
+                      side="right"
+                      align="center"
+                      services={services}
+                      sourceCurrency={report.remainingAmount.currency}
+                      title="Link contractor report"
+                      sourceLabel="Billing value"
+                      targetLabel="Report value"
+                      targetCurrency={report.remainingAmount.currency}
+                      initialValues={{
+                        // billing
+                        source: isSameCurrency
+                          ? // we have same currency, so probably we don't need to exchange
+                            Math.min(
+                              costEntry.remainingAmount.amount,
+                              report.remainingAmount.amount,
+                            )
+                          : // this won't be same, so let's assume that cost  = remaining report but in target currency
+                            costEntry.remainingAmount.amount,
+                        target: isSameCurrency
+                          ? Math.min(
+                              report.remainingAmount.amount,
+                              costEntry.remainingAmount.amount,
+                            )
+                          : report.remainingAmount.amount,
+                        description: [
+                          isSameCurrency
+                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${costEntry.remainingAmount.currency}, exchange cost: [...]`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join("\n"),
+                      }}
+                      onValueChange={(value) =>
+                        track(
+                          services.mutationService.linkCostAndReport({
+                            costId: costEntry.id,
+                            costAmount: value.source,
+                            reportId: report.id,
+                            reportAmount: value.target,
+                            description: value.description,
+                          }),
+                        )
+                      }
+                    >
+                      {button}
+                    </LinkPopover>
+                  );
+                }}
                 query={reportQueryUtils.ofDefault(
                   costEntry.workspace.id,
                   clientId,
