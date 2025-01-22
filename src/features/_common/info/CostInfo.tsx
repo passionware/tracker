@@ -9,11 +9,11 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientWidget } from "@/features/_common/pickers/ClientView.tsx";
-import { ContractorWidget } from "@/features/_common/pickers/ContractorView.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
-import { InlineReportSearchWidget } from "@/features/_common/inline-search/report/InlineReportSearchWidget.tsx";
+import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";

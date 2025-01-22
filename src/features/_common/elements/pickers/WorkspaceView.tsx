@@ -2,7 +2,7 @@ import { Workspace } from "@/api/workspace/workspace.api.ts";
 import {
   AbstractEntityView,
   AbstractEntityViewProps,
-} from "@/features/_common/pickers/_common/AbstractEntityView.tsx";
+} from "@/features/_common/elements/pickers/_common/AbstractEntityView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { SwitchProps } from "@/platform/typescript/SwitchProps.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";

@@ -2,8 +2,8 @@ import {
   Contractor,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
-import { ContractorView } from "@/features/_common/pickers/ContractorView.tsx";
-import { AbstractPicker } from "@/features/_common/pickers/_common/AbstractPicker.tsx";
+import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { AbstractPicker } from "@/features/_common/elements/pickers/_common/AbstractPicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { rd } from "@passionware/monads";

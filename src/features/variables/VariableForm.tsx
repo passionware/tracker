@@ -12,9 +12,9 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ClientPicker } from "@/features/_common/pickers/ClientPicker.tsx";
-import { ContractorPicker } from "@/features/_common/pickers/ContractorPicker.tsx";
-import { WorkspacePicker } from "@/features/_common/pickers/WorkspacePicker.tsx";
+import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
+import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
+import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";

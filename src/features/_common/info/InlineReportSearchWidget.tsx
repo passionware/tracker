@@ -16,13 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
-import { ClientView } from "@/features/_common/pickers/ClientView.tsx";
+import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import {
   LinkPopover,
   LinkValue,
 } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";

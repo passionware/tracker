@@ -14,11 +14,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientView } from "@/features/_common/pickers/ClientView.tsx";
+import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";

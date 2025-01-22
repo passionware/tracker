@@ -16,9 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ContractorView } from "@/features/_common/pickers/ContractorView.tsx";
+import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";

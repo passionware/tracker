@@ -9,10 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
-import { ClientView } from "@/features/_common/pickers/ClientView.tsx";
+import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";

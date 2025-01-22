@@ -13,11 +13,11 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { ClientView } from "@/features/_common/pickers/ClientView.tsx";
-import { ContractorView } from "@/features/_common/pickers/ContractorView.tsx";
+import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";

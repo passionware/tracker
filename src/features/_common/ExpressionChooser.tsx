@@ -17,12 +17,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientWidget } from "@/features/_common/pickers/ClientView.tsx";
-import { ContractorWidget } from "@/features/_common/pickers/ContractorView.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
-import { WorkspaceWidget } from "@/features/_common/pickers/WorkspaceView.tsx";
+import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ensureError } from "@/platform/lang/ensureError.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
