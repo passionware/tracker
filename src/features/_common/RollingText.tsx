@@ -3,15 +3,10 @@ import * as React from "react";
 import { motion } from "framer-motion";
 
 interface RollingTextProps {
-  /** Dowolna treść, np. string, JSX, itp. */
   children: React.ReactNode;
-  /** Styl dla zewnętrznego kontenera (z overflow hidden). */
   containerClassName?: string;
-  /** Styl dla opakowania tekstu (wewnętrzny motion.div). */
   textClassName?: string;
-  /** Czas (w sekundach) przewijania w jedną stronę. */
   scrollDuration?: number;
-  /** Czas (w sekundach) pauzy na końcach przewijania. */
   pauseDuration?: number;
 }
 
