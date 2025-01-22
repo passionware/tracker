@@ -1,9 +1,10 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   Contractor,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
-import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { AbstractPicker } from "@/features/_common/elements/pickers/_common/AbstractPicker.tsx";
+import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { rd } from "@passionware/monads";
@@ -20,7 +21,7 @@ export const ContractorPicker = injectConfig(
       <ContractorView
         layout={props.layout}
         size={props.size}
-        contractor={rd.of(item)}
+        contractor={unassignedUtils.mapOrElse(item, rd.of, rd.ofIdle())}
       />
     ),
     renderOption: (item) => <ContractorView contractor={rd.of(item)} />,

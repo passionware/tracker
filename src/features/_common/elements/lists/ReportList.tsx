@@ -45,11 +45,13 @@ export function ReportList(props: ReportListProps) {
       data={props.data}
       columns={[
         idSpecUtils.isAll(props.context.workspaceId)
-          ? reportColumns.workspace
+          ? foreignColumns.workspace
           : null,
-        idSpecUtils.isAll(props.context.clientId) ? reportColumns.client : null,
+        idSpecUtils.isAll(props.context.clientId)
+          ? foreignColumns.client
+          : null,
         idSpecUtils.isAll(props.context.contractorId)
-          ? reportColumns.contractor.regular
+          ? foreignColumns.contractor
           : null,
         reportColumns.billing.linkingStatus.read(props.services),
         reportColumns.netAmount(props.services),

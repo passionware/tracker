@@ -7,13 +7,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { headers } from "@/features/reports/headers.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import {
+  ExpressionContext,
+  WithExpressionService,
+} from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   ReportViewEntry,
   WithReportDisplayService,
@@ -23,7 +26,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { truthy } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
 
@@ -55,15 +58,6 @@ export const reportColumns = {
         sortKey: "netValue",
       },
     }),
-  workspace: baseColumnHelper.accessor("workspace", {
-    header: "Issuer",
-    cell: (info) => (
-      <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
-    ),
-    meta: {
-      sortKey: "workspace",
-    },
-  }),
   contractor: {
     withAdjacency: columnHelper.accessor("contractor.fullName", {
       header: "Contractor",
@@ -86,13 +80,6 @@ export const reportColumns = {
           <span className="inline">{info.getValue()}</span>
         </>
       ),
-      meta: {
-        sortKey: "contractor",
-      },
-    }),
-    regular: baseColumnHelper.accessor("contractor.fullName", {
-      header: "Contractor",
-      cell: (info) => info.getValue(),
       meta: {
         sortKey: "contractor",
       },
@@ -222,13 +209,12 @@ export const reportColumns = {
         },
       }),
   },
-  client: baseColumnHelper.accessor("client", {
-    header: "Client",
-    cell: (info) => (
-      <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
-    ),
-    meta: {
-      sortKey: "client",
-    },
-  }),
+  getContextual: (context: ExpressionContext) =>
+    [
+      idSpecUtils.isAll(context.workspaceId) ? foreignColumns.workspace : null,
+      idSpecUtils.isAll(context.clientId) ? foreignColumns.client : null,
+      idSpecUtils.isAll(context.contractorId)
+        ? reportColumns.contractor.withAdjacency
+        : null,
+    ].filter(truthy.isTruthy),
 };

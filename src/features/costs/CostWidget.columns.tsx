@@ -1,4 +1,3 @@
-import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -14,13 +13,13 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { assert } from "@/platform/lang/assert";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
@@ -28,7 +27,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe, rd } from "@passionware/monads";
+import { maybe } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { startCase } from "lodash";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -37,46 +36,9 @@ const columnHelper = createColumnHelper<CostEntry>();
 
 export function useColumns(props: PotentialCostWidgetProps) {
   return [
-    columnHelper.accessor("workspace", {
-      header: "Workspace",
-      cell: (info) => (
-        <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
-      ),
-      meta: {
-        sortKey: "workspace",
-      },
-    }),
-    columnHelper.accessor("counterparty", {
-      header: "Counterparty",
-      cell: (info) => info.getValue() || "N/A",
-      meta: {
-        sortKey: "counterparty",
-      },
-    }),
-    columnHelper.accessor("contractor", {
-      header: "Contractor",
-      cell: (info) => {
-        const contractor = info.getValue();
-        return (
-          <ContractorPicker
-            value={maybe.getOrElse(
-              contractor?.id,
-              unassignedUtils.ofUnassigned(),
-            )}
-            allowUnassigned
-            onSelect={(contractorId) =>
-              props.services.mutationService.editCost(info.row.original.id, {
-                contractorId: unassignedUtils.getOrElse(contractorId, null),
-              })
-            }
-            services={props.services}
-            size="xs"
-          />
-        );
-      },
-      meta: {
-        sortKey: "contractor",
-      },
+    ...foreignColumns.getContextual({
+      workspaceId: props.workspaceId,
+      contractorId: idSpecUtils.ofAll(),
     }),
     columnHelper.accessor("invoiceNumber", {
       header: "Invoice Number",

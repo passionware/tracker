@@ -32,14 +32,15 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
   return [
-    idSpecUtils.isAll(props.workspaceId) ? reportColumns.workspace : null,
-    reportColumns.contractor.withAdjacency,
-    idSpecUtils.isAll(props.clientId) ? reportColumns.client : null,
+    ...reportColumns.getContextual({
+      contractorId: idSpecUtils.ofAll(),
+      clientId: props.clientId,
+      workspaceId: props.workspaceId,
+    }),
     reportColumns.billing.linkingStatus.allowModify(props.services),
     columnHelper.accessor("instantEarnings", {
       header: "Instant earn",
@@ -215,7 +216,7 @@ export function useColumns(props: ReportsWidgetProps) {
         <ActionMenu services={props.services} entry={row.original} />
       ),
     }),
-  ].filter(maybe.isPresent);
+  ];
 }
 
 function ActionMenu(

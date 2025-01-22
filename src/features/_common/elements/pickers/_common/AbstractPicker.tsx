@@ -32,7 +32,7 @@ import { ReactNode, useState } from "react";
 export interface AbstractPickerConfig<Id, Data, Props> {
   useItem: (id: Maybe<Id>) => RemoteData<Data>;
   useItems: (query: string) => RemoteData<Data[]>;
-  renderItem: (item: Data, props: Props) => ReactNode;
+  renderItem: (item: Unassigned | Data, props: Props) => ReactNode;
   renderOption?: (item: Data) => ReactNode;
   getItemId: (item: Data) => Id;
   getKey: (item: Data) => string;

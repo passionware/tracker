@@ -1,3 +1,4 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   Workspace,
   workspaceQueryUtils,
@@ -18,7 +19,7 @@ export const WorkspacePicker = injectConfig(
       <WorkspaceView
         layout={props.layout}
         size={props.size}
-        workspace={rd.of(item)}
+        workspace={unassignedUtils.mapOrElse(item, rd.of, rd.ofIdle())}
       />
     ),
     renderOption: (item) => <WorkspaceView workspace={rd.of(item)} />,

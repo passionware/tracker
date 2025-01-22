@@ -1,6 +1,7 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { Client, clientQueryUtils } from "@/api/clients/clients.api.ts";
-import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { AbstractPicker } from "@/features/_common/elements/pickers/_common/AbstractPicker.tsx";
+import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { rd } from "@passionware/monads";
@@ -12,7 +13,7 @@ export const ClientPicker = injectConfig(AbstractPicker<Client["id"], Client>)
       <ClientView
         layout={props.layout}
         size={props.size}
-        client={rd.of(item)}
+        client={unassignedUtils.mapOrElse(item, rd.of, rd.ofIdle())}
       />
     ),
     renderOption: (item) => <ClientView client={rd.of(item)} />,
