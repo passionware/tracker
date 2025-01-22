@@ -6,6 +6,7 @@ import {
 } from "@/features/_common/columns/report.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { delay } from "@/platform/lang/delay.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -57,7 +58,7 @@ export function ReportList(props: ReportListProps) {
         reportColumns.netAmount(props.services),
         reportColumns.billing.linkedValue(props.services),
         reportColumns.billing.remainingValue(props.services),
-        foreignColumns.select<ReportSearchBaseModel>((info, button) => {
+        foreignColumns.select<ReportSearchBaseModel>((info, button, track) => {
           const report = info.row.original;
           const maxSourceAmount = { amount: 999, currency: "USD" }; // TODO: replace with actual value
           return (
@@ -96,7 +97,9 @@ export function ReportList(props: ReportListProps) {
                   .join("\n"),
               }}
               onValueChange={
-                () => alert("TODO: implement onSelect or extract") // TODO: implement onSelect
+                () => {
+                  track(delay(1000).then(void 0));
+                } // TODO: implement onSelect
                 // props.onSelect({
                 //   reportId: report.id,
                 //   value,

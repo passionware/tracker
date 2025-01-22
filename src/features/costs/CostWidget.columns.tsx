@@ -1,4 +1,3 @@
-import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -7,15 +6,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
+import { costColumns } from "@/features/_common/columns/cost.tsx";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { assert } from "@/platform/lang/assert";
@@ -27,9 +20,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { startCase } from "lodash";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<CostEntry>();
@@ -40,74 +31,15 @@ export function useColumns(props: PotentialCostWidgetProps) {
       workspaceId: props.workspaceId,
       contractorId: idSpecUtils.ofAll(),
     }),
-    columnHelper.accessor("invoiceNumber", {
-      header: "Invoice Number",
-      cell: (info) => info.getValue() || "N/A",
-      meta: {
-        sortKey: "invoiceNumber",
-      },
-    }),
-    columnHelper.accessor("invoiceDate", {
-      header: "Invoice Date",
-      cell: (info) =>
-        props.services.formatService.temporal.date(info.getValue()),
-      meta: {
-        sortKey: "invoiceDate",
-      },
-    }),
-    columnHelper.accessor("netAmount", {
-      header: "Net Value",
-      cell: (info) =>
-        props.services.formatService.financial.currency(info.getValue()),
-      meta: {
-        sortKey: "netValue",
-      },
-    }),
-    columnHelper.accessor("grossAmount", {
-      header: "Gross Value",
-      cell: (info) =>
-        maybe.mapOrElse(
-          info.getValue(),
-          props.services.formatService.financial.currency,
-          "N/A",
-        ),
-      meta: {
-        sortKey: "grossValue",
-      },
-    }),
-    columnHelper.accessor("status", {
-      header: "Status",
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <RollingBadge
-              className="max-w-24"
-              variant={
-                (
-                  {
-                    matched: "positive",
-                    unmatched: "destructive",
-                    "partially-matched": "warning",
-                    overmatched: "warning",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {startCase(info.getValue())}
-            </RollingBadge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Cost details</PopoverHeader>
-            <CostInfo
-              costEntry={info.row.original}
-              services={props.services}
-              clientId={props.clientId}
-              workspaceId={props.workspaceId}
-            />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
+    costColumns.invoiceNumber,
+    costColumns.invoiceDate(props.services),
+    costColumns.netAmount(props.services),
+    costColumns.grossAmount(props.services),
+    costColumns.report.linkStatus.allowModify(
+      props.services,
+      props.clientId,
+      props.workspaceId,
+    ),
     columnHelper.accessor("matchedAmount", {
       header: "Matched",
       cell: (info) => (

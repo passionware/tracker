@@ -12,6 +12,7 @@ import {
   WorkspaceView,
   WorkspaceWidget,
 } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -19,6 +20,7 @@ import { ExpressionContext } from "@/services/front/ExpressionService/Expression
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, Maybe, rd, truthy } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
 
@@ -71,11 +73,23 @@ export const foreignColumns = {
     renderer: (
       cellContext: CellContext<T, unknown>,
       button: ReactElement,
+      // this will be connected to local promiseState
+      track: (promise: Promise<void>) => void,
     ) => ReactNode,
   ) =>
     getColumnHelper<T>().display({
       id: "select",
-      cell: (info) => renderer(info, <Button>Select</Button>),
+      cell: (info) => {
+        const promise = promiseState.useRemoteData<void>();
+        return renderer(
+          info,
+          <Button>
+            {renderSpinnerMutation(rd.toMutation(promise.state))}
+            Select
+          </Button>,
+          promise.track,
+        );
+      },
     }),
   workspace: getColumnHelper<{ workspace: Nullable<Workspace> }>().accessor(
     "workspace",
