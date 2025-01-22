@@ -13,6 +13,7 @@ import {
   WorkspaceWidget,
 } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -69,6 +70,18 @@ export const foreignColumns = {
       header: "Last updated",
       cell: (info) => services.formatService.temporal.datetime(info.getValue()),
     }),
+  description: getColumnHelper<{ description: string }>().accessor(
+    "description",
+    {
+      header: "Description",
+      cell: (info) => (
+        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
+      ),
+      meta: {
+        sortKey: "description",
+      },
+    },
+  ),
   select: <T,>(
     renderer: (
       cellContext: CellContext<T, unknown>,

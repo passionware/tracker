@@ -8,10 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
-import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
-import { assert } from "@/platform/lang/assert";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -31,6 +28,7 @@ export function useColumns(props: PotentialCostWidgetProps) {
       workspaceId: props.workspaceId,
       contractorId: idSpecUtils.ofAll(),
     }),
+    costColumns.counterparty,
     costColumns.invoiceNumber,
     costColumns.invoiceDate(props.services),
     costColumns.netAmount(props.services),
@@ -40,40 +38,9 @@ export function useColumns(props: PotentialCostWidgetProps) {
       props.clientId,
       props.workspaceId,
     ),
-    columnHelper.accessor("matchedAmount", {
-      header: "Matched",
-      cell: (info) => (
-        <div className="empty:hidden flex flex-row gap-1.5 items-center">
-          {props.services.formatService.financial.currency(info.getValue())}
-          {info.row.original.linkReports.map((link) => {
-            assert(link.report, "link.report is not null work on types");
-            return (
-              <ClientWidget
-                layout="avatar"
-                size="xs"
-                key={link.link.id}
-                clientId={link.report.clientId}
-                services={props.services}
-              />
-            );
-          })}
-        </div>
-      ),
-    }),
-    columnHelper.accessor("remainingAmount", {
-      header: "Remaining",
-      cell: (info) =>
-        props.services.formatService.financial.currency(info.getValue()),
-    }),
-    columnHelper.accessor("description", {
-      header: "Description",
-      cell: (info) => (
-        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
-      ),
-      meta: {
-        sortKey: "description",
-      },
-    }),
+    costColumns.report.linkedValue(props.services),
+    costColumns.report.remainingValue(props.services),
+    foreignColumns.description,
     columnHelper.display({
       id: "actions",
       cell: (info) => (

@@ -7,7 +7,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
+import { assert } from "@/platform/lang/assert.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -32,6 +34,16 @@ export const costColumns = {
       cell: (info) => info.getValue() || "N/A",
       meta: {
         sortKey: "invoiceNumber",
+      },
+    },
+  ),
+  counterparty: getColumnHelper<Pick<Cost, "counterparty">>().accessor(
+    "counterparty",
+    {
+      header: "Counterparty",
+      cell: (info) => info.getValue() || "N/A",
+      meta: {
+        sortKey: "counterparty",
       },
     },
   ),
@@ -117,5 +129,37 @@ export const costColumns = {
           ),
         }),
     },
+    linkedValue: (
+      services: MergeServices<[WithFormatService, WithClientService]>,
+    ) =>
+      getColumnHelper<CostEntry>().accessor("matchedAmount", {
+        header: "Matched",
+        cell: (info) => (
+          <div className="empty:hidden flex flex-row gap-1.5 items-center">
+            {services.formatService.financial.currency(info.getValue())}
+            {info.row.original.linkReports.map((link) => {
+              assert(link.report, "link.report is not null work on types");
+              return (
+                <ClientWidget
+                  layout="avatar"
+                  size="xs"
+                  key={link.link.id}
+                  clientId={link.report.clientId}
+                  services={services}
+                />
+              );
+            })}
+          </div>
+        ),
+      }),
+    remainingValue: (services: MergeServices<[WithFormatService]>) =>
+      getColumnHelper<Pick<CostEntry, "remainingAmount">>().accessor(
+        "remainingAmount",
+        {
+          header: "Remaining",
+          cell: (info) =>
+            services.formatService.financial.currency(info.getValue()),
+        },
+      ),
   },
 };
