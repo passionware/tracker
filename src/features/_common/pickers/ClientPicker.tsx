@@ -1,5 +1,5 @@
 import { Client, clientQueryUtils } from "@/api/clients/clients.api.ts";
-import { ClientView } from "@/features/_common/ClientView.tsx";
+import { ClientView } from "@/features/_common/pickers/ClientView.tsx";
 import { AbstractPicker } from "@/features/_common/inline-search/_common/AbstractPicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";

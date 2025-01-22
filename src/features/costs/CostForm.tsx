@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
+import { ContractorPicker } from "@/features/_common/pickers/ContractorPicker.tsx";
 import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
-import { WorkspacePicker } from "@/features/_common/inline-search/WorkspacePicker.tsx";
+import { WorkspacePicker } from "@/features/_common/pickers/WorkspacePicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";

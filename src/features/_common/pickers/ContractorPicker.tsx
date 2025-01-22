@@ -2,7 +2,7 @@ import {
   Contractor,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
-import { ContractorView } from "@/features/_common/ContractorView.tsx";
+import { ContractorView } from "@/features/_common/pickers/ContractorView.tsx";
 import { AbstractPicker } from "@/features/_common/inline-search/_common/AbstractPicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -17,10 +17,7 @@ export const ContractorPicker = injectConfig(
 )
   .fromProps<WithServices<[WithContractorService]>>((api) => ({
     renderItem: (item, props) => (
-      <ContractorView
-        size={props.size === "xs" ? "xs" : "md"}
-        contractor={rd.of(item)}
-      />
+      <ContractorView size={props.size} contractor={rd.of(item)} />
     ),
     renderOption: (item) => <ContractorView contractor={rd.of(item)} />,
     getKey: (item) => item.id.toString(),

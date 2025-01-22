@@ -4,7 +4,7 @@ import { Contractor } from "@/api/contractor/contractor.api.ts";
 import {
   ContractorPicker,
   ContractorPickerProps,
-} from "@/features/_common/inline-search/ContractorPicker.tsx";
+} from "@/features/_common/pickers/ContractorPicker.tsx";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { maybe } from "@passionware/monads";
 

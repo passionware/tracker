@@ -29,5 +29,11 @@ export const workspaceMock = createMockFactory<Workspace>(
       name: "Code Institute",
       avatarUrl: "https://i.pravatar.cc/50?img=8",
     },
+    {
+      id: 3,
+      slug: "microsoft",
+      name: "No Avatars LLC",
+      avatarUrl: null,
+    },
   ],
 );

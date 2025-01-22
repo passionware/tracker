@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils.ts";
 import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Overwrite } from "@passionware/platform-ts";
+import { cva } from "class-variance-authority";
 import { CommandLoading } from "cmdk";
 import { partialRight } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
@@ -42,6 +43,7 @@ export interface AbstractPickerConfig<Id, Data, Props> {
 export type AbstractPickerProps<Id, Data> = Overwrite<
   ButtonProps,
   {
+    size?: "xs" | "sm" | "md" | "lg";
     value: Maybe<Unassigned | Id>;
     onSelect: Maybe<(item: Maybe<Unassigned | Id>) => void | Promise<void>>;
     config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
@@ -49,6 +51,17 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     allowUnassigned?: boolean;
   }
 >;
+
+const buttonPaddingVariant = cva("", {
+  variants: {
+    size: {
+      xs: "px-0.5",
+      sm: "pl-1 pr-1.5",
+      md: "pl-1 pr-2",
+      lg: "pl-1 pr-2",
+    },
+  },
+});
 
 export function AbstractPicker<Id, Data>(
   _props: AbstractPickerProps<Id, Data>,
@@ -97,8 +110,12 @@ export function AbstractPicker<Id, Data>(
       variant={variant ?? "outline"}
       role="combobox"
       aria-expanded={open}
-      className={cn("pl-1 pr-2 justify-between", className)}
-      size={size}
+      className={cn(
+        "justify-between *:min-w-0",
+        className,
+        buttonPaddingVariant({ size }),
+      )}
+      size={size === "md" ? "default" : size}
       {...rest}
     >
       {rd
@@ -109,7 +126,11 @@ export function AbstractPicker<Id, Data>(
         .map(() => null)}
       {rd
         .fullJourney(currentOption)
-        .initially(config.placeholder ?? "Select item")
+        .initially(
+          <div className="ml-2 truncate min-w-0">
+            {config.placeholder ?? "Select item"}
+          </div>,
+        )
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
         .map((data) =>
@@ -122,13 +143,9 @@ export function AbstractPicker<Id, Data>(
             </>,
           ),
         )}
-      <ChevronsUpDown className="opacity-50" />
+      <ChevronsUpDown className="opacity-50 " />
     </Button>
   );
-
-  if (!onSelect) {
-    return button;
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

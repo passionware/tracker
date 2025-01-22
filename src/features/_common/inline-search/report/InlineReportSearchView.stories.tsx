@@ -28,7 +28,11 @@ const meta = {
   component: InlineReportSearchView,
   args: {
     ...services.args,
-    query: reportQueryUtils.ofDefault(0, 0),
+    query: reportQueryUtils.setFilter(
+      reportQueryUtils.ofDefault(0, 0),
+      "contractorId",
+      { operator: "oneOf", value: [contractorMock.static.list[0].id] },
+    ),
     data: rd.of([
       {
         id: 1,
@@ -70,3 +74,44 @@ export default meta;
 type Story = StoryObj<Args>;
 
 export const Default = {} satisfies Story;
+
+export const ScopedToWorkspace = {
+  args: {
+    ...meta.args,
+    context: expressionContextUtils
+      .ofGlobal()
+      .setWorkspace(workspaceMock.static.list[0].id)
+      .build(),
+  },
+} satisfies Story;
+
+export const ScopedToClient = {
+  args: {
+    ...meta.args,
+    context: expressionContextUtils
+      .ofGlobal()
+      .setClient(clientsMock.static.list[0].id)
+      .build(),
+  },
+} satisfies Story;
+
+export const ScopedToContractor = {
+  args: {
+    ...meta.args,
+    context: expressionContextUtils
+      .ofGlobal()
+      .setContractor(contractorMock.static.list[0].id)
+      .build(),
+  },
+} satisfies Story;
+
+export const ScopedToWorkspaceAndClient = {
+  args: {
+    ...meta.args,
+    context: expressionContextUtils
+      .ofGlobal()
+      .setWorkspace(workspaceMock.static.list[0].id)
+      .setClient(clientsMock.static.list[0].id)
+      .build(),
+  },
+} satisfies Story;

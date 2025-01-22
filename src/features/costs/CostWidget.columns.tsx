@@ -14,11 +14,11 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
+import { ClientWidget } from "@/features/_common/pickers/ClientView.tsx";
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
-import { ContractorPicker } from "@/features/_common/inline-search/ContractorPicker.tsx";
+import { ContractorPicker } from "@/features/_common/pickers/ContractorPicker.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { WorkspaceView } from "@/features/_common/WorkspaceView.tsx";
+import { WorkspaceView } from "@/features/_common/pickers/WorkspaceView.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { assert } from "@/platform/lang/assert";
 import { WithServices } from "@/platform/typescript/services.ts";

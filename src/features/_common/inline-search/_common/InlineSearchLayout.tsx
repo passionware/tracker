@@ -17,7 +17,7 @@ export function InlineSearchLayout({
 }: InlineSearchLayoutProps) {
   return (
     <div className={cn("flex flex-col gap-4", className)} {...rest}>
-      {filters && <div className="flex gap-4">{filters}</div>}
+      {filters && <div className="flex gap-2">{filters}</div>}
       {children}
     </div>
   );

@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
-import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
+import { ContractorWidget } from "@/features/_common/pickers/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";

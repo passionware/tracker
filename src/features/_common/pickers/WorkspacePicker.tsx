@@ -7,17 +7,15 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { injectConfig } from "@passionware/platform-react";
-import { WorkspaceView } from "../WorkspaceView";
+import { ComponentProps } from "react";
+import { WorkspaceView } from "./WorkspaceView.tsx";
 
 export const WorkspacePicker = injectConfig(
   AbstractPicker<Workspace["id"], Workspace>,
 )
   .fromProps<WithServices<[WithWorkspaceService]>>((api) => ({
     renderItem: (item, props) => (
-      <WorkspaceView
-        size={props.size === "xs" ? "xs" : "md"}
-        workspace={rd.of(item)}
-      />
+      <WorkspaceView size={props.size} workspace={rd.of(item)} />
     ),
     renderOption: (item) => <WorkspaceView workspace={rd.of(item)} />,
     getKey: (item) => item.id.toString(),
@@ -36,3 +34,6 @@ export const WorkspacePicker = injectConfig(
     placeholder: "Select a workspace",
   }))
   .transformProps((x) => x.passAll);
+
+export type WorkspacePickerProps = ComponentProps<typeof WorkspacePicker>;
+

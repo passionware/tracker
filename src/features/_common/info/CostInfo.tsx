@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientWidget } from "@/features/_common/ClientView.tsx";
-import { ContractorWidget } from "@/features/_common/ContractorView.tsx";
+import { ClientWidget } from "@/features/_common/pickers/ClientView.tsx";
+import { ContractorWidget } from "@/features/_common/pickers/ContractorView.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineReportSearchWidget } from "@/features/_common/inline-search/report/InlineReportSearchWidget.tsx";
