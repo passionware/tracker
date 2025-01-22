@@ -1,4 +1,3 @@
-import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -8,17 +7,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
-import {
   baseColumnHelper,
   columnHelper,
   reportColumns,
 } from "@/features/_common/columns/report.tsx";
-import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
@@ -42,99 +34,8 @@ export function useColumns(props: ReportsWidgetProps) {
       workspaceId: props.workspaceId,
     }),
     reportColumns.billing.linkingStatus.allowModify(props.services),
-    columnHelper.accessor("instantEarnings", {
-      header: "Instant earn",
-      meta: {
-        tooltip: headers.compensationStatus,
-      },
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <RollingBadge
-              className="max-w-24"
-              tone="solid"
-              variant={
-                (
-                  {
-                    compensated: "positive",
-                    "partially-compensated": "warning",
-                    uncompensated: "destructive",
-                    clarified: "secondary",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                (
-                  {
-                    compensated: "Paid",
-                    "partially-compensated": (
-                      <>
-                        Pay{" "}
-                        {props.services.formatService.financial.currency(
-                          info.row.original.remainingCompensationAmount,
-                        )}
-                      </>
-                    ),
-                    uncompensated: "Unpaid",
-                    clarified: "Clarified",
-                  } as const
-                )[info.getValue()]
-              }
-            </RollingBadge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Compensation details</PopoverHeader>
-            <ReportCostInfo
-              report={info.row.original}
-              services={props.services}
-            />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
-    columnHelper.accessor("deferredEarnings", {
-      header: "Deferred earn",
-      meta: {
-        tooltip: headers.fullCompensationStatus,
-      },
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <RollingBadge
-              className="max-w-24"
-              tone="secondary"
-              variant={
-                (
-                  {
-                    compensated: "positive",
-                    "partially-compensated": "warning",
-                    uncompensated: "accent2",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                (
-                  {
-                    compensated: "Paid",
-                    "partially-compensated": "Partially",
-                    uncompensated: "Unpaid",
-                  } as const
-                )[info.getValue()]
-              }
-            </RollingBadge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Compensation details</PopoverHeader>
-            <ReportCostInfo
-              report={info.row.original}
-              services={props.services}
-            />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
+    reportColumns.cost.immediateLinkingStatus.allowModify(props.services),
+    reportColumns.cost.linkingStatus.read,
     reportColumns.netAmount(props.services),
     baseColumnHelper.group({
       header: "Charging",

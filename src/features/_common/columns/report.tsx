@@ -7,7 +7,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -21,6 +23,7 @@ import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -208,6 +211,149 @@ export const reportColumns = {
           sortKey: "reportBillingValue",
         },
       }),
+  },
+  cost: {
+    immediateLinkingStatus: {
+      allowModify: (
+        services: WithFormatService &
+          WithMutationService &
+          WithPreferenceService &
+          WithReportDisplayService &
+          WithRoutingService &
+          WithClientService &
+          WithExpressionService &
+          WithWorkspaceService &
+          WithContractorService,
+      ) =>
+        getColumnHelper<ReportViewEntry>().accessor("instantEarnings", {
+          header: "Instant earn",
+          meta: {
+            tooltip: headers.compensationStatus,
+          },
+          cell: (info) => (
+            <Popover>
+              <PopoverTrigger>
+                <RollingBadge
+                  className="max-w-24"
+                  tone="solid"
+                  variant={
+                    (
+                      {
+                        compensated: "positive",
+                        "partially-compensated": "warning",
+                        uncompensated: "destructive",
+                        clarified: "secondary",
+                      } as const
+                    )[info.getValue()]
+                  }
+                >
+                  {
+                    (
+                      {
+                        compensated: "Paid",
+                        "partially-compensated": (
+                          <>
+                            Pay{" "}
+                            {services.formatService.financial.currency(
+                              info.row.original.remainingCompensationAmount,
+                            )}
+                          </>
+                        ),
+                        uncompensated: "Unpaid",
+                        clarified: "Clarified",
+                      } as const
+                    )[info.getValue()]
+                  }
+                </RollingBadge>
+              </PopoverTrigger>
+              <PopoverContent className="w-fit">
+                <PopoverHeader>Compensation details</PopoverHeader>
+                <ReportCostInfo
+                  report={info.row.original}
+                  services={services}
+                />
+              </PopoverContent>
+            </Popover>
+          ),
+        }),
+      read: (services: WithFormatService) =>
+        getColumnHelper<ReportViewEntry>().accessor("instantEarnings", {
+          header: "Instant earn",
+          meta: {
+            tooltip: headers.compensationStatus,
+          },
+          cell: (info) => (
+            <RollingBadge
+              className="max-w-24"
+              tone="solid"
+              variant={
+                (
+                  {
+                    compensated: "positive",
+                    "partially-compensated": "warning",
+                    uncompensated: "destructive",
+                    clarified: "secondary",
+                  } as const
+                )[info.getValue()]
+              }
+            >
+              {
+                (
+                  {
+                    compensated: "Paid",
+                    "partially-compensated": (
+                      <>
+                        Pay{" "}
+                        {services.formatService.financial.currency(
+                          info.row.original.remainingCompensationAmount,
+                        )}
+                      </>
+                    ),
+                    uncompensated: "Unpaid",
+                    clarified: "Clarified",
+                  } as const
+                )[info.getValue()]
+              }
+            </RollingBadge>
+          ),
+        }),
+    },
+    linkingStatus: {
+      read: getColumnHelper<ReportViewEntry>().accessor("deferredEarnings", {
+        header: "Deferred earn",
+        meta: {
+          tooltip: headers.fullCompensationStatus,
+        },
+        cell: (info) => (
+          <RollingBadge
+            className="max-w-24"
+            tone="secondary"
+            variant={
+              (
+                {
+                  compensated: "positive",
+                  "partially-compensated": "warning",
+                  uncompensated: "accent2",
+                } as const
+              )[info.getValue()]
+            }
+          >
+            {
+              (
+                {
+                  compensated: "Paid",
+                  "partially-compensated": "Partially",
+                  uncompensated: "Unpaid",
+                } as const
+              )[info.getValue()]
+            }
+          </RollingBadge>
+        ),
+      }),
+    },
+    linkedValue: null,
+    immediateRemainingValue: null,
+    remainingValue: null,
   },
   getContextual: (context: ExpressionContext) =>
     [
