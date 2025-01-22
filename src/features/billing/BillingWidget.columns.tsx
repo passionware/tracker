@@ -1,4 +1,3 @@
-import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -7,17 +6,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
-import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
-import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
-import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
+import { billingColumns } from "@/features/_common/columns/billing.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -26,158 +16,32 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
-import { createColumnHelper } from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<BillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
   return [
-    columnHelper.accessor("workspace", {
-      header: "Issuer",
-      cell: (info) => (
-        <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
-      ),
-      meta: {
-        sortKey: "workspace",
-      },
+    ...foreignColumns.getContextual({
+      workspaceId: props.workspaceId,
+      clientId: props.clientId,
     }),
-    columnHelper.accessor("client", {
-      header: "Client",
-      cell: (info) => (
-        <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
-      ),
-      meta: {
-        sortKey: "client",
-      },
-    }),
-    columnHelper.accessor("invoiceNumber", {
-      header: "Invoice Number",
-      meta: {
-        sortKey: "invoiceNumber",
-      },
-    }),
-    columnHelper.accessor("invoiceDate", {
-      header: "Invoice Date",
-      cell: (info) =>
-        props.services.formatService.temporal.date(info.getValue()),
-      meta: {
-        sortKey: "invoiceDate",
-      },
-    }),
-    columnHelper.accessor("status", {
-      header: "Status",
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <RollingBadge
-              className="max-w-24"
-              tone="solid"
-              variant={
-                (
-                  {
-                    matched: "positive",
-                    unmatched: "destructive",
-                    "partially-matched": "warning",
-                    clarified: "secondary",
-                    overmatched: "accent1",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                (
-                  {
-                    matched: "Matched",
-                    unmatched: "Unmatched",
-                    "partially-matched": "Partially Matched",
-                    clarified: "Clarified",
-                    overmatched: "Overmatched",
-                  } as const
-                )[info.getValue()]
-              }
-            </RollingBadge>
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto"
-          >
-            <PopoverHeader>Invoice details</PopoverHeader>
-            <ChargeInfo services={props.services} billing={info.row.original} />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
-    columnHelper.accessor("netAmount", {
-      header: "Net Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-      meta: { sortKey: "totalNet" },
-    }),
-    columnHelper.accessor("grossAmount", {
-      header: "Gross Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-      meta: {
-        sortKey: "totalGross",
-      },
-    }),
-    columnHelper.accessor("matchedAmount", {
-      header: "Matched Amount",
-      cell: (info) => (
-        <div className="empty:hidden flex flex-row gap-1.5 items-center">
-          {props.services.formatService.financial.amount(
-            info.getValue().amount,
-            info.getValue().currency,
-          )}
-          {info.row.original.contractors.map((contractor) => (
-            <ContractorView
-              size="sm"
-              layout="avatar"
-              key={contractor.id}
-              contractor={rd.of(contractor)}
-            />
-          ))}
-        </div>
-      ),
-      meta: {
-        sortKey: "billingReportValue",
-      },
-    }),
-    columnHelper.accessor("remainingAmount", {
-      header: "Remaining Amount",
-      cell: (info) =>
-        props.services.formatService.financial.amount(
-          info.getValue().amount,
-          info.getValue().currency,
-        ),
-      meta: {
-        sortKey: "remainingBalance",
-      },
-    }),
-    columnHelper.accessor("description", {
-      header: "Description",
-      cell: (info) => (
-        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
-      ),
-      meta: {
-        sortKey: "description",
-      },
-    }),
+    billingColumns.invoiceNumber,
+    billingColumns.invoiceDate(props.services),
+    billingColumns.report.linkingStatus(props.services),
+    billingColumns.netAmount(props.services),
+    billingColumns.grossAmount(props.services),
+    billingColumns.report.linkedValue(props.services),
+    billingColumns.report.remainingValue(props.services),
+    foreignColumns.description,
     columnHelper.display({
       id: "actions",
       cell: (info) => (
         <ActionMenu entry={info.row.original} services={props.services} />
       ),
     }),
-  ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ] satisfies ColumnDef<any, any>[];
 }
 
 function ActionMenu(
