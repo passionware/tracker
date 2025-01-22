@@ -6,6 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import {
   baseColumnHelper,
   columnHelper,
@@ -60,15 +61,7 @@ export function useColumns(props: ReportsWidgetProps) {
       },
     }),
     reportColumns.period(props.services),
-    columnHelper.accessor("description", {
-      header: "Description",
-      cell: (info) => (
-        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
-      ),
-      meta: {
-        sortKey: "description",
-      },
-    }),
+    foreignColumns.description,
     columnHelper.display({
       id: "actions",
       enableHiding: false,
