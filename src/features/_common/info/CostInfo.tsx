@@ -67,7 +67,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
         fromAmount={costEntry.remainingAmount}
         toAmount={costEntry.matchedAmount}
       />
-      {costEntry.remainingAmount.amount > 0 && (
+      {costEntry.status !== "matched" && (
         <div className="flex gap-2 flex-row self-end">
           <Popover>
             <PopoverTrigger asChild>
