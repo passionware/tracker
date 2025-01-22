@@ -24,9 +24,8 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
-import { CellContext, createColumnHelper } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
-import { ReactElement, ReactNode } from "react";
 
 export type ReportSearchBaseModel = Pick<
   ReportViewEntry,
@@ -233,14 +232,4 @@ export const reportColumns = {
       sortKey: "client",
     },
   }),
-  select: (
-    renderer: (
-      cellContext: CellContext<ReportSearchBaseModel, unknown>,
-      button: ReactElement,
-    ) => ReactNode,
-  ) =>
-    baseColumnHelper.display({
-      id: "select",
-      cell: (info) => renderer(info, <Button>Select</Button>),
-    }),
 };

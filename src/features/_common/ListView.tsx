@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils.ts";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { rd, RemoteData } from "@passionware/monads";
 import {
+  ColumnDef,
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
@@ -25,7 +26,6 @@ import {
   getPaginationRowModel,
   Header,
   SortingState,
-  TableOptions,
   useReactTable,
 } from "@tanstack/react-table";
 import { get } from "lodash";
@@ -36,10 +36,11 @@ import { ReactNode } from "react";
 // Typ wejściowy komponentu (co będzie wierszem w tabeli)
 export interface ListViewProps<TData, Query extends SortableQueryBase> {
   data: RemoteData<TData[]>;
-  columns: TableOptions<TData>["columns"];
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  columns: ColumnDef<any, any>[];
   skeletonRows?: number;
   caption?: React.ReactNode;
-  onRowDoubleClick?: (row: TData) => void;
+  onRowDoubleClick?: (row: NoInfer<TData>) => void;
   className?: string;
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;

@@ -1,4 +1,4 @@
-import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -16,7 +16,6 @@ import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { addDays } from "date-fns";
@@ -122,7 +121,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      <ListView<ReportViewEntry, ReportQuery>
+      <ListView
         query={query}
         onQueryChange={setQuery}
         data={rd.map(reports, (r) => r.entries)}

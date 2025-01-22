@@ -1,4 +1,5 @@
 import { ReportQuery } from "@/api/reports/reports.api.ts";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import {
   reportColumns,
   ReportSearchBaseModel,
@@ -54,7 +55,7 @@ export function ReportList(props: ReportListProps) {
         reportColumns.netAmount(props.services),
         reportColumns.billing.linkedValue(props.services),
         reportColumns.billing.remainingValue(props.services),
-        reportColumns.select((info, button) => {
+        foreignColumns.select<ReportSearchBaseModel>((info, button) => {
           const report = info.row.original;
           const maxSourceAmount = { amount: 999, currency: "USD" }; // TODO: replace with actual value
           return (

@@ -16,14 +16,11 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { variable } from "@/features/_common/columns/variable.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
-import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
-import { cn } from "@/lib/utils.ts";
 import { ensureError } from "@/platform/lang/ensureError.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -37,7 +34,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { mt, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { createColumnHelper } from "@tanstack/react-table";
+import { Slot } from "@radix-ui/react-slot";
 import { memo, PropsWithChildren, ReactNode } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
@@ -61,8 +58,6 @@ export interface ExpressionChooserProps
   className?: string;
 }
 
-const columnHelper = createColumnHelper<Variable>();
-
 export const ExpressionChooser = memo(XExpressionChooser);
 function XExpressionChooser({
   services,
@@ -82,118 +77,55 @@ function XExpressionChooser({
       className={className}
       data={vars}
       columns={[
-        columnHelper.accessor("workspaceId", {
-          header: "Workspace",
-          cell: (info) => (
-            <WorkspaceWidget
-              layout="avatar"
-              workspaceId={info.getValue()}
-              services={services}
-            />
-          ),
-        }),
-        columnHelper.accessor("clientId", {
-          header: "Client",
-          cell: (info) => (
-            <ClientWidget
-              layout="avatar"
-              clientId={info.getValue()}
-              services={services}
-            />
-          ),
-        }),
-        columnHelper.accessor("contractorId", {
-          header: "Contractor",
-          cell: (info) => (
-            <ContractorWidget
-              layout="avatar"
-              contractorId={info.getValue()}
-              services={services}
-            />
-          ),
-        }),
-        columnHelper.accessor("name", { header: "Name" }),
-        columnHelper.accessor("value", {
-          header: "Value",
-          cell: (info) => {
-            const className = cn(
-              "p-1 border",
-              {
-                const: "border-sky-800/50 rounded bg-sky-50 text-sky-800",
-                expression:
-                  "border-lime-800/50 rounded bg-lime-50 text-lime-900",
-              }[info.row.original.type],
-            );
+        foreignColumns.workspaceId(services),
+        foreignColumns.clientId(services),
+        foreignColumns.contractorId(services),
+        variable.name,
+        variable.value,
+        variable.type,
+        foreignColumns.updatedAt(services),
+        foreignColumns.select<Variable>((info, button) => {
+          const evaluatePromise = promiseState.useRemoteData();
+          if (info.row.original.type === "const") {
             return (
-              <OverflowTooltip
-                light
-                title={
-                  <div
-                    className={cn(className, "whitespace-pre overflow-auto")}
-                  >
-                    {info.getValue()}
-                  </div>
+              <Slot
+                onClick={() =>
+                  onChoose(
+                    info.row.original,
+                    defaultArgs,
+                    info.row.original.value,
+                  )
                 }
               >
-                <div className={cn(className, "max-w-[10rem] w-min truncate")}>
-                  {info.getValue()}
-                </div>
-              </OverflowTooltip>
+                {button}
+              </Slot>
             );
-          },
-        }),
-        columnHelper.accessor("type", { header: "Type" }),
-        columnHelper.accessor("updatedAt", {
-          header: "Last updated",
-          cell: (info) =>
-            services.formatService.temporal.datetime(info.getValue()),
-        }),
-        columnHelper.display({
-          header: "Select",
-          cell: (info) => {
-            const evaluatePromise = promiseState.useRemoteData();
-            if (info.row.original.type === "const") {
-              return (
-                <Button
-                  onClick={() =>
-                    onChoose(
-                      info.row.original,
-                      defaultArgs,
-                      info.row.original.value,
-                    )
-                  }
-                  variant="default"
-                >
-                  Select
-                </Button>
-              );
-            }
+          }
 
-            return (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="default">Evaluate</Button>
-                </PopoverTrigger>
-                <PopoverContent className="max-w-4xl w-fit">
-                  <PopoverHeader>Adjust input</PopoverHeader>
-                  <AdjustArgs
-                    mutation={evaluatePromise.state}
-                    args={defaultArgs}
-                    onAdjust={async (args) => {
-                      const result = await evaluatePromise.track(
-                        services.expressionService.ensureExpressionValue(
-                          context,
-                          info.row.original.value,
-                          args,
-                        ),
-                      );
-                      onChoose(info.row.original, args, result);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            );
-          },
+          return (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="default">Evaluate</Button>
+              </PopoverTrigger>
+              <PopoverContent className="max-w-4xl w-fit">
+                <PopoverHeader>Adjust input</PopoverHeader>
+                <AdjustArgs
+                  mutation={evaluatePromise.state}
+                  args={defaultArgs}
+                  onAdjust={async (args) => {
+                    const result = await evaluatePromise.track(
+                      services.expressionService.ensureExpressionValue(
+                        context,
+                        info.row.original.value,
+                        args,
+                      ),
+                    );
+                    onChoose(info.row.original, args, result);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          );
         }),
       ]}
       caption={

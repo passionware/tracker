@@ -6,7 +6,7 @@ import {
 import { WithServices } from "@/platform/typescript/services.ts";
 import { SwitchProps } from "@/platform/typescript/SwitchProps.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { RemoteData } from "@passionware/monads";
+import { Maybe, RemoteData } from "@passionware/monads";
 
 export type WorkspaceViewProps = SwitchProps<
   AbstractEntityViewProps,
@@ -25,7 +25,7 @@ export type WorkspaceWidgetProps = WithServices<[WithWorkspaceService]> &
     WorkspaceViewProps,
     "workspace",
     {
-      workspaceId: Workspace["id"];
+      workspaceId: Maybe<Workspace["id"]>;
     }
   >;
 
