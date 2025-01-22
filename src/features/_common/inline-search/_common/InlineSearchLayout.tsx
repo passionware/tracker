@@ -18,7 +18,7 @@ export function InlineSearchLayout({
   return (
     <div className={cn("flex flex-col gap-4", className)} {...rest}>
       {filters && (
-        <div className="border-b p-1 pb-4 border-slate-200 flex flex-row gap-4 justify-between items-center">
+        <div className="flex flex-row gap-4 justify-between items-center">
           {filters}
         </div>
       )}

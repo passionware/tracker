@@ -19,6 +19,9 @@ const services = createSbServices({
   workspace: true,
   client: true,
   contractor: true,
+  format: true,
+  expression: true,
+  variable: true,
 });
 
 type Args = ArgsWithServices<ReportListProps, typeof services>;
@@ -41,6 +44,9 @@ const meta = {
         workspace: workspaceMock.static.list[0],
         client: clientsMock.static.list[0],
         netAmount: { amount: 100, currency: "USD" },
+        remainingAmount: { amount: 50, currency: "USD" },
+        status: "partially-billed",
+        billedAmount: { amount: 50, currency: "USD" },
       },
       {
         id: 2,
@@ -49,6 +55,9 @@ const meta = {
         workspace: workspaceMock.static.list[0],
         client: clientsMock.static.list[0],
         netAmount: { amount: 200, currency: "USD" },
+        remainingAmount: { amount: 100, currency: "USD" },
+        status: "partially-billed",
+        billedAmount: { amount: 50, currency: "USD" },
       },
       {
         id: 3,
@@ -57,6 +66,9 @@ const meta = {
         workspace: workspaceMock.static.list[1],
         client: clientsMock.static.list[1],
         netAmount: { amount: 300, currency: "USD" },
+        remainingAmount: { amount: 150, currency: "USD" },
+        status: "partially-billed",
+        billedAmount: { amount: 50, currency: "USD" },
       },
     ]),
     context: expressionContextUtils.ofGlobal().build(),

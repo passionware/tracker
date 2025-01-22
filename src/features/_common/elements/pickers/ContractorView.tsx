@@ -17,7 +17,10 @@ export type ContractorViewProps = SwitchProps<
 export function ContractorView({ contractor, ...props }: ContractorViewProps) {
   return (
     <AbstractEntityView
-      entity={rd.map(contractor, (x) => ({ ...x, avatarUrl: null }))}
+      entity={rd.map(contractor, (x) => ({
+        name: x.fullName,
+        avatarUrl: null,
+      }))}
       {...props}
     />
   );

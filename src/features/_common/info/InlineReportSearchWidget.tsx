@@ -1,4 +1,8 @@
-import { ReportPayload, ReportQuery } from "@/api/reports/reports.api.ts";
+import {
+  ReportPayload,
+  ReportQuery,
+  reportQueryUtils,
+} from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Dialog,
@@ -7,24 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
-import { Skeleton } from "@/components/ui/skeleton.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table.tsx";
-import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { ReportList } from "@/features/_common/elements/lists/ReportList.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
-import {
-  LinkPopover,
-  LinkValue,
-} from "@/features/_common/filters/LinkPopover.tsx";
+import { LinkValue } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
-import { renderError } from "@/features/_common/renderError.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -41,7 +31,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Maybe, rd } from "@passionware/monads";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 export interface InlineReportSearchWidgetProps
@@ -67,7 +57,8 @@ export interface InlineReportSearchWidgetProps
 }
 
 export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
-  const [query, setQuery] = useState<ReportQuery>(props.query);
+  const [_query, setQuery] = useState<ReportQuery>(props.query);
+  const query = reportQueryUtils.narrowContext(_query, props.context);
   const editModalState = useOpenState();
 
   const reports = props.services.reportDisplayService.useReportView(query);
@@ -86,7 +77,7 @@ export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
             />
             <Dialog {...editModalState.dialogProps}>
               <DialogTrigger asChild>
-                <Button variant="accent1" size="icon-sm" className="">
+                <Button variant="secondary" size="icon-sm" className="">
                   <Plus strokeWidth={3} />
                 </Button>
               </DialogTrigger>
@@ -108,106 +99,13 @@ export function InlineReportSearchWidget(props: InlineReportSearchWidgetProps) {
           </>
         }
       >
-        {rd
-          .journey(reports)
-          .wait(<Skeleton className="h-6" />)
-          .catch(renderError)
-          .map((reports) => {
-            if (reports.entries.length === 0) {
-              return <div>No contractor reports found.</div>;
-            }
-
-            return (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Id</TableHead>
-                    <TableHead>Issuer</TableHead>
-                    <TableHead>Contractor</TableHead>
-                    <TableHead>Reconciled</TableHead>
-                    <TableHead>Remaining</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.entries.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>{report.id}</TableCell>
-                      <TableCell>
-                        <WorkspaceView
-                          layout="avatar"
-                          workspace={rd.of(report.workspace)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {report.contractor.fullName}
-                          <ChevronRight className="size-3" />
-                          <ClientView
-                            layout="avatar"
-                            size="xs"
-                            client={rd.of(report.client)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {props.services.formatService.financial.amount(
-                          report.remainingAmount.amount,
-                          report.remainingAmount.currency,
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <LinkPopover
-                          context={{
-                            contractorId: report.contractor.id,
-                            workspaceId: report.workspace.id,
-                            clientId: report.client.id,
-                          }}
-                          services={props.services}
-                          sourceCurrency={report.remainingAmount.currency}
-                          title="Link contractor report"
-                          targetLabel="Report value"
-                          targetCurrency={
-                            props.maxSourceAmount?.currency ??
-                            report.remainingAmount.currency
-                          }
-                          initialValues={{
-                            target: Math.min(
-                              props.maxSourceAmount?.amount ?? 0,
-                              report.remainingAmount.amount,
-                            ),
-                            source:
-                              props.maxSourceAmount?.currency ===
-                              report.remainingAmount.currency
-                                ? // we have same currency, so probably we don't need to exchange
-                                  props.maxSourceAmount?.amount
-                                : // this won't be same, so let's assume that cost  = remaining report but in target currency
-                                  report.remainingAmount.amount,
-                            description: [
-                              report.remainingAmount.currency !==
-                              props.maxSourceAmount?.currency
-                                ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${props.maxSourceAmount?.currency}, exchange cost: [...]`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join("\n"),
-                          }}
-                          onValueChange={(value) =>
-                            props.onSelect({
-                              reportId: report.id,
-                              value,
-                            })
-                          }
-                        >
-                          <Button>Select</Button>
-                        </LinkPopover>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            );
-          })}
+        <ReportList
+          services={props.services}
+          context={props.context}
+          data={rd.map(reports, (x) => x.entries)}
+          query={query}
+          onQueryChange={setQuery}
+        />
       </InlineSearchLayout>
     </>
   );

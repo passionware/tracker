@@ -52,6 +52,7 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     allowUnassigned?: boolean;
     align?: PopoverContentProps["align"];
     side?: PopoverContentProps["side"];
+    layout?: "full" | "avatar";
   }
 >;
 
@@ -63,6 +64,9 @@ const buttonPaddingVariant = cva("", {
       md: "pl-1 pr-2",
       lg: "pl-1 pr-2",
     },
+  },
+  defaultVariants: {
+    size: "md",
   },
 });
 

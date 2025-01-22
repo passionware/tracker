@@ -17,10 +17,12 @@ import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
+import { ExpressionContext } from "@/services/front/ExpressionService/ExpressionService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { chain } from "lodash";
 
 export interface ReportPayload {
   contractorId: number;
@@ -134,4 +136,34 @@ export const reportQueryUtils = {
       ),
     },
   }),
+  narrowContext: (
+    query: ReportQuery,
+    context: ExpressionContext,
+  ): ReportQuery =>
+    chain(query)
+      .thru((x) =>
+        idSpecUtils.isAll(context.workspaceId)
+          ? x
+          : reportQueryUtils.setFilter(x, "workspaceId", {
+              operator: "oneOf",
+              value: [context.workspaceId],
+            }),
+      )
+      .thru((x) =>
+        idSpecUtils.isAll(context.clientId)
+          ? x
+          : reportQueryUtils.setFilter(x, "clientId", {
+              operator: "oneOf",
+              value: [context.clientId],
+            }),
+      )
+      .thru((x) =>
+        idSpecUtils.isAll(context.contractorId)
+          ? x
+          : reportQueryUtils.setFilter(x, "contractorId", {
+              operator: "oneOf",
+              value: [context.contractorId],
+            }),
+      )
+      .value(),
 };

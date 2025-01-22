@@ -28,6 +28,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { PopoverContentProps } from "@radix-ui/react-popover";
 import { Leaf } from "lucide-react";
 import { ReactElement, ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -60,6 +61,8 @@ export type LinkPopoverProps = WithServices<
   targetLabel?: string;
   descriptionLabel?: string;
   children: ReactElement;
+  align?: PopoverContentProps["align"];
+  side?: PopoverContentProps["side"];
   context: ExpressionContext;
 };
 
@@ -80,7 +83,7 @@ export function LinkPopover(props: LinkPopoverProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{props.children}</PopoverTrigger>
-      <PopoverContent>
+      <PopoverContent align={props.align} side={props.side}>
         <Form {...form}>
           <form
             className="flex flex-col gap-2"
@@ -141,9 +144,9 @@ export function LinkPopover(props: LinkPopoverProps) {
               )}
             />
 
-            <div
-            className="text-lime-700 bg-lime-100 text-md p-2 rounded-lg my-2 "
-            >Corresponds to</div>
+            <div className="text-lime-700 bg-lime-100 text-md p-2 rounded-lg my-2 ">
+              Corresponds to
+            </div>
 
             <FormField
               control={form.control}

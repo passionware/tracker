@@ -1,7 +1,10 @@
+import { Maybe } from "@passionware/monads";
 import { Meta } from "@storybook/react";
 
 type MakeOnlyFunctionsOptional<T> = {
-  [K in keyof T as T[K] extends (...args: any[]) => any ? never : K]: T[K];
+  [K in keyof T as T[K] extends Maybe<(...args: any[]) => any>
+    ? never
+    : K]: T[K];
 } & Partial<{
   [K in keyof T as T[K] extends (...args: any[]) => any ? K : never]: T[K];
 }>;

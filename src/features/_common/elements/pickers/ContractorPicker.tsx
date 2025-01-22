@@ -17,7 +17,11 @@ export const ContractorPicker = injectConfig(
 )
   .fromProps<WithServices<[WithContractorService]>>((api) => ({
     renderItem: (item, props) => (
-      <ContractorView size={props.size} contractor={rd.of(item)} />
+      <ContractorView
+        layout={props.layout}
+        size={props.size}
+        contractor={rd.of(item)}
+      />
     ),
     renderOption: (item) => <ContractorView contractor={rd.of(item)} />,
     getKey: (item) => item.id.toString(),

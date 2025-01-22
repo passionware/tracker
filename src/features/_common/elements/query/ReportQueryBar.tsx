@@ -45,7 +45,11 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
     <ReportQueryBarLayout>
       <WorkspacePicker
         size="sm"
+        allowClear
         disabled={idSpecUtils.isSpecific(props.context.workspaceId)}
+        layout={
+          idSpecUtils.isAll(props.context.workspaceId) ? "full" : "avatar"
+        }
         value={props.query.filters.workspaceId?.value[0]}
         onSelect={handleChange("workspaceId", (workspaceId) =>
           maybe.mapOrNull(
@@ -60,7 +64,9 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
       />
       <ClientPicker
         size="sm"
+        allowClear
         disabled={idSpecUtils.isSpecific(props.context.clientId)}
+        layout={idSpecUtils.isAll(props.context.clientId) ? "full" : "avatar"}
         services={props.services}
         value={props.query.filters.clientId?.value[0]}
         onSelect={handleChange("clientId", (clientId) =>
@@ -75,7 +81,11 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
       />
       <ContractorPicker
         size="sm"
+        allowClear
         disabled={idSpecUtils.isSpecific(props.context.contractorId)}
+        layout={
+          idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"
+        }
         services={props.services}
         value={props.query.filters.contractorId?.value[0]}
         onSelect={handleChange("contractorId", (contractorId) =>

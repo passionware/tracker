@@ -1,10 +1,11 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
+import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import {
   ArgsWithServices,
   createSbServices,
 } from "@/services/_common/createSbServices.ts";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react";
 import { Fragment } from "react";
 
 import { WorkspacePicker, WorkspacePickerProps } from "./WorkspacePicker.tsx";
@@ -18,9 +19,10 @@ const meta = {
   decorators: [ser.decorator.argsDecorator],
   args: {
     ...ser.args,
+    value: undefined,
   },
   component: WorkspacePicker,
-} satisfies Meta<Args>;
+} satisfies FixedMeta<Args>;
 
 export default meta;
 
@@ -38,7 +40,7 @@ export const Unassigned = {
   args: {
     ...WithValue.args,
     value: unassignedUtils.ofUnassigned(),
-      allowUnassigned: true,
+    allowUnassigned: true,
   },
 } satisfies Story;
 

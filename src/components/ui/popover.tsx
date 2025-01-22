@@ -29,9 +29,7 @@ PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 function PopoverHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-lg text-gray-700 mb-4 pb-3 font-semibold border-b">
-      {children}
-    </div>
+    <div className="text-lg text-slate-700 pb-4 font-light ">{children}</div>
   );
 }
 

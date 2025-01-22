@@ -92,3 +92,15 @@ export const ScopedToWorkspaceAndClient = {
       .build(),
   },
 } satisfies Story;
+
+export const ScopedToWorkspaceAndContractorAndClient = {
+  args: {
+    ...meta.args,
+    context: expressionContextUtils
+      .ofGlobal()
+      .setWorkspace(workspaceMock.static.list[0].id)
+      .setContractor(contractorMock.static.list[0].id)
+      .setClient(clientsMock.static.list[0].id)
+      .build(),
+  },
+};

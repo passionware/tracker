@@ -152,7 +152,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
           <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
             {columnsElement}
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
                 {table.getVisibleLeafColumns().map((_, colIndex) => (
@@ -191,7 +191,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
             {/* CIAŁO */}
             <TableBody
               className={cn(
-                "border-b",
+                "border-b bg-white",
                 getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
               )}
             >

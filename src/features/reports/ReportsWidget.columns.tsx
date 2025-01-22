@@ -13,12 +13,13 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
+import {
+  baseColumnHelper,
+  columnHelper,
+  reportColumns,
+} from "@/features/_common/columns/report.tsx";
 import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
-import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
-import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -30,103 +31,14 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
-import { createColumnHelper } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
-
-const columnHelper = createColumnHelper<ReportViewEntry>();
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
   return [
-    columnHelper.accessor("workspace", {
-      header: "Issuer",
-
-      cell: (info) => (
-        <WorkspaceView layout="avatar" workspace={rd.of(info.getValue())} />
-      ),
-      meta: {
-        sortKey: "workspace",
-      },
-    }),
-    columnHelper.accessor("contractor.fullName", {
-      header: "Contractor",
-      cell: (info) => (
-        <>
-          {info.row.original.previousReportInfo?.adjacency === "separated" && (
-            <SimpleTooltip light title="Report is not adjacent to previous">
-              <Button size="icon-xs" variant="ghost">
-                <TriangleAlert className="text-rose-500" />
-              </Button>
-            </SimpleTooltip>
-          )}
-          {info.row.original.previousReportInfo?.adjacency === "overlaps" && (
-            <SimpleTooltip light title="Report is overlapping with previous">
-              <Button size="icon-xs" variant="ghost">
-                <TriangleAlert className="text-rose-500" />
-              </Button>
-            </SimpleTooltip>
-          )}
-          <span className="inline">{info.getValue()}</span>
-        </>
-      ),
-      meta: {
-        sortKey: "contractor",
-      },
-    }),
-    columnHelper.accessor("client", {
-      header: "Client",
-      cell: (info) => (
-        <ClientView layout="avatar" size="sm" client={rd.of(info.getValue())} />
-      ),
-      meta: {
-        sortKey: "client",
-      },
-    }),
-    columnHelper.accessor("status", {
-      header: "Charge",
-      meta: {
-        tooltip: headers.chargeStatus,
-      },
-      cell: (info) => (
-        <Popover>
-          <PopoverTrigger>
-            <Badge
-              className="max-w-24 overflow-hidden"
-              variant={
-                (
-                  {
-                    billed: "positive",
-                    "partially-billed": "warning",
-                    uncovered: "destructive",
-                    clarified: "secondary",
-                  } as const
-                )[info.getValue()]
-              }
-            >
-              {
-                {
-                  billed: "Billed",
-                  "partially-billed": (
-                    <>
-                      Bill{" "}
-                      {props.services.formatService.financial.currency(
-                        info.row.original.remainingAmount,
-                      )}
-                    </>
-                  ),
-                  uncovered: "Uncovered",
-                  clarified: "Clarified",
-                }[info.getValue()]
-              }
-            </Badge>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit">
-            <PopoverHeader>Link billings to report</PopoverHeader>
-            <ReportInfo report={info.row.original} services={props.services} />
-          </PopoverContent>
-        </Popover>
-      ),
-    }),
+    reportColumns.workspace,
+    reportColumns.contractor.withAdjacency,
+    reportColumns.client,
+    reportColumns.billing.linkingStatus.allowModify(props.services),
     columnHelper.accessor("instantEarnings", {
       header: "Instant earn",
       meta: {
@@ -219,40 +131,12 @@ export function useColumns(props: ReportsWidgetProps) {
         </Popover>
       ),
     }),
-    columnHelper.accessor("netAmount", {
-      header: "Net Amount",
-      cell: (info) =>
-        props.services.formatService.financial.currency(info.getValue()),
-      meta: {
-        headerClassName: "bg-sky-50 border-x border-slate-800/10",
-        cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
-        sortKey: "netValue",
-      },
-    }),
-    columnHelper.group({
+    reportColumns.netAmount(props.services),
+    baseColumnHelper.group({
       header: "Charging",
       columns: [
-        columnHelper.accessor("billedAmount", {
-          header: "Amount",
-          cell: (info) =>
-            props.services.formatService.financial.currency(info.getValue()),
-          meta: {
-            headerClassName: "bg-rose-50 border-x border-slate-800/10",
-            cellClassName: "bg-rose-50/50 border-x border-slate-800/10",
-            tooltip: "[total_billing_billing_value] billedAmount",
-            sortKey: "reportBillingValue",
-          },
-        }),
-        columnHelper.accessor("remainingAmount", {
-          header: "Remaining",
-          cell: (info) =>
-            props.services.formatService.financial.currency(info.getValue()),
-          meta: {
-            headerClassName: "bg-rose-50 border-x border-slate-800/10",
-            cellClassName: "bg-rose-50/50 border-x border-slate-800/10",
-            sortKey: "remainingAmount",
-          },
-        }),
+        reportColumns.billing.linkedValue(props.services),
+        reportColumns.billing.remainingValue(props.services),
       ],
       meta: {
         headerClassName: "bg-rose-50 border-x border-slate-800/10",

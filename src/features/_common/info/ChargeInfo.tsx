@@ -15,6 +15,7 @@ import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBil
 import { InlineReportSearchWidget } from "@/features/_common/info/InlineReportSearchWidget.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -109,7 +110,15 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 Find & link report
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
+            {/* TODO candidate for inline search popover layout?*/}
+            <PopoverContent
+              className={cn(
+                "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
+                "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-opacity-50 backdrop-blur-xl",
+              )}
+              side="bottom"
+              align="start"
+            >
               <PopoverHeader>
                 Match the billing with a contractor report
               </PopoverHeader>
@@ -119,7 +128,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                   clientId: billing.client.id,
                   contractorId: idSpecUtils.ofAll(),
                 }}
-                className="overflow-y-auto h-full"
+                query={query}
                 maxSourceAmount={billing.remainingAmount}
                 services={services}
                 onSelect={(report) => {
@@ -146,7 +155,6 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 }}
                 showDescription={false}
                 showTargetValue={false}
-                query={query}
               />
             </PopoverContent>
           </Popover>

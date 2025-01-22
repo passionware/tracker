@@ -37,7 +37,6 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
-import { chain } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface CostInfoProps
@@ -110,22 +109,10 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                     }),
                   )
                 }
-                query={chain(
-                  reportQueryUtils.ofDefault(
-                    costEntry.workspace.id, // we want to search in the same workspace only!
-                    clientId,
-                  ),
-                )
-                  .thru((x) =>
-                    costEntry.contractor
-                      ? // if the cost is already assigned to a contractor, just allow to search his reports
-                        reportQueryUtils.setFilter(x, "contractorId", {
-                          operator: "oneOf",
-                          value: [costEntry.contractor.id],
-                        })
-                      : x,
-                  )
-                  .value()}
+                query={reportQueryUtils.ofDefault(
+                  costEntry.workspace.id,
+                  clientId,
+                )}
               />
             </PopoverContent>
           </Popover>

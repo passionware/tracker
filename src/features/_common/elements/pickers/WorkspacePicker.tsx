@@ -15,7 +15,11 @@ export const WorkspacePicker = injectConfig(
 )
   .fromProps<WithServices<[WithWorkspaceService]>>((api) => ({
     renderItem: (item, props) => (
-      <WorkspaceView size={props.size} workspace={rd.of(item)} />
+      <WorkspaceView
+        layout={props.layout}
+        size={props.size}
+        workspace={rd.of(item)}
+      />
     ),
     renderOption: (item) => <WorkspaceView workspace={rd.of(item)} />,
     getKey: (item) => item.id.toString(),
@@ -36,4 +40,3 @@ export const WorkspacePicker = injectConfig(
   .transformProps((x) => x.passAll);
 
 export type WorkspacePickerProps = ComponentProps<typeof WorkspacePicker>;
-
