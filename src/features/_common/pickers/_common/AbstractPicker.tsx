@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils.ts";
 import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Overwrite } from "@passionware/platform-ts";
+import { PopoverContentProps } from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
 import { CommandLoading } from "cmdk";
 import { partialRight } from "lodash";
@@ -49,6 +50,8 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
     allowClear?: boolean;
     allowUnassigned?: boolean;
+    align: PopoverContentProps["align"];
+    side: PopoverContentProps["side"];
   }
 >;
 
@@ -75,6 +78,8 @@ export function AbstractPicker<Id, Data>(
     className,
     allowUnassigned,
     allowClear,
+    align = "start",
+    side = "right",
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -137,10 +142,15 @@ export function AbstractPicker<Id, Data>(
           unassignedUtils.mapOrElse(
             data,
             partialRight(config.renderItem, _props),
-            <>
+            <div
+              className={cn(
+                "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
+                "text-sky-800 dark:text-sky-50 ",
+              )}
+            >
               <Unlink2 />
               Unassigned
-            </>,
+            </div>,
           ),
         )}
       <ChevronsUpDown className="opacity-50 " />
@@ -150,7 +160,7 @@ export function AbstractPicker<Id, Data>(
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{button}</PopoverTrigger>
-      <PopoverContent className="max-w-md w-fit p-0">
+      <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={config.searchPlaceholder || "Search item"}

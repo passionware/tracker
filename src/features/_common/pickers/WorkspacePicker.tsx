@@ -2,7 +2,7 @@ import {
   Workspace,
   workspaceQueryUtils,
 } from "@/api/workspace/workspace.api.ts";
-import { AbstractPicker } from "@/features/_common/inline-search/_common/AbstractPicker.tsx";
+import { AbstractPicker } from "@/features/_common/pickers/_common/AbstractPicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
