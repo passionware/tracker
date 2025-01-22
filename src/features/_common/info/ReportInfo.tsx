@@ -64,7 +64,7 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
         toLabel="Linked to billing"
       />
 
-      {report.remainingAmount.amount > 0 && (
+      {report.remainingAmount.amount !== 0 && (
         <div className="flex gap-2 flex-row self-end">
           <Popover>
             <PopoverTrigger asChild>
