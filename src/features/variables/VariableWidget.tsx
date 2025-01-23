@@ -78,7 +78,11 @@ export function VariableWidget(props: VariableWidgetProps) {
             services={props.services}
             query={query}
             onQueryChange={setQuery}
-            context={{ contractorId: idSpecUtils.ofAll() }}
+            context={{
+              contractorId: idSpecUtils.ofAll(),
+              clientId: props.clientId,
+              workspaceId: props.workspaceId,
+            }}
           />
           <InlinePopoverForm
             trigger={
