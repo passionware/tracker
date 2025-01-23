@@ -66,22 +66,23 @@ export const reportColumns = {
     withAdjacency: columnHelper.accessor("contractor", {
       header: "Contractor",
       cell: (info) => (
-        <div className="flex flex-row items-center gap-2">
+        <div className="flex flex-row items-center gap-2 relative">
           <ContractorView
             contractor={maybe.mapOrElse(info.getValue(), rd.of, rd.ofIdle())}
             layout="full"
             size="sm"
+            className="max-w-32"
           />
           {info.row.original.previousReportInfo?.adjacency === "separated" && (
             <SimpleTooltip light title="Report is not adjacent to previous">
-              <Button size="icon-xs" variant="ghost">
+              <Button size="icon-xs" variant="ghost" className="absolute left-3 -top-3">
                 <TriangleAlert className="text-rose-500" />
               </Button>
             </SimpleTooltip>
           )}
           {info.row.original.previousReportInfo?.adjacency === "overlaps" && (
             <SimpleTooltip light title="Report is overlapping with previous">
-              <Button size="icon-xs" variant="ghost">
+              <Button size="icon-xs" variant="ghost" className="absolute left-3 -top-3">
                 <TriangleAlert className="text-rose-500" />
               </Button>
             </SimpleTooltip>

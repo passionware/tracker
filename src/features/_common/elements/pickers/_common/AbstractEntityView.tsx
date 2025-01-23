@@ -75,7 +75,12 @@ export function AbstractEntityView({
   }
 
   return (
-    <div className="flex items-center flex-row gap-2 text-xs whitespace-pre">
+    <div
+      className={cn(
+        "flex items-center flex-row gap-2 text-xs whitespace-pre",
+        className,
+      )}
+    >
       {avatar}
       <span className="min-w-0 truncate">
         {rd
