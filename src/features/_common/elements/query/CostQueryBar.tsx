@@ -84,13 +84,10 @@ export function CostQueryBar(props: CostQueryBarProps) {
           services={props.services}
           value={props.query.filters.clientId?.value[0]}
           onSelect={handleChange("clientId", (clientId) =>
-            maybe.mapOrNull(
-              unassignedUtils.getOrElse(clientId, null),
-              (clientId) => ({
-                operator: "oneOf",
-                value: [clientId],
-              }),
-            ),
+            maybe.mapOrNull(clientId, (clientId) => ({
+              operator: "oneOf",
+              value: [unassignedUtils.getOrElse(clientId, null)],
+            })),
           )}
         />
       )}

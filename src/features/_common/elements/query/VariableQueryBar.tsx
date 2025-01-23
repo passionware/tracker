@@ -69,13 +69,10 @@ export function VariableQueryBar(props: VariableQueryBarProps) {
           }
           value={props.query.filters.workspaceId?.value[0]}
           onSelect={handleChange("workspaceId", (workspaceId) =>
-            maybe.mapOrNull(
-              unassignedUtils.getOrElse(workspaceId, null),
-              (workspaceId) => ({
-                operator: "oneOf",
-                value: [workspaceId],
-              }),
-            ),
+            maybe.mapOrNull(workspaceId, (workspaceId) => ({
+              operator: "oneOf",
+              value: [unassignedUtils.getOrElse(workspaceId, null)],
+            })),
           )}
           services={props.services}
         />
@@ -90,13 +87,10 @@ export function VariableQueryBar(props: VariableQueryBarProps) {
           services={props.services}
           value={props.query.filters.clientId?.value[0]}
           onSelect={handleChange("clientId", (clientId) =>
-            maybe.mapOrNull(
-              unassignedUtils.getOrElse(clientId, null),
-              (clientId) => ({
-                operator: "oneOf",
-                value: [clientId],
-              }),
-            ),
+            maybe.mapOrNull(clientId, (clientId) => ({
+              operator: "oneOf",
+              value: [unassignedUtils.getOrElse(clientId, null)],
+            })),
           )}
         />
       )}
