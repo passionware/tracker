@@ -10,13 +10,12 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
-import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
-import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -211,15 +210,10 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                         <Badge variant="positive">Report</Badge>
                       </Button>
                     </LinkPopover>
-                    <Badge variant="primary" tone="secondary" className={cn()}>
-                      {services.formatService.temporal.date(
-                        link.report.periodStart,
-                      )}{" "}
-                      -{" "}
-                      {services.formatService.temporal.date(
-                        link.report.periodEnd,
-                      )}
-                    </Badge>
+                    {services.formatService.temporal.range.compact(
+                      link.report.periodStart,
+                      link.report.periodEnd,
+                    )}
                   </div>
                 )}
                 {link.report && (

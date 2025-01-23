@@ -248,14 +248,12 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                       <span className="text-xs text-slate-600">
                         invoiced at
                       </span>
-                      <Badge variant="secondary" size="sm">
-                        {services.formatService.temporal.date(
-                          maybe.getOrThrow(
-                            link.cost,
-                            "todo fix types - discriminated union?",
-                          ).invoiceDate,
-                        )}
-                      </Badge>
+                      {services.formatService.temporal.single.compact(
+                        maybe.getOrThrow(
+                          link.cost,
+                          "todo fix types - discriminated union?",
+                        ).invoiceDate,
+                      )}
                     </div>
                   </div>
 

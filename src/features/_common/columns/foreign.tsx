@@ -68,7 +68,8 @@ export const foreignColumns = {
   updatedAt: (services: WithFormatService) =>
     getColumnHelper<{ updatedAt: Date }>().accessor("updatedAt", {
       header: "Last updated",
-      cell: (info) => services.formatService.temporal.datetime(info.getValue()),
+      cell: (info) =>
+        services.formatService.temporal.single.compact(info.getValue()),
     }),
   description: getColumnHelper<{ description: string }>().accessor(
     "description",

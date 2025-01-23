@@ -7,8 +7,6 @@ import {
   differenceInYears,
   format,
   isSameDay,
-  isSameMonth,
-  isSameYear,
   startOfDay,
 } from "date-fns";
 import { ReactNode, useEffect, useState } from "react";
@@ -111,13 +109,30 @@ export function createFormatService(clock: () => Date): FormatService {
           return daysLeft;
         },
       },
+      single: {
+        compact: (date) => {
+          return (
+            <SingleWrapper date={date}>
+              <div className="flex flex-col text-center gap-1">
+                <div>
+                  <DayBadge value={format(date, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(date, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(date, "yy")} />
+                </div>
+              </div>
+            </SingleWrapper>
+          );
+        },
+      },
       range: {
         compact: (startDate, endDate) => {
           // 1. Ten sam dzień
           if (isSameDay(startDate, endDate)) {
             return (
               <RangeWrapper from={startDate} to={endDate}>
-                <div className="flex flex-col text-center">
+                <div className="flex flex-col text-center gap-1">
                   <div>
                     <DayBadge value={format(startDate, "dd")} />
                     <DotSeparator />
@@ -130,61 +145,9 @@ export function createFormatService(clock: () => Date): FormatService {
             );
           }
 
-          // 2. Ta sama data w sensie miesiąca i roku (np. "07–12.12.2024")
-          if (
-            isSameMonth(startDate, endDate) &&
-            isSameYear(startDate, endDate)
-          ) {
-            return (
-              <RangeWrapper from={startDate} to={endDate}>
-                <div className="flex flex-col text-center">
-                  <div>
-                    <DayBadge value={format(startDate, "dd")} />
-                    <DotSeparator />
-                    <MonthBadge value={format(startDate, "MM")} />
-                    <DotSeparator />
-                    <YearBadge value={format(startDate, "yy")} />
-                  </div>
-                  <div>
-                    <DayBadge value={format(endDate, "dd")} />
-                    <DotSeparator />
-                    <MonthBadge value={format(endDate, "MM")} />
-                    <DotSeparator />
-                    <YearBadge value={format(endDate, "yy")} />
-                  </div>
-                </div>
-              </RangeWrapper>
-            );
-          }
-
-          // 3. Ten sam rok (ale różne miesiące), np. "07.11–12.12.2024"
-          if (isSameYear(startDate, endDate)) {
-            return (
-              <RangeWrapper from={startDate} to={endDate}>
-                <div className="flex flex-col text-center">
-                  <div>
-                    <DayBadge value={format(startDate, "dd")} />
-                    <DotSeparator />
-                    <MonthBadge value={format(startDate, "MM")} />
-                    <DotSeparator />
-                    <YearBadge value={format(startDate, "yy")} />
-                  </div>
-                  <div>
-                    <DayBadge value={format(endDate, "dd")} />
-                    <DotSeparator />
-                    <MonthBadge value={format(endDate, "MM")} />
-                    <DotSeparator />
-                    <YearBadge value={format(endDate, "yy")} />
-                  </div>
-                </div>
-              </RangeWrapper>
-            );
-          }
-
-          // 4. Różne lata (np. "07.12.2024–05.01.2025")
           return (
             <RangeWrapper from={startDate} to={endDate}>
-              <div className="flex flex-col text-center">
+              <div className="flex flex-col text-center gap-1">
                 <div>
                   <DayBadge value={format(startDate, "dd")} />
                   <DotSeparator />
@@ -239,22 +202,30 @@ export function createFormatService(clock: () => Date): FormatService {
 
 function DayBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="bg-lime-100 text-lime-800 px-1 rounded">{value}</span>
+    <span className="pr-2 last:pr-1 bg-emerald-100 text-emerald-700 border border-black/5 px-1 rounded">
+      {value}
+    </span>
   );
 }
 
 function MonthBadge({ value }: { value: ReactNode }) {
-  return <span className="bg-sky-100 text-sky-800 px-1 rounded">{value}</span>;
+  return (
+    <span className="pr-2 last:pr-1 bg-sky-100 text-sky-700 border border-black/5 px-1 rounded">
+      {value}
+    </span>
+  );
 }
 
 function YearBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="bg-purple-100 text-purple-800 px-1 rounded">{value}</span>
+    <span className="pr-2 last:pr-1 bg-purple-100 text-purple-700 border border-black/5 px-1 rounded">
+      {value}
+    </span>
   );
 }
 
 function DotSeparator() {
-  return <span className="text-gray-600">&#183;</span>;
+  return <span className="text-gray-600 -ml-1.5" />;
 }
 
 function RangeWrapper({
@@ -277,6 +248,27 @@ function RangeWrapper({
             {getHumanFriendlyDuration(from, to)} ({differenceInDays(to, from)}{" "}
             days)
           </div>
+        </div>
+      }
+    >
+      <span className="cursor-pointer inline-flex items-center font-mono rounded hover:bg-black/10 hover:-m-1 hover:p-1">
+        {children}
+      </span>
+    </SimpleTooltip>
+  );
+}
+function SingleWrapper({
+  children,
+  date,
+}: {
+  children: ReactNode;
+  date: Date;
+}) {
+  return (
+    <SimpleTooltip
+      title={
+        <div>
+          <div className="font-mono">{format(date, "dd.MM.yyyy")}</div>
         </div>
       }
     >

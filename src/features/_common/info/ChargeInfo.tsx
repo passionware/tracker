@@ -273,15 +273,10 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                           <Badge variant="positive">Report</Badge>
                         </Button>
                       </LinkPopover>
-                      <Badge variant="secondary" size="sm">
-                        {services.formatService.temporal.date(
-                          link.report.periodStart,
-                        )}
-                        -
-                        {services.formatService.temporal.date(
-                          link.report.periodEnd,
-                        )}
-                      </Badge>
+                      {services.formatService.temporal.range.compact(
+                        link.report.periodStart,
+                        link.report.periodEnd,
+                      )}
                     </div>
                     <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
                       {services.formatService.financial.amount(

@@ -312,11 +312,9 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                   <div className="text-gray-600 text-xs mr-1.5">
                     {link.billing.invoiceNumber}
                   </div>
-                  <Badge variant="secondary" size="sm">
-                    {services.formatService.temporal.date(
-                      link.billing.invoiceDate,
-                    )}
-                  </Badge>
+                  {services.formatService.temporal.single.compact(
+                    link.billing.invoiceDate,
+                  )}
                 </>
               )}
               {link.link.linkType === "clarify" && (

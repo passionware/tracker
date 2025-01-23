@@ -97,7 +97,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                     </TableCell>
                     <TableCell>{billing.invoiceNumber}</TableCell>
                     <TableCell>
-                      {props.services.formatService.temporal.date(
+                      {props.services.formatService.temporal.single.compact(
                         billing.invoiceDate,
                       )}
                     </TableCell>
