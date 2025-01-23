@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { FilterChip } from "@/features/_common/FilterChip.tsx";
-import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
+import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -36,17 +35,12 @@ export function BillingWidget(props: BillingWidgetProps) {
     <CommonPageContainer
       tools={
         <>
-          <FilterChip label="Contractor">
-            <ContractorQueryControl
-              allowClear
-              allowUnassigned
-              filter={query.filters.contractorId}
-              onFilterChange={(x) =>
-                setQuery(billingQueryUtils.setFilter(query, "contractorId", x))
-              }
-              services={props.services}
-            />
-          </FilterChip>
+          <BillingQueryBar
+            {...props}
+            query={query}
+            onQueryChange={setQuery}
+            context={{}}
+          />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">

@@ -1,3 +1,4 @@
+import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
@@ -64,6 +65,7 @@ export type BillingQuery = WithFilters<{
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
+  invoiceDate: Nullable<DateFilter>;
 }> &
   WithPagination &
   WithSorter<
@@ -92,6 +94,7 @@ export const billingQueryUtils = withBuilderUtils({
           workspaceId: null,
           remainingAmount: null,
           contractorId: null,
+          invoiceDate: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "invoiceDate", order: "asc" },

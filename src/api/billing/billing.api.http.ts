@@ -8,6 +8,7 @@ import { BillingApi } from "@/api/billing/billing.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { dateFilterSupabaseUtils } from "../_common/query/filters/DateFilter.supabase";
 
 export function createBillingApi(client: SupabaseClient): BillingApi {
   return {
@@ -86,6 +87,15 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
             break;
         }
       }
+
+      if (query.filters.invoiceDate) {
+        request = dateFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.invoiceDate,
+          "invoice_date",
+        );
+      }
+
       if (query.sort) {
         request = sorterSupabaseUtils.sort(request, query.sort, {
           invoiceDate: "invoice_date",
