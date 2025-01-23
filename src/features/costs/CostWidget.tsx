@@ -5,8 +5,7 @@ import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { FilterChip } from "@/features/_common/FilterChip.tsx";
-import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
+import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -23,13 +22,16 @@ import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function CostWidget(props: PotentialCostWidgetProps) {
-  const [query, setQuery] = useState(
+  const [_query, setQuery] = useState(
     costQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
 
-  const costs = props.services.reportDisplayService.useCostView(
-    costQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
+  const query = costQueryUtils.ensureDefault(
+    _query,
+    props.workspaceId,
+    props.clientId,
   );
+  const costs = props.services.reportDisplayService.useCostView(query);
 
   const addCostState = promiseState.useRemoteData<void>();
 
@@ -44,17 +46,12 @@ export function CostWidget(props: PotentialCostWidgetProps) {
       ]}
       tools={
         <>
-          <FilterChip label="Contractor">
-            <ContractorQueryControl
-              allowClear
-              allowUnassigned
-              filter={query.filters.contractorId}
-              onFilterChange={(x) =>
-                setQuery(costQueryUtils.setFilter(query, "contractorId", x))
-              }
-              services={props.services}
-            />
-          </FilterChip>
+          <CostQueryBar
+            services={props.services}
+            query={query}
+            onQueryChange={setQuery}
+            context={{ contractorId: idSpecUtils.ofAll() }}
+          />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">

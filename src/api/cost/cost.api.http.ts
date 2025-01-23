@@ -1,3 +1,4 @@
+import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
 import { CostApi } from "@/api/cost/cost.api.ts";
@@ -164,6 +165,15 @@ export function createCostApi(client: SupabaseClient): CostApi {
             throw new Error(`Unsupported operator: ${operator}`);
         }
       }
+
+      if (query.filters.invoiceDate) {
+        request = dateFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.invoiceDate,
+          "invoice_date",
+        );
+      }
+
       if (query.sort) {
         request = sorterSupabaseUtils.sort(request, query.sort, {
           createdAt: "created_at",

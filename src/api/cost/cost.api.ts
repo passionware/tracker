@@ -1,3 +1,4 @@
+import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
@@ -58,6 +59,7 @@ export type CostQuery = WithSearch &
     contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
     linkedRemainder: Nullable<NumberFilter>;
     linkedAmount: Nullable<NumberFilter>;
+    invoiceDate: Nullable<DateFilter>;
   }> &
   WithPagination &
   WithSorter<
@@ -88,6 +90,7 @@ export const costQueryUtils = withBuilderUtils({
           linkedRemainder: null,
           linkedAmount: null,
           potentialClientId: null,
+          invoiceDate: null,
         },
         page: paginationUtils.ofDefault(),
         sort: { field: "contractor", order: "asc" },
