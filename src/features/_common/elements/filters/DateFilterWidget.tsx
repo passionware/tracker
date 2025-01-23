@@ -12,7 +12,8 @@ import { getDisplayOptions } from "@/features/_common/elements/filters/DateFilte
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { maybe, Maybe } from "@passionware/monads";
-import { CalendarIcon } from "lucide-react";
+import { Slot } from "@radix-ui/react-slot";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLayoutEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 
@@ -38,18 +39,37 @@ export function DateFilterWidget({
     setFilter(value);
   }, [value]);
 
-  const formatDate = services.formatService.temporal.date;
-
   function renderLabel(value: DateFilter) {
     switch (value.operator) {
       case "equal":
-        return `= ${formatDate(value.value)}`;
+        return services.formatService.temporal.single.compact(value.value);
       case "greaterThan":
-        return `> ${formatDate(value.value)}`;
+        return (
+          <div className="flex flex-row items-center gap-1">
+            <ChevronRight />
+            <span>
+              {services.formatService.temporal.single.compact(value.value)}
+            </span>
+          </div>
+        );
       case "lessThan":
-        return `< ${formatDate(value.value)}`;
+        return (
+          <div className="flex flex-row items-center gap-1">
+            <ChevronLeft />
+            <span>
+              {services.formatService.temporal.single.compact(value.value)}
+            </span>
+          </div>
+        );
       case "between":
-        return `${formatDate(value.value.from)} - ${formatDate(value.value.to)}`;
+        return (
+          <Slot className="text-xs *:flex-row *:gap-2">
+            {services.formatService.temporal.range.compact(
+              value.value.from,
+              value.value.to,
+            )}
+          </Slot>
+        );
     }
   }
 

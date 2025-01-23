@@ -1,4 +1,5 @@
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { cn } from "@/lib/utils.ts";
 import { FormatService } from "@/services/FormatService/FormatService.ts";
 import {
   differenceInDays,
@@ -232,10 +233,13 @@ function RangeWrapper({
   children,
   from,
   to,
+  className,
+  ...rest
 }: {
   children: ReactNode;
   from: Date;
   to: Date;
+  className?: string;
 }) {
   return (
     <SimpleTooltip
@@ -251,7 +255,13 @@ function RangeWrapper({
         </div>
       }
     >
-      <span className="cursor-pointer inline-flex items-center font-mono rounded hover:bg-black/10 hover:-m-1 hover:p-1">
+      <span
+        className={cn(
+          "cursor-pointer inline-flex items-center font-mono rounded hover:bg-black/10 hover:-m-1 hover:p-1",
+          className,
+        )}
+        {...rest}
+      >
         {children}
       </span>
     </SimpleTooltip>
@@ -260,9 +270,12 @@ function RangeWrapper({
 function SingleWrapper({
   children,
   date,
+  className,
+  ...rest
 }: {
   children: ReactNode;
   date: Date;
+  className?: string;
 }) {
   return (
     <SimpleTooltip
@@ -272,7 +285,13 @@ function SingleWrapper({
         </div>
       }
     >
-      <span className="cursor-pointer inline-flex items-center font-mono rounded hover:bg-black/10 hover:-m-1 hover:p-1">
+      <span
+        className={cn(
+          "cursor-pointer inline-flex items-center font-mono rounded hover:bg-black/10 hover:-m-1 hover:p-1",
+          className,
+        )}
+        {...rest}
+      >
         {children}
       </span>
     </SimpleTooltip>
