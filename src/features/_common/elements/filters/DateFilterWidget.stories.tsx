@@ -13,7 +13,6 @@ const meta = {
     services: { formatService: createFormatService(() => new Date()) },
   },
   argTypes: {
-    onRemove: { action: "onRemove" },
     onUpdate: { action: "onUpdate" },
   },
   render: (args) => {

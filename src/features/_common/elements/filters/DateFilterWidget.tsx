@@ -19,7 +19,6 @@ import { DateRange } from "react-day-picker";
 export interface DateFilterWidgetProps
   extends WithServices<[WithFormatService]> {
   value: Maybe<DateFilter>;
-  onRemove: () => void;
   onUpdate: (value: Maybe<DateFilter>) => void;
   fieldLabel: string;
   disabled?: boolean;
@@ -27,7 +26,6 @@ export interface DateFilterWidgetProps
 
 export function DateFilterWidget({
   value,
-  onRemove,
   onUpdate,
   fieldLabel,
   services,
@@ -111,7 +109,7 @@ export function DateFilterWidget({
           isActive={maybe.isPresent(value)}
           onRemove={() => {
             setIsOpen(false);
-            onRemove();
+            onUpdate(maybe.ofAbsent());
           }}
         >
           {maybe.journey(value).ifPresent(renderLabel).orElse(fieldLabel)}

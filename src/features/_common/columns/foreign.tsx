@@ -141,6 +141,7 @@ export const foreignColumns = {
         contractor={maybe.mapOrElse(info.getValue(), rd.of, rd.ofIdle())}
         layout="full"
         size="sm"
+        className="max-w-64"
       />
     ),
     meta: {

@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { FilterChip } from "@/features/_common/FilterChip.tsx";
-import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
+import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -24,17 +23,16 @@ import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
-  const [query, setQuery] = useState(
+  const [_query, setQuery] = useState(
     reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
+  const query = chain(_query)
+    .thru((x) =>
+      reportQueryUtils.ensureDefault(x, props.workspaceId, props.clientId),
+    )
+    .value();
 
-  const reports = props.services.reportDisplayService.useReportView(
-    chain(query)
-      .thru((x) =>
-        reportQueryUtils.ensureDefault(x, props.workspaceId, props.clientId),
-      )
-      .value(),
-  );
+  const reports = props.services.reportDisplayService.useReportView(query);
 
   const addReportState = promiseState.useRemoteData<void>();
 
@@ -49,18 +47,14 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       ]}
       tools={
         <>
-          <FilterChip label="Contractor">
-            <ContractorQueryControl
-              allowClear
-              filter={query.filters.contractorId}
-              onFilterChange={(filter) =>
-                setQuery(
-                  reportQueryUtils.setFilter(query, "contractorId", filter),
-                )
-              }
-              services={props.services}
-            />
-          </FilterChip>
+          <ReportQueryBar
+            context={{
+              contractorId: idSpecUtils.ofAll(),
+            }}
+            query={query}
+            onQueryChange={setQuery}
+            services={props.services}
+          />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">

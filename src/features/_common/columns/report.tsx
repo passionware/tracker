@@ -118,7 +118,7 @@ export const reportColumns = {
             <Popover>
               <PopoverTrigger>
                 <RollingBadge
-                  className="max-w-24"
+                  className="max-w-20"
                   variant={
                     (
                       {
@@ -162,7 +162,7 @@ export const reportColumns = {
           },
           cell: (info) => (
             <RollingBadge
-              className="max-w-24"
+              className="max-w-20"
               variant={
                 (
                   {
@@ -239,7 +239,7 @@ export const reportColumns = {
             <Popover>
               <PopoverTrigger>
                 <RollingBadge
-                  className="max-w-24"
+                  className="max-w-20"
                   tone="solid"
                   variant={
                     (
@@ -289,7 +289,7 @@ export const reportColumns = {
           },
           cell: (info) => (
             <RollingBadge
-              className="max-w-24"
+              className="max-w-20"
               tone="solid"
               variant={
                 (
@@ -331,7 +331,7 @@ export const reportColumns = {
         },
         cell: (info) => (
           <RollingBadge
-            className="max-w-24"
+            className="max-w-20"
             tone="secondary"
             variant={
               (

@@ -19,6 +19,7 @@ const services = createSbServices({
   workspace: true,
   client: true,
   contractor: true,
+  format: true,
 });
 
 type Args = ArgsWithServices<ReportQueryBarProps, typeof services>;

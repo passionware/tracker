@@ -21,6 +21,7 @@ export const ToolbarButton = ({
     <Button
       disabled={visuallyDisabled}
       variant="outline"
+      size="sm"
       onPointerDownCapture={(e) => {
         if (e.target instanceof HTMLElement && e.target.querySelector("svg")) {
           return;

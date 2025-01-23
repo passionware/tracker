@@ -1,3 +1,4 @@
+import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
@@ -72,6 +73,7 @@ export type ReportQuery = WithFilters<{
   workspaceId: Nullable<EnumFilter<Workspace["id"]>>;
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
+  period: Nullable<DateFilter>;
 }> &
   WithPagination &
   WithSorter<
@@ -104,6 +106,7 @@ export const reportQueryUtils = withBuilderUtils({
           clientId: null,
           remainingAmount: null,
           contractorId: null,
+          period: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "period", order: "asc" },
