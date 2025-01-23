@@ -139,9 +139,12 @@ export const withBuilderUtils = <Api>(api: Api) => {
     ) => {
       const rawBuild = (
         startQuery: Q,
-        getMappers: (api: Api) => Array<(input: Q) => Q>,
+        getMappers: (
+          api: Api & { unchanged: () => (query: Q) => Q },
+        ) => Array<(input: Q) => Q>,
       ): Q => {
-        return getMappers(api).reduce(
+        const api2 = { ...api, unchanged: () => (query: Q) => query };
+        return getMappers(api2).reduce(
           (query, mapper) => mapper(query),
           startQuery,
         );
@@ -159,6 +162,9 @@ export const withBuilderUtils = <Api>(api: Api) => {
             build: partial(rawBuild, initialQuery),
           };
         },
+        transform: (initialQuery: Q) => ({
+          build: partial(rawBuild, initialQuery),
+        }),
       };
     },
   };

@@ -98,6 +98,10 @@ export const costQueryUtils = withBuilderUtils({
       workspaceId,
       clientId,
     ),
+  withEnsureDefault:
+    (workspaceId: WorkspaceSpec, clientId: ClientSpec) =>
+    (query: CostQuery): CostQuery =>
+      costQueryUtils.ensureDefault(query, workspaceId, clientId),
   ensureDefault: (
     query: CostQuery,
     workspaceId: WorkspaceSpec,

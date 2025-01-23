@@ -93,17 +93,15 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
       <ContractorPicker
         size="sm"
         allowClear
+        allowUnassigned
         layout={"full"}
         services={props.services}
         value={props.query.filters.contractorId?.value[0]}
         onSelect={handleChange("contractorId", (contractorId) =>
-          maybe.mapOrNull(
-            unassignedUtils.getOrElse(contractorId, null),
-            (contractorId) => ({
-              operator: "oneOf",
-              value: [contractorId],
-            }),
-          ),
+          maybe.mapOrNull(contractorId, (contractorId) => ({
+            operator: "oneOf",
+            value: [unassignedUtils.getOrElse(contractorId, null)],
+          })),
         )}
       />
       <DateFilterWidget

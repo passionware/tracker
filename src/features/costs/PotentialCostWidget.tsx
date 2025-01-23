@@ -5,8 +5,7 @@ import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { FilterChip } from "@/features/_common/FilterChip.tsx";
-import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
+import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -19,55 +18,43 @@ import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx"
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { chain } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export function PotentialCostWidget(props: PotentialCostWidgetProps) {
-  const [query, setQuery] = useState(
-    costQueryUtils.ofDefault(props.workspaceId, props.clientId),
+  const [_query, setQuery] = useState(
+    costQueryUtils.ofDefault(props.workspaceId, idSpecUtils.ofAll()),
   );
+  /**
+   * TODO: we can have a special place in the app, where we can see all unmatched costs that couldn't be even potentially matched
+   * Now, when we go to potential costs for all companies, we simply show all unmatched costs
+   * thru((x) =>
+   *         costQueryUtils.setFilter(x, "potentialClientId", {
+   *           operator: "oneOf",
+   *           value: [idSpecUtils.switchAll(props.clientId, -1)],
+   *         }),
+   *       )
+   */
 
-  const costs = props.services.reportDisplayService.useCostView(
-    chain(
-      costQueryUtils.ensureDefault(
-        query,
-        props.workspaceId,
-        idSpecUtils.ofAll(),
-      ),
-    )
-      .thru((x) =>
-        idSpecUtils.mapSpecificOrElse(
-          props.clientId,
-          (clientId) =>
-            costQueryUtils.setFilter(x, "potentialClientId", {
-              operator: "oneOf",
-              value: [clientId],
-            }),
-          x,
-        ),
-      )
-      /**
-       * TODO: we can have a special place in the app, where we can see all unmatched costs that couldn't be even potentially matched
-       * Now, when we go to potential costs for all companies, we simply show all unmatched costs
-       * thru((x) =>
-       *         costQueryUtils.setFilter(x, "potentialClientId", {
-       *           operator: "oneOf",
-       *           value: [idSpecUtils.switchAll(props.clientId, -1)],
-       *         }),
-       *       )
-       */
-      .thru((x) =>
-        costQueryUtils.setFilter(x, "linkedRemainder", {
-          operator: "greaterThan",
-          value: 0,
+  const query = costQueryUtils.transform(_query).build((api) => [
+    api.withEnsureDefault(props.workspaceId, idSpecUtils.ofAll()),
+    idSpecUtils.mapSpecificOrElse(
+      props.clientId,
+      (clientId) =>
+        api.withFilter("potentialClientId", {
+          operator: "oneOf",
+          value: [clientId],
         }),
-      )
-      .value(),
-  );
+      api.unchanged(),
+    ),
+    api.withFilter("linkedRemainder", {
+      operator: "greaterThan",
+      value: 0,
+    }),
+  ]);
 
+  const costs = props.services.reportDisplayService.useCostView(query);
   const addCostState = promiseState.useRemoteData<void>();
-
   const columns = useColumns(props);
 
   return (
@@ -79,17 +66,12 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
       ]}
       tools={
         <>
-          <FilterChip label="Contractor">
-            <ContractorQueryControl
-              allowClear
-              allowUnassigned
-              filter={query.filters.contractorId}
-              onFilterChange={(x) =>
-                setQuery(costQueryUtils.setFilter(query, "contractorId", x))
-              }
-              services={props.services}
-            />
-          </FilterChip>
+          <CostQueryBar
+            services={props.services}
+            query={query}
+            onQueryChange={setQuery}
+            context={{ contractorId: idSpecUtils.ofAll() }}
+          />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">
