@@ -112,13 +112,10 @@ export function VariableQueryBar(props: VariableQueryBarProps) {
           services={props.services}
           value={props.query.filters.contractorId?.value[0]}
           onSelect={handleChange("contractorId", (contractorId) =>
-            maybe.mapOrNull(
-              unassignedUtils.getOrElse(contractorId, null),
-              (contractorId) => ({
-                operator: "oneOf",
-                value: [contractorId],
-              }),
-            ),
+            maybe.mapOrNull(contractorId, (contractorId) => ({
+              operator: "oneOf",
+              value: [unassignedUtils.getOrElse(contractorId, null)],
+            })),
           )}
         />
       )}
