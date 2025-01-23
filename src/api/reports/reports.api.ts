@@ -1,6 +1,7 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
+  withBuilderUtils,
   WithFilters,
   withFiltersUtils,
   WithPagination,
@@ -91,7 +92,7 @@ export interface ReportApi {
   getReport: (id: number) => Promise<Report>;
 }
 
-export const reportQueryUtils = {
+export const reportQueryUtils = withBuilderUtils({
   ...withFiltersUtils<ReportQuery>(),
   ...withPaginationUtils<ReportQuery>(),
   ...withSorterUtils<ReportQuery>(),
@@ -166,4 +167,4 @@ export const reportQueryUtils = {
             }),
       )
       .value(),
-};
+}).setInitialQueryFactory((api) => api.ofDefault);

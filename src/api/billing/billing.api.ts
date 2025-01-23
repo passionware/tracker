@@ -1,6 +1,7 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import {
+  withBuilderUtils,
   WithFilters,
   withFiltersUtils,
   WithPagination,
@@ -79,7 +80,7 @@ export type BillingQuery = WithFilters<{
     | "description"
   >;
 
-export const billingQueryUtils = {
+export const billingQueryUtils = withBuilderUtils({
   ...withFiltersUtils<BillingQuery>(),
   ...withPaginationUtils<BillingQuery>(),
   ...withSorterUtils<BillingQuery>(),
@@ -150,7 +151,7 @@ export const billingQueryUtils = {
             }),
       )
       .value(),
-};
+}).setInitialQueryFactory((api) => api.ofDefault);
 
 export interface BillingApi {
   getBillings: (query: BillingQuery) => Promise<Billing[]>;

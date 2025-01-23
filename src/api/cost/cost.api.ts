@@ -2,6 +2,7 @@ import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
+  withBuilderUtils,
   WithFilters,
   withFiltersUtils,
   WithPagination,
@@ -71,7 +72,7 @@ export type CostQuery = WithSearch &
     | "description"
   >;
 
-export const costQueryUtils = {
+export const costQueryUtils = withBuilderUtils({
   ...withFiltersUtils<CostQuery>(),
   ...withSorterUtils<CostQuery>(),
   ...withSearchUtils<CostQuery>(),
@@ -123,7 +124,7 @@ export const costQueryUtils = {
         ),
       )
       .value(),
-};
+}).setInitialQueryFactory((api) => api.ofDefault);
 
 export interface CostApi {
   getCosts: (query: CostQuery) => Promise<Cost[]>;

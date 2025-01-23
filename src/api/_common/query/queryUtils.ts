@@ -2,6 +2,7 @@ import { Pagination } from "@/api/_common/query/pagination.ts";
 import { Sorter } from "@/api/_common/query/sorters/Sorter.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { maybe, Maybe } from "@passionware/monads";
+import { partial, partialRight } from "lodash";
 
 export interface WithSorter<Field> {
   sort: Nullable<Sorter<Field>>;
@@ -62,10 +63,11 @@ export const withPaginationUtils = <Q extends WithPagination>() => ({
   }),
 });
 export const withSorterUtils = <
-  Q extends WithSorter<unknown> & WithPagination,
+  Q extends { sort: Maybe<SpecificSorter> } & WithPagination,
+  SpecificSorter extends Sorter<unknown> = Sorter<unknown>,
 >() => {
   const pagUtils = withPaginationUtils<Q>();
-  return {
+  const api = {
     setSort: (query: Q, sort: Maybe<Q["sort"]>): Q =>
       pagUtils.resetPage({
         ...query,
@@ -76,24 +78,30 @@ export const withSorterUtils = <
         ...query,
         sort: maybe.ofAbsent(),
       }),
+    withSort: (sort: Maybe<Q["sort"]>) => partialRight(api.setSort, sort),
   };
+  return api;
 };
-export const withSearchUtils = <Q extends WithSearch>() => ({
-  setSearch: (query: Q, search: string): Q => ({
-    ...query,
-    search: search.trimStart(),
-  }),
-  removeSearch: (query: Q): Q => ({
-    ...query,
-    search: "",
-  }),
-});
+export const withSearchUtils = <Q extends WithSearch>() => {
+  const api = {
+    setSearch: (query: Q, search: string): Q => ({
+      ...query,
+      search: search.trimStart(),
+    }),
+    removeSearch: (query: Q): Q => ({
+      ...query,
+      search: "",
+    }),
+    withSearch: (search: string) => partialRight(api.setSearch, search),
+  };
+  return api;
+};
 
 export const withFiltersUtils = <
   Q extends WithFilters<FilterBase> & WithPagination,
 >() => {
   const pagUtils = withPaginationUtils<Q>();
-  return {
+  const api = {
     setFilter: <K extends keyof Q["filters"]>(
       query: Q,
       filterName: K,
@@ -114,5 +122,44 @@ export const withFiltersUtils = <
           [filterName]: maybe.ofAbsent(),
         },
       }),
+    withFilter: <K extends keyof Q["filters"]>(
+      filterName: K,
+      value: Maybe<Q["filters"][K]>,
+    ) => partialRight(api.setFilter, filterName, value),
+    withoutFilter: (filterName: keyof Q["filters"]) =>
+      partialRight(api.removeFilter, filterName),
+  };
+  return api;
+};
+
+export const withBuilderUtils = <Api>(api: Api) => {
+  return {
+    setInitialQueryFactory: <Input extends unknown[], Q>(
+      factoryFn: (api: Api) => (...args: Input) => Q,
+    ) => {
+      const rawBuild = (
+        startQuery: Q,
+        getMappers: (api: Api) => Array<(input: Q) => Q>,
+      ): Q => {
+        return getMappers(api).reduce(
+          (query, mapper) => mapper(query),
+          startQuery,
+        );
+      };
+
+      const initialQueryFactory = factoryFn(api);
+
+      return {
+        ...api,
+        getBuilder: (...args: Input) => {
+          // Explicitly infer the types for slicing
+
+          const initialQuery = initialQueryFactory(...args);
+          return {
+            build: partial(rawBuild, initialQuery),
+          };
+        },
+      };
+    },
   };
 };
