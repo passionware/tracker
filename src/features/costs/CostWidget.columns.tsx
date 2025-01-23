@@ -18,7 +18,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { createColumnHelper } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<CostEntry>();
 
@@ -94,6 +94,7 @@ function ActionMenu(
               const result =
                 await props.services.messageService.editCost.sendRequest({
                   defaultValues: props.entry.originalCost,
+                  operatingMode: "edit",
                 });
               switch (result.action) {
                 case "confirm":
@@ -109,6 +110,27 @@ function ActionMenu(
           >
             <Pencil />
             Edit Cost
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              const result =
+                await props.services.messageService.editCost.sendRequest({
+                  defaultValues: props.entry.originalCost,
+                  operatingMode: "duplicate",
+                });
+              switch (result.action) {
+                case "confirm":
+                  await props.services.mutationService.createCost(
+                    result.payload,
+                  );
+                  break;
+                case "cancel":
+                  break;
+              }
+            }}
+          >
+            <Copy />
+            Duplicate Cost
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>

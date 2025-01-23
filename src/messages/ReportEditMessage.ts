@@ -3,6 +3,7 @@ import { ReportPayload } from "@/api/reports/reports.api.ts";
 export interface ReportEditMessage {
   request: {
     defaultValues: Partial<ReportPayload>;
+    operatingMode: "create" | "edit" | "duplicate";
   };
   response:
     | {

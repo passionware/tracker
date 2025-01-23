@@ -36,7 +36,17 @@ export function VariableEditModalWidget(props: VariableEditModalWidgetProps) {
   return (
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
-        <DialogTitle>Edit variable</DialogTitle>
+        <DialogTitle>
+          {" "}
+          {message &&
+            (
+              {
+                create: "Create variable",
+                edit: "Edit variable",
+                duplicate: "Duplicate variable",
+              } as const
+            )[message?.request.operatingMode]}
+        </DialogTitle>
         <DialogDescription></DialogDescription>
         <VariableForm
           onCancel={handleCancel}

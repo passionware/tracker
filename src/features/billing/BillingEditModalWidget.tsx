@@ -36,7 +36,16 @@ export function BillingEditModalWidget(props: BillingEditModalWidgetProps) {
   return (
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
-        <DialogTitle>Edit billing</DialogTitle>
+        <DialogTitle>
+          {message &&
+            (
+              {
+                create: "Create billing",
+                edit: "Edit billing",
+                duplicate: "Duplicate billing",
+              } as const
+            )[message?.request.operatingMode]}
+        </DialogTitle>
         <DialogDescription></DialogDescription>
         <BillingForm
           onCancel={handleCancel}

@@ -17,7 +17,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<BillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
@@ -83,6 +83,7 @@ function ActionMenu(
             const result =
               await props.services.messageService.editBilling.sendRequest({
                 defaultValues: props.entry.originalBilling,
+                operatingMode: "edit",
               });
             switch (result.action) {
               case "confirm":
@@ -96,6 +97,25 @@ function ActionMenu(
         >
           <Pencil />
           Edit Billing
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            const result =
+              await props.services.messageService.editBilling.sendRequest({
+                defaultValues: props.entry.originalBilling,
+                operatingMode: "duplicate",
+              });
+            switch (result.action) {
+              case "confirm":
+                await props.services.mutationService.createBilling(
+                  result.payload,
+                );
+                break;
+            }
+          }}
+        >
+          <Copy />
+          Duplicate Billing
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>

@@ -3,6 +3,7 @@ import { VariablePayload } from "@/api/variable/variable.api.ts";
 export interface VariableEditMessage {
   request: {
     defaultValues: Partial<VariablePayload>;
+    operatingMode: "create" | "edit" | "duplicate";
   };
   response:
     | {

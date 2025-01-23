@@ -11,7 +11,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function ActionMenu(
   props: WithServices<
@@ -48,6 +48,7 @@ export function ActionMenu(
             const result =
               await props.services.messageService.editVariable.sendRequest({
                 defaultValues: props.entry,
+                operatingMode: "edit",
               });
             switch (result.action) {
               case "confirm":
@@ -63,6 +64,27 @@ export function ActionMenu(
         >
           <Pencil />
           Edit Variable
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            const result =
+              await props.services.messageService.editVariable.sendRequest({
+                defaultValues: props.entry,
+                operatingMode: "duplicate",
+              });
+            switch (result.action) {
+              case "confirm":
+                await props.services.variableService.createVariable(
+                  result.payload,
+                );
+                break;
+              case "cancel":
+                break;
+            }
+          }}
+        >
+          <Copy />
+          Duplicate Variable
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>

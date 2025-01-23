@@ -123,6 +123,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           const result =
             await props.services.messageService.editReport.sendRequest({
               defaultValues: row.originalReport,
+              operatingMode: "edit",
             });
           switch (result.action) {
             case "confirm": {

@@ -111,6 +111,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
           const result =
             await props.services.messageService.editCost.sendRequest({
               defaultValues: x.originalCost,
+              operatingMode: "edit",
             });
           switch (result.action) {
             case "confirm":

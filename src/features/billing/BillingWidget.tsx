@@ -109,6 +109,7 @@ export function BillingWidget(props: BillingWidgetProps) {
           const result =
             await props.services.messageService.editBilling.sendRequest({
               defaultValues: x.originalBilling,
+              operatingMode: "edit",
             });
           switch (result.action) {
             case "confirm":

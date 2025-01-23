@@ -3,6 +3,7 @@ import { CostPayload } from "@/api/cost/cost.api.ts";
 export interface CostEditMessage {
   request: {
     defaultValues: Partial<CostPayload>;
+    operatingMode: "create" | "edit" | "duplicate";
   };
   response:
     | {

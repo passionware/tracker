@@ -34,7 +34,17 @@ export function CostEditModalWidget(props: CostEditModalWidgetProps) {
   return (
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
-        <DialogTitle>Edit cost</DialogTitle>
+        <DialogTitle>
+          {" "}
+          {message &&
+            (
+              {
+                create: "Create cost",
+                edit: "Edit cost",
+                duplicate: "Duplicate cost",
+              } as const
+            )[message?.request.operatingMode]}
+        </DialogTitle>
         <DialogDescription></DialogDescription>
         <CostForm
           onCancel={handleCancel}

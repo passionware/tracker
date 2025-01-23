@@ -23,7 +23,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
   return [
@@ -115,6 +115,7 @@ function ActionMenu(
             const result =
               await props.services.messageService.editReport.sendRequest({
                 defaultValues: props.entry.originalReport,
+                operatingMode: "edit",
               });
             switch (result.action) {
               case "confirm":
@@ -128,6 +129,25 @@ function ActionMenu(
         >
           <Pencil />
           Edit Report
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            const result =
+              await props.services.messageService.editReport.sendRequest({
+                defaultValues: props.entry.originalReport,
+                operatingMode: "duplicate",
+              });
+            switch (result.action) {
+              case "confirm":
+                await props.services.mutationService.createReport(
+                  result.payload,
+                );
+                break;
+            }
+          }}
+        >
+          <Copy />
+          Duplicate Report
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {

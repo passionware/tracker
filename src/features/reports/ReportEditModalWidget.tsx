@@ -40,7 +40,16 @@ export function ReportEditModalWidget(props: ReportEditModalWidgetProps) {
   return (
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
-        <DialogTitle>Edit report</DialogTitle>
+        <DialogTitle>
+          {message &&
+            (
+              {
+                create: "Create report",
+                edit: "Edit report",
+                duplicate: "Duplicate report",
+              } as const
+            )[message?.request.operatingMode]}
+        </DialogTitle>
         <DialogDescription></DialogDescription>
         <ReportForm
           onCancel={handleCancel}
