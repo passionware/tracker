@@ -7,8 +7,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { OpenState } from "@/features/_common/OpenState.tsx";
 
 import { cn } from "@/lib/utils";
+import { delay } from "@/platform/lang/delay.ts";
 import { Maybe } from "@passionware/monads";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -25,30 +27,35 @@ export function DatePicker({
   placeholder = "Pick a date",
 }: DatePickerProps) {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-[280px] justify-start text-left font-normal",
-            !value && "text-muted-foreground",
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "yyyy-MM-dd") : <span>{placeholder}</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <Calendar
-          mode="single"
-          defaultMonth={value || undefined}
-          selected={value || undefined}
-          onSelect={(date) => {
-            onChange(date || null);
-          }}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
+    <OpenState>
+      {(bag) => (
+        <Popover open={bag.open} onOpenChange={bag.onOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[280px] justify-start text-left font-normal",
+                !value && "text-muted-foreground",
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {value ? format(value, "yyyy-MM-dd") : <span>{placeholder}</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              defaultMonth={value || undefined}
+              selected={value || undefined}
+              onSelect={(date) => {
+                onChange(date || null);
+                delay(150).then(bag.close);
+              }}
+              autoFocus
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+    </OpenState>
   );
 }
