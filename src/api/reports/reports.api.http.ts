@@ -1,3 +1,4 @@
+import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
@@ -69,6 +70,15 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
           request,
           query.filters.remainingAmount,
           "report_billing_balance",
+        );
+      }
+
+      if (query.filters.period) {
+        request = dateFilterSupabaseUtils.filterByRangeOverlap(
+          request,
+          query.filters.period,
+          "period_start",
+          "period_end",
         );
       }
 
