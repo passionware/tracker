@@ -21,12 +21,15 @@ import { useState } from "react";
 import { useColumns } from "./BillingWidget.columns";
 
 export function BillingWidget(props: BillingWidgetProps) {
-  const [query, setQuery] = useState(
+  const [_query, setQuery] = useState(
     billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
-  const billings = props.services.reportDisplayService.useBillingView(
-    billingQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
+  const query = billingQueryUtils.ensureDefault(
+    _query,
+    props.workspaceId,
+    props.clientId,
   );
+  const billings = props.services.reportDisplayService.useBillingView(query);
 
   const addBillingState = promiseState.useRemoteData();
   const columns = useColumns(props);

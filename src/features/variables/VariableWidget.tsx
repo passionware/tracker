@@ -59,12 +59,15 @@ export interface VariableWidgetProps
 const columnHelper = createColumnHelper<Variable>();
 
 export function VariableWidget(props: VariableWidgetProps) {
-  const [query, setQuery] = useState<VariableQuery>(
+  const [_query, setQuery] = useState<VariableQuery>(
     variableQueryUtils.ofDefault(props.workspaceId, props.clientId),
   );
-  const variables = props.services.variableService.useVariables(
-    variableQueryUtils.ensureDefault(query, props.workspaceId, props.clientId),
+  const query = variableQueryUtils.ensureDefault(
+    _query,
+    props.workspaceId,
+    props.clientId,
   );
+  const variables = props.services.variableService.useVariables(query);
 
   const addVariableState = promiseState.useRemoteData<void>();
 
