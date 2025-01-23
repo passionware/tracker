@@ -155,21 +155,31 @@ function calculateReportEntry(
   ////
 
   function getInstantEarningsStatus() {
-    // compensation amount: reportCostValue
-    // to pay: billingCostBalance
-    if (report.reportBillingValue === report.immediatePaymentDue) {
-      if (report.netValue === 0) {
-        return "compensated";
-      }
-      // reported costs
+    if (report.netValue === 0) {
+      // If the report's net value is 0, there is nothing to process; status is "compensated"
+      return "compensated";
+    }
+
+    if (report.reportCostValue === 0) {
+      // If no costs have been paid, the status is "uncompensated"
       return "uncompensated";
     }
+
     if (report.immediatePaymentDue > 0) {
+      // If a partial payment is still due, the status is "partially-compensated"
       return "partially-compensated";
     }
-    if (report.linkCostReport?.some((link) => maybe.isAbsent(link.cost))) {
+
+    if (
+      report.linkCostReport?.some(
+        (link) => link.cost === null || link.cost === undefined,
+      )
+    ) {
+      // If there are linked costs that are undefined or unclear, the status is "clarified"
       return "clarified";
     }
+
+    // By default, assume everything has been fully compensated
     return "compensated";
   }
 
