@@ -56,6 +56,7 @@ export function CostQueryBar(props: CostQueryBarProps) {
         <WorkspacePicker
           size="sm"
           allowClear
+          allowUnassigned={idSpecUtils.isAll(props.context.workspaceId)}
           disabled={idSpecUtils.isSpecific(props.context.workspaceId)}
           layout={
             idSpecUtils.isAll(props.context.workspaceId) ? "full" : "avatar"
@@ -77,6 +78,7 @@ export function CostQueryBar(props: CostQueryBarProps) {
         <ClientPicker
           size="sm"
           allowClear
+          allowUnassigned={idSpecUtils.isAll(props.context.clientId)}
           disabled={idSpecUtils.isSpecific(props.context.clientId)}
           layout={idSpecUtils.isAll(props.context.clientId) ? "full" : "avatar"}
           services={props.services}
@@ -96,7 +98,7 @@ export function CostQueryBar(props: CostQueryBarProps) {
         <ContractorPicker
           size="sm"
           allowClear
-          allowUnassigned
+          allowUnassigned={idSpecUtils.isAll(props.context.contractorId)}
           disabled={idSpecUtils.isSpecific(props.context.contractorId)}
           layout={
             idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"

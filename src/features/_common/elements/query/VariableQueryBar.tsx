@@ -1,6 +1,8 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
-import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
+import {
+  VariableQuery,
+  variableQueryUtils,
+} from "@/api/variable/variable.api.ts";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
@@ -17,7 +19,7 @@ import { maybe } from "@passionware/monads";
 import { Overwrite } from "@passionware/platform-ts";
 import { ComponentProps } from "react";
 
-export type ReportQueryBarProps = WithServices<
+export type VariableQueryBarProps = WithServices<
   [
     WithWorkspaceService,
     WithClientService,
@@ -28,8 +30,8 @@ export type ReportQueryBarProps = WithServices<
   Overwrite<
     ComponentProps<"div">,
     {
-      query: ReportQuery;
-      onQueryChange: (query: ReportQuery) => void;
+      query: VariableQuery;
+      onQueryChange: (query: VariableQuery) => void;
       /**
        * How contextual pickers should behave.
        * If undefined, the pickers will be not be shown.
@@ -40,14 +42,14 @@ export type ReportQueryBarProps = WithServices<
     }
   >;
 
-export function ReportQueryBar(props: ReportQueryBarProps) {
-  function handleChange<T extends keyof ReportQuery["filters"], X>(
+export function VariableQueryBar(props: VariableQueryBarProps) {
+  function handleChange<T extends keyof VariableQuery["filters"], X>(
     key: T,
-    transform: (value: X) => ReportQuery["filters"][T],
+    transform: (value: X) => VariableQuery["filters"][T],
   ): (value: Nullable<X>) => void {
     return (value) =>
       props.onQueryChange(
-        reportQueryUtils.setFilter(
+        variableQueryUtils.setFilter(
           props.query,
           key,
           maybe.map(value, transform),
@@ -102,8 +104,8 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
         <ContractorPicker
           size="sm"
           allowClear
-          disabled={idSpecUtils.isSpecific(props.context.contractorId)}
           allowUnassigned={idSpecUtils.isAll(props.context.contractorId)}
+          disabled={idSpecUtils.isSpecific(props.context.contractorId)}
           layout={
             idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"
           }
@@ -120,12 +122,6 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
           )}
         />
       )}
-      <DateFilterWidget
-        services={props.services}
-        value={props.query.filters.period}
-        fieldLabel="Period"
-        onUpdate={handleChange("period", maybe.getOrNull)}
-      />
     </QueryBarLayout>
   );
 }

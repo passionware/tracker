@@ -54,6 +54,7 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
         <WorkspacePicker
           size="sm"
           allowClear
+          allowUnassigned={idSpecUtils.isAll(props.context.workspaceId)}
           disabled={idSpecUtils.isSpecific(props.context.workspaceId)}
           layout={
             idSpecUtils.isAll(props.context.workspaceId) ? "full" : "avatar"
@@ -75,6 +76,7 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
         <ClientPicker
           size="sm"
           allowClear
+          allowUnassigned={idSpecUtils.isAll(props.context.clientId)}
           disabled={idSpecUtils.isSpecific(props.context.clientId)}
           layout={idSpecUtils.isAll(props.context.clientId) ? "full" : "avatar"}
           services={props.services}

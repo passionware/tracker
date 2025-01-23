@@ -12,8 +12,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
-import { FilterChip } from "@/features/_common/FilterChip.tsx";
-import { ContractorQueryControl } from "@/features/_common/filters/ContractorQueryControl.tsx";
+import { VariableQueryBar } from "@/features/_common/elements/query/VariableQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -75,17 +74,12 @@ export function VariableWidget(props: VariableWidgetProps) {
     <CommonPageContainer
       tools={
         <>
-          <FilterChip label="Contractor">
-            <ContractorQueryControl
-              allowClear
-              allowUnassigned
-              filter={query.filters.contractorId}
-              onFilterChange={(x) =>
-                setQuery(variableQueryUtils.setFilter(query, "contractorId", x))
-              }
-              services={props.services}
-            />
-          </FilterChip>
+          <VariableQueryBar
+            services={props.services}
+            query={query}
+            onQueryChange={setQuery}
+            context={{ contractorId: idSpecUtils.ofAll() }}
+          />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">
