@@ -101,6 +101,10 @@ export function ListView<TData, Query extends SortableQueryBase>({
             header.getContext(),
           );
           const tooltip = get(header.column.columnDef.meta, "tooltip");
+          const tooltipCompact = get(
+            header.column.columnDef.meta,
+            "tooltipCompact",
+          );
           return (
             <TableHead
               key={header.id}
@@ -115,8 +119,11 @@ export function ListView<TData, Query extends SortableQueryBase>({
               <div className="flex flex-row items-center gap-0.5">
                 {tooltip ? (
                   <SimpleTooltip title={tooltip}>
-                    <div className="whitespace-pre flex flex-row items-center">
-                      {element} <Info className="inline size-4" />{" "}
+                    <div className="cursor-pointer whitespace-pre flex flex-row items-center">
+                      {element}{" "}
+                      {tooltipCompact ? null : (
+                        <Info className="inline size-4" />
+                      )}
                     </div>
                   </SimpleTooltip>
                 ) : (
@@ -124,6 +131,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
                 )}
                 {get(header.column.columnDef.meta, "sortKey") && (
                   <SorterWidget // check if this is sortable
+                    className="ml-auto"
                     query={query} // we need to know the sorting key somehow
                     field={
                       get(

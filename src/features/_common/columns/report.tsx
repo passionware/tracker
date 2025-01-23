@@ -326,7 +326,7 @@ export const reportColumns = {
     },
     linkingStatus: {
       read: getColumnHelper<ReportViewEntry>().accessor("deferredEarnings", {
-        header: "Deferred earn",
+        header: "Defer.",
         meta: {
           tooltip: headers.fullCompensationStatus,
         },

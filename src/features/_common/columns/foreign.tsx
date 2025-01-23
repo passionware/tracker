@@ -107,7 +107,7 @@ export const foreignColumns = {
   workspace: getColumnHelper<{ workspace: Nullable<Workspace> }>().accessor(
     "workspace",
     {
-      header: "Issuer",
+      header: "W",
       cell: (info) => (
         <WorkspaceView
           layout="avatar"
@@ -116,11 +116,13 @@ export const foreignColumns = {
       ),
       meta: {
         sortKey: "workspace",
+        tooltip: "Workspace",
+        tooltipCompact: true,
       },
     },
   ),
   client: getColumnHelper<{ client: Nullable<Client> }>().accessor("client", {
-    header: "Client",
+    header: "C",
     cell: (info) => (
       <ClientView
         layout="avatar"
@@ -130,6 +132,8 @@ export const foreignColumns = {
     ),
     meta: {
       sortKey: "client",
+      tooltip: "Client",
+      tooltipCompact: true,
     },
   }),
   contractor: getColumnHelper<{
