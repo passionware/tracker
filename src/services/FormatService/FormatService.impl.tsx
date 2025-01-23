@@ -117,11 +117,15 @@ export function createFormatService(clock: () => Date): FormatService {
           if (isSameDay(startDate, endDate)) {
             return (
               <RangeWrapper from={startDate} to={endDate}>
-                <DayBadge value={format(startDate, "dd")} />
-                <DotSeparator />
-                <MonthBadge value={format(startDate, "MM")} />
-                <DotSeparator />
-                <YearBadge value={format(startDate, "yy")} />
+                <div className="flex flex-col text-center">
+                  <div>
+                    <DayBadge value={format(startDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(startDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(startDate, "yy")} />
+                  </div>
+                </div>
               </RangeWrapper>
             );
           }
@@ -133,18 +137,22 @@ export function createFormatService(clock: () => Date): FormatService {
           ) {
             return (
               <RangeWrapper from={startDate} to={endDate}>
-                {/* day badge z zakresem 07–12 */}
-                <DayBadge
-                  value={
-                    <>
-                      {format(startDate, "dd")}-{format(endDate, "dd")}
-                    </>
-                  }
-                />
-                <DotSeparator />
-                <MonthBadge value={format(startDate, "MM")} />
-                <DotSeparator />
-                <YearBadge value={format(startDate, "yy")} />
+                <div className="flex flex-col text-center">
+                  <div>
+                    <DayBadge value={format(startDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(startDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(startDate, "yy")} />
+                  </div>
+                  <div>
+                    <DayBadge value={format(endDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(endDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(endDate, "yy")} />
+                  </div>
+                </div>
               </RangeWrapper>
             );
           }
@@ -153,15 +161,22 @@ export function createFormatService(clock: () => Date): FormatService {
           if (isSameYear(startDate, endDate)) {
             return (
               <RangeWrapper from={startDate} to={endDate}>
-                <DayBadge value={format(startDate, "dd")} />
-                <DotSeparator />
-                <MonthBadge value={format(startDate, "MM")} />
-                <RangeSeparator />
-                <DayBadge value={format(endDate, "dd")} />
-                <DotSeparator />
-                <MonthBadge value={format(endDate, "MM")} />
-                <DotSeparator />
-                <YearBadge value={format(startDate, "yy")} />
+                <div className="flex flex-col text-center">
+                  <div>
+                    <DayBadge value={format(startDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(startDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(startDate, "yy")} />
+                  </div>
+                  <div>
+                    <DayBadge value={format(endDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(endDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(endDate, "yy")} />
+                  </div>
+                </div>
               </RangeWrapper>
             );
           }
@@ -169,19 +184,22 @@ export function createFormatService(clock: () => Date): FormatService {
           // 4. Różne lata (np. "07.12.2024–05.01.2025")
           return (
             <RangeWrapper from={startDate} to={endDate}>
-              {/* startDate */}
-              <DayBadge value={format(startDate, "dd")} />
-              <DotSeparator />
-              <MonthBadge value={format(startDate, "MM")} />
-              <DotSeparator />
-              <YearBadge value={format(startDate, "yy")} />
-              <RangeSeparator />
-              {/* endDate */}
-              <DayBadge value={format(endDate, "dd")} />
-              <DotSeparator />
-              <MonthBadge value={format(endDate, "MM")} />
-              <DotSeparator />
-              <YearBadge value={format(endDate, "yy")} />
+              <div className="flex flex-col text-center">
+                <div>
+                  <DayBadge value={format(startDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(startDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(startDate, "yy")} />
+                </div>
+                <div>
+                  <DayBadge value={format(endDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(endDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(endDate, "yy")} />
+                </div>
+              </div>
             </RangeWrapper>
           );
         },
@@ -237,10 +255,6 @@ function YearBadge({ value }: { value: ReactNode }) {
 
 function DotSeparator() {
   return <span className="text-gray-600">&#183;</span>;
-}
-
-function RangeSeparator() {
-  return <span className="text-gray-600 mx-[0.1rem]">–</span>;
 }
 
 function RangeWrapper({
