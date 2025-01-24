@@ -50,7 +50,8 @@ export const costColumns = {
   invoiceDate: (services: WithFormatService) =>
     getColumnHelper<Pick<Cost, "invoiceDate">>().accessor("invoiceDate", {
       header: "Invoice Date",
-      cell: (info) => services.formatService.temporal.single.compact(info.getValue()),
+      cell: (info) =>
+        services.formatService.temporal.single.compact(info.getValue()),
       meta: {
         sortKey: "invoiceDate",
       },
@@ -117,7 +118,6 @@ export const costColumns = {
                 </RollingBadge>
               </PopoverTrigger>
               <PopoverContent className="w-fit">
-                <PopoverHeader>Cost details</PopoverHeader>
                 <CostInfo
                   costEntry={info.row.original}
                   services={services}

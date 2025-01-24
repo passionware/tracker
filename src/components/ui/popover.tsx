@@ -27,9 +27,9 @@ const PopoverContent = React.forwardRef<
 ));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-function PopoverHeader({ children }: { children: React.ReactNode }) {
+function PopoverHeader({ children,className }: { children: React.ReactNode, className?:string }) {
   return (
-    <div className="text-lg text-slate-700 pb-4 font-light ">{children}</div>
+    <div className={cn("text-lg text-slate-700 pb-4 font-light ",className)}>{children}</div>
   );
 }
 
