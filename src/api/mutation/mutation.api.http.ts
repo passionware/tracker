@@ -13,7 +13,6 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       case "clarify":
         return {
           description: payload.description,
-          link_type: "clarify",
           report_id: "reportId" in payload ? payload.reportId : null,
           billing_id: "billingId" in payload ? payload.billingId : null,
           report_amount:
