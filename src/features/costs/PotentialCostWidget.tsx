@@ -43,7 +43,7 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
       (clientId) =>
         api.withFilter("potentialClientId", {
           operator: "oneOf",
-          value: [clientId],
+          value: [clientId, null],
         }),
       api.unchanged(),
     ),

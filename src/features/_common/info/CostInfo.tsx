@@ -1,3 +1,4 @@
+import { Cost } from "@/api/cost/cost.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -9,13 +10,17 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
+import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -36,7 +41,8 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
-import { Check, Link2, Loader2 } from "lucide-react";
+import { createColumnHelper } from "@tanstack/react-table";
+import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
 
 export interface CostInfoProps
   extends WithServices<
@@ -56,7 +62,14 @@ export interface CostInfoProps
   workspaceId: WorkspaceSpec;
 }
 
-export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
+const columnHelper = createColumnHelper<Cost["linkReports"][number]>();
+
+export function CostInfo({
+  costEntry,
+  services,
+  clientId,
+  workspaceId,
+}: CostInfoProps) {
   const linkingState = promiseState.useRemoteData();
 
   return (
@@ -90,7 +103,7 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
                 context={{
                   clientId,
                   workspaceId: costEntry.workspace.id,
-                  contractorId: idSpecUtils.ofAll(),
+                  contractorId: costEntry.contractor?.id ?? idSpecUtils.ofAll(),
                 }}
                 className="overflow-y-auto h-full"
                 services={services}
@@ -169,127 +182,106 @@ export function CostInfo({ costEntry, services, clientId }: CostInfoProps) {
       </div>
       <Separator className="my-2" />
 
-      <ul role="list" className="divide-y divide-gray-100">
-        {costEntry.linkReports.map((link) => {
-          return (
-            <li
-              key={link.link.id}
-              className="flex items-center justify-between gap-x-6 py-5"
-            >
-              <div className="min-w-0">
-                {link.report && (
-                  <div className="flex items-start gap-x-3">
-                    <LinkPopover
-                      context={{
-                        contractorId: link.report.contractorId,
-                        workspaceId: link.report.workspaceId,
-                        clientId: idSpecUtils.ofAll(),
-                      }}
-                      services={services}
-                      sourceLabel="Cost amount"
-                      targetLabel="Report amount"
-                      sourceCurrency={costEntry.netAmount.currency}
-                      targetCurrency={link.report.currency}
-                      title="Update linked report"
-                      initialValues={{
-                        source: link.link.costAmount ?? undefined,
-                        target: link.link.reportAmount ?? undefined,
-                        description: link.link.description,
-                      }}
-                      onValueChange={(_all, updates) =>
-                        services.mutationService.updateCostReportLink(
-                          link.link.id,
-                          mapKeys(updates, {
-                            source: "costAmount",
-                            target: "reportAmount",
-                          }),
-                        )
-                      }
-                    >
-                      <Button variant="headless" size="headless">
-                        <Badge variant="positive">Report</Badge>
-                      </Button>
-                    </LinkPopover>
-                    {services.formatService.temporal.range.compact(
-                      link.report.periodStart,
-                      link.report.periodEnd,
-                    )}
-                  </div>
-                )}
-                {link.report && (
-                  <>
-                    <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
-                      <ContractorWidget
-                        services={services}
-                        contractorId={link.report.contractorId}
-                        layout="avatar"
-                      />
-                      <div className="contents text-green-800 font-bold">
-                        Cost's{" "}
-                        {services.formatService.financial.amount(
-                          link.link.costAmount,
-                          costEntry.netAmount.currency,
-                        )}
-                      </div>
-                      <svg viewBox="0 0 2 2" className="size-0.5 fill-current">
-                        <circle r={1} cx={1} cy={1} />
-                      </svg>
-                      satisfies{" "}
+      <ListView
+        data={rd.of(costEntry.linkReports)}
+        columns={[
+          columnHelper.accessor((x) => x, {
+            header: "Link",
+            cell: (cellInfo) => {
+              const link = cellInfo.getValue();
+              if (link.report) {
+                return (
+                  <LinkPopover
+                    context={{
+                      contractorId: link.report.contractorId,
+                      workspaceId: link.report.workspaceId,
+                      clientId: idSpecUtils.ofAll(),
+                    }}
+                    services={services}
+                    sourceLabel="Cost amount"
+                    targetLabel="Report amount"
+                    sourceCurrency={costEntry.netAmount.currency}
+                    targetCurrency={link.report.currency}
+                    title="Update linked report"
+                    initialValues={{
+                      source: link.link.costAmount ?? undefined,
+                      target: link.link.reportAmount ?? undefined,
+                      description: link.link.description,
+                    }}
+                    onValueChange={(_all, updates) =>
+                      services.mutationService.updateCostReportLink(
+                        link.link.id,
+                        mapKeys(updates, {
+                          source: "costAmount",
+                          target: "reportAmount",
+                        }),
+                      )
+                    }
+                  >
+                    <Button variant="headless" size="headless">
+                      <Badge variant="positive">Report</Badge>
+                    </Button>
+                  </LinkPopover>
+                );
+              }
+            },
+          }),
+          {
+            ...foreignColumns.contractorId(services),
+            accessorKey: "report.contractorId",
+          },
+
+          { ...reportColumns.period(services), accessorFn: (x) => x.report },
+          columnHelper.accessor(
+            (x) => ({
+              costAmount: x.link.costAmount,
+              reportAmount: x.link.reportAmount,
+              description: x.link.description,
+            }),
+            {
+              header: "Linking",
+              cell: (cellInfo) => {
+                const value = cellInfo.getValue();
+                return (
+                  <div className="flex flex-row gap-2 items-center h-full">
+                    <div>work of</div>
+                    <div className="text-green-600 font-bold">
                       {services.formatService.financial.amount(
-                        link.link.reportAmount,
-                        link.report.currency,
-                      )}{" "}
-                      of{" "}
-                      <ClientWidget
-                        services={services}
-                        size="sm"
-                        layout="avatar"
-                        clientId={link.report.clientId}
-                      />
-                      's report{" "}
-                      {services.formatService.financial.amount(
-                        link.report.netValue,
-                        link.report.currency,
+                        value.costAmount,
+                        costEntry.netAmount.currency,
                       )}
                     </div>
-                  </>
-                )}
-              </div>
-              <div className="flex flex-none items-center gap-x-4">
-                {link.report?.contractorId && (
-                  <div className="text-xs text-slate-600">
-                    <ContractorWidget
-                      contractorId={link.report.contractorId}
-                      services={services}
-                    />
-                  </div>
-                )}
-                <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50 block min-w-24 whitespace-pre-line">
-                  <SimpleTooltip title={link.link.description}>
-                    <div className="line-clamp-3 overflow-hidden text-ellipsis break-all text-[8pt] leading-3 text-slate-800">
-                      {maybe.getOrElse(
-                        maybe.fromTruthy(link.link.description),
-                        <div className="text-slate-400">No description</div>,
+                    <ChevronsRight />
+                    <div>
+                      {services.formatService.financial.amount(
+                        value.reportAmount,
+                        cellInfo.row.original.report.currency,
                       )}
                     </div>
-                  </SimpleTooltip>
-                </div>
-                <DeleteButtonWidget
-                  services={services}
-                  onDelete={() =>
-                    services.mutationService.deleteCostReportLink(link.link.id)
-                  }
-                />
-              </div>
-            </li>
-          );
-        })}
-        {costEntry.linkReports.length === 0 && (
-          <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
-            No linked contractor reports.
-          </div>
-        )}
-      </ul>
+                    <div>of report</div>
+                  </div>
+                );
+              },
+            },
+          ),
+          {
+            ...foreignColumns.description,
+            accessorKey: "link.description",
+            header: "Link description",
+          },
+          {
+            ...foreignColumns.clientId(services),
+            accessorKey: "report.clientId",
+          },
+          {
+            ...foreignColumns.description,
+            accessorKey: "report.description",
+            header: "Report description",
+          },
+        ]}
+        query={reportQueryUtils.ofDefault(workspaceId, clientId)}
+        onQueryChange={() => void 0}
+      />
     </div>
   );
 }

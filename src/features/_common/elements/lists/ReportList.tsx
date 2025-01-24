@@ -53,6 +53,7 @@ export function ReportList(props: ReportListProps) {
         reportColumns.netAmount(props.services),
         reportColumns.billing.linkedValue(props.services),
         reportColumns.billing.remainingValue(props.services),
+        foreignColumns.description,
         props.renderSelect &&
           foreignColumns.select<ReportSearchBaseModel>(
             (info, button, track) => {

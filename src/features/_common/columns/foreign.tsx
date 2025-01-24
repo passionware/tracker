@@ -7,7 +7,10 @@ import {
   ClientView,
   ClientWidget,
 } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import {
+  ContractorView,
+  ContractorWidget,
+} from "@/features/_common/elements/pickers/ContractorView.tsx";
 import {
   WorkspaceView,
   WorkspaceWidget,
@@ -19,6 +22,7 @@ import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { ExpressionContext } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, Maybe, rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -52,15 +56,15 @@ export const foreignColumns = {
         />
       ),
     }),
-  contractorId: (services: WithClientService) =>
+  contractorId: (services: WithContractorService) =>
     getColumnHelper<{
       contractorId: Maybe<Contractor["id"]>;
     }>().accessor("contractorId", {
       header: "Contractor",
       cell: (info) => (
-        <ClientWidget
+        <ContractorWidget
           layout="avatar"
-          clientId={info.getValue()}
+          contractorId={info.getValue()}
           services={services}
         />
       ),
@@ -76,7 +80,13 @@ export const foreignColumns = {
     {
       header: "Description",
       cell: (info) => (
-        <TruncatedMultilineText>{info.getValue()}</TruncatedMultilineText>
+        <TruncatedMultilineText>
+          {maybe.fromTruthy(info.getValue()) ?? (
+            <div className="p-1.5 inline-block bg-slate-100 text-slate-500 rounded">
+              N/A
+            </div>
+          )}
+        </TruncatedMultilineText>
       ),
       meta: {
         sortKey: "description",

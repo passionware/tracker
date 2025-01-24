@@ -75,14 +75,22 @@ export const reportColumns = {
           />
           {info.row.original.previousReportInfo?.adjacency === "separated" && (
             <SimpleTooltip light title="Report is not adjacent to previous">
-              <Button size="icon-xs" variant="ghost" className="absolute left-3 -top-3">
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                className="absolute left-3 -top-3"
+              >
                 <TriangleAlert className="text-rose-500" />
               </Button>
             </SimpleTooltip>
           )}
           {info.row.original.previousReportInfo?.adjacency === "overlaps" && (
             <SimpleTooltip light title="Report is overlapping with previous">
-              <Button size="icon-xs" variant="ghost" className="absolute left-3 -top-3">
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                className="absolute left-3 -top-3"
+              >
                 <TriangleAlert className="text-rose-500" />
               </Button>
             </SimpleTooltip>
@@ -400,13 +408,14 @@ export const reportColumns = {
       ),
   },
   period: (services: WithFormatService) =>
-    getColumnHelper<ReportViewEntry>().display({
+    getColumnHelper<ReportViewEntry>().accessor((x) => x, {
       header: "Period",
+      id: "period",
       cell: (info) => (
         <div className="whitespace-pre">
           {services.formatService.temporal.range.compact(
-            info.row.original.periodStart,
-            info.row.original.periodEnd,
+            info.getValue().periodStart,
+            info.getValue().periodEnd,
           )}
         </div>
       ),
