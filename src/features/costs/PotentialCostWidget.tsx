@@ -48,10 +48,6 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
       q.unchanged(),
     ),
     q.withSort({ field: "invoiceDate", order: "asc" }),
-    q.withFilter("linkedRemainder", {
-      operator: "greaterThan",
-      value: 0,
-    }),
   ]);
 
   const costs = props.services.reportDisplayService.useCostView(query);

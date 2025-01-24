@@ -64,11 +64,11 @@ function useData(
               url: routing.charges(),
             },
             {
-              title: "Costs",
+              title: "Matched costs",
               url: routing.costs(),
             },
             {
-              title: "Costs to match",
+              title: "Relevant costs",
               url: routing.potentialCosts(),
             },
           ],
