@@ -3,7 +3,6 @@ import { RollingBadge } from "@/components/ui/badge.tsx";
 import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
