@@ -243,8 +243,25 @@ export function ReportForm(props: ReportWidgetFormProps) {
                 onChoose={async (_variable, _args, result) => {
                   // remember - expression can call side effect for now
                   // in the future we will define `procedures` (for plugin system)F so the are expected to be have side effects
-                  form.setValue("netValue", String(result));
-                  form.setFocus("netValue");
+                  const affectedFields =
+                    typeof result === "object" && result !== null
+                      ? result
+                      : {
+                          netValue: String(result),
+                        };
+
+                  for (const field of Object.keys(affectedFields)) {
+                    form.setValue(
+                      field as keyof FormModel,
+                      String(
+                        affectedFields[field as keyof typeof affectedFields],
+                      ),
+                      { shouldDirty: true },
+                    );
+                  }
+                  form.setFocus(
+                    Object.keys(affectedFields)[0] as keyof FormModel,
+                  );
                 }}
               >
                 <Button variant="accent2" size="xs">
