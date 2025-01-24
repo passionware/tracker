@@ -114,6 +114,8 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 Match the billing with a contractor report
               </PopoverHeader>
               <InlineReportSearch
+                showBillingColumns
+                showCostColumns={false}
                 context={{
                   workspaceId: billing.workspace.id,
                   clientId: billing.client.id,

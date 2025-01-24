@@ -34,6 +34,8 @@ export type ReportListProps = WithServices<
       query: ReportQuery;
       onQueryChange: (query: ReportQuery) => void;
       context: ExpressionContext;
+      showCostColumns: boolean;
+      showBillingColumns: boolean;
       renderSelect?: (
         report: ReportSearchBaseModel,
         button: ReactElement,
@@ -49,10 +51,21 @@ export function ReportList(props: ReportListProps) {
       data={props.data}
       columns={[
         ...reportColumns.getContextual(props.context),
+        reportColumns.period(props.services),
         reportColumns.billing.linkingStatus.read(props.services),
         reportColumns.netAmount(props.services),
-        reportColumns.billing.linkedValue(props.services),
-        reportColumns.billing.remainingValue(props.services),
+        props.showBillingColumns
+          ? reportColumns.billing.linkedValue(props.services)
+          : null,
+        props.showBillingColumns
+          ? reportColumns.billing.remainingValue(props.services)
+          : null,
+        props.showCostColumns
+          ? reportColumns.cost.linkedValue(props.services)
+          : null,
+        props.showCostColumns
+          ? reportColumns.cost.remainingValue(props.services)
+          : null,
         foreignColumns.description,
         props.renderSelect &&
           foreignColumns.select<ReportSearchBaseModel>(

@@ -51,6 +51,8 @@ export interface InlineReportSearchWidgetProps
   renderSelect: ReportListProps["renderSelect"];
   className?: string;
   context: ExpressionContext;
+  showBillingColumns: boolean;
+  showCostColumns: boolean;
 }
 
 export function InlineReportSearch(props: InlineReportSearchWidgetProps) {
@@ -103,6 +105,8 @@ export function InlineReportSearch(props: InlineReportSearchWidgetProps) {
           query={query}
           onQueryChange={setQuery}
           renderSelect={props.renderSelect}
+          showBillingColumns={props.showBillingColumns}
+          showCostColumns={props.showCostColumns}
         />
       </InlineSearchLayout>
     </>

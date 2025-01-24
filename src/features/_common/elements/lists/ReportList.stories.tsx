@@ -30,6 +30,8 @@ const meta = {
   decorators: [services.decorator.argsDecorator],
   component: ReportList,
   args: {
+    showBillingColumns: true,
+    showCostColumns: true,
     ...services.args,
     query: reportQueryUtils.setFilter(
       reportQueryUtils.ofDefault(0, 0),

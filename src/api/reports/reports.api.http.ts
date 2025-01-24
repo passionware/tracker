@@ -72,6 +72,13 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
           "report_billing_balance",
         );
       }
+      if (query.filters.immediatePaymentDue) {
+        request = numberFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.immediatePaymentDue,
+          "report_cost_balance",
+        );
+      }
 
       if (query.filters.period) {
         request = dateFilterSupabaseUtils.filterByRangeOverlap(

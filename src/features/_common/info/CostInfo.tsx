@@ -96,6 +96,8 @@ export function CostInfo({
                   Match the cost with a contractor report
                 </PopoverHeader>
                 <InlineReportSearch
+                  showBillingColumns={false}
+                  showCostColumns={true}
                   context={{
                     clientId,
                     workspaceId: costEntry.workspace.id,
@@ -163,10 +165,14 @@ export function CostInfo({
                       </LinkPopover>
                     );
                   }}
-                  query={reportQueryUtils.ofDefault(
-                    costEntry.workspace.id,
-                    clientId,
-                  )}
+                  query={reportQueryUtils
+                    .getBuilder(costEntry.workspace.id, clientId)
+                    .build((x) => [
+                      x.withFilter("immediatePaymentDue", {
+                        operator: "greaterThan",
+                        value: 0,
+                      }),
+                    ])}
                 />
               </PopoverContent>
             </Popover>
