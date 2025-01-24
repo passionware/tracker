@@ -47,6 +47,14 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
         }),
       q.unchanged(),
     ),
+    q.withFilter(
+      "clientId",
+      idSpecUtils.mapSpecificOrElse(
+        props.clientId,
+        (x) => ({ operator: "oneOf", value: [x, null] }),
+        null,
+      ),
+    ),
     q.withSort({ field: "invoiceDate", order: "asc" }),
   ]);
 
