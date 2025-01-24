@@ -67,7 +67,7 @@ export function CostInfo({
   const linkingState = promiseState.useRemoteData();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <PopoverHeader className="grid grid-cols-3 justify-content-around p-0">
         <div>Cost linking to reports</div>
         <TransferView
@@ -76,7 +76,7 @@ export function CostInfo({
           toAmount={costEntry.matchedAmount}
         />
         {costEntry.status !== "matched" && (
-          <div className="flex gap-2 flex-row justify-self-end ">
+          <div className="flex gap-2 flex-row justify-self-end self-end">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="default" size="xs">

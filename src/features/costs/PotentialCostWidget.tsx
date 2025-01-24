@@ -36,18 +36,19 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
    *       )
    */
 
-  const query = costQueryUtils.transform(_query).build((api) => [
-    api.withEnsureDefault(props.workspaceId, idSpecUtils.ofAll()),
+  const query = costQueryUtils.transform(_query).build((q) => [
+    q.withEnsureDefault(props.workspaceId, idSpecUtils.ofAll()),
     idSpecUtils.mapSpecificOrElse(
       props.clientId,
       (clientId) =>
-        api.withFilter("potentialClientId", {
+        q.withFilter("potentialClientId", {
           operator: "oneOf",
           value: [clientId, null],
         }),
-      api.unchanged(),
+      q.unchanged(),
     ),
-    api.withFilter("linkedRemainder", {
+    q.withSort({ field: "invoiceDate", order: "asc" }),
+    q.withFilter("linkedRemainder", {
       operator: "greaterThan",
       value: 0,
     }),

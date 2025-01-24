@@ -23,7 +23,9 @@ import { useState } from "react";
 
 export function CostWidget(props: PotentialCostWidgetProps) {
   const [_query, setQuery] = useState(
-    costQueryUtils.ofDefault(props.workspaceId, props.clientId),
+    costQueryUtils
+      .getBuilder(props.workspaceId, props.clientId)
+      .build((x) => [x.withSort({ field: "invoiceDate", order: "asc" })]),
   );
 
   const query = costQueryUtils.ensureDefault(
