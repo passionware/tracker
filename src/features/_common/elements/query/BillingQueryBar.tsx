@@ -2,7 +2,7 @@ import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { BillingQuery, billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
-import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
+import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -92,17 +92,19 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
           )}
         />
       )}
-      <ContractorPicker
+      <ContractorMultiPicker
         size="sm"
-        allowClear
         allowUnassigned
-        layout={"full"}
         services={props.services}
-        value={props.query.filters.contractorId?.value[0]}
-        onSelect={handleChange("contractorId", (contractorId) =>
-          maybe.mapOrNull(contractorId, (contractorId) => ({
+        value={
+          props.query.filters.contractorId?.value.map(
+            unassignedUtils.fromMaybe,
+          ) ?? []
+        }
+        onSelect={handleChange("contractorId", (ids) =>
+          maybe.mapOrNull(maybe.fromArray(ids), (ids) => ({
             operator: "oneOf",
-            value: [unassignedUtils.getOrElse(contractorId, null)],
+            value: ids.map(unassignedUtils.getOrNull),
           })),
         )}
       />

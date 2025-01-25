@@ -28,7 +28,7 @@ import { CommandLoading } from "cmdk";
 import { AnimatePresence, motion } from "framer-motion";
 import { partialRight, xor } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { Fragment, ReactNode, useState } from "react";
 
 export interface AbstractPickerConfig<Id, Data, Props> {
   useSelectedItems: (ids: Id[]) => RemoteData<Data[]>;
@@ -97,23 +97,26 @@ export function AbstractMultiPicker<Id, Data>(
 
   const options = rd.useLastWithPlaceholder(config.useItems(query));
 
-  const unassignedIndex = value.findIndex(unassignedUtils.isUnassigned);
   const valueWithoutUnassigned = value.filter(unassignedUtils.isAssigned);
-  const valueRd = config.useSelectedItems(valueWithoutUnassigned);
-  const valueWithUnassigned = rd.useMemoMap(valueRd, (data) =>
-    unassignedIndex === -1
-      ? data
-      : [
-          ...data.slice(0, unassignedIndex),
-          unassignedUtils.ofUnassigned(),
-          ...data.slice(unassignedIndex),
-        ],
+  const unassignedIndex = value.findIndex(unassignedUtils.isUnassigned);
+  const selectedItems = rd.map(
+    config.useSelectedItems(valueWithoutUnassigned),
+    (items) =>
+      unassignedIndex === -1
+        ? items
+        : [
+            ...items.slice(0, unassignedIndex),
+            unassignedUtils.ofUnassigned(),
+            ...items.slice(unassignedIndex),
+          ],
   );
-  const valueWithPlaceholder = rd.useLastWithPlaceholder(valueWithUnassigned);
+
+  const selectedItemsWithPlaceholder = rd.useLastWithPlaceholder(selectedItems);
 
   // hmm moze najpierw nie wspierać valueWithPlaceholder zeby uprosicc kod
 
-  const currentOption = value.length === 0 ? rd.ofIdle() : valueWithPlaceholder;
+  const currentOption =
+    value.length === 0 ? rd.ofIdle() : selectedItemsWithPlaceholder;
 
   const handleSelect = (
     itemIds: Array<Unassigned | Id>,
@@ -157,32 +160,40 @@ export function AbstractMultiPicker<Id, Data>(
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
         .map((optionItems) =>
-          optionItems.map((data) =>
-            unassignedUtils.mapOrElse(
-              data as Unassigned | Data,
-              partialRight(config.renderItem, _props),
-              value.length > 1 ? (
-                <div
-                  className={cn(
-                    "truncate min-w-0 flex-row flex gap-2 items-center",
-                    "text-sky-800 dark:text-sky-50 ",
-                  )}
-                >
-                  <Unlink2 />
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                    "text-sky-800 dark:text-sky-50 ",
-                  )}
-                >
-                  <Unlink2 />
-                  Unassigned
-                </div>
-              ),
-            ),
-          ),
+          optionItems.map((data) => (
+            <Fragment
+              key={unassignedUtils.mapOrElse(
+                data as Unassigned | Data,
+                config.getKey,
+                "@@unassigned@@",
+              )}
+            >
+              {unassignedUtils.mapOrElse(
+                data as Unassigned | Data,
+                partialRight(config.renderItem, _props),
+                value.length > 1 ? (
+                  <div
+                    className={cn(
+                      "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-slate-100",
+                      "text-sky-800 dark:text-sky-50 ",
+                    )}
+                  >
+                    <Unlink2 />
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
+                      "text-sky-800 dark:text-sky-50 ",
+                    )}
+                  >
+                    <Unlink2 />
+                    Unassigned
+                  </div>
+                ),
+              )}
+            </Fragment>
+          )),
         )}
       <ChevronsUpDown className="opacity-50 ml-auto" />
     </Button>
@@ -206,7 +217,7 @@ export function AbstractMultiPicker<Id, Data>(
                     <motion.div
                       layout
                       key="clear-button"
-                        initial={{ opacity: 0, y: -30, height: 0 }}
+                      initial={{ opacity: 0, y: -30, height: 0 }}
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -30, height: 0 }}
                       transition={{ duration: 0.2 }}
