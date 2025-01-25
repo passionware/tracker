@@ -42,7 +42,10 @@ export function BillingWidget(props: BillingWidgetProps) {
             {...props}
             query={query}
             onQueryChange={setQuery}
-            context={{}}
+            context={{
+                clientId: props.clientId,
+                workspaceId: props.workspaceId,
+            }}
           />
           <InlinePopoverForm
             trigger={

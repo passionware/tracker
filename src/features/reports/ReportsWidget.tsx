@@ -48,9 +48,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       tools={
         <>
           <ReportQueryBar
-            context={{
-              contractorId: idSpecUtils.ofAll(),
-            }}
+              context={{
+                  contractorId: idSpecUtils.ofAll(),
+                  clientId: props.clientId,
+                  workspaceId: props.workspaceId,
+              }}
             query={query}
             onQueryChange={setQuery}
             services={props.services}
