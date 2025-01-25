@@ -42,9 +42,14 @@ export function BillingWidget(props: BillingWidgetProps) {
             {...props}
             query={query}
             onQueryChange={setQuery}
-            context={{
-                clientId: props.clientId,
-                workspaceId: props.workspaceId,
+            spec={{
+              client: idSpecUtils.takeOrElse(props.clientId, "disable", "show"),
+              workspace: idSpecUtils.takeOrElse(
+                props.workspaceId,
+                "disable",
+                "show",
+              ),
+              contractor: "show",
             }}
           />
           <InlinePopoverForm

@@ -38,6 +38,16 @@ export const unassignedUtils = {
     }
     return value;
   },
+  takeOrElse: <T, E>(
+    value: unknown,
+    assignedValue: T,
+    unassignedValue: E,
+  ): T | E => {
+    if (unassignedUtils.isUnassigned(value)) {
+      return unassignedValue;
+    }
+    return assignedValue;
+  },
   getOrNull: <T>(value: T | Unassigned) => {
     return unassignedUtils.getOrElse(value, null);
   },

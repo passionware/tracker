@@ -1,3 +1,4 @@
+import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   BillingPayload,
   BillingQuery,
@@ -71,7 +72,19 @@ export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
             <BillingQueryBar
               query={query}
               onQueryChange={setQuery}
-              context={props.context}
+              spec={{
+                workspace: unassignedUtils.takeOrElse(
+                  props.context.workspaceId,
+                  "show",
+                  "disable",
+                ),
+                client: unassignedUtils.takeOrElse(
+                  props.context.clientId,
+                  "show",
+                  "disable",
+                ),
+                contractor: "show",
+              }}
               services={props.services}
             />
             <Dialog {...editModalState.dialogProps}>

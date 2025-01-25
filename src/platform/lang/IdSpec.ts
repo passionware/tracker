@@ -13,4 +13,6 @@ export const idSpecUtils = {
   ) => (value === all ? orElse : map(value as Exclude<V, All>)),
   switchAll: <V, S>(value: V, switchTo: S): Exclude<V, All> | S =>
     value === all ? switchTo : (value as Exclude<V, All>),
+  takeOrElse: <V, S>(value: unknown, specificValue: V, allValue: S) =>
+    value === all ? allValue : specificValue,
 };

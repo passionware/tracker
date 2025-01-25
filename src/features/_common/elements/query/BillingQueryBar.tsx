@@ -5,11 +5,13 @@ import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.t
 import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import {
+  QueryBarSpec,
+  queryBarSpecUtils,
+} from "@/features/_common/elements/query/QueryBarSpec.tsx";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { ExpressionContext } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
@@ -30,7 +32,7 @@ export type BillingQueryBarProps = WithServices<
     {
       query: BillingQuery;
       onQueryChange: (query: BillingQuery) => void;
-      context: Omit<Partial<ExpressionContext>, "contractorId">;
+      spec: QueryBarSpec;
     }
   >;
 
@@ -50,14 +52,17 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
   }
   return (
     <QueryBarLayout>
-      {maybe.isAbsent(props.context.workspaceId) ? null : (
+      {queryBarSpecUtils.renderIf(
+        props.spec.workspace,
         <WorkspacePicker
           size="sm"
           allowClear
-          allowUnassigned={idSpecUtils.isAll(props.context.workspaceId)}
-          disabled={idSpecUtils.isSpecific(props.context.workspaceId)}
+          allowUnassigned
+          disabled={queryBarSpecUtils.isDisabled(props.spec.workspace)}
           layout={
-            idSpecUtils.isAll(props.context.workspaceId) ? "full" : "avatar"
+            queryBarSpecUtils.isDisabled(props.spec.workspace)
+              ? "avatar"
+              : "full"
           }
           value={props.query.filters.workspaceId?.value[0]}
           onSelect={handleChange("workspaceId", (workspaceId) =>
@@ -70,15 +75,18 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
             ),
           )}
           services={props.services}
-        />
+        />,
       )}
-      {maybe.isAbsent(props.context.clientId) ? null : (
+      {queryBarSpecUtils.renderIf(
+        props.spec.client,
         <ClientPicker
           size="sm"
           allowClear
-          allowUnassigned={idSpecUtils.isAll(props.context.clientId)}
-          disabled={idSpecUtils.isSpecific(props.context.clientId)}
-          layout={idSpecUtils.isAll(props.context.clientId) ? "full" : "avatar"}
+          allowUnassigned
+          disabled={queryBarSpecUtils.isDisabled(props.spec.client)}
+          layout={
+            queryBarSpecUtils.isDisabled(props.spec.client) ? "avatar" : "full"
+          }
           services={props.services}
           value={props.query.filters.clientId?.value[0]}
           onSelect={handleChange("clientId", (clientId) =>
@@ -90,24 +98,33 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
               }),
             ),
           )}
-        />
+        />,
       )}
-      <ContractorMultiPicker
-        size="sm"
-        allowUnassigned
-        services={props.services}
-        value={
-          props.query.filters.contractorId?.value.map(
-            unassignedUtils.fromMaybe,
-          ) ?? []
-        }
-        onSelect={handleChange("contractorId", (ids) =>
-          maybe.mapOrNull(maybe.fromArray(ids), (ids) => ({
-            operator: "oneOf",
-            value: ids.map(unassignedUtils.getOrNull),
-          })),
-        )}
-      />
+      {queryBarSpecUtils.renderIf(
+        props.spec.contractor,
+        <ContractorMultiPicker
+          size="sm"
+          allowUnassigned
+          services={props.services}
+          disabled={queryBarSpecUtils.isDisabled(props.spec.contractor)}
+          layout={
+            queryBarSpecUtils.isDisabled(props.spec.contractor)
+              ? "avatar"
+              : "full"
+          }
+          value={
+            props.query.filters.contractorId?.value.map(
+              unassignedUtils.fromMaybe,
+            ) ?? []
+          }
+          onSelect={handleChange("contractorId", (ids) =>
+            maybe.mapOrNull(maybe.fromArray(ids), (ids) => ({
+              operator: "oneOf",
+              value: ids.map(unassignedUtils.getOrNull),
+            })),
+          )}
+        />,
+      )}
       <DateFilterWidget
         services={props.services}
         value={props.query.filters.invoiceDate}
