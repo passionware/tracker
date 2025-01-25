@@ -1,3 +1,4 @@
+import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   contractor$,
@@ -14,6 +15,14 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       let request = client.from("contractor").select("*");
       if (query.search) {
         request = request.ilike("full_name", `%${query.search}%`);
+      }
+
+      if (query.filters.id) {
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
+          request,
+          query.filters.id,
+          "id",
+        );
       }
 
       if (query.sort) {

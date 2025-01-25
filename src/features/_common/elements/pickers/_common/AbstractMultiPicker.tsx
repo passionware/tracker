@@ -19,18 +19,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
-import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
+import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Overwrite } from "@passionware/platform-ts";
 import { PopoverContentProps } from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
 import { CommandLoading } from "cmdk";
-import { partialRight } from "lodash";
+import { partialRight, xor } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
 import { ReactNode, useState } from "react";
 
 export interface AbstractPickerConfig<Id, Data, Props> {
-  useItem: (id: Maybe<Id>) => RemoteData<Data>;
+  useSelectedItems: (ids: Id[]) => RemoteData<Data[]>;
   useItems: (query: string) => RemoteData<Data[]>;
   renderItem: (item: Unassigned | Data, props: Props) => ReactNode;
   renderOption?: (item: Data) => ReactNode;
@@ -41,14 +41,19 @@ export interface AbstractPickerConfig<Id, Data, Props> {
   placeholder?: string;
 }
 
-export type AbstractPickerProps<Id, Data> = Overwrite<
+export type AbstractMultiPickerProps<Id, Data> = Overwrite<
   ButtonProps,
   {
     size?: "xs" | "sm" | "md" | "lg";
-    value: Maybe<Unassigned | Id>;
-    onSelect: Maybe<(item: Maybe<Unassigned | Id>) => void | Promise<void>>;
-    config: AbstractPickerConfig<Id, Data, AbstractPickerProps<Id, Data>>;
-    allowClear?: boolean;
+    value: Array<Unassigned | Id>;
+    onSelect: Maybe<
+      (
+        value: Array<Unassigned | Id>,
+        selectedItem: Maybe<Unassigned | Id>,
+        action: "include" | "exclude" | "toggle" | "clear",
+      ) => void | Promise<void>
+    >;
+    config: AbstractPickerConfig<Id, Data, AbstractMultiPickerProps<Id, Data>>;
     allowUnassigned?: boolean;
     align?: PopoverContentProps["align"];
     side?: PopoverContentProps["side"];
@@ -70,8 +75,8 @@ const buttonPaddingVariant = cva("", {
   },
 });
 
-export function AbstractPicker<Id, Data>(
-  _props: AbstractPickerProps<Id, Data>,
+export function AbstractMultiPicker<Id, Data>(
+  _props: AbstractMultiPickerProps<Id, Data>,
 ) {
   const {
     value,
@@ -81,9 +86,8 @@ export function AbstractPicker<Id, Data>(
     variant,
     className,
     allowUnassigned,
-    allowClear,
-    align = "start",
-    side = "bottom",
+    align = "end",
+    side = "top",
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -91,26 +95,35 @@ export function AbstractPicker<Id, Data>(
   const promise = promiseState.useRemoteData();
 
   const options = rd.useLastWithPlaceholder(config.useItems(query));
-  const lastOption = rd.useLastWithPlaceholder(
-    config.useItem(unassignedUtils.getOrElse(value, null)),
-  );
 
-  const currentOption = rd.widen<Data | Unassigned>(
-    maybe.isAbsent(value)
-      ? rd.ofIdle()
-      : unassignedUtils.mapOrElse(
-          value,
-          () => lastOption,
-          rd.of(unassignedUtils.ofUnassigned()),
-        ),
+  const unassignedIndex = value.findIndex(unassignedUtils.isUnassigned);
+  const valueWithoutUnassigned = value.filter(unassignedUtils.isAssigned);
+  const valueRd = config.useSelectedItems(valueWithoutUnassigned);
+  const valueWithUnassigned = rd.useMemoMap(valueRd, (data) =>
+    unassignedIndex === -1
+      ? data
+      : [
+          ...data.slice(0, unassignedIndex),
+          unassignedUtils.ofUnassigned(),
+          ...data.slice(unassignedIndex),
+        ],
   );
+  const valueWithPlaceholder = rd.useLastWithPlaceholder(valueWithUnassigned);
 
-  const handleSelect = (itemId: Maybe<Unassigned | Id>) => {
-    const result = onSelect?.(itemId);
+  // hmm moze najpierw nie wspierać valueWithPlaceholder zeby uprosicc kod
+
+  const currentOption = value.length === 0 ? rd.ofIdle() : valueWithPlaceholder;
+
+  const handleSelect = (
+    itemIds: Array<Unassigned | Id>,
+    selectedItem: Maybe<Unassigned | Id>,
+    action: "include" | "exclude" | "toggle" | "clear",
+  ) => {
+    const result = onSelect?.(itemIds, selectedItem, action);
     if (result) {
       void promise.track(result);
     }
-    setOpen(false);
+    // setOpen(false);
     setQuery("");
   };
 
@@ -142,19 +155,32 @@ export function AbstractPicker<Id, Data>(
         )
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
-        .map((data) =>
-          unassignedUtils.mapOrElse(
-            data,
-            partialRight(config.renderItem, _props),
-            <div
-              className={cn(
-                "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                "text-sky-800 dark:text-sky-50 ",
-              )}
-            >
-              <Unlink2 />
-              Unassigned
-            </div>,
+        .map((optionItems) =>
+          optionItems.map((data) =>
+            unassignedUtils.mapOrElse(
+              data as Unassigned | Data,
+              partialRight(config.renderItem, _props),
+              value.length > 1 ? (
+                <div
+                  className={cn(
+                    "truncate min-w-0 flex-row flex gap-2 items-center",
+                    "text-sky-800 dark:text-sky-50 ",
+                  )}
+                >
+                  <Unlink2 />
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
+                    "text-sky-800 dark:text-sky-50 ",
+                  )}
+                >
+                  <Unlink2 />
+                  Unassigned
+                </div>
+              ),
+            ),
           ),
         )}
       <ChevronsUpDown className="opacity-50 " />
@@ -174,11 +200,11 @@ export function AbstractPicker<Id, Data>(
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
-                {allowClear && maybe.isPresent(value) && (
+                {value.length > 0 && (
                   <CommandItem
                     value={undefined}
                     onSelect={() => {
-                      handleSelect(null);
+                      handleSelect([], null, "clear");
                     }}
                     variant="danger"
                   >
@@ -191,7 +217,11 @@ export function AbstractPicker<Id, Data>(
                     variant="info"
                     value={undefined}
                     onSelect={() => {
-                      handleSelect(unassignedUtils.ofUnassigned());
+                      handleSelect(
+                        xor(value, [unassignedUtils.ofUnassigned()]),
+                        unassignedUtils.ofUnassigned(),
+                        "toggle",
+                      );
                     }}
                   >
                     <Unlink2 />
@@ -199,7 +229,7 @@ export function AbstractPicker<Id, Data>(
                     <Check
                       className={cn(
                         "ml-auto",
-                        unassignedUtils.isUnassigned(value)
+                        value.includes(unassignedUtils.ofUnassigned())
                           ? "opacity-100"
                           : "opacity-0",
                       )}
@@ -215,36 +245,32 @@ export function AbstractPicker<Id, Data>(
                   if (options.length === 0) {
                     return <CommandEmpty>Nothing found</CommandEmpty>;
                   }
-                  return options.map((data) => (
-                    <CommandItem
-                      key={config.getKey(data)}
-                      value={config.getKey(data)}
-                      onSelect={() => {
-                        if (value === config.getItemId(data)) {
-                          if (allowClear) {
-                            handleSelect(null);
-                          }
-                          setOpen(false);
-                          return;
-                        }
-
-                        handleSelect(config.getItemId(data));
-                      }}
-                    >
-                      {partialRight(
-                        config.renderOption ?? config.renderItem,
-                        _props,
-                      )(data)}
-                      <Check
-                        className={cn(
-                          "ml-auto",
-                          value === config.getItemId(data)
-                            ? "opacity-100"
-                            : "opacity-0",
-                        )}
-                      />
-                    </CommandItem>
-                  ));
+                  return options.map((data) => {
+                    const itemId = config.getItemId(data);
+                    return (
+                      <CommandItem
+                        key={config.getKey(data)}
+                        value={config.getKey(data)}
+                        onSelect={() => {
+                          handleSelect(xor(value, [itemId]), itemId, "toggle");
+                          // setOpen(false);
+                        }}
+                      >
+                        {partialRight(
+                          config.renderOption ?? config.renderItem,
+                          _props,
+                        )(data)}
+                        <Check
+                          className={cn(
+                            "ml-auto",
+                            value.includes(itemId)
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                      </CommandItem>
+                    );
+                  });
                 })}
             </CommandGroup>
           </CommandList>

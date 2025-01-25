@@ -12,6 +12,9 @@ export const unassignedUtils = {
   isUnassigned: (value: unknown): value is Unassigned => {
     return value === unassigned;
   },
+  isAssigned: <T>(value: Maybe<T | Unassigned>): value is T => {
+    return !unassignedUtils.isUnassigned(value);
+  },
   ofUnassigned: (): Unassigned => unassigned,
   map: <T>(value: Maybe<T | Unassigned>, fn: () => T): Maybe<T> => {
     if (unassignedUtils.isUnassigned(value)) {
@@ -34,6 +37,9 @@ export const unassignedUtils = {
       return defaultValue;
     }
     return value;
+  },
+  getOrNull: <T>(value: T | Unassigned) => {
+    return unassignedUtils.getOrElse(value, null);
   },
   fromMaybe: <T>(value: Maybe<T>): T | Unassigned =>
     maybe.getOrElse(value, unassignedUtils.ofUnassigned()),

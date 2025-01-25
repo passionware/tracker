@@ -2,7 +2,7 @@ import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import { ReportQuery, reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
-import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
+import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -99,24 +99,23 @@ export function ReportQueryBar(props: ReportQueryBarProps) {
         />
       )}
       {maybe.isAbsent(props.context.contractorId) ? null : (
-        <ContractorPicker
+        <ContractorMultiPicker
           size="sm"
-          allowClear
           disabled={idSpecUtils.isSpecific(props.context.contractorId)}
-          allowUnassigned={idSpecUtils.isAll(props.context.contractorId)}
           layout={
             idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"
           }
           services={props.services}
-          value={props.query.filters.contractorId?.value[0]}
-          onSelect={handleChange("contractorId", (contractorId) =>
-            maybe.mapOrNull(
-              unassignedUtils.getOrElse(contractorId, null),
-              (contractorId) => ({
-                operator: "oneOf",
-                value: [contractorId],
-              }),
-            ),
+          value={
+            props.query.filters.contractorId?.value.map(
+              unassignedUtils.fromMaybe,
+            ) ?? []
+          }
+          onSelect={handleChange("contractorId", (ids) =>
+            maybe.mapOrNull(maybe.fromArray(ids), (ids) => ({
+              operator: "oneOf",
+              value: ids.map(unassignedUtils.getOrNull),
+            })),
           )}
         />
       )}

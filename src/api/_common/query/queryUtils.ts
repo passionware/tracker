@@ -18,7 +18,7 @@ export type WithSearch = {
 
 type FilterBase = Record<string, unknown>;
 export type WithFilters<F extends FilterBase> = {
-  filters: F;
+  filters: { [K in keyof F]: Nullable<F[K]> };
 };
 
 export const withPaginationUtils = <Q extends WithPagination>() => ({
