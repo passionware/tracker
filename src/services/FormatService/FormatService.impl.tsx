@@ -120,7 +120,7 @@ export function createFormatService(clock: () => Date): FormatService {
                   <DotSeparator />
                   <MonthBadge value={format(date, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(date, "yy")} />
+                  <YearBadge value={format(date, "yyyy")} />
                 </div>
               </div>
             </SingleWrapper>
@@ -139,7 +139,7 @@ export function createFormatService(clock: () => Date): FormatService {
                     <DotSeparator />
                     <MonthBadge value={format(startDate, "MM")} />
                     <DotSeparator />
-                    <YearBadge value={format(startDate, "yy")} />
+                    <YearBadge value={format(startDate, "yyyy")} />
                   </div>
                 </div>
               </RangeWrapper>
@@ -154,14 +154,14 @@ export function createFormatService(clock: () => Date): FormatService {
                   <DotSeparator />
                   <MonthBadge value={format(startDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(startDate, "yy")} />
+                  <YearBadge value={format(startDate, "yyyy")} />
                 </div>
                 <div>
                   <DayBadge value={format(endDate, "dd")} />
                   <DotSeparator />
                   <MonthBadge value={format(endDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(endDate, "yy")} />
+                  <YearBadge value={format(endDate, "yyyy")} />
                 </div>
               </div>
             </RangeWrapper>
