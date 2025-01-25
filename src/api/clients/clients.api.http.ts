@@ -1,3 +1,4 @@
+import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import { ClientsApi } from "@/api/clients/clients.api.ts";
@@ -10,6 +11,13 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
       let request = client.from("client").select("*");
       if (query.search) {
         request = request.ilike("name", `%${query.search}%`);
+      }
+      if (query.filters.id) {
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
+          request,
+          query.filters.id,
+          "id",
+        );
       }
       const { data, error } = await request;
       if (error) {

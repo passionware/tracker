@@ -1,3 +1,4 @@
+import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import {
   workspace$,
   workspaceFromHttp,
@@ -16,6 +17,14 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
         request = request
           .ilike("name", `%${query.search}%`)
           .or(`slug.ilike('%${query.search}%')`);
+      }
+
+      if (query.filters.id) {
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
+          request,
+          query.filters.id,
+          "id",
+        );
       }
 
       const { data, error } = await request;

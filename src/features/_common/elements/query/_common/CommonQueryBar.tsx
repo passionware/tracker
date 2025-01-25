@@ -8,9 +8,9 @@ import {
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
-import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
+import { ClientMultiPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
-import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { WorkspaceMultiPicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import {
   QueryBarSpec,
   queryBarSpecUtils,
@@ -65,9 +65,8 @@ export function CommonQueryBar<Q extends QueryBase>(
     <>
       {queryBarSpecUtils.renderIf(
         props.spec.workspace,
-        <WorkspacePicker
+        <WorkspaceMultiPicker
           size="sm"
-          allowClear
           allowUnassigned
           disabled={queryBarSpecUtils.isDisabled(props.spec.workspace)}
           layout={
@@ -75,23 +74,29 @@ export function CommonQueryBar<Q extends QueryBase>(
               ? "avatar"
               : "full"
           }
-          value={props.query.filters.workspaceId?.value[0]}
+          value={
+            props.query.filters.workspaceId?.value.map(
+              unassignedUtils.fromMaybe,
+            ) ?? []
+          }
           onSelect={handleChange("workspaceId")}
           services={props.services}
         />,
       )}
       {queryBarSpecUtils.renderIf(
         props.spec.client,
-        <ClientPicker
+        <ClientMultiPicker
           size="sm"
-          allowClear
-          allowUnassigned
           disabled={queryBarSpecUtils.isDisabled(props.spec.client)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.client) ? "avatar" : "full"
           }
           services={props.services}
-          value={props.query.filters.clientId?.value[0]}
+          value={
+            props.query.filters.clientId?.value.map(
+              unassignedUtils.fromMaybe,
+            ) ?? []
+          }
           onSelect={handleChange("clientId")}
         />,
       )}
