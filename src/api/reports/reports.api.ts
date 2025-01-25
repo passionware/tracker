@@ -130,7 +130,7 @@ export const reportQueryUtils = withBuilderUtils({
           operator: "oneOf",
           value: [x],
         }),
-        null,
+        query.filters.workspaceId,
       ),
       clientId: idSpecUtils.mapSpecificOrElse(
         clientId,
@@ -138,7 +138,7 @@ export const reportQueryUtils = withBuilderUtils({
           operator: "oneOf",
           value: [x],
         }),
-        null,
+        query.filters.clientId,
       ),
     },
   }),

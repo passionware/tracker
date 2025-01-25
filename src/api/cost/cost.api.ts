@@ -115,7 +115,7 @@ export const costQueryUtils = withBuilderUtils({
           idSpecUtils.mapSpecificOrElse(
             workspaceId,
             (x) => ({ operator: "oneOf", value: [x] }),
-            null,
+            query.filters.workspaceId,
           ),
         ),
       )
@@ -126,7 +126,7 @@ export const costQueryUtils = withBuilderUtils({
           idSpecUtils.mapSpecificOrElse(
             clientId,
             (x) => ({ operator: "oneOf", value: [x] }),
-            null,
+            query.filters.clientId,
           ),
         ),
       )
