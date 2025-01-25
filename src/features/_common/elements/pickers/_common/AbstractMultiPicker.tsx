@@ -159,8 +159,10 @@ export function AbstractMultiPicker<Id, Data>(
         )
         .wait(<Skeleton className="w-full h-[1lh]" />)
         .catch(renderSmallError("w-full h-[1lh]", "Not found"))
-        .map((optionItems) =>
-          optionItems.map((data) => (
+        .map((optionItems) => {
+          const unassigned = optionItems.filter(unassignedUtils.isUnassigned);
+          const rest = optionItems.filter(unassignedUtils.isAssigned);
+          return [...unassigned, ...rest].map((data) => (
             <Fragment
               key={unassignedUtils.mapOrElse(
                 data as Unassigned | Data,
@@ -193,8 +195,8 @@ export function AbstractMultiPicker<Id, Data>(
                 ),
               )}
             </Fragment>
-          )),
-        )}
+          ));
+        })}
       <ChevronsUpDown className="opacity-50 ml-auto" />
     </Button>
   );
