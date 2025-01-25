@@ -67,7 +67,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         withFiltersUtils<Q>().setFilter(
           props.query,
           key,
-          maybe.map(value, (value) => ({
+          maybe.mapOrNull(value, (value) => ({
             operator: "oneOf" as const,
             value: value.map(unassignedUtils.getOrNull),
           })),

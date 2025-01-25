@@ -44,8 +44,8 @@ export function CostQueryBar(props: CostQueryBarProps) {
     <QueryBarLayout>
       <CommonQueryBar
         allowUnassigned={{
-          client: false,
-          contractor: false,
+          client: true,
+          contractor: true,
           workspace: false,
         }}
         query={props.query}

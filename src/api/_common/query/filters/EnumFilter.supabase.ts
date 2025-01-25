@@ -12,6 +12,11 @@ export const enumFilterSupabaseUtils = {
       column: string,
     ): S {
       const values = filter.value;
+
+      if (values.length === 0) {
+        return builder;
+      }
+
       const includesNull = values.includes(null as any);
       const nonNullValues = values.filter((v) => v !== null);
 
@@ -47,6 +52,11 @@ export const enumFilterSupabaseUtils = {
       column: string,
     ): S {
       const values = filter.value;
+
+      if (values.length === 0) {
+        return builder;
+      }
+
       const includesNull = values.includes(null as any);
       const nonNullValues = values.filter((v) => v !== null);
 
