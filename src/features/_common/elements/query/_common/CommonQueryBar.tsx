@@ -14,7 +14,7 @@ import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePi
 import {
   QueryBarSpec,
   queryBarSpecUtils,
-} from "@/features/_common/elements/query/QueryBarSpec.tsx";
+} from "@/features/_common/elements/query/_common/QueryBarSpec.tsx";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";

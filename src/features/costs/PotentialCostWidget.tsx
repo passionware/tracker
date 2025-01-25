@@ -75,10 +75,14 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
             services={props.services}
             query={query}
             onQueryChange={setQuery}
-            context={{
-              contractorId: idSpecUtils.ofAll(),
-              clientId: props.clientId,
-              workspaceId: props.workspaceId,
+            spec={{
+              contractor: "show",
+              client: idSpecUtils.takeOrElse(props.clientId, "disable", "show"),
+              workspace: idSpecUtils.takeOrElse(
+                props.workspaceId,
+                "disable",
+                "show",
+              ),
             }}
           />
           <InlinePopoverForm
