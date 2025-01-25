@@ -133,7 +133,7 @@ export function AbstractMultiPicker<Id, Data>(
       role="combobox"
       aria-expanded={open}
       className={cn(
-        "justify-between *:min-w-0",
+        "justify-start *:min-w-0",
         className,
         buttonPaddingVariant({ size }),
       )}
@@ -183,7 +183,7 @@ export function AbstractMultiPicker<Id, Data>(
             ),
           ),
         )}
-      <ChevronsUpDown className="opacity-50 " />
+      <ChevronsUpDown className="opacity-50 ml-auto" />
     </Button>
   );
 
