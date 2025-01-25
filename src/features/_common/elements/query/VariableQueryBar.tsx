@@ -4,7 +4,7 @@ import {
   variableQueryUtils,
 } from "@/api/variable/variable.api.ts";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
-import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
+import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -95,20 +95,23 @@ export function VariableQueryBar(props: VariableQueryBarProps) {
         />
       )}
       {maybe.isAbsent(props.context.contractorId) ? null : (
-        <ContractorPicker
+        <ContractorMultiPicker
           size="sm"
-          allowClear
           allowUnassigned={idSpecUtils.isAll(props.context.contractorId)}
           disabled={idSpecUtils.isSpecific(props.context.contractorId)}
           layout={
             idSpecUtils.isAll(props.context.contractorId) ? "full" : "avatar"
           }
           services={props.services}
-          value={props.query.filters.contractorId?.value[0]}
-          onSelect={handleChange("contractorId", (contractorId) =>
-            maybe.mapOrNull(contractorId, (contractorId) => ({
+          value={
+            props.query.filters.contractorId?.value.map(
+              unassignedUtils.fromMaybe,
+            ) ?? []
+          }
+          onSelect={handleChange("contractorId", (ids) =>
+            maybe.mapOrNull(maybe.fromArray(ids), (ids) => ({
               operator: "oneOf",
-              value: [unassignedUtils.getOrElse(contractorId, null)],
+              value: ids.map(unassignedUtils.getOrNull),
             })),
           )}
         />
