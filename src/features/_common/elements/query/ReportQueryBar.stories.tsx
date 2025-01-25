@@ -1,7 +1,5 @@
-import { clientsMock } from "@/api/clients/clients.mock.ts";
 import { contractorMock } from "@/api/contractor/contractor.mock.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
 import {
   ReportQueryBar,
   ReportQueryBarProps,
@@ -11,7 +9,6 @@ import {
   ArgsWithServices,
   createSbServices,
 } from "@/services/_common/createSbServices.ts";
-import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { classNameDecorator } from "@passionware/platform-storybook";
 import type { StoryObj } from "@storybook/react";
 
@@ -37,7 +34,11 @@ const meta = {
       "contractorId",
       { operator: "oneOf", value: [contractorMock.static.list[0].id] },
     ),
-    context: expressionContextUtils.ofGlobal().build(),
+    spec: {
+      workspace: "show",
+      client: "show",
+      contractor: "show",
+    },
   },
   argTypes: {
     ...services.argTypes,
@@ -56,52 +57,54 @@ export const Default = {} satisfies Story;
 export const ScopedToWorkspace = {
   args: {
     ...meta.args,
-    context: expressionContextUtils
-      .ofGlobal()
-      .setWorkspace(workspaceMock.static.list[0].id)
-      .build(),
+    spec: {
+      workspace: "show",
+      client: "disable",
+      contractor: "show",
+    },
   },
 } satisfies Story;
 
 export const ScopedToClient = {
   args: {
     ...meta.args,
-    context: expressionContextUtils
-      .ofGlobal()
-      .setClient(clientsMock.static.list[0].id)
-      .build(),
+    spec: {
+      workspace: "disable",
+      client: "show",
+      contractor: "disable",
+    },
   },
 } satisfies Story;
 
 export const ScopedToContractor = {
   args: {
     ...meta.args,
-    context: expressionContextUtils
-      .ofGlobal()
-      .setContractor(contractorMock.static.list[0].id)
-      .build(),
+    spec: {
+      workspace: "disable",
+      client: "disable",
+      contractor: "show",
+    },
   },
 } satisfies Story;
 
 export const ScopedToWorkspaceAndClient = {
   args: {
     ...meta.args,
-    context: expressionContextUtils
-      .ofGlobal()
-      .setWorkspace(workspaceMock.static.list[0].id)
-      .setClient(clientsMock.static.list[0].id)
-      .build(),
+    spec: {
+      workspace: "show",
+      client: "show",
+      contractor: "disable",
+    },
   },
 } satisfies Story;
 
 export const ScopedToWorkspaceAndContractorAndClient = {
   args: {
     ...meta.args,
-    context: expressionContextUtils
-      .ofGlobal()
-      .setWorkspace(workspaceMock.static.list[0].id)
-      .setContractor(contractorMock.static.list[0].id)
-      .setClient(clientsMock.static.list[0].id)
-      .build(),
+    spec: {
+      workspace: "show",
+      client: "show",
+      contractor: "show",
+    },
   },
 };

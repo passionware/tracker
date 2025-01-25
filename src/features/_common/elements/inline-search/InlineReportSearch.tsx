@@ -18,6 +18,7 @@ import {
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { useOpenState } from "@/platform/react/useOpenState.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -71,7 +72,23 @@ export function InlineReportSearch(props: InlineReportSearchWidgetProps) {
             <ReportQueryBar
               query={query}
               onQueryChange={setQuery}
-              context={props.context}
+              spec={{
+                workspace: idSpecUtils.takeOrElse(
+                  props.context.workspaceId,
+                  "disable",
+                  "show",
+                ),
+                client: idSpecUtils.takeOrElse(
+                  props.context.clientId,
+                  "disable",
+                  "show",
+                ),
+                contractor: idSpecUtils.takeOrElse(
+                  props.context.contractorId,
+                  "disable",
+                  "show",
+                ),
+              }}
               services={props.services}
             />
             <Dialog {...editModalState.dialogProps}>
