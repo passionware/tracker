@@ -1,8 +1,8 @@
 import { BillingQuery, billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
 import { CommonQueryBar } from "@/features/_common/elements/query/_common/CommonQueryBar.tsx";
-import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
 import { QueryBarSpec } from "@/features/_common/elements/query/_common/QueryBarSpec.tsx";
+import { QueryBarLayout } from "@/features/_common/elements/query/QueryBarLayout.tsx";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -51,6 +51,11 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
         onQueryChange={props.onQueryChange}
         spec={props.spec}
         services={props.services}
+        allowUnassigned={{
+          client: false,
+          workspace: false,
+          contractor: true,
+        }}
       />
       <DateFilterWidget
         services={props.services}

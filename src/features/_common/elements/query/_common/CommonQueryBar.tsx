@@ -1,5 +1,8 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
+import {
+  Unassigned,
+  unassignedUtils,
+} from "@/api/_common/query/filters/Unassigned.ts";
 import {
   WithFilters,
   withFiltersUtils,
@@ -20,7 +23,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, Present } from "@passionware/monads";
 
 type QueryBase = WithFilters<{
   workspaceId: Nullable<EnumFilter<Nullable<Workspace["id"]>>>;
@@ -36,27 +39,38 @@ export interface CommonQueryBarProps<Q extends QueryBase>
   spec: QueryBarSpec;
   query: Q;
   onQueryChange: (query: Q) => void;
+  allowUnassigned: {
+    workspace?: boolean;
+    client?: boolean;
+    contractor?: boolean;
+  };
 }
 
 export function CommonQueryBar<Q extends QueryBase>(
   props: CommonQueryBarProps<Q>,
 ) {
-  function handleChange<T extends keyof QueryBase["filters"], X>(
+  const {
+    workspace: allowWorkspace,
+    client: allowClient,
+    contractor: allowContractor,
+  } = props.allowUnassigned;
+
+  type FilterValue<F extends keyof QueryBase["filters"]> = Present<
+    Q["filters"][F]
+  >["value"][number];
+
+  function handleChange<T extends keyof QueryBase["filters"]>(
     key: T,
-  ): (value: Nullable<X>) => void {
+  ): (value: (FilterValue<T> | Unassigned)[]) => void {
     return (value) =>
       props.onQueryChange(
         withFiltersUtils<Q>().setFilter(
           props.query,
           key,
-          maybe.map(
-            value,
-            (value) =>
-              ({
-                operator: "oneOf" as const,
-                value,
-              }) as QueryBase["filters"][T],
-          ),
+          maybe.map(value, (value) => ({
+            operator: "oneOf" as const,
+            value: value.map(unassignedUtils.getOrNull),
+          })),
         ),
       );
   }
@@ -67,7 +81,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         props.spec.workspace,
         <WorkspaceMultiPicker
           size="sm"
-          allowUnassigned
+          allowUnassigned={allowWorkspace}
           disabled={queryBarSpecUtils.isDisabled(props.spec.workspace)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.workspace)
@@ -87,6 +101,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         props.spec.client,
         <ClientMultiPicker
           size="sm"
+          allowUnassigned={allowClient}
           disabled={queryBarSpecUtils.isDisabled(props.spec.client)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.client) ? "avatar" : "full"
@@ -104,7 +119,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         props.spec.contractor,
         <ContractorMultiPicker
           size="sm"
-          allowUnassigned
+          allowUnassigned={allowContractor}
           services={props.services}
           disabled={queryBarSpecUtils.isDisabled(props.spec.contractor)}
           layout={

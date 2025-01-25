@@ -35,6 +35,11 @@ export function VariableQueryBar(props: VariableQueryBarProps) {
         onQueryChange={props.onQueryChange}
         spec={props.spec}
         services={props.services}
+        allowUnassigned={{
+          client: true,
+          contractor: true,
+          workspace: true,
+        }}
       />
     </QueryBarLayout>
   );
