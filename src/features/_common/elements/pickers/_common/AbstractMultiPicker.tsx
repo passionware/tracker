@@ -25,6 +25,7 @@ import { Overwrite } from "@passionware/platform-ts";
 import { PopoverContentProps } from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
 import { CommandLoading } from "cmdk";
+import { AnimatePresence, motion } from "framer-motion";
 import { partialRight, xor } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
 import { ReactNode, useState } from "react";
@@ -200,18 +201,29 @@ export function AbstractMultiPicker<Id, Data>(
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
-                {value.length > 0 && (
-                  <CommandItem
-                    value={undefined}
-                    onSelect={() => {
-                      handleSelect([], null, "clear");
-                    }}
-                    variant="danger"
-                  >
-                    <X />
-                    Clear
-                  </CommandItem>
-                )}
+                <AnimatePresence initial={false}>
+                  {value.length > 0 && (
+                    <motion.div
+                      layout
+                      key="clear-button"
+                        initial={{ opacity: 0, y: -30, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -30, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <CommandItem
+                        value={undefined}
+                        onSelect={() => {
+                          handleSelect([], null, "clear");
+                        }}
+                        variant="danger"
+                      >
+                        <X />
+                        Clear
+                      </CommandItem>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {allowUnassigned && (
                   <CommandItem
                     variant="info"
