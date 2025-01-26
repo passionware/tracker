@@ -1,13 +1,8 @@
 import { Cost } from "@/api/cost/cost.api.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
-import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
+import { CostInfoPopover } from "@/features/_common/info/CostInfo.tsx";
 import { assert } from "@/platform/lang/assert.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -98,33 +93,28 @@ export const costColumns = {
         getColumnHelper<CostEntry>().accessor("status", {
           header: "Status",
           cell: (info) => (
-            <Popover>
-              <PopoverTrigger>
-                <RollingBadge
-                  className="max-w-24"
-                  variant={
-                    (
-                      {
-                        matched: "positive",
-                        unmatched: "destructive",
-                        "partially-matched": "warning",
-                        overmatched: "accent1",
-                      } as const
-                    )[info.getValue()]
-                  }
-                >
-                  {startCase(info.getValue())}
-                </RollingBadge>
-              </PopoverTrigger>
-              <PopoverContent className="w-fit">
-                <CostInfo
-                  costEntry={info.row.original}
-                  services={services}
-                  clientId={clientId}
-                  workspaceId={workspaceId}
-                />
-              </PopoverContent>
-            </Popover>
+            <CostInfoPopover
+              costEntry={info.row.original}
+              services={services}
+              clientId={clientId}
+              workspaceId={workspaceId}
+            >
+              <RollingBadge
+                className="max-w-24"
+                variant={
+                  (
+                    {
+                      matched: "positive",
+                      unmatched: "destructive",
+                      "partially-matched": "warning",
+                      overmatched: "accent1",
+                    } as const
+                  )[info.getValue()]
+                }
+              >
+                {startCase(info.getValue())}
+              </RollingBadge>
+            </CostInfoPopover>
           ),
         }),
     },
