@@ -20,5 +20,5 @@ export function InfoLayout({ header, children }: InfoLayoutProps) {
 
 export const InfoPopoverContent = w(PopoverContent, {
   className:
-    "max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto",
+    "w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto",
 });

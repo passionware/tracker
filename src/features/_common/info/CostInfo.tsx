@@ -191,7 +191,7 @@ export function CostInfo({
           columnHelper.accessor((x) => x, {
             header: "Link",
             cell: (cellInfo) => {
-              const link = cellInfo.getValue();
+              const link = cellInfo.getValue<Cost["linkReports"][number]>();
               if (link.report) {
                 return (
                   <LinkPopover
@@ -235,38 +235,31 @@ export function CostInfo({
           },
 
           { ...reportColumns.period(services), accessorFn: (x) => x.report },
-          columnHelper.accessor(
-            (x) => ({
-              costAmount: x.link.costAmount,
-              reportAmount: x.link.reportAmount,
-              description: x.link.description,
-            }),
-            {
-              header: "Linking",
-              cell: (cellInfo) => {
-                const value = cellInfo.getValue();
-                return (
-                  <div className="flex flex-row gap-2 items-center h-full">
-                    <div>work of</div>
-                    <div className="text-green-600 font-bold">
-                      {services.formatService.financial.amount(
-                        value.costAmount,
-                        costEntry.netAmount.currency,
-                      )}
-                    </div>
-                    <ChevronsRight />
-                    <div>
-                      {services.formatService.financial.amount(
-                        value.reportAmount,
-                        cellInfo.row.original.report.currency,
-                      )}
-                    </div>
-                    <div>of report</div>
+          columnHelper.accessor((x) => x.link, {
+            header: "Linking",
+            cell: (cellInfo) => {
+              const value = cellInfo.getValue();
+              return (
+                <div className="flex flex-row gap-2 items-center h-full">
+                  <div>work of</div>
+                  <div className="text-green-600 font-bold">
+                    {services.formatService.financial.amount(
+                      value.costAmount,
+                      costEntry.netAmount.currency,
+                    )}
                   </div>
-                );
-              },
+                  <ChevronsRight />
+                  <div>
+                    {services.formatService.financial.amount(
+                      value.reportAmount,
+                      cellInfo.row.original.report.currency,
+                    )}
+                  </div>
+                  <div>of report</div>
+                </div>
+              );
             },
-          ),
+          }),
           {
             ...foreignColumns.description,
             accessorKey: "link.description",

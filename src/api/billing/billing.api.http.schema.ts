@@ -17,6 +17,7 @@ import {
   reportBase$,
   reportBaseFromHttp,
 } from "@/api/reports/reports.api.http.schema.base.ts";
+import { maybe } from "@passionware/monads";
 import { z } from "zod";
 
 export const billing$ = billingBase$.extend({
@@ -32,7 +33,7 @@ export const billing$ = billingBase$.extend({
   link_billing_reports: z.array(
     z.object({
       link: linkBillingReport$,
-      report: reportBase$,
+      report: reportBase$.nullable(),
     }),
   ),
   contractors: z.array(z.object({ contractor: contractor$ })),
@@ -53,7 +54,7 @@ export function billingFromHttp(billing: Billing$): Billing {
     ),
     linkBillingReport: billing.link_billing_reports.map((x) => ({
       link: linkBillingReportFromHttp({ ...x.link }),
-      report: reportBaseFromHttp({ ...x.report }),
+      report: maybe.mapOrNull(x.report, reportBaseFromHttp),
     })),
   };
 }

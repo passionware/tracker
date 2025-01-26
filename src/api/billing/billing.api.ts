@@ -55,7 +55,7 @@ export interface Billing extends BillingBase {
   client: Client;
   linkBillingReport: {
     link: LinkBillingReport;
-    report: ReportBase;
+    report: Nullable<ReportBase>;
   }[];
   contractors: Contractor[];
 }

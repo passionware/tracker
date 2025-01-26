@@ -1,3 +1,5 @@
+import { Billing } from "@/api/billing/billing.api.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -7,16 +9,17 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
-import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
-import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InfoLayout } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
+import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
+import { assert } from "@/platform/lang/assert.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -33,10 +36,10 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
-import { Slot } from "@radix-ui/react-slot";
+import { createColumnHelper } from "@tanstack/react-table";
 import { addDays, startOfDay } from "date-fns";
-import { chain, partial, sortBy } from "lodash";
-import { Check, Link2, Loader2 } from "lucide-react";
+import { chain, sortBy } from "lodash";
+import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface ChargeInfoProps
@@ -54,6 +57,9 @@ export interface ChargeInfoProps
   > {
   billing: BillingViewEntry;
 }
+
+const columnHelper = createColumnHelper<Billing["linkBillingReport"][number]>();
+
 export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const clarifyState = promiseState.useRemoteData();
 
@@ -237,120 +243,124 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         </>
       }
     >
-      <div className="space-y-8">
-        {billing.links.map((link) => {
-          const actualLink = link.link;
-          switch (actualLink.linkType) {
-            case "reconcile":
-              return (
-                <div className="flex items-stretch gap-2" key={actualLink.id}>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-row justify-between items-center gap-2">
-                      <LinkPopover
-                        context={{
-                          contractorId: link.report.contractorId,
-                          workspaceId: link.report.workspaceId,
-                          clientId: billing.client.id,
-                        }}
-                        services={services}
-                        sourceLabel="Billing amount"
-                        targetLabel="Report amount"
-                        sourceCurrency={billing.netAmount.currency}
-                        targetCurrency={link.report.currency}
-                        title="Update linked report"
-                        initialValues={{
-                          source: link.link.billingAmount ?? undefined,
-                          target: link.link.reportAmount ?? undefined,
-                          description: link.link.description,
-                        }}
-                        onValueChange={(_all, updates) =>
-                          services.mutationService.updateBillingReportLink(
-                            link.link.id,
-                            mapKeys(updates, {
-                              source: "billingAmount",
-                              target: "reportAmount",
-                            }),
-                          )
-                        }
-                      >
-                        <Button variant="headless" size="headless">
-                          <Badge variant="positive">Report</Badge>
-                        </Button>
-                      </LinkPopover>
-                      {services.formatService.temporal.range.compact(
-                        link.report.periodStart,
-                        link.report.periodEnd,
-                      )}
-                    </div>
-                    <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
+      <ListView
+        query={query}
+        onQueryChange={() => {}}
+        data={rd.of(billing.links)}
+        columns={[
+          columnHelper.accessor((x) => x, {
+            header: "Link",
+            cell: (cellInfo) => {
+              const link =
+                cellInfo.getValue<
+                  ChargeInfoProps["billing"]["links"][number]
+                >();
+              switch (link.link.linkType) {
+                case "reconcile":
+                  assert(link.report);
+                  return (
+                    <LinkPopover
+                      context={{
+                        contractorId: link.report.contractorId,
+                        workspaceId: link.report.workspaceId,
+                        clientId: billing.client.id,
+                      }}
+                      services={services}
+                      sourceLabel="Billing amount"
+                      targetLabel="Report amount"
+                      sourceCurrency={billing.netAmount.currency}
+                      targetCurrency={link.report.currency}
+                      title="Update linked report"
+                      initialValues={{
+                        source: link.link.billingAmount ?? undefined,
+                        target: link.link.reportAmount ?? undefined,
+                        description: link.link.description,
+                      }}
+                      onValueChange={(_all, updates) =>
+                        services.mutationService.updateBillingReportLink(
+                          link.link.id,
+                          mapKeys(updates, {
+                            source: "billingAmount",
+                            target: "reportAmount",
+                          }),
+                        )
+                      }
+                    >
+                      <Button variant="headless" size="headless">
+                        <Badge variant="positive">Report</Badge>
+                      </Button>
+                    </LinkPopover>
+                  );
+                case "clarify":
+                  return <Badge variant="warning">Clarify</Badge>;
+              }
+            },
+          }),
+          {
+            ...foreignColumns.contractorId(services),
+            accessorKey: "report.contractorId",
+          },
+          { ...reportColumns.period(services), accessorFn: (x) => x.report },
+          columnHelper.accessor((x) => x.link, {
+            header: "Linking",
+            cell: (cellInfo) => {
+              const value = cellInfo.getValue<LinkBillingReport>();
+
+              if (maybe.isAbsent(value.reportAmount)) {
+                assert(
+                  maybe.isPresent(value.billingAmount),
+                  "Report id is missing",
+                );
+                return (
+                  <div className="flex flex-row gap-2 items-center h-full">
+                    <div>clarify</div>
+                    <div>
                       {services.formatService.financial.amount(
-                        actualLink.billingAmount,
+                        value.billingAmount,
                         billing.netAmount.currency,
                       )}
-                      <div className="text-gray-500">of</div>
-                      <Slot className="text-gray-500">
-                        {services.formatService.financial.amount(
-                          actualLink.reportAmount,
-                          link.report.currency,
-                        )}
-                      </Slot>
                     </div>
+                    <div>of billing</div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-slate-600">
-                      <ContractorWidget
-                        services={services}
-                        contractorId={link.report.contractorId}
-                      />
-                    </div>
-                    <div className="text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                      {link.report.description}
-                    </div>
-                  </div>
-                  <DeleteButtonWidget
-                    services={services}
-                    onDelete={partial(
-                      services.mutationService.deleteBillingReportLink,
-                      actualLink.id,
-                    )}
-                  />
-                </div>
+                );
+              }
+              assert(
+                maybe.isPresent(value.billingAmount),
+                "Billing id is missing",
               );
-            case "clarify":
               return (
-                <div className="flex items-center gap-2" key={actualLink.id}>
-                  <div className="flex flex-row justify-between items-center gap-2">
-                    <Badge variant="warning">Clarification</Badge>
-                  </div>
-                  <div className="text-sm font-medium leading-none shrink-0 w-fit flex flex-row gap-2">
+                <div className="flex flex-row gap-2 items-center h-full">
+                  <div>work of</div>
+                  <div className="text-green-600 font-bold">
                     {services.formatService.financial.amount(
-                      maybe.getOrThrow(
-                        actualLink.reportAmount,
-                        "Amount is missing",
-                      ),
+                      value.billingAmount,
                       billing.netAmount.currency,
                     )}
                   </div>
-                  <div className="self-stretch text-gray-600 text-xs mr-1.5 max-w-64 border border-gray-300 rounded p-1 bg-gray-50">
-                    {actualLink.description}
-                  </div>
-                  <DeleteButtonWidget
-                    services={services}
-                    onDelete={partial(
-                      services.mutationService.deleteBillingReportLink,
-                      actualLink.id,
+                  <ChevronsRight />
+                  <div>
+                    {services.formatService.financial.amount(
+                      value.reportAmount,
+                      maybe.getOrThrow(cellInfo.row.original.report).currency,
                     )}
-                  />
+                  </div>
+                  <div>of report</div>
                 </div>
               );
-          }
-        })}
-        {billing.links.length === 0 && (
-          <div className="text-gray-500 text-center flex flex-row gap-2 items-center">
-            No linked contractor reports.
-          </div>
-        )}
-      </div>
+            },
+          }),
+          {
+            ...foreignColumns.description,
+            accessorKey: "link.description",
+            header: "Link description",
+          },
+          {
+            ...foreignColumns.description,
+            accessorKey: "report.description",
+            header: "Report description",
+          },
+        ]}
+      />
     </InfoLayout>
   );
 }

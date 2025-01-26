@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import { Slot } from "@radix-ui/react-slot";
-import React from "react";
+import React, { useRef } from "react";
 import { ZodError, ZodIssue } from "zod";
 
 type JsonTreeProps = {
@@ -20,6 +20,8 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
   json,
   zodError,
 }) => {
+  const firstErrorPathRef = useRef<string | null>(null);
+
   const issuesByPath: IssuesByPath =
     zodError.issues.reduce<IssuesByPath>((acc, issue) => {
       const path = issue.path.join(".");
@@ -31,8 +33,23 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
       if (!acc[parentPath]) acc[parentPath] = [];
       acc[parentPath].push(issue);
 
+      // Save the first error path
+      if (!firstErrorPathRef.current) {
+        firstErrorPathRef.current = path;
+      }
+
       return acc;
     }, {}) || {};
+
+  const scrollToError = () => {
+    if (firstErrorPathRef.current) {
+      window.location.hash = `#${firstErrorPathRef.current}`;
+      const element = document.querySelector(
+        `[data-error-path="${firstErrorPathRef.current}"]`,
+      );
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
   const renderTree = (data: unknown, path = ""): React.ReactNode => {
     if (typeof data === "object" && data !== null) {
@@ -79,6 +96,7 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
     const labelElement = <span className="text-blue-500">{label}: </span>;
     const element = (
       <div
+        id={path}
         className={cn("inline-block p-1", {
           "text-red-500 font-semibold": hasError,
         })}
@@ -87,7 +105,7 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
         {hasError ? (
           <SimpleTooltip
             title={errors.map((error) => (
-              <div>
+              <div key={error.message}>
                 {error.path.join(".")}: {error.message}
               </div>
             ))}
@@ -100,20 +118,16 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
         ) : (
           labelElement
         )}
-        {errors?.map((error) => {
-          return (
-            <div
-              key={error.message}
-              className="text-red-500 text-sm font-thin m-2"
-            >
-              {makePathLocal(error.path.join("."), path)}: {error.message}
-            </div>
-          );
-        })}
+        {errors?.map((error) => (
+          <div
+            key={error.message}
+            className="text-red-500 text-sm font-thin m-2"
+          >
+            {makePathLocal(error.path.join("."), path)}: {error.message}
+          </div>
+        ))}
         {typeof value === "object" && value !== null
-          ? Array.isArray(value)
-            ? renderTree(value, path)
-            : renderTree(value, path)
+          ? renderTree(value, path)
           : JSON.stringify(value)}
       </div>
     );
@@ -132,12 +146,14 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
       <Tooltip>
         <TooltipContent className="max-h-[300px] max-w-screen-2xl overflow-y-auto whitespace-pre">
           {JSON.stringify(zodError.issues, null, 2)}
-          {/*{zodError.errors.map((x) => x.path).join("\n")}*/}
         </TooltipContent>
         <TooltipTrigger>
-          <div className="p-2 bg-rose-700 text-rose-100 text-lg border border-rose-900 rounded inline-block mb-2">
+          <button
+            onClick={scrollToError}
+            className="p-2 bg-rose-700 text-rose-100 text-lg border border-rose-900 rounded inline-block mb-2"
+          >
             Data not valid
-          </div>
+          </button>
         </TooltipTrigger>
       </Tooltip>
 

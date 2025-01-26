@@ -411,14 +411,22 @@ export const reportColumns = {
     getColumnHelper<ReportViewEntry>().accessor((x) => x, {
       header: "Period",
       id: "period",
-      cell: (info) => (
-        <div className="whitespace-pre">
-          {services.formatService.temporal.range.compact(
-            info.getValue().periodStart,
-            info.getValue().periodEnd,
-          )}
-        </div>
-      ),
+      cell: (info) => {
+        const period = info.getValue();
+
+        if (!period) {
+          return <div className="whitespace-pre">-</div>;
+        }
+
+        return (
+          <div className="whitespace-pre">
+            {services.formatService.temporal.range.compact(
+              period.periodStart,
+              period.periodEnd,
+            )}
+          </div>
+        );
+      },
       meta: {
         sortKey: "period",
       },

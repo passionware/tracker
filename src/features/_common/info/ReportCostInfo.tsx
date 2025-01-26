@@ -1,4 +1,3 @@
-import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -12,7 +11,6 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
-import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
@@ -34,7 +32,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
-import { chain, partial } from "lodash";
+import { partial } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
 
 export interface ReportCostInfoProps
@@ -88,50 +86,7 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
             </PopoverTrigger>
             <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
               <PopoverHeader>Match the report with a cost entry</PopoverHeader>
-              <InlineCostSearch
-                className="overflow-y-auto h-full"
-                showTargetValue
-                showDescription
-                maxSourceAmount={report.remainingFullCompensationAmount}
-                services={services}
-                onSelect={(data) =>
-                  linkingState.track(
-                    services.mutationService.linkCostAndReport({
-                      costId: data.costId,
-                      reportId: report.id,
-                      reportAmount: data.value.source,
-                      costAmount: data.value.target,
-                      description: data.value.description,
-                    }),
-                  )
-                }
-                query={chain(
-                  costQueryUtils.ofDefault(
-                    report.workspace.id,
-                    report.client.id,
-                  ),
-                )
-                  .thru((x) =>
-                    costQueryUtils.setFilter(x, "linkedRemainder", {
-                      operator: "greaterThan",
-                      value: 0,
-                    }),
-                  )
-                  .thru((x) =>
-                    costQueryUtils.setFilter(x, "contractorId", {
-                      operator: "oneOf",
-                      value: [report.contractor.id, null],
-                    }),
-                  )
-                  .thru((x) =>
-                    costQueryUtils.setFilter(x, "potentialClientId", {
-                      operator: "oneOf",
-                      value: [report.client.id, null],
-                    }),
-                  ) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients
-                  .thru((x) => costQueryUtils.removeFilter(x, "clientId")) // we want to see all costs since they may be not linked to any, or effectively linked to multiple clients
-                  .value()}
-              />
+              {/*todo inline searc*/}
             </PopoverContent>
           </Popover>
           <Popover>
@@ -163,13 +118,7 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                     "Only report clarifications are allowed",
                   );
                   void clarifyState.track(
-                    services.mutationService.linkCostAndReport({
-                      reportId: report.id,
-                      reportAmount: data.reportAmount,
-                      description: data.description,
-                      costId: null,
-                      costAmount: 0,
-                    }),
+                    services.mutationService.linkReportAndBilling(data),
                   );
                 }}
                 context={{ reportId: report.id, billingId: -1 }} // stop reusing InlineBilingClarify for cost clarifications
