@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { Maybe, rd, RemoteData } from "@passionware/monads";
@@ -170,30 +171,32 @@ export function AbstractMultiPicker<Id, Data>(
                 "@@unassigned@@",
               )}
             >
-              {unassignedUtils.mapOrElse(
-                data as Unassigned | Data,
-                partialRight(config.renderItem, _props),
-                value.length > 1 ? (
-                  <div
-                    className={cn(
-                      "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-slate-100",
-                      "text-sky-800 dark:text-sky-50 ",
-                    )}
-                  >
-                    <Unlink2 />
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                      "text-sky-800 dark:text-sky-50 ",
-                    )}
-                  >
-                    <Unlink2 />
-                    Unassigned
-                  </div>
-                ),
-              )}
+              <SimpleTooltip title="Unassigned">
+                {unassignedUtils.mapOrElse(
+                  data as Unassigned | Data,
+                  partialRight(config.renderItem, _props),
+                  value.length > 1 ? (
+                    <div
+                      className={cn(
+                        "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-slate-100",
+                        "text-sky-800 dark:text-sky-50 ",
+                      )}
+                    >
+                      <Unlink2 />
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
+                        "text-sky-800 dark:text-sky-50 ",
+                      )}
+                    >
+                      <Unlink2 />
+                      Unassigned
+                    </div>
+                  ),
+                )}
+              </SimpleTooltip>
             </Fragment>
           ));
         })}

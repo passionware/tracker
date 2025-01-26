@@ -82,7 +82,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         <WorkspaceMultiPicker
           size="sm"
           allowUnassigned={allowWorkspace}
-          disabled={queryBarSpecUtils.isDisabled(props.spec.workspace)}
+          visuallyDisabled={queryBarSpecUtils.isDisabled(props.spec.workspace)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.workspace)
               ? "avatar"
@@ -102,7 +102,7 @@ export function CommonQueryBar<Q extends QueryBase>(
         <ClientMultiPicker
           size="sm"
           allowUnassigned={allowClient}
-          disabled={queryBarSpecUtils.isDisabled(props.spec.client)}
+          visuallyDisabled={queryBarSpecUtils.isDisabled(props.spec.client)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.client) ? "avatar" : "full"
           }
@@ -121,7 +121,7 @@ export function CommonQueryBar<Q extends QueryBase>(
           size="sm"
           allowUnassigned={allowContractor}
           services={props.services}
-          disabled={queryBarSpecUtils.isDisabled(props.spec.contractor)}
+          visuallyDisabled={queryBarSpecUtils.isDisabled(props.spec.contractor)}
           layout={
             queryBarSpecUtils.isDisabled(props.spec.contractor)
               ? "avatar"

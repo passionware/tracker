@@ -7,6 +7,10 @@ const buttonVariants = cva(
   "flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
   {
     variants: {
+      visuallyDisabled: {
+        true: "opacity-50 cursor-not-allowed",
+        false: "",
+      },
       variant: {
         headless: "",
         default:
@@ -55,18 +59,46 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  visuallyDisabled?: boolean;
+  onDisabledClick?: (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => void;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, type = "button", variant, size, asChild = false, ...props },
+    {
+      className,
+      type = "button",
+      variant,
+      size,
+      visuallyDisabled,
+      onDisabledClick,
+      onClick,
+      asChild = false,
+      ...props
+    },
     ref,
   ) => {
     const Comp = asChild ? Slot : "button";
     return (
       <Comp
         type={type}
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, visuallyDisabled, className }),
+        )}
+        aria-disabled={props.disabled || visuallyDisabled}
+        onClick={(e) => {
+          if (onDisabledClick && (props.disabled || visuallyDisabled)) {
+            onDisabledClick(e);
+          }
+          if (props.disabled || visuallyDisabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          onClick?.(e);
+        }}
         ref={ref}
         {...props}
       />
