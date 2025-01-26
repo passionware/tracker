@@ -13,7 +13,10 @@ import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
-import { InfoLayout } from "@/features/_common/info/_common/InfoLayout.tsx";
+import {
+  InfoLayout,
+  InfoPopoverContent,
+} from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -376,9 +379,9 @@ export function ChargeInfoPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-fit" side="right" align="center">
+      <InfoPopoverContent>
         <ChargeInfo {...props} />
-      </PopoverContent>
+      </InfoPopoverContent>
     </Popover>
   );
 }
