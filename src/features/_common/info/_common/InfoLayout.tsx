@@ -1,4 +1,6 @@
+import { PopoverContent } from "@/components/ui/popover.tsx";
 import { ReactNode } from "react";
+import { w } from "windstitch";
 
 export interface InfoLayoutProps {
   header: ReactNode;
@@ -15,3 +17,8 @@ export function InfoLayout({ header, children }: InfoLayoutProps) {
     </div>
   );
 }
+
+export const InfoPopoverContent = w(PopoverContent, {
+  className:
+    "max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto",
+});

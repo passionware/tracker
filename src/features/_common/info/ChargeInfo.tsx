@@ -12,6 +12,7 @@ import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
+import { InfoLayout } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -36,6 +37,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { addDays, startOfDay } from "date-fns";
 import { chain, partial, sortBy } from "lodash";
 import { Check, Link2, Loader2 } from "lucide-react";
+import { ReactElement } from "react";
 
 export interface ChargeInfoProps
   extends WithServices<
@@ -87,154 +89,154 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <TransferView
-        services={services}
-        fromAmount={billing.remainingAmount}
-        toAmount={billing.matchedAmount}
-      />
-      {billing.remainingAmount.amount !== 0 && (
-        <div className="flex gap-2 flex-row self-end">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="default" size="xs">
-                Find & link report
-              </Button>
-            </PopoverTrigger>
-            {/* TODO candidate for inline search popover layout?*/}
-            <PopoverContent
-              className={cn(
-                "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
-                "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-opacity-50 backdrop-blur-xl",
-              )}
-              side="bottom"
-              align="start"
-            >
-              <PopoverHeader>
-                Match the billing with a contractor report
-              </PopoverHeader>
-              <InlineReportSearch
-                showBillingColumns
-                showCostColumns={false}
-                context={{
-                  workspaceId: billing.workspace.id,
-                  clientId: billing.client.id,
-                  contractorId: idSpecUtils.ofAll(),
-                }}
-                query={query}
-                services={services}
-                renderSelect={(report, button, track) => {
-                  const isSameCurrency =
-                    report.remainingAmount.currency ===
-                    billing.remainingAmount.currency;
-                  return (
-                    <LinkPopover
-                      context={{
-                        contractorId: report.contractor.id,
-                        workspaceId: report.workspace.id,
-                        clientId: report.client.id,
-                      }}
-                      side="right"
-                      align="center"
-                      services={services}
-                      sourceCurrency={report.remainingAmount.currency}
-                      title="Link contractor report"
-                      sourceLabel="Billing value"
-                      targetLabel="Report value"
-                      targetCurrency={report.remainingAmount.currency}
-                      initialValues={{
-                        // billing
-                        source: isSameCurrency
-                          ? // we have same currency, so probably we don't need to exchange
-                            Math.min(
-                              billing.remainingAmount.amount,
-                              report.remainingAmount.amount,
+    <InfoLayout
+      header={
+        <>
+          Link billing to reports
+          <TransferView
+            services={services}
+            fromAmount={billing.remainingAmount}
+            toAmount={billing.matchedAmount}
+          />
+          {billing.remainingAmount.amount !== 0 && (
+            <div className="flex gap-2 flex-row self-end">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="default" size="xs">
+                    Find & link report
+                  </Button>
+                </PopoverTrigger>
+                {/* TODO candidate for inline search popover layout?*/}
+                <PopoverContent
+                  className={cn(
+                    "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
+                    "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-opacity-50 backdrop-blur-xl",
+                  )}
+                  side="bottom"
+                  align="start"
+                >
+                  <PopoverHeader>
+                    Match the billing with a contractor report
+                  </PopoverHeader>
+                  <InlineReportSearch
+                    showBillingColumns
+                    showCostColumns={false}
+                    context={{
+                      workspaceId: billing.workspace.id,
+                      clientId: billing.client.id,
+                      contractorId: idSpecUtils.ofAll(),
+                    }}
+                    query={query}
+                    services={services}
+                    renderSelect={(report, button, track) => {
+                      const isSameCurrency =
+                        report.remainingAmount.currency ===
+                        billing.remainingAmount.currency;
+                      return (
+                        <LinkPopover
+                          context={{
+                            contractorId: report.contractor.id,
+                            workspaceId: report.workspace.id,
+                            clientId: report.client.id,
+                          }}
+                          side="right"
+                          align="center"
+                          services={services}
+                          sourceCurrency={report.remainingAmount.currency}
+                          title="Link contractor report"
+                          sourceLabel="Billing value"
+                          targetLabel="Report value"
+                          targetCurrency={report.remainingAmount.currency}
+                          initialValues={{
+                            // billing
+                            source: isSameCurrency
+                              ? // we have same currency, so probably we don't need to exchange
+                                Math.min(
+                                  billing.remainingAmount.amount,
+                                  report.remainingAmount.amount,
+                                )
+                              : // this won't be same, so let's assume that cost  = remaining report but in target currency
+                                billing.remainingAmount.amount,
+                            target: isSameCurrency
+                              ? Math.min(
+                                  report.remainingAmount.amount,
+                                  billing.remainingAmount.amount,
+                                )
+                              : report.remainingAmount.amount,
+                            description: [
+                              isSameCurrency
+                                ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${billing.remainingAmount.currency}, exchange cost: [...]`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join("\n"),
+                          }}
+                          onValueChange={(value) =>
+                            track(
+                              services.mutationService.linkReportAndBilling({
+                                linkType: "reconcile",
+                                billingId: billing.id,
+                                billingAmount: value.source,
+                                reportId: report.id,
+                                reportAmount: value.target,
+                                description: value.description,
+                              }),
                             )
-                          : // this won't be same, so let's assume that cost  = remaining report but in target currency
-                            billing.remainingAmount.amount,
-                        target: isSameCurrency
-                          ? Math.min(
-                              report.remainingAmount.amount,
-                              billing.remainingAmount.amount,
-                            )
-                          : report.remainingAmount.amount,
-                        description: [
-                          isSameCurrency
-                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${billing.remainingAmount.currency}, exchange cost: [...]`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join("\n"),
-                      }}
-                      onValueChange={(value) =>
-                        track(
-                          services.mutationService.linkReportAndBilling({
-                            linkType: "reconcile",
-                            billingId: billing.id,
-                            billingAmount: value.source,
-                            reportId: report.id,
-                            reportAmount: value.target,
-                            description: value.description,
-                          }),
-                        )
-                      }
-                    >
-                      {button}
-                    </LinkPopover>
-                  );
-                }}
-                initialNewReportValues={{
-                  workspaceId: billing.workspace.id,
-                  clientId: billing.client.id,
-                  currency: billing.netAmount.currency,
-                  contractorId:
-                    billing.contractors[billing.contractors.length - 1]?.id,
-                  netValue: billing.remainingAmount.amount,
-                  periodStart: rd.getOrElse(newReportStartDate, undefined),
-                  periodEnd: startOfDay(new Date()),
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="warning" size="xs">
-                {rd
-                  .fullJourney(clarifyState.state)
-                  .initially(<Link2 />)
-                  .wait(<Loader2 />)
-                  .catch(renderSmallError("w-6 h-4"))
-                  .map(() => (
-                    <Check />
-                  ))}
-                Clarify
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-fit max-w-md"
-              align="center"
-              side="right"
-            >
-              <InlineBillingClarify
-                maxAmount={billing.remainingAmount.amount}
-                services={services}
-                onSelect={(data) =>
-                  clarifyState.track(
-                    services.mutationService.linkReportAndBilling(data),
-                  )
-                }
-                context={{ billingId: billing.id }}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
-
-      <Separator className="my-2" />
-      <div className="text-sm text-gray-700 font-medium my-1 text-center">
-        Linked Reports
-      </div>
-      <Separator className="my-2" />
+                          }
+                        >
+                          {button}
+                        </LinkPopover>
+                      );
+                    }}
+                    initialNewReportValues={{
+                      workspaceId: billing.workspace.id,
+                      clientId: billing.client.id,
+                      currency: billing.netAmount.currency,
+                      contractorId:
+                        billing.contractors[billing.contractors.length - 1]?.id,
+                      netValue: billing.remainingAmount.amount,
+                      periodStart: rd.getOrElse(newReportStartDate, undefined),
+                      periodEnd: startOfDay(new Date()),
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="warning" size="xs">
+                    {rd
+                      .fullJourney(clarifyState.state)
+                      .initially(<Link2 />)
+                      .wait(<Loader2 />)
+                      .catch(renderSmallError("w-6 h-4"))
+                      .map(() => (
+                        <Check />
+                      ))}
+                    Clarify
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-fit max-w-md"
+                  align="center"
+                  side="right"
+                >
+                  <InlineBillingClarify
+                    maxAmount={billing.remainingAmount.amount}
+                    services={services}
+                    onSelect={(data) =>
+                      clarifyState.track(
+                        services.mutationService.linkReportAndBilling(data),
+                      )
+                    }
+                    context={{ billingId: billing.id }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </>
+      }
+    >
       <div className="space-y-8">
         {billing.links.map((link) => {
           const actualLink = link.link;
@@ -349,6 +351,24 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
           </div>
         )}
       </div>
-    </div>
+    </InfoLayout>
+  );
+}
+
+export type ChargeInfoPopoverProps = ChargeInfoProps & {
+  children: ReactElement;
+};
+
+export function ChargeInfoPopover({
+  children,
+  ...props
+}: ChargeInfoPopoverProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-fit" side="right" align="center">
+        <ChargeInfo {...props} />
+      </PopoverContent>
+    </Popover>
   );
 }

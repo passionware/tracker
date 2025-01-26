@@ -1,15 +1,9 @@
 import { Cost } from "@/api/cost/cost.api.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
+import { ChargeInfoPopover } from "@/features/_common/info/ChargeInfo.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -87,45 +81,35 @@ export const billingColumns = {
         getColumnHelper<BillingViewEntry>().accessor("status", {
           header: "Status",
           cell: (info) => (
-            <Popover>
-              <PopoverTrigger>
-                <RollingBadge
-                  className="max-w-24"
-                  tone="solid"
-                  variant={
-                    (
-                      {
-                        matched: "positive",
-                        unmatched: "destructive",
-                        "partially-matched": "warning",
-                        clarified: "secondary",
-                        overmatched: "accent1",
-                      } as const
-                    )[info.getValue()]
-                  }
-                >
-                  {
-                    (
-                      {
-                        matched: "Matched",
-                        unmatched: "Unmatched",
-                        "partially-matched": "Partially Matched",
-                        clarified: "Clarified",
-                        overmatched: "Overmatched",
-                      } as const
-                    )[info.getValue()]
-                  }
-                </RollingBadge>
-              </PopoverTrigger>
-              <PopoverContent
-                side="bottom"
-                align="start"
-                className="w-fit max-h-[calc(-1rem+var(--radix-popover-content-available-height))] overflow-y-auto"
+            <ChargeInfoPopover billing={info.row.original} services={services}>
+              <RollingBadge
+                className="max-w-24"
+                tone="solid"
+                variant={
+                  (
+                    {
+                      matched: "positive",
+                      unmatched: "destructive",
+                      "partially-matched": "warning",
+                      clarified: "secondary",
+                      overmatched: "accent1",
+                    } as const
+                  )[info.getValue()]
+                }
               >
-                <PopoverHeader>Invoice details</PopoverHeader>
-                <ChargeInfo services={services} billing={info.row.original} />
-              </PopoverContent>
-            </Popover>
+                {
+                  (
+                    {
+                      matched: "Matched",
+                      unmatched: "Unmatched",
+                      "partially-matched": "Partially Matched",
+                      clarified: "Clarified",
+                      overmatched: "Overmatched",
+                    } as const
+                  )[info.getValue()]
+                }
+              </RollingBadge>
+            </ChargeInfoPopover>
           ),
         }),
       read: getColumnHelper<BillingViewEntry>().accessor("status", {
