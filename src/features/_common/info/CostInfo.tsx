@@ -69,7 +69,7 @@ export function CostInfo({
 
   return (
     <div className="flex flex-col gap-3">
-      <PopoverHeader className="grid grid-cols-3 justify-content-around p-0">
+      <PopoverHeader className="flex flex-row gap-4 p-0">
         <div>Cost linking to reports</div>
         <TransferView
           services={services}

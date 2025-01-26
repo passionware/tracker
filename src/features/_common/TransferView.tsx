@@ -35,67 +35,75 @@ export function TransferView({
     totalAmount > 0 ? ((extraAmount?.amount || 0) / totalAmount) * 100 : 0;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {/* Main Content */}
-      <div className="flex items-center justify-center gap-2">
-        <div
-          className={cn(
-            "flex items-center gap-2",
-            fromAmount.amount === 0 ? "text-gray-800" : "text-red-800",
-          )}
-        >
-          <Badge tone="outline" variant="destructive">
-            {fromLabel ?? "Remaining"}
-          </Badge>
-          <span>{services.formatService.financial.currency(fromAmount)}</span>
-        </div>
-        <ChevronsRight className="size-6" strokeWidth={1} />
-        <div
-          className={cn(
-            "flex items-center gap-2",
-            toAmount.amount === 0 ? "text-gray-800" : "text-green-800",
-          )}
-        >
-          <Badge tone="outline" variant="positive">
-            {toLabel ?? "Reconciled"}
-          </Badge>
-          <span>{services.formatService.financial.currency(toAmount)}</span>
-        </div>
-        {extraAmount && extraLabel && (
-          <>
-            <ChevronsRight className="size-6" strokeWidth={1} />
-            <div
-              className={cn(
-                "flex items-center gap-2",
-                extraAmount.amount === 0 ? "text-gray-800" : "text-green-800",
-              )}
-            >
-              <Badge tone="outline" variant="positive">
-                {extraLabel}
-              </Badge>
-              <span>
-                {services.formatService.financial.currency(extraAmount)}
-              </span>
-            </div>
-          </>
+    <div className="flex items-center gap-1 w-full flex-1">
+      {/* Remaining */}
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          fromAmount.amount === 0 ? "text-gray-800" : "text-red-800",
         )}
+      >
+        <Badge tone="outline" variant="destructive">
+          {fromLabel ?? "Remaining"}
+        </Badge>
+        <span>{services.formatService.financial.currency(fromAmount)}</span>
       </div>
 
-      {/* Compact Visual Bar */}
-      <div className="w-full flex gap-0.5 first:*:rounded-l-full last:*:rounded-r-full">
-        <div
-          className="h-2 bg-red-800"
-          style={{ width: `${fromPercentage}%` }}
-          title={`From: ${fromPercentage.toFixed(2)}%`}
-        ></div>
-        <div
-          className="h-2 bg-green-800"
-          style={{ width: `${toPercentage}%` }}
-          title={`To: ${toPercentage.toFixed(2)}%`}
-        ></div>
+      {/* Arrow */}
+      <ChevronsRight className="size-6" strokeWidth={1} />
+
+      {/* Reconciled */}
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          toAmount.amount === 0 ? "text-gray-800" : "text-green-800",
+        )}
+      >
+        <Badge tone="outline" variant="positive">
+          {toLabel ?? "Reconciled"}
+        </Badge>
+        <span>{services.formatService.financial.currency(toAmount)}</span>
+      </div>
+
+      {/* Optional Extra */}
+      {extraAmount && extraLabel && (
+        <>
+          <ChevronsRight className="size-6" strokeWidth={1} />
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              extraAmount.amount === 0 ? "text-gray-800" : "text-blue-800",
+            )}
+          >
+            <Badge tone="outline" variant="positive">
+              {extraLabel}
+            </Badge>
+            <span>
+              {services.formatService.financial.currency(extraAmount)}
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Inline Visual Bar */}
+      <div className="flex flex-1 items-center h-3 gap-1 ml-4 first:*:rounded-l-full last:*:rounded-r-full min-w-16">
+        {fromAmount.amount > 0 && (
+          <div
+            className="h-full bg-red-800"
+            style={{ width: `${fromPercentage}%` }}
+            title={`From: ${fromPercentage.toFixed(2)}%`}
+          ></div>
+        )}
+        {toAmount.amount > 0 && (
+          <div
+            className="h-full bg-green-800"
+            style={{ width: `${toPercentage}%` }}
+            title={`To: ${toPercentage.toFixed(2)}%`}
+          ></div>
+        )}
         {extraAmount && (
           <div
-            className="h-2 bg-blue-800"
+            className="h-full bg-blue-800"
             style={{ width: `${extraPercentage}%` }}
             title={`Extra: ${extraPercentage.toFixed(2)}%`}
           ></div>
