@@ -12,6 +12,7 @@ import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { InfoLayout } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -68,120 +69,119 @@ export function CostInfo({
   const linkingState = promiseState.useRemoteData();
 
   return (
-    <div className="flex flex-col gap-3">
-      <PopoverHeader className="flex flex-row gap-4 p-0">
-        <div>Cost linking to reports</div>
-        <TransferView
-          services={services}
-          fromAmount={costEntry.remainingAmount}
-          toAmount={costEntry.matchedAmount}
-        />
-        {costEntry.status !== "matched" && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="default"
-                size="xs"
-                className="self-end place-self-end"
-              >
-                {rd
-                  .fullJourney(linkingState.state)
-                  .initially(<Link2 />)
-                  .wait(<Loader2 />)
-                  .catch(renderSmallError("w-6 h-4"))
-                  .map(() => (
-                    <Check />
-                  ))}
-                Find & link report
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
-              <PopoverHeader>
-                Match the cost with a contractor report
-              </PopoverHeader>
-              <InlineReportSearch
-                showBillingColumns={false}
-                showCostColumns={true}
-                context={{
-                  clientId,
-                  workspaceId: costEntry.workspace.id,
-                  contractorId: costEntry.contractor?.id ?? idSpecUtils.ofAll(),
-                }}
-                className="overflow-y-auto h-full"
-                services={services}
-                renderSelect={(report, button, track) => {
-                  const isSameCurrency =
-                    report.remainingAmount.currency ===
-                    costEntry.remainingAmount.currency;
-                  return (
-                    <LinkPopover
-                      context={{
-                        contractorId: report.contractor.id,
-                        workspaceId: report.workspace.id,
-                        clientId: report.client.id,
-                      }}
-                      side="right"
-                      align="center"
-                      services={services}
-                      sourceCurrency={report.remainingAmount.currency}
-                      title="Link contractor report"
-                      sourceLabel="Billing value"
-                      targetLabel="Report value"
-                      targetCurrency={report.remainingAmount.currency}
-                      initialValues={{
-                        // billing
-                        source: isSameCurrency
-                          ? // we have same currency, so probably we don't need to exchange
-                            Math.min(
+    <InfoLayout
+      header={
+        <>
+          Cost linking to reports
+          <TransferView
+            services={services}
+            fromAmount={costEntry.remainingAmount}
+            toAmount={costEntry.matchedAmount}
+          />
+          {costEntry.status !== "matched" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="default" size="xs">
+                  {rd
+                    .fullJourney(linkingState.state)
+                    .initially(<Link2 />)
+                    .wait(<Loader2 />)
+                    .catch(renderSmallError("w-6 h-4"))
+                    .map(() => (
+                      <Check />
+                    ))}
+                  Find & link report
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
+                <PopoverHeader>
+                  Match the cost with a contractor report
+                </PopoverHeader>
+                <InlineReportSearch
+                  showBillingColumns={false}
+                  showCostColumns={true}
+                  context={{
+                    clientId,
+                    workspaceId: costEntry.workspace.id,
+                    contractorId:
+                      costEntry.contractor?.id ?? idSpecUtils.ofAll(),
+                  }}
+                  className="overflow-y-auto h-full"
+                  services={services}
+                  renderSelect={(report, button, track) => {
+                    const isSameCurrency =
+                      report.remainingAmount.currency ===
+                      costEntry.remainingAmount.currency;
+                    return (
+                      <LinkPopover
+                        context={{
+                          contractorId: report.contractor.id,
+                          workspaceId: report.workspace.id,
+                          clientId: report.client.id,
+                        }}
+                        side="right"
+                        align="center"
+                        services={services}
+                        sourceCurrency={report.remainingAmount.currency}
+                        title="Link contractor report"
+                        sourceLabel="Billing value"
+                        targetLabel="Report value"
+                        targetCurrency={report.remainingAmount.currency}
+                        initialValues={{
+                          // billing
+                          source: isSameCurrency
+                            ? // we have same currency, so probably we don't need to exchange
+                              Math.min(
+                                costEntry.remainingAmount.amount,
+                                report.remainingAmount.amount,
+                              )
+                            : // this won't be same, so let's assume that cost  = remaining report but in target currency
                               costEntry.remainingAmount.amount,
-                              report.remainingAmount.amount,
-                            )
-                          : // this won't be same, so let's assume that cost  = remaining report but in target currency
-                            costEntry.remainingAmount.amount,
-                        target: isSameCurrency
-                          ? Math.min(
-                              report.remainingAmount.amount,
-                              costEntry.remainingAmount.amount,
-                            )
-                          : report.remainingAmount.amount,
-                        description: [
-                          isSameCurrency
-                            ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${costEntry.remainingAmount.currency}, exchange cost: [...]`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join("\n"),
-                      }}
-                      onValueChange={(value) =>
-                        track(
-                          services.mutationService.linkCostAndReport({
-                            costId: costEntry.id,
-                            costAmount: value.source,
-                            reportId: report.id,
-                            reportAmount: value.target,
-                            description: value.description,
-                          }),
-                        )
-                      }
-                    >
-                      {button}
-                    </LinkPopover>
-                  );
-                }}
-                query={reportQueryUtils
-                  .getBuilder(costEntry.workspace.id, clientId)
-                  .build((x) => [
-                    x.withFilter("immediatePaymentDue", {
-                      operator: "greaterThan",
-                      value: 0,
-                    }),
-                  ])}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
-      </PopoverHeader>
-
+                          target: isSameCurrency
+                            ? Math.min(
+                                report.remainingAmount.amount,
+                                costEntry.remainingAmount.amount,
+                              )
+                            : report.remainingAmount.amount,
+                          description: [
+                            isSameCurrency
+                              ? `Currency exchange, 1 ${report.remainingAmount.currency} = [...] ${costEntry.remainingAmount.currency}, exchange cost: [...]`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join("\n"),
+                        }}
+                        onValueChange={(value) =>
+                          track(
+                            services.mutationService.linkCostAndReport({
+                              costId: costEntry.id,
+                              costAmount: value.source,
+                              reportId: report.id,
+                              reportAmount: value.target,
+                              description: value.description,
+                            }),
+                          )
+                        }
+                      >
+                        {button}
+                      </LinkPopover>
+                    );
+                  }}
+                  query={reportQueryUtils
+                    .getBuilder(costEntry.workspace.id, clientId)
+                    .build((x) => [
+                      x.withFilter("immediatePaymentDue", {
+                        operator: "greaterThan",
+                        value: 0,
+                      }),
+                    ])}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </>
+      }
+    >
       <ListView
         data={rd.of(costEntry.linkReports)}
         columns={[
@@ -282,7 +282,7 @@ export function CostInfo({
         query={reportQueryUtils.ofDefault(workspaceId, clientId)}
         onQueryChange={() => void 0}
       />
-    </div>
+    </InfoLayout>
   );
 }
 export type CostInfoPopoverProps = CostInfoProps & { children: ReactElement };
