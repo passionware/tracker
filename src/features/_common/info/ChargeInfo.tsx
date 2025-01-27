@@ -379,7 +379,7 @@ export function ChargeInfoPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <InfoPopoverContent>
+      <InfoPopoverContent align="start" side="bottom">
         <ChargeInfo {...props} />
       </InfoPopoverContent>
     </Popover>

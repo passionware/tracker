@@ -417,7 +417,7 @@ export function ReportInfoPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <InfoPopoverContent>
+      <InfoPopoverContent align="start" side="bottom">
         <ReportInfo {...props} />
       </InfoPopoverContent>
     </Popover>

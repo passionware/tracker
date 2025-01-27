@@ -286,7 +286,7 @@ export function CostInfoPopover({ children, ...props }: CostInfoPopoverProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <InfoPopoverContent>
+      <InfoPopoverContent align="start" side="bottom">
         <CostInfo {...props} />
       </InfoPopoverContent>
     </Popover>
