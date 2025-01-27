@@ -11,7 +11,7 @@ import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
-import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
+import { ReportInfoPopover } from "@/features/_common/info/ReportInfo.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
@@ -124,43 +124,37 @@ export const reportColumns = {
             tooltip: headers.chargeStatus,
           },
           cell: (info) => (
-            <Popover>
-              <PopoverTrigger>
-                <RollingBadge
-                  className="max-w-20"
-                  variant={
-                    (
-                      {
-                        billed: "positive",
-                        "partially-billed": "warning",
-                        uncovered: "destructive",
-                        clarified: "secondary",
-                      } as const
-                    )[info.getValue()]
-                  }
-                >
-                  {
+            <ReportInfoPopover report={info.row.original} services={services}>
+              <RollingBadge
+                className="max-w-20"
+                variant={
+                  (
                     {
-                      billed: "Billed",
-                      "partially-billed": (
-                        <>
-                          Bill{" "}
-                          {services.formatService.financial.currency(
-                            info.row.original.remainingAmount,
-                          )}
-                        </>
-                      ),
-                      uncovered: "Uncovered",
-                      clarified: "Clarified",
-                    }[info.getValue()]
-                  }
-                </RollingBadge>
-              </PopoverTrigger>
-              <PopoverContent className="w-fit">
-                <PopoverHeader>Link billings to report</PopoverHeader>
-                <ReportInfo report={info.row.original} services={services} />
-              </PopoverContent>
-            </Popover>
+                      billed: "positive",
+                      "partially-billed": "warning",
+                      uncovered: "destructive",
+                      clarified: "secondary",
+                    } as const
+                  )[info.getValue()]
+                }
+              >
+                {
+                  {
+                    billed: "Billed",
+                    "partially-billed": (
+                      <>
+                        Bill{" "}
+                        {services.formatService.financial.currency(
+                          info.row.original.remainingAmount,
+                        )}
+                      </>
+                    ),
+                    uncovered: "Uncovered",
+                    clarified: "Clarified",
+                  }[info.getValue()]
+                }
+              </RollingBadge>
+            </ReportInfoPopover>
           ),
         }),
       read: (services: MergeServices<[WithFormatService]>) =>
