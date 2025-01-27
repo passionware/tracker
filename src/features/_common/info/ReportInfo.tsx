@@ -9,7 +9,6 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
 import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
