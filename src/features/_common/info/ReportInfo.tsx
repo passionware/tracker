@@ -1,26 +1,30 @@
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
+import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
+import { Report } from "@/api/reports/reports.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import CircleProgress from "@/components/ui/circle-progress.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { DeleteButtonWidget } from "@/features/_common/DeleteButtonWidget.tsx";
+import { billingColumns } from "@/features/_common/columns/billing.tsx";
+import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
-import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { CenteredBar } from "@/features/_common/info/_common/CenteredBar.tsx";
 import {
   InfoLayout,
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
+import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
+import { assert } from "@/platform/lang/assert.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -28,6 +32,10 @@ import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -36,8 +44,9 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
-import { partial } from "lodash";
-import { Check, Link2, Loader2 } from "lucide-react";
+import { createColumnHelper } from "@tanstack/react-table";
+import { max } from "lodash";
+import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface ReportInfoProps
@@ -54,9 +63,18 @@ export interface ReportInfoProps
     ]
   > {
   report: ReportViewEntry;
+  clientId: ClientSpec;
+  workspaceId: WorkspaceSpec;
 }
 
-export function ReportInfo({ services, report }: ReportInfoProps) {
+const columnHelper = createColumnHelper<Report["linkBillingReport"][number]>();
+
+export function ReportInfo({
+  services,
+  clientId,
+  workspaceId,
+  report,
+}: ReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
   return (
@@ -215,17 +233,26 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
         </>
       }
     >
-      <div className="space-y-8">
-        {report.billingLinks.map((link) => (
-          <div className="flex items-center gap-2" key={link.link.id}>
-            {link.link.linkType === "clarify" && (
-              <Badge variant="warning" size="sm">
-                Clarification
-              </Badge>
-            )}
-            {link.link.linkType === "reconcile" &&
-              link.billing &&
-              link.billing.currency === report.netAmount.currency && (
+      <ListView
+        query={billingQueryUtils.ofDefault(clientId, workspaceId)}
+        onQueryChange={() => {}}
+        data={rd.of(report.billingLinks)}
+        columns={[
+          columnHelper.accessor((x) => x, {
+            header: "Link",
+            cell: (cellInfo) => {
+              const link =
+                cellInfo.getValue<Report["linkBillingReport"][number]>();
+              if (!link.billing) {
+                return (
+                  <Badge variant="warning" size="sm">
+                    Clarification
+                  </Badge>
+                );
+              }
+              assert(link.link.billingId, "billing is missing");
+              assert(link.link.reportId, "report is missing");
+              return (
                 <LinkPopover
                   context={{
                     contractorId: report.contractor.id,
@@ -271,87 +298,99 @@ export function ReportInfo({ services, report }: ReportInfoProps) {
                     })()}
                   </Button>
                 </LinkPopover>
-              )}
+              );
+            },
+          }),
+          {
+            ...foreignColumns.clientId(services),
+            accessorKey: "billing.clientId",
+          },
+          {
+            ...billingColumns.invoiceDate(services),
+            accessorKey: "billing.invoiceDate",
+          },
+          {
+            ...billingColumns.invoiceNumber,
+            accessorKey: "billing.invoiceNumber",
+          },
+          columnHelper.accessor((x) => x.link, {
+            header: "Linking",
+            cell: (cellInfo) => {
+              const value = cellInfo.getValue<LinkBillingReport>();
 
-            <div className="text-sm font-medium leading-none flex flex-row gap-2 items-center">
-              {services.formatService.financial.amount(
-                maybe.getOrThrow(
-                  link.link.reportAmount,
-                  "reportAmount is missing",
-                ),
-                report.netAmount.currency,
-              )}
-              /{services.formatService.financial.currency(report.netAmount)}
-              <CircleProgress
-                className="w-6 h-6 border rounded-full"
-                value={
-                  ((link.link.reportAmount ?? 0) / report.netAmount.amount) *
-                  100
-                }
-              />
-              {link.billing && (
-                <div className="contents text-gray-500">
-                  of work billed as
-                  {services.formatService.financial.amount(
-                    maybe.getOrThrow(
-                      link.link.billingAmount,
-                      "billingAmount is missing",
-                    ),
-                    link.billing.currency,
-                  )}
-                  to
-                  <ClientWidget
-                    size="xs"
-                    clientId={link.billing.clientId}
-                    services={services}
-                  />
-                  as
-                </div>
-              )}
-            </div>
-            <div className="ml-auto font-medium text-sm flex flex-col items-end gap-1">
-              {link.billing && (
-                <>
-                  <div className="text-gray-600 text-xs mr-1.5">
-                    {link.billing.invoiceNumber}
-                  </div>
-                  {services.formatService.temporal.single.compact(
-                    link.billing.invoiceDate,
-                  )}
-                </>
-              )}
-              {link.link.linkType === "clarify" && (
-                <Popover>
-                  <PopoverTrigger>
-                    <Badge size="sm" variant="secondary">
-                      Justification
-                    </Badge>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="end"
-                    side="right"
-                    className="max-w-lg w-fit"
-                  >
-                    <PopoverHeader>
-                      Justification for unmatched amount
-                    </PopoverHeader>
-                    <div className="text-xs text-gray-900">
-                      {link.link.description}
+              if (maybe.isAbsent(value.reportAmount)) {
+                assert(
+                  maybe.isPresent(value.billingAmount),
+                  "Report id is missing",
+                );
+                return (
+                  <div className="flex flex-row gap-2 items-center h-full">
+                    <div>clarify</div>
+                    <div>
+                      {services.formatService.financial.amount(
+                        value.billingAmount,
+                        report.netAmount.currency,
+                      )}
                     </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-            <DeleteButtonWidget
-              services={services}
-              onDelete={partial(
-                services.mutationService.deleteBillingReportLink,
-                link.link.id,
-              )}
-            />
-          </div>
-        ))}
-      </div>
+                    <div>of billing</div>
+                  </div>
+                );
+              }
+              assert(
+                maybe.isPresent(value.billingAmount),
+                "Billing id is missing",
+              );
+              return (
+                <div className="flex flex-row gap-2 items-center h-full">
+                  <div>work of</div>
+                  <div>
+                    {services.formatService.financial.amount(
+                      value.reportAmount,
+                      maybe.getOrThrow(report).netAmount.currency,
+                    )}
+                  </div>
+                  <ChevronsRight />
+                  <div className="text-green-600 font-bold">
+                    {services.formatService.financial.amount(
+                      value.billingAmount,
+                      report.netAmount.currency,
+                    )}
+                  </div>
+                  <div>of report</div>
+                </div>
+              );
+            },
+          }),
+          columnHelper.accessor((x) => x.link, {
+            header: "Link balance",
+            cell: (cellInfo) => {
+              const value = cellInfo.getValue<LinkBillingReport>();
+              if (
+                maybe.isAbsent(value.reportAmount) ||
+                maybe.isAbsent(value.billingAmount)
+              ) {
+                return "-";
+              }
+              return (
+                <CenteredBar
+                  maxAmount={
+                    max(
+                      report.billingLinks.map((link) =>
+                        Math.max(
+                          link.link.billingAmount ?? 0,
+                          link.link.reportAmount ?? 0,
+                        ),
+                      ),
+                    ) ?? 0
+                  }
+                  value={value.billingAmount - value.reportAmount}
+                />
+              );
+            },
+          }),
+        ]}
+      />
+
       <Alert variant="info" className="mt-4">
         <AlertTitle>
           If remaining amount is greater than 0, it may mean:

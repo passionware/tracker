@@ -24,7 +24,11 @@ import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
+import {
+  ClientSpec,
+  WithRoutingService,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -117,6 +121,8 @@ export const reportColumns = {
             WithContractorService,
           ]
         >,
+        clientId: ClientSpec,
+        workspaceId: WorkspaceSpec,
       ) =>
         columnHelper.accessor("status", {
           header: "Charge",
@@ -124,7 +130,12 @@ export const reportColumns = {
             tooltip: headers.chargeStatus,
           },
           cell: (info) => (
-            <ReportInfoPopover report={info.row.original} services={services}>
+            <ReportInfoPopover
+              workspaceId={workspaceId}
+              clientId={clientId}
+              report={info.row.original}
+              services={services}
+            >
               <RollingBadge
                 className="max-w-20"
                 variant={

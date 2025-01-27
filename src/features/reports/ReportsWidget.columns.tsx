@@ -32,7 +32,11 @@ export function useColumns(props: ReportsWidgetProps) {
       clientId: props.clientId,
       workspaceId: props.workspaceId,
     }),
-    reportColumns.billing.linkingStatus.allowModify(props.services),
+    reportColumns.billing.linkingStatus.allowModify(
+      props.services,
+      props.clientId,
+      props.workspaceId,
+    ),
     reportColumns.cost.immediateLinkingStatus.allowModify(props.services),
     reportColumns.cost.linkingStatus.read,
     reportColumns.netAmount(props.services),
