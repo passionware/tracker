@@ -361,6 +361,11 @@ export function ReportInfo({
               );
             },
           }),
+          {
+            ...foreignColumns.description,
+            accessorKey: "billing.description",
+            header: "Description",
+          },
           columnHelper.accessor((x) => x.link, {
             header: "Link balance",
             cell: (cellInfo) => {
