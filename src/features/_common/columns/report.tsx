@@ -1,16 +1,10 @@
 import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { ReportCostInfo } from "@/features/_common/info/ReportCostInfo.tsx";
+import { ReportCostInfoPopover } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfoPopover } from "@/features/_common/info/ReportInfo.tsx";
 import { headers } from "@/features/reports/headers.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -250,49 +244,43 @@ export const reportColumns = {
             tooltip: headers.compensationStatus,
           },
           cell: (info) => (
-            <Popover>
-              <PopoverTrigger>
-                <RollingBadge
-                  className="max-w-20"
-                  tone="solid"
-                  variant={
-                    (
-                      {
-                        compensated: "positive",
-                        "partially-compensated": "warning",
-                        uncompensated: "destructive",
-                        clarified: "secondary",
-                      } as const
-                    )[info.getValue()]
-                  }
-                >
-                  {
-                    (
-                      {
-                        compensated: "Paid",
-                        "partially-compensated": (
-                          <>
-                            Pay{" "}
-                            {services.formatService.financial.currency(
-                              info.row.original.remainingCompensationAmount,
-                            )}
-                          </>
-                        ),
-                        uncompensated: "Unpaid",
-                        clarified: "Clarified",
-                      } as const
-                    )[info.getValue()]
-                  }
-                </RollingBadge>
-              </PopoverTrigger>
-              <PopoverContent className="w-fit">
-                <PopoverHeader>Compensation details</PopoverHeader>
-                <ReportCostInfo
-                  report={info.row.original}
-                  services={services}
-                />
-              </PopoverContent>
-            </Popover>
+            <ReportCostInfoPopover
+              report={info.row.original}
+              services={services}
+            >
+              <RollingBadge
+                className="max-w-20"
+                tone="solid"
+                variant={
+                  (
+                    {
+                      compensated: "positive",
+                      "partially-compensated": "warning",
+                      uncompensated: "destructive",
+                      clarified: "secondary",
+                    } as const
+                  )[info.getValue()]
+                }
+              >
+                {
+                  (
+                    {
+                      compensated: "Paid",
+                      "partially-compensated": (
+                        <>
+                          Pay{" "}
+                          {services.formatService.financial.currency(
+                            info.row.original.remainingCompensationAmount,
+                          )}
+                        </>
+                      ),
+                      uncompensated: "Unpaid",
+                      clarified: "Clarified",
+                    } as const
+                  )[info.getValue()]
+                }
+              </RollingBadge>
+            </ReportCostInfoPopover>
           ),
         }),
       read: (services: WithFormatService) =>
