@@ -36,11 +36,11 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd } from "@passionware/monads";
+import { rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
+import { Check, ChevronsRight, Link2, Loader2, Trash2 } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface CostInfoProps
@@ -70,6 +70,8 @@ export function CostInfo({
   workspaceId,
 }: CostInfoProps) {
   const linkingState = promiseState.useRemoteData();
+
+  const isDangerMode = services.preferenceService.useIsDangerMode();
 
   return (
     <InfoLayout
@@ -234,7 +236,10 @@ export function CostInfo({
             accessorKey: "report.contractorId",
           },
 
-          { ...reportColumns.period(services), accessorFn: (x) => x.report },
+          {
+            ...reportColumns.period(services),
+            accessorFn: (x: Cost["linkReports"][0]) => x.report,
+          },
           columnHelper.accessor((x) => x.link, {
             header: "Linking",
             cell: (cellInfo) => {
@@ -274,7 +279,26 @@ export function CostInfo({
             accessorKey: "report.description",
             header: "Report description",
           },
-        ]}
+          isDangerMode &&
+            columnHelper.display({
+              header: "Actions",
+              cell: (info) => (
+                <Button
+                  variant="outline-destructive"
+                  size="icon-xs"
+                  onClick={() => {
+                    linkingState.track(
+                      services.mutationService.deleteCostReportLink(
+                        info.row.original.link.id,
+                      ),
+                    );
+                  }}
+                >
+                  <Trash2 />
+                </Button>
+              ),
+            }),
+        ].filter(truthy.isTruthy)}
         query={reportQueryUtils.ofDefault(workspaceId, clientId)}
         onQueryChange={() => void 0}
       />

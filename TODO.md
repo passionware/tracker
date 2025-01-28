@@ -111,9 +111,19 @@ Dodatkowe Uwagi
 • Zalecane jest raczej używanie dwuwartościowych linków (reportValue, billingValue) zamiast jednowartościowych.
 • W planach jest rozbudowany system wtyczek (pluginów) pozwalający automatyzować m.in. pobieranie danych z TMetric i przeliczanie różnych stawek (np. stawka godzinowa, marże, flat rate).
 
+DONE:
+
+- variables - copy to workspace/client/contractor
+
 TODO:
 
 - Dla każdego linka można by jakoś zdefiniować funkcję konwertującą, aby przy każdorazowej aktualizacji linka, ją wykonać, oraz wyświetlić to.
-- variables - copy to workspace/client/contractor
 - pokazywanie długości okresu, dla którego jest raport (i faktura tez - na podstawie linked reports - moze tez wykres fragmentacji? lub gantta)
 - expandable table row zamiast popovera - linki
+- generic csv/html table import
+- rozpoznawanie kolumn
+- drag&drop zeby zmatchować z kolumnami
+- poprawki na każdym polu - freetext
+- konwersja kolumny- toNumber(), toDate() - jako przyciski
+- identyfikacja duplikatów w locie - checkboxy do wybrania tylko tych które chce zaimportowac, jak znajdzie duplikaty to je odznacza
+- import/export do pliku różnych tabel (backup/restore)
