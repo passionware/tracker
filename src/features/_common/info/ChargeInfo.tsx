@@ -42,7 +42,7 @@ import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { addDays, startOfDay } from "date-fns";
 import { chain, sortBy } from "lodash";
-import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
+import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface ChargeInfoProps
@@ -340,7 +340,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       billing.netAmount.currency,
                     )}
                   </div>
-                  <ChevronsRight />
+                  <Shuffle className="size-4" />
                   <div>
                     {services.formatService.financial.amount(
                       value.reportAmount,

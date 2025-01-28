@@ -40,7 +40,7 @@ import { rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Check, ChevronsRight, Link2, Loader2, Trash2 } from "lucide-react";
+import { Check, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface CostInfoProps
@@ -129,7 +129,7 @@ export function CostInfo({
                         services={services}
                         sourceCurrency={report.remainingAmount.currency}
                         title="Link contractor report"
-                        sourceLabel="Billing value"
+                        sourceLabel="Cost value"
                         targetLabel="Report value"
                         targetCurrency={report.remainingAmount.currency}
                         initialValues={{
@@ -246,14 +246,14 @@ export function CostInfo({
               const value = cellInfo.getValue();
               return (
                 <div className="flex flex-row gap-2 items-center h-full">
-                  <div>work of</div>
+                  <div>cost of</div>
                   <div className="text-green-600 font-bold">
                     {services.formatService.financial.amount(
                       value.costAmount,
                       costEntry.netAmount.currency,
                     )}
                   </div>
-                  <ChevronsRight />
+                  <Shuffle className="size-4" />
                   <div>
                     {services.formatService.financial.amount(
                       value.reportAmount,

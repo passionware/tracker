@@ -34,7 +34,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
+import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface ReportCostInfoProps
@@ -191,7 +191,7 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                       report.netAmount.currency,
                     )}
                   </div>
-                  <ChevronsRight />
+                  <Shuffle className="size-4" />
                   <div>
                     {services.formatService.financial.amount(
                       link.costAmount,

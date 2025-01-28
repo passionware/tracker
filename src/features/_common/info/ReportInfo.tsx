@@ -46,7 +46,7 @@ import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { max } from "lodash";
-import { Check, ChevronsRight, Link2, Loader2 } from "lucide-react";
+import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
 
 export interface ReportInfoProps
@@ -349,7 +349,7 @@ export function ReportInfo({
                       maybe.getOrThrow(report).netAmount.currency,
                     )}
                   </div>
-                  <ChevronsRight />
+                  <Shuffle className="size-4" />
                   <div className="text-green-600 font-bold">
                     {services.formatService.financial.amount(
                       value.billingAmount,

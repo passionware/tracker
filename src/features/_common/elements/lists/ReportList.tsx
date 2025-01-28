@@ -53,6 +53,7 @@ export function ReportList(props: ReportListProps) {
         ...reportColumns.getContextual(props.context),
         reportColumns.period(props.services),
         reportColumns.billing.linkingStatus.read(props.services),
+        reportColumns.cost.immediateLinkingStatus.read(props.services),
         reportColumns.netAmount(props.services),
         props.showBillingColumns
           ? reportColumns.billing.linkedValue(props.services)
