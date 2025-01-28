@@ -333,7 +333,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
               );
               return (
                 <div className="flex flex-row gap-2 items-center h-full">
-                  <div>work of</div>
+                  <div>billing of</div>
                   <div className="text-green-600 font-bold">
                     {services.formatService.financial.amount(
                       value.billingAmount,
