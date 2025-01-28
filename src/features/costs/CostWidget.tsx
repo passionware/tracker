@@ -93,6 +93,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                           .currency,
                     ),
                     invoiceDate: new Date(),
+                    contractorId: query.filters.contractorId?.value[0],
                   }}
                   services={props.services}
                   onSubmit={(data) =>
