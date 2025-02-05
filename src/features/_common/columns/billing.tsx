@@ -149,11 +149,12 @@ export const billingColumns = {
       getColumnHelper<BillingViewEntry>().accessor("matchedAmount", {
         header: "Matched Amount",
         cell: (info) => (
-          <div className="empty:hidden flex flex-row gap-1.5 items-center">
+          <div className="empty:hidden flex flex-row gap-1.5 items-center content-between">
             {services.formatService.financial.amount(
               info.getValue().amount,
               info.getValue().currency,
             )}
+              <div className="flex-1"/>
             {info.row.original.contractors.map((contractor) => (
               <ContractorView
                 size="sm"
