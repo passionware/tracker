@@ -154,7 +154,7 @@ export const billingColumns = {
               info.getValue().amount,
               info.getValue().currency,
             )}
-              <div className="flex-1"/>
+              <div className="flex-1 -mx-0.5"/>
             {info.row.original.contractors.map((contractor) => (
               <ContractorView
                 size="sm"
