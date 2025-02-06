@@ -274,11 +274,11 @@ export function RootWidget(
           }
         />
         <Route
-          path={props.services.routingService
+          path={`${props.services.routingService
             .forWorkspace()
             .forClient()
             .forProject()
-            .root()}
+            .root()}/*`}
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>

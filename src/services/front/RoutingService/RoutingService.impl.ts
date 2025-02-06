@@ -43,7 +43,10 @@ export function createRoutingService(): RoutingService {
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/past`,
             forProject: (projectId = ":projectId") => {
               const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
-              return { root: () => base };
+              return {
+                root: () => base,
+                configuration: () => `${base}/configuration`,
+              };
             },
           };
         },
