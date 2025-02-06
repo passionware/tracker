@@ -52,7 +52,7 @@ function useData(
       navMain: [
         {
           title: "Projects",
-          url: "#",
+          url: routing.projectsRoot(),
           icon: BriefcaseBusiness,
           items: [
             {
@@ -71,9 +71,8 @@ function useData(
         },
         {
           title: "Cash flow",
-          url: "#",
+          url: routing.flowRoot(),
           icon: HandCoins,
-          isActive: true,
           items: [
             {
               title: "Work Reports",
@@ -110,7 +109,7 @@ function useData(
         },
         {
           title: "Environment",
-          url: "#",
+          url: routing.environmentRoot(),
           icon: Leaf,
           items: [
             {

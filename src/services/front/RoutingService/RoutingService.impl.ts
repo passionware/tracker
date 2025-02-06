@@ -12,13 +12,18 @@ export function createRoutingService(): RoutingService {
         forClient: (clientId) => {
           const clientSlot = routingUtils.client.toString(clientId);
           return {
-            reports: () => `/w/${workspaceSlot}/clients/${clientSlot}/reports`,
-            charges: () => `/w/${workspaceSlot}/clients/${clientSlot}/charges`,
-            costs: () => `/w/${workspaceSlot}/clients/${clientSlot}/costs`,
+            flowRoot: () => `/w/${workspaceSlot}/clients/${clientSlot}/flow`,
+            reports: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/flow/reports`,
+            charges: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/flow/charges`,
+            costs: () => `/w/${workspaceSlot}/clients/${clientSlot}/flow/costs`,
+            environmentRoot: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/environment`,
             variables: () =>
-              `/w/${workspaceSlot}/clients/${clientSlot}/variables`,
+              `/w/${workspaceSlot}/clients/${clientSlot}/environment/variables`,
             potentialCosts: () =>
-              `/w/${workspaceSlot}/clients/${clientSlot}/potentialCosts`,
+              `/w/${workspaceSlot}/clients/${clientSlot}/flow/potentialCosts`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,
             forContractor: (contractorId) => {
               const contractorSlot =
@@ -28,8 +33,10 @@ export function createRoutingService(): RoutingService {
                   `/w/${workspaceSlot}/clients/${clientSlot}/contractors/${contractorSlot}`,
               };
             },
-            allProjects: () =>
+            projectsRoot: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects`,
+            allProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects/all`,
             currentProjects: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/current`,
             pastProjects: () =>

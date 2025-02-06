@@ -74,15 +74,18 @@ export interface RoutingService {
   forWorkspace: (workspaceId?: WorkspaceParam) => {
     root: () => string;
     forClient: (clientId?: ClientParam) => {
+      flowRoot: () => string;
       reports: () => string;
       charges: () => string;
       costs: () => string;
+      environmentRoot: () => string;
       variables: () => string;
       potentialCosts: () => string;
       root: () => string;
       forContractor: (contractorId?: ContractorParam) => {
         root: () => string;
       };
+      projectsRoot: () => string;
       allProjects: () => string;
       currentProjects: () => string;
       pastProjects: () => string;
