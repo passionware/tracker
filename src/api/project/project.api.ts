@@ -1,3 +1,4 @@
+import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
@@ -39,6 +40,7 @@ export interface Project extends ProjectBase {
 export type ProjectQuery = WithFilters<{
   clientId: EnumFilter<Client["id"]>;
   workspaceId: EnumFilter<Workspace["id"]>;
+  createdAt: DateFilter;
   status: EnumFilter<"draft" | "active" | "closed">;
 }> &
   WithSearch &
@@ -56,6 +58,7 @@ export const projectQueryUtils = withBuilderUtils({
       clientId: null,
       workspaceId: null,
       status: null,
+      createdAt: null,
     },
     page: paginationUtils.ofDefault(),
     sort: null,

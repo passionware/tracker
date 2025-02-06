@@ -1,3 +1,4 @@
+import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import {
   project$,
@@ -33,6 +34,13 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
           request,
           query.filters.clientId,
           "client_id",
+        );
+      }
+      if (query.filters.createdAt) {
+        request = dateFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.createdAt,
+          "created_at",
         );
       }
       if (query.filters.status) {

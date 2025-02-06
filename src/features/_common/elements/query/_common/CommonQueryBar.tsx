@@ -26,9 +26,9 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, Present } from "@passionware/monads";
 
 type QueryBase = WithFilters<{
-  workspaceId: Nullable<EnumFilter<Nullable<Workspace["id"]>>>;
-  clientId: Nullable<EnumFilter<Nullable<Client["id"]>>>;
-  contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
+  workspaceId?: Nullable<EnumFilter<Nullable<Workspace["id"]>>>;
+  clientId?: Nullable<EnumFilter<Nullable<Client["id"]>>>;
+  contractorId?: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
 }> &
   WithPagination;
 

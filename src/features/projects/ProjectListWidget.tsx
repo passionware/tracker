@@ -4,8 +4,10 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { project } from "@/features/_common/columns/project.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryBar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -36,10 +38,9 @@ export interface ProjectListWidgetProps
 }
 
 export function ProjectListWidget(props: ProjectListWidgetProps) {
-  const [query, setQuery] = useState(projectQueryUtils.ofDefault());
-  const projects = props.services.projectService.useProjects(
-    projectQueryUtils.ensureDefault(query, props),
-  );
+  const [_query, setQuery] = useState(projectQueryUtils.ofDefault());
+  const query = projectQueryUtils.ensureDefault(_query, props);
+  const projects = props.services.projectService.useProjects(query);
 
   return (
     <CommonPageContainer
@@ -48,7 +49,24 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
         <ClientBreadcrumbLink {...props} />,
         <BreadcrumbPage>Projects</BreadcrumbPage>,
       ]}
-      tools={<></>}
+      tools={
+        <>
+          <ProjectQueryBar
+            query={query}
+            onQueryChange={setQuery}
+            services={props.services}
+            spec={{
+              workspace: idSpecUtils.takeOrElse(
+                props.workspaceId,
+                "disable",
+                "show",
+              ),
+              client: idSpecUtils.takeOrElse(props.clientId, "disable", "show"),
+              contractor: "hide",
+            }}
+          />
+        </>
+      }
     >
       <ListView
         query={query}
