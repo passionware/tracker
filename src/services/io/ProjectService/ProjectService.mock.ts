@@ -7,10 +7,13 @@ import {
 import { ProjectService } from "./ProjectService";
 
 export function createProjectService(config: {
-  accessor: ArgsScopedAccessor<TestQuery<Project[]>>;
+  listAccessor: ArgsScopedAccessor<TestQuery<Project[]>>;
+  itemAccessor: ArgsScopedAccessor<TestQuery<Project>>;
 }): ProjectService {
   return {
-    useProjects: () => testQuery.useData(config.accessor.use()),
-    ensureProjects: () => testQuery.asPromise(config.accessor.get()),
+    useProjects: () => testQuery.useData(config.listAccessor.use()),
+    ensureProjects: () => testQuery.asPromise(config.listAccessor.get()),
+    useProject: () => testQuery.useData(config.itemAccessor.use()),
+    ensureProject: () => testQuery.asPromise(config.itemAccessor.get()),
   };
 }

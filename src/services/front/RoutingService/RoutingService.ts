@@ -89,7 +89,7 @@ export interface RoutingService {
       allProjects: () => string;
       currentProjects: () => string;
       pastProjects: () => string;
-      forProject: (projectId: string | ":projectId") => {
+      forProject: (projectId?: string | ":projectId") => {
         root: () => string;
       };
     };

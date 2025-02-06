@@ -93,6 +93,26 @@ export function createLocationService(
         api.getCurrentClientId() ?? idSpecUtils.ofAll(),
       );
     },
+    useCurrentProjectId: () => {
+      const match = config.services.navigationService.useMatch(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .root() + "/*",
+      );
+      return maybe.map(match?.params.projectId, parseInt);
+    },
+    getCurrentProjectId: () => {
+      const match = config.services.navigationService.match(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .root() + "/*",
+      );
+      return maybe.map(match?.params.projectId, parseInt);
+    },
   };
   return api;
 }

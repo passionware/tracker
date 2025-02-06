@@ -4,6 +4,10 @@ import {
 } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
+import {
+  IdResolver,
+  ProjectIdResolver,
+} from "@/features/app/RootWidget.idResolvers.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
@@ -11,6 +15,7 @@ import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
@@ -21,11 +26,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import {
-  ClientSpec,
-  WithRoutingService,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
@@ -40,22 +41,7 @@ import { WithProjectService } from "@/services/io/ProjectService/ProjectService.
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
-import { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
-
-function IdResolver(
-  props: WithServices<[WithLocationService]> & {
-    children: (workspaceId: WorkspaceSpec, clientId: ClientSpec) => ReactNode;
-  },
-) {
-  const clientId = props.services.locationService.useCurrentClientId();
-  const workspaceId = props.services.locationService.useCurrentWorkspaceId();
-  return props.children(
-    maybe.getOrThrow(workspaceId, "No workspace ID"),
-    maybe.getOrThrow(clientId, "No client ID"),
-  );
-}
 
 export function RootWidget(
   props: WithServices<
@@ -281,6 +267,33 @@ export function RootWidget(
                       workspaceId={workspaceId}
                       services={props.services}
                     />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .forProject()
+            .root()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectIdResolver services={props.services}>
+                      {(projectId) => (
+                        <ProjectDetailWidget
+                          clientId={clientId}
+                          workspaceId={workspaceId}
+                          projectId={projectId}
+                          services={props.services}
+                        />
+                      )}
+                    </ProjectIdResolver>
                   )}
                 </IdResolver>
               </Layout>

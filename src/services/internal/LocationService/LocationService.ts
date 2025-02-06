@@ -1,3 +1,4 @@
+import { Project } from "@/api/project/project.api.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -13,9 +14,13 @@ export interface LocationService {
   // maybe - we can be in the route which neither specific workspace nor all workspaces
   useCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
   // maybe - we can be in the route which neither specific client nor all clients
+  useCurrentProjectId: () => Maybe<Project["id"]>;
+  // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;
   // maybe - we can be in the route which neither specific workspace nor all workspaces
   getCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
+  // maybe - we can be in the route which neither specific client nor all clients
+  getCurrentProjectId: () => Maybe<Project["id"]>;
   changeCurrentClientId: (id: ClientSpec) => void;
   changeCurrentWorkspaceId: (id: WorkspaceSpec) => void;
 }

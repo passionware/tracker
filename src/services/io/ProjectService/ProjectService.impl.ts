@@ -35,5 +35,22 @@ export function createProjectService(
         queryKey: ["projects", query],
         queryFn: () => config.api.getProjects(query),
       }),
+    useProject: (projectId) =>
+      ensureIdleQuery(
+        projectId,
+        useQuery(
+          {
+            queryKey: ["project", projectId],
+            enabled: !!projectId,
+            queryFn: () => config.api.getProject(projectId!),
+          },
+          config.client,
+        ),
+      ),
+    ensureProject: (projectId) =>
+      config.client.ensureQueryData({
+        queryKey: ["project", projectId],
+        queryFn: () => config.api.getProject(projectId),
+      }),
   };
 }
