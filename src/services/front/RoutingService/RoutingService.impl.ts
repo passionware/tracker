@@ -46,6 +46,10 @@ export function createRoutingService(): RoutingService {
               return {
                 root: () => base,
                 configuration: () => `${base}/configuration`,
+                relative: {
+                  root: () => `/`,
+                  configuration: () => `/configuration`,
+                },
               };
             },
           };

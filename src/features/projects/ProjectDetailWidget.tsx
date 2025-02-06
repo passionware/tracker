@@ -6,6 +6,7 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { ProjectForm } from "@/features/projects/ProjectForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
@@ -17,6 +18,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
+import { Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps
   extends WithServices<
@@ -42,6 +44,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
       .forProject(props.projectId.toString())
       .root(),
   );
+
   return (
     <CommonPageContainer
       tools={
@@ -90,6 +93,30 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
             .map((x) => x.name)}
         </BreadcrumbPage>,
       ]}
-    ></CommonPageContainer>
+    >
+      <Routes>
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .forProject()
+            .relative.root()}
+          element={<div>Details</div>}
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .forProject()
+            .relative.configuration()}
+          element={
+            <ProjectForm
+              services={props.services}
+              defaultValues={rd.tryGet(project)}
+            />
+          }
+        />
+      </Routes>
+    </CommonPageContainer>
   );
 }

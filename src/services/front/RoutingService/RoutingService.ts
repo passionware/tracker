@@ -92,6 +92,10 @@ export interface RoutingService {
       forProject: (projectId?: string | ":projectId") => {
         root: () => string;
         configuration: () => string;
+        relative: {
+          root: () => string;
+          configuration: () => string;
+        };
       };
     };
   };
