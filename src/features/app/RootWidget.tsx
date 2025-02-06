@@ -36,6 +36,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
@@ -76,6 +77,7 @@ export function RootWidget(
       WithReportService,
       WithBillingService,
       WithExpressionService,
+      WithProjectService,
     ]
   >,
 ) {

@@ -2,7 +2,7 @@ import { RollingBadge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ReportCostInfoPopover } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfoPopover } from "@/features/_common/info/ReportInfo.tsx";
@@ -426,8 +426,8 @@ export const reportColumns = {
     }),
   getContextual: (context: ExpressionContext) =>
     [
-      idSpecUtils.isAll(context.workspaceId) ? foreignColumns.workspace : null,
-      idSpecUtils.isAll(context.clientId) ? foreignColumns.client : null,
+      idSpecUtils.isAll(context.workspaceId) ? sharedColumns.workspace : null,
+      idSpecUtils.isAll(context.clientId) ? sharedColumns.client : null,
       idSpecUtils.isAll(context.contractorId)
         ? reportColumns.contractor.withAdjacency
         : null,

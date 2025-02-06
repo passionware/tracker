@@ -10,8 +10,8 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { CenteredBar } from "@/features/_common/info/_common/CenteredBar.tsx";
@@ -302,7 +302,7 @@ export function ReportInfo({
             },
           }),
           {
-            ...foreignColumns.clientId(services),
+            ...sharedColumns.clientId(services),
             accessorKey: "billing.clientId",
           },
           {
@@ -362,7 +362,7 @@ export function ReportInfo({
             },
           }),
           {
-            ...foreignColumns.description,
+            ...sharedColumns.description,
             accessorKey: "billing.description",
             header: "Description",
           },

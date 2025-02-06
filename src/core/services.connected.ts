@@ -4,6 +4,7 @@ import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
@@ -39,6 +40,8 @@ import { createCostService } from "@/services/io/CostService/CostService.impl.ts
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
+import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
@@ -134,6 +137,13 @@ export const myServices = {
       variableService,
     },
   }),
+  projectService: createProjectService({
+    api: myProjectApi,
+    client: myQueryClient,
+    services: {
+      messageService,
+    },
+  }),
 } satisfies MergeServices<
   [
     WithAuthService,
@@ -153,6 +163,7 @@ export const myServices = {
     WithVariableService,
     WithBillingService,
     WithExpressionService,
+    WithProjectService,
   ]
 >;
 

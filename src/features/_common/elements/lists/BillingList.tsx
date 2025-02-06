@@ -1,6 +1,6 @@
 import { BillingQuery } from "@/api/billing/billing.api.ts";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -62,7 +62,7 @@ export function BillingList(props: BillingListProps) {
         billingColumns.netAmount(props.services),
         billingColumns.report.remainingValue(props.services),
         props.renderSelect &&
-          foreignColumns.select<BillingViewEntry>((info, button, track) => {
+          sharedColumns.select<BillingViewEntry>((info, button, track) => {
             const billing = info.row.original;
             return props.renderSelect?.(billing, button, track);
           }),

@@ -6,8 +6,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -24,7 +24,7 @@ const columnHelper = createColumnHelper<CostEntry>();
 
 export function useColumns(props: PotentialCostWidgetProps) {
   return [
-    ...foreignColumns.getContextual({
+    ...sharedColumns.getContextual({
       workspaceId: props.workspaceId,
       contractorId: idSpecUtils.ofAll(),
     }),
@@ -40,7 +40,7 @@ export function useColumns(props: PotentialCostWidgetProps) {
     ),
     costColumns.report.linkedValue(props.services),
     costColumns.report.remainingValue(props.services),
-    foreignColumns.description,
+    sharedColumns.description,
     columnHelper.display({
       id: "actions",
       cell: (info) => (

@@ -16,7 +16,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { variable } from "@/features/_common/columns/variable.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
@@ -77,14 +77,14 @@ function XExpressionChooser({
       className={className}
       data={vars}
       columns={[
-        foreignColumns.workspaceId(services),
-        foreignColumns.clientId(services),
-        foreignColumns.contractorId(services),
+        sharedColumns.workspaceId(services),
+        sharedColumns.clientId(services),
+        sharedColumns.contractorId(services),
         variable.name,
         variable.value,
         variable.type,
-        foreignColumns.updatedAt(services),
-        foreignColumns.select<Variable>((info, button) => {
+        sharedColumns.updatedAt(services),
+        sharedColumns.select<Variable>((info, button) => {
           const evaluatePromise = promiseState.useRemoteData();
           if (info.row.original.type === "const") {
             return (

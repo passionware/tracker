@@ -1,5 +1,5 @@
 import { ReportQuery } from "@/api/reports/reports.api.ts";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   reportColumns,
   ReportSearchBaseModel,
@@ -67,14 +67,12 @@ export function ReportList(props: ReportListProps) {
         props.showCostColumns
           ? reportColumns.cost.remainingValue(props.services)
           : null,
-        foreignColumns.description,
+        sharedColumns.description,
         props.renderSelect &&
-          foreignColumns.select<ReportSearchBaseModel>(
-            (info, button, track) => {
-              const report = info.row.original;
-              return props.renderSelect?.(report, button, track);
-            },
-          ),
+          sharedColumns.select<ReportSearchBaseModel>((info, button, track) => {
+            const report = info.row.original;
+            return props.renderSelect?.(report, button, track);
+          }),
       ].filter(maybe.isPresent)}
       query={props.query}
       onQueryChange={props.onQueryChange}

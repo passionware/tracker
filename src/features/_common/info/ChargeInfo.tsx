@@ -9,7 +9,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
@@ -300,7 +300,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             },
           }),
           {
-            ...foreignColumns.contractorId(services),
+            ...sharedColumns.contractorId(services),
             accessorKey: "report.contractorId",
           },
           { ...reportColumns.period(services), accessorFn: (x) => x.report },
@@ -353,12 +353,12 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             },
           }),
           {
-            ...foreignColumns.description,
+            ...sharedColumns.description,
             accessorKey: "link.description",
             header: "Link description",
           },
           {
-            ...foreignColumns.description,
+            ...sharedColumns.description,
             accessorKey: "report.description",
             header: "Report description",
           },

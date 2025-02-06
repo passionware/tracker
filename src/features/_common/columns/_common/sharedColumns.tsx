@@ -1,5 +1,6 @@
 import { Client } from "@/api/clients/clients.api.ts";
 import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { Cost } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
@@ -19,6 +20,7 @@ import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinner
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
+import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { ExpressionContext } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -29,7 +31,7 @@ import { promiseState } from "@passionware/platform-react";
 import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
 
-export const foreignColumns = {
+export const sharedColumns = {
   workspaceId: (services: WithWorkspaceService) =>
     getColumnHelper<{
       workspaceId: Maybe<Workspace["id"]>;
@@ -167,12 +169,38 @@ export const foreignColumns = {
     [
       maybe.isPresent(context.workspaceId) &&
         idSpecUtils.isAll(context.workspaceId) &&
-        foreignColumns.workspace,
+        sharedColumns.workspace,
       maybe.isPresent(context.clientId) &&
         idSpecUtils.isAll(context.clientId) &&
-        foreignColumns.client,
+        sharedColumns.client,
       maybe.isPresent(context.contractorId) &&
         idSpecUtils.isAll(context.contractorId) &&
-        foreignColumns.contractor,
+        sharedColumns.contractor,
     ].filter(truthy.isTruthy),
+  getContextualForIds: (
+    context: Partial<ExpressionContext>,
+    services: MergeServices<
+      [WithWorkspaceService, WithClientService, WithContractorService]
+    >,
+  ) =>
+    [
+      maybe.isPresent(context.workspaceId) &&
+        idSpecUtils.isAll(context.workspaceId) &&
+        sharedColumns.workspaceId(services),
+      maybe.isPresent(context.clientId) &&
+        idSpecUtils.isAll(context.clientId) &&
+        sharedColumns.clientId(services),
+      maybe.isPresent(context.contractorId) &&
+        idSpecUtils.isAll(context.contractorId) &&
+        sharedColumns.contractorId(services),
+    ].filter(truthy.isTruthy),
+  createdAt: (services: WithFormatService) =>
+    getColumnHelper<Pick<Cost, "createdAt">>().accessor("createdAt", {
+      header: "Created At",
+      cell: (info) =>
+        services.formatService.temporal.single.compact(info.getValue()),
+      meta: {
+        sortKey: "createdAt",
+      },
+    }),
 };

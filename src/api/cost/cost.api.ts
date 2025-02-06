@@ -103,6 +103,7 @@ export const costQueryUtils = withBuilderUtils({
     (query: CostQuery): CostQuery =>
       costQueryUtils.ensureDefault(query, workspaceId, clientId),
   ensureDefault: (
+    // todo builder?
     query: CostQuery,
     workspaceId: WorkspaceSpec,
     clientId: ClientSpec,

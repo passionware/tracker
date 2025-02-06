@@ -6,7 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   baseColumnHelper,
   columnHelper,
@@ -64,7 +64,7 @@ export function useColumns(props: ReportsWidgetProps) {
       },
     }),
     reportColumns.period(props.services),
-    foreignColumns.description,
+    sharedColumns.description,
     columnHelper.display({
       id: "actions",
       enableHiding: false,

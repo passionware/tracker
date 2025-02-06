@@ -1,7 +1,7 @@
 import { Cost } from "@/api/cost/cost.api.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ChargeInfoPopover } from "@/features/_common/info/ChargeInfo.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -154,7 +154,7 @@ export const billingColumns = {
               info.getValue().amount,
               info.getValue().currency,
             )}
-              <div className="flex-1 -mx-0.5"/>
+            <div className="flex-1 -mx-0.5" />
             {info.row.original.contractors.map((contractor) => (
               <ContractorView
                 size="sm"
@@ -186,9 +186,9 @@ export const billingColumns = {
     [
       maybe.isPresent(context.workspaceId) &&
         idSpecUtils.isAll(context.workspaceId) &&
-        foreignColumns.workspace,
+        sharedColumns.workspace,
       maybe.isPresent(context.clientId) &&
         idSpecUtils.isAll(context.clientId) &&
-        foreignColumns.client,
+        sharedColumns.client,
     ].filter(truthy.isTruthy),
 };

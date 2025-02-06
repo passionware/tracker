@@ -6,8 +6,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
-import { foreignColumns } from "@/features/_common/columns/foreign.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -22,7 +22,7 @@ import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 const columnHelper = createColumnHelper<BillingViewEntry>();
 export function useColumns(props: BillingWidgetProps) {
   return [
-    ...foreignColumns.getContextual({
+    ...sharedColumns.getContextual({
       workspaceId: props.workspaceId,
       clientId: props.clientId,
     }),
@@ -33,7 +33,7 @@ export function useColumns(props: BillingWidgetProps) {
     billingColumns.grossAmount(props.services),
     billingColumns.report.linkedValue(props.services),
     billingColumns.report.remainingValue(props.services),
-    foreignColumns.description,
+    sharedColumns.description,
     columnHelper.display({
       id: "actions",
       cell: (info) => (
