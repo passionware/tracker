@@ -11,6 +11,7 @@ import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
@@ -208,6 +209,72 @@ export function RootWidget(
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <VariableWidget
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .allProjects()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectListWidget
+                      filter="all"
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .currentProjects()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectListWidget
+                      filter="current"
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .pastProjects()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectListWidget
+                      filter="past"
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}

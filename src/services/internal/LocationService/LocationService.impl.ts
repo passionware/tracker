@@ -26,6 +26,9 @@ export function createLocationService(
       "potentialCosts",
       "variables",
       "root",
+      "allProjects",
+      "currentProjects",
+      "pastProjects",
     ] satisfies (keyof typeof routing)[];
 
     for (const route of routesToKeep) {

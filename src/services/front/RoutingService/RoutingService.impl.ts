@@ -28,6 +28,16 @@ export function createRoutingService(): RoutingService {
                   `/w/${workspaceSlot}/clients/${clientSlot}/contractors/${contractorSlot}`,
               };
             },
+            allProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects`,
+            currentProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects/current`,
+            pastProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects/past`,
+            forProject: (projectId = ":projectId") => {
+              const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
+              return { root: () => base };
+            },
           };
         },
       };

@@ -28,6 +28,7 @@ import { maybe, rd } from "@passionware/monads";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   AudioLines,
+  BriefcaseBusiness,
   Frame,
   HandCoins,
   HardHat,
@@ -49,6 +50,25 @@ function useData(
       .forClient(currentClientId ?? idSpecUtils.ofAll());
     return {
       navMain: [
+        {
+          title: "Projects",
+          url: "#",
+          icon: BriefcaseBusiness,
+          items: [
+            {
+              title: "All projects",
+              url: routing.allProjects(),
+            },
+            {
+              title: "Current projects",
+              url: routing.currentProjects(),
+            },
+            {
+              title: "Past projects",
+              url: routing.pastProjects(),
+            },
+          ],
+        },
         {
           title: "Cash flow",
           url: "#",

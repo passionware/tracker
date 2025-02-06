@@ -83,6 +83,12 @@ export interface RoutingService {
       forContractor: (contractorId?: ContractorParam) => {
         root: () => string;
       };
+      allProjects: () => string;
+      currentProjects: () => string;
+      pastProjects: () => string;
+      forProject: (projectId: string | ":projectId") => {
+        root: () => string;
+      };
     };
   };
 
