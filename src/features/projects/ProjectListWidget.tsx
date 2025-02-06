@@ -10,6 +10,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ClientSpec,
+  WithRoutingService,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -26,6 +27,7 @@ export interface ProjectListWidgetProps
       WithProjectService,
       WithFormatService,
       WithContractorService,
+      WithRoutingService,
     ]
   > {
   filter: unknown; // something like all/current/past - should be part of ProjectQuery?
@@ -60,7 +62,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
             },
             props.services,
           ),
-          project.name,
+          project.name(props.services, props),
           project.createdAt(props.services),
           project.status,
         ]}

@@ -41,6 +41,7 @@ export interface ListViewProps<TData, Query extends SortableQueryBase> {
   skeletonRows?: number;
   caption?: React.ReactNode;
   onRowDoubleClick?: (row: NoInfer<TData>) => void;
+  onRowClick?: (row: NoInfer<TData>) => void;
   className?: string;
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
@@ -52,6 +53,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
   skeletonRows = 6,
   caption,
   onRowDoubleClick,
+  onRowClick,
   className,
   query,
   onQueryChange,
@@ -209,6 +211,19 @@ export function ListView<TData, Query extends SortableQueryBase>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
+                    onClick={(e) => {
+                      if (e.target instanceof Element) {
+                        if (e.target.closest("a, button")) {
+                          return;
+                        }
+                        // check if the click was physically inside, not via react portal:
+                        if (!e.currentTarget.contains(e.target)) {
+                          return;
+                        }
+                      }
+
+                      onRowClick?.(row.original);
+                    }}
                     onDoubleClick={(e) => {
                       if (e.target instanceof Element) {
                         if (e.target.closest("a, button")) {
