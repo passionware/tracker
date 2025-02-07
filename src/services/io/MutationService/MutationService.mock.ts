@@ -56,5 +56,12 @@ export function createMutationService(
     deleteCostReport: async () => {
       onActionAccessor.get()("Deleting cost report");
     },
+    createProject: async () => {
+      onActionAccessor.get()("Creating project");
+      return { id: 1 };
+    },
+    deleteProject: async () => {
+      onActionAccessor.get()("Deleting project");
+    },
   };
 }

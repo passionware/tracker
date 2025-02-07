@@ -128,5 +128,22 @@ export function createMutationService(
         scope: "Updating cost report link",
       });
     },
+    createProject: async (project) => {
+      const response = await api.createProject(project);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating project",
+      });
+      return response;
+    },
+    deleteProject: async (projectId) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.deleteProject(projectId);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Deleting project",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
   };
 }
