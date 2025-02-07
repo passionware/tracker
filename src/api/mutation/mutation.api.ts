@@ -1,6 +1,7 @@
 import { Billing, BillingPayload } from "@/api/billing/billing.api.ts";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.ts";
+import { ProjectPayload } from "@/api/project/project.api.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
 import { LinkBillingReportPayload } from "../link-billing-report/link-billing-report.api";
 
@@ -32,5 +33,9 @@ export interface MutationApi {
   editReport: (
     reportId: number,
     payload: Partial<ReportPayload>,
+  ) => Promise<void>;
+  editProject: (
+    projectId: number,
+    payload: Partial<ProjectPayload>,
   ) => Promise<void>;
 }

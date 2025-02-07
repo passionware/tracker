@@ -15,6 +15,7 @@ import {
   WithRoutingService,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
@@ -30,6 +31,7 @@ export interface ProjectListWidgetProps
       WithFormatService,
       WithContractorService,
       WithRoutingService,
+      WithNavigationService,
     ]
   > {
   filter: unknown; // something like all/current/past - should be part of ProjectQuery?
@@ -72,6 +74,15 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
         query={query}
         onQueryChange={setQuery}
         data={projects}
+        onRowDoubleClick={(project) => {
+          props.services.navigationService.navigate(
+            props.services.routingService
+              .forWorkspace(props.workspaceId)
+              .forClient(props.clientId)
+              .forProject(project.id.toString())
+              .root(),
+          );
+        }}
         columns={[
           ...sharedColumns.getContextualForIds(
             {

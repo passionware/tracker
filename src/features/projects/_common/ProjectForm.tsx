@@ -8,29 +8,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
+import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
 
 export interface ProjectFormProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
   defaultValues?: Partial<ProjectPayload>;
-  onSubmit: (data: ProjectPayload, changes: Partial<ProjectPayload>) => void;
+  onSubmit: (
+    data: ProjectPayload,
+    changes: Partial<ProjectPayload>,
+  ) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -53,6 +59,8 @@ export function ProjectForm(props: ProjectFormProps) {
     },
   });
 
+  const processingPromise = promiseState.useRemoteData<void>();
+
   function handleSubmit(data: FormModel) {
     const allData: ProjectPayload = {
       name: data.name,
@@ -61,7 +69,9 @@ export function ProjectForm(props: ProjectFormProps) {
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
     };
-    props.onSubmit(allData, getDirtyFields(allData, form));
+    void processingPromise.track(
+      props.onSubmit(allData, getDirtyFields(allData, form)),
+    );
   }
 
   return (
@@ -159,7 +169,22 @@ export function ProjectForm(props: ProjectFormProps) {
         <Button type="button" variant="outline" onClick={props.onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Submit</Button>
+        <Button
+          type="submit"
+          disabled={
+            rd.isPending(processingPromise.state) || !form.formState.isDirty
+          }
+        >
+          {rd
+            .fullJourney(processingPromise.state)
+            .initially(null)
+            .wait(<LoaderCircle className="w-5 animate-spin" />)
+            .catch(renderSmallError("size-6"))
+            .map(() => (
+              <CheckCircle2 />
+            ))}
+          Submit
+        </Button>
       </form>
     </Form>
   );

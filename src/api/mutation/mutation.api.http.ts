@@ -240,6 +240,28 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    editProject: async (projectId, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("project")
+        .update(
+          pickBy(
+            {
+              name: takeIfPresent("name"),
+              description: takeIfPresent("description"),
+              client_id: takeIfPresent("clientId"),
+              workspace_id: takeIfPresent("workspaceId"),
+              status: takeIfPresent("status"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", projectId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     updateBillingReportLink: async (linkId, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;

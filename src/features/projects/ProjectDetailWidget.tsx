@@ -6,7 +6,7 @@ import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.ts
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
-import { ProjectForm } from "@/features/projects/ProjectForm.tsx";
+import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
@@ -15,6 +15,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
@@ -28,6 +29,7 @@ export interface ProjectDetailWidgetProps
       WithWorkspaceService,
       WithNavigationService,
       WithRoutingService,
+      WithMutationService,
     ]
   > {
   workspaceId: WorkspaceSpec;
@@ -110,9 +112,9 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
             .forProject()
             .relative.configuration()}
           element={
-            <ProjectForm
+            <ProjectConfigurationWidget
               services={props.services}
-              defaultValues={rd.tryGet(project)}
+              projectId={props.projectId}
             />
           }
         />

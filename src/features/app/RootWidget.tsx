@@ -41,7 +41,7 @@ import { WithProjectService } from "@/services/io/ProjectService/ProjectService.
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 export function RootWidget(
   props: WithServices<
@@ -271,6 +271,25 @@ export function RootWidget(
                 </IdResolver>
               </Layout>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .projectsRoot()}
+          element={
+            <IdResolver services={props.services}>
+              {(workspaceId, clientId) => (
+                <Navigate
+                  replace
+                  to={props.services.routingService
+                    .forWorkspace(workspaceId)
+                    .forClient(clientId)
+                    .currentProjects()}
+                />
+              )}
+            </IdResolver>
           }
         />
         <Route

@@ -38,6 +38,9 @@ export function createMutationService(
     editCost: async () => {
       onActionAccessor.get()("Editing cost");
     },
+    editProject: async () => {
+      onActionAccessor.get()("Editing project");
+    },
     updateCostReportLink: async () => {
       onActionAccessor.get()("Updating cost report link");
     },
