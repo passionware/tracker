@@ -8,46 +8,28 @@ import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
+import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
-import { MergeServices } from "@/platform/typescript/services.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
-import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
-import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
-import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { createMessageService } from "@/services/internal/MessageService/MessageService.impl.ts";
-import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.impl.ts";
-import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.impl.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
-import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
-import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
-import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
-import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
-import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
-import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe } from "@passionware/monads";
 import { createSimpleEvent } from "@passionware/simple-event";
 import { useRef } from "react";
@@ -144,28 +126,7 @@ export const myServices = {
       messageService,
     },
   }),
-} satisfies MergeServices<
-  [
-    WithAuthService,
-    WithClientService,
-    WithReportService,
-    WithLocationService,
-    WithNavigationService,
-    WithRoutingService,
-    WithFormatService,
-    WithReportDisplayService,
-    WithMessageService,
-    WithMutationService,
-    WithContractorService,
-    WithWorkspaceService,
-    WithCostService,
-    WithPreferenceService,
-    WithVariableService,
-    WithBillingService,
-    WithExpressionService,
-    WithProjectService,
-  ]
->;
+} satisfies FrontServices;
 
 export function NavigationServiceInject() {
   const navigate = useNavigate();
