@@ -26,7 +26,7 @@ export const project = {
         const id = info.row.original.id;
         return (
           <Link
-              className="text-sky-800 hover:underline"
+            className="text-sky-800 hover:underline"
             to={services.routingService
               .forWorkspace(spec.workspaceId)
               .forClient(spec.clientId)
@@ -36,6 +36,9 @@ export const project = {
             {value}
           </Link>
         );
+      },
+      meta: {
+        sortKey: "name",
       },
     }),
   status: helper.accessor("status", {

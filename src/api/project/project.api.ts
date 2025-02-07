@@ -45,7 +45,7 @@ export type ProjectQuery = WithFilters<{
 }> &
   WithSearch &
   WithPagination &
-  WithSorter<"name" | "startDate" | "endDate" | "status">;
+  WithSorter<"name" | "createdAt" | "status">;
 
 export const projectQueryUtils = withBuilderUtils({
   ...withFiltersUtils<ProjectQuery>(),

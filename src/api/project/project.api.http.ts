@@ -1,5 +1,6 @@
 import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   project$,
   projectFromHttp,
@@ -18,8 +19,8 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
       }
 
       if (query.sort) {
-        request = request.order(query.sort.field, {
-          ascending: query.sort.order === "asc",
+        request = sorterSupabaseUtils.sort(request, query.sort, {
+          createdAt: "created_at",
         });
       }
       if (query.filters.workspaceId) {
