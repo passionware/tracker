@@ -1,9 +1,14 @@
+import { Project } from "@/api/project/project.api.ts";
 import { Variable } from "@/api/variable/variable.api.ts";
 import { variableMock } from "@/api/variable/variable.mock.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { FormatService } from "@/services/FormatService/FormatService.ts";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { ExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
+import { RoutingService } from "@/services/front/RoutingService/RoutingService.ts";
+import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.mock.ts";
+import { NavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
 import { PreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
@@ -12,6 +17,7 @@ import { createContractorService } from "@/services/io/ContractorService/Contrac
 import { ContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.mock.ts";
 import { MutationService } from "@/services/io/MutationService/MutationService.ts";
+import { createProjectService } from "@/services/io/ProjectService/ProjectService.mock.ts";
 import { createVariableService } from "@/services/io/VariableService/VariableService.mock.ts";
 import { VariableService } from "@/services/io/VariableService/VariableService.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
@@ -20,6 +26,7 @@ import { maybe, rd, RemoteData } from "@passionware/monads";
 import {
   createArgsAccessor,
   createArgsDecorator,
+  TestQuery,
 } from "@passionware/platform-storybook";
 
 const factories = {
@@ -28,6 +35,8 @@ const factories = {
   contractor: createContractorService,
   variable: createVariableService,
   preference: createPreferenceService,
+  project: createProjectService,
+  routing: createRoutingService,
 } as const;
 
 type FactoryArgs = {
@@ -39,6 +48,7 @@ type SbServiceConfig = {
   client?: true | FactoryArgs["client"];
   contractor?: true | FactoryArgs["contractor"];
   variable?: true | FactoryArgs["variable"]["accessor"];
+  project?: true | FactoryArgs["project"];
   format?: true;
   expression?: true;
   preference?: true | FactoryArgs["preference"];
@@ -59,6 +69,11 @@ type OutputServices<C extends SbServiceConfig> = {
     ? PreferenceService
     : undefined;
   mutationService: MutationService;
+  projectService: C["project"] extends true
+    ? ReturnType<typeof createProjectService>
+    : never;
+  navigationService: NavigationService;
+  routingService: RoutingService;
 };
 
 /**
@@ -70,6 +85,8 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
     onAction: () => void;
     variables: RemoteData<Variable[]>;
     dangerMode: boolean;
+    project: TestQuery<Project>;
+    projects: TestQuery<Project[]>;
   }>();
 
   const variableService =
@@ -104,6 +121,16 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
             onAction: createArgsAccessor(decorator).forArg("onAction"),
           })
         : undefined,
+      projectService: config?.project
+        ? createProjectService({
+            itemAccessor: createArgsAccessor(decorator).forArg("project"),
+            listAccessor: createArgsAccessor(decorator).forArg("projects"),
+          })
+        : undefined,
+      navigationService: createNavigationService(
+        createArgsAccessor(decorator).forArg("onAction"),
+      ),
+      routingService: createRoutingService(),
     } as unknown as OutputServices<SC>,
     workspace: config?.workspace ? factories.workspace() : undefined,
     client: config?.client ? factories.client() : undefined,

@@ -1,87 +1,75 @@
-import { billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { billingMock } from "@/api/billing/billing.mock.ts";
-import { clientsMock } from "@/api/clients/clients.mock.ts";
-import { contractorMock } from "@/api/contractor/contractor.mock.ts";
+import { Project } from "@/api/project/project.api.ts";
+import { projectMock } from "@/api/project/project.mock.ts";
 import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
 import {
-  BillingList,
-  BillingListProps,
-} from "@/features/_common/elements/lists/BillingList.tsx";
+  ProjectListWidget,
+  ProjectListWidgetProps,
+} from "@/features/projects/ProjectListWidget.tsx";
+import { Layout } from "@/layout/AppLayout.tsx";
+import { createGuardedAccessor } from "@/platform/lang/guardedAccessor.ts";
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
-import {
-  ArgsWithServices,
-  createSbServices,
-} from "@/services/_common/createSbServices.ts";
-import { createExchangeService } from "@/services/ExchangeService/ExchangeService.mock.ts";
-import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
-import { calculateBilling } from "@/services/front/ReportDisplayService/_private/billing.ts";
-import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
-import { createBillingService } from "@/services/io/BillingService/BillingService.mock.ts";
-import { createCostService } from "@/services/io/CostService/CostService.mock.ts";
-import { createReportService } from "@/services/io/ReportService/ReportService.mock.ts";
+import { createStaticAccessor } from "@/services/_common/createStaticAccessor.ts";
+import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
+import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
+import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
+import { createMutationService } from "@/services/io/MutationService/MutationService.mock.ts";
+import { createProjectService } from "@/services/io/ProjectService/ProjectService.mock.ts";
+import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
 import { rd } from "@passionware/monads";
+import {
+  createArgsAccessor,
+  createArgsDecorator,
+  PropsWithActionHandler,
+  testQuery,
+  TestQuery,
+} from "@passionware/platform-storybook";
 import type { StoryObj } from "@storybook/react";
+import { MemoryRouter } from "react-router-dom";
 
-const services = createSbServices({
-  workspace: true,
-  client: true,
-  contractor: true,
-  format: true,
-  expression: true,
-  variable: true,
-  preference: true,
-});
+type Args = ProjectListWidgetProps &
+  PropsWithActionHandler & {
+    projects: TestQuery<Project[]>;
+  };
+const args = createArgsDecorator<Args>();
 
-type Args = ArgsWithServices<BillingListProps, typeof services>;
-
+const onAction = createArgsAccessor(args).forArg("onAction");
 const meta = {
-  decorators: [services.decorator.argsDecorator],
-  component: BillingList,
+  decorators: [
+    args.argsDecorator,
+    (Story) => (
+      <MemoryRouter>
+        <Layout sidebarSlot={<div>sidebar</div>}>{Story()}</Layout>
+      </MemoryRouter>
+    ),
+  ],
+  component: ProjectListWidget,
   args: {
-    ...{
-      ...services.args,
-      services: {
-        ...services.args.services,
-        reportDisplayService: createReportDisplayService({
-          services: {
-            workspaceService: services.args.services.workspaceService,
-            exchangeService: createExchangeService(),
-            reportService: createReportService(),
-            costService: createCostService(),
-            billingService: createBillingService(),
-          },
+    services: createGuardedAccessor(
+      {
+        routingService: createRoutingService(),
+        projectService: createProjectService({
+          listAccessor: createArgsAccessor(args).forArg("projects"),
+          itemAccessor: createStaticAccessor(testQuery.of(rd.ofIdle())),
         }),
+        workspaceService: createWorkspaceService(),
+        clientService: createClientService(),
+        formatService: createFormatService(() => new Date()),
+        preferenceService: createPreferenceService({
+          dangerMode: createStaticAccessor(false),
+          onAction,
+        }),
+        mutationService: createMutationService(onAction),
       },
-    },
-    query: billingQueryUtils.setFilter(
-      billingQueryUtils.ofDefault(0, 0),
-      "contractorId",
-      { operator: "oneOf", value: [contractorMock.static.list[0].id] },
+      "Service %s not available",
     ),
-    data: rd.of(
-      billingMock.static.list.map((x) =>
-        calculateBilling(
-          {
-            ...x,
-            billingReportValue: 0,
-            totalBillingValue: 0,
-            billingBalance: 0,
-            remainingBalance: 0,
-            client: clientsMock.static.list[0],
-            linkBillingReport: [],
-            contractors: [],
-          },
-          workspaceMock.static.list,
-        ),
-      ),
-    ),
-    context: expressionContextUtils.ofGlobal().build(),
+    clientId: 123,
+    workspaceId: workspaceMock.static.list[0].id,
+    filter: "all",
+    projects: testQuery.of(rd.of(projectMock.static.list), 1000),
   },
   argTypes: {
-    ...services.argTypes,
-    onQueryChange: {
-      action: "onQueryChange",
-    },
+    onAction: { action: "onAction" },
   },
 } satisfies FixedMeta<Args>;
 

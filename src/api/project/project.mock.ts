@@ -39,8 +39,8 @@ export const projectMock = createMockFactory<ProjectBase>(
       status: "closed",
       createdAt: new Date("2021-03-01"),
       description: "This is yet another project",
-      clientId: clientsMock.static.list[2].id,
-      workspaceId: workspaceMock.static.list[2].id,
+      clientId: clientsMock.static.list[1].id,
+      workspaceId: workspaceMock.static.list[1].id,
     },
   ],
 );
