@@ -43,3 +43,7 @@ export type FrontServices = MergeServices<
     WithProjectService,
   ]
 >;
+
+export type WithFrontServices = {
+  services: FrontServices;
+};
