@@ -115,6 +115,8 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
             <ProjectConfigurationWidget
               services={props.services}
               projectId={props.projectId}
+              workspaceId={props.workspaceId}
+              clientId={props.clientId}
             />
           }
         />

@@ -15,13 +15,19 @@ import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
+import {
+  ClientSpec,
+  WithRoutingService,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
+import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { Trash } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export interface ProjectConfigurationWidgetProps
   extends WithServices<
@@ -30,9 +36,13 @@ export interface ProjectConfigurationWidgetProps
       WithProjectService,
       WithClientService,
       WithWorkspaceService,
+      WithNavigationService,
+      WithRoutingService,
     ]
   > {
   projectId: Project["id"];
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
 }
 export function ProjectConfigurationWidget(
   props: ProjectConfigurationWidgetProps,
@@ -71,7 +81,7 @@ export function ProjectConfigurationWidget(
           <Dialog {...bag}>
             <DialogTrigger asChild>
               <Button variant="destructive" className="w-min">
-                <Trash />
+                <Trash2 />
                 Delete project
               </Button>
             </DialogTrigger>
@@ -89,6 +99,12 @@ export function ProjectConfigurationWidget(
                   onClick={async () => {
                     await deletePromise.track(props.projectId);
                     bag.close();
+                    props.services.navigationService.navigate(
+                      props.services.routingService
+                        .forWorkspace(props.workspaceId)
+                        .forClient(props.clientId)
+                        .allProjects(),
+                    );
                   }}
                 >
                   Confirm

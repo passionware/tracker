@@ -9,7 +9,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Link } from "react-router-dom";
 
-const helper = getColumnHelper<Project>();
+export const columnHelper = getColumnHelper<Project>();
 
 export const project = {
   name: (
@@ -19,7 +19,7 @@ export const project = {
       clientId: ClientSpec;
     },
   ) =>
-    helper.accessor("name", {
+    columnHelper.accessor("name", {
       header: "Name",
       cell: (info) => {
         const value = info.getValue();
@@ -41,7 +41,7 @@ export const project = {
         sortKey: "name",
       },
     }),
-  status: helper.accessor("status", {
+  status: columnHelper.accessor("status", {
     header: "Status",
     cell: (info) => {
       const value = info.getValue();
