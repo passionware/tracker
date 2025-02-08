@@ -63,5 +63,5 @@ export interface ProjectIterationApi {
   getProjectIterations: (
     query: ProjectIterationQuery,
   ) => Promise<ProjectIteration[]>;
-  getProductIteration: (id: number) => Promise<ProjectIterationDetail>;
+  getProjectIterationDetail: (id: number) => Promise<ProjectIterationDetail>;
 }

@@ -37,7 +37,7 @@ export function createProjectIterationApi(
       }
       return data.map(projectIterationFromHttp);
     },
-    getProductIteration: async (id) => {
+    getProjectIterationDetail: async (id) => {
       const { data, error } = await client
         .from("project_iteration")
         .select("*")
