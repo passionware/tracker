@@ -40,54 +40,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
 
   return (
     <CommonPageContainer
-      tools={
-        <Tabs value={matchedRoot ? "details" : "configuration"}>
-          <TabsList>
-            <TabsTrigger
-              value="details"
-              onClick={() => {
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .root(),
-                );
-              }}
-            >
-              Iterations
-            </TabsTrigger>
-            <TabsTrigger
-              value="reports"
-              onClick={() => {
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .root(),
-                );
-              }}
-            >
-              Reports
-            </TabsTrigger>
-            <TabsTrigger
-              value="configuration"
-              onClick={() => {
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .configuration(),
-                );
-              }}
-            >
-              Configuration
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      }
+      tools={null}
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
@@ -101,6 +54,52 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         </BreadcrumbPage>,
       ]}
     >
+      <Tabs value={matchedRoot ? "details" : "configuration"}>
+        <TabsList>
+          <TabsTrigger
+            value="details"
+            onClick={() => {
+              props.services.navigationService.navigate(
+                props.services.routingService
+                  .forWorkspace(props.workspaceId)
+                  .forClient(props.clientId)
+                  .forProject(props.projectId.toString())
+                  .root(),
+              );
+            }}
+          >
+            Iterations
+          </TabsTrigger>
+          <TabsTrigger
+            value="reports"
+            onClick={() => {
+              props.services.navigationService.navigate(
+                props.services.routingService
+                  .forWorkspace(props.workspaceId)
+                  .forClient(props.clientId)
+                  .forProject(props.projectId.toString())
+                  .root(),
+              );
+            }}
+          >
+            Reports
+          </TabsTrigger>
+          <TabsTrigger
+            value="configuration"
+            onClick={() => {
+              props.services.navigationService.navigate(
+                props.services.routingService
+                  .forWorkspace(props.workspaceId)
+                  .forClient(props.clientId)
+                  .forProject(props.projectId.toString())
+                  .configuration(),
+              );
+            }}
+          >
+            Configuration
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <Routes>
         <Route
           path={makeRelativePath(
