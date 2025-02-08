@@ -1,9 +1,9 @@
 import { Project } from "@/api/project/project.api.ts";
-import { BreadcrumbLink } from "@/components/ui/breadcrumb.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
+import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
 import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
@@ -73,14 +73,8 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
-        <BreadcrumbLink>Projects</BreadcrumbLink>,
-        <ProjectBreadcrumbView
-          services={props.services}
-          project={project}
-          projectId={props.projectId}
-          workspaceId={props.workspaceId}
-          clientId={props.clientId}
-        />,
+        <ProjectListBreadcrumb {...props} />,
+        <ProjectBreadcrumbView {...props} project={project} />,
       ]}
     >
       <Routes>

@@ -4,7 +4,6 @@ import {
   ProjectQuery,
   projectQueryUtils,
 } from "@/api/project/project.api.ts";
-import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -14,21 +13,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { columnHelper } from "@/features/_common/columns/project";
 import { project } from "@/features/_common/columns/project.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ClientSpec,
   WithRoutingService,
@@ -39,7 +39,6 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -53,20 +52,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-export interface ProjectListWidgetProps
-  extends WithServices<
-    [
-      WithWorkspaceService,
-      WithClientService,
-      WithProjectService,
-      WithFormatService,
-      WithContractorService,
-      WithRoutingService,
-      WithNavigationService,
-      WithMutationService,
-      WithPreferenceService,
-    ]
-  > {
+export interface ProjectListWidgetProps extends WithFrontServices {
   filter: Nullable<QueryFilter<ProjectQuery, "status">>;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
@@ -89,7 +75,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
-        <BreadcrumbPage>Projects</BreadcrumbPage>,
+        <ProjectListBreadcrumb {...props} />,
       ]}
       tools={
         <>
@@ -125,7 +111,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
               <>
                 <PopoverHeader>Add new project</PopoverHeader>
                 <ProjectForm
-                    mode="create"
+                  mode="create"
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -237,7 +223,7 @@ function ActionMenu(
           }
           content={(bag) => (
             <ProjectForm
-                mode="create"
+              mode="create"
               defaultValues={props.entry}
               services={props.services}
               onSubmit={async (data) => {
