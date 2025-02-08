@@ -67,6 +67,20 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               Details
             </TabsTrigger>
             <TabsTrigger
+              value="reports"
+              onClick={() => {
+                props.services.navigationService.navigate(
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .root(),
+                );
+              }}
+            >
+              Reports
+            </TabsTrigger>
+            <TabsTrigger
               value="configuration"
               onClick={() => {
                 props.services.navigationService.navigate(

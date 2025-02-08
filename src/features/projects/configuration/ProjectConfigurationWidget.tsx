@@ -87,7 +87,7 @@ export function ProjectConfigurationWidget(
                 Delete project
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogTitle>Confirm deletion</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete this project?
