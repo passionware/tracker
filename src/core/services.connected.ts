@@ -4,6 +4,7 @@ import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
@@ -26,6 +27,7 @@ import { createClientService } from "@/services/io/ClientService/ClientService.i
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
+import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
@@ -125,6 +127,13 @@ export const myServices = {
     services: {
       messageService,
     },
+  }),
+  projectIterationService: createProjectIterationService({
+    services: {
+      messageService,
+    },
+    api: myProjectIterationApi,
+    client: myQueryClient,
   }),
 } satisfies FrontServices;
 

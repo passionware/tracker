@@ -13,3 +13,7 @@ export interface ProjectIterationService {
     id: ProjectIterationDetail["id"],
   ) => RemoteData<ProjectIterationDetail>;
 }
+
+export interface WithProjectIterationService {
+    projectIterationService: ProjectIterationService;
+}

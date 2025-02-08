@@ -2,37 +2,22 @@ import { Project } from "@/api/project/project.api.ts";
 import { BreadcrumbLink, BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
+import { WithFrontServices } from "@/core/frontServices.ts";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
+import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
-import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
-  WithRoutingService,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { Route, Routes } from "react-router-dom";
 
-export interface ProjectDetailWidgetProps
-  extends WithServices<
-    [
-      WithProjectService,
-      WithClientService,
-      WithWorkspaceService,
-      WithNavigationService,
-      WithRoutingService,
-      WithMutationService,
-    ]
-  > {
+export interface ProjectDetailWidgetProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
   projectId: Project["id"];
@@ -126,7 +111,12 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               .forProject()
               .root(),
           )}
-          element={<div>Details</div>}
+          element={
+            <ProjectIterationListWidget
+              projectId={props.projectId}
+              services={props.services}
+            />
+          }
         />
         <Route
           path={makeRelativePath(

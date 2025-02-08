@@ -1,3 +1,4 @@
+import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ProtectedRoute,
   RenderIfAuthenticated,
@@ -22,51 +23,9 @@ import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
-import { WithServices } from "@/platform/typescript/services.ts";
-import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
-import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
-import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
-import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
-import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithCostService } from "@/services/io/CostService/CostService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
-import { WithReportService } from "@/services/io/ReportService/ReportService";
-import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-export function RootWidget(
-  props: WithServices<
-    [
-      WithAuthService,
-      WithClientService,
-      WithLocationService,
-      WithRoutingService,
-      WithFormatService,
-      WithReportDisplayService,
-      WithMutationService,
-      WithContractorService,
-      WithNavigationService,
-      WithWorkspaceService,
-      WithCostService,
-      WithPreferenceService,
-      WithVariableService,
-      WithMessageService,
-      WithReportService,
-      WithBillingService,
-      WithExpressionService,
-      WithProjectService,
-    ]
-  >,
-) {
+export function RootWidget(props: WithFrontServices) {
   return (
     <>
       <Routes>
