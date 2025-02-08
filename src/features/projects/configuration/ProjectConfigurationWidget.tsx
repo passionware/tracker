@@ -53,7 +53,8 @@ export function ProjectConfigurationWidget(
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 border border-slate-300 p-10 rounded-xl max-w-4xl self-center my-auto">
+        <Label size="lg">Edit project configuration</Label>
       {rd
         .journey(project)
         .wait(<Skeleton className="h-96" />)
@@ -75,7 +76,7 @@ export function ProjectConfigurationWidget(
             onCancel={() => {}}
           />
         ))}
-      <Label>Danger zone</Label>
+      <Label size="lg">Danger zone</Label>
       <OpenState>
         {(bag) => (
           <Dialog {...bag}>
