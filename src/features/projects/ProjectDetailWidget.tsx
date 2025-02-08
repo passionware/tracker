@@ -7,6 +7,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
+import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
@@ -39,6 +40,11 @@ export interface ProjectDetailWidgetProps
 
 export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
   const project = props.services.projectService.useProject(props.projectId);
+  const basePath = props.services.routingService
+    .forWorkspace()
+    .forClient()
+    .forProject()
+    .root();
   const matchedRoot = props.services.navigationService.useMatch(
     props.services.routingService
       .forWorkspace(props.workspaceId)
@@ -64,7 +70,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 );
               }}
             >
-              Details
+              Iterations
             </TabsTrigger>
             <TabsTrigger
               value="reports"
@@ -112,19 +118,25 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
     >
       <Routes>
         <Route
-          path={props.services.routingService
-            .forWorkspace()
-            .forClient()
-            .forProject()
-            .relative.root()}
+          path={makeRelativePath(
+            basePath,
+            props.services.routingService
+              .forWorkspace()
+              .forClient()
+              .forProject()
+              .root(),
+          )}
           element={<div>Details</div>}
         />
         <Route
-          path={props.services.routingService
-            .forWorkspace()
-            .forClient()
-            .forProject()
-            .relative.configuration()}
+          path={makeRelativePath(
+            basePath,
+            props.services.routingService
+              .forWorkspace()
+              .forClient()
+              .forProject()
+              .configuration(),
+          )}
           element={
             <ProjectConfigurationWidget
               services={props.services}
