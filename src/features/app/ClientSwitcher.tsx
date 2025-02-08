@@ -47,7 +47,7 @@ export function ClientSwitcher({
     ? activeClient
     : clients.find((client) => client.id === activeClient);
   const allClasses =
-    "bg-gradient-to-tl from-pink-500 to-amber-300 text-white rounded-none";
+    "bg-linear-to-tl from-pink-500 to-amber-300 text-white rounded-none";
 
   return (
     <SidebarMenu>
@@ -56,7 +56,7 @@ export function ClientSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="rounded-xl py-7 border border-sky-900 border-opacity-10 dark:border-opacity-50  bg-gradient-to-tl from-rose-300/5 to-blue-500/5 dark:from-rose-300/15 dark:to-blue-500/15 outline-none focus-visible:ring-2 focus:ring-rose-500/20"
+              className="rounded-xl py-7 border border-sky-900 border-opacity-10 dark:border-opacity-50  bg-linear-to-tl from-rose-300/5 to-blue-500/5 dark:from-rose-300/15 dark:to-blue-500/15 outline-hidden focus-visible:ring-2 focus:ring-rose-500/20"
             >
               {activeItem ? (
                 idSpecUtils.isAll(activeItem) ? (
@@ -65,7 +65,7 @@ export function ClientSwitcher({
                       <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                         <AvatarFallback
                           className={cn(
-                            "rounded-none text-white bg-gradient-to-tl",
+                            "rounded-none text-white bg-linear-to-tl",
                             allClasses,
                           )}
                         >
@@ -118,7 +118,7 @@ export function ClientSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="min-w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}

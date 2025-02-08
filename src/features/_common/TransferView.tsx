@@ -86,7 +86,7 @@ export function TransferView({
       )}
 
       {/* Inline Visual Bar */}
-      <div className="flex flex-1 items-center h-3 gap-1 ml-4 first:*:rounded-l-full last:*:rounded-r-full min-w-16">
+      <div className="flex flex-1 items-center h-3 gap-1 ml-4 *:first:rounded-l-full *:last:rounded-r-full min-w-16">
         {fromAmount.amount > 0 && (
           <div
             className="h-full bg-red-800"

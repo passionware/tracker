@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 const buttonVariants = cva(
-  "flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
+  "flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-white transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
   {
     variants: {
       visuallyDisabled: {
@@ -31,12 +31,12 @@ const buttonVariants = cva(
         // some gold-purple gradient tl-br
         accent1: [
           "border border-black/70 text-white",
-          "bg-gradient-to-br from-yellow-600 via-orange-800 to-purple-800  hover:brightness-110 dark:from-yellow-500 dark:to-purple-500 dark:hover:from-yellow-600 dark:hover:to-purple-600",
+          "bg-linear-to-br from-yellow-600 via-orange-800 to-purple-800  hover:brightness-110 dark:from-yellow-500 dark:to-purple-500 dark:hover:from-yellow-600 dark:hover:to-purple-600",
         ],
         accent2: [
           "border border-black/70 text-white",
           // gold-emerald
-          "bg-gradient-to-br from-yellow-600  to-emerald-900  hover:brightness-110 dark:from-yellow-500 dark:to-emerald-500 dark:hover:from-yellow-600 dark:hover:to-emerald-600",
+          "bg-linear-to-br from-yellow-600  to-emerald-900  hover:brightness-110 dark:from-yellow-500 dark:to-emerald-500 dark:hover:from-yellow-600 dark:hover:to-emerald-600",
         ],
       },
       size: {

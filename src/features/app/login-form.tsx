@@ -154,7 +154,7 @@ export function LoginForm({
           </div>
         </CardContent>
       </Card>
-      {/*<div className="text-balance text-center text-xs text-slate-500 [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-slate-900 dark:text-slate-400 dark:hover:[&_a]:text-slate-50">*/}
+      {/*<div className="text-balance text-center text-xs text-slate-500 [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-slate-900 dark:text-slate-400 dark:[&_a]:hover:text-slate-50">*/}
       {/*  By clicking continue, you agree to our <a href="#">Terms of Service</a>*/}
       {/*  {""}*/}
       {/*  and <a href="#">Privacy Policy</a>.*/}

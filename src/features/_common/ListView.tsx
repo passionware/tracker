@@ -160,7 +160,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
       // Wyświetlamy skeletony
       <div className={cn("rounded-md border overflow-auto", className)}>
         <Table>
-          <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
+          <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
             {columnsElement}
           </TableHeader>
           <TableBody className="bg-white">
@@ -195,7 +195,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
         <div className={cn("rounded-md border overflow-auto", className)}>
           <Table>
             {/* NAGŁÓWEK */}
-            <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow">
+            <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
               {columnsElement}
             </TableHeader>
 

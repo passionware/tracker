@@ -130,7 +130,7 @@ export function AbstractPicker<Id, Data>(
       {rd
         .fullJourney(promise.state)
         .initially(null)
-        .wait(<LoaderCircle className="!size-3 animate-spin" />)
+        .wait(<LoaderCircle className="size-3! animate-spin" />)
         .catch(renderSmallError("w-5 h-5"))
         .map(() => null)}
       {rd

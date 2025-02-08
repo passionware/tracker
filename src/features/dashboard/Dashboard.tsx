@@ -31,7 +31,7 @@ export function Dashboard(props: DashboardProps) {
       <div>Dashboard</div>
       <div className="p-10 text-3xl text-opacity-50 grid grid-flow-col items-stretch justify-stretch justify-items-stretch *:w-full *:aspect-square gap-24 *:flex *:items-center *:justify-center">
         <Link
-          className="bg-gradient-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
+          className="bg-linear-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
           to={props.services.routingService
             .forWorkspace(props.workspaceId)
             .forClient(props.clientId)
@@ -40,7 +40,7 @@ export function Dashboard(props: DashboardProps) {
           Reports
         </Link>
         <Link
-          className="bg-gradient-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
+          className="bg-linear-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
           to={props.services.routingService
             .forWorkspace(props.workspaceId)
             .forClient(props.clientId)
@@ -49,7 +49,7 @@ export function Dashboard(props: DashboardProps) {
           Charges
         </Link>
         <Link
-          className="bg-gradient-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
+          className="bg-linear-to-tl from-fuchsia-500 to-blue-400 text-white p-2 rounded-md inline-block w-fit hover:brightness-110 transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white"
           to={props.services.routingService
             .forWorkspace(props.workspaceId)
             .forClient(props.clientId)

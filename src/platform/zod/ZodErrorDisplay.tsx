@@ -144,7 +144,7 @@ export const ZodErrorDisplay: React.FC<JsonTreeProps> = ({
   return (
     <div className="font-mono text-sm text-gray-800">
       <Tooltip>
-        <TooltipContent className="max-h-[300px] max-w-screen-2xl overflow-y-auto whitespace-pre">
+        <TooltipContent className="max-h-[300px] max-w-(--breakpoint-2xl) overflow-y-auto whitespace-pre">
           {JSON.stringify(zodError.issues, null, 2)}
         </TooltipContent>
         <TooltipTrigger>

@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex whitespace-pre items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 dark:focus:ring-slate-300",
+  "inline-flex whitespace-pre items-center rounded-full border transition-colors focus:outline-hidden focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 dark:focus:ring-slate-300",
   {
     variants: {
       tone: {
@@ -63,13 +63,13 @@ const badgeVariants = cva(
         tone: "solid",
         variant: "accent1",
         class:
-          "border-violet-700 bg-gradient-to-br from-violet-500 to-red-500 text-white/95 hover:bg-gradient-to-br hover:from-violet-400 hover:to-red-400 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
+          "border-violet-700 bg-linear-to-br from-violet-500 to-red-500 text-white/95 hover:bg-linear-to-br hover:from-violet-400 hover:to-red-400 dark:bg-linear-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-linear-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
       },
       {
         tone: "solid",
         variant: "accent2",
         class:
-          "border-orange-700 bg-gradient-to-br from-orange-500 to-blue-500 text-white/95 hover:bg-gradient-to-br hover:from-orange-400 hover:to-blue-400 dark:bg-gradient-to-br dark:from-orange-900 dark:to-blue-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-orange-800 dark:hover:to-blue-800",
+          "border-orange-700 bg-linear-to-br from-orange-500 to-blue-500 text-white/95 hover:bg-linear-to-br hover:from-orange-400 hover:to-blue-400 dark:bg-linear-to-br dark:from-orange-900 dark:to-blue-900 dark:text-slate-50 dark:hover:bg-linear-to-br dark:hover:from-orange-800 dark:hover:to-blue-800",
       },
       {
         tone: "outline",
@@ -147,13 +147,13 @@ const badgeVariants = cva(
         tone: "secondary",
         variant: "accent1",
         class:
-          "border-slate-950/20 bg-gradient-to-br from-violet-100 to-red-100 text-white/95 hover:bg-gradient-to-br hover:from-violet-100 hover:to-red-100 dark:bg-gradient-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
+          "border-slate-950/20 bg-linear-to-br from-violet-100 to-red-100 text-white/95 hover:bg-linear-to-br hover:from-violet-100 hover:to-red-100 dark:bg-linear-to-br dark:from-violet-900 dark:to-red-900 dark:text-slate-50 dark:hover:bg-linear-to-br dark:hover:from-violet-800 dark:hover:to-red-800",
       },
       {
         tone: "secondary",
         variant: "accent2",
         class:
-          "border-slate-950/20 bg-gradient-to-br from-orange-300 to-rose-300 text-white hover:bg-gradient-to-br hover:from-orange-300 hover:to-rose-200 dark:bg-gradient-to-br dark:from-orange-900 dark:to-rose-900 dark:text-slate-50 dark:hover:bg-gradient-to-br dark:hover:from-orange-800 dark:hover:to-rose-800",
+          "border-slate-950/20 bg-linear-to-br from-orange-300 to-rose-300 text-white hover:bg-linear-to-br hover:from-orange-300 hover:to-rose-200 dark:bg-linear-to-br dark:from-orange-900 dark:to-rose-900 dark:text-slate-50 dark:hover:bg-linear-to-br dark:hover:from-orange-800 dark:hover:to-rose-800",
       },
     ],
     defaultVariants: {

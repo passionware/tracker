@@ -104,7 +104,7 @@ export function LinkPopover(props: LinkPopoverProps) {
               setOpen(false);
             })}
           >
-            <h3 className="text-sky-700 p-2 rounded-md bg-gradient-to-br from-sky-100 to-cyan-50 empty:hidden">
+            <h3 className="text-sky-700 p-2 rounded-md bg-linear-to-br from-sky-100 to-cyan-50 empty:hidden">
               {props.title}
             </h3>
 

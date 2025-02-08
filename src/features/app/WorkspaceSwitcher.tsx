@@ -48,7 +48,7 @@ export function WorkspaceSwitcher({
     : workspaces.find((workspace) => workspace.id === activeWorkspace);
 
   const allClasses =
-    "bg-gradient-to-tl from-amber-600 to-emerald-600 text-white rounded-none";
+    "bg-linear-to-tl from-amber-600 to-emerald-600 text-white rounded-none";
 
   return (
     <SidebarMenu>
@@ -57,7 +57,7 @@ export function WorkspaceSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="rounded-xl py-7 border border-emerald-500 border-opacity-20 dark:border-opacity-20 bg-gradient-to-tl from-sky-300/10 dark:from-sky-300/20 to-yellow-500/10 dark:to-yellow-500/20 outline-none focus-visible:ring-2 focus:ring-emerald-500/20"
+              className="rounded-xl py-7 border border-emerald-500 border-opacity-20 dark:border-opacity-20 bg-linear-to-tl from-sky-300/10 dark:from-sky-300/20 to-yellow-500/10 dark:to-yellow-500/20 outline-hidden focus-visible:ring-2 focus:ring-emerald-500/20"
             >
               {activeItem ? (
                 idSpecUtils.isAll(activeItem) ? (
@@ -113,7 +113,7 @@ export function WorkspaceSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="min-w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}

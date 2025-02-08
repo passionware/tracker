@@ -41,10 +41,10 @@ export function SorterWidget<T extends SortableQueryBase<Field>, Field>({
       )}
     >
       <ChevronUp
-        className={clsx("!size-3 -mb-2", order === "asc" && "text-black")}
+        className={clsx("size-3! -mb-2", order === "asc" && "text-black")}
       />
       <ChevronDown
-        className={clsx("!size-3", order === "desc" && "text-black")}
+        className={clsx("size-3!", order === "desc" && "text-black")}
       />
     </Button>
   );

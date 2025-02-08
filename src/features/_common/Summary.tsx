@@ -16,7 +16,7 @@ export function SummaryEntry({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6",
+        "overflow-hidden rounded-lg bg-white px-4 py-5 shadow-sm sm:p-6",
         className,
       )}
     >
