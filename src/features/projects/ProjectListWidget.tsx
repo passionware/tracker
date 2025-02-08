@@ -125,6 +125,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
               <>
                 <PopoverHeader>Add new project</PopoverHeader>
                 <ProjectForm
+                    mode="create"
                   onCancel={bag.close}
                   defaultValues={{
                     workspaceId: idSpecUtils.switchAll(
@@ -236,6 +237,7 @@ function ActionMenu(
           }
           content={(bag) => (
             <ProjectForm
+                mode="create"
               defaultValues={props.entry}
               services={props.services}
               onSubmit={async (data) => {

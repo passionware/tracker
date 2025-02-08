@@ -38,6 +38,7 @@ export interface ProjectFormProps
     changes: Partial<ProjectPayload>,
   ) => Promise<void>;
   onCancel: () => void;
+  mode: "create" | "edit";
 }
 
 type FormModel = {
@@ -166,9 +167,16 @@ export function ProjectForm(props: ProjectFormProps) {
             </FormItem>
           )}
         />
-        <Button type="button" variant="outline" onClick={props.onCancel}>
-          Cancel
-        </Button>
+        {props.mode === "create" && (
+          <Button type="button" variant="outline" onClick={props.onCancel}>
+            Cancel
+          </Button>
+        )}
+        {props.mode === "edit" && (
+          <Button type="button" variant="outline" onClick={()=>form.reset({})}>
+            Reset
+          </Button>
+        )}
         <Button
           type="submit"
           disabled={
