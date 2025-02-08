@@ -1,4 +1,9 @@
-import { Project, projectQueryUtils } from "@/api/project/project.api.ts";
+import { QueryFilter } from "@/api/_common/query/queryUtils.ts";
+import {
+  Project,
+  ProjectQuery,
+  projectQueryUtils,
+} from "@/api/project/project.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -11,8 +16,8 @@ import {
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
-import { project } from "@/features/_common/columns/project.tsx";
 import { columnHelper } from "@/features/_common/columns/project";
+import { project } from "@/features/_common/columns/project.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
@@ -21,6 +26,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
 import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { Nullable } from "@/platform/typescript/Nullable";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
@@ -61,14 +67,19 @@ export interface ProjectListWidgetProps
       WithPreferenceService,
     ]
   > {
-  filter: unknown; // something like all/current/past - should be part of ProjectQuery?
+  filter: Nullable<QueryFilter<ProjectQuery, "status">>;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
 }
 
 export function ProjectListWidget(props: ProjectListWidgetProps) {
   const [_query, setQuery] = useState(projectQueryUtils.ofDefault());
-  const query = projectQueryUtils.ensureDefault(_query, props);
+  const query = projectQueryUtils
+    .transform(_query)
+    .build((q) => [
+      q.withEnsureDefault(props),
+      q.withFilter("status", props.filter),
+    ]);
   const projects = props.services.projectService.useProjects(query);
 
   const addProjectState = promiseState.useRemoteData<void>();

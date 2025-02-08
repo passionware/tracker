@@ -65,7 +65,7 @@ const meta = {
     ),
     clientId: 123,
     workspaceId: workspaceMock.static.list[0].id,
-    filter: "all",
+    filter: { operator: "oneOf", value: ["active"] },
     projects: testQuery.of(rd.of(projectMock.static.list), 1000),
   },
   argTypes: {

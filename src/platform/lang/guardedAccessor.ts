@@ -20,3 +20,24 @@ export function createGuardedAccessor<T extends object, S extends T>(
     },
   });
 }
+
+/**
+ * Todo:
+ * this has bad devex, since we don't really know which services are required, we discover it lately, maybe even after we deploy storybook etc.
+ *
+ * Better idea: create some reusable "slices" of service.
+ * const services = [
+ *     createWorkspaceServiceSlice(/ optionally rename args accessors / ),
+ *     createClientServiceSlice(/ optionally rename args accessors / ),
+ *     createContractorServiceSlice( / optionally rename args accessors / ),
+ * ]
+ *
+ * const sb = createSbServices(services)
+ *
+ * const meta = {
+ *     decorator: sb.decorator,
+ *     args: sb.args,
+ *     argTypes: sb.argTypes,
+ *     component: MyComponent,
+ * }
+ */

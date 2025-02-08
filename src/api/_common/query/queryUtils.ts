@@ -20,6 +20,7 @@ type FilterBase = Record<string, unknown>;
 export type WithFilters<F extends FilterBase> = {
   filters: { [K in keyof F]: Nullable<F[K]> };
 };
+export type QueryFilter<Q extends WithFilters<FilterBase>, K extends keyof Q["filters"]> = Q["filters"][K];
 
 export const withPaginationUtils = <Q extends WithPagination>() => ({
   resetPage: (query: Q): Q => ({

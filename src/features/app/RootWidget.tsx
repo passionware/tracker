@@ -218,7 +218,7 @@ export function RootWidget(
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <ProjectListWidget
-                      filter="all"
+                      filter={null}
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}
@@ -240,7 +240,10 @@ export function RootWidget(
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <ProjectListWidget
-                      filter="current"
+                      filter={{
+                        operator: "oneOf",
+                        value: ["active"],
+                      }}
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}
@@ -262,7 +265,10 @@ export function RootWidget(
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <ProjectListWidget
-                      filter="past"
+                      filter={{
+                        operator: "oneOf",
+                        value: ["closed"],
+                      }}
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}

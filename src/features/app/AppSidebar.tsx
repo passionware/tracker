@@ -56,12 +56,12 @@ function useData(
           icon: BriefcaseBusiness,
           items: [
             {
-              title: "All projects",
-              url: routing.allProjects(),
-            },
-            {
               title: "Current projects",
               url: routing.currentProjects(),
+            },
+            {
+              title: "All projects",
+              url: routing.allProjects(),
             },
             {
               title: "Past projects",

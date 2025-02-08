@@ -83,6 +83,10 @@ export const projectQueryUtils = withBuilderUtils({
         x.unchanged(),
       ),
     ]),
+  withEnsureDefault:
+    (specs: { workspaceId: WorkspaceSpec; clientId: ClientSpec }) =>
+    (query: ProjectQuery): ProjectQuery =>
+      projectQueryUtils.ensureDefault(query, specs),
 }).setInitialQueryFactory((q) => q.ofDefault);
 
 export interface ProjectApi {
