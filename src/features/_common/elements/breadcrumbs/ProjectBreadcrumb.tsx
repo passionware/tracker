@@ -20,7 +20,6 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { rd, RemoteData } from "@passionware/monads";
-import { ChevronsUpDown } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
 
 export interface ProjectBreadcrumbProps extends WithFrontServices {
@@ -40,56 +39,17 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
   return (
     <>
       <BreadcrumbLink>
-        {rd
-          .journey(props.project)
-          .wait(<Skeleton className="w-20 h-4" />)
-          .catch(renderSmallError("w-20 h-4"))
-          .map((x) => x.name)}
-      </BreadcrumbLink>
-      <BreadcrumbSeparator />
-      <BreadcrumbPage>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="px-2 -mx-2 group">
-              <Routes>
-                <Route
-                  path={makeRelativePath(
-                    basePath,
-                    props.services.routingService
-                      .forWorkspace()
-                      .forClient()
-                      .forProject()
-                      .root(),
-                  )}
-                  element="Iterations"
-                />
-                <Route
-                  path={makeRelativePath(
-                    basePath,
-                    props.services.routingService
-                      .forWorkspace()
-                      .forClient()
-                      .forProject()
-                      .reports(),
-                  )}
-                  element="Reports"
-                />
-                <Route
-                  path={makeRelativePath(
-                    basePath,
-                    props.services.routingService
-                      .forWorkspace()
-                      .forClient()
-                      .forProject()
-                      .configuration(),
-                  )}
-                  element="Configuration"
-                />
-              </Routes>
-              <ChevronsUpDown className="size-4 opacity-0 group-hocus:opacity-100" />
+            <Button variant="ghost" size="sm" className="px-2 -mx-2">
+              {rd
+                .journey(props.project)
+                .wait(<Skeleton className="w-20 h-4" />)
+                .catch(renderSmallError("w-20 h-4"))
+                .map((x) => x.name)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="center">
             <DropdownMenuItem
               onClick={() =>
                 props.services.navigationService.navigate(
@@ -131,6 +91,46 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </BreadcrumbLink>
+      <BreadcrumbSeparator />
+      <BreadcrumbPage>
+        <Button variant="ghost" size="sm" className="px-2 -mx-2">
+          <Routes>
+            <Route
+              path={makeRelativePath(
+                basePath,
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject()
+                  .root(),
+              )}
+              element="Iterations"
+            />
+            <Route
+              path={makeRelativePath(
+                basePath,
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject()
+                  .reports(),
+              )}
+              element="Reports"
+            />
+            <Route
+              path={makeRelativePath(
+                basePath,
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject()
+                  .configuration(),
+              )}
+              element="Configuration"
+            />
+          </Routes>
+        </Button>
       </BreadcrumbPage>
     </>
   );
