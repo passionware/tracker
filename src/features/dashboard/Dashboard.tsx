@@ -1,7 +1,7 @@
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,

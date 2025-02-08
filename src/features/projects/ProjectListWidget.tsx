@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { columnHelper } from "@/features/_common/columns/project";
 import { project } from "@/features/_common/columns/project.tsx";
@@ -23,7 +23,7 @@ import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryB
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable";

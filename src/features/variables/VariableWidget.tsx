@@ -7,7 +7,7 @@ import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/ClientBreadcrumbLink.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
@@ -16,7 +16,7 @@ import { VariableQueryBar } from "@/features/_common/elements/query/VariableQuer
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/WorkspaceBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { VariableForm } from "@/features/variables/VariableForm.tsx";
 import { ActionMenu } from "@/features/variables/VariableWidget.menu.tsx";
 import { cn } from "@/lib/utils.ts";
