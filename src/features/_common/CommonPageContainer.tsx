@@ -18,6 +18,7 @@ export function CommonPageContainer(
   props: PropsWithChildren<{
     segments: ReactNode[];
     tools?: ReactNode;
+    footer?: ReactNode;
   }>,
 ) {
   return (
@@ -59,6 +60,7 @@ export function CommonPageContainer(
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
         {props.children}
       </div>
+      {props.footer}
     </>
   );
 }

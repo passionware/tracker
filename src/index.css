@@ -35,4 +35,30 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
+  .dark {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+      border-color: var(--color-black, currentColor);
+    }
+  }
+}
+
+/* Catch hover, focus, expanded state at once */
+@custom-variant hocus {
+  &:hover,
+  &:focus-visible,
+  &:has(:focus-visible),
+  &[aria-expanded="true"] {
+    @slot;
+  }
+}
+/* Catch hover and expanded state at once */
+@custom-variant xhover {
+  &:hover,
+  &[aria-expanded="true"] {
+    @slot;
+  }
 }
