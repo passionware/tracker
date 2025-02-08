@@ -86,5 +86,10 @@ export function createMutationService(
       onActionAccessor.get()("Deleting project");
       await wait();
     },
+    createProjectIteration: async () => {
+      onActionAccessor.get()("Creating project iteration");
+      await wait();
+      return { id: 1 };
+    },
   };
 }

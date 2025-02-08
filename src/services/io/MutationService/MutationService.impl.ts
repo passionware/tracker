@@ -145,5 +145,12 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    createProjectIteration: async (iteration) => {
+      const response = await api.createProjectIteration(iteration);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating project iteration",
+      });
+      return response;
+    },
   };
 }

@@ -334,5 +334,25 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    createProjectIteration: async (iteration) => {
+      const response = await client
+        .from("project_iteration")
+        .insert({
+          project_id: iteration.projectId,
+          period_start: iteration.periodStart,
+          period_end: iteration.periodEnd,
+          status: iteration.status,
+          description: iteration.description,
+        })
+        .select("id");
+
+      if (response.error) {
+        throw response.error;
+      }
+      if (response.data[0]?.id === undefined) {
+        throw new Error("No id returned");
+      }
+      return { id: response.data[0].id };
+    },
   };
 }

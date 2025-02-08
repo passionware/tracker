@@ -16,7 +16,9 @@ export function NewIterationPopover(
     projectId: Project["id"];
   },
 ) {
-  const promise = promiseState.useMutation(async () => void 0);
+  const promise = promiseState.useMutation(
+    props.services.mutationService.createProjectIteration,
+  );
 
   return (
     <InlinePopoverForm
