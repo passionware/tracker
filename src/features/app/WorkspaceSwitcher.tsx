@@ -57,7 +57,7 @@ export function WorkspaceSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="rounded-xl py-7 border border-emerald-500 border-opacity-20 dark:border-opacity-20 bg-linear-to-tl from-sky-300/10 dark:from-sky-300/20 to-yellow-500/10 dark:to-yellow-500/20 outline-hidden focus-visible:ring-2 focus:ring-emerald-500/20"
+              className="rounded-xl py-7 border border-emerald-500/20 bg-linear-to-tl from-sky-300/10 dark:from-sky-300/20 to-yellow-500/10 dark:to-yellow-500/20 outline-hidden focus-visible:ring-2 focus:ring-emerald-500/20"
             >
               {activeItem ? (
                 idSpecUtils.isAll(activeItem) ? (
