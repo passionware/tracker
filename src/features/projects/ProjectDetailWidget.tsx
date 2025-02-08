@@ -1,26 +1,18 @@
 import { Project } from "@/api/project/project.api.ts";
-import { Button } from "@/components/ui/button.tsx";
-import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
-import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
+import { NewIterationPopover } from "@/features/projects/iterations/NewIterationPopover.tsx";
 import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { rd } from "@passionware/monads";
-import { promiseState } from "@passionware/platform-react";
-import { Check, Loader2, PlusCircle } from "lucide-react";
 import { NavLink, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
@@ -36,8 +28,6 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
     .forClient()
     .forProject()
     .root();
-
-  const addIterationState = promiseState.useRemoteData();
 
   return (
     <CommonPageContainer
@@ -92,49 +82,9 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 .root(),
             )}
             element={
-              <InlinePopoverForm
-                trigger={
-                  <Button variant="accent1" size="sm" className="flex">
-                    {rd
-                      .fullJourney(addIterationState.state)
-                      .initially(<PlusCircle />)
-                      .wait(<Loader2 />)
-                      .catch(renderSmallError("w-6 h-6"))
-                      .map(() => (
-                        <Check />
-                      ))}
-                    Add iteration
-                  </Button>
-                }
-                content={(bag) => (
-                  <>
-                    <PopoverHeader>Add new project</PopoverHeader>
-                    <ProjectForm
-                      mode="create"
-                      onCancel={bag.close}
-                      defaultValues={{
-                        workspaceId: idSpecUtils.switchAll(
-                          props.workspaceId,
-                          undefined,
-                        ),
-                        clientId: idSpecUtils.switchAll(
-                          props.clientId,
-                          undefined,
-                        ),
-                        status: "draft",
-                      }}
-                      services={props.services}
-                      onSubmit={async () => {}}
-                      // onSubmit={(data) =>
-                      // addIterationState.track(
-                      //   props.services.mutationService
-                      //     .createProject(data)
-                      //     .then(bag.close),
-                      // )
-                      //}
-                    />
-                  </>
-                )}
+              <NewIterationPopover
+                services={props.services}
+                projectId={props.projectId}
               />
             }
           />
