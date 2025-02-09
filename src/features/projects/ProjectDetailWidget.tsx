@@ -13,7 +13,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -39,7 +39,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 .forWorkspace(props.workspaceId)
                 .forClient(props.clientId)
                 .forProject(props.projectId.toString())
-                .root(),
+                .iterations(),
               "Iterations",
             ],
             [
@@ -79,7 +79,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 .forWorkspace()
                 .forClient()
                 .forProject()
-                .root(),
+                .iterations(),
             )}
             element={
               <NewIterationPopover
@@ -106,6 +106,25 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               .forClient()
               .forProject()
               .root(),
+          )}
+          element={
+            <Navigate
+              to={props.services.routingService
+                .forWorkspace(props.workspaceId)
+                .forClient(props.clientId)
+                .forProject(props.projectId.toString())
+                .iterations("all")}
+            />
+          }
+        />
+        <Route
+          path={makeRelativePath(
+            basePath,
+            props.services.routingService
+              .forWorkspace()
+              .forClient()
+              .forProject()
+              .iterations(),
           )}
           element={
             <ProjectIterationListWidget
