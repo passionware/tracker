@@ -6,6 +6,7 @@ import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/P
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
+import { IterationFilterDropdown } from "@/features/projects/iterations/IterationFilter.tsx";
 import { NewIterationPopover } from "@/features/projects/iterations/NewIterationPopover.tsx";
 import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
@@ -39,7 +40,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 .forWorkspace(props.workspaceId)
                 .forClient(props.clientId)
                 .forProject(props.projectId.toString())
-                .iterations(),
+                .iterations("active"),
               "Iterations",
             ],
             [
@@ -60,7 +61,6 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
             ],
           ].map(([path, label]) => (
             <NavLink
-              end
               key={path}
               to={path}
               className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
@@ -82,10 +82,13 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 .iterations(),
             )}
             element={
-              <NewIterationPopover
-                services={props.services}
-                projectId={props.projectId}
-              />
+              <>
+                <IterationFilterDropdown services={props.services} />
+                <NewIterationPopover
+                  services={props.services}
+                  projectId={props.projectId}
+                />
+              </>
             }
           />
         </Routes>
@@ -109,11 +112,12 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
           )}
           element={
             <Navigate
+              replace
               to={props.services.routingService
                 .forWorkspace(props.workspaceId)
                 .forClient(props.clientId)
                 .forProject(props.projectId.toString())
-                .iterations("all")}
+                .iterations("active")}
             />
           }
         />

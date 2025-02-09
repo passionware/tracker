@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { maybe } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { capitalize } from "lodash";
 import { useState } from "react";
@@ -20,11 +21,24 @@ export function ProjectIterationListWidget(
   props: ProjectIterationListWidgetProps,
 ) {
   const [_query, setQuery] = useState(projectIterationQueryUtils.ofDefault());
+  const statusFilter =
+    props.services.locationService.useCurrentProjectIterationStatus();
   const query = projectIterationQueryUtils.transform(_query).build((q) => [
     q.withFilter("projectId", {
       operator: "oneOf",
       value: [props.projectId],
     }),
+    q.withFilter(
+      "status",
+      maybe.map(statusFilter, (x) =>
+        x === "all" // todo probably we need navigation utils same as for ClientSpec and WorkspaceSpec
+          ? null
+          : {
+              operator: "oneOf",
+              value: x === "active" ? ["active", "draft"] : [x],
+            },
+      ),
+    ),
   ]);
   const projectIterations =
     props.services.projectIterationService.useProjectIterations(query);

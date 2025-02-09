@@ -26,8 +26,8 @@ export function createLocationService(
       "potentialCosts",
       "variables",
       "allProjects",
-      "currentProjects",
-      "pastProjects",
+      "activeProjects",
+      "closedProjects",
       "projectsRoot",
       "root",
     ] satisfies (keyof typeof routing)[];
@@ -123,7 +123,7 @@ export function createLocationService(
       );
       return maybe.map(
         match?.params.projectIterationStatus,
-        (filter) => filter as "all" | "current" | "past",
+        (filter) => filter as "all" | "active" | "closed",
       );
     },
     getCurrentProjectIterationStatus: () => {
@@ -136,7 +136,7 @@ export function createLocationService(
       );
       return maybe.map(
         match?.params.projectIterationStatus,
-        (filter) => filter as "all" | "current" | "past",
+        (filter) => filter as "all" | "active" | "closed",
       );
     },
   };

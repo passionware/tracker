@@ -5,7 +5,6 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { ProjectIterationForm } from "@/features/projects/iterations/IterationForm.tsx";
-import { delay } from "@/platform/lang/delay.ts";
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -45,12 +44,18 @@ export function NewIterationPopover(
               projectId: props.projectId,
               status: "draft",
             }}
-            onSubmit={(data) =>
-              promise
-                .track(data)
-                .then(bag.close)
-                .then(() => delay(2000).then(promise.reset))
-            }
+            onSubmit={async (data) => {
+              const response = await promise.track(data);
+              bag.close();
+              props.services.navigationService.navigate(
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject(props.projectId.toString())
+                  .forIteration(response.id.toString())
+                  .root(),
+              );
+            }}
           />
         </>
       )}

@@ -87,13 +87,16 @@ export interface RoutingService {
       };
       projectsRoot: () => string;
       allProjects: () => string;
-      currentProjects: () => string;
-      pastProjects: () => string;
+      activeProjects: () => string;
+      closedProjects: () => string;
       forProject: (projectId?: string | ":projectId") => {
         root: () => string;
         iterations: (
-          status?: "all" | "current" | "past" | ":projectIterationStatus",
+          status?: "all" | "active" | "closed" | ":projectIterationStatus",
         ) => string;
+        forIteration: (iterationId?: string | ":iterationId") => {
+          root: () => string;
+        };
         reports: () => string;
         configuration: () => string;
       };

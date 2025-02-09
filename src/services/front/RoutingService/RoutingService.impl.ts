@@ -37,16 +37,22 @@ export function createRoutingService(): RoutingService {
               `/w/${workspaceSlot}/clients/${clientSlot}/projects`,
             allProjects: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/all`,
-            currentProjects: () =>
-              `/w/${workspaceSlot}/clients/${clientSlot}/projects/current`,
-            pastProjects: () =>
-              `/w/${workspaceSlot}/clients/${clientSlot}/projects/past`,
+            activeProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects/active`,
+            closedProjects: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
             forProject: (projectId = ":projectId") => {
               const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
               return {
                 root: () => base,
                 iterations: (status = ":projectIterationStatus") =>
                   `${base}/iterations/${status}`,
+                forIteration: (iterationId = ":iterationId") => {
+                  const base2 = `${base}/iterations/${iterationId}`;
+                  return {
+                    root: () => base2,
+                  };
+                },
                 reports: () => `${base}/reports`,
                 configuration: () => `${base}/configuration`,
               };

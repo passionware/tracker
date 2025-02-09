@@ -192,7 +192,7 @@ export function RootWidget(props: WithFrontServices) {
           path={props.services.routingService
             .forWorkspace()
             .forClient()
-            .currentProjects()}
+            .activeProjects()}
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
@@ -217,7 +217,7 @@ export function RootWidget(props: WithFrontServices) {
           path={props.services.routingService
             .forWorkspace()
             .forClient()
-            .pastProjects()}
+            .closedProjects()}
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
@@ -251,7 +251,7 @@ export function RootWidget(props: WithFrontServices) {
                   to={props.services.routingService
                     .forWorkspace(workspaceId)
                     .forClient(clientId)
-                    .currentProjects()}
+                    .activeProjects()}
                 />
               )}
             </IdResolver>
