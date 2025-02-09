@@ -1,4 +1,5 @@
 import { Project } from "@/api/project/project.api.ts";
+import { Badge } from "@/components/ui/badge.tsx";
 import {
   BreadcrumbLink,
   BreadcrumbPage,
@@ -113,6 +114,18 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
                 .forWorkspace()
                 .forClient()
                 .forProject()
+                .forIteration()
+                .root(),
+            )}
+            element={<IterationBreadcrumb services={props.services} />}
+          />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              props.services.routingService
+                .forWorkspace()
+                .forClient()
+                .forProject()
                 .reports(),
             )}
             element="Reports"
@@ -131,5 +144,44 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
         </Routes>
       </BreadcrumbPage>
     </>
+  );
+}
+
+function IterationBreadcrumb(props: WithFrontServices) {
+  const currentIteration =
+    props.services.locationService.useCurrentProjectIterationId();
+  const iteration =
+    props.services.projectIterationService.useProjectIterationDetail(
+      currentIteration,
+    );
+  return (
+    <BreadcrumbPage>
+      {rd
+        .journey(iteration)
+        .wait(<Skeleton className="w-20 h-4" />)
+        .catch(renderSmallError("w-20 h-4"))
+        .map((x) => (
+          <div className="flex items-center space-x-2">
+            <div>Iteration</div>
+            <Badge
+              variant={
+                (
+                  {
+                    draft: "secondary",
+                    active: "positive",
+                    closed: "destructive",
+                  } as const
+                )[x.status]
+              }
+            >
+              {x.ordinalNumber}.
+            </Badge>
+            {props.services.formatService.temporal.range.long(
+              x.periodStart,
+              x.periodEnd,
+            )}
+          </div>
+        ))}
+    </BreadcrumbPage>
   );
 }

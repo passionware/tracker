@@ -10,6 +10,7 @@ export const projectIteration$ = z.object({
   period_end: z.coerce.date(),
   description: z.string().nullable(),
   status: z.enum(["draft", "active", "closed"]),
+  ordinal_number: z.number(),
   // todo more fields, nested structure - we load project iteration as a whole, using some view
 });
 

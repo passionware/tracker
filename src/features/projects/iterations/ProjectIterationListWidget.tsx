@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { capitalize } from "lodash";
@@ -13,6 +17,8 @@ import { useState } from "react";
 
 export interface ProjectIterationListWidgetProps extends WithFrontServices {
   projectId: number;
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
 }
 
 const c = createColumnHelper<ProjectIteration>();
@@ -49,6 +55,16 @@ export function ProjectIterationListWidget(
         data={projectIterations}
         query={query}
         onQueryChange={setQuery}
+        onRowDoubleClick={(row) => {
+          props.services.navigationService.navigate(
+            props.services.routingService
+              .forWorkspace(props.workspaceId)
+              .forClient(props.clientId)
+              .forProject(props.projectId.toString())
+              .forIteration(row.id.toString())
+              .root(),
+          );
+        }}
         columns={[
           c.display({
             header: "Range",

@@ -21,6 +21,7 @@ export interface ProjectIterationPayload {
   status: "draft" | "active" | "closed";
   description: Nullable<string>;
   projectId: Project["id"];
+  ordinalNumber: number;
 }
 
 export interface ProjectIteration extends ProjectIterationPayload {

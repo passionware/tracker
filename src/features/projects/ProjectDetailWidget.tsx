@@ -6,6 +6,7 @@ import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/P
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
+import { IterationWidget } from "@/features/projects/iterations/iteration/IterationWidget.tsx";
 import { IterationFilterDropdown } from "@/features/projects/iterations/IterationFilter.tsx";
 import { NewIterationPopover } from "@/features/projects/iterations/NewIterationPopover.tsx";
 import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
@@ -14,6 +15,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { maybe } from "@passionware/monads";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
@@ -29,6 +31,9 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
     .forClient()
     .forProject()
     .root();
+
+  const iterationId =
+    props.services.locationService.useCurrentProjectIterationId();
 
   return (
     <CommonPageContainer
@@ -86,6 +91,8 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 <IterationFilterDropdown services={props.services} />
                 <NewIterationPopover
                   services={props.services}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
                   projectId={props.projectId}
                 />
               </>
@@ -128,10 +135,32 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               .forWorkspace()
               .forClient()
               .forProject()
+              .forIteration()
+              .root(),
+          )}
+          element={maybe.map(iterationId, (iterationId) => (
+            <IterationWidget
+              workspaceId={props.workspaceId}
+              clientId={props.clientId}
+              projectId={props.projectId}
+              services={props.services}
+              projectIterationId={iterationId}
+            />
+          ))}
+        />
+        <Route
+          path={makeRelativePath(
+            basePath,
+            props.services.routingService
+              .forWorkspace()
+              .forClient()
+              .forProject()
               .iterations(),
           )}
           element={
             <ProjectIterationListWidget
+              workspaceId={props.workspaceId}
+              clientId={props.clientId}
               projectId={props.projectId}
               services={props.services}
             />

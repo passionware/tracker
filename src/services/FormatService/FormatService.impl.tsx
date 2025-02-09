@@ -167,6 +167,46 @@ export function createFormatService(clock: () => Date): FormatService {
             </RangeWrapper>
           );
         },
+        long: (startDate, endDate) => {
+          // 1. Ten sam dzień
+          if (isSameDay(startDate, endDate)) {
+            return (
+              <RangeWrapper from={startDate} to={endDate}>
+                <div className="flex flex-col text-center gap-1">
+                  <div>
+                    <DayBadge value={format(startDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(startDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(startDate, "yyyy")} />
+                  </div>
+                </div>
+              </RangeWrapper>
+            );
+          }
+
+          return (
+            <RangeWrapper from={startDate} to={endDate}>
+              <div className="flex flex-row text-center gap-1">
+                <div>
+                  <DayBadge value={format(startDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(startDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(startDate, "yyyy")} />
+                </div>
+                <div className="text-gray-600">-</div>
+                <div>
+                  <DayBadge value={format(endDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(endDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(endDate, "yyyy")} />
+                </div>
+              </div>
+            </RangeWrapper>
+          );
+        },
       },
     },
     financial: {

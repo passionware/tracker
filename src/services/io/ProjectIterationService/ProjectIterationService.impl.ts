@@ -39,8 +39,9 @@ export function createProjectIterationService({
         id,
         useQuery(
           {
+            enabled: !!id,
             queryKey: ["project-iteration", id],
-            queryFn: () => api.getProjectIterationDetail(id),
+            queryFn: () => api.getProjectIterationDetail(id!),
           },
           client,
         ),

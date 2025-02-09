@@ -139,6 +139,28 @@ export function createLocationService(
         (filter) => filter as "all" | "active" | "closed",
       );
     },
+    useCurrentProjectIterationId: () => {
+      const match = config.services.navigationService.useMatch(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .forIteration()
+          .root() + "/*",
+      );
+      return maybe.map(match?.params.iterationId, parseInt);
+    },
+    getCurrentProjectIterationId: () => {
+      const match = config.services.navigationService.match(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .forIteration()
+          .root() + "/*",
+      );
+      return maybe.map(match?.params.iterationId, parseInt);
+    },
   };
   return api;
 }

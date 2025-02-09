@@ -32,6 +32,7 @@ export interface FormatService {
     };
     range: {
       compact: (start: Date, end: Date) => ReactNode;
+      long: (start: Date, end: Date) => ReactNode;
     };
   };
 }

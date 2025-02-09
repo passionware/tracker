@@ -10,10 +10,10 @@ export interface ProjectIterationService {
     query: Maybe<ProjectIterationQuery>,
   ) => RemoteData<ProjectIteration[]>;
   useProjectIterationDetail: (
-    id: ProjectIterationDetail["id"],
+    id: Maybe<ProjectIterationDetail["id"]>,
   ) => RemoteData<ProjectIterationDetail>;
 }
 
 export interface WithProjectIterationService {
-    projectIterationService: ProjectIterationService;
+  projectIterationService: ProjectIterationService;
 }

@@ -42,13 +42,13 @@ export function createRoutingService(): RoutingService {
             closedProjects: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
             forProject: (projectId = ":projectId") => {
-              const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
+              const base = `/w/${workspaceSlot}/clients/${clientSlot}/project/${projectId}`;
               return {
                 root: () => base,
                 iterations: (status = ":projectIterationStatus") =>
                   `${base}/iterations/${status}`,
                 forIteration: (iterationId = ":iterationId") => {
-                  const base2 = `${base}/iterations/${iterationId}`;
+                  const base2 = `${base}/iteration/${iterationId}`;
                   return {
                     root: () => base2,
                   };

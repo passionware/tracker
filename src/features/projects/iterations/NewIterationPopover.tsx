@@ -5,6 +5,10 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { ProjectIterationForm } from "@/features/projects/iterations/IterationForm.tsx";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -13,6 +17,8 @@ export function NewIterationPopover(
   props: WithFrontServices & {
     className?: string;
     projectId: Project["id"];
+    workspaceId: WorkspaceSpec;
+    clientId: ClientSpec;
   },
 ) {
   const promise = promiseState.useMutation(
@@ -49,8 +55,8 @@ export function NewIterationPopover(
               bag.close();
               props.services.navigationService.navigate(
                 props.services.routingService
-                  .forWorkspace()
-                  .forClient()
+                  .forWorkspace(props.workspaceId)
+                  .forClient(props.clientId)
                   .forProject(props.projectId.toString())
                   .forIteration(response.id.toString())
                   .root(),

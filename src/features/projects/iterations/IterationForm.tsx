@@ -40,6 +40,7 @@ type FormModel = {
   status: "draft" | "active" | "closed";
   description: string;
   projectId: number;
+  ordinalNumber: number;
 };
 
 export function ProjectIterationForm(props: ProjectIterationFormProps) {
@@ -57,6 +58,7 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
 
   function handleSubmit(data: FormModel) {
     const allData: ProjectIterationPayload = {
+      ordinalNumber: 1,
       periodStart: data.periodStart,
       periodEnd: data.periodEnd,
       status: data.status,
