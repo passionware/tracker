@@ -113,6 +113,32 @@ export function createLocationService(
       );
       return maybe.map(match?.params.projectId, parseInt);
     },
+    useCurrentProjectIterationStatus: () => {
+      const match = config.services.navigationService.useMatch(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .iterations() + "/*",
+      );
+      return maybe.map(
+        match?.params.projectIterationStatus,
+        (filter) => filter as "all" | "current" | "past",
+      );
+    },
+    getCurrentProjectIterationStatus: () => {
+      const match = config.services.navigationService.match(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .iterations() + "/*",
+      );
+      return maybe.map(
+        match?.params.projectIterationStatus,
+        (filter) => filter as "all" | "current" | "past",
+      );
+    },
   };
   return api;
 }

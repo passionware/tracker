@@ -57,7 +57,7 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
                     .forWorkspace(props.workspaceId)
                     .forClient(props.clientId)
                     .forProject(props.projectId.toString())
-                    .root(),
+                    .iterations("all"),
                 )
               }
             >

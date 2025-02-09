@@ -45,6 +45,8 @@ export function createRoutingService(): RoutingService {
               const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
               return {
                 root: () => base,
+                iterations: (status = ":projectIterationStatus") =>
+                  `${base}/iterations/${status}`,
                 reports: () => `${base}/reports`,
                 configuration: () => `${base}/configuration`,
               };
