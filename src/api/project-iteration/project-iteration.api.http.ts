@@ -29,6 +29,7 @@ export function createProjectIterationApi(
           periodStart: "period_start",
           periodEnd: "period_end",
           status: "status",
+          ordinalNumber: "ordinal_number",
         });
       }
       const { data, error } = await request;

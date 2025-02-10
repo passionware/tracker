@@ -66,6 +66,12 @@ export function ProjectIterationListWidget(
           );
         }}
         columns={[
+          c.accessor("ordinalNumber", {
+            header: "#",
+            meta: {
+              sortKey: "ordinalNumber",
+            },
+          }),
           c.display({
             header: "Range",
             cell: (cell) =>

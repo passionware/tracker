@@ -41,7 +41,7 @@ export interface ProjectIterationQuery
       status: EnumFilter<ProjectIterationPayload["status"]>;
       projectId: EnumFilter<ProjectIterationPayload["projectId"]>;
     }>,
-    WithSorter<"periodStart" | "periodEnd" | "status"> {}
+    WithSorter<"periodStart" | "periodEnd" | "status" | "ordinalNumber"> {}
 
 export const projectIterationQueryUtils = withBuilderUtils({
   ...withPaginationUtils<ProjectIterationQuery>(),
