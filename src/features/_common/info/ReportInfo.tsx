@@ -340,6 +340,10 @@ export function ReportInfo({
                 maybe.isPresent(value.billingAmount),
                 "Billing id is missing",
               );
+              assert(
+                maybe.isPresent(cellInfo.row.original.billing),
+                "Billing is missing",
+              );
               return (
                 <div className="flex flex-row gap-2 items-center h-full">
                   <div>work of</div>
@@ -353,10 +357,10 @@ export function ReportInfo({
                   <div className="text-green-600 font-bold">
                     {services.formatService.financial.amount(
                       value.billingAmount,
-                      report.netAmount.currency,
+                      cellInfo.row.original.billing.currency,
                     )}
                   </div>
-                  <div>of report</div>
+                  <div>of billing</div>
                 </div>
               );
             },
