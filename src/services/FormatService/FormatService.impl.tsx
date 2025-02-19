@@ -26,7 +26,7 @@ export function createFormatService(clock: () => Date): FormatService {
     });
 
     // eslint-disable-next-line no-compare-neg-zero
-    const clearedValue = value === -0 ? 0 : value;
+    const clearedValue = Math.abs(value);
 
     let formattedValue = formatter.format(clearedValue);
 
@@ -37,9 +37,17 @@ export function createFormatService(clock: () => Date): FormatService {
     const result = formattedValue.split(" ");
     const currencySymbol = result[1];
     const currencyValue = result[0];
-    const text = `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
 
-    return <div className="font-mono ">{text}</div>;
+    const text =
+      value < 0
+        ? `-${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`
+        : `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
+
+    return (
+      <div className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
+        {text}
+      </div>
+    );
     // return (
     //   <div className="flex flex-row gap-1 justify-end">
     //     <div>{result[0]}</div>
