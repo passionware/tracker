@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
@@ -47,7 +49,20 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
                 .journey(props.project)
                 .wait(<Skeleton className="w-20 h-4" />)
                 .catch(renderSmallError("w-20 h-4"))
-                .map((x) => x.name)}
+                .map((x) => {
+                  return (
+                    <>
+                      {idSpecUtils.isAll(props.clientId) && (
+                        <ClientWidget
+                            size="xs"
+                          clientId={x.clientId}
+                          services={props.services}
+                        />
+                      )}
+                      {x.name}
+                    </>
+                  );
+                })}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center">
