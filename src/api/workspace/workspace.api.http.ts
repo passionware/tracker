@@ -43,7 +43,9 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
       if (error) {
         throw error;
       }
-      return workspaceFromHttp(workspace$.parse(data[0]));
+      return workspaceFromHttp(
+        parseWithDataError(z.array(workspace$), data)[0],
+      );
     },
   };
 }

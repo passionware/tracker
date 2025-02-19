@@ -6,6 +6,7 @@ import {
   projectFromHttp,
 } from "@/api/project/project.api.http.schema.ts";
 import { ProjectApi } from "@/api/project/project.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -57,7 +58,7 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
       if (error) {
         throw error;
       }
-      return z.array(project$).parse(data).map(projectFromHttp);
+      return parseWithDataError(z.array(project$), data).map(projectFromHttp);
     },
     getProject: async (id) => {
       const { data, error } = await client
@@ -73,7 +74,7 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
         throw new Error(`Project with id ${id} not found`);
       }
 
-      return projectFromHttp(project$.parse(data[0]));
+      return projectFromHttp(parseWithDataError(project$, data[0]));
     },
   };
 }

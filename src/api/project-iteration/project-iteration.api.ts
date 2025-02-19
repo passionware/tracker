@@ -22,6 +22,7 @@ export interface ProjectIterationPayload {
   description: Nullable<string>;
   projectId: Project["id"];
   ordinalNumber: number;
+  currency: string;
 }
 
 export interface ProjectIteration extends ProjectIterationPayload {
@@ -30,7 +31,29 @@ export interface ProjectIteration extends ProjectIterationPayload {
 }
 
 export interface ProjectIterationDetail extends ProjectIteration {
-  // todo - all iteration nested data goes here (extracted from view)
+  positions: ProjectIterationPosition[];
+  // linked reports? somehow we should know that specific work was reported in this iteration, regardless if it was paid or not
+}
+
+/**
+ * Represents a position in a project iteration. Balance should be 0 at the end of the iteration.
+ * Examples:
+ * - project cost (also link to costs??) for example part or whole for accountant service
+ * - billing for client (also link to billing) ie 160*80eur/h = 12800eur, description "programming services flat rate", unit price 80eur/h, amount 160, unit "hour"
+ * - decision to pay for a work (also link to reports) ie 50*115eur/h = 5750eur, description "programming services", unit price 115eur, amount 50, unit "hour"
+ * - decision to pay iteration remainder to contractor (also link to reports) ie 10*115eur/h = 1150eur, description "programming services", unit price 115eur, amount 10, unit "hour"
+ *
+ * Fixed price examples:
+ * - fixed billing for client (also link to billing) ie 1*1000eur = 1000eur, description "programming services flat rate", unit price 1000eur, amount 1, unit "iteration"
+ * - decision to pay entire hourly work (also link to billing) ie 40*120PLN/h = 4800PLN, description "programming services", unit price 120PLN, amount 40, unit "hour"
+ */
+export interface ProjectIterationPosition {
+  id: number;
+  description: string;
+  quantity: number;
+  unitPrice: number; // price in currency of the project iteration
+  unit: string;
+  order: number;
 }
 
 export interface ProjectIterationQuery

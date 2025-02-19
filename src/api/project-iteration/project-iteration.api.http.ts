@@ -1,7 +1,14 @@
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
-import { projectIterationFromHttp } from "@/api/project-iteration/project-iteration.api.http.schema.ts";
+import {
+  projectIteration$,
+  projectIterationDetail$,
+  projectIterationDetailFromHttp,
+  projectIterationFromHttp,
+} from "@/api/project-iteration/project-iteration.api.http.schema.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import { ProjectIterationApi } from "./project-iteration.api";
 
 export function createProjectIterationApi(
@@ -36,18 +43,23 @@ export function createProjectIterationApi(
       if (error) {
         throw error;
       }
-      return data.map(projectIterationFromHttp);
+      return parseWithDataError(z.array(projectIteration$), data).map(
+        projectIterationFromHttp,
+      );
     },
     getProjectIterationDetail: async (id) => {
       const { data, error } = await client
         .from("project_iteration")
-        .select("*")
+        .select("*, project_iteration_position(*)")
         .eq("id", id)
         .single();
       if (error) {
         throw error;
       }
-      return projectIterationFromHttp(data);
+
+      return projectIterationDetailFromHttp(
+        parseWithDataError(projectIterationDetail$, data),
+      );
     },
   };
 }

@@ -41,6 +41,7 @@ type FormModel = {
   description: string;
   projectId: number;
   ordinalNumber: number;
+  currency: string;
 };
 
 export function ProjectIterationForm(props: ProjectIterationFormProps) {
@@ -64,6 +65,7 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
       status: data.status,
       description: data.description || null,
       projectId: maybe.getOrThrow(data.projectId, "Project is required"),
+      currency: data.currency,
     };
     void processingPromise.track(
       props.onSubmit(allData, getDirtyFields(allData, form)),

@@ -1,4 +1,5 @@
 import { ExchangeApi } from "@/api/exchange/exchange.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { z } from "zod";
 
 const exchangeRateSchema = z.object({
@@ -26,7 +27,7 @@ export function createExchangeApi(fetchImpl: typeof fetch): ExchangeApi {
       const getResponse = async (response: Response) => {
         if (response.ok) {
           const json = await response.json();
-          return exchangeRateSchema.parse(json).rates[0].mid;
+          return parseWithDataError(exchangeRateSchema, json).rates[0].mid;
         }
         throw new Error("Failed to fetch exchange rates");
       };

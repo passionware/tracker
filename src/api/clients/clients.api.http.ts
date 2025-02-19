@@ -2,6 +2,7 @@ import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import { ClientsApi } from "@/api/clients/clients.api.ts";
+import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -23,7 +24,7 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
       if (error) {
         throw error;
       }
-      return z.array(client$).parse(data).map(clientFromHttp);
+      return parseWithDataError(z.array(client$), data).map(clientFromHttp);
     },
     getClient: async (id) => {
       const { data, error } = await client
@@ -33,7 +34,7 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
       if (error) {
         throw error;
       }
-      return clientFromHttp(z.array(client$).parse(data)[0]);
+      return clientFromHttp(parseWithDataError(z.array(client$), data)[0]);
     },
   };
 }
