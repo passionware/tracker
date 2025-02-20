@@ -1,19 +1,14 @@
 import { QueryFilter } from "@/api/_common/query/queryUtils.ts";
-import {
-  Project,
-  ProjectQuery,
-  projectQueryUtils,
-} from "@/api/project/project.api.ts";
+import { ProjectQuery, projectQueryUtils } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ActionMenu,
+  ActionMenuCopyItem,
+  ActionMenuDeleteItem,
+  ActionMenuDuplicateItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { columnHelper } from "@/features/_common/columns/project";
 import { project } from "@/features/_common/columns/project.tsx";
@@ -28,28 +23,13 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable";
-import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
-  WithRoutingService,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import {
-  Check,
-  Copy,
-  Loader2,
-  MoreHorizontal,
-  PlusCircle,
-  Trash2,
-} from "lucide-react";
+import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export interface ProjectListWidgetProps extends WithFrontServices {
@@ -164,93 +144,56 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
             id: "actions",
             enableHiding: false,
             cell: ({ row }) => (
-              <ActionMenu services={props.services} entry={row.original} />
+              <ActionMenu services={props.services}>
+                <ActionMenuDeleteItem
+                  onClick={() => {
+                    void props.services.mutationService.deleteProject(
+                      row.original.id,
+                    );
+                  }}
+                >
+                  Delete Project
+                </ActionMenuDeleteItem>
+                <InlinePopoverForm
+                  trigger={
+                    <ActionMenuDuplicateItem
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      Duplicate Report
+                    </ActionMenuDuplicateItem>
+                  }
+                  content={(bag) => (
+                    <ProjectForm
+                      mode="create"
+                      defaultValues={row.original}
+                      services={props.services}
+                      onSubmit={async (data) => {
+                        // todo this should be our UserFlowService
+                        const { id } =
+                          await props.services.mutationService.createProject(
+                            data,
+                          );
+                        bag.close();
+                        props.services.navigationService.navigate(
+                          props.services.routingService
+                            .forWorkspace(data.workspaceId)
+                            .forClient(data.clientId)
+                            .forProject(id.toString())
+                            .configuration(),
+                        );
+                      }}
+                      onCancel={bag.close}
+                    />
+                  )}
+                />
+                <ActionMenuCopyItem copyText={row.original.id.toString()}>
+                  Copy project ID
+                </ActionMenuCopyItem>
+              </ActionMenu>
             ),
           }),
         ]}
       />
     </CommonPageContainer>
-  );
-}
-function ActionMenu(
-  props: WithServices<
-    [
-      WithPreferenceService,
-      WithMutationService,
-      WithClientService,
-      WithContractorService,
-      WithWorkspaceService,
-      WithNavigationService,
-      WithRoutingService,
-    ]
-  > & {
-    entry: Project;
-  },
-) {
-  const isDangerMode = props.services.preferenceService.useIsDangerMode();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {/*  TODO open menu should be centralized in patterns? */}
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {isDangerMode && (
-          <DropdownMenuItem
-            onClick={() => {
-              void props.services.mutationService.deleteProject(props.entry.id);
-            }}
-          >
-            <Trash2 />
-            Delete Project
-          </DropdownMenuItem>
-        )}
-        <InlinePopoverForm
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-              }}
-            >
-              <Copy />
-              Duplicate Report
-            </DropdownMenuItem>
-          }
-          content={(bag) => (
-            <ProjectForm
-              mode="create"
-              defaultValues={props.entry}
-              services={props.services}
-              onSubmit={async (data) => {
-                // todo this should be our UserFlowService
-                const { id } =
-                  await props.services.mutationService.createProject(data);
-                bag.close();
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(data.workspaceId)
-                    .forClient(data.clientId)
-                    .forProject(id.toString())
-                    .configuration(),
-                );
-              }}
-              onCancel={bag.close}
-            />
-          )}
-        />
-        <DropdownMenuItem
-          onClick={() =>
-            navigator.clipboard.writeText(props.entry.id.toString())
-          }
-        >
-          Copy project ID
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
