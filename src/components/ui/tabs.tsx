@@ -27,6 +27,7 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "flex gap-2 items-center whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-200 hover:text-gray-700",
+      "focus-visible:bg-slate-50 outline-none rounded-t-sm",
       "data-[state=active]:border-sky-700 data-[state=active]:text-sky-900", // aktywny tab wyróżniony kolorem
       className,
     )}
