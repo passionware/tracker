@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button.tsx";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
+  ActionMenu,
+  ActionMenuCopyItem,
+  ActionMenuDeleteItem,
+  ActionMenuDuplicateItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   baseColumnHelper,
@@ -14,16 +14,7 @@ import {
 } from "@/features/_common/columns/report.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { WithServices } from "@/platform/typescript/services.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
-import { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
   return [
@@ -69,121 +60,78 @@ export function useColumns(props: ReportsWidgetProps) {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => (
-        <ActionMenu services={props.services} entry={row.original} />
-      ),
-    }),
-  ];
-}
-
-function ActionMenu(
-  props: WithServices<
-    [
-      WithPreferenceService,
-      WithMutationService,
-      WithClientService,
-      WithContractorService,
-      WithWorkspaceService,
-      WithMessageService,
-      WithExpressionService,
-    ]
-  > & {
-    entry: ReportViewEntry;
-  },
-) {
-  const isDangerMode = props.services.preferenceService.useIsDangerMode();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {/*  TODO open menu should be centralized in patterns? */}
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {isDangerMode && (
-          <DropdownMenuItem
+        <ActionMenu services={props.services}>
+          <ActionMenuDeleteItem
             onClick={() => {
               void props.services.mutationService.deleteCostReport(
-                props.entry.id,
+                row.original.id,
               );
             }}
           >
-            <Trash2 />
             Delete Report
+          </ActionMenuDeleteItem>
+          <ActionMenuEditItem
+            onClick={async () => {
+              const result =
+                await props.services.messageService.editReport.sendRequest({
+                  defaultValues: row.original.originalReport,
+                  operatingMode: "edit",
+                });
+              switch (result.action) {
+                case "confirm":
+                  await props.services.mutationService.editReport(
+                    row.original.id,
+                    result.changes,
+                  );
+                  break;
+              }
+            }}
+          >
+            Edit Report
+          </ActionMenuEditItem>
+          <ActionMenuDuplicateItem
+            onClick={async () => {
+              const result =
+                await props.services.messageService.editReport.sendRequest({
+                  defaultValues: row.original.originalReport,
+                  operatingMode: "duplicate",
+                });
+              switch (result.action) {
+                case "confirm":
+                  await props.services.mutationService.createReport(
+                    result.payload,
+                  );
+                  break;
+              }
+            }}
+          >
+            Duplicate Report
+          </ActionMenuDuplicateItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              // calling some action, hopefully it opens a report
+              await props.services.expressionService.ensureExpressionValue(
+                {
+                  clientId: row.original.client.id,
+                  contractorId: row.original.contractor.id,
+                  workspaceId: row.original.workspace.id,
+                },
+                "vars.open_report_action", // in the future we will just enable plugin point so user defines what should happen and from where it should be sourced
+                {
+                  reportStart: row.original.periodStart,
+                  reportEnd: row.original.periodEnd,
+                },
+              );
+            }}
+          >
+            <ExternalLink className="size-4 " />
+            Navigate to report
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          onClick={async () => {
-            const result =
-              await props.services.messageService.editReport.sendRequest({
-                defaultValues: props.entry.originalReport,
-                operatingMode: "edit",
-              });
-            switch (result.action) {
-              case "confirm":
-                await props.services.mutationService.editReport(
-                  props.entry.id,
-                  result.changes,
-                );
-                break;
-            }
-          }}
-        >
-          <Pencil />
-          Edit Report
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={async () => {
-            const result =
-              await props.services.messageService.editReport.sendRequest({
-                defaultValues: props.entry.originalReport,
-                operatingMode: "duplicate",
-              });
-            switch (result.action) {
-              case "confirm":
-                await props.services.mutationService.createReport(
-                  result.payload,
-                );
-                break;
-            }
-          }}
-        >
-          <Copy />
-          Duplicate Report
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={async () => {
-            // calling some action, hopefully it opens a report
-            await props.services.expressionService.ensureExpressionValue(
-              {
-                clientId: props.entry.client.id,
-                contractorId: props.entry.contractor.id,
-                workspaceId: props.entry.workspace.id,
-              },
-              "vars.open_report_action", // in the future we will just enable plugin point so user defines what should happen and from where it should be sourced
-              {
-                reportStart: props.entry.periodStart,
-                reportEnd: props.entry.periodEnd,
-              },
-            );
-          }}
-        >
-          Navigate to report
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            navigator.clipboard.writeText(props.entry.id.toString())
-          }
-        >
-          Copy report ID
-        </DropdownMenuItem>
-        {/*<DropdownMenuSeparator />*/}
-        {/*<DropdownMenuItem>View customer</DropdownMenuItem>*/}
-        {/*<DropdownMenuItem>View payment details</DropdownMenuItem>*/}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+          <ActionMenuCopyItem copyText={row.id.toString()}>
+            Copy report ID
+          </ActionMenuCopyItem>
+        </ActionMenu>
+      ),
+    }),
+  ];
 }
