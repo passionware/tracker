@@ -17,6 +17,7 @@ import {
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import {
@@ -24,6 +25,7 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
+import { ProjectIterationForm } from "@/features/projects/iterations/IterationForm.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -77,6 +79,31 @@ export function IterationWidget(
                     >
                       Delete iteration
                     </ActionMenuDeleteItem>
+                    <InlinePopoverForm
+                      trigger={
+                        <ActionMenuEditItem
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          Edit iteration
+                        </ActionMenuEditItem>
+                      }
+                      content={(bag) => (
+                        <ProjectIterationForm
+                          onCancel={bag.close}
+                          mode="edit"
+                          defaultValues={iteration}
+                          onSubmit={async (data) => {
+                            await props.services.mutationService.editProjectIteration(
+                              iteration.id,
+                              data,
+                            );
+                            bag.close();
+                          }}
+                        />
+                      )}
+                    >
+                      <ActionMenuEditItem>Edit iteration</ActionMenuEditItem>
+                    </InlinePopoverForm>
                   </ActionMenu>
                 </CardTitle>
                 <CardDescription>{iteration.description}</CardDescription>

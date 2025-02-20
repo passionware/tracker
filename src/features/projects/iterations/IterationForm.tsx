@@ -152,6 +152,9 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
             </FormItem>
           )}
         />
+        <Button type="button" variant="outline" onClick={props.onCancel}>
+          Cancel
+        </Button>
         <Button
           type="submit"
           disabled={
@@ -167,9 +170,6 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
               <CheckCircle2 />
             ))}
           Submit
-        </Button>
-        <Button type="button" variant="outline" onClick={props.onCancel}>
-          Cancel
         </Button>
       </form>
     </Form>
