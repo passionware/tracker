@@ -1,24 +1,16 @@
-import { Button } from "@/components/ui/button.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
+  ActionMenu,
+  ActionMenuCopyItem,
+  ActionMenuDeleteItem,
+  ActionMenuDuplicateItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { WithServices } from "@/platform/typescript/services.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<CostEntry>();
 
@@ -44,62 +36,27 @@ export function useColumns(props: PotentialCostWidgetProps) {
     columnHelper.display({
       id: "actions",
       cell: (info) => (
-        <ActionMenu entry={info.row.original} services={props.services} />
-      ),
-    }),
-  ];
-}
-
-function ActionMenu(
-  props: WithServices<
-    [
-      WithPreferenceService,
-      WithMutationService,
-      WithContractorService,
-      WithWorkspaceService,
-      WithMessageService,
-    ]
-  > & {
-    entry: CostEntry;
-  },
-) {
-  const isDangerMode = props.services.preferenceService.useIsDangerMode();
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          {isDangerMode && (
-            <>
-              <DropdownMenuItem
-                onClick={() => {
-                  void props.services.mutationService.deleteCost(
-                    props.entry.id,
-                  );
-                }}
-              >
-                <Trash2 />
-                Delete Cost
-              </DropdownMenuItem>
-            </>
-          )}
-          <DropdownMenuItem
+        <ActionMenu services={props.services}>
+          <ActionMenuDeleteItem
+            onClick={() => {
+              void props.services.mutationService.deleteCost(
+                info.row.original.id,
+              );
+            }}
+          >
+            Delete Cost
+          </ActionMenuDeleteItem>
+          <ActionMenuEditItem
             onClick={async () => {
               const result =
                 await props.services.messageService.editCost.sendRequest({
-                  defaultValues: props.entry.originalCost,
+                  defaultValues: info.row.original.originalCost,
                   operatingMode: "edit",
                 });
               switch (result.action) {
                 case "confirm":
                   await props.services.mutationService.editCost(
-                    props.entry.id,
+                    info.row.original.id,
                     result.changes,
                   );
                   break;
@@ -108,14 +65,13 @@ function ActionMenu(
               }
             }}
           >
-            <Pencil />
             Edit Cost
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </ActionMenuEditItem>
+          <ActionMenuDuplicateItem
             onClick={async () => {
               const result =
                 await props.services.messageService.editCost.sendRequest({
-                  defaultValues: props.entry.originalCost,
+                  defaultValues: info.row.original.originalCost,
                   operatingMode: "duplicate",
                 });
               switch (result.action) {
@@ -129,21 +85,13 @@ function ActionMenu(
               }
             }}
           >
-            <Copy />
             Duplicate Cost
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              navigator.clipboard.writeText(props.entry.id.toString())
-            }
-          >
+          </ActionMenuDuplicateItem>
+          <ActionMenuCopyItem copyText={info.row.original.id.toString()}>
             Copy cost ID
-          </DropdownMenuItem>
-          {/*<DropdownMenuSeparator />*/}
-          {/*<DropdownMenuItem>View customer</DropdownMenuItem>*/}
-          {/*<DropdownMenuItem>View payment details</DropdownMenuItem>*/}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
+          </ActionMenuCopyItem>
+        </ActionMenu>
+      ),
+    }),
+  ];
 }

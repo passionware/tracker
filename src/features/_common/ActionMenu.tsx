@@ -65,7 +65,7 @@ export function ActionMenuDeleteItem({
   const { isDangerMode } = useContext(ctx);
   return (
     <DropdownMenuItem disabled={!isDangerMode} variant="destructrive" {...rest}>
-      <Trash2 />
+      <Trash2 className="size-4" />
       {children}
     </DropdownMenuItem>
   );
@@ -84,7 +84,7 @@ export function ActionMenuCopyItem({
         rest.onClick?.(event);
       }}
     >
-      <ClipboardCopy />
+      <ClipboardCopy className="size-4" />
       {children}
     </DropdownMenuItem>
   );
@@ -96,7 +96,7 @@ export function ActionMenuEditItem({
 }: DropdownMenuItemProps) {
   return (
     <DropdownMenuItem {...rest}>
-      <Pencil />
+      <Pencil className="size-4" />
       {children}
     </DropdownMenuItem>
   );
@@ -108,7 +108,7 @@ export function ActionMenuDuplicateItem({
 }: DropdownMenuItemProps) {
   return (
     <DropdownMenuItem {...rest}>
-      <Copy />
+      <Copy className="size-4" />
       {children}
     </DropdownMenuItem>
   );
