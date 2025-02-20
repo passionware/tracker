@@ -31,7 +31,7 @@ export function NewPositionPopover(
   return (
     <InlinePopoverForm
       trigger={
-        <Button variant="accent1" size="sm" className="flex">
+        <Button variant="accent1" size="sm" className={props.className}>
           {mt
             .journey(promise.state)
             .initially(<PlusCircle />)

@@ -54,20 +54,6 @@ export function IterationWidget(
         <ProjectBreadcrumbView {...props} />,
         <ProjectIterationBreadcrumb {...props} />,
       ]}
-      tools={rd
-        .journey(projectIteration)
-        .wait(<Skeleton className="w-20 h-4" />)
-        .catch(renderError)
-        .map((projectIteration) => (
-          <NewPositionPopover
-            iterationId={projectIteration.id}
-            services={props.services}
-            workspaceId={props.workspaceId}
-            clientId={props.clientId}
-            projectId={props.projectId}
-            currency={projectIteration.currency}
-          />
-        ))}
     >
       {rd
         .journey(projectIteration)
@@ -151,6 +137,21 @@ export function IterationWidget(
                     1
                   </Badge>
                 </TabsTrigger>
+                {rd
+                  .journey(projectIteration)
+                  .wait(<Skeleton className="w-20 h-4" />)
+                  .catch(renderError)
+                  .map((projectIteration) => (
+                    <NewPositionPopover
+                      className="ml-auto"
+                      iterationId={projectIteration.id}
+                      services={props.services}
+                      workspaceId={props.workspaceId}
+                      clientId={props.clientId}
+                      projectId={props.projectId}
+                      currency={projectIteration.currency}
+                    />
+                  ))}
               </TabsList>
             </Tabs>
             <PositionList iteration={iteration} services={props.services} />

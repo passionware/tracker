@@ -11,7 +11,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "border-b border-slate-200 flex space-x-8", // nadaje styl nawigacji z dolną linią i odstępami między triggerami
+      "border-b border-slate-200 flex gap-8 items-center", // nadaje styl nawigacji z dolną linią i odstępami między triggerami
       className,
     )}
     {...props}
