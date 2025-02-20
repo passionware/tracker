@@ -101,9 +101,7 @@ export function IterationWidget(
                           }}
                         />
                       )}
-                    >
-                      <ActionMenuEditItem>Edit iteration</ActionMenuEditItem>
-                    </InlinePopoverForm>
+                    />
                   </ActionMenu>
                 </CardTitle>
                 <CardDescription>{iteration.description}</CardDescription>
