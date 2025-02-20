@@ -10,7 +10,13 @@ import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { DropdownMenuItemProps } from "@radix-ui/react-dropdown-menu";
-import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  ClipboardCopy,
+  Copy,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { createContext, ReactNode, useContext, useMemo } from "react";
 
 export interface ActionMenuProps
@@ -58,7 +64,7 @@ export function ActionMenuDeleteItem({
 }: DropdownMenuItemProps) {
   const { isDangerMode } = useContext(ctx);
   return (
-    <DropdownMenuItem disabled={!isDangerMode} {...rest}>
+    <DropdownMenuItem disabled={!isDangerMode} variant="destructrive" {...rest}>
       <Trash2 />
       {children}
     </DropdownMenuItem>
@@ -78,7 +84,7 @@ export function ActionMenuCopyItem({
         rest.onClick?.(event);
       }}
     >
-      <Copy />
+      <ClipboardCopy />
       {children}
     </DropdownMenuItem>
   );

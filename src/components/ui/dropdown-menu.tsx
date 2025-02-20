@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { cva, VariantProps } from "class-variance-authority";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import * as React from "react";
 
@@ -71,19 +72,30 @@ const DropdownMenuContent = React.forwardRef<
 ));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
+const itemVariants = cva(
+  "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors focus:bg-slate-100 focus:text-slate-900 data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50",
+  {
+    variants: {
+      variant: {
+        default: "text-slate-900 dark:text-slate-50",
+        destructrive:
+          "text-rose-800 focus:bg-rose-100 dark:text-rose-400 dark:focus:bg-rose-900",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
+
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
-    inset?: boolean;
-  }
->(({ className, inset, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> &
+    VariantProps<typeof itemVariants>
+>(({ className, variant, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors focus:bg-slate-100 focus:text-slate-900 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:focus:bg-slate-800 dark:focus:text-slate-50",
-      inset && "pl-8",
-      className,
-    )}
+    className={cn(itemVariants({ variant }), className)}
     {...props}
   />
 ));
@@ -91,14 +103,12 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> &
+    VariantProps<typeof itemVariants>
+>(({ className, children, checked, variant, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden transition-colors focus:bg-slate-100 focus:text-slate-900 data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50",
-      className,
-    )}
+    className={cn(itemVariants({ variant }), className)}
     checked={checked}
     {...props}
   >
@@ -115,14 +125,12 @@ DropdownMenuCheckboxItem.displayName =
 
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> &
+    VariantProps<typeof itemVariants>
+>(({ className, children, variant, ...props }, ref) => (
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden transition-colors focus:bg-slate-100 focus:text-slate-900 data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50",
-      className,
-    )}
+    className={cn(itemVariants({ variant }), className)}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
