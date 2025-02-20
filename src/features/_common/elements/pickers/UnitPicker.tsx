@@ -40,7 +40,12 @@ export const UnitPicker = injectConfig(AbstractPicker<Unit["id"], Unit>)
           ),
         rd.ofIdle(),
       ),
-    useItems: () => rd.of(UNITS),
+    useItems: (query) =>
+      rd.of(
+        UNITS.filter((unit) =>
+          unit.label.toLowerCase().includes(query.trim().toLowerCase()),
+        ),
+      ),
     searchPlaceholder: "Search for a unit",
     placeholder: "Select a unit",
   }))

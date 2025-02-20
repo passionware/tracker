@@ -16,6 +16,7 @@ import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { PositionEditModal } from "@/features/projects/iterations/iteration/PositionEditModal.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
@@ -290,6 +291,7 @@ export function RootWidget(props: WithFrontServices) {
         <ReportEditModalWidget services={props.services} />
         <CostEditModalWidget services={props.services} />
         <BillingEditModalWidget services={props.services} />
+        <PositionEditModal services={props.services} />
       </RenderIfAuthenticated>
     </>
   );

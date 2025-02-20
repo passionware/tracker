@@ -11,5 +11,6 @@ export function createMessageService(): MessageService {
     editBilling: createRequestResponseMessaging(),
     editCost: createRequestResponseMessaging(),
     editReport: createRequestResponseMessaging(),
+    editProjectIterationPosition: createRequestResponseMessaging(),
   };
 }

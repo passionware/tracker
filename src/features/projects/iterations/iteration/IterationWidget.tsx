@@ -81,6 +81,24 @@ export function IterationWidget(
               </CardHeader>
             </Card>
             <ListView
+              onRowDoubleClick={async (row) => {
+                const result =
+                  await props.services.messageService.editProjectIterationPosition.sendRequest(
+                    {
+                      currency: iteration.currency,
+                      operatingMode: "edit",
+                      defaultValues: row,
+                    },
+                  );
+                switch (result.action) {
+                  case "confirm":
+                    await props.services.mutationService.editProjectIterationPosition(
+                      row.id,
+                      result.changes,
+                    );
+                    break;
+                }
+              }}
               data={rd.of(iteration.positions)}
               query={{ sort: null, page: paginationUtils.ofDefault() }}
               onQueryChange={() => {}}
@@ -144,7 +162,28 @@ export function IterationWidget(
                   id: "actions",
                   cell: ({ row }) => (
                     <ActionMenu services={props.services}>
-                      <ActionMenuEditItem>Edit position</ActionMenuEditItem>
+                      <ActionMenuEditItem
+                        onClick={async () => {
+                          const result =
+                            await props.services.messageService.editProjectIterationPosition.sendRequest(
+                              {
+                                currency: iteration.currency,
+                                operatingMode: "edit",
+                                defaultValues: row.original,
+                              },
+                            );
+                          switch (result.action) {
+                            case "confirm":
+                              await props.services.mutationService.editProjectIterationPosition(
+                                row.original.id,
+                                result.changes,
+                              );
+                              break;
+                          }
+                        }}
+                      >
+                        Edit position
+                      </ActionMenuEditItem>
                       <ActionMenuDeleteItem
                         onClick={() => {
                           void props.services.mutationService.deleteProjectIterationPosition(

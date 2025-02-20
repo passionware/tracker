@@ -32,7 +32,7 @@ export interface ProjectIterationPositionFormProps extends WithFrontServices {
     changes: Partial<ProjectIterationPositionPayload>,
   ) => Promise<void>;
   onCancel: () => void;
-  mode: "create" | "edit";
+  mode: "create" | "edit" | "duplicate";
   currency: string;
 }
 
@@ -109,7 +109,7 @@ export function ProjectIterationPositionForm(
             <FormItem>
               <FormLabel>Unit Price</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <Input type="number" step={0.01} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
