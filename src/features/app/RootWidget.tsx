@@ -8,6 +8,7 @@ import { LoginPage } from "@/features/app/LoginWidget.tsx";
 import {
   IdResolver,
   ProjectIdResolver,
+  ProjectIterationIdResolver,
 } from "@/features/app/RootWidget.idResolvers.tsx";
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
@@ -16,6 +17,7 @@ import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
+import { IterationWidget } from "@/features/projects/iterations/iteration/IterationWidget.tsx";
 import { PositionEditModal } from "@/features/projects/iterations/iteration/PositionEditModal.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
@@ -277,6 +279,39 @@ export function RootWidget(props: WithFrontServices) {
                           projectId={projectId}
                           services={props.services}
                         />
+                      )}
+                    </ProjectIdResolver>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={`${props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .forProject()
+            .forIteration()
+            .root()}/*`}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectIdResolver services={props.services}>
+                      {(projectId) => (
+                        <ProjectIterationIdResolver services={props.services}>
+                          {(projectIterationId) => (
+                            <IterationWidget
+                              workspaceId={workspaceId}
+                              clientId={clientId}
+                              projectId={projectId}
+                              services={props.services}
+                              projectIterationId={projectIterationId}
+                            />
+                          )}
+                        </ProjectIterationIdResolver>
                       )}
                     </ProjectIdResolver>
                   )}

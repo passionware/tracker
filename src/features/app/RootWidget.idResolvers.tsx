@@ -28,3 +28,13 @@ export function ProjectIdResolver(
   const projectId = props.services.locationService.useCurrentProjectId();
   return props.children(maybe.getOrThrow(projectId, "No project ID"));
 }
+
+export function ProjectIterationIdResolver(
+  props: WithServices<[WithLocationService]> & {
+    children: (iterationId: number) => ReactNode;
+  },
+) {
+  const iterationId =
+    props.services.locationService.useCurrentProjectIterationId();
+  return props.children(maybe.getOrThrow(iterationId, "No iteration ID"));
+}

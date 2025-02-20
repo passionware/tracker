@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import {PopoverHeader} from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ActionMenu,
@@ -49,6 +50,15 @@ export function IterationWidget(
       props.projectIterationId,
     );
 
+  /*<NewPositionPopover
+                  iterationId={iteration.id}
+                  services={props.services}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
+                  projectId={props.projectId}
+                  currency={iteration.currency}
+                />*/
+
   return (
     <div>
       {rd
@@ -88,18 +98,21 @@ export function IterationWidget(
                         </ActionMenuEditItem>
                       }
                       content={(bag) => (
-                        <ProjectIterationForm
-                          onCancel={bag.close}
-                          mode="edit"
-                          defaultValues={iteration}
-                          onSubmit={async (data) => {
-                            await props.services.mutationService.editProjectIteration(
-                              iteration.id,
-                              data,
-                            );
-                            bag.close();
-                          }}
-                        />
+                        <>
+                          <PopoverHeader>Edit project iteration</PopoverHeader>
+                          <ProjectIterationForm
+                            onCancel={bag.close}
+                            mode="edit"
+                            defaultValues={iteration}
+                            onSubmit={async (data) => {
+                              await props.services.mutationService.editProjectIteration(
+                                iteration.id,
+                                data,
+                              );
+                              bag.close();
+                            }}
+                          />
+                        </>
                       )}
                     />
                   </ActionMenu>
