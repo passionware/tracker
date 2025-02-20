@@ -126,7 +126,7 @@ export function IterationWidget(
                       <ActionMenuEditItem>Edit position</ActionMenuEditItem>
                       <ActionMenuDeleteItem
                         onClick={() => {
-                          props.services.mutationService.deleteProjectIterationPosition(
+                          void props.services.mutationService.deleteProjectIterationPosition(
                             row.original.id,
                           );
                         }}
