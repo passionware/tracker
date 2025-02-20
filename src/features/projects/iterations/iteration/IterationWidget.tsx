@@ -13,6 +13,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ActionMenu,
   ActionMenuDeleteItem,
+  ActionMenuDuplicateItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
@@ -184,6 +185,27 @@ export function IterationWidget(
                       >
                         Edit position
                       </ActionMenuEditItem>
+                      <ActionMenuDuplicateItem
+                        onClick={async () => {
+                          const result =
+                            await props.services.messageService.editProjectIterationPosition.sendRequest(
+                              {
+                                currency: iteration.currency,
+                                operatingMode: "duplicate",
+                                defaultValues: row.original,
+                              },
+                            );
+                          switch (result.action) {
+                            case "confirm":
+                              await props.services.mutationService.createProjectIterationPosition(
+                                result.payload,
+                              );
+                              break;
+                          }
+                        }}
+                      >
+                        Duplicate position
+                      </ActionMenuDuplicateItem>
                       <ActionMenuDeleteItem
                         onClick={() => {
                           void props.services.mutationService.deleteProjectIterationPosition(

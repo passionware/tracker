@@ -95,3 +95,15 @@ export function ActionMenuEditItem({
     </DropdownMenuItem>
   );
 }
+
+export function ActionMenuDuplicateItem({
+  children,
+  ...rest
+}: DropdownMenuItemProps) {
+  return (
+    <DropdownMenuItem {...rest}>
+      <Copy />
+      {children}
+    </DropdownMenuItem>
+  );
+}
