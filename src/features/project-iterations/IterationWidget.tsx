@@ -3,6 +3,7 @@ import {
   ProjectIteration,
   ProjectIterationPosition,
 } from "@/api/project-iteration/project-iteration.api.ts";
+import { Badge } from "@/components/ui/badge.tsx";
 import {
   Card,
   CardDescription,
@@ -10,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ActionMenu,
@@ -40,6 +43,7 @@ import {
 import { maybe, rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { sumBy } from "lodash";
+import { NewPositionPopover } from "./NewPositionPopover";
 
 const c = createColumnHelper<ProjectIterationPosition>();
 
@@ -56,15 +60,6 @@ export function IterationWidget(
       props.projectIterationId,
     );
 
-  /*<NewPositionPopover
-                  iterationId={iteration.id}
-                  services={props.services}
-                  workspaceId={props.workspaceId}
-                  clientId={props.clientId}
-                  projectId={props.projectId}
-                  currency={iteration.currency}
-                />*/
-
   return (
     <CommonPageContainer
       segments={[
@@ -74,6 +69,20 @@ export function IterationWidget(
         <ProjectBreadcrumbView {...props} />,
         <ProjectIterationBreadcrumb {...props} />,
       ]}
+      tools={rd
+        .journey(projectIteration)
+        .wait(<Skeleton className="w-20 h-4" />)
+        .catch(renderError)
+        .map((projectIteration) => (
+          <NewPositionPopover
+            iterationId={projectIteration.id}
+            services={props.services}
+            workspaceId={props.workspaceId}
+            clientId={props.clientId}
+            projectId={props.projectId}
+            currency={projectIteration.currency}
+          />
+        ))}
     >
       {rd
         .journey(projectIteration)
@@ -134,6 +143,28 @@ export function IterationWidget(
                 <CardDescription>{iteration.description}</CardDescription>
               </CardHeader>
             </Card>
+            <Tabs defaultValue="account" className="w-full bg-white sticky top-0 z-[100]">
+              <TabsList>
+                <TabsTrigger value="account">
+                  Positions
+                  <Badge variant="secondary" size="sm">
+                    {iteration.positions.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="password">
+                  Reports
+                  <Badge variant="warning" size="sm">
+                    12
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="billings">
+                  Billings
+                  <Badge variant="accent1" size="sm">
+                    1
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             <ListView
               onRowDoubleClick={async (row) => {
                 const result =

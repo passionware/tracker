@@ -49,7 +49,7 @@ export function ActionMenu({
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="z-[1000]">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           {children}
         </DropdownMenuContent>
