@@ -104,5 +104,14 @@ export function createMutationService(
       onActionAccessor.get()("Editing project iteration position");
       await wait();
     },
+    deleteProjectIterationPosition: async () => {
+      onActionAccessor.get()("Deleting project iteration position");
+      await wait();
+    },
+
+    deleteProjectIteration: async () => {
+      onActionAccessor.get()("Deleting project iteration");
+      await wait();
+    },
   };
 }

@@ -172,5 +172,17 @@ export function createMutationService(
         scope: "Editing project iteration",
       });
     },
+    deleteProjectIterationPosition: async (positionId) => {
+      await api.deleteProjectIterationPosition(positionId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Deleting project iteration position",
+      });
+    },
+    deleteProjectIteration: async (iterationId) => {
+      await api.deleteProjectIteration(iterationId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Deleting project iteration",
+      });
+    },
   };
 }

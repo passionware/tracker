@@ -10,6 +10,11 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ActionMenu,
+  ActionMenuDeleteItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import {
@@ -113,6 +118,23 @@ export function IterationWidget(
                     cellClassName: "text-right",
                     headerClassName: "*:block *:text-right *:pr-2",
                   },
+                }),
+                c.display({
+                  id: "actions",
+                  cell: ({ row }) => (
+                    <ActionMenu services={props.services}>
+                      <ActionMenuEditItem>Edit position</ActionMenuEditItem>
+                      <ActionMenuDeleteItem
+                        onClick={() => {
+                          props.services.mutationService.deleteProjectIterationPosition(
+                            row.original.id,
+                          );
+                        }}
+                      >
+                        Delete position
+                      </ActionMenuDeleteItem>
+                    </ActionMenu>
+                  ),
                 }),
               ]}
               caption={maybe.map(iteration, (view) => {

@@ -417,5 +417,23 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    deleteProjectIteration: async (iterationId) => {
+      const response = await client
+        .from("project_iteration")
+        .delete()
+        .eq("id", iterationId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    deleteProjectIterationPosition: async (positionId) => {
+      const response = await client
+        .from("project_iteration_position")
+        .delete()
+        .eq("id", positionId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }
