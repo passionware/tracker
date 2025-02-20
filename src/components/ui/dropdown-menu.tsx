@@ -73,13 +73,18 @@ const DropdownMenuContent = React.forwardRef<
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const itemVariants = cva(
-  "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors focus:bg-slate-100 focus:text-slate-900 data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50",
+  "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors  data-disabled:pointer-events-none data-disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "text-slate-900 dark:text-slate-50",
-        destructrive:
+        default: [
+          "text-slate-900 dark:text-slate-50",
+          "focus:bg-slate-100 focus:text-slate-900 dark:focus:bg-slate-800 dark:focus:text-slate-50",
+        ],
+        destructrive: [
           "text-rose-800 focus:bg-rose-100 dark:text-rose-400 dark:focus:bg-rose-900",
+          "focus:bg-rose-50 focus:text-rose-800 dark:focus:bg-rose-900 dark:focus:text-rose-400",
+        ],
       },
     },
     defaultVariants: {

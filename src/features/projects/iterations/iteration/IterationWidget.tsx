@@ -12,6 +12,7 @@ import {
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ActionMenu,
+  ActionMenuCopyItem,
   ActionMenuDeleteItem,
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
@@ -163,6 +164,15 @@ export function IterationWidget(
                   id: "actions",
                   cell: ({ row }) => (
                     <ActionMenu services={props.services}>
+                      <ActionMenuDeleteItem
+                        onClick={() => {
+                          void props.services.mutationService.deleteProjectIterationPosition(
+                            row.original.id,
+                          );
+                        }}
+                      >
+                        Delete position
+                      </ActionMenuDeleteItem>
                       <ActionMenuEditItem
                         onClick={async () => {
                           const result =
@@ -206,15 +216,9 @@ export function IterationWidget(
                       >
                         Duplicate position
                       </ActionMenuDuplicateItem>
-                      <ActionMenuDeleteItem
-                        onClick={() => {
-                          void props.services.mutationService.deleteProjectIterationPosition(
-                            row.original.id,
-                          );
-                        }}
-                      >
-                        Delete position
-                      </ActionMenuDeleteItem>
+                      <ActionMenuCopyItem copyText={row.original.id.toString()}>
+                        Copy position ID
+                      </ActionMenuCopyItem>
                     </ActionMenu>
                   ),
                 }),
