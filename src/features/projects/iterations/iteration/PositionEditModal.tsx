@@ -25,13 +25,12 @@ export function PositionEditModal(props: PositionEditModalProps) {
     <Dialog open={!!message} onOpenChange={handleCancel}>
       <DialogContent>
         <DialogTitle>
-          {" "}
           {message &&
             (
               {
-                create: "Create cost",
-                edit: "Edit cost",
-                duplicate: "Duplicate cost",
+                create: "Create position",
+                edit: "Edit position",
+                duplicate: "Duplicate position",
               } as const
             )[message?.request.operatingMode]}
         </DialogTitle>

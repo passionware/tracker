@@ -115,7 +115,8 @@ export function ProjectIterationPositionForm(
             </FormItem>
           )}
         />
-        <div className="col-span-3 text-right">
+        <div className="self-center text-right">
+          <span className="font-mono text-slate-500">∑&nbsp;</span>
           {props.services.formatService.financial.amount(
             form.watch("quantity") * form.watch("unitPrice"),
             props.currency,
