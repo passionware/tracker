@@ -5,8 +5,8 @@ import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/Cl
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
-import { IterationFilterDropdown } from "@/features/projects/iterations/IterationFilter.tsx";
-import { NewIterationPopover } from "@/features/projects/iterations/NewIterationPopover.tsx";
+import { IterationFilterDropdown } from "@/features/project-iterations/IterationFilter.tsx";
+import { NewIterationPopover } from "@/features/project-iterations/NewIterationPopover.tsx";
 import { ProjectDetailContent } from "@/features/projects/ProjectDetailContent.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {

@@ -32,7 +32,7 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
-import { ProjectIterationForm } from "@/features/projects/iterations/IterationForm.tsx";
+import { ProjectIterationForm } from "@/features/project-iterations/IterationForm.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,

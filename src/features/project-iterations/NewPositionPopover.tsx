@@ -1,10 +1,11 @@
+import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { ProjectIterationForm } from "@/features/projects/iterations/IterationForm.tsx";
+import { ProjectIterationPositionForm } from "@/features/project-iterations/PositionForm.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -13,16 +14,18 @@ import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 
-export function NewIterationPopover(
+export function NewPositionPopover(
   props: WithFrontServices & {
     className?: string;
     projectId: Project["id"];
+    iterationId: ProjectIteration["id"];
     workspaceId: WorkspaceSpec;
     clientId: ClientSpec;
+    currency: string;
   },
 ) {
   const promise = promiseState.useMutation(
-    props.services.mutationService.createProjectIteration,
+    props.services.mutationService.createProjectIterationPosition,
   );
 
   return (
@@ -37,30 +40,23 @@ export function NewIterationPopover(
             .done(() => (
               <Check />
             ))}
-          Add iteration
+          Add position
         </Button>
       }
       content={(bag) => (
         <>
-          <PopoverHeader>Add project iteration</PopoverHeader>
-          <ProjectIterationForm
+          <PopoverHeader>Add iteration position</PopoverHeader>
+          <ProjectIterationPositionForm
+            currency={props.currency}
+            services={props.services}
             mode="create"
             onCancel={bag.close}
             defaultValues={{
-              projectId: props.projectId,
-              status: "draft",
+              projectIterationId: props.iterationId,
             }}
             onSubmit={async (data) => {
-              const response = await promise.track(data);
+              await promise.track(data);
               bag.close();
-              props.services.navigationService.navigate(
-                props.services.routingService
-                  .forWorkspace(props.workspaceId)
-                  .forClient(props.clientId)
-                  .forProject(props.projectId.toString())
-                  .forIteration(response.id.toString())
-                  .root(),
-              );
             }}
           />
         </>

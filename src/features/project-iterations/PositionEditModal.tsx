@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { ProjectIterationPositionForm } from "@/features/projects/iterations/iteration/PositionForm.tsx";
+import { ProjectIterationPositionForm } from "@/features/project-iterations/PositionForm.tsx";
 import { useSubscribedMessage } from "@passionware/messaging-react";
 
 export type PositionEditModalProps = WithFrontServices;
