@@ -55,7 +55,20 @@ export function IterationWidget(
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Details</CardTitle>
+                <CardTitle className="flex flex-row">
+                  <div>Details</div>
+                  <ActionMenu services={props.services} className="ml-auto">
+                    <ActionMenuDeleteItem
+                      onClick={() => {
+                        void props.services.mutationService.deleteProjectIteration(
+                          iteration.id,
+                        );
+                      }}
+                    >
+                      Delete iteration
+                    </ActionMenuDeleteItem>
+                  </ActionMenu>
+                </CardTitle>
                 <CardDescription>{iteration.description}</CardDescription>
               </CardHeader>
             </Card>

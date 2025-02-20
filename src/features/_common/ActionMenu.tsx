@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button.tsx";
+import { Button, ButtonProps } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,26 +6,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { DropdownMenuItemProps } from "@radix-ui/react-dropdown-menu";
 import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { createContext, ReactNode, useContext, useMemo } from "react";
 
-export interface ActionMenuProps extends WithServices<[WithPreferenceService]> {
+export interface ActionMenuProps
+  extends WithServices<[WithPreferenceService]>,
+    ButtonProps {
   children: ReactNode;
 }
 
 const ctx = createContext<{ isDangerMode: boolean }>({ isDangerMode: false });
 
-export function ActionMenu({ children, services }: ActionMenuProps) {
+export function ActionMenu({
+  children,
+  services,
+  className,
+  ...rest
+}: ActionMenuProps) {
   const isDangerMode = services.preferenceService.useIsDangerMode();
   const ctxValue = useMemo(() => ({ isDangerMode }), [isDangerMode]);
   return (
     <ctx.Provider value={ctxValue}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn("-m-1", className)}
+            {...rest}
+          >
             <span className="sr-only">Open menu</span>
             <MoreHorizontal />
           </Button>
@@ -44,12 +57,12 @@ export function ActionMenuDeleteItem({
   ...rest
 }: DropdownMenuItemProps) {
   const { isDangerMode } = useContext(ctx);
-  return isDangerMode ? (
-    <DropdownMenuItem {...rest}>
+  return (
+    <DropdownMenuItem disabled={!isDangerMode} {...rest}>
       <Trash2 />
       {children}
     </DropdownMenuItem>
-  ) : null;
+  );
 }
 
 export function ActionMenuCopyItem({
