@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import {PopoverHeader} from "@/components/ui/popover.tsx";
+import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ActionMenu,
@@ -18,6 +18,12 @@ import {
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
+import { ProjectIterationBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectIterationBreadcrumb.tsx";
+import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
@@ -60,7 +66,15 @@ export function IterationWidget(
                 />*/
 
   return (
-    <div>
+    <CommonPageContainer
+      segments={[
+        <WorkspaceBreadcrumbLink {...props} />,
+        <ClientBreadcrumbLink {...props} />,
+        <ProjectListBreadcrumb {...props} />,
+        <ProjectBreadcrumbView {...props} />,
+        <ProjectIterationBreadcrumb {...props} />,
+      ]}
+    >
       {rd
         .journey(projectIteration)
         .wait("Loading...")
@@ -312,6 +326,6 @@ export function IterationWidget(
             />
           </div>
         ))}
-    </div>
+    </CommonPageContainer>
   );
 }

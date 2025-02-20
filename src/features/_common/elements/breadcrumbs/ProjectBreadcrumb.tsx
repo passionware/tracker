@@ -1,6 +1,5 @@
 import { Project } from "@/api/project/project.api.ts";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
@@ -10,21 +9,29 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { rd, RemoteData } from "@passionware/monads";
+import { rd } from "@passionware/monads";
+import { Link } from "react-router-dom";
 
 export interface ProjectBreadcrumbProps extends WithFrontServices {
-  project: RemoteData<Project>;
   projectId: Project["id"];
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
 }
 
 export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
+  const project = props.services.projectService.useProject(props.projectId);
   return (
     <BreadcrumbLink>
-      <Button variant="ghost" size="sm" className="px-2 -mx-2">
+      <Link
+        className="flex flex-row gap-2"
+        to={props.services.routingService
+          .forWorkspace(props.workspaceId)
+          .forClient(props.clientId)
+          .forProject(props.projectId.toString())
+          .root()}
+      >
         {rd
-          .journey(props.project)
+          .journey(project)
           .wait(<Skeleton className="w-20 h-4" />)
           .catch(renderSmallError("w-20 h-4"))
           .map((x) => {
@@ -33,6 +40,7 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
                 {idSpecUtils.isAll(props.clientId) && (
                   <ClientWidget
                     size="xs"
+                    layout="avatar"
                     clientId={x.clientId}
                     services={props.services}
                   />
@@ -41,7 +49,7 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
               </>
             );
           })}
-      </Button>
+      </Link>
     </BreadcrumbLink>
   );
 }

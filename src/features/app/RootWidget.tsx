@@ -16,7 +16,6 @@ import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
-import { Dashboard } from "@/features/dashboard/Dashboard.tsx";
 import { IterationWidget } from "@/features/projects/iterations/iteration/IterationWidget.tsx";
 import { PositionEditModal } from "@/features/projects/iterations/iteration/PositionEditModal.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
@@ -53,10 +52,11 @@ export function RootWidget(props: WithFrontServices) {
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <Dashboard
-                      clientId={clientId}
-                      workspaceId={workspaceId}
-                      services={props.services}
+                    <Navigate
+                      to={props.services.routingService
+                        .forWorkspace(workspaceId)
+                        .forClient(clientId)
+                        .projectsRoot()}
                     />
                   )}
                 </IdResolver>

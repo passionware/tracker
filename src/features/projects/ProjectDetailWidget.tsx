@@ -22,7 +22,6 @@ export interface ProjectDetailWidgetProps extends WithFrontServices {
 }
 
 export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
-  const project = props.services.projectService.useProject(props.projectId);
   const basePath = props.services.routingService
     .forWorkspace()
     .forClient()
@@ -46,7 +45,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,
         <ProjectListBreadcrumb {...props} />,
-        <ProjectBreadcrumbView {...props} project={project} />,
+        <ProjectBreadcrumbView {...props} />,
       ]}
     >
       <Routes>
