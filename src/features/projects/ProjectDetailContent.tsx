@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
@@ -124,19 +125,22 @@ export function ProjectDetailContent(props: ProjectDetailContentProps) {
                         </ActionMenuEditItem>
                       }
                       content={(bag) => (
-                        <ProjectForm
-                          services={props.services}
-                          onCancel={bag.close}
-                          mode="edit"
-                          defaultValues={project}
-                          onSubmit={async (data) => {
-                            await props.services.mutationService.editProject(
-                              project.id,
-                              data,
-                            );
-                            bag.close();
-                          }}
-                        />
+                        <>
+                          <PopoverHeader>Edit project</PopoverHeader>
+                          <ProjectForm
+                            services={props.services}
+                            onCancel={bag.close}
+                            mode="edit"
+                            defaultValues={project}
+                            onSubmit={async (data) => {
+                              await props.services.mutationService.editProject(
+                                project.id,
+                                data,
+                              );
+                              bag.close();
+                            }}
+                          />
+                        </>
                       )}
                     />
                   </>
