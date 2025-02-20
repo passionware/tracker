@@ -45,40 +45,91 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
     <CommonPageContainer
       footer={
         <div className="flex flex-row gap-4 justify-end bg-linear-to-r/oklab from-indigo-50 to-teal-50 border-t border-teal-800/20 p-2 ">
-          {[
-            [
-              props.services.routingService
-                .forWorkspace(props.workspaceId)
-                .forClient(props.clientId)
-                .forProject(props.projectId.toString())
-                .iterations("active"),
-              "Iterations",
-            ],
-            [
-              props.services.routingService
-                .forWorkspace(props.workspaceId)
-                .forClient(props.clientId)
-                .forProject(props.projectId.toString())
-                .reports(),
-              "Reports",
-            ],
-            [
-              props.services.routingService
-                .forWorkspace(props.workspaceId)
-                .forClient(props.clientId)
-                .forProject(props.projectId.toString())
-                .configuration(),
-              "Configuration",
-            ],
-          ].map(([path, label]) => (
-            <NavLink
-              key={path}
-              to={path}
-              className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
-            >
-              {label}
-            </NavLink>
-          ))}
+          <Routes>
+            <Route
+              path={makeRelativePath(
+                basePath,
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject()
+                  .forIteration()
+                  .root() + "/*",
+              )}
+              element={[
+                [
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .forIteration()
+                    .root(),
+                  "Positions",
+                ],
+                [
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .forIteration()
+                    .reports(),
+                  "Reports",
+                ],
+              ].map(([path, label]) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
+                >
+                  {label}
+                </NavLink>
+              ))}
+            />
+            <Route
+              path={makeRelativePath(
+                basePath,
+                props.services.routingService
+                  .forWorkspace()
+                  .forClient()
+                  .forProject()
+                  .root() + "/*",
+              )}
+              element={[
+                [
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .iterations("active"),
+                  "Iterations",
+                ],
+                [
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .reports(),
+                  "Reports",
+                ],
+                [
+                  props.services.routingService
+                    .forWorkspace(props.workspaceId)
+                    .forClient(props.clientId)
+                    .forProject(props.projectId.toString())
+                    .configuration(),
+                  "Configuration",
+                ],
+              ].map(([path, label]) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
+                >
+                  {label}
+                </NavLink>
+              ))}
+            />
+          </Routes>
         </div>
       }
       tools={

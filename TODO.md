@@ -127,3 +127,10 @@ TODO:
 - konwersja kolumny- toNumber(), toDate() - jako przyciski
 - identyfikacja duplikatów w locie - checkboxy do wybrania tylko tych które chce zaimportowac, jak znajdzie duplikaty to je odznacza
 - import/export do pliku różnych tabel (backup/restore)
+
+Każdy raport ma projectIterationId, więc wiemy jakie raporty powinny być uwzględnione w danej iteracji
+Mamy iteration rules (json kolumna iteration, kopiowana z project default rules), która mówi co dodać do danej iteracji
+* np weź wszystkie raporty, i przemnóż przez env flat_rate, i dodaj jako charge do iteracji
+* np weź wszystkie raporty, i przemnóż przez env hour_rate, i dodaj jako wynagrodzenie do iteracji
+* * następnie każdy raport próbuj polinkować z wynagrodzeniem wg ustalonej strategii (np min flat rate, a reszta to jak się da)
+* * * jeśli nie da się polinkować, to zostaje jako unmatched kawałek

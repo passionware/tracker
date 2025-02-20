@@ -51,6 +51,7 @@ export function createRoutingService(): RoutingService {
                   const base2 = `${base}/iteration/${iterationId}`;
                   return {
                     root: () => base2,
+                    reports: () => `${base2}/reports`,
                   };
                 },
                 reports: () => `${base}/reports`,
