@@ -113,12 +113,12 @@ export function ListView<TData, Query extends SortableQueryBase>({
               colSpan={header.colSpan}
               rowSpan={rowSpan}
               className={cn(
-                get(header.column.columnDef.meta, "headerClassName"),
                 !header.column.getCanGroup() && "text-center",
                 "whitespace-pre",
+                get(header.column.columnDef.meta, "headerClassName"),
               )}
             >
-              <div className="flex flex-row items-center gap-0.5">
+              <div className="inline-flex flex-row items-center gap-0.5">
                 {tooltip ? (
                   <SimpleTooltip title={tooltip}>
                     <div className="cursor-pointer whitespace-pre flex flex-row items-center">

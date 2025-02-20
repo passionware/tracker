@@ -23,6 +23,7 @@ export function createFormatService(clock: () => Date): FormatService {
       currency,
       currencyDisplay: "symbol",
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
 
     // eslint-disable-next-line no-compare-neg-zero
@@ -44,9 +45,9 @@ export function createFormatService(clock: () => Date): FormatService {
         : `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
 
     return (
-      <div className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
+      <span className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
         {text}
-      </div>
+      </span>
     );
     // return (
     //   <div className="flex flex-row gap-1 justify-end">
@@ -225,7 +226,8 @@ export function createFormatService(clock: () => Date): FormatService {
       amountWithoutCurrency: (value: number, fullPrecision = false) => {
         const formatter = new Intl.NumberFormat("de-DE", {
           style: "decimal",
-          minimumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         });
 
         let formattedValue = formatter.format(value);
@@ -234,7 +236,11 @@ export function createFormatService(clock: () => Date): FormatService {
           formattedValue = `<${formatter.format(0.01)}`;
         }
 
-        return formattedValue;
+        return (
+          <span className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
+            {formattedValue}
+          </span>
+        );
       },
       currencySymbol: (currency: string) => {
         const formatter = new Intl.NumberFormat("de-DE", {
