@@ -7,8 +7,16 @@ import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import {
+  ActionMenu,
+  ActionMenuCopyItem,
+  ActionMenuDeleteItem,
+  ActionMenuDuplicateItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
@@ -16,9 +24,7 @@ import { VariableQueryBar } from "@/features/_common/elements/query/VariableQuer
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { VariableForm } from "@/features/variables/VariableForm.tsx";
-import { ActionMenu } from "@/features/variables/VariableWidget.menu.tsx";
 import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -218,7 +224,63 @@ export function VariableWidget(props: VariableWidgetProps) {
           columnHelper.display({
             id: "actions",
             cell: (info) => (
-              <ActionMenu entry={info.row.original} services={props.services} />
+              <ActionMenu services={props.services}>
+                <ActionMenuDeleteItem
+                  onClick={() =>
+                    props.services.variableService.deleteVariable(
+                      info.row.original.id,
+                    )
+                  }
+                >
+                  Delete variable
+                </ActionMenuDeleteItem>
+                <ActionMenuEditItem
+                  onClick={async () => {
+                    const result =
+                      await props.services.messageService.editVariable.sendRequest(
+                        {
+                          defaultValues: info.row.original,
+                          operatingMode: "edit",
+                        },
+                      );
+                    switch (result.action) {
+                      case "confirm": {
+                        await props.services.variableService.updateVariable(
+                          info.row.original.id,
+                          result.changes,
+                        );
+                        break;
+                      }
+                    }
+                  }}
+                >
+                  Edit variable
+                </ActionMenuEditItem>
+                <ActionMenuDuplicateItem
+                  onClick={async () => {
+                    const result =
+                      await props.services.messageService.editVariable.sendRequest(
+                        {
+                          defaultValues: info.row.original,
+                          operatingMode: "duplicate",
+                        },
+                      );
+                    switch (result.action) {
+                      case "confirm": {
+                        await props.services.variableService.createVariable(
+                          result.payload,
+                        );
+                        break;
+                      }
+                    }
+                  }}
+                >
+                  Duplicate variable
+                </ActionMenuDuplicateItem>
+                <ActionMenuCopyItem copyText={info.row.original.id.toString()}>
+                  Copy variable ID
+                </ActionMenuCopyItem>
+              </ActionMenu>
             ),
           }),
         ]}
