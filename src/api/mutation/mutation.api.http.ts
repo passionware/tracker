@@ -343,6 +343,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           period_end: iteration.periodEnd,
           status: iteration.status,
           description: iteration.description,
+          ordinal_number: iteration.ordinalNumber,
+          currency: iteration.currency,
         })
         .select("id");
 

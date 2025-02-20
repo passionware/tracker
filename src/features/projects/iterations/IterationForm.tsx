@@ -52,6 +52,8 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
       status: props.defaultValues?.status ?? "draft",
       description: props.defaultValues?.description ?? "",
       projectId: props.defaultValues?.projectId ?? 0,
+      ordinalNumber: props.defaultValues?.ordinalNumber ?? 0,
+      currency: props.defaultValues?.currency ?? "eur",
     },
   });
 

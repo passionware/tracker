@@ -59,9 +59,17 @@ export function IterationWidget(
                   <div>Details</div>
                   <ActionMenu services={props.services} className="ml-auto">
                     <ActionMenuDeleteItem
-                      onClick={() => {
-                        void props.services.mutationService.deleteProjectIteration(
+                      onClick={async () => {
+                        await props.services.mutationService.deleteProjectIteration(
                           iteration.id,
+                        );
+                        // navigate to the list
+                        props.services.navigationService.navigate(
+                          props.services.routingService
+                            .forWorkspace(props.workspaceId)
+                            .forClient(props.clientId)
+                            .forProject(props.projectId.toString())
+                            .iterations("active"),
                         );
                       }}
                     >
