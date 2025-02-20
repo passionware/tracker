@@ -152,5 +152,25 @@ export function createMutationService(
       });
       return response;
     },
+
+    editProjectIterationPosition: async (positionId, payload) => {
+      await api.editProjectIterationPosition(positionId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Editing project iteration position",
+      });
+    },
+    createProjectIterationPosition: async (position) => {
+      const response = await api.createProjectIterationPosition(position);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating project iteration position",
+      });
+      return response;
+    },
+    editProjectIteration: async (iterationId, payload) => {
+      await api.editProjectIteration(iterationId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Editing project iteration",
+      });
+    },
   };
 }

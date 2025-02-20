@@ -47,13 +47,17 @@ export interface ProjectIterationDetail extends ProjectIteration {
  * - fixed billing for client (also link to billing) ie 1*1000eur = 1000eur, description "programming services flat rate", unit price 1000eur, amount 1, unit "iteration"
  * - decision to pay entire hourly work (also link to billing) ie 40*120PLN/h = 4800PLN, description "programming services", unit price 120PLN, amount 40, unit "hour"
  */
-export interface ProjectIterationPosition {
-  id: number;
+export interface ProjectIterationPositionPayload {
   description: string;
   quantity: number;
   unitPrice: number; // price in currency of the project iteration
   unit: string;
+  projectIterationId: ProjectIteration["id"];
+}
+export interface ProjectIterationPosition
+  extends ProjectIterationPositionPayload {
   order: number;
+  id: number;
 }
 
 export interface ProjectIterationQuery

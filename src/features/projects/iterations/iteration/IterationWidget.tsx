@@ -3,6 +3,12 @@ import {
   ProjectIteration,
   ProjectIterationPosition,
 } from "@/api/project-iteration/project-iteration.api.ts";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
@@ -41,8 +47,13 @@ export function IterationWidget(
         .wait("Loading...")
         .catch(renderError)
         .map((iteration) => (
-          <div>
-            <div>{iteration.description}</div>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Details</CardTitle>
+                <CardDescription>{iteration.description}</CardDescription>
+              </CardHeader>
+            </Card>
             <ListView
               data={rd.of(iteration.positions)}
               query={{ sort: null, page: paginationUtils.ofDefault() }}

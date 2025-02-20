@@ -354,5 +354,68 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
       return { id: response.data[0].id };
     },
+    createProjectIterationPosition: async (position) => {
+      const response = await client
+        .from("project_iteration_position")
+        .insert({
+          project_iteration_id: position.projectIterationId,
+          quantity: position.quantity,
+          unit: position.unit,
+          unit_price: position.unitPrice,
+          description: position.description,
+        })
+        .select("id");
+      if (response.error) {
+        throw response.error;
+      }
+      if (response.data[0]?.id === undefined) {
+        throw new Error("No id returned");
+      }
+      return { id: response.data[0].id };
+    },
+    editProjectIteration: async (iterationId, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("project_iteration")
+        .update(
+          pickBy(
+            {
+              project_id: takeIfPresent("projectId"),
+              period_start: takeIfPresent("periodStart"),
+              period_end: takeIfPresent("periodEnd"),
+              status: takeIfPresent("status"),
+              description: takeIfPresent("description"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", iterationId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    editProjectIterationPosition: async (positionId, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("project_iteration_position")
+        .update(
+          pickBy(
+            {
+              project_iteration_id: takeIfPresent("projectIterationId"),
+              quantity: takeIfPresent("quantity"),
+              unit: takeIfPresent("unit"),
+              unit_price: takeIfPresent("unitPrice"),
+              description: takeIfPresent("description"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .eq("id", positionId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

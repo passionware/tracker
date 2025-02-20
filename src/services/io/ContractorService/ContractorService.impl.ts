@@ -12,7 +12,7 @@ export function createContractorService(
 ): ContractorService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
-      queryKey: ["contractors", "list"],
+      queryKey: ["contractor", "list"],
     });
     request.sendResponse();
   });
@@ -21,7 +21,7 @@ export function createContractorService(
     useContractors: (query) => {
       return useQuery(
         {
-          queryKey: ["contractors", "list", query],
+          queryKey: ["contractor", "list", query],
           queryFn: () => api.getContractors(query),
         },
         client,
@@ -32,7 +32,7 @@ export function createContractorService(
         id,
         useQuery(
           {
-            queryKey: ["contractors", "get", id],
+            queryKey: ["contractor", "get", id],
             enabled: maybe.isPresent(id),
             queryFn: () => api.getContractor(id!),
           },

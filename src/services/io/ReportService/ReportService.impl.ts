@@ -10,7 +10,7 @@ export function createReportService(
 ): ReportService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
-      queryKey: ["contractor_reports"],
+      queryKey: ["contractor_report"],
     });
     request.sendResponse();
   });
@@ -19,7 +19,7 @@ export function createReportService(
     useReports: (query) => {
       return useQuery(
         {
-          queryKey: ["contractor_reports", "list", query],
+          queryKey: ["contractor_report", "list", query],
           queryFn: () => api.getReports(query),
         },
         client,
@@ -28,7 +28,7 @@ export function createReportService(
     useReport: (id) => {
       return useQuery(
         {
-          queryKey: ["contractor_reports", "item", id],
+          queryKey: ["contractor_report", "item", id],
           queryFn: () => api.getReport(id),
         },
         client,

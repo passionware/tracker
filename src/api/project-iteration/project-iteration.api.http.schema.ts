@@ -24,7 +24,8 @@ const projectIterationPosition$ = z.object({
   quantity: z.number(),
   unit_price: z.number(),
   unit: z.string(),
-  order: z.number(),
+  order: z.number().catch(0),
+  project_iteration_id: z.number(),
 });
 export type ProjectIterationPosition$ = z.infer<
   typeof projectIterationPosition$
@@ -50,9 +51,7 @@ export function projectIterationDetailFromHttp({
 }: ProjectIterationDetail$): ProjectIterationDetail {
   return {
     ...camelcaseKeys(projectIteration),
-    positions: project_iteration_position.map(
-      projectIterationPositionFromHttp,
-    ),
+    positions: project_iteration_position.map(projectIterationPositionFromHttp),
   };
 }
 

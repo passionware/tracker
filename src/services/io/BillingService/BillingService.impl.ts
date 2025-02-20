@@ -10,7 +10,7 @@ export function createBillingService(
 ): BillingService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
-      queryKey: ["billings"],
+      queryKey: ["billing"],
     });
     request.sendResponse();
   });
@@ -18,7 +18,7 @@ export function createBillingService(
     useBillings: (query) => {
       return useQuery(
         {
-          queryKey: ["billings", "list", query],
+          queryKey: ["billing", "list", query],
           queryFn: () => api.getBillings(query),
         },
         client,

@@ -12,7 +12,7 @@ export function createClientService(
 ): ClientService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await client.invalidateQueries({
-      queryKey: ["clients"],
+      queryKey: ["client"],
     });
     request.sendResponse();
   });
@@ -21,7 +21,7 @@ export function createClientService(
   const findClientInCache = (id: Client["id"]) => {
     // Pobierz wszystkie list queries z pamięci podręcznej
     const allLists = client.getQueriesData<Client[]>({
-      queryKey: ["clients", "list"],
+      queryKey: ["client", "list"],
     });
 
     // Przeszukaj każdą tablicę z list
@@ -41,7 +41,7 @@ export function createClientService(
     useClients: (query) => {
       return useQuery(
         {
-          queryKey: ["clients", "list", query],
+          queryKey: ["client", "list", query],
           queryFn: () => api.getClients(query),
         },
         client,
@@ -52,7 +52,7 @@ export function createClientService(
         id,
         useQuery(
           {
-            queryKey: ["clients", "item", id],
+            queryKey: ["client", "item", id],
             enabled: maybe.isPresent(id),
             queryFn: () => api.getClient(id!),
             staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla pojedynczych klienta

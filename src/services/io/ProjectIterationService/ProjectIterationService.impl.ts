@@ -16,7 +16,7 @@ export function createProjectIterationService({
   services.messageService.reportSystemEffect.subscribeToRequest(
     async (request) => {
       await client.invalidateQueries({
-        queryKey: ["project-iterations"],
+        queryKey: ["project-iteration"],
       });
       request.sendResponse();
     },
@@ -27,7 +27,7 @@ export function createProjectIterationService({
         query,
         useQuery(
           {
-            queryKey: ["project-iterations", query],
+            queryKey: ["project-iteration", "list", query],
             queryFn: () => api.getProjectIterations(query!),
             enabled: !!query,
           },
@@ -40,7 +40,7 @@ export function createProjectIterationService({
         useQuery(
           {
             enabled: !!id,
-            queryKey: ["project-iteration", id],
+            queryKey: ["project-iteration", "detail", id],
             queryFn: () => api.getProjectIterationDetail(id!),
           },
           client,

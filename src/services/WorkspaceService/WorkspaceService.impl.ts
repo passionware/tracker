@@ -12,14 +12,14 @@ export function createWorkspaceService(
 ): WorkspaceService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await queryClient.invalidateQueries({
-      queryKey: ["workspaces"],
+      queryKey: ["workspace"],
     });
     request.sendResponse();
   });
 
   const findWorkspaceInCache = (id: Workspace["id"]) => {
     const allLists = queryClient.getQueriesData<Workspace[]>({
-      queryKey: ["workspaces", "list"],
+      queryKey: ["workspace", "list"],
     });
 
     // Przeszukaj każdą tablicę z list
@@ -39,7 +39,7 @@ export function createWorkspaceService(
     useWorkspaces: (query) =>
       useQuery(
         {
-          queryKey: ["workspaces", "list", query],
+          queryKey: ["workspace", "list", query],
           queryFn: () => api.getWorkspaces(query),
           staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla listy workspace
           refetchOnMount: false,
@@ -54,7 +54,7 @@ export function createWorkspaceService(
         useQuery(
           {
             enabled: maybe.isPresent(id),
-            queryKey: ["workspaces", "item", id],
+            queryKey: ["workspace", "item", id],
             queryFn: () => api.getWorkspace(id!),
             staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla pojedynczych workspace
             initialData: () => findWorkspaceInCache(id!), // Znajdź dane w cache, jeśli istnieją

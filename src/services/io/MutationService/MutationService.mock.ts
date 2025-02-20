@@ -91,5 +91,18 @@ export function createMutationService(
       await wait();
       return { id: 1 };
     },
+    editProjectIteration: async () => {
+      onActionAccessor.get()("Editing project iteration");
+      await wait();
+    },
+    createProjectIterationPosition: async () => {
+      onActionAccessor.get()("Creating project iteration position");
+      await wait();
+      return { id: 1 };
+    },
+    editProjectIterationPosition: async () => {
+      onActionAccessor.get()("Editing project iteration position");
+      await wait();
+    },
   };
 }

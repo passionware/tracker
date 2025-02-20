@@ -4,6 +4,8 @@ import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.t
 import {
   ProjectIteration,
   ProjectIterationPayload,
+  ProjectIterationPosition,
+  ProjectIterationPositionPayload,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project, ProjectPayload } from "@/api/project/project.api.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
@@ -18,6 +20,9 @@ export interface MutationApi {
   createProjectIteration: (
     iteration: ProjectIterationPayload,
   ) => Promise<{ id: ProjectIteration["id"] }>;
+  createProjectIterationPosition: (
+    position: ProjectIterationPositionPayload,
+  ) => Promise<{ id: ProjectIterationPosition["id"] }>;
   createCost: (cost: CostPayload) => Promise<{ id: Cost["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
@@ -46,5 +51,13 @@ export interface MutationApi {
   editProject: (
     projectId: number,
     payload: Partial<ProjectPayload>,
+  ) => Promise<void>;
+  editProjectIteration: (
+    iterationId: number,
+    payload: Partial<ProjectIterationPayload>,
+  ) => Promise<void>;
+  editProjectIterationPosition: (
+    positionId: number,
+    payload: Partial<ProjectIterationPositionPayload>,
   ) => Promise<void>;
 }

@@ -12,7 +12,7 @@ export function createProjectService(
 ): ProjectService {
   config.services.messageService.reportSystemEffect.subscribeToRequest(
     async (payload) => {
-      await config.client.invalidateQueries({ queryKey: ["projects"] });
+      await config.client.invalidateQueries({ queryKey: ["project"] });
       payload.sendResponse();
     },
   );
@@ -23,7 +23,7 @@ export function createProjectService(
         query,
         useQuery(
           {
-            queryKey: ["projects", query],
+            queryKey: ["project", "list", query],
             enabled: !!query,
             queryFn: () => config.api.getProjects(query!),
           },
@@ -32,7 +32,7 @@ export function createProjectService(
       ),
     ensureProjects: (query) =>
       config.client.ensureQueryData({
-        queryKey: ["projects", query],
+        queryKey: ["project", "list", query],
         queryFn: () => config.api.getProjects(query),
       }),
     useProject: (projectId) =>
@@ -40,7 +40,7 @@ export function createProjectService(
         projectId,
         useQuery(
           {
-            queryKey: ["project", projectId],
+            queryKey: ["project", "detail", projectId],
             enabled: !!projectId,
             queryFn: () => config.api.getProject(projectId!),
           },
@@ -49,7 +49,7 @@ export function createProjectService(
       ),
     ensureProject: (projectId) =>
       config.client.ensureQueryData({
-        queryKey: ["project", projectId],
+        queryKey: ["project", "detail", projectId],
         queryFn: () => config.api.getProject(projectId),
       }),
   };

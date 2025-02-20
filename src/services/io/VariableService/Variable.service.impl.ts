@@ -11,7 +11,7 @@ export function createVariableService(
 ): VariableService {
   config.services.messageService.reportSystemEffect.subscribeToRequest(
     async (payload) => {
-      await config.client.invalidateQueries({ queryKey: ["variables"] });
+      await config.client.invalidateQueries({ queryKey: ["variable"] });
       payload.sendResponse();
     },
   );
@@ -20,7 +20,7 @@ export function createVariableService(
     useVariables: (query) =>
       useQuery(
         {
-          queryKey: ["variables", query],
+          queryKey: ["variable", "list", query],
           enabled: !!query,
           queryFn: () => config.api.getVariables(query!),
         },
@@ -28,7 +28,7 @@ export function createVariableService(
       ),
     ensureVariables: (query) =>
       config.client.ensureQueryData({
-        queryKey: ["variables", query],
+        queryKey: ["variable", "list", query],
         queryFn: () => config.api.getVariables(query),
       }),
     createVariable: async (variable) => {

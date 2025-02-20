@@ -7,6 +7,7 @@ import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/P
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
 import { IterationWidget } from "@/features/projects/iterations/iteration/IterationWidget.tsx";
+import { NewPositionPopover } from "@/features/projects/iterations/iteration/NewPositionPopover.tsx";
 import { IterationFilterDropdown } from "@/features/projects/iterations/IterationFilter.tsx";
 import { NewIterationPopover } from "@/features/projects/iterations/NewIterationPopover.tsx";
 import { ProjectIterationListWidget } from "@/features/projects/iterations/ProjectIterationListWidget.tsx";
@@ -15,7 +16,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
@@ -34,6 +35,11 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
 
   const iterationId =
     props.services.locationService.useCurrentProjectIterationId();
+
+  const iteration =
+    props.services.projectIterationService.useProjectIterationDetail(
+      iterationId,
+    );
 
   return (
     <CommonPageContainer
@@ -97,6 +103,29 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
                 />
               </>
             }
+          />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              props.services.routingService
+                .forWorkspace()
+                .forClient()
+                .forProject()
+                .forIteration()
+                .root(),
+            )}
+            element={rd.tryMap(iteration, (iteration) => (
+              <>
+                <NewPositionPopover
+                  iterationId={iteration.id}
+                  services={props.services}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
+                  projectId={props.projectId}
+                  currency={iteration.currency}
+                />
+              </>
+            ))}
           />
         </Routes>
       }

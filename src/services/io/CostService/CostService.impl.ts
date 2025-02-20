@@ -12,7 +12,7 @@ export function createCostService(
 ): CostService {
   messageService.reportSystemEffect.subscribeToRequest(async (request) => {
     await queryClient.invalidateQueries({
-      queryKey: ["costs"],
+      queryKey: ["cost"],
     });
     request.sendResponse();
   });
@@ -20,7 +20,7 @@ export function createCostService(
     useCosts: (query) =>
       useQuery(
         {
-          queryKey: ["costs", "list", query],
+          queryKey: ["cost", "list", query],
           queryFn: () => api.getCosts(query),
         },
         queryClient,
@@ -31,7 +31,7 @@ export function createCostService(
         useQuery(
           {
             enabled: maybe.isPresent(id),
-            queryKey: ["costs", "item", id],
+            queryKey: ["cost", "item", id],
             queryFn: () => api.getCost(id!),
           },
           queryClient,
