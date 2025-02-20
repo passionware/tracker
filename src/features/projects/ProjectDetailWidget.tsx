@@ -5,7 +5,6 @@ import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/Cl
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
-import { ProjectConfigurationWidget } from "@/features/projects/configuration/ProjectConfigurationWidget.tsx";
 import { IterationWidget } from "@/features/projects/iterations/iteration/IterationWidget.tsx";
 import { NewPositionPopover } from "@/features/projects/iterations/iteration/NewPositionPopover.tsx";
 import { IterationFilterDropdown } from "@/features/projects/iterations/IterationFilter.tsx";
@@ -17,7 +16,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -43,95 +42,6 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
 
   return (
     <CommonPageContainer
-      footer={
-        <div className="flex flex-row gap-4 justify-end bg-linear-to-r/oklab from-indigo-50 to-teal-50 border-t border-teal-800/20 p-2 ">
-          <Routes>
-            <Route
-              path={makeRelativePath(
-                basePath,
-                props.services.routingService
-                  .forWorkspace()
-                  .forClient()
-                  .forProject()
-                  .forIteration()
-                  .root() + "/*",
-              )}
-              element={[
-                [
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .forIteration()
-                    .root(),
-                  "Positions",
-                ],
-                [
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .forIteration()
-                    .reports(),
-                  "Reports",
-                ],
-              ].map(([path, label]) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
-                >
-                  {label}
-                </NavLink>
-              ))}
-            />
-            <Route
-              path={makeRelativePath(
-                basePath,
-                props.services.routingService
-                  .forWorkspace()
-                  .forClient()
-                  .forProject()
-                  .root() + "/*",
-              )}
-              element={[
-                [
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .iterations("active"),
-                  "Iterations",
-                ],
-                [
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .reports(),
-                  "Reports",
-                ],
-                [
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .configuration(),
-                  "Configuration",
-                ],
-              ].map(([path, label]) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  className="transition-colors text-sky-800 aria-[current]:bg-sky-700/10 hocus:bg-sky-700/15 p-1 rounded-sm"
-                >
-                  {label}
-                </NavLink>
-              ))}
-            />
-          </Routes>
-        </div>
-      }
       tools={
         <Routes>
           <Route
@@ -243,24 +153,6 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               clientId={props.clientId}
               projectId={props.projectId}
               services={props.services}
-            />
-          }
-        />
-        <Route
-          path={makeRelativePath(
-            basePath,
-            props.services.routingService
-              .forWorkspace()
-              .forClient()
-              .forProject()
-              .configuration(),
-          )}
-          element={
-            <ProjectConfigurationWidget
-              services={props.services}
-              projectId={props.projectId}
-              workspaceId={props.workspaceId}
-              clientId={props.clientId}
             />
           }
         />

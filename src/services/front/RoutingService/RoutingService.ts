@@ -98,8 +98,6 @@ export interface RoutingService {
           root: () => string;
           reports: () => string;
         };
-        reports: () => string;
-        configuration: () => string;
       };
     };
   };

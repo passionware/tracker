@@ -54,8 +54,6 @@ export function createRoutingService(): RoutingService {
                     reports: () => `${base2}/reports`,
                   };
                 },
-                reports: () => `${base}/reports`,
-                configuration: () => `${base}/configuration`,
               };
             },
           };

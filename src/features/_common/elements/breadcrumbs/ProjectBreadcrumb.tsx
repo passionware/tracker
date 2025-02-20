@@ -6,12 +6,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
@@ -42,71 +36,26 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
   return (
     <>
       <BreadcrumbLink>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="px-2 -mx-2">
-              {rd
-                .journey(props.project)
-                .wait(<Skeleton className="w-20 h-4" />)
-                .catch(renderSmallError("w-20 h-4"))
-                .map((x) => {
-                  return (
-                    <>
-                      {idSpecUtils.isAll(props.clientId) && (
-                        <ClientWidget
-                            size="xs"
-                          clientId={x.clientId}
-                          services={props.services}
-                        />
-                      )}
-                      {x.name}
-                    </>
-                  );
-                })}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center">
-            <DropdownMenuItem
-              onClick={() =>
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .iterations("all"),
-                )
-              }
-            >
-              Iterations
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .reports(),
-                )
-              }
-            >
-              Reports
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                props.services.navigationService.navigate(
-                  props.services.routingService
-                    .forWorkspace(props.workspaceId)
-                    .forClient(props.clientId)
-                    .forProject(props.projectId.toString())
-                    .configuration(),
-                )
-              }
-            >
-              Configuration
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button variant="ghost" size="sm" className="px-2 -mx-2">
+          {rd
+            .journey(props.project)
+            .wait(<Skeleton className="w-20 h-4" />)
+            .catch(renderSmallError("w-20 h-4"))
+            .map((x) => {
+              return (
+                <>
+                  {idSpecUtils.isAll(props.clientId) && (
+                    <ClientWidget
+                      size="xs"
+                      clientId={x.clientId}
+                      services={props.services}
+                    />
+                  )}
+                  {x.name}
+                </>
+              );
+            })}
+        </Button>
       </BreadcrumbLink>
       <BreadcrumbSeparator />
       <BreadcrumbPage>
@@ -118,43 +67,10 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
                 .forWorkspace()
                 .forClient()
                 .forProject()
-                .iterations(),
-            )}
-            element="Iterations"
-          />
-          <Route
-            path={makeRelativePath(
-              basePath,
-              props.services.routingService
-                .forWorkspace()
-                .forClient()
-                .forProject()
                 .forIteration()
                 .root(),
             )}
             element={<IterationBreadcrumb services={props.services} />}
-          />
-          <Route
-            path={makeRelativePath(
-              basePath,
-              props.services.routingService
-                .forWorkspace()
-                .forClient()
-                .forProject()
-                .reports(),
-            )}
-            element="Reports"
-          />
-          <Route
-            path={makeRelativePath(
-              basePath,
-              props.services.routingService
-                .forWorkspace()
-                .forClient()
-                .forProject()
-                .configuration(),
-            )}
-            element="Configuration"
           />
         </Routes>
       </BreadcrumbPage>

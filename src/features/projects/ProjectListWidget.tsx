@@ -179,7 +179,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
                             .forWorkspace(data.workspaceId)
                             .forClient(data.clientId)
                             .forProject(id.toString())
-                            .configuration(),
+                            .root(),
                         );
                       }}
                       onCancel={bag.close}
