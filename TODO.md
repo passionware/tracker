@@ -134,3 +134,7 @@ Mamy iteration rules (json kolumna iteration, kopiowana z project default rules)
 * np weź wszystkie raporty, i przemnóż przez env hour_rate, i dodaj jako wynagrodzenie do iteracji
 * * następnie każdy raport próbuj polinkować z wynagrodzeniem wg ustalonej strategii (np min flat rate, a reszta to jak się da)
 * * * jeśli nie da się polinkować, to zostaje jako unmatched kawałek
+      TODO:
+      routing for 3 tabs
+      linked reports + find report&link option with our existing report search component
+            
