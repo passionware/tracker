@@ -8,6 +8,7 @@ import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/P
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
+import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
 import { PositionList } from "@/features/project-iterations/widgets/PositionList.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
@@ -52,7 +53,7 @@ export function IterationWidget(
           />
           <Route
             path={makeRelativePath(basePath, forIteration.reports())}
-            element={<div>Reports</div>}
+            element={<LinkedReportList {...props} />}
           />
           <Route
             path={makeRelativePath(basePath, forIteration.billings())}

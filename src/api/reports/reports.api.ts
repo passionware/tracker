@@ -16,6 +16,7 @@ import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { CostBase } from "@/api/cost/cost.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
+import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -37,6 +38,8 @@ export interface ReportPayload {
   netValue: number;
 
   currency: string;
+
+  projectIterationId: Nullable<ProjectIteration["id"]>;
 }
 
 export interface ReportBase extends ReportPayload {
@@ -75,6 +78,7 @@ export type ReportQuery = WithFilters<{
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
   period: Nullable<DateFilter>;
   immediatePaymentDue: Nullable<NumberFilter>;
+  projectIterationId: Nullable<EnumFilter<Nullable<ProjectIteration["id"]>>>;
 }> &
   WithPagination &
   WithSorter<
@@ -109,6 +113,7 @@ export const reportQueryUtils = withBuilderUtils({
           contractorId: null,
           period: null,
           immediatePaymentDue: null,
+          projectIterationId: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "period", order: "asc" },

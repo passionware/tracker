@@ -1,4 +1,5 @@
 import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
+import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
@@ -86,6 +87,14 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
           query.filters.period,
           "period_start",
           "period_end",
+        );
+      }
+
+      if (query.filters.projectIterationId) {
+        request = enumFilterSupabaseUtils.filterBy.oneToMany(
+          request,
+          query.filters.projectIterationId,
+          "project_iteration_id",
         );
       }
 

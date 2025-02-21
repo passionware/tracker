@@ -231,6 +231,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               currency: takeIfPresent("currency"),
               client_id: takeIfPresent("clientId"),
               workspace_id: takeIfPresent("workspaceId"),
+              project_iteration_id: takeIfPresent("projectIterationId"),
             },
             (_, key) => key !== undefined,
           ),

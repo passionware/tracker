@@ -41,7 +41,7 @@ export function PositionList(
         const result =
           await props.services.messageService.editProjectIterationPosition.sendRequest(
             {
-              currency,
+              currency: rd.getOrThrow(iteration).currency,
               operatingMode: "edit",
               defaultValues: row,
             },
@@ -130,7 +130,7 @@ export function PositionList(
                   const result =
                     await props.services.messageService.editProjectIterationPosition.sendRequest(
                       {
-                        currency,
+                        currency: rd.getOrThrow(iteration).currency,
                         operatingMode: "edit",
                         defaultValues: row.original,
                       },
@@ -152,7 +152,7 @@ export function PositionList(
                   const result =
                     await props.services.messageService.editProjectIterationPosition.sendRequest(
                       {
-                        currency,
+                        currency: rd.getOrThrow(iteration).currency,
                         operatingMode: "duplicate",
                         defaultValues: row.original,
                       },
@@ -202,6 +202,16 @@ export function PositionList(
 
         return (
           <div>
+            <p>
+              The balance should be zero. It means that all income and outcome
+              positions are balanced. We need to create payroll positions for
+              linked reports. If we can't cover all reported work with payroll
+              positions, we need to create a debt. Balance will be still "0" and
+              we clearly say that the iteration is closed with a debt to
+              specific contractor. Also, if the client has paid upfront too
+              much, we close the iteration with a debt to the client. Then we
+              can insert a debt as a new position in the next iteration.
+            </p>
             <h3 className="my-3 text-base font-semibold ">
               Summary ({iteration.positions.length} positions)
             </h3>
