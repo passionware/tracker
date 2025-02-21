@@ -52,6 +52,10 @@ export function createProjectIterationApi(
         .from("project_iteration")
         .select("*, project_iteration_position(*)")
         .eq("id", id)
+        .order("order", {
+          ascending: true,
+          foreignTable: "project_iteration_position",
+        })
         .single();
       if (error) {
         throw error;
