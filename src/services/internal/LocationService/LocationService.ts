@@ -5,6 +5,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Maybe } from "@passionware/monads";
+import { ReactNode } from "react";
 
 /**
  * LocationService is responsible for managing the current client id and other location-related state.
@@ -18,6 +19,9 @@ export interface LocationService {
   useCurrentProjectId: () => Maybe<Project["id"]>;
   useCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   useCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
+  useCurrentProjectIterationTab: () => Maybe<
+    "positions" | "reports" | "billings"
+  >;
   // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;
   // maybe - we can be in the route which neither specific workspace nor all workspaces
@@ -28,6 +32,17 @@ export interface LocationService {
   getCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
   changeCurrentClientId: (id: ClientSpec) => void;
   changeCurrentWorkspaceId: (id: WorkspaceSpec) => void;
+
+  Resolver: (props: {
+    children: (params: {
+      workspaceId: Maybe<WorkspaceSpec>;
+      clientId: Maybe<ClientSpec>;
+      projectId: Maybe<Project["id"]>;
+      projectIterationStatus: Maybe<"all" | "active" | "closed">;
+      projectIterationId: Maybe<ProjectIteration["id"]>;
+      projectIterationTab: Maybe<"positions" | "reports" | "billings">;
+    }) => ReactNode;
+  }) => ReactNode;
 }
 export interface WithLocationService {
   locationService: LocationService;

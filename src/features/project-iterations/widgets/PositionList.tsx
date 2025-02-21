@@ -1,6 +1,6 @@
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
-  ProjectIterationDetail,
+  ProjectIteration,
   ProjectIterationPosition,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
@@ -17,18 +17,23 @@ import {
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
-import { maybe, rd } from "@passionware/monads";
+import { rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { sumBy } from "lodash";
 
 const c = createColumnHelper<ProjectIterationPosition>();
 
 export function PositionList(
-  props: WithFrontServices & { iteration: ProjectIterationDetail },
+  props: WithFrontServices & { projectIterationId: ProjectIteration["id"] },
 ) {
-  const { iteration } = props;
-  const currency = props.services.formatService.financial.currencySymbol(
-    iteration.currency,
+  const iteration =
+    props.services.projectIterationService.useProjectIterationDetail(
+      props.projectIterationId,
+    );
+  const currency = rd.mapOrElse(
+    iteration,
+    (i) => props.services.formatService.financial.currencySymbol(i.currency),
+    "",
   );
   return (
     <ListView
@@ -50,7 +55,7 @@ export function PositionList(
             break;
         }
       }}
-      data={rd.of(iteration.positions)}
+      data={rd.map(iteration, (i) => i.positions)}
       query={{ sort: null, page: paginationUtils.ofDefault() }}
       onQueryChange={() => {}}
       columns={[
@@ -170,7 +175,7 @@ export function PositionList(
           ),
         }),
       ]}
-      caption={maybe.map(iteration, (iteration) => {
+      caption={rd.tryMap(iteration, (iteration) => {
         const details = [
           {
             label: "Income",

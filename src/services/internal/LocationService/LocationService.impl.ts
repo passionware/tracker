@@ -150,6 +150,33 @@ export function createLocationService(
       );
       return maybe.map(match?.params.iterationId, parseInt);
     },
+    useCurrentProjectIterationTab: () => {
+      const forIteration = config.services.routingService
+        .forWorkspace()
+        .forClient()
+        .forProject()
+        .forIteration();
+      const rootMatch = config.services.navigationService.useMatch(
+        forIteration.root() + "/*",
+      );
+      const reportsMatch = config.services.navigationService.useMatch(
+        forIteration.reports() + "/*",
+      );
+      const billingsMatch = config.services.navigationService.useMatch(
+        forIteration.billings() + "/*",
+      );
+
+      switch (true) {
+        case !!reportsMatch:
+          return "reports";
+        case !!billingsMatch:
+          return "billings";
+        case !!rootMatch:
+          return "positions";
+        default:
+          return maybe.ofAbsent();
+      }
+    },
     getCurrentProjectIterationId: () => {
       const match = config.services.navigationService.match(
         config.services.routingService
@@ -160,6 +187,24 @@ export function createLocationService(
           .root() + "/*",
       );
       return maybe.map(match?.params.iterationId, parseInt);
+    },
+    Resolver: (props) => {
+      const workspaceId = api.useCurrentWorkspaceId();
+
+      const clientId = api.useCurrentClientId();
+      const projectId = api.useCurrentProjectId();
+      const projectIterationStatus = api.useCurrentProjectIterationStatus();
+      const projectIterationId = api.useCurrentProjectIterationId();
+      const projectIterationTab = api.useCurrentProjectIterationTab();
+
+      return props.children({
+        workspaceId,
+        clientId,
+        projectId,
+        projectIterationStatus,
+        projectIterationId,
+        projectIterationTab,
+      });
     },
   };
   return api;
