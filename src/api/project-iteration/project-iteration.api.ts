@@ -122,5 +122,6 @@ export interface ProjectIterationEvent {
     to: AccountSpec;
     amount: number;
     unitPrice: number;
+    unit: string;
   }>;
 }

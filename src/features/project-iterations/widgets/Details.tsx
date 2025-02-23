@@ -93,7 +93,21 @@ export function Details(
             .journey(iteration)
             .wait(<Skeleton className="h-[1lh] w-30" />)
             .catch(renderError)
-            .map((iteration) => iteration.description)}
+            .map((iteration) => (
+              <>
+                <p>{iteration.description}</p>
+                <p className="mt-2">
+                  <strong>Currency: </strong>
+                  <span className="font-semibold text-sky-700">
+                    {iteration.currency.toUpperCase()} (
+                    {props.services.formatService.financial.currencySymbol(
+                      iteration.currency,
+                    )}
+                    )
+                  </span>
+                </p>
+              </>
+            ))}
         </CardDescription>
       </CardHeader>
     </Card>

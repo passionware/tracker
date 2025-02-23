@@ -55,6 +55,7 @@ export const projectIterationEvent$ = z.object({
       to: accountSpec$,
       amount: z.number(),
       unit_price: z.number(),
+      unit: z.string(),
     }),
   ),
 });

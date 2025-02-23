@@ -1,6 +1,5 @@
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
-  AccountSpec,
   ProjectIteration,
   ProjectIterationEvent,
   ProjectIterationPosition,
@@ -13,15 +12,18 @@ import {
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   Summary,
   SummaryEntry,
   SummaryEntryValue,
 } from "@/features/_common/Summary.tsx";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
-import { sumBy } from "lodash";
+import { get, sumBy, uniqBy } from "lodash";
 
 const c = createColumnHelper<ProjectIterationPosition>();
 
@@ -32,14 +34,33 @@ export function PositionList(
     props.services.projectIterationService.useProjectIterationDetail(
       props.projectIterationId,
     );
+  const project = props.services.projectService.useProject(
+    rd.tryMap(iteration, (i) => i.projectId),
+  );
   const currency = rd.mapOrElse(
     iteration,
     (i) => props.services.formatService.financial.currencySymbol(i.currency),
     "",
   );
+  const isEvent = (x: unknown): x is ProjectIterationPosition =>
+    typeof x === "object" && !!x && "order" in x;
+
+  function renderMove(
+    move: ProjectIterationEvent["moves"][0] & { direction: "from" | "to" },
+  ) {
+    return props.services.formatService.financial.amountWithoutCurrency(
+      move.amount * move.unitPrice * (move.direction === "from" ? -1 : 1),
+    );
+  }
+
+  const numberMeta = {
+    cellClassName: "text-right",
+    headerClassName: "*:block *:text-right *:pr-1 *:justify-items-end",
+  };
   return (
     <ListView
       onRowDoubleClick={async (row) => {
+        if (!isEvent(row)) return;
         const result =
           await props.services.messageService.editProjectIterationPosition.sendRequest(
             {
@@ -57,140 +78,272 @@ export function PositionList(
             break;
         }
       }}
-      data={rd.map(iteration, (i) => i.events)}
       query={{ sort: null, page: paginationUtils.ofDefault() }}
-      renderAdditionalData={(event) => (
-        <div className="p-4 bg-gray-100">
-          <h4 className="text-sm font-bold text-gray-700 mb-2">Moves</h4>
-          {event.moves && event.moves.length > 0 ? (
-            <ul className="list-disc ml-5 mt-1">
-              {event.moves.map((move, index) => (
-                <li key={index} className="text-xs text-gray-500">
-                  {`From: ${formatAccountSpec(move.from)}, To: ${formatAccountSpec(move.to)}, Amount: ${move.amount}, Unit Price: ${move.unitPrice}`}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-600">No moves available.</p>
-          )}
-        </div>
+      data={rd.map(iteration, (i) =>
+        i.events.flatMap((event) => [
+          event,
+          ...event.moves.flatMap((move) =>
+            (
+              [
+                { ...move, account: move.from, direction: "from" },
+                { ...move, account: move.to, direction: "to" },
+              ] as const
+            ).reduce(
+              (acc, x) => {
+                const moveValue = {
+                  ...move,
+                  direction: x.direction,
+                };
+                switch (x.account.type) {
+                  case "client":
+                    return {
+                      ...acc,
+                      "x-client": moveValue,
+                    };
+                  case "iteration":
+                    return {
+                      ...acc,
+                      "x-iteration": moveValue,
+                    };
+                  case "contractor":
+                    return {
+                      ...acc,
+                      [`x-contractor-${x.account.contractorId}`]: moveValue,
+                    };
+                  case "cost":
+                    return { ...acc, "x-cost": moveValue };
+                }
+              },
+              {
+                // description: `${move.amount} x ${move.unitPrice}${currency} / ${move.unit} = ${move.amount * move.unitPrice} ${currency}`,
+                description: (
+                  <div className="flex flex-row gap-0.5 opacity-40 ml-8">
+                    <span>
+                      {props.services.formatService.financial.amountWithoutCurrency(
+                        move.amount,
+                      )}
+                    </span>
+                    <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+                      {move.unit}
+                    </span>
+                    <span>&times;</span>
+                    <span>
+                      {props.services.formatService.financial.amountWithoutCurrency(
+                        move.unitPrice,
+                      )}
+                    </span>
+                    <span>/</span>
+                    <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+                      {move.unit}
+                    </span>
+                    <span>=</span>
+                    <span className="font-extrabold">
+                      {props.services.formatService.financial.amountWithoutCurrency(
+                        move.amount * move.unitPrice,
+                      )}
+                    </span>
+                  </div>
+                ),
+              },
+            ),
+          ),
+        ]),
       )}
       onQueryChange={() => {}}
       columns={[
         c.accessor("order", { header: "#" }),
-        c.accessor("description", { header: "Description" }),
-        c.accessor("quantity", {
-          header: "Quantity",
-
-          cell: (cell) => (
-            <>
-              {props.services.formatService.financial.amountWithoutCurrency(
-                cell.row.original.quantity,
-              )}
-              <span className="inline-block min-w-8 text-left ml-1">
-                <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
-                  {cell.row.original.unit}
-                </span>
-              </span>
-            </>
-          ),
-          meta: {
-            cellClassName: "text-right",
-            headerClassName: "*:block *:text-right *:pr-8",
-          },
+        c.accessor("description", {
+          header: "Description",
+          cell: (cell) => cell.row.original.description,
         }),
-        c.accessor("unitPrice", {
-          header: `Unit Price (${currency})`,
-          cell: (cell) => (
-            <>
-              {props.services.formatService.financial.amountWithoutCurrency(
-                cell.row.original.unitPrice,
-              )}
-              <span className="inline-block min-w-8 text-left ml-1">
-                <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
-                  / {cell.row.original.unit}
-                </span>
-              </span>
-            </>
-          ),
-          meta: {
-            cellClassName: "text-right",
-            headerClassName: "*:block *:text-right *:pr-6",
+        c.accessor("x-client", {
+          id: "client",
+          header: rd.tryMap(project, (p) => (
+            <ClientWidget
+              layout="avatar"
+              size="sm"
+              services={props.services}
+              clientId={p.clientId}
+            />
+          )),
+          cell: (cell) => {
+            const move = get(cell.row.original, "x-client");
+            return maybe.map(move, renderMove);
           },
+          meta: numberMeta,
         }),
-        c.display({
-          id: "total",
-          header: `Total (${currency})`,
-          cell: (cell) =>
-            props.services.formatService.financial.amountWithoutCurrency(
-              cell.row.original.quantity * cell.row.original.unitPrice,
+        c.accessor("x-iteration", {
+          id: "iteration",
+          header: (
+            <WorkspaceWidget
+              // take from project
+              workspaceId={rd.tryMap(
+                project,
+                (iteration) => iteration.workspaceId,
+              )}
+              services={props.services}
+              layout="avatar"
+              size="sm"
+            />
+          ),
+          cell: (cell) => {
+            const move = get(cell.row.original, "x-iteration");
+            return maybe.map(move, renderMove);
+          },
+          meta: numberMeta,
+        }),
+        ...uniqBy(
+          (rd.tryGet(iteration)?.events ?? [])
+            .flatMap((e) => e.moves)
+            .flatMap((move) => [move.from, move.to])
+            .filter((x) => x.type === "contractor"),
+          (move) => move.contractorId,
+        ).map((value) =>
+          c.display({
+            id: `x-contractor-${value.contractorId}`,
+            header: (ctx) => (
+              <ContractorWidget
+                layout="avatar"
+                size="sm"
+                services={props.services}
+                contractorId={value.contractorId}
+              />
             ),
-          meta: {
-            cellClassName: "text-right",
-            headerClassName: "*:block *:text-right *:pr-2",
+            cell: (cell) => {
+              const move = get(
+                cell.row.original,
+                `x-contractor-${value.contractorId}`,
+              );
+              return maybe.map(move, renderMove);
+            },
+            meta: numberMeta,
+          }),
+        ),
+        // koszty
+        c.display({
+          id: "x-cost",
+          header: "Cost",
+          cell: (cell) => {
+            const move = get(cell.row.original, "x-cost");
+            return maybe.map(move, renderMove);
           },
+          meta: numberMeta,
         }),
+        // c.accessor("quantity", {
+        //   header: "Quantity",
+        //
+        //   cell: (cell) => (
+        //     <>
+        //       {props.services.formatService.financial.amountWithoutCurrency(
+        //         cell.row.original.quantity,
+        //       )}
+        //       <span className="inline-block min-w-8 text-left ml-1">
+        //         <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+        //           {cell.row.original.unit}
+        //         </span>
+        //       </span>
+        //     </>
+        //   ),
+        //   meta: {
+        //     cellClassName: "text-right",
+        //     headerClassName: "*:block *:text-right *:pr-8",
+        //   },
+        // }),
+        // c.accessor("unitPrice", {
+        //   header: `Unit Price (${currency})`,
+        //   cell: (cell) => (
+        //     <>
+        //       {props.services.formatService.financial.amountWithoutCurrency(
+        //         cell.row.original.unitPrice,
+        //       )}
+        //       <span className="inline-block min-w-8 text-left ml-1">
+        //         <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+        //           / {cell.row.original.unit}
+        //         </span>
+        //       </span>
+        //     </>
+        //   ),
+        //   meta: {
+        //     cellClassName: "text-right",
+        //     headerClassName: "*:block *:text-right *:pr-6",
+        //   },
+        // }),
+        // c.display({
+        //   id: "total",
+        //   header: `Total (${currency})`,
+        //   cell: (cell) =>
+        //     props.services.formatService.financial.amountWithoutCurrency(
+        //       cell.row.original.quantity * cell.row.original.unitPrice,
+        //     ),
+        //   meta: {
+        //     cellClassName: "text-right",
+        //     headerClassName: "*:block *:text-right *:pr-2",
+        //   },
+        // }),
         c.display({
           id: "actions",
-          cell: ({ row }) => (
-            <ActionMenu services={props.services}>
-              <ActionMenuDeleteItem
-                onClick={() => {
-                  void props.services.mutationService.deleteProjectIterationPosition(
-                    row.original.id,
-                  );
-                }}
-              >
-                Delete position
-              </ActionMenuDeleteItem>
-              <ActionMenuEditItem
-                onClick={async () => {
-                  const result =
-                    await props.services.messageService.editProjectIterationPosition.sendRequest(
-                      {
-                        currency: rd.getOrThrow(iteration).currency,
-                        operatingMode: "edit",
-                        defaultValues: row.original,
-                      },
+          cell: ({ row }) => {
+            if (!isEvent(row.original)) return null;
+            return (
+              <ActionMenu services={props.services}>
+                <ActionMenuDeleteItem
+                  onClick={() => {
+                    void props.services.mutationService.deleteProjectIterationPosition(
+                      row.original.id,
                     );
-                  switch (result.action) {
-                    case "confirm":
-                      await props.services.mutationService.editProjectIterationPosition(
-                        row.original.id,
-                        result.changes,
+                  }}
+                >
+                  Delete position
+                </ActionMenuDeleteItem>
+                <ActionMenuEditItem
+                  onClick={async () => {
+                    const result =
+                      await props.services.messageService.editProjectIterationPosition.sendRequest(
+                        {
+                          currency: rd.getOrThrow(iteration).currency,
+                          operatingMode: "edit",
+                          defaultValues: row.original,
+                        },
                       );
-                      break;
-                  }
-                }}
-              >
-                Edit position
-              </ActionMenuEditItem>
-              <ActionMenuDuplicateItem
-                onClick={async () => {
-                  const result =
-                    await props.services.messageService.editProjectIterationPosition.sendRequest(
-                      {
-                        currency: rd.getOrThrow(iteration).currency,
-                        operatingMode: "duplicate",
-                        defaultValues: row.original,
-                      },
-                    );
-                  switch (result.action) {
-                    case "confirm":
-                      await props.services.mutationService.createProjectIterationPosition(
-                        result.payload,
+                    switch (result.action) {
+                      case "confirm":
+                        await props.services.mutationService.editProjectIterationPosition(
+                          row.original.id,
+                          result.changes,
+                        );
+                        break;
+                    }
+                  }}
+                >
+                  Edit position
+                </ActionMenuEditItem>
+                <ActionMenuDuplicateItem
+                  onClick={async () => {
+                    const result =
+                      await props.services.messageService.editProjectIterationPosition.sendRequest(
+                        {
+                          currency: rd.getOrThrow(iteration).currency,
+                          operatingMode: "duplicate",
+                          defaultValues: row.original,
+                        },
                       );
-                      break;
-                  }
-                }}
-              >
-                Duplicate position
-              </ActionMenuDuplicateItem>
-              <ActionMenuCopyItem copyText={row.original.id.toString()}>
-                Copy position ID
-              </ActionMenuCopyItem>
-            </ActionMenu>
-          ),
+                    switch (result.action) {
+                      case "confirm":
+                        await props.services.mutationService.createProjectIterationPosition(
+                          result.payload,
+                        );
+                        break;
+                    }
+                  }}
+                >
+                  Duplicate position
+                </ActionMenuDuplicateItem>
+                <ActionMenuCopyItem copyText={row.original.id.toString()}>
+                  Copy position ID
+                </ActionMenuCopyItem>
+              </ActionMenu>
+            );
+          },
         }),
       ]}
       caption={rd.tryMap(iteration, (iteration) => {
@@ -250,19 +403,4 @@ export function PositionList(
       })}
     />
   );
-}
-
-function formatAccountSpec(account: AccountSpec): string {
-  switch (account.type) {
-    case "client":
-      return "Client";
-    case "contractor":
-      return `Contractor (${account.contractorId})`;
-    case "iteration":
-      return "Iteration";
-    case "cost":
-      return "Cost";
-    default:
-      return "Unknown";
-  }
 }
