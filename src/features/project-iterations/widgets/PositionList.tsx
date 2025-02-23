@@ -1,6 +1,8 @@
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
 import {
+  AccountSpec,
   ProjectIteration,
+  ProjectIterationEvent,
   ProjectIterationPosition,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
@@ -55,8 +57,24 @@ export function PositionList(
             break;
         }
       }}
-      data={rd.map(iteration, (i) => i.positions)}
+      data={rd.map(iteration, (i) => i.events)}
       query={{ sort: null, page: paginationUtils.ofDefault() }}
+      renderAdditionalData={(event) => (
+        <div className="p-4 bg-gray-100">
+          <h4 className="text-sm font-bold text-gray-700 mb-2">Moves</h4>
+          {event.moves && event.moves.length > 0 ? (
+            <ul className="list-disc ml-5 mt-1">
+              {event.moves.map((move, index) => (
+                <li key={index} className="text-xs text-gray-500">
+                  {`From: ${formatAccountSpec(move.from)}, To: ${formatAccountSpec(move.to)}, Amount: ${move.amount}, Unit Price: ${move.unitPrice}`}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-600">No moves available.</p>
+          )}
+        </div>
+      )}
       onQueryChange={() => {}}
       columns={[
         c.accessor("order", { header: "#" }),
@@ -232,4 +250,19 @@ export function PositionList(
       })}
     />
   );
+}
+
+function formatAccountSpec(account: AccountSpec): string {
+  switch (account.type) {
+    case "client":
+      return "Client";
+    case "contractor":
+      return `Contractor (${account.contractorId})`;
+    case "iteration":
+      return "Iteration";
+    case "cost":
+      return "Cost";
+    default:
+      return "Unknown";
+  }
 }

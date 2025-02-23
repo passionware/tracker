@@ -16,7 +16,7 @@ import {
 } from "@/features/_common/filters/SorterWidget.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
-import { rd, RemoteData } from "@passionware/monads";
+import { maybe, rd, RemoteData } from "@passionware/monads";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -45,6 +45,7 @@ export interface ListViewProps<TData, Query extends SortableQueryBase> {
   className?: string;
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
+  renderAdditionalData?: (row: TData) => React.ReactNode;
 }
 
 export function ListView<TData, Query extends SortableQueryBase>({
@@ -57,6 +58,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
   className,
   query,
   onQueryChange,
+  renderAdditionalData,
 }: ListViewProps<TData, Query>) {
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -209,52 +211,66 @@ export function ListView<TData, Query extends SortableQueryBase>({
               {/* Sprawdź, czy mamy wiersze w modelu */}
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    onClick={(e) => {
-                      if (e.target instanceof Element) {
-                        if (e.target.closest("a, button")) {
-                          return;
+                  <>
+                    <TableRow
+                      key={row.id}
+                      onClick={(e) => {
+                        if (e.target instanceof Element) {
+                          if (e.target.closest("a, button")) {
+                            return;
+                          }
+                          // check if the click was physically inside, not via react portal:
+                          if (!e.currentTarget.contains(e.target)) {
+                            return;
+                          }
                         }
-                        // check if the click was physically inside, not via react portal:
-                        if (!e.currentTarget.contains(e.target)) {
-                          return;
-                        }
-                      }
 
-                      onRowClick?.(row.original);
-                    }}
-                    onDoubleClick={(e) => {
-                      if (e.target instanceof Element) {
-                        if (e.target.closest("a, button")) {
-                          return;
+                        onRowClick?.(row.original);
+                      }}
+                      onDoubleClick={(e) => {
+                        if (e.target instanceof Element) {
+                          if (e.target.closest("a, button")) {
+                            return;
+                          }
+                          // check if the click was physically inside, not via react portal:
+                          if (!e.currentTarget.contains(e.target)) {
+                            return;
+                          }
                         }
-                        // check if the click was physically inside, not via react portal:
-                        if (!e.currentTarget.contains(e.target)) {
-                          return;
-                        }
-                      }
 
-                      onRowDoubleClick?.(row.original);
-                      if (onRowDoubleClick && !e.defaultPrevented) {
-                        window.getSelection?.()?.removeAllRanges();
-                      }
-                    }}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          get(cell.column.columnDef.meta, "cellClassName"),
-                        )}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                        onRowDoubleClick?.(row.original);
+                        if (onRowDoubleClick && !e.defaultPrevented) {
+                          window.getSelection?.()?.removeAllRanges();
+                        }
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            get(cell.column.columnDef.meta, "cellClassName"),
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    {maybe.map(
+                      renderAdditionalData?.(row.original),
+                      (additionalData) => (
+                        <TableRow>
+                          <TableCell
+                            colSpan={table.getVisibleLeafColumns().length}
+                          >
+                            {additionalData}
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </>
                 ))
               ) : (
                 <TableRow>

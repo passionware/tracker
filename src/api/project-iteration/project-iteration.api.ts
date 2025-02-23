@@ -32,7 +32,7 @@ export interface ProjectIteration extends ProjectIterationPayload {
 
 export interface ProjectIterationDetail extends ProjectIteration {
   positions: ProjectIterationPosition[];
-  events?: ProjectIterationEvent[];
+  events: ProjectIterationEvent[];
   // linked reports? somehow we should know that specific work was reported in this iteration, regardless if it was paid or not
 }
 
@@ -99,7 +99,7 @@ export interface ProjectIterationApi {
  * Experimental api - events
  */
 
-type AccountSpec =
+export type AccountSpec =
   | {
       type: "client";
     }
