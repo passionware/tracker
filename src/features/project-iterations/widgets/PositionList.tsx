@@ -37,11 +37,6 @@ export function PositionList(
   const project = props.services.projectService.useProject(
     rd.tryMap(iteration, (i) => i.projectId),
   );
-  const currency = rd.mapOrElse(
-    iteration,
-    (i) => props.services.formatService.financial.currencySymbol(i.currency),
-    "",
-  );
   const isEvent = (x: unknown): x is ProjectIterationPosition =>
     typeof x === "object" && !!x && "order" in x;
 
@@ -156,6 +151,7 @@ export function PositionList(
           header: "Description",
           cell: (cell) => cell.row.original.description,
         }),
+        // @ts-expect-error wrong inference
         c.accessor("x-client", {
           id: "client",
           header: rd.tryMap(project, (p) => (
@@ -172,6 +168,7 @@ export function PositionList(
           },
           meta: numberMeta,
         }),
+        // @ts-expect-error wrong inference
         c.accessor("x-iteration", {
           id: "iteration",
           header: (
@@ -201,7 +198,7 @@ export function PositionList(
         ).map((value) =>
           c.display({
             id: `x-contractor-${value.contractorId}`,
-            header: (ctx) => (
+            header: () => (
               <ContractorWidget
                 layout="avatar"
                 size="sm"
