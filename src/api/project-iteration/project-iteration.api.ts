@@ -32,6 +32,7 @@ export interface ProjectIteration extends ProjectIterationPayload {
 
 export interface ProjectIterationDetail extends ProjectIteration {
   positions: ProjectIterationPosition[];
+  events?: ProjectIterationEvent[];
   // linked reports? somehow we should know that specific work was reported in this iteration, regardless if it was paid or not
 }
 
@@ -92,4 +93,34 @@ export interface ProjectIterationApi {
     query: ProjectIterationQuery,
   ) => Promise<ProjectIteration[]>;
   getProjectIterationDetail: (id: number) => Promise<ProjectIterationDetail>;
+}
+
+/**
+ * Experimental api - events
+ */
+
+type AccountSpec =
+  | {
+      type: "client";
+    }
+  | {
+      type: "contractor";
+      contractorId: number;
+    }
+  | {
+      type: "iteration";
+    }
+  | {
+      type: "cost";
+    };
+
+export interface ProjectIterationEvent {
+  id: string; // v4
+  description: string; // np 'licencja przerzucana na klienta',
+  moves: Array<{
+    from: AccountSpec;
+    to: AccountSpec;
+    amount: number;
+    unitPrice: number;
+  }>;
 }
