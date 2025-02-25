@@ -15,6 +15,7 @@ import { mySupabase } from "@/core/supabase.connected.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
+import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
@@ -69,6 +70,13 @@ const variableService = createVariableService({
   },
   client: myQueryClient,
   api: createVariableApi(mySupabase),
+});
+const projectIterationService = createProjectIterationService({
+  services: {
+    messageService,
+  },
+  api: myProjectIterationApi,
+  client: myQueryClient,
 });
 export const myServices = {
   authService: createAuthService(mySupabase),
@@ -128,12 +136,9 @@ export const myServices = {
       messageService,
     },
   }),
-  projectIterationService: createProjectIterationService({
-    services: {
-      messageService,
-    },
-    api: myProjectIterationApi,
-    client: myQueryClient,
+  projectIterationService,
+  projectIterationDisplayService: createProjectIterationDisplayService({
+    projectIterationService,
   }),
 } satisfies FrontServices;
 

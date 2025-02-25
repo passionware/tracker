@@ -58,6 +58,7 @@ type FormModel = {
   description: string;
   netValue: string;
   workspaceId: number | null;
+  projectIterationId: number | null;
 };
 
 export function ReportForm(props: ReportWidgetFormProps) {
@@ -71,6 +72,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
       currency: props.defaultValues?.currency,
       description: props.defaultValues?.description ?? "",
       netValue: props.defaultValues?.netValue?.toString() ?? "",
+      projectIterationId: props.defaultValues?.projectIterationId,
     },
   });
 
@@ -92,6 +94,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
       ),
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
+      projectIterationId: data.projectIterationId,
     };
     void processingPromise.track(
       props.onSubmit(transformedData, getDirtyFields(transformedData, form)) ??

@@ -30,3 +30,9 @@ export type ComputedEvent = {
   balances: BalanceInfo;
   iterationEvent: ProjectIterationEvent;
 };
+
+
+
+export interface WithProjectIterationDisplayService {
+  projectIterationDisplayService: ProjectIterationDisplayService;
+}
