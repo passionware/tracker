@@ -1,13 +1,6 @@
 // @jest-environment jsdom
 
 import { ProjectIterationDetail } from "@/api/project-iteration/project-iteration.api.ts";
-import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.sb.ts";
-import { rd } from "@passionware/monads";
-import {
-  createStaticScopedAccessor,
-  testQuery,
-} from "@passionware/platform-storybook";
-import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { createProjectIterationDisplayService } from "./ProjectIterationDisplayService.impl";
 
@@ -32,19 +25,12 @@ describe("ProjectIterationDisplayService - useComputedEvents", () => {
       ],
     } satisfies Partial<ProjectIterationDetail>;
 
-    const service = createProjectIterationDisplayService({
-      projectIterationService: createProjectIterationService({
-        listAccessor: createStaticScopedAccessor(testQuery.of(rd.ofIdle())),
-        itemAccessor: createStaticScopedAccessor(
-          testQuery.of(rd.of(iterationDetail as ProjectIterationDetail)),
-        ),
-      }),
-    });
+    const service = createProjectIterationDisplayService();
 
     // Use renderHook to call the hook in a proper React environment
-    const { result } = renderHook(() => service.useComputedEvents(1));
-    const remoteData = result.current;
-    const computedData = rd.getOrThrow(remoteData);
+    const computedData = service.getComputedEvents(
+      iterationDetail as ProjectIterationDetail,
+    );
 
     // Expected balances: client: -50, contractor (id: 1): +50, iteration and cost: 0
     expect(computedData.balances.client.amount).toBe(-50);
@@ -115,18 +101,11 @@ describe("ProjectIterationDisplayService - useComputedEvents", () => {
       ],
     } satisfies Partial<ProjectIterationDetail>;
 
-    const service = createProjectIterationDisplayService({
-      projectIterationService: createProjectIterationService({
-        listAccessor: createStaticScopedAccessor(testQuery.of(rd.ofIdle())),
-        itemAccessor: createStaticScopedAccessor(
-          testQuery.of(rd.of(iterationDetail as ProjectIterationDetail)),
-        ),
-      }),
-    });
+    const service = createProjectIterationDisplayService();
 
-    const { result } = renderHook(() => service.useComputedEvents(1));
-    const remoteData = result.current;
-    const computedData = rd.getOrThrow(remoteData);
+    const computedData = service.getComputedEvents(
+      iterationDetail as ProjectIterationDetail,
+    );
 
     // Validate overall balances
     expect(computedData.balances.client.amount).toBe(-110);
@@ -150,42 +129,17 @@ describe("ProjectIterationDisplayService - useComputedEvents", () => {
     expect(new Set(computedData.contractorIds)).toEqual(new Set([1, 2]));
   });
 
-  it("should propagate error when useProjectIterationDetail returns an error", () => {
-    const error = new Error("Test error");
-
-    const service = createProjectIterationDisplayService({
-      projectIterationService: createProjectIterationService({
-        listAccessor: createStaticScopedAccessor(testQuery.of(rd.ofIdle())),
-        itemAccessor: createStaticScopedAccessor(
-          testQuery.of(rd.ofError(error)),
-        ),
-      }),
-    });
-
-    const { result } = renderHook(() => service.useComputedEvents(1));
-    const remoteData = result.current;
-    expect(rd.isError(remoteData)).toBe(true);
-    expect(rd.tryGetError(remoteData)).toEqual(error);
-  });
-
   it("should return empty events and initial balances when there are no events", () => {
     // Scenario: iterationDetail with no events
     const iterationDetail = {
       events: [],
     } satisfies Partial<ProjectIterationDetail>;
 
-    const service = createProjectIterationDisplayService({
-      projectIterationService: createProjectIterationService({
-        listAccessor: createStaticScopedAccessor(testQuery.of(rd.ofIdle())),
-        itemAccessor: createStaticScopedAccessor(
-          testQuery.of(rd.of(iterationDetail as unknown as ProjectIterationDetail)),
-        ),
-      }),
-    });
+    const service = createProjectIterationDisplayService();
 
-    const { result } = renderHook(() => service.useComputedEvents(1));
-    const remoteData = result.current;
-    const computedData = rd.getOrThrow(remoteData);
+    const computedData = service.getComputedEvents(
+      iterationDetail as unknown as ProjectIterationDetail,
+    );
 
     // Expect that the events array is empty and the initial balances remain at zero
     expect(computedData.events).toHaveLength(0);

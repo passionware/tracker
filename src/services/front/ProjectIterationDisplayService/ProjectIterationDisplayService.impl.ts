@@ -9,14 +9,10 @@ import {
   ComputedEventData,
   ProjectIterationDisplayService,
 } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
-import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
-import { rd } from "@passionware/monads";
 import { get, has, set, uniq } from "lodash";
 
-export function createProjectIterationDisplayService(
-  config: WithProjectIterationService,
-): ProjectIterationDisplayService {
-  function createAccountBuffer() {
+export function createProjectIterationDisplayService(): ProjectIterationDisplayService {
+  function createAccountBuffer(initial?: BalanceInfo) {
     const key = (account: AccountSpec) => {
       switch (account.type) {
         case "client":
@@ -30,10 +26,10 @@ export function createProjectIterationDisplayService(
       }
     };
     const buffer: BalanceInfo = {
-      iteration: { amount: 0 },
-      cost: { amount: 0 },
-      client: { amount: 0 },
-      contractors: {},
+      iteration: initial?.iteration || { amount: 0 },
+      cost: initial?.cost || { amount: 0 },
+      client: initial?.client || { amount: 0 },
+      contractors: initial?.contractors || {},
     };
 
     return {
@@ -58,7 +54,10 @@ export function createProjectIterationDisplayService(
     };
   }
 
-  function mapDetail(detail: ProjectIterationDetail): ComputedEventData {
+  function mapDetail(
+    detail: ProjectIterationDetail,
+    initialBalance?: BalanceInfo,
+  ): ComputedEventData {
     /*
      * Create buffers for:
      * 1. iteration
@@ -76,7 +75,7 @@ export function createProjectIterationDisplayService(
       ),
     );
 
-    const totalBalances = createAccountBuffer();
+    const totalBalances = createAccountBuffer(initialBalance);
 
     const events = detail.events.map((event) => {
       const eventBalances = createAccountBuffer();
@@ -100,10 +99,33 @@ export function createProjectIterationDisplayService(
   }
 
   return {
-    useComputedEvents: (iterationId) => {
-      const iterationDetail =
-        config.projectIterationService.useProjectIterationDetail(iterationId);
-      return rd.map(iterationDetail, mapDetail);
+    getComputedEvents: mapDetail,
+    updateDetail: (detail, action) => {
+      switch (action.type) {
+        case "removeEvent":
+          return {
+            ...detail,
+            events: detail.events.filter(
+              (event) => event.id !== action.eventId,
+            ),
+          };
+        case "removeMove": {
+          const event = detail.events.find(
+            (event) => event.id === action.eventId,
+          );
+          if (!event) {
+            return detail;
+          }
+          const moves = event.moves.filter((_, i) => i !== action.moveIndex);
+          return {
+            ...detail,
+            events: detail.events.map((e) =>
+              e.id === action.eventId ? { ...e, moves } : e,
+            ),
+          };
+        }
+      }
+      return detail;
     },
   };
 }

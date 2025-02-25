@@ -1,15 +1,31 @@
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import {
-  ProjectIteration,
+  ProjectIterationDetail,
   ProjectIterationEvent,
 } from "@/api/project-iteration/project-iteration.api.ts";
-import { RemoteData } from "@passionware/monads";
 
 export interface ProjectIterationDisplayService {
-  useComputedEvents: (
-    iterationId: ProjectIteration["id"],
-  ) => RemoteData<ComputedEventData>;
+  getComputedEvents: (
+    iteration: ProjectIterationDetail,
+    initialBalance?: BalanceInfo,
+  ) => ComputedEventData;
+  updateDetail: (
+    detail: ProjectIterationDetail,
+    action: UpdateAction,
+  ) => ProjectIterationDetail;
 }
+
+export type UpdateAction =
+  | {
+      type: "removeEvent";
+      eventId: ProjectIterationEvent["id"];
+    }
+  | {
+      type: "removeMove";
+      eventId: ProjectIterationEvent["id"];
+      moveIndex: number;
+    };
+
 export type BalanceData = {
   amount: number;
 };
@@ -30,8 +46,6 @@ export type ComputedEvent = {
   balances: BalanceInfo;
   iterationEvent: ProjectIterationEvent;
 };
-
-
 
 export interface WithProjectIterationDisplayService {
   projectIterationDisplayService: ProjectIterationDisplayService;

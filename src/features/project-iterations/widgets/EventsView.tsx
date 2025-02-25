@@ -8,17 +8,21 @@ import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceVi
 import { ExpandButton } from "@/features/project-iterations/widgets/_private/ExpandButton.tsx";
 import { HorizontalArrow } from "@/features/project-iterations/widgets/_private/HorizontalArrow.tsx";
 import { cn } from "@/lib/utils.ts";
-import { ComputedEventData } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
+import {
+  ComputedEventData,
+  UpdateAction,
+} from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { Trash } from "lucide-react";
 import { Fragment, useState } from "react";
 
-export function EventsView(
-  props: {
-    data: ComputedEventData;
-    clientId: Project["clientId"];
-    workspaceId: Project["workspaceId"];
-  } & WithFrontServices,
-) {
+export interface EventsViewProps extends WithFrontServices {
+  data: ComputedEventData;
+  clientId: Project["clientId"];
+  workspaceId: Project["workspaceId"];
+  onAction: (action: UpdateAction) => void;
+}
+
+export function EventsView(props: EventsViewProps) {
   const { data, clientId, workspaceId } = props;
   let rowOffset = 1;
 
@@ -126,7 +130,7 @@ export function EventsView(
         return (
           <>
             <div
-              className="-mr-20 text-xs text-slate-700 self-center justify-self-end flex flex-row gap-1 items-center"
+              className="-mr-20 text-xs text-slate-700 self-center justify-self-end flex flex-row gap-0.5 items-center"
               style={{
                 gridColumn: 1,
                 gridRow: rowOffset,
@@ -143,6 +147,18 @@ export function EventsView(
               >
                 {event.iterationEvent.description}
               </ExpandButton>
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                onClick={() =>
+                  props.onAction({
+                    type: "removeEvent",
+                    eventId: event.iterationEvent.id,
+                  })
+                }
+              >
+                <Trash className="size-2" />
+              </Button>
             </div>
             {[
               event.balances.client,
@@ -213,6 +229,19 @@ export function EventsView(
                             move.amount * move.unitPrice,
                           )}
                         </span>
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() =>
+                            props.onAction({
+                              type: "removeMove",
+                              eventId: event.iterationEvent.id,
+                              moveIndex,
+                            })
+                          }
+                        >
+                          <Trash className="size-2" />
+                        </Button>
                       </div>
                     </div>
                     {/* Starting cell - show the amount */}

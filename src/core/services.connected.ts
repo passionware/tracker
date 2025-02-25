@@ -137,9 +137,7 @@ export const myServices = {
     },
   }),
   projectIterationService,
-  projectIterationDisplayService: createProjectIterationDisplayService({
-    projectIterationService,
-  }),
+  projectIterationDisplayService: createProjectIterationDisplayService(),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {
