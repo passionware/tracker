@@ -13,7 +13,7 @@ export const reportBase$ = z.object({
   currency: z.string(),
   client_id: z.number(),
   workspace_id: z.number(),
-  project_iteration_id: z.number(),
+  project_iteration_id: z.number().nullable(),
 });
 export type ReportBase$ = z.input<typeof reportBase$>;
 

@@ -7,7 +7,9 @@ export function ExpandButton({
   ...props
 }: ButtonProps & { isExpanded: boolean }) {
   return (
-    <Button variant="ghost" size="xs" {...props}>
+    <Button variant={
+        isExpanded ? "secondary" : "ghost"
+    } size="xs" {...props}>
       {props.children}
       <ChevronRight
         className={cn(

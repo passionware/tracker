@@ -156,7 +156,7 @@ export function EventsView(
         return (
           <>
             <div
-              className="text-xs text-slate-700 self-center justify-self-end flex flex-row gap-1 items-center"
+              className="-mr-20 text-xs text-slate-700 self-center justify-self-end flex flex-row gap-1 items-center"
               style={{
                 gridColumn: 1,
                 gridRow: rowOffset,
@@ -211,6 +211,40 @@ export function EventsView(
 
                 return (
                   <Fragment key={moveIndex}>
+                    <div
+                      className="-mr-16 m-1 z-2 text-[8pt] flex flex-row items-center justify-end gap-1"
+                      style={{
+                        gridColumn: 1,
+                        gridRow: rowOffset,
+                      }}
+                    >
+                      <div className="flex flex-row gap-0.5 ml-8">
+                        <span>
+                          {props.services.formatService.financial.amountWithoutCurrency(
+                            move.amount,
+                          )}
+                        </span>
+                        <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+                          {move.unit}
+                        </span>
+                        <span>&times;</span>
+                        <span>
+                          {props.services.formatService.financial.amountWithoutCurrency(
+                            move.unitPrice,
+                          )}
+                        </span>
+                        <span>/</span>
+                        <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+                          {move.unit}
+                        </span>
+                        <span>=</span>
+                        <span className="font-extrabold">
+                          {props.services.formatService.financial.amountWithoutCurrency(
+                            move.amount * move.unitPrice,
+                          )}
+                        </span>
+                      </div>
+                    </div>
                     {/* Starting cell - show the amount */}
                     <div
                       className="m-1 z-2 text-xs font-semibold text-sky-700 bg-sky-50 inline-block rounded p-1 text-center"
