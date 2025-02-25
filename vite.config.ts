@@ -13,4 +13,12 @@ export default defineConfig({
   server: {
     port: 3002,
   },
+  // @ts-expect-error vite does not expose this type
+  test: {
+    server: {
+      deps: {
+        inline: [/@passionware\/.*/],
+      },
+    },
+  },
 });
