@@ -74,6 +74,17 @@ export function IterationTabs(
           </Badge>
         </TabsTrigger>
         <TabsTrigger
+          value="events"
+          onClick={() =>
+            props.services.navigationService.navigate(forIteration.events())
+          }
+        >
+          Events
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(iteration, (iteration) => iteration.positions.length)}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger
           value="reports"
           onClick={() =>
             props.services.navigationService.navigate(forIteration.reports())

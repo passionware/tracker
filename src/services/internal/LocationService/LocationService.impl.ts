@@ -165,8 +165,13 @@ export function createLocationService(
       const billingsMatch = config.services.navigationService.useMatch(
         forIteration.billings() + "/*",
       );
+      const eventsMatch = config.services.navigationService.useMatch(
+        forIteration.events() + "/*",
+      );
 
       switch (true) {
+        case !!eventsMatch:
+          return "events";
         case !!reportsMatch:
           return "reports";
         case !!billingsMatch:

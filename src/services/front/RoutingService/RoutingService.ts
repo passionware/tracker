@@ -96,6 +96,7 @@ export interface RoutingService {
         ) => string;
         forIteration: (iterationId?: string | ":iterationId") => {
           root: () => string;
+          events: () => string;
           reports: () => string;
           billings: () => string;
         };
