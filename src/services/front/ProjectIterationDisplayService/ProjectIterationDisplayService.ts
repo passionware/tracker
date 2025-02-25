@@ -1,5 +1,6 @@
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import {
+  AccountSpec,
   ProjectIterationDetail,
   ProjectIterationEvent,
 } from "@/api/project-iteration/project-iteration.api.ts";
@@ -24,6 +25,17 @@ export type UpdateAction =
       type: "removeMove";
       eventId: ProjectIterationEvent["id"];
       moveIndex: number;
+    }
+  | {
+      type: "addMove";
+      eventId: ProjectIterationEvent["id"];
+      move: {
+        from: AccountSpec;
+        to: AccountSpec;
+        amount: number;
+        unitPrice: number;
+        unit: string;
+      };
     };
 
 export type BalanceData = {

@@ -124,6 +124,21 @@ export function createProjectIterationDisplayService(): ProjectIterationDisplayS
             ),
           };
         }
+        case "addMove": {
+          const event = detail.events.find(
+            (event) => event.id === action.eventId,
+          );
+          if (!event) {
+            return detail;
+          }
+          const moves = event.moves.concat(action.move);
+          return {
+            ...detail,
+            events: detail.events.map((e) =>
+              e.id === action.eventId ? { ...e, moves } : e,
+            ),
+          };
+        }
       }
       return detail;
     },

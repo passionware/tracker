@@ -12,7 +12,7 @@ import {
   ComputedEventData,
   UpdateAction,
 } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
-import { Trash } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
 import { Fragment, useState } from "react";
 
 export interface EventsViewProps extends WithFrontServices {
@@ -45,9 +45,9 @@ export function EventsView(props: EventsViewProps) {
 
   return (
     <div
-      className="grid gap-y-3 gap-x-32 pr-16"
+      className="grid gap-3 gap-x-12 justify-stretch"
       style={{
-        gridTemplateColumns: `auto repeat(${3 + data.contractorIds.length}, min-content)`,
+        gridTemplateColumns: `40% repeat(${3 + data.contractorIds.length}, min-content)`,
       }}
     >
       {/*expand/collapse all button*/}
@@ -118,7 +118,12 @@ export function EventsView(props: EventsViewProps) {
           </div>
         );
       })}
-      <div className="text-xs self-center flex flex-row items-center gap-1 row-start-1 -col-start-2 bg-slate-50 p-1 border border-slate-200 rounded z-1">
+      <div
+        className="text-xs self-center flex flex-row items-center gap-1 row-start-1 bg-slate-50 p-1 border border-slate-200 rounded z-1"
+        style={{
+          gridColumn: 4 + data.contractorIds.length,
+        }}
+      >
         <Trash className="size-3" />
         Cost
       </div>
@@ -130,7 +135,7 @@ export function EventsView(props: EventsViewProps) {
         return (
           <>
             <div
-              className="-mr-20 text-xs text-slate-700 self-center justify-self-end flex flex-row gap-0.5 items-center"
+              className="text-xs text-slate-700 self-center justify-self-end flex flex-row gap-0.5 items-center"
               style={{
                 gridColumn: 1,
                 gridRow: rowOffset,
@@ -198,13 +203,13 @@ export function EventsView(props: EventsViewProps) {
                 return (
                   <Fragment key={moveIndex}>
                     <div
-                      className="-mr-16 m-1 z-2 text-[8pt] flex flex-row items-center justify-end gap-1"
+                      className="m-1 z-2 text-[8pt] flex flex-row items-center justify-end gap-1"
                       style={{
                         gridColumn: 1,
                         gridRow: rowOffset,
                       }}
                     >
-                      <div className="flex flex-row gap-0.5 ml-8">
+                      <div className="flex flex-row items-center gap-0.5 ml-8">
                         <span>
                           {props.services.formatService.financial.amountWithoutCurrency(
                             move.amount,
@@ -246,7 +251,7 @@ export function EventsView(props: EventsViewProps) {
                     </div>
                     {/* Starting cell - show the amount */}
                     <div
-                      className="m-1 z-2 text-xs font-semibold text-sky-700 bg-sky-50 inline-block rounded p-1 text-center"
+                      className="m-1 z-2 text-xs font-semibold text-sky-700 bg-sky-50 inline-block rounded p-1 text-center place-self-center"
                       style={{
                         gridColumn: fromIndex,
                         gridRow: rowOffset,
@@ -289,6 +294,39 @@ export function EventsView(props: EventsViewProps) {
                 className="relative z-0 rounded-lg border border-slate-200 shadow-xs"
               ></div>
             )}
+            {/*
+        row to add new item
+        */}
+            <div
+              hidden
+              className="flex items-end justify-end"
+              style={{
+                gridColumnStart: 4 + data.contractorIds.length,
+                gridRowStart: rowOffset,
+              }}
+            >
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                onClick={() =>
+                  props.onAction({
+                    type: "addMove",
+                    eventId: event.iterationEvent.id,
+                    move: {
+                      from: { type: "client" },
+                      to: {
+                        type: "iteration",
+                      },
+                      amount: 10,
+                      unitPrice: 100,
+                      unit: "h",
+                    },
+                  })
+                }
+              >
+                <Plus className="size-2" />
+              </Button>
+            </div>
           </>
         );
       })}
