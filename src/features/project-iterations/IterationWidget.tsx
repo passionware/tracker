@@ -7,6 +7,7 @@ import { ProjectIterationBreadcrumb } from "@/features/_common/elements/breadcru
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
+import {EventsWidget} from "@/features/project-iterations/widgets/EventsWidget.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
 import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
 import { PositionList } from "@/features/project-iterations/widgets/PositionList.tsx";
@@ -47,10 +48,14 @@ export function IterationWidget(
         <Details {...props} />
         <IterationTabs {...props} />
         <Routes>
-          <Route
-            path={makeRelativePath(basePath, forIteration.root())}
-            element={<PositionList {...props} />}
-          />
+            <Route
+                path={makeRelativePath(basePath, forIteration.root())}
+                element={<PositionList {...props} />}
+            />
+            <Route
+                path={makeRelativePath(basePath, forIteration.events())}
+                element={<EventsWidget {...props} />}
+            />
           <Route
             path={makeRelativePath(basePath, forIteration.reports())}
             element={<LinkedReportList {...props} />}

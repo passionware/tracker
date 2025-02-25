@@ -9,7 +9,7 @@ import {
 import { rd } from "@passionware/monads";
 
 export interface EventsWidgetProps extends WithFrontServices {
-  iterationId: number;
+  projectIterationId: number;
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
 }
@@ -17,7 +17,7 @@ export interface EventsWidgetProps extends WithFrontServices {
 export function EventsWidget(props: EventsWidgetProps) {
   const events =
     props.services.projectIterationDisplayService.useComputedEvents(
-      props.iterationId,
+      props.projectIterationId,
     );
 
   return rd
