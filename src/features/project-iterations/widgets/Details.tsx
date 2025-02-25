@@ -39,7 +39,7 @@ export function Details(
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-row">
-          <div>Details</div>
+          <div>Project iteration</div>
           <ActionMenu services={props.services} className="ml-auto">
             {rd.tryMap(iteration, (iteration) => (
               <>
