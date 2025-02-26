@@ -204,7 +204,7 @@ export function RootWidget(props: WithFrontServices) {
                     <ProjectListWidget
                       filter={{
                         operator: "oneOf",
-                        value: ["active"],
+                        value: ["active", "draft"],
                       }}
                       clientId={clientId}
                       workspaceId={workspaceId}

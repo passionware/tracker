@@ -1,6 +1,6 @@
 import { Billing, BillingQuery } from "@/api/billing/billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { ContractorBase } from "@/api/contractor/contractor.api.ts";
 import { Cost, CostQuery } from "@/api/cost/cost.api.ts";
 import { Report, ReportQuery } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -52,7 +52,7 @@ export interface ReportViewEntry {
   // how much to compensate against reported work value
   remainingFullCompensationAmount: CurrencyValue;
 
-  contractor: Contractor;
+  contractor: ContractorBase;
   workspace: Workspace;
   client: Client;
   previousReportInfo: Nullable<{
@@ -75,7 +75,7 @@ export interface BillingViewEntry {
   id: number;
   netAmount: CurrencyValue;
   grossAmount: CurrencyValue;
-  contractors: Contractor[];
+  contractors: ContractorBase[];
   invoiceNumber: string;
   client: Client;
   invoiceDate: Date;
@@ -107,7 +107,7 @@ export type CostEntry = {
   invoiceDate: Date;
   netAmount: CurrencyValue;
   grossAmount: Maybe<CurrencyValue>;
-  contractor: Contractor | null;
+  contractor: ContractorBase | null;
   // foreign references
   linkReports: Cost["linkReports"];
   workspace: Workspace;

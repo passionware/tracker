@@ -49,7 +49,7 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
     },
     getContractor: async (id) => {
       const { data, error } = await client
-        .from("contractor")
+        .from("contractor_with_projects")
         .select("*")
         .eq("id", id);
       if (error) {

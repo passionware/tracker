@@ -190,5 +190,11 @@ export function createMutationService(
         scope: "Adding contractor to project",
       });
     },
+    unassignContractorFromProject: async (projectId, contractorId) => {
+      await api.unassignContractorFromProject(projectId, contractorId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Unassigning contractor from project",
+      });
+    },
   };
 }

@@ -13,7 +13,7 @@ import {
   WithSorter,
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { Contractor, ContractorBase } from "@/api/contractor/contractor.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
 import { ReportBase } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -44,7 +44,7 @@ export interface CostBase extends CostPayload {
 }
 
 export interface Cost extends CostBase {
-  contractor: Nullable<Contractor>;
+  contractor: Nullable<ContractorBase>;
   linkReports: { link: LinkCostReport; report: ReportBase }[];
 }
 

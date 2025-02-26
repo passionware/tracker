@@ -447,5 +447,15 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    unassignContractorFromProject: async (projectId, contractorId) => {
+      const response = await client
+        .from("link_contractor_project")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("contractor_id", contractorId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

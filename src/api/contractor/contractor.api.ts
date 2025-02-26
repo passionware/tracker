@@ -13,11 +13,13 @@ import {
 import { Project } from "@/api/project/project.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 
-export interface Contractor {
+export interface ContractorBase {
   id: number;
   name: string;
   fullName: string;
   createdAt: Date;
+}
+export interface Contractor extends ContractorBase {
   projectIds: Project["id"][];
 }
 

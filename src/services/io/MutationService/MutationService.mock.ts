@@ -117,5 +117,9 @@ export function createMutationService(
       onActionAccessor.get()("Adding contractor to project");
       await wait();
     },
+    unassignContractorFromProject: async () => {
+      onActionAccessor.get()("Unassigning contractor from project");
+      await wait();
+    },
   };
 }

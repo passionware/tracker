@@ -1,4 +1,4 @@
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { ContractorBase } from "@/api/contractor/contractor.api.ts";
 import {
   AbstractEntityView,
   AbstractEntityViewProps,
@@ -11,7 +11,7 @@ import { Maybe, rd, RemoteData } from "@passionware/monads";
 export type ContractorViewProps = SwitchProps<
   AbstractEntityViewProps,
   "entity",
-  { contractor: RemoteData<Contractor> }
+  { contractor: RemoteData<ContractorBase> }
 >;
 
 export function ContractorView({ contractor, ...props }: ContractorViewProps) {

@@ -5,8 +5,8 @@ import {
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import { client$ } from "@/api/clients/clients.api.http.schema.ts";
 import {
-  contractor$,
-  contractorFromHttp,
+  contractorBase$,
+  contractorBaseFromHttp,
 } from "@/api/contractor/contractor.api.http.schema.ts";
 import {
   costBase$,
@@ -41,7 +41,7 @@ export const report$ = reportBase$.extend({
       cost: costBase$.nullable(),
     }),
   ),
-  contractor: contractor$,
+  contractor: contractorBase$,
   client: client$,
   total_billing_billing_value: z.number(),
   total_cost_cost_value: z.number(),
@@ -65,7 +65,7 @@ export function reportFromHttp(report: Report$): Report {
       link: linkCostReportFromHttp(value.link),
       cost: maybe.mapOrNull(value.cost, costBaseFromHttp),
     })),
-    contractor: contractorFromHttp(report.contractor),
+    contractor: contractorBaseFromHttp(report.contractor),
     client: clientFromHttp(report.client),
     reportBillingValue: report.total_billing_billing_value,
     reportCostValue: report.total_cost_cost_value,

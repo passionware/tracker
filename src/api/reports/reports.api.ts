@@ -12,7 +12,7 @@ import {
 } from "@/api/_common/query/queryUtils.ts";
 import { BillingBase } from "@/api/billing/billing.api.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import { Contractor, ContractorBase } from "@/api/contractor/contractor.api.ts";
 import { CostBase } from "@/api/cost/cost.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { LinkCostReport } from "@/api/link-cost-report/link-cost-report.ts";
@@ -48,7 +48,7 @@ export interface ReportBase extends ReportPayload {
 }
 
 export type Report = ReportBase & {
-  contractor: Contractor;
+  contractor: ContractorBase;
   client: Client;
   linkBillingReport: {
     link: LinkBillingReport;

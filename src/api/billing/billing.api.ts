@@ -11,7 +11,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import { Contractor } from "@/api/contractor/contractor.api.ts";
+import {Contractor, ContractorBase} from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { ReportBase } from "@/api/reports/reports.api.ts";
@@ -57,7 +57,7 @@ export interface Billing extends BillingBase {
     link: LinkBillingReport;
     report: Nullable<ReportBase>;
   }[];
-  contractors: Contractor[];
+  contractors: ContractorBase[];
 }
 
 export type BillingQuery = WithFilters<{
