@@ -1,12 +1,18 @@
 import { AccountSpec } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { PopoverHeader } from "@/components/ui/popover.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ActionMenu,
+  ActionMenuDeleteItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
@@ -105,7 +111,6 @@ export function EventsView(props: EventsViewProps) {
                 services={props.services}
                 onCancel={bag.close}
                 mode="create"
-                currency="EUR" // todo read from project
                 onSubmit={async (data) => {
                   props.onAction({
                     type: "addEvent",
@@ -172,7 +177,7 @@ export function EventsView(props: EventsViewProps) {
         return (
           <>
             <div
-              className="text-xs text-slate-700 self-center justify-self-end flex flex-row gap-0.5 items-center"
+              className="group text-xs text-slate-700 self-center justify-self-end flex flex-row gap-0.5 items-center"
               style={{
                 gridColumn: 1,
                 gridRow: rowOffset,
@@ -189,18 +194,50 @@ export function EventsView(props: EventsViewProps) {
               >
                 {event.iterationEvent.description}
               </ExpandButton>
-              <Button
+              <ActionMenu
+                services={props.services}
                 size="icon-xs"
-                variant="ghost"
-                onClick={() =>
-                  props.onAction({
-                    type: "removeEvent",
-                    eventId: event.iterationEvent.id,
-                  })
-                }
+                className="ml-1 opacity-0 group-hocus:opacity-100"
               >
-                <Trash className="size-2" />
-              </Button>
+                <ActionMenuDeleteItem
+                  onClick={() =>
+                    props.onAction({
+                      type: "removeEvent",
+                      eventId: event.iterationEvent.id,
+                    })
+                  }
+                >
+                  Delete event
+                </ActionMenuDeleteItem>
+                <InlinePopoverForm
+                  trigger={
+                    <ActionMenuEditItem onSelect={(e) => e.preventDefault()}>
+                      Edit event
+                    </ActionMenuEditItem>
+                  }
+                  content={(bag) => (
+                    <>
+                      <PopoverHeader>Edit event</PopoverHeader>
+                      <EventForm
+                        services={props.services}
+                        onCancel={bag.close}
+                        mode="edit"
+                        defaultValues={{
+                          description: event.iterationEvent.description,
+                        }}
+                        onSubmit={async (data) => {
+                          props.onAction({
+                            type: "updateEvent",
+                            eventId: event.iterationEvent.id,
+                            description: data.description,
+                          });
+                          bag.close();
+                        }}
+                      />
+                    </>
+                  )}
+                ></InlinePopoverForm>
+              </ActionMenu>
             </div>
             {[
               event.balances.client,
@@ -240,7 +277,7 @@ export function EventsView(props: EventsViewProps) {
                 return (
                   <Fragment key={moveIndex}>
                     <div
-                      className="m-1 z-2 text-[8pt] flex flex-row items-center justify-end gap-1"
+                      className="group m-1 z-2 text-[8pt] flex flex-row items-center justify-end gap-1"
                       style={{
                         gridColumn: 1,
                         gridRow: rowOffset,
@@ -271,19 +308,23 @@ export function EventsView(props: EventsViewProps) {
                             move.amount * move.unitPrice,
                           )}
                         </span>
-                        <Button
+                        <ActionMenu
+                          services={props.services}
                           size="icon-xs"
-                          variant="ghost"
-                          onClick={() =>
-                            props.onAction({
-                              type: "removeMove",
-                              eventId: event.iterationEvent.id,
-                              moveIndex,
-                            })
-                          }
+                          className="ml-1 opacity-0 group-hocus:opacity-100"
                         >
-                          <Trash className="size-2" />
-                        </Button>
+                          <ActionMenuDeleteItem
+                            onClick={() =>
+                              props.onAction({
+                                type: "removeMove",
+                                eventId: event.iterationEvent.id,
+                                moveIndex,
+                              })
+                            }
+                          >
+                            Delete move
+                          </ActionMenuDeleteItem>
+                        </ActionMenu>
                       </div>
                     </div>
                     {/* Starting cell - show the amount */}

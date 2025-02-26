@@ -28,7 +28,6 @@ export interface EventFormProps extends WithFrontServices {
   ) => Promise<void>;
   onCancel: () => void;
   mode: "create" | "edit" | "duplicate";
-  currency: string;
 }
 
 export function EventForm(props: EventFormProps) {

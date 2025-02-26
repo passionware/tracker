@@ -152,6 +152,16 @@ export function createProjectIterationDisplayService(): ProjectIterationDisplayS
             events: detail.events.concat(newEvent),
           };
         }
+        case "updateEvent": {
+          return {
+            ...detail,
+            events: detail.events.map((event) =>
+              event.id === action.eventId
+                ? { ...event, description: action.description }
+                : event,
+            ),
+          };
+        }
       }
       return detail;
     },

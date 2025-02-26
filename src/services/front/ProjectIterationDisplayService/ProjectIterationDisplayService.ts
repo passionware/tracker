@@ -40,6 +40,11 @@ export type UpdateAction =
   | {
       type: "addEvent";
       description: string;
+    }
+  | {
+      type: "updateEvent";
+      eventId: ProjectIterationEvent["id"];
+      description: string;
     };
 
 export type BalanceData = {
