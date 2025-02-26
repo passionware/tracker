@@ -39,6 +39,7 @@ export function createLocationService(
           routingService
             .forWorkspace(newWorkspaceId)
             .forClient(newClientId)
+            // eslint-disable-next-line no-unexpected-multiline
             [route](),
         );
         return;
@@ -112,6 +113,18 @@ export function createLocationService(
           .root() + "/*",
       );
       return maybe.map(match?.params.projectId, parseInt);
+    },
+    useCurrentProjectTab: () => {
+      const forProject = config.services.routingService
+        .forWorkspace()
+        .forClient()
+        .forProject();
+      const matchWon = config.services.navigationService.useMatchMany({
+        iterations: forProject.iterations() + "/*",
+        details: forProject.details() + "/*",
+        contractors: forProject.contractors() + "/*",
+      });
+      return matchWon?.key;
     },
     useCurrentProjectIterationStatus: () => {
       const match = config.services.navigationService.useMatch(

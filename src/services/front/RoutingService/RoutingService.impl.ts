@@ -47,6 +47,8 @@ export function createRoutingService(): RoutingService {
                 root: () => base,
                 iterations: (status = ":projectIterationStatus") =>
                   `${base}/iterations/${status}`,
+                details: () => `${base}/details`,
+                contractors: () => `${base}/contractors`,
                 forIteration: (iterationId = ":iterationId") => {
                   const base2 = `${base}/iteration/${iterationId}`;
                   return {

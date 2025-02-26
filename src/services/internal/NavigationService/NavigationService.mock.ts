@@ -7,6 +7,8 @@ export function createNavigationService(
     navigate: (to) => accessor.get()(`Navigated to ${to}`),
     match: () => null,
     useMatch: () => null,
+    matchRoutes: () => null,
+    useMatchMany: () => null,
   },
 ): NavigationService {
   return newParam;

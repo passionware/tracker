@@ -94,6 +94,8 @@ export interface RoutingService {
         iterations: (
           status?: "all" | "active" | "closed" | ":projectIterationStatus",
         ) => string;
+        contractors: () => string;
+        details: () => string;
         forIteration: (iterationId?: string | ":iterationId") => {
           root: () => string;
           events: () => string;

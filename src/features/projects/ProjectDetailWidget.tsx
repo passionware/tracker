@@ -8,6 +8,8 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { IterationFilterDropdown } from "@/features/project-iterations/IterationFilter.tsx";
 import { NewIterationPopover } from "@/features/project-iterations/NewIterationPopover.tsx";
 import { ProjectDetailContent } from "@/features/projects/ProjectDetailContent.tsx";
+import { ProjectDetails } from "@/features/projects/widgets/ProjectDetails.tsx";
+import { ProjectTabs } from "@/features/projects/widgets/ProjectTabs.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
@@ -48,6 +50,8 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         <ProjectBreadcrumbView {...props} />,
       ]}
     >
+      <ProjectDetails {...props} />
+      <ProjectTabs {...props} />
       <Routes>
         <Route
           path={makeRelativePath(
