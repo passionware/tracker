@@ -53,6 +53,7 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     align?: PopoverContentProps["align"];
     side?: PopoverContentProps["side"];
     layout?: "full" | "avatar";
+    placeholder?: string;
   }
 >;
 
@@ -84,6 +85,7 @@ export function AbstractPicker<Id, Data>(
     allowClear,
     align = "start",
     side = "bottom",
+    placeholder,
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -137,7 +139,7 @@ export function AbstractPicker<Id, Data>(
         .fullJourney(currentOption)
         .initially(
           <div className="ml-2 truncate min-w-0">
-            {config.placeholder ?? "Select item"}
+            {placeholder ?? config.placeholder ?? "Select item"}
           </div>,
         )
         .wait(<Skeleton className="w-full h-[1lh]" />)

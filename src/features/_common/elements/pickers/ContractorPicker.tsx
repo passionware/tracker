@@ -1,6 +1,7 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   Contractor,
+  ContractorQuery,
   contractorQueryUtils,
 } from "@/api/contractor/contractor.api.ts";
 import { AbstractMultiPicker } from "@/features/_common/elements/pickers/_common/AbstractMultiPicker.tsx";
@@ -17,7 +18,9 @@ export type ContractorPickerProps = ComponentProps<typeof ContractorPicker>;
 export const ContractorPicker = injectConfig(
   AbstractPicker<Contractor["id"], Contractor>,
 )
-  .fromProps<WithServices<[WithContractorService]>>((api) => ({
+  .fromProps<
+    WithServices<[WithContractorService]> & { query?: ContractorQuery }
+  >((api) => ({
     renderItem: (item, props) => (
       <ContractorView
         layout={props.layout}
@@ -35,7 +38,9 @@ export const ContractorPicker = injectConfig(
     useItems: (query) => {
       const props = api.useProps();
       return props.services.contractorService.useContractors(
-        contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
+        contractorQueryUtils
+          .transform(props.query ?? contractorQueryUtils.ofEmpty())
+          .build((q) => [q.withSearch(query)]),
       );
     },
     searchPlaceholder: "Search for a contractor",
@@ -46,7 +51,9 @@ export const ContractorPicker = injectConfig(
 export const ContractorMultiPicker = injectConfig(
   AbstractMultiPicker<Contractor["id"], Contractor>,
 )
-  .fromProps<WithServices<[WithContractorService]>>((api) => ({
+  .fromProps<
+    WithServices<[WithContractorService]> & { query?: ContractorQuery }
+  >((api) => ({
     renderItem: (item, props) => (
       <ContractorView
         layout={props.value.length > 1 ? "avatar" : props.layout}
@@ -70,7 +77,9 @@ export const ContractorMultiPicker = injectConfig(
     useItems: (query) => {
       const props = api.useProps();
       return props.services.contractorService.useContractors(
-        contractorQueryUtils.setSearch(contractorQueryUtils.ofEmpty(), query),
+        contractorQueryUtils
+          .transform(props.query ?? contractorQueryUtils.ofEmpty())
+          .build((q) => [q.withSearch(query)]),
       );
     },
     searchPlaceholder: "Search for a contractor",
