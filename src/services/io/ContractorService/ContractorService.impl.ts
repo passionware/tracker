@@ -19,12 +19,16 @@ export function createContractorService(
 
   return {
     useContractors: (query) => {
-      return useQuery(
-        {
-          queryKey: ["contractor", "list", query],
-          queryFn: () => api.getContractors(query),
-        },
-        client,
+      return ensureIdleQuery(
+        query,
+        useQuery(
+          {
+            queryKey: ["contractor", "list", query],
+            enabled: maybe.isPresent(query),
+            queryFn: () => api.getContractors(query!),
+          },
+          client,
+        ),
       );
     },
     useContractor: (id) => {

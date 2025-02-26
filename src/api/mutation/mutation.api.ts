@@ -62,4 +62,8 @@ export interface MutationApi {
     positionId: number,
     payload: Partial<ProjectIterationPositionPayload>,
   ) => Promise<void>;
+  addContractorToProject: (
+    projectId: number,
+    contractorId: number,
+  ) => Promise<void>;
 }

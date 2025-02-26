@@ -7,6 +7,7 @@ export const contractor$ = z.object({
   name: z.string(),
   full_name: z.string(),
   created_at: z.coerce.date(),
+  project_ids: z.array(z.number()),
 });
 
 export type Contractor$ = z.infer<typeof contractor$>;

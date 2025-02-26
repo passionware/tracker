@@ -184,5 +184,11 @@ export function createMutationService(
         scope: "Deleting project iteration",
       });
     },
+    addContractorToProject: async (projectId, contractorId) => {
+      await api.addContractorToProject(projectId, contractorId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Adding contractor to project",
+      });
+    },
   };
 }

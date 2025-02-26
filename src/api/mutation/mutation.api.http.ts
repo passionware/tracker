@@ -438,5 +438,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    addContractorToProject: async (projectId, contractorId) => {
+      const response = await client.from("link_contractor_project").insert({
+        project_id: projectId,
+        contractor_id: contractorId,
+      });
+      if (response.error) {
+        throw response.error;
+      }
+    },
   };
 }

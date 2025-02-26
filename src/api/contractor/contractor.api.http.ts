@@ -12,7 +12,7 @@ import { z } from "zod";
 export function createContractorApi(client: SupabaseClient): ContractorApi {
   return {
     getContractors: async (query) => {
-      let request = client.from("contractor").select("*");
+      let request = client.from("contractor_with_projects").select("*");
       if (query.search) {
         request = request.ilike("full_name", `%${query.search}%`);
       }
@@ -22,6 +22,13 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
           request,
           query.filters.id,
           "id",
+        );
+      }
+      if (query.filters.projectId) {
+        request = enumFilterSupabaseUtils.filterBy.arrayColumn(
+          request,
+          query.filters.projectId,
+          "project_ids",
         );
       }
 

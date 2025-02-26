@@ -1,3 +1,4 @@
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -5,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { IterationFilterDropdown } from "@/features/project-iterations/IterationFilter.tsx";
 import { NewIterationPopover } from "@/features/project-iterations/NewIterationPopover.tsx";
+import { AddContractorPopover } from "@/features/projects/widgets/AddContractorPopover.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
@@ -25,7 +27,7 @@ export function ProjectTabs(
     .forClient(props.clientId)
     .forProject(props.projectId.toString());
   const currentTab = props.services.locationService.useCurrentProjectTab();
-  // const project = props.services.projectService.useProject(props.projectId);
+  const project = props.services.projectService.useProject(props.projectId);
   const numIterations = rd.map(
     props.services.projectIterationService.useProjectIterations(
       projectIterationQueryUtils.getBuilder().build((q) => [
@@ -38,15 +40,21 @@ export function ProjectTabs(
     (iterations) => iterations.length,
   );
 
-  // const contractorsQuery = rd.map(project, (project) =>
-  //   contractorQueryUtils.getBuilder().build((q) => [
-  //     q.unchanged(), // todo - add special view so we can filter contractor by project id
-  //     // q.withFilter("projectIterationId", {
-  //     //   operator: "oneOf",
-  //     //   value: [null],
-  //     // }),
-  //   ]),
-  // );
+  const contractorsQuery = rd.map(project, (project) =>
+    contractorQueryUtils.getBuilder().build((q) => [
+      q.withFilter("projectId", {
+        operator: "oneOf",
+        value: [project.id],
+      }),
+    ]),
+  );
+
+  const numContractors = rd.map(
+    props.services.contractorService.useContractors(
+      rd.tryGet(contractorsQuery),
+    ),
+    (contractors) => contractors.length,
+  );
 
   return (
     <Tabs
@@ -83,7 +91,7 @@ export function ProjectTabs(
         >
           Contractors
           <Badge variant="warning" size="sm">
-            0 {/* TODO read contractors for project*/}
+            {rd.tryGet(numContractors)}
           </Badge>
         </TabsTrigger>
         <div className="ml-auto flex flex-row gap-2 items-center">
@@ -104,6 +112,13 @@ export function ProjectTabs(
                   />
                 </>
               }
+            />
+            <Route
+              path={makeRelativePath(
+                forProject.root(),
+                forProject.contractors(),
+              )}
+              element={<AddContractorPopover {...props} />}
             />
           </Routes>
         </div>
