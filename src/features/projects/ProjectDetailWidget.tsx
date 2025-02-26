@@ -5,8 +5,8 @@ import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/Cl
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
-import { ProjectDetailContent } from "@/features/projects/ProjectDetailContent.tsx";
 import { ProjectDetails } from "@/features/projects/widgets/ProjectDetails.tsx";
+import { ProjectIterations } from "@/features/projects/widgets/ProjectIterations.tsx";
 import { ProjectTabs } from "@/features/projects/widgets/ProjectTabs.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
@@ -70,7 +70,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
               .iterations(),
           )}
           element={
-            <ProjectDetailContent
+            <ProjectIterations
               workspaceId={props.workspaceId}
               clientId={props.clientId}
               projectId={props.projectId}

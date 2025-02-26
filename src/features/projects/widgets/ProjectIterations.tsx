@@ -15,7 +15,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { capitalize } from "lodash";
 import { useState } from "react";
 
-export interface ProjectDetailContentProps extends WithFrontServices {
+export interface ProjectIterationsProps extends WithFrontServices {
   projectId: number;
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
@@ -23,7 +23,7 @@ export interface ProjectDetailContentProps extends WithFrontServices {
 
 const c = createColumnHelper<ProjectIteration>();
 
-export function ProjectDetailContent(props: ProjectDetailContentProps) {
+export function ProjectIterations(props: ProjectIterationsProps) {
   const [_query, setQuery] = useState(projectIterationQueryUtils.ofDefault());
   const statusFilter =
     props.services.locationService.useCurrentProjectIterationStatus();
