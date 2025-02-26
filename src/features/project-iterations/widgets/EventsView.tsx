@@ -197,7 +197,7 @@ export function EventsView(props: EventsViewProps) {
               <ActionMenu
                 services={props.services}
                 size="icon-xs"
-                className="ml-1 opacity-0 group-hocus:opacity-100"
+                className="ml-1 opacity-0 group-hocus:opacity-100 xhover:opacity-100"
               >
                 <ActionMenuDeleteItem
                   onClick={() =>
@@ -311,7 +311,7 @@ export function EventsView(props: EventsViewProps) {
                         <ActionMenu
                           services={props.services}
                           size="icon-xs"
-                          className="ml-1 opacity-0 group-hocus:opacity-100"
+                          className="ml-1 opacity-0 group-hocus:opacity-100 xhover:opacity-100"
                         >
                           <ActionMenuDeleteItem
                             onClick={() =>
