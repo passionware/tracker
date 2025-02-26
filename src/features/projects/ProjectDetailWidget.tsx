@@ -5,8 +5,6 @@ import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/Cl
 import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/ProjectBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
-import { IterationFilterDropdown } from "@/features/project-iterations/IterationFilter.tsx";
-import { NewIterationPopover } from "@/features/project-iterations/NewIterationPopover.tsx";
 import { ProjectDetailContent } from "@/features/projects/ProjectDetailContent.tsx";
 import { ProjectDetails } from "@/features/projects/widgets/ProjectDetails.tsx";
 import { ProjectTabs } from "@/features/projects/widgets/ProjectTabs.tsx";
@@ -32,17 +30,6 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
 
   return (
     <CommonPageContainer
-      tools={
-        <>
-          <IterationFilterDropdown services={props.services} />
-          <NewIterationPopover
-            services={props.services}
-            workspaceId={props.workspaceId}
-            clientId={props.clientId}
-            projectId={props.projectId}
-          />
-        </>
-      }
       segments={[
         <WorkspaceBreadcrumbLink {...props} />,
         <ClientBreadcrumbLink {...props} />,

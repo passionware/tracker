@@ -3,11 +3,15 @@ import { Project } from "@/api/project/project.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { IterationFilterDropdown } from "@/features/project-iterations/IterationFilter.tsx";
+import { NewIterationPopover } from "@/features/project-iterations/NewIterationPopover.tsx";
+import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { rd } from "@passionware/monads";
+import { Route, Routes } from "react-router-dom";
 
 export function ProjectTabs(
   props: WithFrontServices & {
@@ -82,6 +86,27 @@ export function ProjectTabs(
             0 {/* TODO read contractors for project*/}
           </Badge>
         </TabsTrigger>
+        <div className="ml-auto flex flex-row gap-2 items-center">
+          <Routes>
+            <Route
+              path={makeRelativePath(
+                forProject.root(),
+                forProject.iterations(),
+              )}
+              element={
+                <>
+                  <IterationFilterDropdown services={props.services} />
+                  <NewIterationPopover
+                    services={props.services}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    projectId={props.projectId}
+                  />
+                </>
+              }
+            />
+          </Routes>
+        </div>
       </TabsList>
     </Tabs>
   );

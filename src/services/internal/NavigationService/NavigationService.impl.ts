@@ -47,7 +47,12 @@ export function createNavigationService(
     matchRoutes,
     useMatchMany: (patterns) => {
       const location = useLocation();
-      const match = matchRoutes(Object.values(patterns), location.pathname);
+      const match = matchRoutes(
+        Object.values(patterns).map((x) =>
+          typeof x === "string" ? { path: x } : x,
+        ),
+        location,
+      );
       if (match) {
         // return { match, key: Object.keys(patterns).find(key => match.find(patterns[key] === match.route) as string };
         const firstMatch = match[0];
@@ -60,7 +65,7 @@ export function createNavigationService(
           },
           key: maybe.getOrThrow(
             Object.keys(patterns).find(
-              (key) => patterns[key] === firstMatch.route,
+              (key) => patterns[key] === firstMatch.route.path,
             ),
           ),
         };
