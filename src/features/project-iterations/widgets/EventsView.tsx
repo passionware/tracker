@@ -324,6 +324,7 @@ export function EventsView(props: EventsViewProps) {
                           >
                             Delete move
                           </ActionMenuDeleteItem>
+                          <ActionMenuEditItem>Edit move</ActionMenuEditItem>
                         </ActionMenu>
                       </div>
                     </div>
