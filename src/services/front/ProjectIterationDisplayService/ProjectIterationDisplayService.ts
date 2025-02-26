@@ -36,6 +36,10 @@ export type UpdateAction =
         unitPrice: number;
         unit: string;
       };
+    }
+  | {
+      type: "addEvent";
+      description: string;
     };
 
 export type BalanceData = {

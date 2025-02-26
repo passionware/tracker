@@ -114,9 +114,12 @@ export type AccountSpec =
       type: "cost";
     };
 
-export interface ProjectIterationEvent {
+export interface ProjectIterationEventPayload {
+  description: string;
+}
+
+export interface ProjectIterationEvent extends ProjectIterationEventPayload {
   id: string; // v4
-  description: string; // np 'licencja przerzucana na klienta',
   moves: Array<{
     from: AccountSpec;
     to: AccountSpec;

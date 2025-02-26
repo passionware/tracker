@@ -1,10 +1,16 @@
 import { AccountSpec } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ExpandButton } from "@/features/project-iterations/widgets/_private/ExpandButton.tsx";
 import { HorizontalArrow } from "@/features/project-iterations/widgets/_private/HorizontalArrow.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -12,8 +18,10 @@ import {
   ComputedEventData,
   UpdateAction,
 } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
+import { Portal } from "@radix-ui/react-tooltip";
 import { Plus, Trash } from "lucide-react";
 import { Fragment, useState } from "react";
+import { EventForm } from "./_private/EventForm";
 
 export interface EventsViewProps extends WithFrontServices {
   data: ComputedEventData;
@@ -83,6 +91,35 @@ export function EventsView(props: EventsViewProps) {
         >
           Expand all
         </Button>
+        <Tooltip>
+          <InlinePopoverForm
+            trigger={
+              <TooltipTrigger asChild>
+                <Button size="icon-xs" variant="ghost">
+                  <Plus className="size-2" />
+                </Button>
+              </TooltipTrigger>
+            }
+            content={(bag) => (
+              <EventForm
+                services={props.services}
+                onCancel={bag.close}
+                mode="create"
+                currency="EUR" // todo read from project
+                onSubmit={async (data) => {
+                  props.onAction({
+                    type: "addEvent",
+                    description: data.description,
+                  });
+                  bag.close();
+                }}
+              />
+            )}
+          />
+          <Portal>
+            <TooltipContent>Add event</TooltipContent>
+          </Portal>
+        </Tooltip>
       </div>
       <div className="row-start-1 col-start-2 z-1 justify-self-center">
         <ClientWidget

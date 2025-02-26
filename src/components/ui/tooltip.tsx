@@ -105,7 +105,9 @@ export function OverflowTooltip({
       open={isOverflowing ? undefined : false}
       {...rest}
     >
-      <Slot className="cursor-default" ref={triggerRef}>{children}</Slot>
+      <Slot className="cursor-default" ref={triggerRef}>
+        {children}
+      </Slot>
     </SimpleTooltip>
   );
 }

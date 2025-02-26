@@ -1,6 +1,7 @@
 import {
   AccountSpec,
   ProjectIterationDetail,
+  ProjectIterationEvent,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import {
   BalanceData,
@@ -10,6 +11,7 @@ import {
   ProjectIterationDisplayService,
 } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { get, has, set, uniq } from "lodash";
+import { v4 } from "uuid";
 
 export function createProjectIterationDisplayService(): ProjectIterationDisplayService {
   function createAccountBuffer(initial?: BalanceInfo) {
@@ -137,6 +139,17 @@ export function createProjectIterationDisplayService(): ProjectIterationDisplayS
             events: detail.events.map((e) =>
               e.id === action.eventId ? { ...e, moves } : e,
             ),
+          };
+        }
+        case "addEvent": {
+          const newEvent: ProjectIterationEvent = {
+            id: v4(),
+            description: action.description,
+            moves: [],
+          };
+          return {
+            ...detail,
+            events: detail.events.concat(newEvent),
           };
         }
       }
