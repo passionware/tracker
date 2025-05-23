@@ -114,7 +114,7 @@ export function CostForm(props: CostFormProps) {
         <FormField
           control={form.control}
           name="contractorId"
-          rules={{ required: "Contractor is required" }}
+          // rules={{ required: "Contractor is required" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Contractor</FormLabel>
