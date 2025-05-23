@@ -120,6 +120,7 @@ export interface ProjectIterationEventPayload {
 
 export interface ProjectIterationEvent extends ProjectIterationEventPayload {
   id: string; // v4
+  // todo: this should be linked with report or cost (or specific move should be linked with report or cost)
   moves: Array<{
     from: AccountSpec;
     to: AccountSpec;

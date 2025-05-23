@@ -336,6 +336,9 @@ export function ReportInfo({
                   </div>
                 );
               }
+              if(maybe.isAbsent(value.billingAmount)) {
+                  return "missing billing amount";
+              }
               assert(
                 maybe.isPresent(value.billingAmount),
                 "Billing id is missing",

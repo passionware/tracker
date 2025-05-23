@@ -20,6 +20,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd, truthy } from "@passionware/monads";
+import { isValid } from "date-fns";
 
 export const billingColumns = {
   invoiceNumber: getColumnHelper<Pick<Cost, "invoiceNumber">>().accessor(
@@ -34,8 +35,13 @@ export const billingColumns = {
   invoiceDate: (services: WithFormatService) =>
     getColumnHelper<Pick<Cost, "invoiceDate">>().accessor("invoiceDate", {
       header: "Invoice Date",
-      cell: (info) =>
-        services.formatService.temporal.single.compact(info.getValue()),
+      cell: (info) => {
+        const value = info.getValue();
+        if (isValid(value)) {
+          return services.formatService.temporal.single.compact(value);
+        }
+        return "Invalid Date";
+      },
       meta: {
         sortKey: "invoiceDate",
       },
