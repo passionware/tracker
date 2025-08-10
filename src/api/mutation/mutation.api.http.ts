@@ -1,12 +1,18 @@
 import { LinkBillingReportPayload } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { MutationApi } from "@/api/mutation/mutation.api.ts";
+import { CalendarDate } from "@internationalized/date";
 import { maybe } from "@passionware/monads";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { pickBy } from "lodash";
 
 export function createMutationApi(client: SupabaseClient): MutationApi {
-  const formatDateForSupabase = (date: Date) => format(date, "yyyy-MM-dd");
+  const formatDateForSupabase = (date: Date | CalendarDate) => {
+    if (date instanceof CalendarDate) {
+      return date.toString();
+    }
+    return format(date, "yyyy-MM-dd");
+  };
 
   function getInsertPayload(payload: LinkBillingReportPayload) {
     switch (payload.linkType) {
@@ -103,7 +109,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           counterparty: cost.counterparty,
           contractor_id: cost.contractorId,
           description: cost.description,
-          invoice_date: cost.invoiceDate,
+          invoice_date: formatDateForSupabase(cost.invoiceDate),
           net_value: cost.netValue,
           gross_value: cost.grossValue,
           currency: cost.currency,
@@ -169,7 +175,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               counterparty: takeIfPresent("counterparty"),
               contractor_id: takeIfPresent("contractorId"),
               description: takeIfPresent("description"),
-              invoice_date: takeIfPresent("invoiceDate"),
+              invoice_date: maybe.map(
+                takeIfPresent("invoiceDate"),
+                formatDateForSupabase,
+              ),
               net_value: takeIfPresent("netValue"),
               gross_value: takeIfPresent("grossValue"),
               currency: takeIfPresent("currency"),
