@@ -5,7 +5,7 @@ import {
 } from "@internationalized/date";
 
 export function dateToCalendarDate(date: Date): CalendarDate {
-  return parseDate(date.toISOString());
+  return parseDate(date.toISOString().split("T")[0]);
 }
 
 export function calendarDateToJSDate(date: CalendarDate): Date {
