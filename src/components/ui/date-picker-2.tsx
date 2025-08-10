@@ -55,7 +55,7 @@ export function DatePicker2({
       </Group>
       <Popover className="w-auto">
         <Dialog className="w-auto p-0">
-          <div className="z-50 w-72 rounded-md border border-slate-200 bg-white p-4 text-slate-950 shadow-md outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50">
+          <div className="z-50 w-72 rounded-md border border-slate-200 bg-white p-0 text-slate-950 shadow-md outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50">
             <Calendar className="p-3">
               <header className="flex items-center justify-between pb-4">
                 <Button
@@ -76,7 +76,16 @@ export function DatePicker2({
                 {(date) => (
                   <CalendarCell
                     date={date}
-                    className="h-9 w-9 rounded-md text-center text-sm font-normal hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[selected]:bg-slate-900 data-[selected]:text-slate-50 data-[selected]:hover:bg-slate-900/90 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300 dark:data-[selected]:bg-slate-50 dark:data-[selected]:text-slate-900 dark:data-[selected]:hover:bg-slate-50/90"
+                    className={cn(
+                      "size-9 flex items-center justify-center cursor-pointer transition-colors rounded-md text-center text-sm font-normal",
+                      "hover:bg-slate-100",
+                      "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2",
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                      // Only apply selection styling to truly selected dates
+                      "data-[selected]:bg-slate-900 data-[selected]:text-slate-50",
+                      "dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300",
+                      "dark:data-[selected]:bg-slate-50 dark:data-[selected]:text-slate-900",
+                    )}
                   />
                 )}
               </CalendarGrid>
