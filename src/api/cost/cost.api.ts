@@ -23,6 +23,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
 
@@ -30,7 +31,7 @@ export interface CostPayload {
   invoiceNumber: Maybe<string>;
   counterparty: Maybe<string>;
   description: Maybe<string>;
-  invoiceDate: Date;
+  invoiceDate: CalendarDate;
   netValue: number;
   grossValue: Maybe<number>;
   contractorId: Maybe<Contractor["id"]>;

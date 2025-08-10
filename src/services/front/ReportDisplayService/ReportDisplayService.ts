@@ -10,6 +10,7 @@ import {
   CurrencyValue,
   CurrencyValueGroup,
 } from "@/services/ExchangeService/ExchangeService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ReportView {
@@ -104,7 +105,7 @@ export type CostEntry = {
   invoiceNumber: Maybe<string>;
   counterparty: Maybe<string>;
   description: Maybe<string>;
-  invoiceDate: Date;
+  invoiceDate: CalendarDate;
   netAmount: CurrencyValue;
   grossAmount: Maybe<CurrencyValue>;
   contractor: ContractorBase | null;

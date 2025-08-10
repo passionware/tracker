@@ -1,6 +1,6 @@
 import { CostPayload } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker } from "@/components/ui/date-picker.tsx";
+import { DatePicker2 } from "@/components/ui/date-picker-2";
 import {
   Form,
   FormControl,
@@ -13,13 +13,14 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
-import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
@@ -43,7 +44,7 @@ type FormModel = {
   netValue: string;
   grossValue: string;
   invoiceNumber: string;
-  invoiceDate: Date | null;
+  invoiceDate: CalendarDate | null;
   description: string;
 };
 
@@ -217,7 +218,7 @@ export function CostForm(props: CostFormProps) {
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
               <FormControl>
-                <DatePicker
+                <DatePicker2
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

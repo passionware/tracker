@@ -1,13 +1,15 @@
 import { contractorMock } from "@/api/contractor/contractor.mock.ts";
 import { CostBase } from "@/api/cost/cost.api.ts";
 import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { faker } from "@faker-js/faker";
+import { parseDate } from "@internationalized/date";
 import { createMockFactory } from "@passionware/entities";
 
 export const costMock = createMockFactory<CostBase>(
   () => ({
     id: faker.number.int(),
-    invoiceDate: faker.date.recent(),
+    invoiceDate: dateToCalendarDate(faker.date.recent()),
     currency: faker.helpers.arrayElement(["PLN", "EUR", "USD"]),
     workspaceId: faker.helpers.arrayElement(
       workspaceMock.static.list.map((w) => w.id),
@@ -31,7 +33,7 @@ export const costMock = createMockFactory<CostBase>(
       contractorId: contractorMock.static.list[0].id,
       description: "Test description",
       workspaceId: workspaceMock.static.list[0].id,
-      invoiceDate: new Date("2021-09-01"),
+      invoiceDate: parseDate("2021-09-01"),
       currency: "PLN",
       counterparty: "Test counterparty",
       invoiceNumber: "2025/09/01",

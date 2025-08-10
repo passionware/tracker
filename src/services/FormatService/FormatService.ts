@@ -1,4 +1,5 @@
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { ReactNode } from "react";
 
 export interface FormatService {
@@ -16,7 +17,7 @@ export interface FormatService {
     ) => ReactNode;
   };
   temporal: {
-    date: (date: Date) => string;
+    date: (date: Date | CalendarDate) => string;
     time: (date: Date) => string;
     datetime: (date: Date) => string;
     relative: {
@@ -28,7 +29,7 @@ export interface FormatService {
       useDaysLeft: (date: Date) => number;
     };
     single: {
-      compact: (date: Date) => ReactNode;
+      compact: (date: Date | CalendarDate) => ReactNode;
     };
     range: {
       compact: (start: Date, end: Date) => ReactNode;

@@ -1,6 +1,8 @@
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
+import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { FormatService } from "@/services/FormatService/FormatService.ts";
+import { CalendarDate } from "@internationalized/date";
 import {
   differenceInDays,
   differenceInMonths,
@@ -11,6 +13,13 @@ import {
   startOfDay,
 } from "date-fns";
 import { ReactNode, useEffect, useState } from "react";
+
+const tmpFixDate = (date: Date | CalendarDate) => {
+  if (date instanceof CalendarDate) {
+    return calendarDateToJSDate(date);
+  }
+  return date;
+};
 
 export function createFormatService(clock: () => Date): FormatService {
   const amount = (
@@ -69,9 +78,10 @@ export function createFormatService(clock: () => Date): FormatService {
   };
   return {
     temporal: {
-      date: (date: Date) => {
+      date: (date) => {
+        const fixedDate = tmpFixDate(date);
         try {
-          return format(date, "dd.MM.yyyy");
+          return format(fixedDate, "dd.MM.yyyy");
         } catch (e) {
           console.log(e);
           return `error: ${e}`;
@@ -121,15 +131,16 @@ export function createFormatService(clock: () => Date): FormatService {
       },
       single: {
         compact: (date) => {
+          const fixedDate = tmpFixDate(date);
           return (
-            <SingleWrapper date={date}>
+            <SingleWrapper date={fixedDate}>
               <div className="flex flex-col text-center gap-1">
                 <div>
-                  <DayBadge value={format(date, "dd")} />
+                  <DayBadge value={format(fixedDate, "dd")} />
                   <DotSeparator />
-                  <MonthBadge value={format(date, "MM")} />
+                  <MonthBadge value={format(fixedDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(date, "yyyy")} />
+                  <YearBadge value={format(fixedDate, "yyyy")} />
                 </div>
               </div>
             </SingleWrapper>
