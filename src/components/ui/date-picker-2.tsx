@@ -26,6 +26,58 @@ interface DatePicker2Props {
   className?: string;
 }
 
+// Date format parsing functions
+function parseDateString(dateString: string): CalendarDate | null {
+  // Remove any extra whitespace
+  const trimmed = dateString.trim();
+
+  // Try different date formats
+  const formats = [
+    // DD.MM.YYYY
+    /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/,
+    // DD/MM/YYYY
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+    // YYYY-MM-DD
+    /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+    // DD-MM-YYYY
+    /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+    // MM/DD/YYYY
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+  ];
+
+  for (const format of formats) {
+    const match = trimmed.match(format);
+    if (match) {
+      const [, day, month, year] = match;
+      const dayNum = parseInt(day, 10);
+      const monthNum = parseInt(month, 10);
+      const yearNum = parseInt(year, 10);
+
+      // Basic validation
+      if (
+        dayNum >= 1 &&
+        dayNum <= 31 &&
+        monthNum >= 1 &&
+        monthNum <= 12 &&
+        yearNum >= 1900 &&
+        yearNum <= 2100
+      ) {
+        try {
+          return new CalendarDate(yearNum, monthNum, dayNum);
+        } catch {
+          // Invalid date, continue to next format
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function formatDateForClipboard(date: CalendarDate): string {
+  return `${date.day.toString().padStart(2, "0")}.${date.month.toString().padStart(2, "0")}.${date.year}`;
+}
+
 export function DatePicker2({
   value,
   onChange,
@@ -33,6 +85,23 @@ export function DatePicker2({
   disabled = false,
   className,
 }: DatePicker2Props) {
+  const handleCopy = (event: React.ClipboardEvent) => {
+    if (value) {
+      const formattedDate = formatDateForClipboard(value);
+      event.clipboardData.setData("text/plain", formattedDate);
+      event.preventDefault();
+    }
+  };
+
+  const handlePaste = (event: React.ClipboardEvent) => {
+    const pastedText = event.clipboardData.getData("text/plain");
+    const parsedDate = parseDateString(pastedText);
+    if (parsedDate) {
+      onChange(parsedDate);
+      event.preventDefault();
+    }
+  };
+
   return (
     <DatePicker
       value={value || null}
@@ -40,7 +109,11 @@ export function DatePicker2({
       isDisabled={disabled}
       className={cn("w-full", className)}
     >
-      <Group className="flex w-full items-center">
+      <Group
+        className="flex w-full items-center"
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+      >
         <DateInput className="flex flex-1 items-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300">
           {(segment) => (
             <DateSegment
