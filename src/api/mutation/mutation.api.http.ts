@@ -64,8 +64,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           contractor_id: report.contractorId,
           description: report.description,
           net_value: report.netValue,
-          period_start: report.periodStart,
-          period_end: report.periodEnd,
+          period_start: formatDateForSupabase(report.periodStart),
+          period_end: formatDateForSupabase(report.periodEnd),
           currency: report.currency,
           client_id: report.clientId,
           workspace_id: report.workspaceId,
@@ -352,8 +352,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         .from("project_iteration")
         .insert({
           project_id: iteration.projectId,
-          period_start: iteration.periodStart,
-          period_end: iteration.periodEnd,
+          period_start: formatDateForSupabase(iteration.periodStart),
+          period_end: formatDateForSupabase(iteration.periodEnd),
           status: iteration.status,
           description: iteration.description,
           ordinal_number: iteration.ordinalNumber,
@@ -397,8 +397,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           pickBy(
             {
               project_id: takeIfPresent("projectId"),
-              period_start: takeIfPresent("periodStart"),
-              period_end: takeIfPresent("periodEnd"),
+              period_start: maybe.map(
+                takeIfPresent("periodStart"),
+                formatDateForSupabase,
+              ),
+              period_end: maybe.map(
+                takeIfPresent("periodEnd"),
+                formatDateForSupabase,
+              ),
               status: takeIfPresent("status"),
               description: takeIfPresent("description"),
             },

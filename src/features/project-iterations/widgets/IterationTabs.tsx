@@ -10,6 +10,7 @@ import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { NewPositionPopover } from "@/features/project-iterations/NewPositionPopover.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
@@ -190,8 +191,12 @@ export function IterationTabs(
                             workspaceId: project.workspaceId,
                             clientId: project.clientId,
                             currency: projectIteration.currency,
-                            periodStart: projectIteration.periodStart,
-                            periodEnd: projectIteration.periodEnd,
+                            periodStart: dateToCalendarDate(
+                              projectIteration.periodStart,
+                            ),
+                            periodEnd: dateToCalendarDate(
+                              projectIteration.periodEnd,
+                            ),
                           }}
                         />
                       ),

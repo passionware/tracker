@@ -15,7 +15,7 @@ import {
 } from "date-fns";
 import { ReactNode, useEffect, useState } from "react";
 
-const tmpFixDate = (date: Date | CalendarDate) => {
+const tmpFixDate = (date: Date | CalendarDate): Date => {
   if (date instanceof CalendarDate) {
     return calendarDateToJSDate(date);
   }
@@ -157,17 +157,20 @@ export function createFormatService(clock: () => Date): FormatService {
       },
       range: {
         compact: (startDate, endDate) => {
+          const fixedStartDate = tmpFixDate(startDate);
+          const fixedEndDate = tmpFixDate(endDate);
+
           // 1. Ten sam dzień
-          if (isSameDay(startDate, endDate)) {
+          if (isSameDay(fixedStartDate, fixedEndDate)) {
             return (
-              <RangeWrapper from={startDate} to={endDate}>
+              <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
                 <div className="flex flex-col text-center gap-1">
                   <div>
-                    <DayBadge value={format(startDate, "dd")} />
+                    <DayBadge value={format(fixedStartDate, "dd")} />
                     <DotSeparator />
-                    <MonthBadge value={format(startDate, "MM")} />
+                    <MonthBadge value={format(fixedStartDate, "MM")} />
                     <DotSeparator />
-                    <YearBadge value={format(startDate, "yyyy")} />
+                    <YearBadge value={format(fixedStartDate, "yyyy")} />
                   </div>
                 </div>
               </RangeWrapper>
@@ -175,38 +178,41 @@ export function createFormatService(clock: () => Date): FormatService {
           }
 
           return (
-            <RangeWrapper from={startDate} to={endDate}>
+            <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
               <div className="flex flex-col text-center gap-1">
                 <div>
-                  <DayBadge value={format(startDate, "dd")} />
+                  <DayBadge value={format(fixedStartDate, "dd")} />
                   <DotSeparator />
-                  <MonthBadge value={format(startDate, "MM")} />
+                  <MonthBadge value={format(fixedStartDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(startDate, "yyyy")} />
+                  <YearBadge value={format(fixedStartDate, "yyyy")} />
                 </div>
                 <div>
-                  <DayBadge value={format(endDate, "dd")} />
+                  <DayBadge value={format(fixedEndDate, "dd")} />
                   <DotSeparator />
-                  <MonthBadge value={format(endDate, "MM")} />
+                  <MonthBadge value={format(fixedEndDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(endDate, "yyyy")} />
+                  <YearBadge value={format(fixedEndDate, "yyyy")} />
                 </div>
               </div>
             </RangeWrapper>
           );
         },
         long: (startDate, endDate) => {
+          const fixedStartDate = tmpFixDate(startDate);
+          const fixedEndDate = tmpFixDate(endDate);
+
           // 1. Ten sam dzień
-          if (isSameDay(startDate, endDate)) {
+          if (isSameDay(fixedStartDate, fixedEndDate)) {
             return (
-              <RangeWrapper from={startDate} to={endDate}>
+              <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
                 <div className="flex flex-col text-center gap-1">
                   <div>
-                    <DayBadge value={format(startDate, "dd")} />
+                    <DayBadge value={format(fixedStartDate, "dd")} />
                     <DotSeparator />
-                    <MonthBadge value={format(startDate, "MM")} />
+                    <MonthBadge value={format(fixedStartDate, "MM")} />
                     <DotSeparator />
-                    <YearBadge value={format(startDate, "yyyy")} />
+                    <YearBadge value={format(fixedStartDate, "yyyy")} />
                   </div>
                 </div>
               </RangeWrapper>
@@ -214,22 +220,22 @@ export function createFormatService(clock: () => Date): FormatService {
           }
 
           return (
-            <RangeWrapper from={startDate} to={endDate}>
+            <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
               <div className="flex flex-row text-center gap-1">
                 <div>
-                  <DayBadge value={format(startDate, "dd")} />
+                  <DayBadge value={format(fixedStartDate, "dd")} />
                   <DotSeparator />
-                  <MonthBadge value={format(startDate, "MM")} />
+                  <MonthBadge value={format(fixedStartDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(startDate, "yyyy")} />
+                  <YearBadge value={format(fixedStartDate, "yyyy")} />
                 </div>
                 <div className="text-gray-600">-</div>
                 <div>
-                  <DayBadge value={format(endDate, "dd")} />
+                  <DayBadge value={format(fixedEndDate, "dd")} />
                   <DotSeparator />
-                  <MonthBadge value={format(endDate, "MM")} />
+                  <MonthBadge value={format(fixedEndDate, "MM")} />
                   <DotSeparator />
-                  <YearBadge value={format(endDate, "yyyy")} />
+                  <YearBadge value={format(fixedEndDate, "yyyy")} />
                 </div>
               </div>
             </RangeWrapper>

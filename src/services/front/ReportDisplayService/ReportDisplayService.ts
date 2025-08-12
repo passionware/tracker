@@ -30,8 +30,8 @@ export interface ReportViewEntry {
   originalReport: Report;
   id: number;
   netAmount: CurrencyValue;
-  periodStart: Date;
-  periodEnd: Date;
+  periodStart: CalendarDate;
+  periodEnd: CalendarDate;
   description: string;
   /**
    * Whether the reported work has been already billed or not.

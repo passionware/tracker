@@ -25,12 +25,13 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { chain } from "lodash";
 
 export interface ReportPayload {
   contractorId: number;
-  periodStart: Date;
-  periodEnd: Date;
+  periodStart: CalendarDate;
+  periodEnd: CalendarDate;
   clientId: number;
   workspaceId: number;
 

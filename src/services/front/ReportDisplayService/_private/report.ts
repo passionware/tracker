@@ -1,5 +1,9 @@
 import { Report } from "@/api/reports/reports.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
+import {
+  addDaysToCalendarDate,
+  isSameCalendarDate,
+} from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { prepareValues } from "@/services/front/ReportDisplayService/_private/prepareValues.ts";
@@ -9,7 +13,6 @@ import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd, RemoteData } from "@passionware/monads";
-import { addDays, isSameDay } from "date-fns";
 import { groupBy, sumBy, uniq } from "lodash";
 
 export function useReportView(
@@ -245,7 +248,10 @@ function calculateReportEntry(
       report.previousReport,
       (previousReport) => {
         if (
-          isSameDay(addDays(previousReport.periodEnd, 1), report.periodStart)
+          isSameCalendarDate(
+            addDaysToCalendarDate(previousReport.periodEnd, 1),
+            report.periodStart,
+          )
         ) {
           return {
             adjacency: "adjacent",

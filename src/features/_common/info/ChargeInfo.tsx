@@ -24,6 +24,10 @@ import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { assert } from "@/platform/lang/assert.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import {
+  calendarDateToJSDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -89,12 +93,17 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
 
   const lastReportData = rd.map(matchedReports, (reports) =>
     maybe.getOrUndefined(
-      sortBy(reports.entries, (report) => -report.periodEnd.getTime())[0],
+      sortBy(
+        reports.entries,
+        (report) => -calendarDateToJSDate(report.periodEnd).getTime(),
+      )[0],
     ),
   );
 
   const newReportStartDate = rd.map(lastReportData, (report) =>
-    maybe.mapOrUndefined(report, (r) => startOfDay(addDays(r.periodEnd, 1))),
+    maybe.mapOrUndefined(report, (r) =>
+      startOfDay(addDays(calendarDateToJSDate(r.periodEnd), 1)),
+    ),
   );
 
   return (
@@ -204,8 +213,10 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       contractorId:
                         billing.contractors[billing.contractors.length - 1]?.id,
                       netValue: billing.remainingAmount.amount,
-                      periodStart: rd.getOrElse(newReportStartDate, undefined),
-                      periodEnd: startOfDay(new Date()),
+                      periodStart: rd.tryMap(newReportStartDate, (date) =>
+                        date ? dateToCalendarDate(date) : undefined,
+                      ),
+                      periodEnd: dateToCalendarDate(startOfDay(new Date())),
                     }}
                   />
                 </PopoverContent>

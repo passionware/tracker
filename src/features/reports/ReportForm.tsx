@@ -1,6 +1,6 @@
 import { ReportPayload } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker } from "@/components/ui/date-picker.tsx";
+import { DatePicker2 } from "@/components/ui/date-picker-2.tsx";
 import {
   Form,
   FormControl,
@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { ExportChooserPopover } from "@/features/_common/ExpressionChooser.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
-import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { ExportChooserPopover } from "@/features/_common/ExpressionChooser.tsx";
+import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
@@ -26,6 +26,7 @@ import { WithExpressionService } from "@/services/front/ExpressionService/Expres
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
@@ -52,8 +53,8 @@ export interface ReportWidgetFormProps
 type FormModel = {
   contractorId: number | null;
   clientId: number | null;
-  periodStart: Date | null;
-  periodEnd: Date | null;
+  periodStart: CalendarDate | null;
+  periodEnd: CalendarDate | null;
   currency: string | null;
   description: string;
   netValue: string;
@@ -173,7 +174,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
             <FormItem>
               <FormLabel>Period start</FormLabel>
               <FormControl>
-                <DatePicker
+                <DatePicker2
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"
@@ -192,7 +193,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
             <FormItem>
               <FormLabel>Period end</FormLabel>
               <FormControl>
-                <DatePicker
+                <DatePicker2
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

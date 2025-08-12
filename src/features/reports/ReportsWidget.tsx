@@ -2,22 +2,25 @@ import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import {
+  addDaysToCalendarDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { addDays } from "date-fns";
 import { chain, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -100,10 +103,10 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                     periodStart: rd.tryMap(reports, (reports) =>
                       maybe.map(
                         reports.entries[reports.entries.length - 1]?.periodEnd,
-                        partialRight(addDays, 1),
+                        partialRight(addDaysToCalendarDate, 1),
                       ),
                     ),
-                    periodEnd: new Date(),
+                    periodEnd: dateToCalendarDate(new Date()),
                     clientId: idSpecUtils.switchAll(props.clientId, undefined),
                   }}
                   services={props.services}
