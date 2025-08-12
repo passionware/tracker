@@ -14,10 +14,11 @@ import {
 } from "@/api/_common/query/queryUtils.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Nullable } from "@/platform/typescript/Nullable";
+import { CalendarDate } from "@internationalized/date";
 
 export interface ProjectIterationPayload {
-  periodStart: Date;
-  periodEnd: Date;
+  periodStart: CalendarDate;
+  periodEnd: CalendarDate;
   status: "draft" | "active" | "closed";
   description: Nullable<string>;
   projectId: Project["id"];

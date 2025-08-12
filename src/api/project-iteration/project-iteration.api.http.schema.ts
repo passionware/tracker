@@ -1,6 +1,7 @@
 import { maybe } from "@passionware/monads";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
+import { parseDate } from "@internationalized/date";
 import {
   ProjectIteration,
   ProjectIterationDetail,
@@ -12,8 +13,8 @@ export const projectIteration$ = z.object({
   id: z.number(),
   created_at: z.coerce.date(),
   project_id: z.number(),
-  period_start: z.coerce.date(),
-  period_end: z.coerce.date(),
+  period_start: z.string().transform(parseDate),
+  period_end: z.string().transform(parseDate),
   description: z.string().nullable(),
   status: z.enum(["draft", "active", "closed"]),
   ordinal_number: z.number(),
@@ -74,7 +75,7 @@ export const projectIterationDetail$ = projectIteration$.merge(
   }),
 );
 
-export type ProjectIteration$ = z.infer<typeof projectIteration$>;
+export type ProjectIteration$ = z.output<typeof projectIteration$>;
 export type ProjectIterationDetail$ = z.infer<typeof projectIterationDetail$>;
 
 export function projectIterationFromHttp(
