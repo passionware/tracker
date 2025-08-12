@@ -1,6 +1,6 @@
 import { BillingPayload } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker } from "@/components/ui/date-picker.tsx";
+import { DatePicker2 } from "@/components/ui/date-picker-2";
 import {
   Form,
   FormControl,
@@ -13,12 +13,13 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
-import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { CurrencyPicker } from "@/features/_common/inline-search/CurrencyPicker.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { maybe } from "@passionware/monads";
 import { useForm } from "react-hook-form";
 
@@ -36,7 +37,7 @@ type FormModel = {
   totalNet: string;
   totalGross: string;
   invoiceNumber: string;
-  invoiceDate: Date | null;
+  invoiceDate: CalendarDate | null;
   description: string;
 };
 
@@ -181,7 +182,7 @@ export function BillingForm(props: BillingFormProps) {
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
               <FormControl>
-                <DatePicker
+                <DatePicker2
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

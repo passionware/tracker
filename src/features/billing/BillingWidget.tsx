@@ -2,18 +2,19 @@ import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
-import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
+import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
-import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -82,7 +83,7 @@ export function BillingWidget(props: BillingWidgetProps) {
                         reports.entries[reports.entries.length - 1]?.netAmount
                           .currency,
                     ),
-                    invoiceDate: new Date(),
+                    invoiceDate: dateToCalendarDate(new Date()),
                     clientId: idSpecUtils.switchAll(props.clientId, undefined),
                   }}
                   services={props.services}

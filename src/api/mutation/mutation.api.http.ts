@@ -88,7 +88,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           total_gross: billing.totalGross,
           client_id: billing.clientId,
           invoice_number: billing.invoiceNumber,
-          invoice_date: billing.invoiceDate,
+          invoice_date: formatDateForSupabase(billing.invoiceDate),
           description: billing.description,
           workspace_id: billing.workspaceId,
         })
@@ -206,7 +206,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               total_gross: takeIfPresent("totalGross"),
               client_id: takeIfPresent("clientId"),
               invoice_number: takeIfPresent("invoiceNumber"),
-              invoice_date: takeIfPresent("invoiceDate"),
+              invoice_date: maybe.map(
+                takeIfPresent("invoiceDate"),
+                formatDateForSupabase,
+              ),
               description: takeIfPresent("description"),
               workspace_id: takeIfPresent("workspaceId"),
             },

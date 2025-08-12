@@ -79,7 +79,7 @@ export interface BillingViewEntry {
   contractors: ContractorBase[];
   invoiceNumber: string;
   client: Client;
-  invoiceDate: Date;
+  invoiceDate: CalendarDate;
   description: string | null;
   links: Billing["linkBillingReport"];
   matchedAmount: CurrencyValue;

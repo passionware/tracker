@@ -1,3 +1,4 @@
+import { parseDate } from "@internationalized/date";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
 import { BillingBase } from "./billing.api.ts";
@@ -10,12 +11,12 @@ export const billingBase$ = z.object({
   total_gross: z.number(),
   client_id: z.number(),
   invoice_number: z.string(),
-  invoice_date: z.coerce.date(),
+  invoice_date: z.string().transform(parseDate),
   description: z.string().nullable(),
   workspace_id: z.number(),
 });
 
-export type BillingBase$ = z.input<typeof billingBase$>;
+export type BillingBase$ = z.output<typeof billingBase$>;
 
 export function billingBaseFromHttp(billing: BillingBase$): BillingBase {
   return {

@@ -11,7 +11,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
-import {Contractor, ContractorBase} from "@/api/contractor/contractor.api.ts";
+import { Contractor, ContractorBase } from "@/api/contractor/contractor.api.ts";
 
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { ReportBase } from "@/api/reports/reports.api.ts";
@@ -23,6 +23,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { chain } from "lodash";
 
 export interface BillingPayload {
@@ -31,7 +32,7 @@ export interface BillingPayload {
   totalGross: number;
   clientId: number;
   invoiceNumber: string;
-  invoiceDate: Date;
+  invoiceDate: CalendarDate;
   description: string | null;
   workspaceId: Workspace["id"];
 }

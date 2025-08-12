@@ -10,6 +10,7 @@ import {
   differenceInYears,
   format,
   isSameDay,
+  isValid,
   startOfDay,
 } from "date-fns";
 import { ReactNode, useEffect, useState } from "react";
@@ -132,6 +133,13 @@ export function createFormatService(clock: () => Date): FormatService {
       single: {
         compact: (date) => {
           const fixedDate = tmpFixDate(date);
+          if (!isValid(fixedDate)) {
+            return (
+              <span className="text-red-700 whitespace-nowrap font-mono bg-red-100 border border-red-700 rounded-sm px-1 py-0.5">
+                Invalid Date
+              </span>
+            );
+          }
           return (
             <SingleWrapper date={fixedDate}>
               <div className="flex flex-col text-center gap-1">
