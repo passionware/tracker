@@ -1,6 +1,6 @@
 import { CostQuery } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { NumberInput } from "@/components/ui/input.tsx";
 import {
   Popover,
   PopoverContent,
@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
@@ -28,7 +28,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 import { useId } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 export interface InlineCostSearchProps
   extends WithServices<
@@ -200,7 +200,20 @@ function EnterValue(
         )}
         )
       </label>
-      <Input id={sourceId} {...form.register("source")} />
+      <Controller
+        name="source"
+        control={form.control}
+        render={({ field }) => (
+          <NumberInput
+            id={sourceId}
+            {...field}
+            formatOptions={{
+              style: "currency",
+              currency: props.initialSourceValue.currency,
+            }}
+          />
+        )}
+      />
 
       {props.showTargetValue && (
         <>
@@ -211,7 +224,20 @@ function EnterValue(
             )}
             )
           </label>
-          <Input id={targetId} {...form.register("target")} />
+          <Controller
+            name="target"
+            control={form.control}
+            render={({ field }) => (
+              <NumberInput
+                id={targetId}
+                {...field}
+                formatOptions={{
+                  style: "currency",
+                  currency: props.initialTargetValue.currency,
+                }}
+              />
+            )}
+          />
         </>
       )}
 

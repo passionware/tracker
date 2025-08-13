@@ -6,14 +6,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { NumberInput } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { Expand } from "lucide-react";
 import { useId } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 export interface InlineClarifyProps
   extends WithServices<[WithReportDisplayService, WithFormatService]> {
@@ -64,13 +64,20 @@ export function InlineBillingClarify(props: InlineClarifyProps) {
         {...form.register("clarifyJustification")}
       />
       <label htmlFor={amountId}>Enter amount to clarify:</label>
-      <Input
-        id={amountId}
-        {...form.register("clarifyAmount", {
-          valueAsNumber: true,
-          required: true,
-          max: props.maxAmount,
-        })}
+      <Controller
+        name="clarifyAmount"
+        control={form.control}
+        render={({ field }) => (
+          <NumberInput
+            id={amountId}
+            {...field}
+            step={0.01}
+            formatOptions={{
+              style: "currency",
+              currency: "EUR", // Default currency for clarifications
+            }}
+          />
+        )}
       />
 
       <Button variant="default" type="submit">
