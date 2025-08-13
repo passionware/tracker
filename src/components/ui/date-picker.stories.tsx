@@ -2,10 +2,10 @@ import { CalendarDate } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { DatePicker2 } from "./date-picker-2";
+import { DatePicker } from "./date-picker.tsx";
 
 const meta = {
-  component: DatePicker2,
+  component: DatePicker,
   args: {
     value: maybe.ofAbsent(),
     placeholder: "Pick a date",
@@ -17,13 +17,13 @@ const meta = {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [value, setValue] = useState<Maybe<CalendarDate>>(args.value);
 
-    return <DatePicker2 {...args} value={value} onChange={setValue} />;
+    return <DatePicker {...args} value={value} onChange={setValue} />;
   },
-} satisfies Meta<typeof DatePicker2>;
+} satisfies Meta<typeof DatePicker>;
 
 export default meta;
 
-type Story = StoryObj<typeof DatePicker2>;
+type Story = StoryObj<typeof DatePicker>;
 
 export const Default = {} satisfies Story;
 
@@ -60,7 +60,7 @@ export const AllVariants = {
       <div className="space-y-6 p-6">
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Default State</h3>
-          <DatePicker2
+          <DatePicker
             value={value1}
             onChange={setValue1}
             placeholder="Pick a date"
@@ -69,7 +69,7 @@ export const AllVariants = {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">With Pre-selected Value</h3>
-          <DatePicker2
+          <DatePicker
             value={value2}
             onChange={setValue2}
             placeholder="Pick a date"
@@ -78,7 +78,7 @@ export const AllVariants = {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Disabled State</h3>
-          <DatePicker2
+          <DatePicker
             value={value3}
             onChange={setValue3}
             placeholder="Pick a date"
@@ -88,7 +88,7 @@ export const AllVariants = {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Custom Placeholder</h3>
-          <DatePicker2
+          <DatePicker
             value={maybe.ofAbsent()}
             onChange={() => {}}
             placeholder="Custom placeholder text"

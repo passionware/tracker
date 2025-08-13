@@ -1,6 +1,6 @@
 import { CostPayload } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker2 } from "@/components/ui/date-picker-2";
+import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
   Form,
   FormControl,
@@ -218,7 +218,7 @@ export function CostForm(props: CostFormProps) {
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

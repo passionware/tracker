@@ -1,6 +1,6 @@
 import { BillingPayload } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker2 } from "@/components/ui/date-picker-2";
+import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
   Form,
   FormControl,
@@ -182,7 +182,7 @@ export function BillingForm(props: BillingFormProps) {
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

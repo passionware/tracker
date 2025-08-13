@@ -1,6 +1,6 @@
 import { ReportPayload } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker2 } from "@/components/ui/date-picker-2.tsx";
+import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
   Form,
   FormControl,
@@ -174,7 +174,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
             <FormItem>
               <FormLabel>Period start</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"
@@ -193,7 +193,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
             <FormItem>
               <FormLabel>Period end</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"

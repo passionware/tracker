@@ -10,7 +10,7 @@ import {
   CalendarCell,
   CalendarGrid,
   DateInput,
-  DatePicker,
+  DatePicker as DatePickerComponent,
   DateSegment,
   Dialog,
   Group,
@@ -18,7 +18,7 @@ import {
   Popover,
 } from "react-aria-components";
 
-interface DatePicker2Props {
+interface DatePickerProps {
   value: Maybe<CalendarDate>;
   onChange: (date: Maybe<CalendarDate>) => void;
   placeholder?: string;
@@ -78,13 +78,13 @@ function formatDateForClipboard(date: CalendarDate): string {
   return `${date.day.toString().padStart(2, "0")}.${date.month.toString().padStart(2, "0")}.${date.year}`;
 }
 
-export function DatePicker2({
+export function DatePicker({
   value,
   onChange,
   // placeholder = "Pick a date",
   disabled = false,
   className,
-}: DatePicker2Props) {
+}: DatePickerProps) {
   const handleCopy = (event: React.ClipboardEvent) => {
     if (value) {
       const formattedDate = formatDateForClipboard(value);
@@ -103,7 +103,7 @@ export function DatePicker2({
   };
 
   return (
-    <DatePicker
+    <DatePickerComponent
       value={value || null}
       onChange={(date: CalendarDate | null) => onChange(date || null)}
       isDisabled={disabled}
@@ -166,6 +166,6 @@ export function DatePicker2({
           </div>
         </Dialog>
       </Popover>
-    </DatePicker>
+    </DatePickerComponent>
   );
 }

@@ -1,6 +1,6 @@
 import { ProjectIterationPayload } from "@/api/project-iteration/project-iteration.api.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DatePicker2 } from "@/components/ui/date-picker-2.tsx";
+import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
   Form,
   FormControl,
@@ -18,9 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { CalendarDate } from "@internationalized/date";
-import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
@@ -49,8 +49,10 @@ type FormModel = {
 export function ProjectIterationForm(props: ProjectIterationFormProps) {
   const form = useForm<FormModel>({
     defaultValues: {
-      periodStart: props.defaultValues?.periodStart ?? dateToCalendarDate(new Date()),
-      periodEnd: props.defaultValues?.periodEnd ?? dateToCalendarDate(new Date()),
+      periodStart:
+        props.defaultValues?.periodStart ?? dateToCalendarDate(new Date()),
+      periodEnd:
+        props.defaultValues?.periodEnd ?? dateToCalendarDate(new Date()),
       status: props.defaultValues?.status ?? "draft",
       description: props.defaultValues?.description ?? "",
       projectId: props.defaultValues?.projectId ?? 0,
@@ -64,7 +66,10 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
   function handleSubmit(data: FormModel) {
     const allData: ProjectIterationPayload = {
       ordinalNumber: 1,
-      periodStart: maybe.getOrThrow(data.periodStart, "Period start is required"),
+      periodStart: maybe.getOrThrow(
+        data.periodStart,
+        "Period start is required",
+      ),
       periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
       status: data.status,
       description: data.description || null,
@@ -89,7 +94,7 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
             <FormItem>
               <FormLabel>Period Start</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"
@@ -107,7 +112,7 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
             <FormItem>
               <FormLabel>Period End</FormLabel>
               <FormControl>
-                <DatePicker2
+                <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Pick a date"
