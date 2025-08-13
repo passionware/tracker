@@ -81,3 +81,12 @@ export const WithDecimals = {
     step: 0.01,
   },
 } satisfies Story;
+
+export const WithUnlimitedDecimals = {
+  args: {
+    formatOptions: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 20,
+    },
+  },
+} satisfies Story;
