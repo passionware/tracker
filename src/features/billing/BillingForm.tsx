@@ -141,8 +141,6 @@ export function BillingForm(props: BillingFormProps) {
                   {...field}
                   step={0.01}
                   formatOptions={{
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
                     ...maybe.map(form.watch("currency"), (currency) => ({
                       style: "currency" as const,
                       currency,
@@ -167,8 +165,6 @@ export function BillingForm(props: BillingFormProps) {
                   {...field}
                   step={0.01}
                   formatOptions={{
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
                     ...maybe.map(form.watch("currency"), (currency) => ({
                       style: "currency" as const,
                       currency,

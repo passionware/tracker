@@ -231,8 +231,6 @@ export function ReportForm(props: ReportWidgetFormProps) {
                   {...field}
                   step={0.01}
                   formatOptions={{
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
                     ...maybe.map(form.watch("currency"), (currency) => ({
                       style: "currency" as const,
                       currency,

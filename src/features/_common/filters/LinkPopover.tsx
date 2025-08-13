@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button.tsx";
 import {
+  Form,
   FormControl,
   FormField,
-  Form,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { NumberInput } from "@/components/ui/input.tsx";
 import {
   Popover,
   PopoverContent,
@@ -122,7 +122,14 @@ export function LinkPopover(props: LinkPopoverProps) {
                   </FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
-                      <Input {...field} />
+                      <NumberInput
+                        {...field}
+                        step={0.01}
+                        formatOptions={{
+                          style: "currency",
+                          currency: props.sourceCurrency,
+                        }}
+                      />
                       <ExportChooserPopover
                         header="Choose variable"
                         services={props.services}
@@ -162,7 +169,14 @@ export function LinkPopover(props: LinkPopoverProps) {
                   </FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
-                      <Input {...field} />
+                      <NumberInput
+                        {...field}
+                        step={0.01}
+                        formatOptions={{
+                          style: "currency",
+                          currency: props.targetCurrency,
+                        }}
+                      />
                       <ExportChooserPopover
                         header="Choose variable"
                         services={props.services}

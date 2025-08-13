@@ -113,8 +113,6 @@ export function ProjectIterationPositionForm(
                   {...field}
                   step={0.01}
                   formatOptions={{
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
                     style: "currency",
                     currency: props.currency,
                   }}
