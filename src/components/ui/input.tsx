@@ -51,7 +51,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
               inputClassName,
             )}
           />
-          <div className="flex flex-col rounded-r-md overflow-hidden border-l border-slate-200 dark:border-slate-700">
+          <div className="flex shrink-0 flex-col rounded-r-md overflow-hidden border-l border-slate-200 dark:border-slate-700">
             <Button
               slot="increment"
               className={cn(
@@ -78,4 +78,49 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
 );
 NumberInput.displayName = "NumberInput";
 
-export { Input, NumberInput };
+// NumberInputAsString component that handles string-to-number conversion
+export interface NumberInputAsStringProps
+  extends Omit<NumberInputProps, "value" | "onChange"> {
+  value?: string;
+  onChange?: (value: string) => void;
+  className?: string;
+  inputClassName?: string;
+  buttonClassName?: string;
+}
+
+const NumberInputAsString = React.forwardRef<
+  HTMLInputElement,
+  NumberInputAsStringProps
+>(
+  (
+    { className, inputClassName, buttonClassName, value, onChange, ...props },
+    ref,
+  ) => {
+    // Convert string to number for NumberInput
+    const numericValue = value
+      ? isNaN(parseFloat(value))
+        ? undefined
+        : parseFloat(value)
+      : undefined;
+
+    // Convert number back to string for onChange
+    const handleChange = (numValue: number) => {
+      onChange?.(String(numValue));
+    };
+
+    return (
+      <NumberInput
+        ref={ref}
+        className={className}
+        inputClassName={inputClassName}
+        buttonClassName={buttonClassName}
+        value={numericValue}
+        onChange={handleChange}
+        {...props}
+      />
+    );
+  },
+);
+NumberInputAsString.displayName = "NumberInputAsString";
+
+export { Input, NumberInput, NumberInputAsString };

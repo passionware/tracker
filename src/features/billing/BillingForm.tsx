@@ -10,7 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input.tsx";
+import { Input, NumberInputAsString } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
@@ -137,7 +137,14 @@ export function BillingForm(props: BillingFormProps) {
             <FormItem className="col-start-1">
               <FormLabel>Total Net</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <NumberInputAsString
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormDescription>Enter total net value</FormDescription>
               <FormMessage />
@@ -152,7 +159,14 @@ export function BillingForm(props: BillingFormProps) {
             <FormItem>
               <FormLabel>Total Gross</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <NumberInputAsString
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormDescription>Enter total gross value</FormDescription>
               <FormMessage />

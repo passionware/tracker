@@ -10,7 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input.tsx";
+import { Input, NumberInputAsString } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
@@ -173,7 +173,14 @@ export function CostForm(props: CostFormProps) {
             <FormItem>
               <FormLabel>Net Value</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <NumberInputAsString
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormDescription>Enter net value</FormDescription>
               <FormMessage />
@@ -188,7 +195,14 @@ export function CostForm(props: CostFormProps) {
             <FormItem>
               <FormLabel>Gross Value</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <NumberInputAsString
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormDescription>Enter gross value</FormDescription>
               <FormMessage />

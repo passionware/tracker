@@ -8,7 +8,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { Input, NumberInput } from "@/components/ui/input.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { UnitPicker } from "@/features/_common/elements/pickers/UnitPicker.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
@@ -83,7 +83,7 @@ export function ProjectIterationPositionForm(
             <FormItem>
               <FormLabel>Quantity</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <NumberInput {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -109,7 +109,14 @@ export function ProjectIterationPositionForm(
             <FormItem>
               <FormLabel>Unit Price</FormLabel>
               <FormControl>
-                <Input type="number" step={0.01} {...field} />
+                <NumberInput
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -10,7 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input.tsx";
+import { NumberInputAsString } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
@@ -227,7 +227,14 @@ export function ReportForm(props: ReportWidgetFormProps) {
             <FormItem>
               <FormLabel>Net value</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <NumberInputAsString
+                  {...field}
+                  step={0.01}
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
               </FormControl>
               <FormDescription>Enter net value</FormDescription>
               <ExportChooserPopover
