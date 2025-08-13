@@ -143,6 +143,10 @@ export function BillingForm(props: BillingFormProps) {
                   formatOptions={{
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
+                    ...maybe.map(form.watch("currency"), (currency) => ({
+                      style: "currency" as const,
+                      currency,
+                    })),
                   }}
                 />
               </FormControl>
@@ -165,6 +169,10 @@ export function BillingForm(props: BillingFormProps) {
                   formatOptions={{
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
+                    ...maybe.map(form.watch("currency"), (currency) => ({
+                      style: "currency" as const,
+                      currency,
+                    })),
                   }}
                 />
               </FormControl>

@@ -115,6 +115,8 @@ export function ProjectIterationPositionForm(
                   formatOptions={{
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
+                    style: "currency",
+                    currency: props.currency,
                   }}
                 />
               </FormControl>
