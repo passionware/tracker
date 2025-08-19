@@ -184,7 +184,16 @@ export function CostForm(props: CostFormProps) {
                   }}
                 />
               </FormControl>
-              <FormDescription>Enter net value</FormDescription>
+              <FormDescription className="text-rose-800">
+                <p>
+                  <strong>Umowa o dzieło</strong>: enter the gross value
+                  including tax. Actual payment value put in the description.
+                </p>
+                <p>
+                  <strong>B2B</strong>: enter the net value found in the
+                  invoice.
+                </p>
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -210,7 +219,11 @@ export function CostForm(props: CostFormProps) {
                   }}
                 />
               </FormControl>
-              <FormDescription>Enter gross value</FormDescription>
+              <FormDescription>
+                For information purpose. Field is not processed in any
+                calculations. For B2B contracts, this is the value including vat
+                tax.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
