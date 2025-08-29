@@ -18,6 +18,7 @@ export interface ReportView {
   total: {
     netAmount: CurrencyValueGroup;
     billedAmount: CurrencyValueGroup;
+    linkedReportAmount: CurrencyValueGroup;
     chargedAmount: CurrencyValueGroup;
     toChargeAmount: CurrencyValueGroup;
     compensatedAmount: CurrencyValueGroup;
@@ -38,6 +39,7 @@ export interface ReportViewEntry {
    */
   status: "billed" | "partially-billed" | "clarified" | "uncovered";
   billedAmount: CurrencyValue;
+  linkedReportAmount: CurrencyValue;
   remainingAmount: CurrencyValue;
   billingLinks: Report["linkBillingReport"];
   costLinks: Report["linkCostReport"];

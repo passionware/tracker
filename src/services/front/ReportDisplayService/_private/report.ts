@@ -48,6 +48,15 @@ export function useReportView(
             currency,
           })),
         ),
+        linkedReportAmount: prepareValues(
+          Object.entries(groupedEntries).map(([currency, reports]) => ({
+            amount: sumBy(
+              reports,
+              (report) => report.linkedReportAmount.amount,
+            ),
+            currency,
+          })),
+        ),
         chargedAmount: prepareValues(
           Object.entries(groupedEntries).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.billedAmount.amount),
@@ -220,6 +229,14 @@ function calculateReportEntry(
     billedAmount: {
       // todo probably reconciled and billed will be the same
       amount: report.reportBillingValue,
+      currency: report.currency,
+    },
+    linkedReportAmount: {
+      // Sum of report amounts from billing links (what was actually linked from this report)
+      amount: sumBy(
+        report.linkBillingReport,
+        (link) => link.link.reportAmount ?? 0,
+      ),
       currency: report.currency,
     },
     remainingAmount: {

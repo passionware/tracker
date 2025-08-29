@@ -78,6 +78,7 @@ export function ReportInfo({
 }: ReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
+
   return (
     <InfoLayout
       header={
@@ -85,7 +86,7 @@ export function ReportInfo({
           Report's linking to billing
           <TransferView
             fromAmount={report.remainingAmount}
-            toAmount={report.billedAmount}
+            toAmount={report.linkedReportAmount}
             services={services}
             fromLabel="Unlinked to billing"
             toLabel="Linked to billing"
