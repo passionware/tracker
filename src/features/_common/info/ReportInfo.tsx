@@ -25,6 +25,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { assert } from "@/platform/lang/assert.ts";
+import { todayCalendarDate } from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -121,6 +122,13 @@ export function ReportInfo({
                     context={{
                       clientId: report.client.id,
                       workspaceId: report.workspace.id,
+                    }}
+                    initialNewBillingValues={{
+                      clientId: report.client.id,
+                      workspaceId: report.workspace.id,
+                      totalNet: report.remainingAmount.amount,
+                      currency: report.remainingAmount.currency,
+                      invoiceDate: todayCalendarDate(),
                     }}
                     className="overflow-y-auto h-full"
                     services={services}
@@ -336,8 +344,8 @@ export function ReportInfo({
                   </div>
                 );
               }
-              if(maybe.isAbsent(value.billingAmount)) {
-                  return "missing billing amount";
+              if (maybe.isAbsent(value.billingAmount)) {
+                return "missing billing amount";
               }
               assert(
                 maybe.isPresent(value.billingAmount),

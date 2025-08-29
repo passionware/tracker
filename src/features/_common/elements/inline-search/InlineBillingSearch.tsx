@@ -1,5 +1,6 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
+  Billing,
   BillingPayload,
   BillingQuery,
   billingQueryUtils,
@@ -54,6 +55,7 @@ export interface InlineBillingSearchWidgetProps
   renderSelect: BillingListProps["renderSelect"];
   className?: string;
   context: Omit<ExpressionContext, "contractorId">;
+  onBillingCreated?: (billing: Pick<Billing, "id">) => void;
 }
 
 export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
@@ -103,6 +105,7 @@ export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
                   onSubmit={(data) =>
                     props.services.mutationService
                       .createBilling(data)
+                      .then((x) => props.onBillingCreated?.(x))
                       .then(editModalState.close)
                   }
                 />
