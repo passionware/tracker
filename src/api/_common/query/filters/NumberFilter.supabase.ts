@@ -2,7 +2,7 @@
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 import { NumberFilter } from "./NumberFilter.ts";
 
-type Builder = PostgrestFilterBuilder<any, any, any, unknown, unknown>;
+type Builder = PostgrestFilterBuilder<any, any, any, any, any>;
 
 export const numberFilterSupabaseUtils = {
   filterBy: function <S extends Builder>(

@@ -2,7 +2,7 @@
 import { Sorter } from "@/api/_common/query/sorters/Sorter.ts";
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 
-type Builder = PostgrestFilterBuilder<any, any, any, unknown, unknown>;
+type Builder = PostgrestFilterBuilder<any, any, any, any, any>;
 
 type MappingSpec = string | { foreignTable: string; foreignColumn: string };
 

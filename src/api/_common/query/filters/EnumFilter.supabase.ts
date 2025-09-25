@@ -2,7 +2,7 @@
 import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 
-type Builder = PostgrestFilterBuilder<any, any, any, unknown, unknown>;
+type Builder = PostgrestFilterBuilder<any, any, any, any, any>;
 
 export const enumFilterSupabaseUtils = {
   filterBy: {

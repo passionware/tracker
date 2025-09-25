@@ -52,8 +52,8 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
         request = numberFilterSupabaseUtils.filterBy(
           request,
           query.filters.remainingAmount,
-          "remaining_balance",
-        );
+          "remaining_balance" as const,
+        ) as typeof request;
       }
 
       if (query.filters.workspaceId) {

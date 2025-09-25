@@ -58,7 +58,7 @@ export function RollingText({
   const transitionX = shouldAnimate
     ? {
         duration: totalDuration,
-        ease: "linear",
+        ease: "linear" as const,
         repeat: Infinity, // powtarzaj bez końca
         times: [0, firstMoveEnd, firstPauseEnd, secondMoveEnd, 1],
       }

@@ -3,7 +3,7 @@ import { endOfDay, startOfDay } from "date-fns";
 import { DateFilter } from "./DateFilter";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Builder = PostgrestFilterBuilder<any, any, any, unknown, unknown>;
+type Builder = PostgrestFilterBuilder<any, any, any, any, any>;
 
 export const dateFilterSupabaseUtils = {
   filterBy: function <S extends Builder>(
