@@ -59,7 +59,7 @@ export function ProjectTabs(
   return (
     <Tabs
       value={currentTab ?? "iterations"}
-      className="w-full bg-white sticky top-0 z-[50]"
+      className="w-full bg-white sticky top-0"
     >
       <TabsList>
         <TabsTrigger

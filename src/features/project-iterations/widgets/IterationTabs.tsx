@@ -64,7 +64,7 @@ export function IterationTabs(
   );
 
   return (
-    <Tabs value={currentTab} className="w-full bg-white sticky top-0 z-[50]">
+    <Tabs value={currentTab} className="w-full bg-white sticky top-0">
       <TabsList>
         <TabsTrigger
           value="positions"
