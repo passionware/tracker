@@ -1,6 +1,6 @@
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import { createSbServices } from "@/services/_common/createSbServices.ts";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 
 import { LinkPopover, LinkPopoverProps } from "./LinkPopover";
 

@@ -10,7 +10,7 @@ import {
   createSbServices,
 } from "@/services/_common/createSbServices.ts";
 import { classNameDecorator } from "@passionware/platform-storybook";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 
 const services = createSbServices({
   workspace: true,

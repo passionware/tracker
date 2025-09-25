@@ -1,7 +1,7 @@
 import { parseDate } from "@/platform/lang/parseDate.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { maybe } from "@passionware/monads";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { DateFilterWidget } from "./DateFilterWidget.tsx";
 

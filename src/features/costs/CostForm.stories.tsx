@@ -2,7 +2,7 @@ import { costMock } from "@/api/cost/cost.mock.ts";
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.mock.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 
 import { CostForm, CostFormProps } from "./CostForm.tsx";
 

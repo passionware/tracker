@@ -20,7 +20,7 @@ import { createBillingService } from "@/services/io/BillingService/BillingServic
 import { createCostService } from "@/services/io/CostService/CostService.mock.ts";
 import { createReportService } from "@/services/io/ReportService/ReportService.mock.ts";
 import { rd } from "@passionware/monads";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 
 const services = createSbServices({
   workspace: true,

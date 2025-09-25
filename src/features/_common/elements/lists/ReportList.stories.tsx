@@ -13,7 +13,7 @@ import {
 } from "@/services/_common/createSbServices.ts";
 import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { rd } from "@passionware/monads";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 
 const services = createSbServices({
   workspace: true,

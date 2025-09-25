@@ -24,7 +24,7 @@ import {
   testQuery,
   TestQuery,
 } from "@passionware/platform-storybook";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 import { MemoryRouter } from "react-router-dom";
 
 type Args = ProjectListWidgetProps &

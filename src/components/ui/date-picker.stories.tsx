@@ -1,6 +1,6 @@
 import { CalendarDate } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { DatePicker } from "./date-picker.tsx";
 

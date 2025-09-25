@@ -5,7 +5,7 @@ import {
   ArgsWithServices,
   createSbServices,
 } from "@/services/_common/createSbServices.ts";
-import type { StoryObj } from "@storybook/react";
+import type { StoryObj } from "@storybook/react-vite";
 import { Fragment } from "react";
 
 import { WorkspacePicker, WorkspacePickerProps } from "./WorkspacePicker.tsx";
