@@ -13,7 +13,10 @@ import { z } from "zod";
 export function createProjectApi(client: SupabaseClient): ProjectApi {
   return {
     getProjects: async (query) => {
-      let request = client.from("project").select("*");
+      let request = client.from("project").select(`
+        *,
+        link_project_workspace!inner(*)
+      `);
 
       if (query.search) {
         request = request.ilike("name", `%${query.search}%`);
@@ -24,11 +27,11 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
           createdAt: "created_at",
         });
       }
-      if (query.filters.workspaceId) {
+      if (query.filters.workspaceIds) {
         request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
-          query.filters.workspaceId,
-          "workspace_id",
+          query.filters.workspaceIds,
+          "link_project_workspace.workspace_id",
         );
       }
       if (query.filters.clientId) {

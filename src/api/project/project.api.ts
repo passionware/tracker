@@ -25,7 +25,7 @@ export interface ProjectPayload {
   name: string;
   status: "draft" | "active" | "closed";
   description: Nullable<string>;
-  workspaceId: Workspace["id"];
+  workspaceIds: Workspace["id"][];
   clientId: Client["id"];
 }
 
@@ -39,7 +39,7 @@ export interface Project extends ProjectBase {
 
 export type ProjectQuery = WithFilters<{
   clientId: EnumFilter<Client["id"]>;
-  workspaceId: EnumFilter<Workspace["id"]>;
+  workspaceIds: EnumFilter<Workspace["id"]>;
   createdAt: DateFilter;
   status: EnumFilter<"draft" | "active" | "closed">;
 }> &
@@ -56,7 +56,7 @@ export const projectQueryUtils = withBuilderUtils({
     search: "",
     filters: {
       clientId: null,
-      workspaceId: null,
+      workspaceIds: null,
       status: null,
       createdAt: null,
     },
@@ -70,7 +70,8 @@ export const projectQueryUtils = withBuilderUtils({
     projectQueryUtils.transform(query).build((x) => [
       idSpecUtils.mapSpecificOrElse(
         specs.workspaceId,
-        (id) => x.withFilter("workspaceId", { operator: "oneOf", value: [id] }),
+        (id) =>
+          x.withFilter("workspaceIds", { operator: "oneOf", value: [id] }),
         x.unchanged(),
       ),
       idSpecUtils.mapSpecificOrElse(
