@@ -33,15 +33,11 @@ import { get } from "lodash";
 import { Info } from "lucide-react";
 import * as React from "react";
 import { ReactNode } from "react";
-import { SelectionLayout } from "./SelectionLayout";
 import { sharedColumns } from "./columns/_common/sharedColumns";
+import { SelectionLayout } from "./SelectionLayout";
 
-// Typ wejściowy komponentu (co będzie wierszem w tabeli)
-export type ListViewProps<
-  TData,
-  Query extends SortableQueryBase,
-  TRowKey extends keyof TData,
-> = {
+// Simple approach: make selection props optional and handle at runtime
+export type ListViewProps<TData, Query extends SortableQueryBase> = {
   data: RemoteData<TData[]>;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   columns: ColumnDef<any, any>[];
@@ -53,30 +49,35 @@ export type ListViewProps<
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
   renderAdditionalData?: (row: TData) => React.ReactNode;
-} & (TRowKey extends never
-  ? {}
-  : {
-      selection: SelectionState<TData[TRowKey]>;
-      onSelectionChange: (selection: SelectionState<TData[TRowKey]>) => void;
-    });
+  // Optional selection props - only works when data has id property
+  selection?: TData extends { id: infer TId }
+    ? SelectionState<TId>
+    : SelectionState<never>;
+  onSelectionChange?: (
+    selection: TData extends { id: infer TId }
+      ? SelectionState<TId>
+      : SelectionState<never>,
+  ) => void;
+};
 
-export function ListView<
-  TData,
-  Query extends SortableQueryBase,
-  TRowKey extends keyof TData = never,
->({
-  data,
-  columns,
-  skeletonRows = 6,
-  caption,
-  onRowDoubleClick,
-  onRowClick,
-  className,
-  query,
-  onQueryChange,
-  renderAdditionalData,
-  ...rest
-}: ListViewProps<TData, Query, TRowKey>) {
+export function ListView<TData, Query extends SortableQueryBase>(
+  props: ListViewProps<TData, Query>,
+): React.ReactElement {
+  const {
+    data,
+    columns,
+    skeletonRows = 6,
+    caption,
+    onRowDoubleClick,
+    onRowClick,
+    className,
+    query,
+    onQueryChange,
+    renderAdditionalData,
+    selection,
+    onSelectionChange,
+  } = props;
+
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -91,16 +92,16 @@ export function ListView<
   const tableData = rd.getOrElse(dataWithPlaceholder, [] as TData[]);
 
   // Inicjalizacja tabeli z tanstack react table
-  const table = useReactTable({
-    data: tableData,
+  const table = useReactTable<any>({
+    data: tableData as any,
     manualPagination: true,
     columns:
-      "selection" in rest
+      selection && onSelectionChange
         ? [
             sharedColumns.selection(
-              rest.selection,
-              data as RemoteData<{ id: TRowKey }[]>,
-              rest.onSelectionChange,
+              selection as any,
+              data as any,
+              onSelectionChange as any,
             ),
             ...columns,
           ]
@@ -262,7 +263,7 @@ export function ListView<
                           }
                         }
 
-                        onRowClick?.(row.original);
+                        onRowClick?.(row.original as TData);
                       }}
                       onDoubleClick={(e) => {
                         if (e.target instanceof Element) {
@@ -275,7 +276,7 @@ export function ListView<
                           }
                         }
 
-                        onRowDoubleClick?.(row.original);
+                        onRowDoubleClick?.(row.original as TData);
                         if (onRowDoubleClick && !e.defaultPrevented) {
                           window.getSelection?.()?.removeAllRanges();
                         }
@@ -296,7 +297,7 @@ export function ListView<
                       ))}
                     </TableRow>
                     {maybe.map(
-                      renderAdditionalData?.(row.original),
+                      renderAdditionalData?.(row.original as TData),
                       (additionalData) => (
                         <TableRow>
                           <TableCell
@@ -332,23 +333,29 @@ export function ListView<
       );
     });
 
-  if (maybe.isPresent(onSelectionChange)) {
+  if (selection && onSelectionChange) {
     return (
       <SelectionLayout
-        selectedIds={maybe.flatMapOrElse(
-          selection,
-          (selection) =>
-            selectionState
-              .getSelectedIds(
-                selection,
-                rd.tryGet(data)?.map((item) => item.id) ?? [],
-              )
-              .map(String),
-          [],
-        )}
-        onSelectedIdsChange={(ids) =>
-          onSelectionChange?.(selectionState.selectSome(ids.map(Number)))
-        }
+        selectedIds={selectionState
+          .getSelectedIds(
+            selection,
+            rd.tryGet(data)?.map((item) => (item as any).id) ?? [],
+          )
+          .map(String)}
+        onSelectedIdsChange={(ids) => {
+          // We need to reverse engineer the selection state from the list of selected ids.
+          // The ids we get are strings, but the data's ids may be string or number.
+          // We want to filter the data to only those whose id (as string) is in the ids array.
+          // Then, pass those items' actual ids (not stringified) to selectionState.selectSome.
+          const allData = rd.tryGet(data) ?? [];
+          const selectedIds = new Set(ids);
+          const matchingIds = allData
+            .filter((item) => selectedIds.has(String((item as any).id)))
+            .map((item) => (item as any).id);
+          return onSelectionChange(
+            selectionState.selectSome(matchingIds) as any,
+          );
+        }}
       >
         {listViewContent}
       </SelectionLayout>
