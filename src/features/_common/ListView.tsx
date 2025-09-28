@@ -58,6 +58,7 @@ export type ListViewProps<TData, Query extends SortableQueryBase> = {
       ? SelectionState<TId>
       : SelectionState<never>,
   ) => void;
+  toolbar?: React.ReactNode;
 };
 
 export function ListView<TData, Query extends SortableQueryBase>(
@@ -76,6 +77,7 @@ export function ListView<TData, Query extends SortableQueryBase>(
     renderAdditionalData,
     selection,
     onSelectionChange,
+    toolbar,
   } = props;
 
   // Stan lokalny do sortowania, filtrowania itp.
@@ -220,6 +222,91 @@ export function ListView<TData, Query extends SortableQueryBase>(
     ))
     .map(() => {
       // Mamy faktyczne dane – tworzymy UI tabeli
+      const tbody = (
+        <TableBody
+          className={cn(
+            "border-b bg-white",
+            getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
+          )}
+        >
+          {/* Sprawdź, czy mamy wiersze w modelu */}
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <>
+                <TableRow
+                  key={row.id}
+                  data-item-id={row.original.id}
+                  aria-selected={maybe.mapOrElse(
+                    selection,
+                    (selection) =>
+                      !!selectionState.isSelected(selection, row.original.id),
+                    false,
+                  )}
+                  onClick={(e) => {
+                    if (e.target instanceof Element) {
+                      if (e.target.closest("a, button")) {
+                        return;
+                      }
+                      // check if the click was physically inside, not via react portal:
+                      if (!e.currentTarget.contains(e.target)) {
+                        return;
+                      }
+                    }
+
+                    onRowClick?.(row.original as TData);
+                  }}
+                  onDoubleClick={(e) => {
+                    if (e.target instanceof Element) {
+                      if (e.target.closest("a, button")) {
+                        return;
+                      }
+                      // check if the click was physically inside, not via react portal:
+                      if (!e.currentTarget.contains(e.target)) {
+                        return;
+                      }
+                    }
+
+                    onRowDoubleClick?.(row.original as TData);
+                    if (onRowDoubleClick && !e.defaultPrevented) {
+                      window.getSelection?.()?.removeAllRanges();
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        get(cell.column.columnDef.meta, "cellClassName"),
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {maybe.map(
+                  renderAdditionalData?.(row.original as TData),
+                  (additionalData) => (
+                    <TableRow>
+                      <TableCell colSpan={table.getVisibleLeafColumns().length}>
+                        {additionalData}
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )}
+              </>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No data available.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      );
 
       return (
         <div className={cn("rounded-md border overflow-auto", className)}>
@@ -230,97 +317,34 @@ export function ListView<TData, Query extends SortableQueryBase>(
             </TableHeader>
 
             {/* CIAŁO */}
-            <TableBody
-              className={cn(
-                "border-b bg-white",
-                getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
-              )}
-            >
-              {/* Sprawdź, czy mamy wiersze w modelu */}
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <>
-                    <TableRow
-                      key={row.id}
-                      data-item-id={row.original.id}
-                      aria-selected={maybe.mapOrElse(
-                        selection,
-                        (selection) =>
-                          !!selectionState.isSelected(
-                            selection,
-                            row.original.id,
-                          ),
-                        false,
-                      )}
-                      onClick={(e) => {
-                        if (e.target instanceof Element) {
-                          if (e.target.closest("a, button")) {
-                            return;
-                          }
-                          // check if the click was physically inside, not via react portal:
-                          if (!e.currentTarget.contains(e.target)) {
-                            return;
-                          }
-                        }
-
-                        onRowClick?.(row.original as TData);
-                      }}
-                      onDoubleClick={(e) => {
-                        if (e.target instanceof Element) {
-                          if (e.target.closest("a, button")) {
-                            return;
-                          }
-                          // check if the click was physically inside, not via react portal:
-                          if (!e.currentTarget.contains(e.target)) {
-                            return;
-                          }
-                        }
-
-                        onRowDoubleClick?.(row.original as TData);
-                        if (onRowDoubleClick && !e.defaultPrevented) {
-                          window.getSelection?.()?.removeAllRanges();
-                        }
-                      }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={cn(
-                            get(cell.column.columnDef.meta, "cellClassName"),
-                          )}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {maybe.map(
-                      renderAdditionalData?.(row.original as TData),
-                      (additionalData) => (
-                        <TableRow>
-                          <TableCell
-                            colSpan={table.getVisibleLeafColumns().length}
-                          >
-                            {additionalData}
-                          </TableCell>
-                        </TableRow>
-                      ),
-                    )}
-                  </>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No data available.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            {selection && onSelectionChange ? (
+              <SelectionLayout
+                selectedIds={selectionState
+                  .getSelectedIds(
+                    selection,
+                    rd.tryGet(data)?.map((item) => (item as any).id) ?? [],
+                  )
+                  .map(String)}
+                onSelectedIdsChange={(ids) => {
+                  // We need to reverse engineer the selection state from the list of selected ids.
+                  // The ids we get are strings, but the data's ids may be string or number.
+                  // We want to filter the data to only those whose id (as string) is in the ids array.
+                  // Then, pass those items' actual ids (not stringified) to selectionState.selectSome.
+                  const allData = rd.tryGet(data) ?? [];
+                  const selectedIds = new Set(ids);
+                  const matchingIds = allData
+                    .filter((item) => selectedIds.has(String((item as any).id)))
+                    .map((item) => (item as any).id);
+                  return onSelectionChange(
+                    selectionState.selectSome(matchingIds) as any,
+                  );
+                }}
+              >
+                {tbody}
+              </SelectionLayout>
+            ) : (
+              tbody
+            )}
 
             {/* CAPTION */}
             {caption && (
@@ -329,38 +353,11 @@ export function ListView<TData, Query extends SortableQueryBase>(
               </TableCaption>
             )}
           </Table>
+          {toolbar}
         </div>
       );
     });
 
-  if (selection && onSelectionChange) {
-    return (
-      <SelectionLayout
-        selectedIds={selectionState
-          .getSelectedIds(
-            selection,
-            rd.tryGet(data)?.map((item) => (item as any).id) ?? [],
-          )
-          .map(String)}
-        onSelectedIdsChange={(ids) => {
-          // We need to reverse engineer the selection state from the list of selected ids.
-          // The ids we get are strings, but the data's ids may be string or number.
-          // We want to filter the data to only those whose id (as string) is in the ids array.
-          // Then, pass those items' actual ids (not stringified) to selectionState.selectSome.
-          const allData = rd.tryGet(data) ?? [];
-          const selectedIds = new Set(ids);
-          const matchingIds = allData
-            .filter((item) => selectedIds.has(String((item as any).id)))
-            .map((item) => (item as any).id);
-          return onSelectionChange(
-            selectionState.selectSome(matchingIds) as any,
-          );
-        }}
-      >
-        {listViewContent}
-      </SelectionLayout>
-    );
-  }
   return listViewContent;
 }
 

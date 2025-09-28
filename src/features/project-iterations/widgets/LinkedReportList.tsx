@@ -1,10 +1,24 @@
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
+import {
+  ListToolbar,
+  ListToolbarButton,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { selectionState, SelectionState } from "@/platform/lang/SelectionState";
+import {
+  selectionState,
+  SelectionState,
+  useSelectionCleanup,
+} from "@/platform/lang/SelectionState";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -31,6 +45,11 @@ export function LinkedReportList(
     selectionState.selectNone(),
   );
   const reports = props.services.reportDisplayService.useReportView(query);
+  useSelectionCleanup(
+    selection,
+    rd.tryMap(reports, (r) => r.entries.map((e) => e.id)),
+    setSelection,
+  );
 
   return (
     <ListView
@@ -64,6 +83,43 @@ export function LinkedReportList(
             we create a debt that needs to be resolved later.
           </p>
         </>
+      }
+      toolbar={
+        selectionState.getTotalSelected(
+          selection,
+          rd.tryGet(reports)?.entries.length ?? 0,
+        ) > 0 ? (
+          <ListToolbar>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {selectionState.getTotalSelected(
+                  selection,
+                  rd.tryGet(reports)?.entries.length ?? 0,
+                )}{" "}
+                selected
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ListToolbarButton variant="destructive">
+                Delete
+              </ListToolbarButton>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <ListToolbarButton variant="accent1">
+                    Actions
+                  </ListToolbarButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>Export Selected</DropdownMenuItem>
+                  <DropdownMenuItem>Link to Positions</DropdownMenuItem>
+                  <DropdownMenuItem>Mark as Reviewed</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </ListToolbar>
+        ) : null
       }
     />
   );

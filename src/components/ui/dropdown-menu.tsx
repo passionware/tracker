@@ -4,7 +4,9 @@ import { cva, VariantProps } from "class-variance-authority";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import * as React from "react";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+const DropdownMenu = (
+  props: React.ComponentProps<typeof DropdownMenuPrimitive.Root>,
+) => <DropdownMenuPrimitive.Root modal={true} {...props} />;
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
