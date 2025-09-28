@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "./button";
 import {
   SimpleTooltip,
+  SimpleTooltipProps,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -21,32 +22,34 @@ const meta = {
 
 export default meta;
 
+type Story = StoryObj<Partial<SimpleTooltipProps>>;
+
 export const Default = {
   render: (props) => (
-    <SimpleTooltip title="This is a tooltip" {...props}>
+    <SimpleTooltip {...props} title="This is a tooltip">
       <Button>Hover me</Button>
     </SimpleTooltip>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const Positions = {
   render: (props) => (
     <div className="flex flex-wrap gap-4 p-8">
-      <SimpleTooltip title="Top tooltip" {...props}>
+      <SimpleTooltip {...props} title="Top tooltip">
         <Button>Top</Button>
       </SimpleTooltip>
-      <SimpleTooltip title="Right tooltip" {...props}>
+      <SimpleTooltip {...props} title="Right tooltip">
         <Button>Right</Button>
       </SimpleTooltip>
-      <SimpleTooltip title="Bottom tooltip" {...props}>
+      <SimpleTooltip {...props} title="Bottom tooltip">
         <Button>Bottom</Button>
       </SimpleTooltip>
-      <SimpleTooltip title="Left tooltip" {...props}>
+      <SimpleTooltip {...props} title="Left tooltip">
         <Button>Left</Button>
       </SimpleTooltip>
     </div>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const Light = {
   render: (props) => (
@@ -59,23 +62,23 @@ export const Light = {
       </SimpleTooltip>
     </div>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const LongContent = {
   render: (props) => (
     <SimpleTooltip
-      title="This is a very long tooltip that contains a lot of text and should wrap to multiple lines to demonstrate how the tooltip handles longer content."
       {...props}
+      title="This is a very long tooltip that contains a lot of text and should wrap to multiple lines to demonstrate how the tooltip handles longer content."
     >
       <Button>Long tooltip</Button>
     </SimpleTooltip>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const WithIcons = {
   render: (props) => (
     <div className="flex gap-4 p-4">
-      <SimpleTooltip title="Download file">
+      <SimpleTooltip title="Download file" {...props}>
         <Button size="icon">
           <svg
             className="h-4 w-4"
@@ -134,7 +137,7 @@ export const WithIcons = {
       </SimpleTooltip>
     </div>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const CustomDelay = {
   render: (props) => (
@@ -150,7 +153,7 @@ export const CustomDelay = {
       </SimpleTooltip>
     </div>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const Disabled = {
   render: (props) => (
@@ -163,10 +166,10 @@ export const Disabled = {
       </SimpleTooltip>
     </div>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;
 
 export const ManualControl = {
-  render: (props) => (
+  render: () => (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button>Manual control</Button>
@@ -176,4 +179,4 @@ export const ManualControl = {
       </TooltipContent>
     </Tooltip>
   ),
-} satisfies StoryObj<typeof meta>;
+} satisfies Story;

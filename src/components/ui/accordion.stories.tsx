@@ -45,7 +45,7 @@ export const Default = {
 
 export const Multiple = {
   render: (props) => (
-    <Accordion type="multiple" className="w-full">
+    <Accordion {...props} className="w-full">
       <AccordionItem value="item-1">
         <AccordionTrigger>Is it accessible?</AccordionTrigger>
         <AccordionContent>
@@ -72,7 +72,7 @@ export const Multiple = {
 
 export const WithCustomContent = {
   render: () => (
-    <Accordion className="w-full">
+    <Accordion className="w-full" type="multiple">
       <AccordionItem value="item-1">
         <AccordionTrigger>Getting Started</AccordionTrigger>
         <AccordionContent>
