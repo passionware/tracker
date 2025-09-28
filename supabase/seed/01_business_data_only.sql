@@ -233,16 +233,31 @@ wyplata 7660.58', '2025-09-18', 8705.21, 8705.21, 1, 'pln', 1),
 -- Data for Name: project; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."project" ("id", "created_at", "client_id", "workspace_id", "description", "name", "status") VALUES
-	(5, '2025-02-05 19:40:49.266904+00', 1, 1, 'jakakolwiek nadwyższa wypracowana dla eko, a nie zapłacona z parpu, zostanie zaraportowana tutaj do tego projektu. jeden raport - jeden projekt', 'eKoszt po parpie', 'draft'),
-	(2, '2025-02-05 19:37:52.15385+00', 2, 1, 'cała praca za 13k eur', 'V1 fixed price', 'closed'),
-	(3, '2025-02-05 19:38:55.690149+00', 3, 1, NULL, 'Atellio Passionware Gold', 'active'),
-	(4, '2025-02-05 19:40:30.568489+00', 1, 1, 'suma z umowy z part. z tytułu tej umowy będziemy wystawiać kilka faktur.
+INSERT INTO "public"."project" ("id", "created_at", "client_id", "description", "name", "status") VALUES
+	(5, '2025-02-05 19:40:49.266904+00', 1, 'jakakolwiek nadwyższa wypracowana dla eko, a nie zapłacona z parpu, zostanie zaraportowana tutaj do tego projektu. jeden raport - jeden projekt', 'eKoszt po parpie', 'draft'),
+	(2, '2025-02-05 19:37:52.15385+00', 2, 'cała praca za 13k eur', 'V1 fixed price', 'closed'),
+	(3, '2025-02-05 19:38:55.690149+00', 3, NULL, 'Atellio Passionware Gold', 'active'),
+	(4, '2025-02-05 19:40:30.568489+00', 1, 'suma z umowy z part. z tytułu tej umowy będziemy wystawiać kilka faktur.
 raporty pracy za ten czas powinny linkować się do projektu, a nie do samej faktury, bo faktury nie są porównywane do raportów.', 'ekoszt PARP', 'active'),
-	(1, '2025-02-05 19:24:05.634721+00', 2, 1, 'Flat rate project, billed periodically', 'Passionware silver adjusted', 'active'),
-	(10, '2025-02-26 06:24:07.799077+00', 2, 1, 'Kredytowany ficzer in-app payments, do rozliczenia dopiero po ustaleniu finansowania Countful', 'In app payments', 'draft'),
-	(6, '2025-02-07 19:48:54.749912+00', 5, 3, 'Gold package work for Cliento companta', 'Client.io gold', 'closed'),
-	(11, '2025-08-12 21:54:20.624724+00', 2, 3, NULL, 'ongoing', 'draft');
+	(1, '2025-02-05 19:24:05.634721+00', 2, 'Flat rate project, billed periodically', 'Passionware silver adjusted', 'active'),
+	(10, '2025-02-26 06:24:07.799077+00', 2, 'Kredytowany ficzer in-app payments, do rozliczenia dopiero po ustaleniu finansowania Countful', 'In app payments', 'draft'),
+	(6, '2025-02-07 19:48:54.749912+00', 5, 'Gold package work for Cliento companta', 'Client.io gold', 'closed'),
+	(11, '2025-08-12 21:54:20.624724+00', 2, NULL, 'ongoing', 'draft');
+
+
+--
+-- Data for Name: link_project_workspace; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."link_project_workspace" ("id", "created_at", "project_id", "workspace_id", "is_primary") VALUES
+	(1, '2025-02-05 19:40:49.266904+00', 5, 1, true),
+	(2, '2025-02-05 19:37:52.15385+00', 2, 1, true),
+	(3, '2025-02-05 19:38:55.690149+00', 3, 1, true),
+	(4, '2025-02-05 19:40:30.568489+00', 4, 1, true),
+	(5, '2025-02-05 19:24:05.634721+00', 1, 1, true),
+	(6, '2025-02-26 06:24:07.799077+00', 10, 1, true),
+	(7, '2025-02-07 19:48:54.749912+00', 6, 3, true),
+	(8, '2025-08-12 21:54:20.624724+00', 11, 3, true);
 
 
 --
