@@ -3,6 +3,7 @@ import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Cost } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import {
   ClientView,
@@ -19,6 +20,7 @@ import {
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
 import { TruncatedMultilineText } from "@/features/_common/TruncatedMultilineText.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { SelectionState, selectionState } from "@/platform/lang/SelectionState";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -26,12 +28,50 @@ import { ExpressionContext } from "@/services/front/ExpressionService/Expression
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe, Maybe, rd, truthy } from "@passionware/monads";
+import { maybe, Maybe, rd, truthy, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
 
 export const sharedColumns = {
+  selection: <T extends { id: string }>(
+    state: SelectionState,
+    data: RemoteData<T[]>,
+    onSelectionChange: (state: SelectionState) => void,
+  ) => {
+    const isEverythingSelected = selectionState.isSelectAll(state);
+    const isMixedSelected = selectionState.isPartiallySelected(
+      state,
+      rd.tryGet(data)?.length ?? 0,
+    );
+
+    function handleToggleAll() {
+      onSelectionChange(selectionState.toggleSelectAll(state));
+    }
+
+    return getColumnHelper<T>().display({
+      id: "selection",
+      header: () => (
+        <Checkbox
+          checked={isMixedSelected ? "indeterminate" : isEverythingSelected}
+          className="align-middle"
+          disabled={rd.mapOrElse(data, (data) => data.length === 0, true)}
+          onCheckedChange={handleToggleAll}
+        />
+      ),
+      cell: (info) => (
+        <Checkbox
+          className="align-middle"
+          checked={selectionState.isSelected(state, info.row.original.id)}
+          onCheckedChange={() =>
+            onSelectionChange(
+              selectionState.toggle(state, info.row.original.id),
+            )
+          }
+        />
+      ),
+    });
+  },
   workspaceId: (services: WithWorkspaceService) =>
     getColumnHelper<{
       workspaceId: Maybe<Workspace["id"]>;
