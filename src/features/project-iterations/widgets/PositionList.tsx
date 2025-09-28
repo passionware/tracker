@@ -171,17 +171,15 @@ export function PositionList(
         // @ts-expect-error wrong inference
         c.accessor("x-iteration", {
           id: "iteration",
-          header: (
-            <WorkspaceWidget
-              // take from project
-              workspaceId={rd.tryMap(
-                project,
-                (iteration) => iteration.workspaceId,
-              )}
-              services={props.services}
-              layout="avatar"
-              size="sm"
-            />
+          header: rd.tryMap(project, (p) =>
+            p.workspaceIds.map((workspaceId) => (
+              <WorkspaceWidget
+                workspaceId={workspaceId}
+                services={props.services}
+                layout="avatar"
+                size="sm"
+              />
+            )),
           ),
           cell: (cell) => {
             const move = get(cell.row.original, "x-iteration");

@@ -15,7 +15,6 @@ import {
 } from "@/features/_common/ActionMenu.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ExpandButton } from "@/features/project-iterations/widgets/_private/ExpandButton.tsx";
 import { HorizontalArrow } from "@/features/project-iterations/widgets/_private/HorizontalArrow.tsx";
@@ -32,12 +31,11 @@ import { EventForm } from "./_private/EventForm";
 export interface EventsViewProps extends WithFrontServices {
   data: ComputedEventData;
   clientId: Project["clientId"];
-  workspaceId: Project["workspaceId"];
   onAction: (action: UpdateAction) => void;
 }
 
 export function EventsView(props: EventsViewProps) {
-  const { data, clientId, workspaceId } = props;
+  const { data, clientId } = props;
   let rowOffset = 1;
 
   const getColumnIndex = (account: AccountSpec) => {
@@ -134,14 +132,14 @@ export function EventsView(props: EventsViewProps) {
           size="sm"
         />
       </div>
-      <div className="row-start-1 col-start-3 z-1 justify-self-center">
-        <WorkspaceWidget
-          workspaceId={workspaceId}
-          services={props.services}
-          layout="avatar"
-          size="sm"
-        />
-      </div>
+      {/*<div className="row-start-1 col-start-3 z-1 justify-self-center">*/}
+      {/*  <WorkspaceWidget*/}
+      {/*    workspaceId={porpworkspaceId}*/}
+      {/*    services={props.services}*/}
+      {/*    layout="avatar"*/}
+      {/*    size="sm"*/}
+      {/*  />*/}
+      {/*</div>*/}
       {data.contractorIds.map((contractorId, contractorIndex) => {
         return (
           <div

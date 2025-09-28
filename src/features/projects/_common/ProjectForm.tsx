@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
-import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
+import { WorkspaceArrayPicker } from "@/features/_common/elements/pickers/WorkspaceArrayPicker";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -46,7 +46,7 @@ type FormModel = {
   status: "draft" | "active" | "closed";
   description: string;
   clientId: number | null;
-  workspaceId: number | null;
+  workspaceIds: number[];
 };
 
 export function ProjectForm(props: ProjectFormProps) {
@@ -56,7 +56,7 @@ export function ProjectForm(props: ProjectFormProps) {
       status: props.defaultValues?.status ?? "draft",
       description: props.defaultValues?.description ?? "",
       clientId: props.defaultValues?.clientId ?? null,
-      workspaceId: props.defaultValues?.workspaceId ?? null,
+      workspaceIds: props.defaultValues?.workspaceIds ?? [],
     },
   });
 
@@ -68,7 +68,10 @@ export function ProjectForm(props: ProjectFormProps) {
       status: data.status,
       description: data.description || null,
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
-      workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
+      workspaceIds: maybe.getOrThrow(
+        maybe.fromArray(data.workspaceIds),
+        "At least one workspace is required",
+      ),
     };
     void processingPromise.track(
       props.onSubmit(allData, getDirtyFields(allData, form)),
@@ -83,12 +86,12 @@ export function ProjectForm(props: ProjectFormProps) {
       >
         <FormField
           control={form.control}
-          name="workspaceId"
+          name="workspaceIds"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Workspace</FormLabel>
               <FormControl>
-                <WorkspacePicker
+                <WorkspaceArrayPicker
                   value={field.value}
                   onSelect={field.onChange}
                   services={props.services}
@@ -173,7 +176,11 @@ export function ProjectForm(props: ProjectFormProps) {
           </Button>
         )}
         {props.mode === "edit" && (
-          <Button type="button" variant="outline" onClick={()=>form.reset({})}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => form.reset({})}
+          >
             Reset
           </Button>
         )}

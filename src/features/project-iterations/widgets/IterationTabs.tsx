@@ -47,12 +47,19 @@ export function IterationTabs(
     rd.combine({ project, iteration }),
     ({ project, iteration }) =>
       reportQueryUtils
-        .getBuilder(project.workspaceId, project.clientId)
+        // we don't scope reports to routing workspace
+        .getBuilder(idSpecUtils.ofAll(), project.clientId)
         .build((q) => [
           q.withFilter("projectIterationId", {
             operator: "oneOf",
             value: [null],
           }),
+          // instead we scope reports to project workspaces
+          idSpecUtils.mapSpecificOrElse(
+            project.workspaceIds,
+            (x) => q.withFilter("workspaceId", { operator: "oneOf", value: x }),
+            q.unchanged(),
+          ),
           q.withFilter("period", {
             operator: "between",
             value: {
@@ -122,11 +129,6 @@ export function IterationTabs(
                   className="ml-auto"
                   iterationId={projectIteration.id}
                   services={props.services}
-                  workspaceId={rd.mapOrElse(
-                    project,
-                    (p) => p.workspaceId,
-                    idSpecUtils.ofAll(),
-                  )}
                   clientId={rd.mapOrElse(
                     project,
                     (p) => p.clientId,
@@ -159,10 +161,7 @@ export function IterationTabs(
                           showBillingColumns
                           showCostColumns={false}
                           context={{
-                            workspaceId: maybe.getOrElse(
-                              project.workspaceId,
-                              idSpecUtils.ofAll(),
-                            ),
+                            workspaceId: idSpecUtils.ofAll(),
                             clientId: maybe.getOrElse(
                               project.clientId,
                               idSpecUtils.ofAll(),
@@ -191,7 +190,6 @@ export function IterationTabs(
                             );
                           }}
                           initialNewReportValues={{
-                            workspaceId: project.workspaceId,
                             clientId: project.clientId,
                             currency: projectIteration.currency,
                             periodStart: projectIteration.periodStart,

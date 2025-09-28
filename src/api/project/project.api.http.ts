@@ -27,10 +27,10 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
           createdAt: "created_at",
         });
       }
-      if (query.filters.workspaceIds) {
+      if (query.filters.workspaceId) {
         request = enumFilterSupabaseUtils.filterBy.oneToMany(
           request,
-          query.filters.workspaceIds,
+          query.filters.workspaceId,
           "link_project_workspace.workspace_id",
         );
       }
@@ -66,7 +66,12 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
     getProject: async (id) => {
       const { data, error } = await client
         .from("project")
-        .select("*")
+        .select(
+          `
+          *,
+          link_project_workspace(*)
+        `,
+        )
         .eq("id", id);
 
       if (error) {
