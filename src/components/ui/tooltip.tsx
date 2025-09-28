@@ -24,8 +24,8 @@ const TooltipContent = React.forwardRef<
     sideOffset={sideOffset}
     className={cn(
       light
-        ? "z-50 overflow-hidden rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-950 shadow-md dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
-        : "z-50 rounded-md border border-slate-500/90 bg-slate-950/70 backdrop-blur-xs px-3 py-1.5 text-sm text-slate-50 shadow-sm shadow-black/30 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+        ? "overflow-hidden rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-950 shadow-md dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
+        : "rounded-md border border-slate-500/90 bg-slate-950/70 backdrop-blur-xs px-3 py-1.5 text-sm text-slate-50 shadow-sm shadow-black/30 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
       contentAnimations.tooltip,
       className,
     )}
