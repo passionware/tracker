@@ -5,20 +5,20 @@ import { maybe, Maybe } from "@passionware/monads";
 import { isEqual } from "lodash";
 import { useEffect } from "react";
 
-export type SelectionState =
+export type SelectionState<T> =
   | {
       type: "inactive";
     }
   | {
       type: "inclusive";
-      ids: string[];
+      ids: T[];
     }
   | {
       type: "exclusive";
-      ids: string[];
+      ids: T[];
     };
 
-export function fixState(state: SelectionState): SelectionState {
+export function fixState<T>(state: SelectionState<T>): SelectionState<T> {
   switch (state.type) {
     case "inclusive":
       return state.ids.length === 0 ? { type: "inactive" } : state;
@@ -28,10 +28,10 @@ export function fixState(state: SelectionState): SelectionState {
 }
 
 export const selectionState = {
-  selectAll: (): SelectionState => ({ type: "exclusive", ids: [] }),
-  selectNone: (): SelectionState => ({ type: "inactive" }),
-  selectSome: (ids: string[]): SelectionState => ({ type: "inclusive", ids }),
-  toggle: (state: SelectionState, id: string): SelectionState => {
+  selectAll: <T>(): SelectionState<T> => ({ type: "exclusive", ids: [] }),
+  selectNone: <T>(): SelectionState<T> => ({ type: "inactive" }),
+  selectSome: <T>(ids: T[]): SelectionState<T> => ({ type: "inclusive", ids }),
+  toggle: <T>(state: SelectionState<T>, id: T): SelectionState<T> => {
     switch (state.type) {
       case "inactive":
         return { type: "inclusive", ids: [id] };
@@ -47,7 +47,7 @@ export const selectionState = {
           : { type: "exclusive", ids: [...state.ids, id] };
     }
   },
-  addTo: (state: SelectionState, ids: string[]): SelectionState => {
+  addTo: <T>(state: SelectionState<T>, ids: T[]): SelectionState<T> => {
     switch (state.type) {
       case "inactive":
         return { type: "inclusive", ids };
@@ -60,7 +60,7 @@ export const selectionState = {
         };
     }
   },
-  removeFrom: (state: SelectionState, ids: string[]): SelectionState => {
+  removeFrom: <T>(state: SelectionState<T>, ids: T[]): SelectionState<T> => {
     switch (state.type) {
       case "inactive":
         return { type: "inactive" };
@@ -76,17 +76,20 @@ export const selectionState = {
         };
     }
   },
-  isSelectAll: (state: SelectionState) =>
+  isSelectAll: <T>(state: SelectionState<T>) =>
     state.type === "exclusive" && state.ids.length === 0,
-  isSelected: (state: SelectionState, id: string) =>
+  isSelected: <T>(state: SelectionState<T>, id: T) =>
     (state.type === "inclusive" && state.ids.includes(id)) ||
     (state.type === "exclusive" && !state.ids.includes(id)),
-  toggleSelectAll: (state: SelectionState): SelectionState =>
+  toggleSelectAll: <T>(state: SelectionState<T>): SelectionState<T> =>
     selectionState.isSelectAll(state)
       ? selectionState.selectNone()
       : selectionState.selectAll(),
-  isSomeSelected: (state: SelectionState) => state.type !== "inactive",
-  fixWithTotalCount: (state: SelectionState, total: number): SelectionState => {
+  isSomeSelected: <T>(state: SelectionState<T>) => state.type !== "inactive",
+  fixWithTotalCount: <T>(
+    state: SelectionState<T>,
+    total: number,
+  ): SelectionState<T> => {
     switch (state.type) {
       case "inactive":
         return state;
@@ -96,7 +99,7 @@ export const selectionState = {
         return state.ids.length === total ? selectionState.selectNone() : state;
     }
   },
-  getTotalSelected: (state: SelectionState, total: number) => {
+  getTotalSelected: <T>(state: SelectionState<T>, total: number) => {
     switch (state.type) {
       case "inactive":
         return 0;
@@ -106,11 +109,11 @@ export const selectionState = {
         return total - state.ids.length;
     }
   },
-  isPartiallySelected: (state: SelectionState, total: number) => {
+  isPartiallySelected: <T>(state: SelectionState<T>, total: number) => {
     const totalSelected = selectionState.getTotalSelected(state, total);
     return totalSelected > 0 && totalSelected < total;
   },
-  getSelectedIds: (state: SelectionState, allIds: string[]) => {
+  getSelectedIds: <T>(state: SelectionState<T>, allIds: T[]) => {
     switch (state.type) {
       case "inactive":
         return [];
@@ -125,12 +128,12 @@ export const selectionState = {
    * @param state
    * @param allIds
    */
-  cleanup: (state: SelectionState, allIds: string[]): SelectionState => {
+  cleanup: <T>(state: SelectionState<T>, allIds: T[]): SelectionState<T> => {
     if (allIds.length === 0 && state.type !== "inactive") {
       // if there are no ids, let's remove any existing selection
       return selectionState.selectNone();
     }
-    const cleanedState = ((): SelectionState => {
+    const cleanedState = ((): SelectionState<T> => {
       switch (state.type) {
         case "inactive":
           return state;
@@ -168,10 +171,10 @@ export const selectionState = {
  * @param allIds all ids that are considered as selection members
  * @param onChange callback to change the selection state if cleanup is needed
  */
-export function useSelectionCleanup(
-  state: SelectionState,
-  allIds: Maybe<string[]>,
-  onChange: (state: SelectionState) => void,
+export function useSelectionCleanup<T>(
+  state: SelectionState<T>,
+  allIds: Maybe<T[]>,
+  onChange: (state: SelectionState<T>) => void,
 ) {
   useEffect(() => {
     if (maybe.isAbsent(allIds)) {

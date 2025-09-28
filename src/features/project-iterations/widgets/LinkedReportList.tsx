@@ -4,11 +4,13 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { selectionState, SelectionState } from "@/platform/lang/SelectionState";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { rd } from "@passionware/monads";
+import { useState } from "react";
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -25,11 +27,16 @@ export function LinkedReportList(
         value: [props.projectIterationId],
       }),
     ]);
+  const [selection, setSelection] = useState<SelectionState<number>>(
+    selectionState.selectNone(),
+  );
   const reports = props.services.reportDisplayService.useReportView(query);
 
   return (
     <ListView
       data={rd.map(reports, (r) => r.entries)}
+      selection={selection}
+      onSelectionChange={setSelection}
       query={query}
       onQueryChange={() => {}}
       columns={[

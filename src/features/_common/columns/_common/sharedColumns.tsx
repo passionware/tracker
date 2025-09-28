@@ -34,10 +34,10 @@ import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
 
 export const sharedColumns = {
-  selection: <T extends { id: string }>(
-    state: SelectionState,
+  selection: <T extends { id: string | number }>(
+    state: SelectionState<T["id"]>,
     data: RemoteData<T[]>,
-    onSelectionChange: (state: SelectionState) => void,
+    onSelectionChange: (state: SelectionState<T["id"]>) => void,
   ) => {
     const isEverythingSelected = selectionState.isSelectAll(state);
     const isMixedSelected = selectionState.isPartiallySelected(

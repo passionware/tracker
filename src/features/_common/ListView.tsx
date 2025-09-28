@@ -15,6 +15,7 @@ import {
   SorterWidget,
 } from "@/features/_common/filters/SorterWidget.tsx";
 import { cn } from "@/lib/utils.ts";
+import { selectionState, SelectionState } from "@/platform/lang/SelectionState";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { maybe, rd, RemoteData } from "@passionware/monads";
 import {
@@ -32,9 +33,15 @@ import { get } from "lodash";
 import { Info } from "lucide-react";
 import * as React from "react";
 import { ReactNode } from "react";
+import { SelectionLayout } from "./SelectionLayout";
+import { sharedColumns } from "./columns/_common/sharedColumns";
 
 // Typ wejściowy komponentu (co będzie wierszem w tabeli)
-export interface ListViewProps<TData, Query extends SortableQueryBase> {
+export type ListViewProps<
+  TData,
+  Query extends SortableQueryBase,
+  TRowKey extends keyof TData,
+> = {
   data: RemoteData<TData[]>;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   columns: ColumnDef<any, any>[];
@@ -46,9 +53,18 @@ export interface ListViewProps<TData, Query extends SortableQueryBase> {
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
   renderAdditionalData?: (row: TData) => React.ReactNode;
-}
+} & (TRowKey extends never
+  ? {}
+  : {
+      selection: SelectionState<TData[TRowKey]>;
+      onSelectionChange: (selection: SelectionState<TData[TRowKey]>) => void;
+    });
 
-export function ListView<TData, Query extends SortableQueryBase>({
+export function ListView<
+  TData,
+  Query extends SortableQueryBase,
+  TRowKey extends keyof TData = never,
+>({
   data,
   columns,
   skeletonRows = 6,
@@ -59,7 +75,8 @@ export function ListView<TData, Query extends SortableQueryBase>({
   query,
   onQueryChange,
   renderAdditionalData,
-}: ListViewProps<TData, Query>) {
+  ...rest
+}: ListViewProps<TData, Query, TRowKey>) {
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -71,13 +88,23 @@ export function ListView<TData, Query extends SortableQueryBase>({
   // W zależności od tego, czy mamy dane, w tablicy przekazujemy albo puste [],
   // albo wartość z data (jeżeli jest w stanie success).
   const dataWithPlaceholder = rd.useLastWithPlaceholder(data);
-  const tableData = rd.getOrElse(dataWithPlaceholder, []);
+  const tableData = rd.getOrElse(dataWithPlaceholder, [] as TData[]);
 
   // Inicjalizacja tabeli z tanstack react table
   const table = useReactTable({
     data: tableData,
     manualPagination: true,
-    columns,
+    columns:
+      "selection" in rest
+        ? [
+            sharedColumns.selection(
+              rest.selection,
+              data as RemoteData<{ id: TRowKey }[]>,
+              rest.onSelectionChange,
+            ),
+            ...columns,
+          ]
+        : columns,
     manualSorting: true,
     enableSorting: true,
     state: {
@@ -156,7 +183,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
   // Tu zarządzamy stanem:
   // rd.journey(data) – czekanie, błąd, sukces.
   // Możesz też użyć rd.match lub rd.fold – wedle preferencji.
-  return rd
+  const listViewContent = rd
     .journey(dataWithPlaceholder)
     .wait(() => (
       // Wyświetlamy skeletony
@@ -214,6 +241,16 @@ export function ListView<TData, Query extends SortableQueryBase>({
                   <>
                     <TableRow
                       key={row.id}
+                      data-item-id={row.original.id}
+                      aria-selected={maybe.mapOrElse(
+                        selection,
+                        (selection) =>
+                          !!selectionState.isSelected(
+                            selection,
+                            row.original.id,
+                          ),
+                        false,
+                      )}
                       onClick={(e) => {
                         if (e.target instanceof Element) {
                           if (e.target.closest("a, button")) {
@@ -294,6 +331,30 @@ export function ListView<TData, Query extends SortableQueryBase>({
         </div>
       );
     });
+
+  if (maybe.isPresent(onSelectionChange)) {
+    return (
+      <SelectionLayout
+        selectedIds={maybe.flatMapOrElse(
+          selection,
+          (selection) =>
+            selectionState
+              .getSelectedIds(
+                selection,
+                rd.tryGet(data)?.map((item) => item.id) ?? [],
+              )
+              .map(String),
+          [],
+        )}
+        onSelectedIdsChange={(ids) =>
+          onSelectionChange?.(selectionState.selectSome(ids.map(Number)))
+        }
+      >
+        {listViewContent}
+      </SelectionLayout>
+    );
+  }
+  return listViewContent;
 }
 
 function renderHeaderCell<TData>(

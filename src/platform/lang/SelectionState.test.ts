@@ -21,7 +21,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(fixState(state)).toEqual(state);
     });
 
@@ -60,7 +60,10 @@ describe("selectionState", () => {
 
   describe("selectionState.toggle", () => {
     it("should add an id to inclusive state if not present", () => {
-      const state = { type: "inclusive", ids: ["1"] } satisfies SelectionState;
+      const state = {
+        type: "inclusive",
+        ids: ["1"],
+      } satisfies SelectionState<string>;
       expect(selectionState.toggle(state, "2")).toEqual({
         type: "inclusive",
         ids: ["1", "2"],
@@ -71,7 +74,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.toggle(state, "1")).toEqual({
         type: "inclusive",
         ids: ["2"],
@@ -79,7 +82,10 @@ describe("selectionState", () => {
     });
 
     it("should add an id to exclusive state if not present", () => {
-      const state = { type: "exclusive", ids: ["1"] } satisfies SelectionState;
+      const state = {
+        type: "exclusive",
+        ids: ["1"],
+      } satisfies SelectionState<string>;
       expect(selectionState.toggle(state, "2")).toEqual({
         type: "exclusive",
         ids: ["1", "2"],
@@ -90,7 +96,7 @@ describe("selectionState", () => {
       const state = {
         type: "exclusive",
         ids: ["1", "2"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.toggle(state, "1")).toEqual({
         type: "exclusive",
         ids: ["2"],
@@ -98,7 +104,7 @@ describe("selectionState", () => {
     });
 
     it("should create an inclusive state if current state is inactive", () => {
-      const state = { type: "inactive" } satisfies SelectionState;
+      const state = { type: "inactive" } satisfies SelectionState<string>;
       expect(selectionState.toggle(state, "1")).toEqual({
         type: "inclusive",
         ids: ["1"],
@@ -108,7 +114,10 @@ describe("selectionState", () => {
 
   describe("selectionState.addTo", () => {
     it("should add ids to inclusive state", () => {
-      const state = { type: "inclusive", ids: ["1"] } satisfies SelectionState;
+      const state = {
+        type: "inclusive",
+        ids: ["1"],
+      } satisfies SelectionState<string>;
       expect(selectionState.addTo(state, ["2", "3"])).toEqual({
         type: "inclusive",
         ids: ["1", "2", "3"],
@@ -119,7 +128,7 @@ describe("selectionState", () => {
       const state = {
         type: "exclusive",
         ids: ["1", "2", "3"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.addTo(state, ["2", "3"])).toEqual({
         type: "exclusive",
         ids: ["1"],
@@ -127,7 +136,7 @@ describe("selectionState", () => {
     });
 
     it("should create an inclusive state if current state is inactive", () => {
-      const state = { type: "inactive" } satisfies SelectionState;
+      const state = { type: "inactive" } satisfies SelectionState<string>;
       expect(selectionState.addTo(state, ["1", "2"])).toEqual({
         type: "inclusive",
         ids: ["1", "2"],
@@ -140,7 +149,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2", "3"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.removeFrom(state, ["2"])).toEqual({
         type: "inclusive",
         ids: ["1", "3"],
@@ -151,7 +160,7 @@ describe("selectionState", () => {
       const state = {
         type: "exclusive",
         ids: ["1", "2", "3"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.removeFrom(state, ["2"])).toEqual({
         type: "exclusive",
         ids: ["1", "3"],
@@ -159,7 +168,7 @@ describe("selectionState", () => {
     });
 
     it("should return inactive state if current state is inactive", () => {
-      const state = { type: "inactive" } satisfies SelectionState;
+      const state = { type: "inactive" } satisfies SelectionState<string>;
       expect(selectionState.removeFrom(state, ["1"])).toEqual({
         type: "inactive",
       });
@@ -171,7 +180,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2", "3"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.cleanup(state, ["2", "3"])).toEqual({
         type: "inclusive",
         ids: ["2", "3"],
@@ -182,7 +191,7 @@ describe("selectionState", () => {
       const state = {
         type: "exclusive",
         ids: ["1", "2", "3"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.cleanup(state, ["2", "3"])).toEqual({
         type: "exclusive",
         ids: ["2", "3"],
@@ -193,7 +202,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.cleanup(state, [])).toEqual({ type: "inactive" });
     });
   });
@@ -203,7 +212,7 @@ describe("selectionState", () => {
       const state = {
         type: "inclusive",
         ids: ["1", "2"],
-      } satisfies SelectionState;
+      } satisfies SelectionState<string>;
       expect(selectionState.getSelectedIds(state, ["1", "2", "3"])).toEqual([
         "1",
         "2",
@@ -211,7 +220,10 @@ describe("selectionState", () => {
     });
 
     it("should return all unselected ids for exclusive state", () => {
-      const state = { type: "exclusive", ids: ["1"] } satisfies SelectionState;
+      const state = {
+        type: "exclusive",
+        ids: ["1"],
+      } satisfies SelectionState<string>;
       expect(selectionState.getSelectedIds(state, ["1", "2", "3"])).toEqual([
         "2",
         "3",
@@ -219,7 +231,7 @@ describe("selectionState", () => {
     });
 
     it("should return empty array for inactive state", () => {
-      const state = { type: "inactive" } satisfies SelectionState;
+      const state = { type: "inactive" } satisfies SelectionState<string>;
       expect(selectionState.getSelectedIds(state, ["1", "2", "3"])).toEqual([]);
     });
   });
@@ -230,7 +242,7 @@ describe("useSelectionCleanup", () => {
     const state = {
       type: "inclusive",
       ids: ["1", "2"],
-    } satisfies SelectionState;
+    } satisfies SelectionState<string>;
     const allIds = ["2"];
     const onChange = vi.fn();
 
@@ -240,7 +252,10 @@ describe("useSelectionCleanup", () => {
   });
 
   it("should not call onChange if cleanup does not modify the state", () => {
-    const state = { type: "inclusive", ids: ["2"] } satisfies SelectionState;
+    const state = {
+      type: "inclusive",
+      ids: ["2"],
+    } satisfies SelectionState<string>;
     const allIds = ["2"];
     const onChange = vi.fn();
 
@@ -253,7 +268,7 @@ describe("useSelectionCleanup", () => {
     const state = {
       type: "inclusive",
       ids: ["1", "2"],
-    } satisfies SelectionState;
+    } satisfies SelectionState<string>;
     const allIds = maybe.ofAbsent();
     const onChange = vi.fn();
 
