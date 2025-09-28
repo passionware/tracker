@@ -142,8 +142,8 @@ export function AbstractPicker<Id, Data>(
             {placeholder ?? config.placeholder ?? "Select item"}
           </div>,
         )
-        .wait(<Skeleton className="w-full h-[1lh]" />)
-        .catch(renderSmallError("w-full h-[1lh]", "Not found"))
+        .wait(<Skeleton className="w-full h-lh" />)
+        .catch(renderSmallError("w-full h-lh", "Not found"))
         .map((data) =>
           unassignedUtils.mapOrElse(
             data,

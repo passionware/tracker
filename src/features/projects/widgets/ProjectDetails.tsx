@@ -41,7 +41,7 @@ export function ProjectDetails(
           <div>
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((x) => x.name)}
           </div>
@@ -49,7 +49,7 @@ export function ProjectDetails(
           <div className="flex flex-row gap-2">
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((x) => (
                 <>
@@ -66,7 +66,7 @@ export function ProjectDetails(
             <ChevronRight className="text-slate-400" />
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((x) => (
                 <ClientWidget
@@ -80,7 +80,7 @@ export function ProjectDetails(
           <ActionMenu services={props.services} className="ml-auto">
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((project) => (
                 <>
@@ -132,7 +132,7 @@ export function ProjectDetails(
         <CardDescription>
           {rd
             .journey(project)
-            .wait(<Skeleton className="h-[1lh] w-30" />)
+            .wait(<Skeleton className="h-lh w-30" />)
             .catch(renderError)
             .map((x) => x.description)}
         </CardDescription>

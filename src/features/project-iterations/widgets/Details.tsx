@@ -91,7 +91,7 @@ export function Details(
         <CardDescription>
           {rd
             .journey(iteration)
-            .wait(<Skeleton className="h-[1lh] w-30" />)
+            .wait(<Skeleton className="h-lh w-30" />)
             .catch(renderError)
             .map((iteration) => (
               <>

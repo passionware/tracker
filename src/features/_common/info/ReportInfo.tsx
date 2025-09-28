@@ -111,7 +111,7 @@ export function ReportInfo({
                 <PopoverContent
                   className={cn(
                     "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
-                    "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-opacity-50 backdrop-blur-xl",
+                    "min-w-[calc(min(100vw-2rem,50rem))] min-h-120 bg-opacity-50 backdrop-blur-xl",
                   )}
                   side="bottom"
                   align="start"

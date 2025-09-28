@@ -20,8 +20,8 @@ const PopoverContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         "w-72 rounded-md border border-slate-200 bg-white p-4 text-slate-950 shadow-md outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
-        "max-h-[calc(var(--radix-popover-content-available-height)_-_2rem)] overflow-y-auto",
-        "max-w-[calc(var(--radix-popover-content-available-width)_-_2rem)] overflow-x-auto",
+        "max-h-[calc(var(--radix-popover-content-available-height)-2rem)] overflow-y-auto",
+        "max-w-[calc(var(--radix-popover-content-available-width)-2rem)] overflow-x-auto",
         contentAnimations.popover,
         className,
       )}

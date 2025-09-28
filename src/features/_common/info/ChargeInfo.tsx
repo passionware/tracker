@@ -128,7 +128,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                 <PopoverContent
                   className={cn(
                     "w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]",
-                    "min-w-[calc(min(100vw-2rem,50rem))] min-h-[30rem] bg-white/50 backdrop-blur-xl",
+                    "min-w-[calc(min(100vw-2rem,50rem))] min-h-120 bg-white/50 backdrop-blur-xl",
                   )}
                   side="bottom"
                   align="start"

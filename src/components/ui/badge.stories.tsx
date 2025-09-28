@@ -27,7 +27,7 @@ export const Variants = {
     const sizes = ["md", "sm"] as const;
 
     return (
-      <div className="grid grid-cols-[repeat(8,minmax(0,1fr))]  gap-4 p-4 place-items-center">
+      <div className="grid grid-cols-8  gap-4 p-4 place-items-center">
         {/* Pusta komórka w lewym górnym rogu */}
         <div />
         {/* Nagłówki kolumn: warianty */}

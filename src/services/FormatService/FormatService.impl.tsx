@@ -282,7 +282,7 @@ export function createFormatService(clock: () => Date): FormatService {
 
 function DayBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-1 bg-emerald-100 text-emerald-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-1 bg-emerald-100 text-emerald-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );
@@ -290,7 +290,7 @@ function DayBadge({ value }: { value: ReactNode }) {
 
 function MonthBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-1 bg-sky-100 text-sky-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-1 bg-sky-100 text-sky-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );
@@ -298,7 +298,7 @@ function MonthBadge({ value }: { value: ReactNode }) {
 
 function YearBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-0.5 bg-purple-100 text-purple-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-0.5 bg-purple-100 text-purple-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );
