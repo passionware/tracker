@@ -6,6 +6,7 @@ export const generatedReportSource$ = z.object({
   created_at: z.coerce.date(),
   project_iteration_id: z.number(),
   data: z.record(z.any()), // JSONB data
+  original_data: z.record(z.any()), // JSONB original data
 });
 
 export type GeneratedReportSource$ = z.infer<typeof generatedReportSource$>;

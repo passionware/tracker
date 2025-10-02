@@ -6,6 +6,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
     createdAt: Date;
     projectIterationId: number;
     data: Record<string, any>;
+    originalData: Record<string, any>;
   }> = [
     {
       id: 1,
@@ -18,6 +19,17 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         content: {
           summary: "Monthly report for January 2024",
           sections: ["overview", "financials", "timeline"],
+        },
+      },
+      originalData: {
+        sourceType: "tmetric",
+        rawReports: [
+          { id: 1, hours: 40, description: "Development work" },
+          { id: 2, hours: 20, description: "Code review" },
+        ],
+        metadata: {
+          generatedAt: "2024-01-15T10:30:00Z",
+          sourceVersion: "1.0",
         },
       },
     },
@@ -34,6 +46,18 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
           sections: ["executive_summary", "metrics", "recommendations"],
         },
       },
+      originalData: {
+        sourceType: "tmetric",
+        rawReports: [
+          { id: 3, hours: 60, description: "Q1 development" },
+          { id: 4, hours: 30, description: "Q1 testing" },
+          { id: 5, hours: 20, description: "Q1 documentation" },
+        ],
+        metadata: {
+          generatedAt: "2024-01-20T14:45:00Z",
+          sourceVersion: "1.1",
+        },
+      },
     },
     {
       id: 3,
@@ -46,6 +70,18 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         content: {
           summary: "Weekly progress report",
           sections: ["tasks", "milestones", "blockers"],
+        },
+      },
+      originalData: {
+        sourceType: "tmetric",
+        rawReports: [
+          { id: 6, hours: 8, description: "Monday development" },
+          { id: 7, hours: 6, description: "Tuesday debugging" },
+          { id: 8, hours: 4, description: "Wednesday testing" },
+        ],
+        metadata: {
+          generatedAt: "2024-02-01T09:15:00Z",
+          sourceVersion: "1.2",
         },
       },
     },
@@ -144,6 +180,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         createdAt: new Date(),
         projectIterationId: payload.projectIterationId,
         data: payload.data,
+        originalData: payload.originalData,
       };
       mockData.push(newItem);
       return newItem;

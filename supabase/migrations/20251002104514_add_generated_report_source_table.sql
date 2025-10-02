@@ -6,7 +6,8 @@ CREATE TABLE "public"."generated_report_source" (
     "id" bigint NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "project_iteration_id" bigint NOT NULL,
-    "data" jsonb NOT NULL
+    "data" jsonb NOT NULL,
+    "original_data" jsonb NOT NULL
 );
 
 -- Add primary key and foreign key constraints
@@ -70,9 +71,11 @@ GRANT ALL ON SEQUENCE "public"."generated_report_source_id_seq" TO "service_role
 CREATE INDEX "idx_generated_report_source_project_iteration_id" ON "public"."generated_report_source" ("project_iteration_id");
 CREATE INDEX "idx_generated_report_source_created_at" ON "public"."generated_report_source" ("created_at");
 CREATE INDEX "idx_generated_report_source_data_gin" ON "public"."generated_report_source" USING GIN ("data");
+CREATE INDEX "idx_generated_report_source_original_data_gin" ON "public"."generated_report_source" USING GIN ("original_data");
 
 -- 6. Add comments
 COMMENT ON TABLE "public"."generated_report_source" IS 'Stores generated report sources with versioning support';
 COMMENT ON COLUMN "public"."generated_report_source"."project_iteration_id" IS 'Reference to the project iteration this report source belongs to';
 COMMENT ON COLUMN "public"."generated_report_source"."created_at" IS 'Timestamp for versioning - when this report source was generated';
 COMMENT ON COLUMN "public"."generated_report_source"."data" IS 'JSON data containing the generated report source information';
+COMMENT ON COLUMN "public"."generated_report_source"."original_data" IS 'JSON data containing the original source data before processing';

@@ -72,6 +72,7 @@ export function createGeneratedReportSourceApi(
         .insert({
           project_iteration_id: payload.projectIterationId,
           data: payload.data,
+          original_data: payload.originalData,
         })
         .select()
         .single();
@@ -92,6 +93,9 @@ export function createGeneratedReportSourceApi(
       }
       if (payload.data !== undefined) {
         updateData.data = payload.data;
+      }
+      if (payload.originalData !== undefined) {
+        updateData.original_data = payload.originalData;
       }
 
       const { data, error } = await client

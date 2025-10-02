@@ -17,6 +17,7 @@ import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.
 export interface GeneratedReportSourcePayload {
   projectIterationId: ProjectIteration["id"];
   data: Record<string, any>; // JSONB data
+  originalData: Record<string, any>; // JSONB original data
 }
 
 export interface GeneratedReportSource extends GeneratedReportSourcePayload {
