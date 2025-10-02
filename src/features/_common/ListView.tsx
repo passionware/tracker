@@ -149,6 +149,9 @@ export function ListView<TData, Query extends SortableQueryBase>(
                 "whitespace-pre",
                 get(header.column.columnDef.meta, "headerClassName"),
               )}
+              {...(get(header.column.columnDef.meta, "headerProps") as any)?.(
+                header.getContext(),
+              )}
             >
               <div className="inline-flex flex-row items-center gap-0.5">
                 {tooltip ? (
@@ -278,6 +281,9 @@ export function ListView<TData, Query extends SortableQueryBase>(
                       className={cn(
                         get(cell.column.columnDef.meta, "cellClassName"),
                       )}
+                      {...(
+                        get(cell.column.columnDef.meta, "cellProps") as any
+                      )?.(cell.getContext())}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

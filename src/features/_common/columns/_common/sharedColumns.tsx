@@ -28,7 +28,7 @@ import { ExpressionContext } from "@/services/front/ExpressionService/Expression
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe, Maybe, rd, truthy, RemoteData } from "@passionware/monads";
+import { maybe, Maybe, rd, RemoteData, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
@@ -51,6 +51,27 @@ export const sharedColumns = {
 
     return getColumnHelper<T>().display({
       id: "selection",
+      meta: {
+        cellClassName:
+          "py-0 px-4 text-center cursor-pointer hocus:backdrop-brightness-96",
+        headerClassName:
+          "py-0 px-4 text-center cursor-pointer hocus:backdrop-brightness-96",
+        cellProps: ({ row }: CellContext<T, unknown>) => ({
+          onClick: (e: React.MouseEvent<HTMLTableCellElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSelectionChange(selectionState.toggle(state, row.original.id));
+          },
+        }),
+        headerProps: () => ({
+          onClick: (e: React.MouseEvent<HTMLTableCellElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleToggleAll();
+          },
+        }),
+      },
+
       header: () => (
         <Checkbox
           checked={isMixedSelected ? "indeterminate" : isEverythingSelected}
