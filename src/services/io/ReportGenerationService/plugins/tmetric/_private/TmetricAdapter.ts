@@ -18,22 +18,25 @@ function normalize(s: string): string {
 }
 
 export function inferActivity(
-  description: string,
-  projectName: string,
+  description: string | null | undefined,
+  projectName: string | null | undefined,
   tags: TMetricTag[] = [],
 ): ActivityId {
-  const d = normalize(description);
-  const p = normalize(projectName);
+  // Handle missing or empty fields
+  const d = normalize(description || "");
+  const p = normalize(projectName || "");
 
   // Check tags first for explicit activity type
   for (const tag of tags) {
-    const tagName = normalize(tag.name);
-    if (tagName.includes("meeting")) return "meeting";
-    if (tagName.includes("review")) return "code_review";
-    if (tagName.includes("ops") || tagName.includes("operation"))
-      return "operations";
-    if (tagName.includes("development") || tagName.includes("dev"))
-      return "development";
+    if (tag?.name) {
+      const tagName = normalize(tag.name);
+      if (tagName.includes("meeting")) return "meeting";
+      if (tagName.includes("review")) return "code_review";
+      if (tagName.includes("ops") || tagName.includes("operation"))
+        return "operations";
+      if (tagName.includes("development") || tagName.includes("dev"))
+        return "development";
+    }
   }
 
   // Fallback to description and project name
@@ -48,11 +51,32 @@ export function inferActivity(
 export function adaptTMetricToGeneric(
   input: TMetricAdapterInput,
 ): GenericReport {
-  // Build unique task types from notes
+  // Build unique task types from notes, with fallbacks for missing data
   const uniqueDescriptions = new Map<string, string>();
   for (const e of input.entries) {
-    const name = e.note?.trim() || "Unnamed task";
-    if (!uniqueDescriptions.has(name)) uniqueDescriptions.set(name, name);
+    let taskName = "Unnamed task";
+
+    // Try to get task name from note
+    if (e.note?.trim()) {
+      taskName = e.note.trim();
+    }
+    // Fallback to project name if note is empty and project exists
+    else if (e.project?.name?.trim()) {
+      taskName = `Task in ${e.project.name}`;
+    }
+    // Use tags if available
+    else if (e.tags?.length > 0) {
+      const tagNames = e.tags
+        .filter((tag) => tag?.name?.trim())
+        .map((tag) => tag.name.trim());
+      if (tagNames.length > 0) {
+        taskName = `Tagged: ${tagNames.join(", ")}`;
+      }
+    }
+
+    if (!uniqueDescriptions.has(taskName)) {
+      uniqueDescriptions.set(taskName, taskName);
+    }
   }
 
   const taskTypes: Record<
@@ -115,18 +139,63 @@ export function adaptTMetricToGeneric(
   };
 
   const timeEntries = input.entries.map((e) => {
-    const projectName = e.project.name;
-    const activityId = inferActivity(e.note ?? "", projectName, e.tags);
-    const taskId = e.note?.trim() || "Unnamed task";
-    const startAt = new Date(e.startTime);
-    const endAt = new Date(e.endTime as string);
+    // Handle missing project data
+    const projectName = e.project?.name || null;
+
+    // Determine activity and task with fallbacks
+    const activityId = inferActivity(e.note, projectName, e.tags || []);
+
+    // Determine task ID with multiple fallbacks
+    let taskId = "Unnamed task";
+    if (e.note?.trim()) {
+      taskId = e.note.trim();
+    } else if (projectName) {
+      taskId = `Task in ${projectName}`;
+    } else if (e.tags?.length > 0) {
+      const tagNames = e.tags
+        .filter((tag) => tag?.name?.trim())
+        .map((tag) => tag.name.trim());
+      if (tagNames.length > 0) {
+        taskId = `Tagged: ${tagNames.join(", ")}`;
+      }
+    }
+
+    // Handle date parsing with validation
+    let startAt: Date;
+    let endAt: Date;
+
+    try {
+      startAt = new Date(e.startTime);
+      if (isNaN(startAt.getTime())) {
+        throw new Error("Invalid start time");
+      }
+    } catch {
+      // Fallback to current time if start time is invalid
+      startAt = new Date();
+    }
+
+    try {
+      if (e.endTime) {
+        endAt = new Date(e.endTime);
+        if (isNaN(endAt.getTime())) {
+          throw new Error("Invalid end time");
+        }
+      } else {
+        // If no end time, use start time + 1 hour as fallback
+        endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+      }
+    } catch {
+      // Fallback to start time + 1 hour
+      endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+    }
+
     return {
-      id: String(e.id),
-      note: e.note ?? "",
+      id: String(e.id || `entry_${Date.now()}_${Math.random()}`),
+      note: e.note || "",
       taskId,
       activityId,
       roleId: input.defaultRoleId,
-      createdAt: startAt, // No created/updated fields in new schema
+      createdAt: startAt,
       updatedAt: endAt,
       startAt,
       endAt,

@@ -38,7 +38,7 @@ export type TMetricTag = z.infer<typeof zTMetricTag>;
 
 export const zTMetricTimeEntry = z.object({
   id: z.number(),
-  project: zTMetricProject,
+  project: zTMetricProject.optional(),
   note: z.string().optional(),
   tags: z.array(zTMetricTag).default([]),
   isBillable: z.boolean(),
