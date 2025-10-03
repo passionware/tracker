@@ -1,4 +1,4 @@
-import { z } from "zod";
+import {z} from "zod";
 
 // TMetric REST payloads we care about (matching actual API response)
 export const zTMetricClient = z.object({
@@ -52,16 +52,11 @@ export interface TMetricAuthConfig {
   accountId: string; // TMetric account ID for v3 API
 }
 
-export interface TMetricQueryConfig {
-  workspaceExternalId?: string; // optional mapping
-  clientExternalId?: string; // optional mapping
-  projectIdWhitelist?: number[]; // optional filter by projects
-  userIdWhitelist?: number[]; // optional filter by users
-}
+]
 
 export interface TMetricFetchParams {
   periodStart: Date;
   periodEnd: Date;
-  userIds?: string[]; // optional, overrides whitelist
-  projectIds?: string[]; // optional, overrides whitelist
+  userIds: string[]; // optional, overrides whitelist
+  projectIds: string[]; // optional, overrides whitelist
 }
