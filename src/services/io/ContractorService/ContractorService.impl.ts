@@ -1,6 +1,6 @@
 import { ContractorApi } from "@/api/contractor/contractor.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
+import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
 import { ContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";

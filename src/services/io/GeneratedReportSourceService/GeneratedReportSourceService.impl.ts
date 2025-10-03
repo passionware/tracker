@@ -1,7 +1,7 @@
 import { GeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
+import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
 import { GeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 

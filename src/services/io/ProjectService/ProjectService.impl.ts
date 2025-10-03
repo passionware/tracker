@@ -1,7 +1,7 @@
 import { ProjectApi } from "@/api/project/project.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
+import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
 import { ProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
