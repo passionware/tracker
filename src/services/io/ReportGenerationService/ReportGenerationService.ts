@@ -25,3 +25,7 @@ export interface ReportGenerationService {
     generatedReportSourceId: GeneratedReportSource["id"];
   }>;
 }
+
+export interface WithReportGenerationService {
+  reportGenerationService: ReportGenerationService;
+}

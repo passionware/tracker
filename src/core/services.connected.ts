@@ -30,6 +30,8 @@ import { createCostService } from "@/services/io/CostService/CostService.impl.ts
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
+import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
+import { createReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService.impl";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
@@ -78,6 +80,11 @@ const projectIterationService = createProjectIterationService({
   api: myProjectIterationApi,
   client: myQueryClient,
 });
+const expressionService = createExpressionService({
+  services: {
+    variableService,
+  },
+});
 export const myServices = {
   authService: createAuthService(mySupabase),
   clientService: createClientService(
@@ -124,11 +131,7 @@ export const myServices = {
   preferenceService,
   variableService,
   billingService,
-  expressionService: createExpressionService({
-    services: {
-      variableService,
-    },
-  }),
+  expressionService,
   projectService: createProjectService({
     api: myProjectApi,
     client: myQueryClient,
@@ -138,6 +141,16 @@ export const myServices = {
   }),
   projectIterationService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
+  reportGenerationService: createReportGenerationService({
+    services: {
+      reportService,
+    },
+    plugins: {
+      tmetric: createTmetricPlugin({
+        services: { expressionService, reportService },
+      }),
+    },
+  }),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

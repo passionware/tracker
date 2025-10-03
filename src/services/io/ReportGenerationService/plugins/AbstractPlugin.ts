@@ -17,7 +17,7 @@ export type GetReportPayload = {
    * List of contractor specifications.
    * Defines who, when, for whom, and in which workspace the report should be generated.
    */
-  contractors: Array<{
+  reports: Array<{
     contractorId: Contractor["id"];
     periodStart: CalendarDate;
     periodEnd: CalendarDate;

@@ -31,6 +31,13 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
             break;
         }
       }
+      if (query.filters.id) {
+        enumFilterSupabaseUtils.filterBy.oneToMany(
+          request,
+          query.filters.id,
+          "id",
+        );
+      }
       if (query.filters.contractorId) {
         switch (query.filters.contractorId.operator) {
           case "oneOf":
@@ -118,8 +125,16 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
       }
       return parseWithDataError(z.array(report$), data).map(reportFromHttp);
     },
-    getReport: async () => {
-      throw new Error("Not implemented");
+    getReport: async (id) => {
+      const { data, error } = await client
+        .from("report_with_details, contractor(*), client(*)")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) {
+        throw error;
+      }
+      return reportFromHttp(parseWithDataError(report$, data));
     },
   };
 }

@@ -9,7 +9,7 @@ export async function resolveTmetricReportPayload(
   Array<{ fetchParams: TMetricFetchParams; config: TMetricAuthConfig }>
 > {
   return Promise.all(
-    payload.contractors.map(async (contractor) => {
+    payload.reports.map(async (contractor) => {
       const expressionContext = {
         clientId: contractor.clientId,
         workspaceId: contractor.workspaceId,

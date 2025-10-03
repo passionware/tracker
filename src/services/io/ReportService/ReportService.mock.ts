@@ -12,5 +12,8 @@ export function createReportService(): ReportService {
     ensureReport: () => {
       throw new Error("Not implemented");
     },
+    ensureReports: () => {
+      throw new Error("Not implemented");
+    },
   };
 }

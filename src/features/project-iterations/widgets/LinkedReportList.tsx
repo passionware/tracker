@@ -112,7 +112,7 @@ export function LinkedReportList(
                   </ListToolbarButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    {/*
+                  {/*
                     This will open a dialog where you can fill data from external source -> ie. tmetric
                     It is important that the linked report is somehow mapped to the report billing and cost amounts
                     After importing, you can correct the data freely.
@@ -120,7 +120,19 @@ export function LinkedReportList(
                     Then you can view the report (specific version) in the interactive preview that provides useful analysis.
                     This also should be a public view that is queried by ID. This should be carefully exposed using RLS for anonymous users.
                     */}
-                  <DropdownMenuItem>Generate Detailed Report</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      props.services.reportGenerationService.generateReport({
+                        reportIds: selectionState.getSelectedIds(
+                          selection,
+                          rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+                        ),
+                        sourceType: "tmetric",
+                      });
+                    }}
+                  >
+                    Generate Detailed Report
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

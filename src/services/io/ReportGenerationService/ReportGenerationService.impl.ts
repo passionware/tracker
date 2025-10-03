@@ -1,3 +1,5 @@
+import { reportQueryUtils } from "@/api/reports/reports.api";
+import { idSpecUtils } from "@/platform/lang/IdSpec";
 import { WithServices } from "@/platform/typescript/services";
 import { maybe } from "@passionware/monads";
 import { WithReportService } from "../ReportService/ReportService";
@@ -14,10 +16,12 @@ export function createReportGenerationService(
 ): ReportGenerationService {
   return {
     generateReport: async (payload) => {
-      const trackerReports = await Promise.all(
-        payload.reportIds.map(async (reportId) => {
-          return await config.services.reportService.ensureReport(reportId);
-        }),
+      const trackerReports = await config.services.reportService.ensureReports(
+        reportQueryUtils
+          .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
+          .build((q) => [
+            q.withFilter("id", { operator: "oneOf", value: payload.reportIds }),
+          ]),
       );
       const report = await maybe
         .getOrThrow(
@@ -25,7 +29,7 @@ export function createReportGenerationService(
           "Requested plugin is not configured",
         )
         .getReport({
-          contractors: trackerReports.map((trackerReport) => ({
+          reports: trackerReports.map((trackerReport) => ({
             contractorId: trackerReport.contractorId,
             periodStart: trackerReport.periodStart,
             periodEnd: trackerReport.periodEnd,

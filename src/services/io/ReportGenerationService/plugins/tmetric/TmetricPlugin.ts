@@ -20,7 +20,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
         payload,
       );
       const trackerReports = await Promise.all(
-        payload.contractors.map(async (contractor) => {
+        payload.reports.map(async (contractor) => {
           return await config.services.reportService.ensureReport(
             contractor.contractorId,
           );
