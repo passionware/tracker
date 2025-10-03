@@ -1,3 +1,4 @@
+import { CalendarDate } from "@internationalized/date";
 import { z } from "zod";
 
 // TMetric REST payloads we care about (matching actual API response)
@@ -53,7 +54,7 @@ export interface TMetricAuthConfig {
 }
 
 export interface TMetricFetchParams {
-  periodStart: Date;
-  periodEnd: Date;
+  periodStart: CalendarDate;
+  periodEnd: CalendarDate;
   userIds: string[];
 }

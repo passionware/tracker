@@ -1,0 +1,44 @@
+import { WithServices } from "@/platform/typescript/services";
+import { maybe } from "@passionware/monads";
+import { WithReportService } from "../ReportService/ReportService";
+import { AbstractPlugin } from "./plugins/AbstractPlugin";
+import { ReportGenerationService } from "./ReportGenerationService";
+
+export interface ReportGenerationServiceConfig
+  extends WithServices<[WithReportService]> {
+  plugins: Record<string, AbstractPlugin>;
+}
+
+export function createReportGenerationService(
+  config: ReportGenerationServiceConfig,
+): ReportGenerationService {
+  return {
+    generateReport: async (payload) => {
+      const trackerReports = await Promise.all(
+        payload.reportIds.map(async (reportId) => {
+          return await config.services.reportService.ensureReport(reportId);
+        }),
+      );
+      const report = await maybe
+        .getOrThrow(
+          config.plugins[payload.sourceType],
+          "Requested plugin is not configured",
+        )
+        .getReport({
+          contractors: trackerReports.map((trackerReport) => ({
+            contractorId: trackerReport.contractorId,
+            periodStart: trackerReport.periodStart,
+            periodEnd: trackerReport.periodEnd,
+            workspaceId: trackerReport.workspaceId,
+            clientId: trackerReport.clientId,
+          })),
+        });
+
+      console.log("Generated Report:", report);
+
+      return {
+        generatedReportSourceId: 123,
+      };
+    },
+  };
+}

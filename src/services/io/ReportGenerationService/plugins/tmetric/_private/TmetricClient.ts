@@ -64,13 +64,8 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       // projectIds,
     }) => {
       // Format dates as yyyy-MM-dd
-      function format(date: Date): string {
-        // Use toISOString and slice to get yyyy-MM-dd
-        return date.toISOString().slice(0, 10);
-      }
-
-      const startDate = format(periodStart);
-      const endDate = format(periodEnd);
+      const startDate = periodStart.toString();
+      const endDate = periodEnd.toString();
 
       // Build query parameters using URLSearchParams for proper encoding
       // Match the working curl command format exactly

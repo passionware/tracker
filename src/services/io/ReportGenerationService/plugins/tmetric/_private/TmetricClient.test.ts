@@ -1,3 +1,4 @@
+import { parseDate } from "@internationalized/date";
 import { describe, expect, it } from "vitest";
 import { createTMetricClient } from "./TmetricClient.ts";
 
@@ -23,8 +24,8 @@ describe("TmetricClient", () => {
     });
 
     const timeEntries = await client.listTimeEntries({
-      periodStart: new Date("2025-10-01"),
-      periodEnd: new Date("2025-10-31"),
+      periodStart: parseDate("2025-10-01"),
+      periodEnd: parseDate("2025-10-31"),
       userIds: ["352387"],
     });
 
