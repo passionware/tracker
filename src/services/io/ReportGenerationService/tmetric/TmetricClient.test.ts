@@ -26,7 +26,6 @@ describe("TmetricClient", () => {
       periodStart: new Date("2025-10-01"),
       periodEnd: new Date("2025-10-31"),
       userIds: ["352387"],
-      // projectIds: ["943025", "768260", "761232", "764393", "781493", "983057"],
     });
 
     expect(timeEntries).toMatchInlineSnapshot(`

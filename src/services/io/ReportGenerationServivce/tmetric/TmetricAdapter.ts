@@ -1,9 +1,9 @@
-import { GenericReport } from "../impl/AbstractReportPlugin";
+import { GenericReport } from "../../_common/GenericReport";
 import {
   TMetricProject,
   TMetricTimeEntry,
   TMetricUser,
-} from "./TmetricSchemas";
+} from "../../ReportGenerationService/tmetric/TmetricSchemas";
 
 export type ActivityId =
   | "development"

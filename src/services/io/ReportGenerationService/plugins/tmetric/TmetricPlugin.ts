@@ -1,18 +1,16 @@
 import { WithServices } from "@/platform/typescript/services";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
+import { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { maybe } from "@passionware/monads";
 import { zip } from "lodash";
 import { adaptTMetricToGeneric } from "../../tmetric/TmetricAdapter";
 import { createTMetricClient } from "../../tmetric/TmetricClient";
-import { TMetricClient } from "../../tmetric/TmetricSchemas";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./config-resolver";
 
 interface TmetricConfig
-  extends WithServices<[WithExpressionService, WithReportService]> {
-  client: TMetricClient;
-}
+  extends WithServices<[WithExpressionService, WithReportService]> {}
 
 export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
   return {
@@ -40,15 +38,16 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 
           const projects = await tmetricClient.listProjects();
           const users = await tmetricClient.listUsers();
-          const defaultRoleId = "developer";
+          // Use contractor name as role ID to keep rates separate
+          const contractorRoleId = `contractor_${trackerReport.contractorId}`;
           const adapted = adaptTMetricToGeneric({
             entries: timeEntries,
             projects,
             users,
-            defaultRoleId,
+            defaultRoleId: contractorRoleId,
             currency: trackerReport.currency,
           });
-          adapted.definitions.roleTypes[defaultRoleId].rates.push({
+          adapted.definitions.roleTypes[contractorRoleId].rates.push({
             billing: "hourly",
             activityType: "development",
             taskType: "development",
@@ -68,7 +67,58 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
           return adapted;
         }),
       );
-      return reports;
+
+      // Merge all reports into a single report
+      return mergeGenericReports(reports);
     },
   };
+}
+
+/**
+ * Merges multiple GenericReport objects into a single report.
+ * - Task types are merged by their IDs (original tmetric entry descriptions)
+ * - Activity types are merged (should be the same across contractors)
+ * - Role types are kept separate (each contractor has their own role with rates)
+ * - Time entries are combined from all reports
+ */
+function mergeGenericReports(reports: GenericReport[]): GenericReport {
+  if (reports.length === 0) {
+    throw new Error("Cannot merge empty reports array");
+  }
+
+  if (reports.length === 1) {
+    return reports[0];
+  }
+
+  // Start with the first report as base
+  const merged: GenericReport = {
+    definitions: {
+      taskTypes: { ...reports[0].definitions.taskTypes },
+      activityTypes: { ...reports[0].definitions.activityTypes },
+      roleTypes: { ...reports[0].definitions.roleTypes },
+    },
+    timeEntries: [...reports[0].timeEntries],
+  };
+
+  // Merge remaining reports
+  for (let i = 1; i < reports.length; i++) {
+    const report = reports[i];
+
+    // Merge task types by ID (original tmetric entry descriptions)
+    Object.assign(merged.definitions.taskTypes, report.definitions.taskTypes);
+
+    // Merge activity types (should be the same, but merge to be safe)
+    Object.assign(
+      merged.definitions.activityTypes,
+      report.definitions.activityTypes,
+    );
+
+    // Keep role types separate - each contractor has their own role
+    Object.assign(merged.definitions.roleTypes, report.definitions.roleTypes);
+
+    // Combine time entries
+    merged.timeEntries.push(...report.timeEntries);
+  }
+
+  return merged;
 }
