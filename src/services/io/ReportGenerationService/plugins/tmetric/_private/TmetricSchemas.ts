@@ -28,11 +28,19 @@ export const zTMetricUser = z.object({
 
 export type TMetricUser = z.infer<typeof zTMetricUser>;
 
+export const zTMetricTag = z.object({
+  id: z.number(),
+  name: z.string(),
+  isWorkType: z.boolean(),
+});
+
+export type TMetricTag = z.infer<typeof zTMetricTag>;
+
 export const zTMetricTimeEntry = z.object({
   id: z.number(),
   project: zTMetricProject,
   note: z.string().optional(),
-  tags: z.array(z.string()).default([]),
+  tags: z.array(zTMetricTag).default([]),
   isBillable: z.boolean(),
   isInvoiced: z.boolean(),
   startTime: z.string(), // ISO format

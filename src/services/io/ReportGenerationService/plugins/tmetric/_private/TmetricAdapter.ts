@@ -3,6 +3,7 @@ import {
   TMetricProject,
   TMetricTimeEntry,
   TMetricUser,
+  TMetricTag,
 } from "./TmetricSchemas.ts";
 
 export type ActivityId =
@@ -26,9 +27,23 @@ function normalize(s: string): string {
 export function inferActivity(
   description: string,
   projectName: string,
+  tags: TMetricTag[] = [],
 ): ActivityId {
   const d = normalize(description);
   const p = normalize(projectName);
+
+  // Check tags first for explicit activity type
+  for (const tag of tags) {
+    const tagName = normalize(tag.name);
+    if (tagName.includes("meeting")) return "meeting";
+    if (tagName.includes("review")) return "code_review";
+    if (tagName.includes("ops") || tagName.includes("operation"))
+      return "operations";
+    if (tagName.includes("development") || tagName.includes("dev"))
+      return "development";
+  }
+
+  // Fallback to description and project name
   if (d.includes("meeting") || p.includes("meeting")) return "meeting";
   if (d.includes("review") || p.includes("review")) return "code_review";
   // fallback heuristics: treat entries with words like "ops" as operations
@@ -108,7 +123,7 @@ export function adaptTMetricToGeneric(
 
   const timeEntries = input.entries.map((e) => {
     const projectName = e.project.name;
-    const activityId = inferActivity(e.note ?? "", projectName);
+    const activityId = inferActivity(e.note ?? "", projectName, e.tags);
     const taskId = e.note?.trim() || "Unnamed task";
     const startAt = new Date(e.startTime);
     const endAt = new Date(e.endTime as string);
