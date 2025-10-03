@@ -1,5 +1,6 @@
 import { Client } from "@/api/clients/clients.api";
 import { Contractor } from "@/api/contractor/contractor.api";
+import { Report } from "@/api/reports/reports.api";
 import { Workspace } from "@/api/workspace/workspace.api";
 import { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { CalendarDate } from "@internationalized/date";
@@ -23,6 +24,7 @@ export type GetReportPayload = {
     periodEnd: CalendarDate;
     workspaceId: Workspace["id"];
     clientId: Client["id"];
+    reportId: Report["id"];
   }>;
 };
 

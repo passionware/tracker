@@ -35,6 +35,7 @@ export function createReportGenerationService(
             periodEnd: trackerReport.periodEnd,
             workspaceId: trackerReport.workspaceId,
             clientId: trackerReport.clientId,
+            reportId: trackerReport.id,
           })),
         });
 

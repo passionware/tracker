@@ -8,6 +8,8 @@ import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 
 interface TmetricConfig
   extends WithServices<[WithExpressionService, WithReportService]> {}
@@ -19,12 +21,15 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
         config.services,
         payload,
       );
-      const trackerReports = await Promise.all(
-        payload.reports.map(async (contractor) => {
-          return await config.services.reportService.ensureReport(
-            contractor.contractorId,
-          );
-        }),
+      const trackerReports = await config.services.reportService.ensureReports(
+        reportQueryUtils
+          .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
+          .build((q) => [
+            q.withFilter("id", {
+              operator: "oneOf",
+              value: payload.reports.map((r) => r.reportId),
+            }),
+          ]),
       );
       const configs = zip(configs_, trackerReports);
       const reports = await Promise.all(
