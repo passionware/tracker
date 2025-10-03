@@ -1,10 +1,5 @@
 import { GenericReport } from "../../../../_common/GenericReport.ts";
-import {
-  TMetricProject,
-  TMetricTimeEntry,
-  TMetricUser,
-  TMetricTag,
-} from "./TmetricSchemas.ts";
+import { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
 
 export type ActivityId =
   | "development"
@@ -14,8 +9,6 @@ export type ActivityId =
 
 export interface TMetricAdapterInput {
   entries: TMetricTimeEntry[];
-  projects: TMetricProject[];
-  users: TMetricUser[];
   defaultRoleId: string; // simple single role mapping for now
   currency: string;
 }

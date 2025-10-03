@@ -8,8 +8,6 @@ describe("TmetricAdapter", () => {
     entries = mockTmetricResponse,
   ): TMetricAdapterInput => ({
     entries,
-    projects: [], // Not used in current implementation since projects are embedded
-    users: [], // Not used in current implementation
     defaultRoleId: "developer",
     currency: "USD",
   });

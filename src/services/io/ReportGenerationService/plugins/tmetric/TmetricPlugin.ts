@@ -1,3 +1,5 @@
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport } from "@/services/io/_common/GenericReport.ts";
@@ -8,8 +10,6 @@ import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 
 interface TmetricConfig
   extends WithServices<[WithExpressionService, WithReportService]> {}
@@ -41,14 +41,10 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             reportConfig.fetchParams,
           );
 
-          const projects = await tmetricClient.listProjects();
-          const users = await tmetricClient.listUsers();
           // Use contractor name as role ID to keep rates separate
           const contractorRoleId = `contractor_${trackerReport.contractorId}`;
           const adapted = adaptTMetricToGeneric({
             entries: timeEntries,
-            projects,
-            users,
             defaultRoleId: contractorRoleId,
             currency: trackerReport.currency,
           });
