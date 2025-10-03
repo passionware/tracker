@@ -96,7 +96,7 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       // Filter out running entries without endTime and normalize note to required string
       return data
         .filter((e) => !!e.endTime)
-        .map((e) => ({ ...e, note: e.note ?? "" , tags: e.tags ?? []}));
+        .map((e) => ({ ...e, note: e.note ?? "", tags: e.tags ?? [] }));
     },
     listProjects: async () => {
       // Use TMetric API v3 endpoint for projects (as mentioned by user)
