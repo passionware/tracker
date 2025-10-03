@@ -107,7 +107,7 @@ export function adaptTMetricToGeneric(
   };
 
   const timeEntries = input.entries.map((e) => {
-    const projectName = e.project.name;
+    const projectName = e.project?.name ?? "(no project)";
     const activityId = inferActivity(e.note ?? "", projectName);
     const taskId = e.note?.trim() || "Unnamed task";
     const startAt = new Date(e.startTime);
