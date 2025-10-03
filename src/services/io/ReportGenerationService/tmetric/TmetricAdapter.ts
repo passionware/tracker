@@ -1,4 +1,4 @@
-import { GenericReport } from "../impl/AbstractReportPlugin";
+import { GenericReport } from "../../_common/GenericReport.ts";
 import {
   TMetricProject,
   TMetricTimeEntry,
