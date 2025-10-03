@@ -1,9 +1,9 @@
-import { GenericReport } from "../../_common/GenericReport.ts";
+import { GenericReport } from "../../../../_common/GenericReport.ts";
 import {
   TMetricProject,
   TMetricTimeEntry,
   TMetricUser,
-} from "./TmetricSchemas";
+} from "./TmetricSchemas.ts";
 
 export type ActivityId =
   | "development"

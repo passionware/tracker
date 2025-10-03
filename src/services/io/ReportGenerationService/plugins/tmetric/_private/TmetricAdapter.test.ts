@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { adaptTMetricToGeneric, inferActivity } from "./TmetricAdapter.ts";
 import { mockTmetricResponse } from "./__test__/mock-tmetric-response.ts";
 import type { TMetricAdapterInput } from "./TmetricAdapter.ts";
+import { adaptTMetricToGeneric, inferActivity } from "./TmetricAdapter.ts";
 
 describe("TmetricAdapter", () => {
   const createMockInput = (
@@ -472,7 +472,7 @@ describe("TmetricAdapter", () => {
     });
   });
 
-  it('snapshot test for generic report structure', () => {
+  it("snapshot test for generic report structure", () => {
     const input = createMockInput();
     const result = adaptTMetricToGeneric(input);
     expect(result).toMatchInlineSnapshot(`
@@ -877,5 +877,5 @@ describe("TmetricAdapter", () => {
         ],
       }
     `);
-  })
+  });
 });

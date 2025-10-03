@@ -4,10 +4,10 @@ import { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { maybe } from "@passionware/monads";
 import { zip } from "lodash";
-import { adaptTMetricToGeneric } from "../../tmetric/TmetricAdapter";
-import { createTMetricClient } from "../../tmetric/TmetricClient";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
-import { resolveTmetricReportPayload } from "./config-resolver";
+import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
+import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
+import { createTMetricClient } from "./_private/TmetricClient.ts";
 
 interface TmetricConfig
   extends WithServices<[WithExpressionService, WithReportService]> {}

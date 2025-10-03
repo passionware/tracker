@@ -8,7 +8,7 @@ import {
   zTMetricEntriesResponse,
   zTMetricProjectsResponse,
   zTMetricUsersResponse,
-} from "./TmetricSchemas";
+} from "./TmetricSchemas.ts";
 
 async function get<T>(
   url: string,

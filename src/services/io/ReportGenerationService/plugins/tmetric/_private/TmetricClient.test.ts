@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTMetricClient } from "./TmetricClient";
+import { createTMetricClient } from "./TmetricClient.ts";
 
 describe("TmetricClient", () => {
   it("should be able to fetch projects", async () => {

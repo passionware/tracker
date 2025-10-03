@@ -3,7 +3,7 @@ import {
   TMetricProject,
   TMetricTimeEntry,
   TMetricUser,
-} from "../../ReportGenerationService/tmetric/TmetricSchemas";
+} from "../../ReportGenerationService/plugins/tmetric/_private/TmetricSchemas.ts";
 
 export type ActivityId =
   | "development"

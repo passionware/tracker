@@ -1,9 +1,6 @@
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
-import {
-  TMetricAuthConfig,
-  TMetricFetchParams,
-} from "../../tmetric/TmetricSchemas";
-import { GetReportPayload } from "../AbstractPlugin";
+import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { GetReportPayload } from "../../AbstractPlugin.ts";
+import { TMetricAuthConfig, TMetricFetchParams } from "./TmetricSchemas.ts";
 
 export async function resolveTmetricReportPayload(
   services: WithExpressionService,
