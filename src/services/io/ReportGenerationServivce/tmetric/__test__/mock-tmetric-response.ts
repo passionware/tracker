@@ -1,0 +1,646 @@
+export const mockTmetricResponse = [
+  {
+    endTime: "2025-10-01T10:26:00",
+    id: 195778761,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-01T10:15:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T11:33:00",
+    id: 195786991,
+    isBillable: false,
+    isInvoiced: false,
+    note: "Operations",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_17.svg",
+      id: 902501,
+      isBillable: false,
+      name: "Countful - Development",
+      status: "active",
+    },
+    startTime: "2025-10-01T11:19:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T12:05:00",
+    id: 195790941,
+    isBillable: false,
+    isInvoiced: false,
+    note: "Operations",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_17.svg",
+      id: 902501,
+      isBillable: false,
+      name: "Countful - Development",
+      status: "active",
+    },
+    startTime: "2025-10-01T12:00:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T14:41:00",
+    id: 195810623,
+    isBillable: false,
+    isInvoiced: false,
+    note: "387-cancellation-invoices-cannot-be-connected-for-outgoing-invoices-income",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_17.svg",
+      id: 902501,
+      isBillable: false,
+      name: "Countful - Development",
+      status: "active",
+    },
+    startTime: "2025-10-01T13:12:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T14:48:00",
+    id: 195811645,
+    isBillable: false,
+    isInvoiced: false,
+    note: "backmerging & fixes",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-01T14:41:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T15:29:00",
+    id: 195817932,
+    isBillable: false,
+    isInvoiced: false,
+    note: "387-cancellation-invoices-cannot-be-connected-for-outgoing-invoices-income",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_17.svg",
+      id: 902501,
+      isBillable: false,
+      name: "Countful - Development",
+      status: "active",
+    },
+    startTime: "2025-10-01T14:48:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T15:44:00",
+    id: 195820200,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-01T15:29:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T16:42:00",
+    id: 195828830,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1081-custom-nike-integration-plan",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-01T15:44:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T19:39:00",
+    id: 195848598,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1081-custom-nike-integration-plan",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-01T18:59:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-01T22:43:00",
+    id: 195868218,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1081-custom-nike-integration-plan",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-01T20:11:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T08:13:00",
+    id: 195893316,
+    isBillable: false,
+    isInvoiced: false,
+    note: "388-negative-discount-amount-bug",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_17.svg",
+      id: 902501,
+      isBillable: false,
+      name: "Countful - Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T07:56:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T08:56:00",
+    id: 195898342,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-02T08:46:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T09:16:00",
+    id: 195898784,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1074-run-e2e-test-every-pr",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-02T08:56:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T11:16:00",
+    id: 195912375,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T10:56:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T12:28:00",
+    id: 195920706,
+    isBillable: false,
+    isInvoiced: false,
+    note: "chat with Scott",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 764393,
+      isBillable: false,
+      name: "Atellio - meetings",
+      status: "active",
+    },
+    startTime: "2025-10-02T11:16:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T13:21:00",
+    id: 195926864,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1081-custom-nike-integration-plan",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-02T12:53:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T14:40:00",
+    id: 195936652,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T14:02:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T16:08:00",
+    id: 195950208,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T15:47:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T20:46:00",
+    id: 195979306,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T20:08:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T21:33:00",
+    id: 195982646,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-02T20:46:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T22:40:00",
+    id: 195988502,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T21:33:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T23:00:00",
+    id: 195988507,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-02T22:40:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-02T23:50:00",
+    id: 195990915,
+    isBillable: false,
+    isInvoiced: false,
+    note: "tmetric reports generation",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+        id: 228313,
+        name: "Passionware",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_24.svg",
+      id: 886046,
+      isBillable: false,
+      name: "Passionware Internal Development",
+      status: "active",
+    },
+    startTime: "2025-10-02T23:00:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-03T11:37:00",
+    id: 196022482,
+    isBillable: false,
+    isInvoiced: false,
+    note: "checkin with Lennart",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_5.svg",
+        id: 261186,
+        name: "Countful",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_18.svg",
+      id: 937224,
+      isBillable: false,
+      name: "Countful - Meetings",
+      status: "active",
+    },
+    startTime: "2025-10-03T10:00:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-03T11:54:00",
+    id: 196024144,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-03T11:46:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-03T18:33:00",
+    id: 196069231,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-03T18:14:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-03T18:48:00",
+    id: 196070206,
+    isBillable: false,
+    isInvoiced: false,
+    note: "v1-1138-bookings-with-status-first_hold-or-others-are-not-shown",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_3.svg",
+      id: 761232,
+      isBillable: false,
+      name: "Atellio - development",
+      status: "active",
+    },
+    startTime: "2025-10-03T18:33:00",
+    tags: [],
+  },
+  {
+    endTime: "2025-10-03T19:13:00",
+    id: 196072170,
+    isBillable: false,
+    isInvoiced: false,
+    note: "planning work / task analysis / code review",
+    project: {
+      client: {
+        iconUrl:
+          "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+        id: 190102,
+        name: "Atellio",
+      },
+      iconUrl:
+        "https://services.tmetric.com/storage/Content/Avatars/avatar_4.svg",
+      id: 983057,
+      isBillable: false,
+      name: "Atellio - Operations",
+      status: "active",
+    },
+    startTime: "2025-10-03T18:48:00",
+    tags: [],
+  },
+];
