@@ -99,6 +99,42 @@ export function IterationWidget(
               />
             }
           />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              `${forIteration.forGeneratedReport().root()}/basic`,
+            )}
+            element={
+              <GeneratedReportDetail
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                projectId={props.projectId}
+                reportId={parseInt(
+                  window.location.pathname.split("/").slice(-2, -1)[0] || "0",
+                )}
+                services={props.services}
+              />
+            }
+          />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              `${forIteration.forGeneratedReport().root()}/time-entries`,
+            )}
+            element={
+              <GeneratedReportDetail
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                projectId={props.projectId}
+                reportId={parseInt(
+                  window.location.pathname.split("/").slice(-2, -1)[0] || "0",
+                )}
+                services={props.services}
+              />
+            }
+          />
         </Routes>
       </div>
     </CommonPageContainer>
