@@ -103,6 +103,8 @@ export interface RoutingService {
           generatedReports: () => string;
           forGeneratedReport: (reportId?: string | ":generatedReportId") => {
             root: () => string;
+            basic: () => string;
+            timeEntries: () => string;
           };
           billings: () => string;
         };

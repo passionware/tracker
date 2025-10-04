@@ -17,6 +17,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Calendar, Database, FileText } from "lucide-react";
+import { GeneratedReportTabs } from "./GeneratedReportHeader";
 
 export function GeneratedReportDetail(
   props: WithFrontServices & {
@@ -39,6 +40,7 @@ export function GeneratedReportDetail(
 
   return (
     <div className="space-y-6">
+      <GeneratedReportTabs {...props} />
       {/* Report Details */}
       {rd
         .journey(generatedReport)

@@ -224,6 +224,21 @@ export function createLocationService(
       );
       return maybe.map(match?.params.generatedReportId, parseInt);
     },
+    useCurrentGeneratedReportTab: () => {
+      const match = config.services.navigationService.useMatch(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .forIteration()
+          .forGeneratedReport()
+          .root() + "/*",
+      );
+      return maybe.map(
+        match?.params.generatedReportTab,
+        (tab) => tab as "basic" | "time-entries",
+      );
+    },
     Resolver: (props) => {
       const workspaceId = api.useCurrentWorkspaceId();
 

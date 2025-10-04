@@ -16,7 +16,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { ArrowLeft, FileText } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export function GeneratedReportHeader(
   props: WithFrontServices & {
@@ -105,7 +105,6 @@ export function GeneratedReportTabs(
   },
 ) {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const forIteration = props.services.routingService
     .forWorkspace(props.workspaceId)
@@ -113,30 +112,27 @@ export function GeneratedReportTabs(
     .forProject(props.projectId.toString())
     .forIteration(props.projectIterationId.toString());
 
-  // Determine current tab from URL
-  const getCurrentTab = () => {
-    const pathname = location.pathname;
-    if (pathname.endsWith("/basic")) return "basic";
-    if (pathname.endsWith("/time-entries")) return "time-entries";
-    return "basic"; // default
-  };
-
-  const currentTab = getCurrentTab();
+  const currentTab =
+    props.services.locationService.useCurrentGeneratedReportTab();
 
   const handleTabChange = (tab: string) => {
-    if (tab === "basic") {
-      navigate(
-        forIteration.forGeneratedReport(props.reportId.toString()).root(),
-      );
-    } else if (tab === "time-entries") {
-      navigate(
-        `${forIteration.forGeneratedReport(props.reportId.toString()).root()}/time-entries`,
-      );
+    // Navigate back to the generated reports list
+    switch (tab) {
+      case "basic":
+        navigate(forIteration.forGeneratedReport().root());
+        break;
+      case "time-entries":
+        navigate(forIteration.forGeneratedReport().timeEntries());
+        break;
     }
   };
 
   return (
-    <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+    <Tabs
+      value={currentTab ?? "basic"}
+      onValueChange={handleTabChange}
+      className="w-full"
+    >
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="basic">Basic Information</TabsTrigger>
         <TabsTrigger value="time-entries">Time Entries</TabsTrigger>
