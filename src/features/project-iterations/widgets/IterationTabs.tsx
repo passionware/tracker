@@ -43,6 +43,19 @@ export function IterationTabs(
       props.projectIterationId,
     );
 
+  // Query for linked reports (same as in LinkedReportList)
+  const linkedReportsQuery = reportQueryUtils
+    .getBuilder(props.workspaceId, props.clientId)
+    .build((q) => [
+      q.withFilter("projectIterationId", {
+        operator: "oneOf",
+        value: [props.projectIterationId],
+      }),
+    ]);
+
+  const linkedReports =
+    props.services.reportDisplayService.useReportView(linkedReportsQuery);
+
   const reportsQuery = rd.map(
     rd.combine({ project, iteration }),
     ({ project, iteration }) =>
@@ -101,9 +114,9 @@ export function IterationTabs(
             props.services.navigationService.navigate(forIteration.reports())
           }
         >
-          Reports
-          <Badge variant="warning" size="sm">
-            12
+          Linked reports
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(linkedReports, (reports) => reports.entries.length)}
           </Badge>
         </TabsTrigger>
         <TabsTrigger
