@@ -3,6 +3,7 @@ import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
+import { createGeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.http";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
@@ -27,6 +28,7 @@ import { createBillingService } from "@/services/io/BillingService/BillingServic
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
+import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
@@ -45,6 +47,11 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
+const generatedReportSourceWriteService =
+  createGeneratedReportSourceWriteService({
+    services: { messageService },
+    api: createGeneratedReportSourceApi(mySupabase),
+  });
 const reportService = createReportService(
   createReportsApi(mySupabase),
   myQueryClient,
@@ -144,6 +151,7 @@ export const myServices = {
   reportGenerationService: createReportGenerationService({
     services: {
       reportService,
+      generatedReportSourceWriteService,
     },
     plugins: {
       tmetric: createTmetricPlugin({
@@ -151,6 +159,7 @@ export const myServices = {
       }),
     },
   }),
+  generatedReportSourceWriteService,
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

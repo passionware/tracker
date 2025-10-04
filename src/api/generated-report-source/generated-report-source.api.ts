@@ -13,11 +13,12 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
+import { GenericReport } from "@/services/io/_common/GenericReport";
 
 export interface GeneratedReportSourcePayload {
   projectIterationId: ProjectIteration["id"];
-  data: Record<string, any>; // JSONB data
-  originalData: Record<string, any>; // JSONB original data
+  data: GenericReport;
+  originalData: unknown;
 }
 
 export interface GeneratedReportSource extends GeneratedReportSourcePayload {

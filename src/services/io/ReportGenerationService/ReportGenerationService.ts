@@ -1,9 +1,11 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
+import { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import { Report } from "@/api/reports/reports.api";
 
 export interface ReportGenerationPayload {
   reportIds: Report["id"][];
   sourceType: "tmetric";
+  projectIterationId: ProjectIteration["id"];
 }
 
 /**

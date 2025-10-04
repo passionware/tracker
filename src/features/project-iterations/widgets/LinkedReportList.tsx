@@ -128,6 +128,7 @@ export function LinkedReportList(
                           rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
                         ),
                         sourceType: "tmetric",
+                        projectIterationId: props.projectIterationId,
                       });
                     }}
                   >

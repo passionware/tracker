@@ -5,27 +5,99 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
     id: number;
     createdAt: Date;
     projectIterationId: number;
-    data: Record<string, any>;
-    originalData: Record<string, any>;
+    data: {
+      definitions: {
+        taskTypes: { [key: string]: any };
+        activityTypes: { [key: string]: any };
+        roleTypes: { [key: string]: any };
+      };
+      timeEntries: Array<{
+        id: string;
+        note: string;
+        taskId: string;
+        activityId: string;
+        roleId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        startAt: Date;
+        endAt: Date;
+      }>;
+    };
+    originalData: unknown;
   }> = [
     {
       id: 1,
       createdAt: new Date("2024-01-15T10:30:00Z"),
       projectIterationId: 1,
       data: {
-        reportType: "monthly",
-        generatedBy: "system",
-        version: "1.0",
-        content: {
-          summary: "Monthly report for January 2024",
-          sections: ["overview", "financials", "timeline"],
+        definitions: {
+          taskTypes: {
+            development: {
+              name: "Development",
+              description: "Software development tasks",
+              parameters: { complexity: "medium" },
+            },
+            testing: {
+              name: "Testing",
+              description: "Quality assurance and testing",
+              parameters: { coverage: "high" },
+            },
+          },
+          activityTypes: {
+            coding: {
+              name: "Coding",
+              description: "Writing code and implementation",
+            },
+            review: {
+              name: "Code Review",
+              description: "Reviewing code changes",
+            },
+          },
+          roleTypes: {
+            developer: {
+              name: "Developer",
+              description: "Software developer role",
+              rates: [
+                {
+                  billing: "hourly",
+                  taskType: "development",
+                  currency: "USD",
+                  rate: 75,
+                },
+              ],
+            },
+          },
         },
+        timeEntries: [
+          {
+            id: "entry-1",
+            note: "Implemented user authentication",
+            taskId: "development",
+            activityId: "coding",
+            roleId: "developer",
+            createdAt: new Date("2024-01-15T08:00:00Z"),
+            updatedAt: new Date("2024-01-15T08:00:00Z"),
+            startAt: new Date("2024-01-15T08:00:00Z"),
+            endAt: new Date("2024-01-15T16:00:00Z"),
+          },
+          {
+            id: "entry-2",
+            note: "Code review for auth module",
+            taskId: "testing",
+            activityId: "review",
+            roleId: "developer",
+            createdAt: new Date("2024-01-15T16:30:00Z"),
+            updatedAt: new Date("2024-01-15T16:30:00Z"),
+            startAt: new Date("2024-01-15T16:30:00Z"),
+            endAt: new Date("2024-01-15T18:30:00Z"),
+          },
+        ],
       },
       originalData: {
         sourceType: "tmetric",
         rawReports: [
-          { id: 1, hours: 40, description: "Development work" },
-          { id: 2, hours: 20, description: "Code review" },
+          { id: 1, hours: 8, description: "Development work" },
+          { id: 2, hours: 2, description: "Code review" },
         ],
         metadata: {
           generatedAt: "2024-01-15T10:30:00Z",
@@ -38,20 +110,74 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
       createdAt: new Date("2024-01-20T14:45:00Z"),
       projectIterationId: 2,
       data: {
-        reportType: "quarterly",
-        generatedBy: "user",
-        version: "1.1",
-        content: {
-          summary: "Q1 2024 quarterly report",
-          sections: ["executive_summary", "metrics", "recommendations"],
+        definitions: {
+          taskTypes: {
+            frontend: {
+              name: "Frontend Development",
+              description: "User interface development",
+              parameters: { framework: "React" },
+            },
+            backend: {
+              name: "Backend Development",
+              description: "Server-side development",
+              parameters: { language: "TypeScript" },
+            },
+          },
+          activityTypes: {
+            implementation: {
+              name: "Implementation",
+              description: "Feature implementation",
+            },
+            debugging: {
+              name: "Debugging",
+              description: "Bug fixing and debugging",
+            },
+          },
+          roleTypes: {
+            "senior-dev": {
+              name: "Senior Developer",
+              description: "Senior software developer",
+              rates: [
+                {
+                  billing: "hourly",
+                  taskType: "frontend",
+                  currency: "USD",
+                  rate: 95,
+                },
+              ],
+            },
+          },
         },
+        timeEntries: [
+          {
+            id: "entry-3",
+            note: "Built dashboard components",
+            taskId: "frontend",
+            activityId: "implementation",
+            roleId: "senior-dev",
+            createdAt: new Date("2024-01-20T09:00:00Z"),
+            updatedAt: new Date("2024-01-20T09:00:00Z"),
+            startAt: new Date("2024-01-20T09:00:00Z"),
+            endAt: new Date("2024-01-20T17:00:00Z"),
+          },
+          {
+            id: "entry-4",
+            note: "Fixed API integration bugs",
+            taskId: "backend",
+            activityId: "debugging",
+            roleId: "senior-dev",
+            createdAt: new Date("2024-01-20T17:30:00Z"),
+            updatedAt: new Date("2024-01-20T17:30:00Z"),
+            startAt: new Date("2024-01-20T17:30:00Z"),
+            endAt: new Date("2024-01-20T19:30:00Z"),
+          },
+        ],
       },
       originalData: {
         sourceType: "tmetric",
         rawReports: [
-          { id: 3, hours: 60, description: "Q1 development" },
-          { id: 4, hours: 30, description: "Q1 testing" },
-          { id: 5, hours: 20, description: "Q1 documentation" },
+          { id: 3, hours: 8, description: "Frontend development" },
+          { id: 4, hours: 2, description: "Backend debugging" },
         ],
         metadata: {
           generatedAt: "2024-01-20T14:45:00Z",
@@ -64,21 +190,52 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
       createdAt: new Date("2024-02-01T09:15:00Z"),
       projectIterationId: 1,
       data: {
-        reportType: "weekly",
-        generatedBy: "system",
-        version: "1.2",
-        content: {
-          summary: "Weekly progress report",
-          sections: ["tasks", "milestones", "blockers"],
+        definitions: {
+          taskTypes: {
+            maintenance: {
+              name: "Maintenance",
+              description: "Code maintenance and updates",
+              parameters: { priority: "medium" },
+            },
+          },
+          activityTypes: {
+            refactoring: {
+              name: "Refactoring",
+              description: "Code refactoring and optimization",
+            },
+          },
+          roleTypes: {
+            maintainer: {
+              name: "Code Maintainer",
+              description: "Code maintenance specialist",
+              rates: [
+                {
+                  billing: "hourly",
+                  taskType: "maintenance",
+                  currency: "USD",
+                  rate: 65,
+                },
+              ],
+            },
+          },
         },
+        timeEntries: [
+          {
+            id: "entry-5",
+            note: "Refactored authentication service",
+            taskId: "maintenance",
+            activityId: "refactoring",
+            roleId: "maintainer",
+            createdAt: new Date("2024-02-01T08:00:00Z"),
+            updatedAt: new Date("2024-02-01T08:00:00Z"),
+            startAt: new Date("2024-02-01T08:00:00Z"),
+            endAt: new Date("2024-02-01T12:00:00Z"),
+          },
+        ],
       },
       originalData: {
         sourceType: "tmetric",
-        rawReports: [
-          { id: 6, hours: 8, description: "Monday development" },
-          { id: 7, hours: 6, description: "Tuesday debugging" },
-          { id: 8, hours: 4, description: "Wednesday testing" },
-        ],
+        rawReports: [{ id: 6, hours: 4, description: "Code refactoring" }],
         metadata: {
           generatedAt: "2024-02-01T09:15:00Z",
           sourceVersion: "1.2",
@@ -130,9 +287,46 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
       // Simple search mock
       if (query.search) {
         const searchLower = query.search.toLowerCase();
-        filteredData = filteredData.filter((item) =>
-          JSON.stringify(item.data).toLowerCase().includes(searchLower),
-        );
+        filteredData = filteredData.filter((item) => {
+          // Search in time entry notes
+          const timeEntryMatches = item.data.timeEntries.some((entry) =>
+            entry.note.toLowerCase().includes(searchLower),
+          );
+
+          // Search in task type names and descriptions
+          const taskTypeMatches = Object.values(
+            item.data.definitions.taskTypes,
+          ).some(
+            (taskType) =>
+              taskType.name.toLowerCase().includes(searchLower) ||
+              taskType.description.toLowerCase().includes(searchLower),
+          );
+
+          // Search in activity type names and descriptions
+          const activityTypeMatches = Object.values(
+            item.data.definitions.activityTypes,
+          ).some(
+            (activityType) =>
+              activityType.name.toLowerCase().includes(searchLower) ||
+              activityType.description.toLowerCase().includes(searchLower),
+          );
+
+          // Search in role type names and descriptions
+          const roleTypeMatches = Object.values(
+            item.data.definitions.roleTypes,
+          ).some(
+            (roleType) =>
+              roleType.name.toLowerCase().includes(searchLower) ||
+              roleType.description.toLowerCase().includes(searchLower),
+          );
+
+          return (
+            timeEntryMatches ||
+            taskTypeMatches ||
+            activityTypeMatches ||
+            roleTypeMatches
+          );
+        });
       }
 
       // Simple sorting mock

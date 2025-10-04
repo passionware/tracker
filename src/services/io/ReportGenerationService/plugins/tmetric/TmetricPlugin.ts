@@ -65,12 +65,18 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
               ),
             ),
           });
-          return adapted;
+          return {
+            reportData: adapted,
+            originalData: timeEntries,
+          };
         }),
       );
 
-      // Merge all reports into a single report
-      return mergeGenericReports(reports);
+      return {
+        // Merge all reports into a single report
+        reportData: mergeGenericReports(reports.map((r) => r.reportData)),
+        originalData: reports.map((r) => r.originalData),
+      };
     },
   };
 }

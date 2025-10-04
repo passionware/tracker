@@ -10,7 +10,9 @@ export interface AbstractPlugin {
    * Generates a report for the given payload.
    * Each implementation of this interface will source the data from a different place and adapt it to the generic report format.
    */
-  getReport: (payload: GetReportPayload) => Promise<GenericReport>;
+  getReport: (
+    payload: GetReportPayload,
+  ) => Promise<{ reportData: GenericReport; originalData: unknown }>;
 }
 
 export type GetReportPayload = {
