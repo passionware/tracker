@@ -47,6 +47,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             entries: timeEntries,
             defaultRoleId: contractorRoleId,
             currency: trackerReport.currency,
+            contractorId: trackerReport.contractorId,
           });
           adapted.definitions.roleTypes[contractorRoleId].rates.push({
             billing: "hourly",

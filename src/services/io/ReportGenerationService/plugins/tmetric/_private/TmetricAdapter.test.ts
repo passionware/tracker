@@ -10,6 +10,7 @@ describe("TmetricAdapter", () => {
     entries,
     defaultRoleId: "developer",
     currency: "USD",
+    contractorId: 123,
   });
 
   describe("adaptTMetricToGeneric", () => {

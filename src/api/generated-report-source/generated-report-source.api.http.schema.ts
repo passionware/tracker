@@ -41,6 +41,7 @@ const genericReport$ = z.object({
       taskId: z.string(),
       activityId: z.string(),
       roleId: z.string(),
+      contractorId: z.number(),
       createdAt: z.coerce.date(),
       updatedAt: z.coerce.date(),
       startAt: z.coerce.date(),

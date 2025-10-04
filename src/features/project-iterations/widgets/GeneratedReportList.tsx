@@ -67,6 +67,7 @@ export function GeneratedReportList(
   return (
     <ListView
       data={generatedReports}
+      className="w-full overflow-x-auto"
       selection={selection}
       onSelectionChange={setSelection}
       query={query}

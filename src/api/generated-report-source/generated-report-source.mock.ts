@@ -16,6 +16,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         note: string;
         taskId: string;
         activityId: string;
+        contractorId: number;
         roleId: string;
         createdAt: Date;
         updatedAt: Date;
@@ -75,6 +76,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             taskId: "development",
             activityId: "coding",
             roleId: "developer",
+            contractorId: 1,
             createdAt: new Date("2024-01-15T08:00:00Z"),
             updatedAt: new Date("2024-01-15T08:00:00Z"),
             startAt: new Date("2024-01-15T08:00:00Z"),
@@ -86,6 +88,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             taskId: "testing",
             activityId: "review",
             roleId: "developer",
+            contractorId: 1,
             createdAt: new Date("2024-01-15T16:30:00Z"),
             updatedAt: new Date("2024-01-15T16:30:00Z"),
             startAt: new Date("2024-01-15T16:30:00Z"),
@@ -155,6 +158,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             taskId: "frontend",
             activityId: "implementation",
             roleId: "senior-dev",
+            contractorId: 2,
             createdAt: new Date("2024-01-20T09:00:00Z"),
             updatedAt: new Date("2024-01-20T09:00:00Z"),
             startAt: new Date("2024-01-20T09:00:00Z"),
@@ -166,6 +170,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             taskId: "backend",
             activityId: "debugging",
             roleId: "senior-dev",
+            contractorId: 2,
             createdAt: new Date("2024-01-20T17:30:00Z"),
             updatedAt: new Date("2024-01-20T17:30:00Z"),
             startAt: new Date("2024-01-20T17:30:00Z"),
@@ -226,6 +231,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             taskId: "maintenance",
             activityId: "refactoring",
             roleId: "maintainer",
+            contractorId: 3,
             createdAt: new Date("2024-02-01T08:00:00Z"),
             updatedAt: new Date("2024-02-01T08:00:00Z"),
             startAt: new Date("2024-02-01T08:00:00Z"),

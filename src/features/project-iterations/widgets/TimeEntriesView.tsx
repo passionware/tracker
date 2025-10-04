@@ -60,6 +60,7 @@ export function TimeEntriesView(
                 timeEntryColumns.task(report.data),
                 timeEntryColumns.activity(report.data),
                 timeEntryColumns.role(report.data),
+                timeEntryColumns.contractor(props.services),
                 timeEntryColumns.startTime(props.services),
                 timeEntryColumns.endTime(props.services),
                 timeEntryColumns.duration,

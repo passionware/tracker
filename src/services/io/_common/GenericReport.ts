@@ -1,3 +1,5 @@
+import { Contractor } from "@/api/contractor/contractor.api";
+
 export interface TaskType {
   name: string;
   description: string;
@@ -37,6 +39,7 @@ export interface GenericReport {
     taskId: string;
     activityId: string;
     roleId: string;
+    contractorId: Contractor["id"];
     createdAt: Date;
     updatedAt: Date;
     startAt: Date;

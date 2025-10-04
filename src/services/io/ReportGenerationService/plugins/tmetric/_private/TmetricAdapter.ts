@@ -1,3 +1,4 @@
+import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { GenericReport } from "../../../../_common/GenericReport.ts";
 import { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
 
@@ -9,6 +10,7 @@ export type ActivityId =
 
 export interface TMetricAdapterInput {
   entries: TMetricTimeEntry[];
+  contractorId: Contractor["id"];
   defaultRoleId: string; // simple single role mapping for now
   currency: string;
 }
@@ -195,6 +197,7 @@ export function adaptTMetricToGeneric(
       taskId,
       activityId,
       roleId: input.defaultRoleId,
+      contractorId: input.contractorId,
       createdAt: startAt,
       updatedAt: endAt,
       startAt,

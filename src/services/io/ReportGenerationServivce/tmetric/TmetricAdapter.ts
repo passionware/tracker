@@ -1,3 +1,4 @@
+import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { GenericReport } from "../../_common/GenericReport";
 import {
   TMetricProject,
@@ -17,6 +18,7 @@ export interface TMetricAdapterInput {
   users: TMetricUser[];
   defaultRoleId: string; // simple single role mapping for now
   currency: string;
+  contractorId: Contractor["id"];
 }
 
 function normalize(s: string): string {
@@ -118,6 +120,7 @@ export function adaptTMetricToGeneric(
       taskId,
       activityId,
       roleId: input.defaultRoleId,
+      contractorId: input.contractorId,
       createdAt: startAt, // No created/updated fields in new schema
       updatedAt: endAt,
       startAt,

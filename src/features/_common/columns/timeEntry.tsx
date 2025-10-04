@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { GenericReport } from "@/services/io/_common/GenericReport";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService";
+import { ContractorWidget } from "../elements/pickers/ContractorView";
 
 export type TimeEntry = GenericReport["timeEntries"][0];
 
@@ -26,6 +28,19 @@ export const timeEntryColumns = {
       },
       meta: {
         sortKey: "taskId",
+      },
+    }),
+  contractor: (services: WithContractorService) =>
+    getColumnHelper<TimeEntry>().accessor("contractorId", {
+      header: "Contractor",
+      cell: (info) => {
+        return (
+          <ContractorWidget
+            layout="full"
+            services={services}
+            contractorId={info.getValue()}
+          />
+        );
       },
     }),
   activity: (report: GenericReport) =>
