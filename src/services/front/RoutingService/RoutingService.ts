@@ -100,6 +100,7 @@ export interface RoutingService {
           root: () => string;
           events: () => string;
           reports: () => string;
+          generatedReports: () => string;
           billings: () => string;
         };
       };

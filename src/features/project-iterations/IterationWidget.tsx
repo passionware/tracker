@@ -8,6 +8,7 @@ import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/P
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
 import { EventsWidget } from "@/features/project-iterations/widgets/EventsWidget.tsx";
+import { GeneratedReportList } from "@/features/project-iterations/widgets/GeneratedReportList.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
 import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
 import { PositionList } from "@/features/project-iterations/widgets/PositionList.tsx";
@@ -63,6 +64,20 @@ export function IterationWidget(
           <Route
             path={makeRelativePath(basePath, forIteration.billings())}
             element={<div>Billings</div>}
+          />
+          <Route
+            path={makeRelativePath(
+              forIteration.root(),
+              forIteration.generatedReports(),
+            )}
+            element={
+              <GeneratedReportList
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                services={props.services}
+              />
+            }
           />
         </Routes>
       </div>

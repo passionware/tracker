@@ -13,6 +13,7 @@ import { WithBillingService } from "@/services/io/BillingService/BillingService.
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
+import { WithGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.ts";
 import { WithGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
@@ -49,6 +50,7 @@ export type FrontServices = MergeServices<
     WithProjectIterationDisplayService,
     WithReportGenerationService,
     WithGeneratedReportSourceWriteService,
+    WithGeneratedReportSourceService,
   ]
 >;
 

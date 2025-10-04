@@ -1,3 +1,4 @@
+import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -55,6 +56,21 @@ export function IterationTabs(
 
   const linkedReports =
     props.services.reportDisplayService.useReportView(linkedReportsQuery);
+
+  // Query for generated reports
+  const generatedReportsQuery = generatedReportSourceQueryUtils
+    .getBuilder()
+    .build((q) => [
+      q.withFilter("projectIterationId", {
+        operator: "oneOf",
+        value: [props.projectIterationId],
+      }),
+    ]);
+
+  const generatedReports =
+    props.services.generatedReportSourceService.useGeneratedReportSources(
+      maybe.of(generatedReportsQuery),
+    );
 
   const reportsQuery = rd.map(
     rd.combine({ project, iteration }),
@@ -117,6 +133,19 @@ export function IterationTabs(
           Linked reports
           <Badge variant="secondary" size="sm">
             {rd.tryMap(linkedReports, (reports) => reports.entries.length)}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger
+          value="generated-reports"
+          onClick={() =>
+            props.services.navigationService.navigate(
+              forIteration.generatedReports(),
+            )
+          }
+        >
+          Generated reports
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(generatedReports, (reports) => reports.length)}
           </Badge>
         </TabsTrigger>
         <TabsTrigger

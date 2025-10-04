@@ -28,6 +28,7 @@ import { createBillingService } from "@/services/io/BillingService/BillingServic
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
+import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
 import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
@@ -47,11 +48,17 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
+const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);
 const generatedReportSourceWriteService =
   createGeneratedReportSourceWriteService({
     services: { messageService },
-    api: createGeneratedReportSourceApi(mySupabase),
+    api: generatedReportSourceApi,
   });
+const generatedReportSourceService = createGeneratedReportSourceService({
+  services: { messageService },
+  client: myQueryClient,
+  api: generatedReportSourceApi,
+});
 const reportService = createReportService(
   createReportsApi(mySupabase),
   myQueryClient,
@@ -160,6 +167,7 @@ export const myServices = {
     },
   }),
   generatedReportSourceWriteService,
+  generatedReportSourceService,
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

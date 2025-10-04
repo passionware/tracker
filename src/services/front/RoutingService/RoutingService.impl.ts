@@ -55,6 +55,7 @@ export function createRoutingService(): RoutingService {
                     root: () => base2,
                     events: () => `${base2}/events`,
                     reports: () => `${base2}/reports`,
+                    generatedReports: () => `${base2}/generated-reports`,
                     billings: () => `${base2}/billings`,
                   };
                 },
