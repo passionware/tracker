@@ -119,10 +119,16 @@ export function GeneratedReportTabs(
     // Navigate back to the generated reports list
     switch (tab) {
       case "basic":
-        navigate(forIteration.forGeneratedReport().root());
+        navigate(
+          forIteration.forGeneratedReport(props.reportId.toString()).root(),
+        );
         break;
       case "time-entries":
-        navigate(forIteration.forGeneratedReport().timeEntries());
+        navigate(
+          forIteration
+            .forGeneratedReport(props.reportId.toString())
+            .timeEntries(),
+        );
         break;
     }
   };

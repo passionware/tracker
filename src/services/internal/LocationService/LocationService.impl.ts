@@ -225,19 +225,27 @@ export function createLocationService(
       return maybe.map(match?.params.generatedReportId, parseInt);
     },
     useCurrentGeneratedReportTab: () => {
-      const match = config.services.navigationService.useMatch(
-        config.services.routingService
-          .forWorkspace()
-          .forClient()
-          .forProject()
-          .forIteration()
-          .forGeneratedReport()
-          .root() + "/*",
+      const forGeneratedReport = config.services.routingService
+        .forWorkspace()
+        .forClient()
+        .forProject()
+        .forIteration()
+        .forGeneratedReport();
+
+      const basicMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.basic() + "/*",
       );
-      return maybe.map(
-        match?.params.generatedReportTab,
-        (tab) => tab as "basic" | "time-entries",
+      const timeEntriesMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.timeEntries() + "/*",
       );
+      const rootMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.root() + "/*",
+      );
+
+      if (timeEntriesMatch) return "time-entries";
+      if (basicMatch) return "basic";
+      if (rootMatch) return "basic"; // Default to basic for root path
+      return maybe.ofAbsent();
     },
     Resolver: (props) => {
       const workspaceId = api.useCurrentWorkspaceId();
