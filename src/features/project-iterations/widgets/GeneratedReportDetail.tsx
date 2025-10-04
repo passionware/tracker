@@ -11,6 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { ExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -20,6 +21,37 @@ import { Calendar, Database, FileText } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
 import { GeneratedReportTabs } from "./GeneratedReportHeader";
 import { TimeEntriesView } from "./TimeEntriesView";
+
+// Helper function to calculate approximate total in EUR when multiple currencies exist
+function calculateApproximateTotal(
+  budgetByCurrency: Record<string, number>,
+  exchangeService: ExchangeService,
+): number | null {
+  const currencies = Object.keys(budgetByCurrency);
+  if (currencies.length <= 1) return null;
+
+  let totalEUR = 0;
+  let hasAllRates = true;
+
+  for (const [currency, amount] of Object.entries(budgetByCurrency)) {
+    if (currency === "EUR") {
+      totalEUR += amount;
+    } else {
+      try {
+        const converted = exchangeService.convertCurrencyValue(
+          { amount, currency },
+          "EUR",
+        );
+        totalEUR += converted.amount;
+      } catch {
+        hasAllRates = false;
+        break;
+      }
+    }
+  }
+
+  return hasAllRates ? totalEUR : null;
+}
 
 function BasicInformationView(
   props: WithFrontServices & {
@@ -102,6 +134,57 @@ function BasicInformationView(
                 {Object.keys(props.report.data.definitions.roleTypes).length}
               </Badge>
             </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Total Budget</span>
+              <Badge variant="primary">
+                {(() => {
+                  // Calculate total budget based on role rates and time entries
+                  const budgetByCurrency = props.report.data.timeEntries.reduce(
+                    (acc, entry) => {
+                      const roleType =
+                        props.report.data.definitions.roleTypes[entry.roleId];
+                      if (!roleType || roleType.rates.length === 0) return acc;
+
+                      const matchingRate =
+                        roleType.rates.find(
+                          (rate) =>
+                            rate.activityType === entry.activityId &&
+                            rate.taskType === entry.taskId,
+                        ) || roleType.rates[0];
+
+                      const hours =
+                        (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60);
+                      const cost = hours * matchingRate.rate;
+                      const currency = matchingRate.currency;
+
+                      if (!acc[currency]) acc[currency] = 0;
+                      acc[currency] += cost;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  );
+
+                  const currencies = Object.keys(budgetByCurrency);
+                  if (currencies.length === 0) return "No rates";
+                  if (currencies.length === 1) {
+                    const currency = currencies[0];
+                    return `${budgetByCurrency[currency].toFixed(0)} ${currency}`;
+                  }
+
+                  // Multiple currencies - show approximate total in EUR
+                  const approximateTotal = calculateApproximateTotal(
+                    budgetByCurrency,
+                    props.services.exchangeService,
+                  );
+                  if (approximateTotal !== null) {
+                    return `≈${approximateTotal.toFixed(0)} EUR`;
+                  }
+
+                  return `${currencies.length} currencies`;
+                })()}
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
@@ -139,8 +222,204 @@ function BasicInformationView(
         </Card>
       </div>
 
-      {/* Types Grid - 3 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Budget Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Budget by Role */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Roles</CardTitle>
+            <CardDescription>
+              Roles are independent of contractors. Contractors may have
+              multiple roles.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Object.entries(props.report.data.definitions.roleTypes).map(
+                ([roleId, roleType]) => {
+                  const roleEntries = props.report.data.timeEntries.filter(
+                    (entry) => entry.roleId === roleId,
+                  );
+                  if (roleEntries.length === 0) return null;
+
+                  const budgetByCurrency = roleEntries.reduce(
+                    (acc, entry) => {
+                      const matchingRate =
+                        roleType.rates.find(
+                          (rate) =>
+                            rate.activityType === entry.activityId &&
+                            rate.taskType === entry.taskId,
+                        ) || roleType.rates[0];
+
+                      const hours =
+                        (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60);
+                      const cost = hours * matchingRate.rate;
+                      const currency = matchingRate.currency;
+
+                      if (!acc[currency]) acc[currency] = 0;
+                      acc[currency] += cost;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  );
+
+                  const currencies = Object.keys(budgetByCurrency);
+                  const totalHours = roleEntries.reduce((total, entry) => {
+                    return (
+                      total +
+                      (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60)
+                    );
+                  }, 0);
+
+                  return (
+                    <div key={roleId} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium">{roleType.name}</h4>
+                        <div className="text-right text-sm">
+                          <div className="font-semibold">
+                            {currencies.length === 0
+                              ? "No rates"
+                              : currencies.length === 1
+                                ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                : `${currencies.length} currencies`}
+                          </div>
+                          <div className="text-slate-600">
+                            {roleEntries.length} entries •{" "}
+                            {totalHours.toFixed(1)}h
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {roleType.rates.map((rate, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between text-xs text-slate-600"
+                          >
+                            <span>
+                              {rate.activityType} - {rate.taskType}
+                            </span>
+                            <span>
+                              {rate.rate} {rate.currency}/h
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Budget by Contractor */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contractors</CardTitle>
+            <CardDescription>Cost breakdown by contractor</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(() => {
+                // Group entries by contractorId
+                const entriesByContractor =
+                  props.report.data.timeEntries.reduce(
+                    (acc, entry) => {
+                      const contractorId = entry.contractorId;
+                      if (!acc[contractorId]) acc[contractorId] = [];
+                      acc[contractorId].push(entry);
+                      return acc;
+                    },
+                    {} as Record<number, typeof props.report.data.timeEntries>,
+                  );
+
+                return Object.entries(entriesByContractor).map(
+                  ([contractorId, entries]) => {
+                    const budgetByCurrency = entries.reduce(
+                      (acc, entry) => {
+                        const roleType =
+                          props.report.data.definitions.roleTypes[entry.roleId];
+                        if (!roleType || roleType.rates.length === 0)
+                          return acc;
+
+                        const matchingRate =
+                          roleType.rates.find(
+                            (rate) =>
+                              rate.activityType === entry.activityId &&
+                              rate.taskType === entry.taskId,
+                          ) || roleType.rates[0];
+
+                        const hours =
+                          (entry.endAt.getTime() - entry.startAt.getTime()) /
+                          (1000 * 60 * 60);
+                        const cost = hours * matchingRate.rate;
+                        const currency = matchingRate.currency;
+
+                        if (!acc[currency]) acc[currency] = 0;
+                        acc[currency] += cost;
+                        return acc;
+                      },
+                      {} as Record<string, number>,
+                    );
+
+                    const currencies = Object.keys(budgetByCurrency);
+                    const totalHours = entries.reduce((total, entry) => {
+                      return (
+                        total +
+                        (entry.endAt.getTime() - entry.startAt.getTime()) /
+                          (1000 * 60 * 60)
+                      );
+                    }, 0);
+
+                    return (
+                      <div key={contractorId} className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium">
+                            Contractor #{contractorId}
+                          </h4>
+                          <div className="text-right text-sm">
+                            <div className="font-semibold">
+                              {currencies.length === 0
+                                ? "No rates"
+                                : currencies.length === 1
+                                  ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                  : `${currencies.length} currencies`}
+                            </div>
+                            <div className="text-slate-600">
+                              {entries.length} entries • {totalHours.toFixed(1)}
+                              h
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          {Object.entries(budgetByCurrency).map(
+                            ([currency, amount]) => (
+                              <div
+                                key={currency}
+                                className="flex justify-between text-xs text-slate-600"
+                              >
+                                <span>{currency}</span>
+                                <span>
+                                  {amount.toFixed(0)} {currency}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    );
+                  },
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Types Grid - 2 Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Types */}
         <Card className="flex flex-col">
           <CardHeader>
@@ -152,14 +431,91 @@ function BasicInformationView(
           <CardContent className="flex-1 overflow-y-auto">
             <div className="space-y-3">
               {Object.entries(props.report.data.definitions.taskTypes).map(
-                ([key, taskType]) => (
-                  <div key={key} className="p-3 border rounded-lg">
-                    <h4 className="font-medium">{taskType.name}</h4>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {taskType.description}
-                    </p>
-                  </div>
-                ),
+                ([key, taskType]) => {
+                  // Find all time entries for this task type
+                  const taskEntries = props.report.data.timeEntries.filter(
+                    (entry) => entry.taskId === key,
+                  );
+
+                  // Calculate budget for this task type
+                  const budgetByCurrency = taskEntries.reduce(
+                    (acc, entry) => {
+                      const roleType =
+                        props.report.data.definitions.roleTypes[entry.roleId];
+                      if (!roleType || roleType.rates.length === 0) return acc;
+
+                      const matchingRate =
+                        roleType.rates.find(
+                          (rate) =>
+                            rate.activityType === entry.activityId &&
+                            rate.taskType === entry.taskId,
+                        ) || roleType.rates[0];
+
+                      const hours =
+                        (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60);
+                      const cost = hours * matchingRate.rate;
+                      const currency = matchingRate.currency;
+
+                      if (!acc[currency]) acc[currency] = 0;
+                      acc[currency] += cost;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  );
+
+                  const currencies = Object.keys(budgetByCurrency);
+                  const totalHours = taskEntries.reduce((total, entry) => {
+                    return (
+                      total +
+                      (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60)
+                    );
+                  }, 0);
+
+                  return (
+                    <div key={key} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{taskType.name}</h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {taskType.description}
+                          </p>
+                        </div>
+                        <div className="text-right text-sm">
+                          <div className="font-semibold">
+                            {currencies.length === 0
+                              ? "No rates"
+                              : currencies.length === 1
+                                ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                : `${currencies.length} currencies`}
+                          </div>
+                          <div className="text-slate-600">
+                            {taskEntries.length} entries •{" "}
+                            {totalHours.toFixed(1)}h
+                          </div>
+                        </div>
+                      </div>
+                      {currencies.length > 1 && (
+                        <div className="space-y-1 mt-2 pt-2 border-t border-slate-200">
+                          {Object.entries(budgetByCurrency).map(
+                            ([currency, amount]) => (
+                              <div
+                                key={currency}
+                                className="flex justify-between text-xs text-slate-600"
+                              >
+                                <span>{currency}</span>
+                                <span>
+                                  {amount.toFixed(0)} {currency}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
               )}
             </div>
           </CardContent>
@@ -176,53 +532,91 @@ function BasicInformationView(
           <CardContent className="flex-1 overflow-y-auto">
             <div className="space-y-3">
               {Object.entries(props.report.data.definitions.activityTypes).map(
-                ([key, activityType]) => (
-                  <div key={key} className="p-3 border rounded-lg">
-                    <h4 className="font-medium">{activityType.name}</h4>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {activityType.description}
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                ([key, activityType]) => {
+                  // Find all time entries for this activity type
+                  const activityEntries = props.report.data.timeEntries.filter(
+                    (entry) => entry.activityId === key,
+                  );
 
-        {/* Role Types */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>Role Types</CardTitle>
-            <CardDescription>
-              Available role types with their rates
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto">
-            <div className="space-y-3">
-              {Object.entries(props.report.data.definitions.roleTypes).map(
-                ([key, roleType]) => (
-                  <div key={key} className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">{roleType.name}</h4>
-                    <p className="text-sm text-slate-600 mb-3">
-                      {roleType.description}
-                    </p>
-                    <div className="space-y-2">
-                      {roleType.rates.map((rate, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center text-sm"
-                        >
-                          <span>
-                            {rate.activityType} - {rate.taskType}
-                          </span>
-                          <Badge variant="secondary">
-                            {rate.rate} {rate.currency}
-                          </Badge>
+                  // Calculate budget for this activity type
+                  const budgetByCurrency = activityEntries.reduce(
+                    (acc, entry) => {
+                      const roleType =
+                        props.report.data.definitions.roleTypes[entry.roleId];
+                      if (!roleType || roleType.rates.length === 0) return acc;
+
+                      const matchingRate =
+                        roleType.rates.find(
+                          (rate) =>
+                            rate.activityType === entry.activityId &&
+                            rate.taskType === entry.taskId,
+                        ) || roleType.rates[0];
+
+                      const hours =
+                        (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60);
+                      const cost = hours * matchingRate.rate;
+                      const currency = matchingRate.currency;
+
+                      if (!acc[currency]) acc[currency] = 0;
+                      acc[currency] += cost;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  );
+
+                  const currencies = Object.keys(budgetByCurrency);
+                  const totalHours = activityEntries.reduce((total, entry) => {
+                    return (
+                      total +
+                      (entry.endAt.getTime() - entry.startAt.getTime()) /
+                        (1000 * 60 * 60)
+                    );
+                  }, 0);
+
+                  return (
+                    <div key={key} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{activityType.name}</h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {activityType.description}
+                          </p>
                         </div>
-                      ))}
+                        <div className="text-right text-sm">
+                          <div className="font-semibold">
+                            {currencies.length === 0
+                              ? "No rates"
+                              : currencies.length === 1
+                                ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                : `${currencies.length} currencies`}
+                          </div>
+                          <div className="text-slate-600">
+                            {activityEntries.length} entries •{" "}
+                            {totalHours.toFixed(1)}h
+                          </div>
+                        </div>
+                      </div>
+                      {currencies.length > 1 && (
+                        <div className="space-y-1 mt-2 pt-2 border-t border-slate-200">
+                          {Object.entries(budgetByCurrency).map(
+                            ([currency, amount]) => (
+                              <div
+                                key={currency}
+                                className="flex justify-between text-xs text-slate-600"
+                              >
+                                <span>{currency}</span>
+                                <span>
+                                  {amount.toFixed(0)} {currency}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ),
+                  );
+                },
               )}
             </div>
           </CardContent>

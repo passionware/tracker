@@ -142,6 +142,7 @@ export const myServices = {
   ),
   workspaceService,
   costService,
+  exchangeService: createExchangeService(myExchangeApi, myQueryClient),
   preferenceService,
   variableService,
   billingService,
