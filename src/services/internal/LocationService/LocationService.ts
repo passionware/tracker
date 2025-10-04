@@ -1,3 +1,4 @@
+import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import {
@@ -31,6 +32,7 @@ export interface LocationService {
   getCurrentProjectId: () => Maybe<Project["id"]>;
   getCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   getCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
+  getCurrentGeneratedReportId: () => Maybe<GeneratedReportSource["id"]>;
   changeCurrentClientId: (id: ClientSpec) => void;
   changeCurrentWorkspaceId: (id: WorkspaceSpec) => void;
 

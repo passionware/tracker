@@ -56,7 +56,7 @@ export function createRoutingService(): RoutingService {
                     events: () => `${base2}/events`,
                     reports: () => `${base2}/reports`,
                     generatedReports: () => `${base2}/generated-reports`,
-                    forGeneratedReport: (reportId = ":reportId") => {
+                    forGeneratedReport: (reportId = ":generatedReportId") => {
                       return {
                         root: () => `${base2}/generated-reports/${reportId}`,
                         basic: () =>

@@ -10,6 +10,10 @@ import { InlineReportSearch } from "@/features/_common/elements/inline-search/In
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { NewPositionPopover } from "@/features/project-iterations/NewPositionPopover.tsx";
+import {
+  GeneratedReportHeader,
+  GeneratedReportTabs,
+} from "@/features/project-iterations/widgets/GeneratedReportHeader.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
@@ -243,6 +247,58 @@ export function IterationTabs(
                   }
                 />
               ))}
+          />
+          <Route
+            path={makeRelativePath(
+              forIteration.root(),
+              forIteration.generatedReports(),
+            )}
+            element={
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-semibold">Generated Reports</h2>
+                  <span className="text-sm text-slate-600">
+                    {rd.tryMap(
+                      generatedReports,
+                      (reports) => `${reports.length} reports`,
+                    )}
+                  </span>
+                </div>
+                <Button variant="accent1" size="sm" className="ml-auto">
+                  Generate Report
+                </Button>
+              </div>
+            }
+          />
+          <Route
+            path={makeRelativePath(
+              forIteration.root(),
+              `${forIteration.forGeneratedReport().root()}/*`,
+            )}
+            element={
+              <div className="space-y-6">
+                <GeneratedReportHeader
+                  projectIterationId={props.projectIterationId}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
+                  projectId={props.projectId}
+                  reportId={parseInt(
+                    window.location.pathname.split("/").pop() || "0",
+                  )}
+                  services={props.services}
+                />
+                <GeneratedReportTabs
+                  projectIterationId={props.projectIterationId}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
+                  projectId={props.projectId}
+                  reportId={parseInt(
+                    window.location.pathname.split("/").pop() || "0",
+                  )}
+                  services={props.services}
+                />
+              </div>
+            }
           />
         </Routes>
       </TabsList>

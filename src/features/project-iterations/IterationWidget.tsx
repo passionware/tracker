@@ -19,6 +19,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Route, Routes } from "react-router-dom";
+import { GeneratedReportIdResolver } from "../app/RootWidget.idResolvers";
 
 export function IterationWidget(
   props: WithFrontServices & {
@@ -84,55 +85,21 @@ export function IterationWidget(
           <Route
             path={makeRelativePath(
               basePath,
-              forIteration.forGeneratedReport().root(),
+              forIteration.forGeneratedReport().root() + "/*",
             )}
             element={
-              <GeneratedReportDetail
-                projectIterationId={props.projectIterationId}
-                workspaceId={props.workspaceId}
-                clientId={props.clientId}
-                projectId={props.projectId}
-                reportId={parseInt(
-                  window.location.pathname.split("/").pop() || "0",
+              <GeneratedReportIdResolver services={props.services}>
+                {(reportId) => (
+                  <GeneratedReportDetail
+                    projectIterationId={props.projectIterationId}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    projectId={props.projectId}
+                    reportId={reportId}
+                    services={props.services}
+                  />
                 )}
-                services={props.services}
-              />
-            }
-          />
-          <Route
-            path={makeRelativePath(
-              basePath,
-              `${forIteration.forGeneratedReport().root()}/basic`,
-            )}
-            element={
-              <GeneratedReportDetail
-                projectIterationId={props.projectIterationId}
-                workspaceId={props.workspaceId}
-                clientId={props.clientId}
-                projectId={props.projectId}
-                reportId={parseInt(
-                  window.location.pathname.split("/").slice(-2, -1)[0] || "0",
-                )}
-                services={props.services}
-              />
-            }
-          />
-          <Route
-            path={makeRelativePath(
-              basePath,
-              `${forIteration.forGeneratedReport().root()}/time-entries`,
-            )}
-            element={
-              <GeneratedReportDetail
-                projectIterationId={props.projectIterationId}
-                workspaceId={props.workspaceId}
-                clientId={props.clientId}
-                projectId={props.projectId}
-                reportId={parseInt(
-                  window.location.pathname.split("/").slice(-2, -1)[0] || "0",
-                )}
-                services={props.services}
-              />
+              </GeneratedReportIdResolver>
             }
           />
         </Routes>

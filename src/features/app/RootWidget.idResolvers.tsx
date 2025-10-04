@@ -38,3 +38,12 @@ export function ProjectIterationIdResolver(
     props.services.locationService.useCurrentProjectIterationId();
   return props.children(maybe.getOrThrow(iterationId, "No iteration ID"));
 }
+
+export function GeneratedReportIdResolver(
+  props: WithServices<[WithLocationService]> & {
+    children: (reportId: number) => ReactNode;
+  },
+) {
+  const reportId = props.services.locationService.getCurrentGeneratedReportId();
+  return props.children(maybe.getOrThrow(reportId, "No report ID"));
+}
