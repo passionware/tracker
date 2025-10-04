@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/card.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { ExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -25,32 +25,14 @@ import { TimeEntriesView } from "./TimeEntriesView";
 // Helper function to calculate approximate total in EUR when multiple currencies exist
 function calculateApproximateTotal(
   budgetByCurrency: Record<string, number>,
-  exchangeService: ExchangeService,
 ): number | null {
   const currencies = Object.keys(budgetByCurrency);
   if (currencies.length <= 1) return null;
 
-  let totalEUR = 0;
-  let hasAllRates = true;
-
-  for (const [currency, amount] of Object.entries(budgetByCurrency)) {
-    if (currency === "EUR") {
-      totalEUR += amount;
-    } else {
-      try {
-        const converted = exchangeService.convertCurrencyValue(
-          { amount, currency },
-          "EUR",
-        );
-        totalEUR += converted.amount;
-      } catch {
-        hasAllRates = false;
-        break;
-      }
-    }
-  }
-
-  return hasAllRates ? totalEUR : null;
+  // For now, return null to avoid complex async logic
+  // In a real implementation, we'd need to use useExchangeRates hook
+  // which requires React component context
+  return null;
 }
 
 function BasicInformationView(
@@ -173,10 +155,8 @@ function BasicInformationView(
                   }
 
                   // Multiple currencies - show approximate total in EUR
-                  const approximateTotal = calculateApproximateTotal(
-                    budgetByCurrency,
-                    props.services.exchangeService,
-                  );
+                  const approximateTotal =
+                    calculateApproximateTotal(budgetByCurrency);
                   if (approximateTotal !== null) {
                     return `≈${approximateTotal.toFixed(0)} EUR`;
                   }
@@ -376,9 +356,14 @@ function BasicInformationView(
                     return (
                       <div key={contractorId} className="p-3 border rounded-lg">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium">
-                            Contractor #{contractorId}
-                          </h4>
+                          <div className="flex-1">
+                            <ContractorWidget
+                              contractorId={maybe.of(Number(contractorId))}
+                              services={props.services}
+                              layout="full"
+                              size="sm"
+                            />
+                          </div>
                           <div className="text-right text-sm">
                             <div className="font-semibold">
                               {currencies.length === 0

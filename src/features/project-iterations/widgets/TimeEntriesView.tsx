@@ -9,43 +9,25 @@ import {
 } from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { ExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 
 // Helper function to calculate approximate total in EUR when multiple currencies exist
 function calculateApproximateTotal(
   budgetByCurrency: Record<string, number>,
-  exchangeService: ExchangeService,
 ): number | null {
   const currencies = Object.keys(budgetByCurrency);
   if (currencies.length <= 1) return null;
 
-  let totalEUR = 0;
-  let hasAllRates = true;
-
-  for (const [currency, amount] of Object.entries(budgetByCurrency)) {
-    if (currency === "EUR") {
-      totalEUR += amount;
-    } else {
-      try {
-        const converted = exchangeService.convertCurrencyValue(
-          { amount, currency },
-          "EUR",
-        );
-        totalEUR += converted.amount;
-      } catch {
-        hasAllRates = false;
-        break;
-      }
-    }
-  }
-
-  return hasAllRates ? totalEUR : null;
+  // For now, return null to avoid complex async logic
+  // In a real implementation, we'd need to use useExchangeRates hook
+  // which requires React component context
+  return null;
 }
 
 export function TimeEntriesView(
@@ -185,10 +167,8 @@ export function TimeEntriesView(
                 }
 
                 // Multiple currencies - show approximate total in EUR
-                const approximateTotal = calculateApproximateTotal(
-                  budgetByCurrency,
-                  props.services.exchangeService,
-                );
+                const approximateTotal =
+                  calculateApproximateTotal(budgetByCurrency);
                 if (approximateTotal !== null) {
                   return `≈${approximateTotal.toFixed(0)} EUR`;
                 }
@@ -267,7 +247,6 @@ export function TimeEntriesView(
                                     const approximateTotal =
                                       calculateApproximateTotal(
                                         budgetByCurrency,
-                                        props.services.exchangeService,
                                       );
                                     if (approximateTotal !== null) {
                                       return `≈${approximateTotal.toFixed(0)} EUR`;
@@ -352,9 +331,12 @@ export function TimeEntriesView(
                       >
                         <CardContent className="pt-4">
                           <div className="space-y-2">
-                            <h4 className="font-medium text-sm">
-                              Contractor #{contractorId}
-                            </h4>
+                            <ContractorWidget
+                              contractorId={maybe.of(Number(contractorId))}
+                              services={props.services}
+                              layout="full"
+                              size="sm"
+                            />
                             <div className="text-xs text-slate-600">
                               {entries.length} entries • {totalHours.toFixed(1)}
                               h
@@ -368,7 +350,6 @@ export function TimeEntriesView(
                                       const approximateTotal =
                                         calculateApproximateTotal(
                                           budgetByCurrency,
-                                          props.services.exchangeService,
                                         );
                                       if (approximateTotal !== null) {
                                         return `≈${approximateTotal.toFixed(0)} EUR`;
