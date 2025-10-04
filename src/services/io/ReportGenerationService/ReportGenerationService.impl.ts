@@ -30,11 +30,7 @@ export function createReportGenerationService(
         )
         .getReport({
           reports: trackerReports.map((trackerReport) => ({
-            contractorId: trackerReport.contractorId,
-            periodStart: trackerReport.periodStart,
-            periodEnd: trackerReport.periodEnd,
-            workspaceId: trackerReport.workspaceId,
-            clientId: trackerReport.clientId,
+            ...trackerReport,
             reportId: trackerReport.id,
           })),
         });
