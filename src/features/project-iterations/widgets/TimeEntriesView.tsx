@@ -1,6 +1,5 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
-import { Badge } from "@/components/ui/badge.tsx";
 import {
   Card,
   CardContent,
@@ -8,19 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
+import { ListView } from "@/features/_common/ListView.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { rd } from "@passionware/monads";
 
 export function TimeEntriesView(
   props: WithFrontServices & {
@@ -34,30 +28,13 @@ export function TimeEntriesView(
 ) {
   const { report } = props;
 
-  // Helper function to get task type name
-  const getTaskTypeName = (taskId: string) => {
-    const taskType = report.data.definitions.taskTypes[taskId];
-    return taskType?.name || taskId;
-  };
+  // Create a simple query object for the ListView
+  const query = {
+    sort: [],
+  } as any;
 
-  // Helper function to get activity type name
-  const getActivityTypeName = (activityId: string) => {
-    const activityType = report.data.definitions.activityTypes[activityId];
-    return activityType?.name || activityId;
-  };
-
-  // Helper function to get role type name
-  const getRoleTypeName = (roleId: string) => {
-    const roleType = report.data.definitions.roleTypes[roleId];
-    return roleType?.name || roleId;
-  };
-
-  // Helper function to calculate duration
-  const calculateDuration = (startAt: Date, endAt: Date) => {
-    const diffMs = endAt.getTime() - startAt.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-    return `${diffHours.toFixed(1)}h`;
-  };
+  // Convert time entries to RemoteData format
+  const timeEntriesData = rd.of(report.data.timeEntries);
 
   return (
     <div className="space-y-6">
@@ -74,64 +51,21 @@ export function TimeEntriesView(
               No time entries found in this report.
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Task</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Start Time</TableHead>
-                    <TableHead>End Time</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Note</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report.data.timeEntries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-mono text-xs">
-                        {entry.id}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {getTaskTypeName(entry.taskId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="accent1">
-                          {getActivityTypeName(entry.activityId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="primary">
-                          {getRoleTypeName(entry.roleId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {props.services.formatService.temporal.single.compactWithTime(
-                          entry.startAt,
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {props.services.formatService.temporal.single.compactWithTime(
-                          entry.endAt,
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {calculateDuration(entry.startAt, entry.endAt)}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {entry.note || (
-                          <span className="text-slate-400 italic">No note</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <ListView
+              data={timeEntriesData}
+              query={query}
+              onQueryChange={() => {}}
+              columns={[
+                timeEntryColumns.id,
+                timeEntryColumns.task(report.data),
+                timeEntryColumns.activity(report.data),
+                timeEntryColumns.role(report.data),
+                timeEntryColumns.startTime(props.services),
+                timeEntryColumns.endTime(props.services),
+                timeEntryColumns.duration,
+                timeEntryColumns.note,
+              ]}
+            />
           )}
         </CardContent>
       </Card>

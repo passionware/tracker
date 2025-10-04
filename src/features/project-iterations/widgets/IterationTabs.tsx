@@ -9,6 +9,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { GeneratedReportIdResolver } from "@/features/app/RootWidget.idResolvers";
 import { NewPositionPopover } from "@/features/project-iterations/NewPositionPopover.tsx";
 import { GeneratedReportHeader } from "@/features/project-iterations/widgets/GeneratedReportHeader.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -101,7 +102,7 @@ export function IterationTabs(
   );
 
   return (
-    <Tabs value={currentTab} className="w-full bg-white sticky top-0">
+    <Tabs value={currentTab} className="w-full bg-white sticky top-0 z-1">
       <TabsList>
         <TabsTrigger
           value="positions"
@@ -251,16 +252,18 @@ export function IterationTabs(
               `${forIteration.forGeneratedReport().root()}/*`,
             )}
             element={
-              <GeneratedReportHeader
-                projectIterationId={props.projectIterationId}
-                workspaceId={props.workspaceId}
-                clientId={props.clientId}
-                projectId={props.projectId}
-                reportId={parseInt(
-                  window.location.pathname.split("/").pop() || "0",
+              <GeneratedReportIdResolver services={props.services}>
+                {(reportId) => (
+                  <GeneratedReportHeader
+                    projectIterationId={props.projectIterationId}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    projectId={props.projectId}
+                    reportId={reportId}
+                    services={props.services}
+                  />
                 )}
-                services={props.services}
-              />
+              </GeneratedReportIdResolver>
             }
           />
         </Routes>
