@@ -67,12 +67,7 @@ export function GeneratedReportList(
           header: "ID",
           cell: ({ row }) => row.getValue("id"),
         },
-        {
-          accessorKey: "createdAt",
-          header: "Created At",
-          cell: ({ row }) =>
-            new Date(row.getValue("createdAt")).toLocaleDateString(),
-        },
+        sharedColumns.createdAt(props.services),
         {
           accessorKey: "timeEntriesCount",
           header: "Time Entries",
