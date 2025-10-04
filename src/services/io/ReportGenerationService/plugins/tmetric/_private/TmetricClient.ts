@@ -61,7 +61,7 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       periodStart,
       periodEnd,
       userIds,
-      // projectIds,
+      projectIds,
     }) => {
       // Format dates as yyyy-MM-dd
       const startDate = periodStart.toString();
@@ -78,9 +78,8 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       qs.set("startDate", startDate);
       qs.set("endDate", endDate);
 
-      // if (projectIds && projectIds.length > 0) {
-      //   qs.set("projectId", projectIds.join(","));
-      // }
+      // Note: TMetric API doesn't support project ID filtering in the getEntries endpoint
+      // We'll filter by project IDs client-side after fetching all entries
 
       // Compose the URL for the TMetric API endpoint for time entries
       // Try with account ID in path but simpler parameter names
@@ -89,9 +88,19 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       const data = await get(url, config.token, zTMetricEntriesResponse);
 
       // Filter out running entries without endTime and normalize note to required string
-      return data
+      let filteredData = data
         .filter((e) => !!e.endTime)
         .map((e) => ({ ...e, note: e.note ?? "", tags: e.tags ?? [] }));
+
+      // Client-side filtering by project IDs if specified
+      if (projectIds && projectIds.length > 0) {
+        filteredData = filteredData.filter(
+          (entry) =>
+            entry.project && projectIds.includes(entry.project.id.toString()),
+        );
+      }
+
+      return filteredData;
     },
     listProjects: async () => {
       // Use TMetric API v3 endpoint for projects (as mentioned by user)

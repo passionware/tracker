@@ -65,4 +65,5 @@ export interface TMetricFetchParams {
   periodStart: CalendarDate;
   periodEnd: CalendarDate;
   userIds: string[];
+  projectIds: string[];
 }

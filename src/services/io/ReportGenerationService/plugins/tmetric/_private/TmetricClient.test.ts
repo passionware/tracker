@@ -27,6 +27,7 @@ describe("TmetricClient", () => {
       periodStart: parseDate("2025-10-01"),
       periodEnd: parseDate("2025-10-31"),
       userIds: ["352387"],
+      projectIds: ["983057"],
     });
 
     expect(timeEntries).toMatchInlineSnapshot(`

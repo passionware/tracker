@@ -1,7 +1,5 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
@@ -15,7 +13,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { ArrowLeft, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function GeneratedReportHeader(
@@ -41,16 +39,8 @@ export function GeneratedReportHeader(
     );
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="ml-auto gap-3 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(forIteration.generatedReports())}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Generated Reports
-        </Button>
         <div>
           {rd
             .journey(generatedReport)
@@ -59,14 +49,10 @@ export function GeneratedReportHeader(
             .map((report) => (
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-slate-600" />
-                <h1 className="text-2xl font-bold">
-                  Generated Report #{report.id}
-                </h1>
-                <Badge variant="secondary" className="text-sm">
-                  {props.services.formatService.temporal.single.compactWithTime(
-                    report.createdAt,
-                  )}
-                </Badge>
+                <h1 className="text-lg ">Generated Report #{report.id}</h1>
+                {props.services.formatService.temporal.single.compactWithTime(
+                  report.createdAt,
+                )}
               </div>
             ))}
         </div>

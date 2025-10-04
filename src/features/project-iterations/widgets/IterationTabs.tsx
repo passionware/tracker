@@ -248,28 +248,6 @@ export function IterationTabs(
           <Route
             path={makeRelativePath(
               forIteration.root(),
-              forIteration.generatedReports(),
-            )}
-            element={
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-semibold">Generated Reports</h2>
-                  <span className="text-sm text-slate-600">
-                    {rd.tryMap(
-                      generatedReports,
-                      (reports) => `${reports.length} reports`,
-                    )}
-                  </span>
-                </div>
-                <Button variant="accent1" size="sm" className="ml-auto">
-                  Generate Report
-                </Button>
-              </div>
-            }
-          />
-          <Route
-            path={makeRelativePath(
-              forIteration.root(),
               `${forIteration.forGeneratedReport().root()}/*`,
             )}
             element={
