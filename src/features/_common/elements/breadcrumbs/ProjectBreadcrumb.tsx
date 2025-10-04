@@ -21,7 +21,7 @@ export interface ProjectBreadcrumbProps extends WithFrontServices {
 export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
   const project = props.services.projectService.useProject(props.projectId);
   return (
-    <BreadcrumbLink>
+    <BreadcrumbLink asChild>
       <Link
         className="flex flex-row gap-2"
         to={props.services.routingService
