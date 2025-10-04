@@ -315,7 +315,7 @@ export function ListView<TData, Query extends SortableQueryBase>(
       );
 
       return (
-        <div className={cn("rounded-md border overflow-auto", className)}>
+        <div className={cn("rounded-md border overflow-auto isolate", className)}>
           <Table>
             {/* NAGŁÓWEK */}
             <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
