@@ -30,9 +30,14 @@ export interface FormatService {
     };
     single: {
       compact: (date: Date | CalendarDate) => ReactNode;
+      compactWithTime: (date: Date | CalendarDate) => ReactNode;
     };
     range: {
       compact: (
+        start: Date | CalendarDate,
+        end: Date | CalendarDate,
+      ) => ReactNode;
+      compactWithTime: (
         start: Date | CalendarDate,
         end: Date | CalendarDate,
       ) => ReactNode;

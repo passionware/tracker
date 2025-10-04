@@ -259,7 +259,7 @@ export const sharedColumns = {
     getColumnHelper<Pick<Cost, "createdAt">>().accessor("createdAt", {
       header: "Created At",
       cell: (info) =>
-        services.formatService.temporal.single.compact(info.getValue()),
+        services.formatService.temporal.single.compactWithTime(info.getValue()),
       meta: {
         sortKey: "createdAt",
       },

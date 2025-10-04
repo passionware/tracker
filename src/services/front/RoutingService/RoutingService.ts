@@ -101,6 +101,9 @@ export interface RoutingService {
           events: () => string;
           reports: () => string;
           generatedReports: () => string;
+          forGeneratedReport: (reportId?: string | ":generatedReportId") => {
+            root: () => string;
+          };
           billings: () => string;
         };
       };

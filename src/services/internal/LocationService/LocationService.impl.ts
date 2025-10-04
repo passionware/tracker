@@ -181,6 +181,9 @@ export function createLocationService(
       const eventsMatch = config.services.navigationService.useMatch(
         forIteration.events() + "/*",
       );
+      const generatedReportsMatch = config.services.navigationService.useMatch(
+        forIteration.generatedReports() + "/*",
+      );
 
       switch (true) {
         case !!eventsMatch:
@@ -189,6 +192,9 @@ export function createLocationService(
           return "reports";
         case !!billingsMatch:
           return "billings";
+
+        case !!generatedReportsMatch:
+          return "generated-reports";
         case !!rootMatch:
           return "positions";
         default:

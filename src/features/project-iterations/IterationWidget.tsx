@@ -8,6 +8,7 @@ import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/P
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
 import { EventsWidget } from "@/features/project-iterations/widgets/EventsWidget.tsx";
+import { GeneratedReportDetail } from "@/features/project-iterations/widgets/GeneratedReportDetail.tsx";
 import { GeneratedReportList } from "@/features/project-iterations/widgets/GeneratedReportList.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
 import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
@@ -75,6 +76,25 @@ export function IterationWidget(
                 projectIterationId={props.projectIterationId}
                 workspaceId={props.workspaceId}
                 clientId={props.clientId}
+                projectId={props.projectId}
+                services={props.services}
+              />
+            }
+          />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              forIteration.forGeneratedReport().root(),
+            )}
+            element={
+              <GeneratedReportDetail
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                projectId={props.projectId}
+                reportId={parseInt(
+                  window.location.pathname.split("/").pop() || "0",
+                )}
                 services={props.services}
               />
             }

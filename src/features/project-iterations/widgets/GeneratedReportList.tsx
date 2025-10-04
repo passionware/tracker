@@ -7,6 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ActionMenu,
+  ActionMenuCopyItem,
+  ActionMenuDeleteItem,
+  ActionMenuEditItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   ListToolbar,
@@ -23,13 +29,17 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
+import { createColumnHelper } from "@tanstack/react-table";
 import { useState } from "react";
+
+const columnHelper = createColumnHelper<any>();
 
 export function GeneratedReportList(
   props: WithFrontServices & {
     projectIterationId: ProjectIteration["id"];
     workspaceId: WorkspaceSpec;
     clientId: ClientSpec;
+    projectId?: number;
   },
 ) {
   const query = generatedReportSourceQueryUtils.getBuilder().build((q) => [
@@ -61,6 +71,19 @@ export function GeneratedReportList(
       onSelectionChange={setSelection}
       query={query}
       onQueryChange={() => {}}
+      onRowDoubleClick={(report) => {
+        if (props.projectId) {
+          props.services.navigationService.navigate(
+            props.services.routingService
+              .forWorkspace(props.workspaceId)
+              .forClient(props.clientId)
+              .forProject(props.projectId.toString())
+              .forIteration(props.projectIterationId.toString())
+              .forGeneratedReport(report.id.toString())
+              .root(),
+          );
+        }
+      }}
       columns={[
         {
           accessorKey: "id",
@@ -101,6 +124,44 @@ export function GeneratedReportList(
           },
         },
         sharedColumns.description,
+        columnHelper.display({
+          id: "actions",
+          enableHiding: false,
+          cell: ({ row }) => (
+            <ActionMenu services={props.services}>
+              <ActionMenuDeleteItem
+                onClick={() => {
+                  void props.services.generatedReportSourceWriteService.deleteGeneratedReportSource(
+                    row.original.id,
+                  );
+                }}
+              >
+                Delete Report
+              </ActionMenuDeleteItem>
+              <ActionMenuEditItem
+                onClick={() => {
+                  // Navigate to detail page for editing
+                  if (props.projectId) {
+                    props.services.navigationService.navigate(
+                      props.services.routingService
+                        .forWorkspace(props.workspaceId)
+                        .forClient(props.clientId)
+                        .forProject(props.projectId.toString())
+                        .forIteration(props.projectIterationId.toString())
+                        .forGeneratedReport(row.original.id.toString())
+                        .root(),
+                    );
+                  }
+                }}
+              >
+                View Details
+              </ActionMenuEditItem>
+              <ActionMenuCopyItem copyText={row.original.id.toString()}>
+                Copy Report ID
+              </ActionMenuCopyItem>
+            </ActionMenu>
+          ),
+        }),
       ]}
       caption={
         <>

@@ -21,7 +21,7 @@ export interface LocationService {
   useCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   useCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
   useCurrentProjectIterationTab: () => Maybe<
-    "positions" | "reports" | "billings" | "events"
+    "positions" | "reports" | "billings" | "events" | "generated-reports"
   >;
   // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;
@@ -42,7 +42,7 @@ export interface LocationService {
       projectIterationStatus: Maybe<"all" | "active" | "closed">;
       projectIterationId: Maybe<ProjectIteration["id"]>;
       projectIterationTab: Maybe<
-        "positions" | "reports" | "billings" | "events"
+        "positions" | "reports" | "billings" | "events" | "generated-reports"
       >;
     }) => ReactNode;
   }) => ReactNode;
