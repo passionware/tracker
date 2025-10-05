@@ -2,7 +2,10 @@ import {
   Unassigned,
   unassignedUtils,
 } from "@/api/_common/query/filters/Unassigned.ts";
-import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
+import {
+  GeneratedReportSource,
+  generatedReportSourceQueryUtils,
+} from "@/api/generated-report-source/generated-report-source.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -368,7 +371,7 @@ function TimeEntriesForGroup({
   groupBy,
 }: TimeEntriesForGroupProps) {
   // Always call hooks at the top level
-  const query = { sort: [] } as any;
+  const query = generatedReportSourceQueryUtils.ofDefault();
 
   // Get time entries for the group
   const getTimeEntriesForGroup = (): typeof report.data.timeEntries => {
