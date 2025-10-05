@@ -16,6 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx";
@@ -716,7 +722,71 @@ function BasicInformationView(
                   return (
                     <div key={role.roleId} className="p-3 border rounded-lg">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium">{role.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{role.name}</h4>
+                          {role.rates.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="cursor-pointer select-none">
+                                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
+                                    <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                                    <span className="text-xs text-slate-600">
+                                      {role.rates.length} rates
+                                    </span>
+                                  </div>
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <PopoverHeader>
+                                  Rate Definitions for {role.name}
+                                </PopoverHeader>
+                                <div className="space-y-3">
+                                  {role.rates.map((rate, index) => (
+                                    <div
+                                      key={index}
+                                      className="p-3 border rounded-lg bg-slate-50"
+                                    >
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                          <div className="font-medium text-sm">
+                                            {rate.activityType} -{" "}
+                                            {rate.taskType}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4 text-xs">
+                                        <div>
+                                          <div className="text-slate-500 mb-1">
+                                            Cost Rate
+                                          </div>
+                                          <div className="font-medium">
+                                            {props.services.formatService.financial.amount(
+                                              rate.costRate,
+                                              rate.costCurrency,
+                                            )}
+                                            /h
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className="text-slate-500 mb-1">
+                                            Billing Rate
+                                          </div>
+                                          <div className="font-medium">
+                                            {props.services.formatService.financial.amount(
+                                              rate.billingRate,
+                                              rate.billingCurrency,
+                                            )}
+                                            /h
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
                         <div className="text-right text-sm space-y-1">
                           <div className="font-semibold">
                             {role.costBudget.length === 0 ? (

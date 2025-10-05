@@ -33,6 +33,11 @@ export function createExchangeApi(fetchImpl: typeof fetch): ExchangeApi {
       };
 
       try {
+        // Handle same currency conversion
+        if (fromCurrency === toCurrency) {
+          return 1;
+        }
+
         // Fetch rates for fromCurrency and toCurrency
         const [fromData, toData] = await Promise.all([
           fromCurrency === "PLN"
@@ -51,12 +56,31 @@ export function createExchangeApi(fetchImpl: typeof fetch): ExchangeApi {
               ),
         ]);
 
+        // Validate the fetched data
+        if (!fromData || !toData || isNaN(fromData) || isNaN(toData)) {
+          throw new Error(
+            `Invalid exchange rate data: fromData=${fromData}, toData=${toData}`,
+          );
+        }
+
+        if (toData === 0) {
+          throw new Error("Division by zero in exchange rate calculation");
+        }
+
         // Calculate exchange rate
         const exchangeRate = fromData / toData;
+
+        // Validate the result
+        if (isNaN(exchangeRate) || !isFinite(exchangeRate)) {
+          throw new Error(`Invalid exchange rate result: ${exchangeRate}`);
+        }
+
         return exchangeRate;
       } catch (error) {
         console.error("Error fetching exchange rate:", error);
-        throw new Error("Could not retrieve exchange rate");
+        throw new Error(
+          `Could not retrieve exchange rate: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   };

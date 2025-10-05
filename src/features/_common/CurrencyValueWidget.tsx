@@ -53,10 +53,31 @@ export function CurrencyValueWidget({
 
   const approximateTotal =
     rd.tryMap(exchangeRates, (rates) => {
-      return safeValues.reduce((total, value, index) => {
+      const total = safeValues.reduce((total, value, index) => {
         const rate = rates[index];
-        return total + value.amount * rate.rate;
+        const contribution = value.amount * rate.rate;
+        // Validate each contribution to prevent NaN propagation
+        if (isNaN(contribution) || !isFinite(contribution)) {
+          console.warn(
+            `Invalid exchange rate calculation for ${value.currency}:`,
+            {
+              amount: value.amount,
+              rate: rate.rate,
+              contribution,
+            },
+          );
+          return total; // Skip this contribution
+        }
+        return total + contribution;
       }, 0);
+
+      // Validate the final total
+      if (isNaN(total) || !isFinite(total)) {
+        console.warn("Invalid approximate total calculated:", total);
+        return 0;
+      }
+
+      return total;
     }) || 0;
 
   // Pre-calculate conversions for all unique currencies to avoid conditional hooks
@@ -97,12 +118,20 @@ export function CurrencyValueWidget({
               {services.formatService.financial.currencySymbol(targetCurrency)}
             </PopoverHeader>
             <div className="font-semibold">
-              {rd.tryMap(singleCurrencyConversion, (amount: number) =>
-                services.formatService.financial.currency({
-                  amount,
-                  currency: targetCurrency,
-                }),
-              ) || "Loading..."}
+              {rd
+                .journey(singleCurrencyConversion)
+                .wait("Loading...")
+                .catch(() => "Conversion failed")
+                .map((amount: number) => {
+                  // Check if the amount is valid
+                  if (isNaN(amount) || !isFinite(amount)) {
+                    return "Conversion unavailable";
+                  }
+                  return services.formatService.financial.currency({
+                    amount,
+                    currency: targetCurrency,
+                  });
+                })}
             </div>
           </div>
         }
@@ -150,23 +179,24 @@ export function CurrencyValueWidget({
                       );
                     }
 
-                    // Use the exchange rates to calculate the converted amount
-                    const convertedAmount = rd.tryMap(
-                      currencyConversionRates,
-                      (rates) => {
-                        const rate = rates[index];
-                        return approximateTotal * rate.rate;
-                      },
-                    );
-
                     return (
                       <div key={index} className="font-medium">
-                        {convertedAmount
-                          ? services.formatService.financial.currency({
-                              amount: convertedAmount,
+                        {rd
+                          .journey(currencyConversionRates)
+                          .wait("Loading...")
+                          .catch(() => "Conversion failed")
+                          .map((rates) => {
+                            const rate = rates[index];
+                            const result = approximateTotal * rate.rate;
+                            // Validate the conversion result
+                            if (isNaN(result) || !isFinite(result)) {
+                              return "Conversion unavailable";
+                            }
+                            return services.formatService.financial.currency({
+                              amount: result,
                               currency,
-                            })
-                          : "Loading..."}
+                            });
+                          })}
                       </div>
                     );
                   })}
