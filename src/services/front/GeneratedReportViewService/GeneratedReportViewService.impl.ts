@@ -106,20 +106,6 @@ function getBasicInformationView(
     earningsBudgetByCurrency,
   ).map(([currency, amount]) => ({ amount, currency }));
 
-  // Calculate overall earnings percentage (total billing / total cost - 1) * 100
-  const totalCostAmount = Object.values(costBudgetByCurrency).reduce(
-    (sum, amount) => sum + amount,
-    0,
-  );
-  const totalBillingAmount = Object.values(billingBudgetByCurrency).reduce(
-    (sum, amount) => sum + amount,
-    0,
-  );
-  const totalEarningsPercentage =
-    totalCostAmount > 0
-      ? ((totalBillingAmount - totalCostAmount) / totalCostAmount) * 100
-      : 0;
-
   return {
     reportId: report.id,
     createdAt: report.createdAt,
@@ -133,7 +119,6 @@ function getBasicInformationView(
       totalCostBudget,
       totalBillingBudget,
       totalEarningsBudget,
-      totalEarningsPercentage,
     },
   };
 }
@@ -155,7 +140,7 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
           costBudget: [],
           billingBudget: [],
           earningsBudget: [],
-          earningsPercentage: 0,
+          // percentage removed from view layer; compute in UI when needed
           rates: roleType.rates,
         };
       }
@@ -231,20 +216,6 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
         earningsBudgetByCurrency,
       ).map(([currency, amount]) => ({ amount, currency }));
 
-      // Calculate overall earnings percentage (total billing / total cost - 1) * 100
-      const totalCostAmount = Object.values(costBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const totalBillingAmount = Object.values(billingBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const earningsPercentage =
-        totalCostAmount > 0
-          ? ((totalBillingAmount - totalCostAmount) / totalCostAmount) * 100
-          : 0;
-
       const totalHours = roleEntries.reduce((total, entry) => {
         return (
           total +
@@ -261,7 +232,7 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
         costBudget,
         billingBudget,
         earningsBudget,
-        earningsPercentage,
+        // percentage removed from view layer; compute in UI when needed
         rates: roleType.rates,
       };
     },
@@ -360,19 +331,7 @@ function getContractorsSummaryView(
         earningsBudgetByCurrency,
       ).map(([currency, amount]) => ({ amount, currency }));
 
-      // Calculate overall earnings percentage
-      const totalCostAmount = Object.values(costBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const totalBillingAmount = Object.values(billingBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const earningsPercentage =
-        totalCostAmount > 0
-          ? ((totalBillingAmount - totalCostAmount) / totalCostAmount) * 100
-          : 0;
+      // overall percentage removed from view layer; compute in UI when needed
 
       const totalHours = entries.reduce((total, entry) => {
         return (
@@ -463,20 +422,6 @@ function getContractorsSummaryView(
             roleEarningsBudgetByCurrency,
           ).map(([currency, amount]) => ({ amount, currency }));
 
-          // Calculate earnings percentage for this role
-          const roleTotalCostAmount = Object.values(
-            roleCostBudgetByCurrency,
-          ).reduce((sum, amount) => sum + amount, 0);
-          const roleTotalBillingAmount = Object.values(
-            roleBillingBudgetByCurrency,
-          ).reduce((sum, amount) => sum + amount, 0);
-          const roleEarningsPercentage =
-            roleTotalCostAmount > 0
-              ? ((roleTotalBillingAmount - roleTotalCostAmount) /
-                  roleTotalCostAmount) *
-                100
-              : 0;
-
           const roleHours = roleEntries.reduce((total, entry) => {
             return (
               total +
@@ -492,7 +437,6 @@ function getContractorsSummaryView(
             costBudget: roleCostBudget,
             billingBudget: roleBillingBudget,
             earningsBudget: roleEarningsBudget,
-            earningsPercentage: roleEarningsPercentage,
           };
         },
       );
@@ -504,7 +448,7 @@ function getContractorsSummaryView(
         costBudget,
         billingBudget,
         earningsBudget,
-        earningsPercentage,
+        // percentage removed from view layer; compute in UI when needed
         budgetByRole,
       };
     },
@@ -612,19 +556,7 @@ function getTaskTypesSummaryView(
         earningsBudgetByCurrency,
       ).map(([currency, amount]) => ({ amount, currency }));
 
-      // Calculate overall earnings percentage
-      const totalCostAmount = Object.values(costBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const totalBillingAmount = Object.values(billingBudgetByCurrency).reduce(
-        (sum, amount) => sum + amount,
-        0,
-      );
-      const earningsPercentage =
-        totalCostAmount > 0
-          ? ((totalBillingAmount - totalCostAmount) / totalCostAmount) * 100
-          : 0;
+      // overall percentage removed from view layer; compute in UI when needed
 
       const totalHours = taskEntries.reduce((total, entry) => {
         return (
@@ -715,20 +647,6 @@ function getTaskTypesSummaryView(
             roleEarningsBudgetByCurrency,
           ).map(([currency, amount]) => ({ amount, currency }));
 
-          // Calculate earnings percentage for this role
-          const roleTotalCostAmount = Object.values(
-            roleCostBudgetByCurrency,
-          ).reduce((sum, amount) => sum + amount, 0);
-          const roleTotalBillingAmount = Object.values(
-            roleBillingBudgetByCurrency,
-          ).reduce((sum, amount) => sum + amount, 0);
-          const roleEarningsPercentage =
-            roleTotalCostAmount > 0
-              ? ((roleTotalBillingAmount - roleTotalCostAmount) /
-                  roleTotalCostAmount) *
-                100
-              : 0;
-
           const roleHours = roleEntries.reduce((total, entry) => {
             return (
               total +
@@ -744,7 +662,6 @@ function getTaskTypesSummaryView(
             costBudget: roleCostBudget,
             billingBudget: roleBillingBudget,
             earningsBudget: roleEarningsBudget,
-            earningsPercentage: roleEarningsPercentage,
           };
         },
       );
@@ -758,7 +675,7 @@ function getTaskTypesSummaryView(
         costBudget,
         billingBudget,
         earningsBudget,
-        earningsPercentage,
+        // percentage removed from view layer; compute in UI when needed
         budgetByRole,
       };
     },
@@ -865,19 +782,7 @@ function getActivityTypesSummaryView(
       earningsBudgetByCurrency,
     ).map(([currency, amount]) => ({ amount, currency }));
 
-    // Calculate overall earnings percentage
-    const totalCostAmount = Object.values(costBudgetByCurrency).reduce(
-      (sum, amount) => sum + amount,
-      0,
-    );
-    const totalBillingAmount = Object.values(billingBudgetByCurrency).reduce(
-      (sum, amount) => sum + amount,
-      0,
-    );
-    const earningsPercentage =
-      totalCostAmount > 0
-        ? ((totalBillingAmount - totalCostAmount) / totalCostAmount) * 100
-        : 0;
+    // overall percentage removed from view layer; compute in UI when needed
 
     const totalHours = activityEntries.reduce((total, entry) => {
       return (
@@ -1010,7 +915,7 @@ function getActivityTypesSummaryView(
       costBudget,
       billingBudget,
       earningsBudget,
-      earningsPercentage,
+      // percentage removed from view layer; compute in UI when needed
       budgetByRole,
     };
   });

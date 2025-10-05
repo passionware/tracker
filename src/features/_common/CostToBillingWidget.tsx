@@ -46,7 +46,10 @@ export function CostToBillingWidget({
         );
         return values.reduce((sum, v) => {
           const key = `${v.currency.toUpperCase()}->${targetCurrency}`;
-          const rate = rateMap.get(key);
+          const rate =
+            v.currency.toUpperCase() === targetCurrency.toUpperCase()
+              ? 1
+              : rateMap.get(key);
           if (rate === undefined) return sum;
           return sum + v.amount * rate;
         }, 0);

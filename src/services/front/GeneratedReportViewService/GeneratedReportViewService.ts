@@ -44,7 +44,6 @@ export interface BasicInformationView {
     totalCostBudget: CurrencyValue[]; // What we pay contractors
     totalBillingBudget: CurrencyValue[]; // What we charge clients
     totalEarningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-    totalEarningsPercentage: number; // (Billing - Cost) / Cost * 100
   };
 }
 
@@ -57,7 +56,6 @@ export interface RoleSummary {
   costBudget: CurrencyValue[]; // What we pay contractors
   billingBudget: CurrencyValue[]; // What we charge clients
   earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   rates: {
     activityType: string;
     taskType: string;
@@ -79,7 +77,6 @@ export interface ContractorSummary {
   costBudget: CurrencyValue[]; // What we pay contractors
   billingBudget: CurrencyValue[]; // What we charge clients
   earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
@@ -87,7 +84,6 @@ export interface ContractorSummary {
     costBudget: CurrencyValue[];
     billingBudget: CurrencyValue[];
     earningsBudget: CurrencyValue[];
-    earningsPercentage: number;
   }[];
 }
 
@@ -104,7 +100,6 @@ export interface TaskTypeSummary {
   costBudget: CurrencyValue[]; // What we pay contractors
   billingBudget: CurrencyValue[]; // What we charge clients
   earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
@@ -112,7 +107,6 @@ export interface TaskTypeSummary {
     costBudget: CurrencyValue[];
     billingBudget: CurrencyValue[];
     earningsBudget: CurrencyValue[];
-    earningsPercentage: number;
   }[];
 }
 
@@ -129,7 +123,6 @@ export interface ActivityTypeSummary {
   costBudget: CurrencyValue[]; // What we pay contractors
   billingBudget: CurrencyValue[]; // What we charge clients
   earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
@@ -137,7 +130,6 @@ export interface ActivityTypeSummary {
     costBudget: CurrencyValue[];
     billingBudget: CurrencyValue[];
     earningsBudget: CurrencyValue[];
-    earningsPercentage: number;
   }[];
 }
 
