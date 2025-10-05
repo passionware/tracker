@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx";
 import { AbstractMultiPicker } from "@/features/_common/elements/pickers/_common/AbstractMultiPicker.tsx";
 import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
@@ -625,27 +626,17 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
               <div className="flex items-center gap-4 text-sm text-slate-600 mt-1">
                 <span>{group.entriesCount} entries</span>
                 <span>{group.totalHours.toFixed(1)}h</span>
-                <div className="flex items-center gap-1">
-                  <CurrencyValueWidget
-                    values={group.costBudget}
-                    services={props.services}
-                    exchangeService={props.services.exchangeService}
-                    className="text-xs"
-                  />
-                </div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">
-              <CurrencyValueWidget
-                values={group.earningsBudget}
-                services={props.services}
-                exchangeService={props.services.exchangeService}
-                className="text-xs"
-              />
-            </Badge>
+            <CostToBillingWidget
+              cost={group.costBudget}
+              billing={group.billingBudget}
+              services={props.services}
+              size="sm"
+            />
           </div>
         </div>
 
