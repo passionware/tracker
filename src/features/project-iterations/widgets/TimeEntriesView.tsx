@@ -163,14 +163,20 @@ export function TimeEntriesView(
                 if (currencies.length === 0) return "No rates";
                 if (currencies.length === 1) {
                   const currency = currencies[0];
-                  return `${budgetByCurrency[currency].toFixed(0)} ${currency}`;
+                  return props.services.formatService.financial.amount(
+                    budgetByCurrency[currency],
+                    currency,
+                  );
                 }
 
                 // Multiple currencies - show approximate total in EUR
                 const approximateTotal =
                   calculateApproximateTotal(budgetByCurrency);
                 if (approximateTotal !== null) {
-                  return `≈${approximateTotal.toFixed(0)} EUR`;
+                  return `≈${props.services.formatService.financial.amount(
+                    approximateTotal,
+                    "EUR",
+                  )}`;
                 }
 
                 return `${currencies.length} currencies`;
@@ -242,14 +248,20 @@ export function TimeEntriesView(
                             {currencies.length === 0
                               ? "No rates"
                               : currencies.length === 1
-                                ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                ? props.services.formatService.financial.amount(
+                                    budgetByCurrency[currencies[0]],
+                                    currencies[0],
+                                  )
                                 : (() => {
                                     const approximateTotal =
                                       calculateApproximateTotal(
                                         budgetByCurrency,
                                       );
                                     if (approximateTotal !== null) {
-                                      return `≈${approximateTotal.toFixed(0)} EUR`;
+                                      return `≈${props.services.formatService.financial.amount(
+                                        approximateTotal,
+                                        "EUR",
+                                      )}`;
                                     }
                                     return `${currencies.length} currencies`;
                                   })()}
@@ -345,14 +357,20 @@ export function TimeEntriesView(
                               {currencies.length === 0
                                 ? "No rates"
                                 : currencies.length === 1
-                                  ? `${budgetByCurrency[currencies[0]].toFixed(0)} ${currencies[0]}`
+                                  ? props.services.formatService.financial.amount(
+                                      budgetByCurrency[currencies[0]],
+                                      currencies[0],
+                                    )
                                   : (() => {
                                       const approximateTotal =
                                         calculateApproximateTotal(
                                           budgetByCurrency,
                                         );
                                       if (approximateTotal !== null) {
-                                        return `≈${approximateTotal.toFixed(0)} EUR`;
+                                        return `≈${props.services.formatService.financial.amount(
+                                          approximateTotal,
+                                          "EUR",
+                                        )}`;
                                       }
                                       return `${currencies.length} currencies`;
                                     })()}
