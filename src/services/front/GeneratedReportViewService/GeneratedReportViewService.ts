@@ -25,7 +25,7 @@ export interface GeneratedReportViewService {
   getGroupedView: (
     report: GeneratedReportSource,
     filters: EntryFilters,
-    groupBy: GroupSpecifier[],
+    groupBy: GroupSpecifier,
     contractorNameLookup?: (contractorId: number) => string | undefined,
   ) => GroupedView;
 }
@@ -58,7 +58,6 @@ export interface GroupedEntrySummary {
   costBudget: CurrencyValue[];
   billingBudget: CurrencyValue[];
   earningsBudget: CurrencyValue[];
-  subGroups?: GroupedEntrySummary[];
 }
 
 export interface GroupedView {

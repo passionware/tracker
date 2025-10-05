@@ -38,13 +38,7 @@ import {
   GroupSpecifier,
 } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.ts";
 import { rd } from "@passionware/monads";
-import {
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  GripVertical,
-  Settings,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Filter, Settings } from "lucide-react";
 import { useState } from "react";
 
 // Custom multi-pickers for role, task, and activity using report data
@@ -464,18 +458,17 @@ function TimeEntriesForGroup({
 
 interface GroupedViewConfig {
   filters: EntryFilters;
-  groupBy: GroupSpecifier[];
+  groupBy: GroupSpecifier;
 }
 
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const [config, setConfig] = useState<GroupedViewConfig>({
     filters: {},
-    groupBy: [{ type: "project" }, { type: "activity" }],
+    groupBy: { type: "project" },
   });
 
   const [showFilters, setShowFilters] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Fetch contractor data for name lookup
   const contractorIds = Array.from(
@@ -526,60 +519,20 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     }));
   };
 
-  const updateGroupBy = (index: number, newType: GroupSpecifier["type"]) => {
+  const updateGroupBy = (newType: GroupSpecifier["type"]) => {
     setConfig((prev) => ({
       ...prev,
-      groupBy: prev.groupBy.map((spec, i) =>
-        i === index ? { type: newType } : spec,
-      ),
+      groupBy: { type: newType },
     }));
   };
 
-  const addGroupBy = () => {
-    setConfig((prev) => ({
-      ...prev,
-      groupBy: [...prev.groupBy, { type: "role" }],
-    }));
-  };
+  // addGroupBy removed - now using single-level grouping only
 
-  const removeGroupBy = (index: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      groupBy: prev.groupBy.filter((_, i) => i !== index),
-    }));
-  };
+  // removeGroupBy removed - now using single-level grouping only
 
-  const moveGroupBy = (fromIndex: number, toIndex: number) => {
-    setConfig((prev) => {
-      const newGroupBy = [...prev.groupBy];
-      const [movedItem] = newGroupBy.splice(fromIndex, 1);
-      newGroupBy.splice(toIndex, 0, movedItem);
-      return {
-        ...prev,
-        groupBy: newGroupBy,
-      };
-    });
-  };
+  // moveGroupBy removed - now using single-level grouping only
 
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== dropIndex) {
-      moveGroupBy(draggedIndex, dropIndex);
-    }
-    setDraggedIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
+  // Drag and drop functions removed - now using single-level grouping only
 
   const renderGroupSummary = (
     group: GroupedEntrySummary,
@@ -587,23 +540,16 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     groupPath: string[] = [],
   ) => {
     const isExpanded = expandedGroups.has(group.groupKey);
-    const hasSubGroups = group.subGroups && group.subGroups.length > 0;
     const indent = level * 20;
     const currentGroupPath = [...groupPath, group.groupKey];
 
     return (
       <div key={group.groupKey} className="border rounded-lg">
         <div
-          className={`p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
-            level > 0 ? "border-l-4 border-slate-200" : ""
-          } ${!hasSubGroups ? "border-l-4 border-blue-200" : ""}`}
+          className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
           style={{ paddingLeft: `${12 + indent}px` }}
           onClick={() => toggleGroupExpansion(group.groupKey)}
-          title={
-            !hasSubGroups
-              ? "Click to view time entries"
-              : "Click to expand/collapse"
-          }
+          title="Click to view time entries"
         >
           <div className="flex items-center gap-2 flex-1">
             <div className="w-4 h-4 flex items-center justify-center">
@@ -640,16 +586,8 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
           </div>
         </div>
 
-        {hasSubGroups && isExpanded && (
-          <div className="border-t bg-slate-50/50">
-            {group.subGroups?.map((subGroup) =>
-              renderGroupSummary(subGroup, level + 1, currentGroupPath),
-            )}
-          </div>
-        )}
-
-        {/* Show time entries when we reach the deepest level and group is expanded */}
-        {!hasSubGroups && isExpanded && (
+        {/* Show time entries when group is expanded */}
+        {isExpanded && (
           <div className="border-t bg-white">
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
@@ -665,7 +603,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
                 report={props.report}
                 services={props.services}
                 filters={config.filters}
-                groupBy={config.groupBy}
+                groupBy={[config.groupBy]}
               />
             </div>
           </div>
@@ -794,69 +732,32 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Grouping</h3>
             <div className="space-y-3">
-              {config.groupBy.map((spec, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
-                    draggedIndex === index
-                      ? "opacity-50 bg-blue-50 border-blue-200"
-                      : "bg-white hover:bg-slate-50"
-                  }`}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                >
-                  <div className="cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-medium">
-                    {index + 1}
-                  </div>
-                  <Select
-                    value={spec.type}
-                    onValueChange={(value: GroupSpecifier["type"]) =>
-                      updateGroupBy(index, value)
-                    }
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="contractor">Contractor</SelectItem>
-                      <SelectItem value="role">Role</SelectItem>
-                      <SelectItem value="task">Task</SelectItem>
-                      <SelectItem value="activity">Activity</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {config.groupBy.length > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeGroupBy(index)}
-                    >
-                      Remove
-                    </Button>
-                  )}
+              <div className="flex items-center gap-3 p-3 border rounded-lg bg-white">
+                <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-medium">
+                  1
                 </div>
-              ))}
-              {config.groupBy.length < 3 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addGroupBy}
-                  className="ml-11"
+                <Select
+                  value={config.groupBy.type}
+                  onValueChange={(value: GroupSpecifier["type"]) =>
+                    updateGroupBy(value)
+                  }
                 >
-                  Add Grouping Level
-                </Button>
-              )}
-              {config.groupBy.length > 1 && (
-                <p className="text-sm text-slate-600 ml-11">
-                  💡 Drag and drop to reorder grouping levels
-                </p>
-              )}
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="contractor">Contractor</SelectItem>
+                    <SelectItem value="role">Role</SelectItem>
+                    <SelectItem value="task">Task</SelectItem>
+                    <SelectItem value="activity">Activity</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-slate-600">
+                💡 For detailed drill-down, click on individual groups to see
+                their time entries
+              </p>
             </div>
           </div>
         </CardContent>

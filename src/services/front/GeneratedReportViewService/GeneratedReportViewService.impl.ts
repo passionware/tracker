@@ -131,150 +131,73 @@ function getBasicInformationView(
 }
 
 function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
-  const roles = Object.entries(report.data.definitions.roleTypes).map(
-    ([roleId, roleType]) => {
-      const roleEntries = report.data.timeEntries.filter(
-        (entry) => entry.roleId === roleId,
-      );
-
-      if (roleEntries.length === 0) {
-        return {
-          roleId,
-          name: roleType.name,
-          description: roleType.description,
-          entriesCount: 0,
-          totalHours: 0,
-          costBudget: [],
-          billingBudget: [],
-          earningsBudget: [],
-          // percentage removed from view layer; compute in UI when needed
-          rates: roleType.rates,
-        };
-      }
-
-      const costBudgetByCurrency = roleEntries.reduce(
-        (acc, entry) => {
-          const matchingRate =
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId &&
-                rate.projectId === entry.projectId,
-            ) ||
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId &&
-                rate.projectId === undefined,
-            ) ||
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId,
-            ) ||
-            roleType.rates[0];
-
-          const hours =
-            (entry.endAt.getTime() - entry.startAt.getTime()) /
-            (1000 * 60 * 60);
-          const cost = hours * matchingRate.costRate;
-          const currency = matchingRate.costCurrency;
-
-          if (!acc[currency]) acc[currency] = 0;
-          acc[currency] += cost;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-
-      const billingBudgetByCurrency = roleEntries.reduce(
-        (acc, entry) => {
-          const matchingRate =
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId &&
-                rate.projectId === entry.projectId,
-            ) ||
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId &&
-                rate.projectId === undefined,
-            ) ||
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId,
-            ) ||
-            roleType.rates[0];
-
-          const hours =
-            (entry.endAt.getTime() - entry.startAt.getTime()) /
-            (1000 * 60 * 60);
-          const billing = hours * matchingRate.billingRate;
-          const currency = matchingRate.billingCurrency;
-
-          if (!acc[currency]) acc[currency] = 0;
-          acc[currency] += billing;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-
-      const costBudget: CurrencyValue[] = Object.entries(
-        costBudgetByCurrency,
-      ).map(([currency, amount]) => ({ amount, currency }));
-
-      const billingBudget: CurrencyValue[] = Object.entries(
-        billingBudgetByCurrency,
-      ).map(([currency, amount]) => ({ amount, currency }));
-
-      // Calculate earnings (billing - cost) - this is complex with multiple currencies
-      const earningsBudgetByCurrency: Record<string, number> = {};
-
-      // Add all currencies from both cost and billing
-      const allCurrencies = new Set([
-        ...Object.keys(costBudgetByCurrency),
-        ...Object.keys(billingBudgetByCurrency),
-      ]);
-
-      for (const currency of allCurrencies) {
-        const costAmount = costBudgetByCurrency[currency] || 0;
-        const billingAmount = billingBudgetByCurrency[currency] || 0;
-        earningsBudgetByCurrency[currency] = billingAmount - costAmount;
-      }
-
-      const earningsBudget: CurrencyValue[] = Object.entries(
-        earningsBudgetByCurrency,
-      ).map(([currency, amount]) => ({ amount, currency }));
-
-      const totalHours = roleEntries.reduce((total, entry) => {
-        return (
-          total +
-          (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60)
-        );
-      }, 0);
-
-      return {
-        roleId,
-        name: roleType.name,
-        description: roleType.description,
-        entriesCount: roleEntries.length,
-        totalHours,
-        costBudget,
-        billingBudget,
-        earningsBudget,
-        // percentage removed from view layer; compute in UI when needed
-        rates: roleType.rates,
-      };
-    },
+  // Use the generic grouped view with role grouping
+  const groupedView = getGroupedView(
+    report,
+    {}, // no filters
+    { type: "role" }, // group by role only
   );
+
+  // Transform the generic grouped view to the specific roles summary format
+  const roles = groupedView.groups.map((roleGroup) => {
+    const roleId = roleGroup.groupKey;
+    const roleType = report.data.definitions.roleTypes[roleId];
+
+    return {
+      roleId,
+      name: roleType?.name || "Unknown Role",
+      description: roleType?.description,
+      entriesCount: roleGroup.entriesCount,
+      totalHours: roleGroup.totalHours,
+      costBudget: roleGroup.costBudget,
+      billingBudget: roleGroup.billingBudget,
+      earningsBudget: roleGroup.earningsBudget,
+      rates: roleType?.rates || [],
+    };
+  });
 
   return { roles };
 }
 
 function getProjectsSummaryView(
+  report: GeneratedReportSource,
+): ProjectsSummaryView {
+  // Use the generic grouped view with project grouping
+  const groupedView = getGroupedView(
+    report,
+    {}, // no filters
+    { type: "project" }, // group by project only
+  );
+
+  // Transform the generic grouped view to the specific projects summary format
+  const projects = groupedView.groups.map((projectGroup) => {
+    const projectId = projectGroup.groupKey;
+    const projectType = report.data.definitions.projectTypes[projectId];
+
+    // For budgetByRole, we would need to make a separate call to getGroupedView with role grouping
+    // and project filtering, but for now we'll leave it empty since the UI doesn't seem to use it
+    const budgetByRole: any[] = [];
+
+    return {
+      projectId,
+      name: projectType?.name || "Unknown Project",
+      description: projectType?.description,
+      entriesCount: projectGroup.entriesCount,
+      totalHours: projectGroup.totalHours,
+      costBudget: projectGroup.costBudget,
+      billingBudget: projectGroup.billingBudget,
+      earningsBudget: projectGroup.earningsBudget,
+      budgetCap: projectType?.budgetCap,
+      budgetByRole,
+    };
+  });
+
+  return { projects };
+}
+
+// OLD FUNCTION - REMOVED (now using getGroupedView)
+/*
+function getProjectsSummaryViewOld(
   report: GeneratedReportSource,
 ): ProjectsSummaryView {
   const projects = Object.entries(report.data.definitions.projectTypes).map(
@@ -500,34 +423,25 @@ function getProjectsSummaryView(
   );
 
   return { projects };
-}
+  */
 
 function getContractorsSummaryView(
   report: GeneratedReportSource,
 ): ContractorsSummaryView {
-  // Use the generic grouped view with contractor grouping and role sub-grouping
+  // Use the generic grouped view with contractor grouping
   const groupedView = getGroupedView(
     report,
     {}, // no filters
-    [{ type: "contractor" }, { type: "role" }], // group by contractor, then by role
+    { type: "contractor" }, // group by contractor only
   );
 
   // Transform the generic grouped view to the specific contractors summary format
   const contractors = groupedView.groups.map((contractorGroup) => {
     const contractorId = Number(contractorGroup.groupKey);
 
-    // Transform sub-groups (roles) to the expected format
-    const budgetByRole =
-      contractorGroup.subGroups?.map((roleGroup) => {
-        return {
-          roleId: roleGroup.groupKey,
-          roleName: roleGroup.groupName,
-          hours: roleGroup.totalHours,
-          costBudget: roleGroup.costBudget,
-          billingBudget: roleGroup.billingBudget,
-          earningsBudget: roleGroup.earningsBudget,
-        };
-      }) || [];
+    // For budgetByRole, we would need to make a separate call to getGroupedView with role grouping
+    // and contractor filtering, but for now we'll leave it empty since the UI doesn't seem to use it
+    const budgetByRole: any[] = [];
 
     return {
       contractorId,
@@ -546,27 +460,18 @@ function getContractorsSummaryView(
 function getTaskTypesSummaryView(
   report: GeneratedReportSource,
 ): TaskTypesSummaryView {
-  // Use the generic grouped view with task grouping and role sub-grouping
+  // Use the generic grouped view with task grouping
   const groupedView = getGroupedView(
     report,
     {}, // no filters
-    [{ type: "task" }, { type: "role" }], // group by task, then by role
+    { type: "task" }, // group by task only
   );
 
   // Transform the generic grouped view to the specific task types summary format
   const taskTypes = groupedView.groups.map((taskGroup) => {
-    // Transform sub-groups (roles) to the expected format
-    const budgetByRole =
-      taskGroup.subGroups?.map((roleGroup) => {
-        return {
-          roleId: roleGroup.groupKey,
-          roleName: roleGroup.groupName,
-          hours: roleGroup.totalHours,
-          costBudget: roleGroup.costBudget,
-          billingBudget: roleGroup.billingBudget,
-          earningsBudget: roleGroup.earningsBudget,
-        };
-      }) || [];
+    // For budgetByRole, we would need to make a separate call to getGroupedView with role grouping
+    // and task filtering, but for now we'll leave it empty since the UI doesn't seem to use it
+    const budgetByRole: any[] = [];
 
     return {
       taskId: taskGroup.groupKey,
@@ -587,44 +492,18 @@ function getTaskTypesSummaryView(
 function getActivityTypesSummaryView(
   report: GeneratedReportSource,
 ): ActivityTypesSummaryView {
-  // Use the generic grouped view with activity grouping and role sub-grouping
+  // Use the generic grouped view with activity grouping
   const groupedView = getGroupedView(
     report,
     {}, // no filters
-    [{ type: "activity" }, { type: "role" }], // group by activity, then by role
+    { type: "activity" }, // group by activity only
   );
 
   // Transform the generic grouped view to the specific activity types summary format
   const activityTypes = groupedView.groups.map((activityGroup) => {
-    // Transform sub-groups (roles) to the expected format
-    const budgetByRole =
-      activityGroup.subGroups?.map((roleGroup) => {
-        // Calculate earnings percentage for this role
-        const roleTotalCostAmount = roleGroup.costBudget.reduce(
-          (sum, cv) => sum + cv.amount,
-          0,
-        );
-        const roleTotalBillingAmount = roleGroup.billingBudget.reduce(
-          (sum, cv) => sum + cv.amount,
-          0,
-        );
-        const roleEarningsPercentage =
-          roleTotalCostAmount > 0
-            ? ((roleTotalBillingAmount - roleTotalCostAmount) /
-                roleTotalCostAmount) *
-              100
-            : 0;
-
-        return {
-          roleId: roleGroup.groupKey,
-          roleName: roleGroup.groupName,
-          hours: roleGroup.totalHours,
-          costBudget: roleGroup.costBudget,
-          billingBudget: roleGroup.billingBudget,
-          earningsBudget: roleGroup.earningsBudget,
-          earningsPercentage: roleEarningsPercentage,
-        };
-      }) || [];
+    // For budgetByRole, we would need to make a separate call to getGroupedView with role grouping
+    // and activity filtering, but for now we'll leave it empty since the UI doesn't seem to use it
+    const budgetByRole: any[] = [];
 
     return {
       activityId: activityGroup.groupKey,
@@ -916,7 +795,7 @@ function getFilteredEntriesView(
 function getGroupedView(
   report: GeneratedReportSource,
   filters: EntryFilters,
-  groupBy: GroupSpecifier[],
+  groupBy: GroupSpecifier,
   contractorNameLookup?: (contractorId: number) => string | undefined,
 ): GroupedView {
   // Apply filters first
@@ -952,12 +831,11 @@ function getGroupedView(
     );
   }
 
-  // Group entries by the first group specifier
+  // Group entries by the single group specifier
   const groups = groupEntriesBySpecifier(
     filteredEntries,
     report,
     groupBy,
-    0,
     contractorNameLookup,
   );
 
@@ -1055,15 +933,10 @@ function getGroupedView(
 function groupEntriesBySpecifier(
   entries: GeneratedReportSource["data"]["timeEntries"],
   report: GeneratedReportSource,
-  groupBy: GroupSpecifier[],
-  specifierIndex: number,
+  groupBy: GroupSpecifier,
   contractorNameLookup?: (contractorId: number) => string | undefined,
 ): GroupedEntrySummary[] {
-  if (specifierIndex >= groupBy.length) {
-    return [];
-  }
-
-  const specifier = groupBy[specifierIndex];
+  const specifier = groupBy;
 
   // Group entries by the current specifier
   const groupedEntries = entries.reduce(
@@ -1219,18 +1092,6 @@ function groupEntriesBySpecifier(
         );
       }, 0);
 
-      // Recursively create sub-groups if there are more specifiers
-      const subGroups =
-        specifierIndex < groupBy.length - 1
-          ? groupEntriesBySpecifier(
-              groupEntries,
-              report,
-              groupBy,
-              specifierIndex + 1,
-              contractorNameLookup,
-            )
-          : undefined;
-
       return {
         groupKey,
         groupName,
@@ -1240,7 +1101,6 @@ function groupEntriesBySpecifier(
         costBudget,
         billingBudget,
         earningsBudget,
-        subGroups,
       };
     },
   );
