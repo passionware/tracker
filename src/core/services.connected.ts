@@ -16,6 +16,7 @@ import { mySupabase } from "@/core/supabase.connected.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
+import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
@@ -87,6 +88,10 @@ const variableService = createVariableService({
   client: myQueryClient,
   api: createVariableApi(mySupabase),
 });
+
+const exchangeService = createExchangeService(myExchangeApi, myQueryClient);
+const formatService = createFormatService(() => new Date());
+
 const projectIterationService = createProjectIterationService({
   services: {
     messageService,
@@ -115,14 +120,13 @@ export const myServices = {
       routingService,
     },
   }),
-  formatService: createFormatService(() => new Date()),
   reportDisplayService: createReportDisplayService({
     services: {
       reportService: reportService,
       billingService: billingService,
       workspaceService,
       costService,
-      exchangeService: createExchangeService(myExchangeApi, myQueryClient),
+      exchangeService,
     },
   }),
   messageService,
@@ -142,7 +146,6 @@ export const myServices = {
   ),
   workspaceService,
   costService,
-  exchangeService: createExchangeService(myExchangeApi, myQueryClient),
   preferenceService,
   variableService,
   billingService,
@@ -169,6 +172,12 @@ export const myServices = {
   }),
   generatedReportSourceWriteService,
   generatedReportSourceService,
+  formatService,
+  exchangeService,
+  generatedReportViewService: createGeneratedReportViewService({
+    formatService,
+    exchangeService,
+  }),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {
