@@ -16,20 +16,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx";
 import { AbstractMultiPicker } from "@/features/_common/elements/pickers/_common/AbstractMultiPicker.tsx";
 import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
+import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   EntryFilters,
@@ -358,7 +352,6 @@ interface TimeEntriesForGroupProps extends WithFrontServices {
   groupBy: GroupSpecifier[];
 }
 
-// Separate component to handle time entries rendering with consistent hooks
 function TimeEntriesForGroup({
   groupPath,
   report,
@@ -394,6 +387,11 @@ function TimeEntriesForGroup({
         filters.activityIds!.includes(entry.activityId),
       );
     }
+    if (filters.projectIds && filters.projectIds.length > 0) {
+      filteredEntries = filteredEntries.filter((entry) =>
+        filters.projectIds!.includes(entry.projectId),
+      );
+    }
 
     // Apply grouping filters based on the group path
     for (let i = 0; i < groupPath.length && i < groupBy.length; i++) {
@@ -410,6 +408,8 @@ function TimeEntriesForGroup({
             return entry.taskId === groupKey;
           case "activity":
             return entry.activityId === groupKey;
+          case "project":
+            return entry.projectId === groupKey;
           default:
             return true;
         }
@@ -461,6 +461,346 @@ interface GroupedViewConfig {
   groupBy: GroupSpecifier;
 }
 
+// DrillDownContext removed - no longer needed with tab-based expansion
+
+interface GroupSummaryItemProps extends WithFrontServices {
+  group: GroupedEntrySummary;
+  level: number;
+  groupPath: string[];
+  currentGroupBy: GroupSpecifier["type"];
+  appliedGroupTypes: GroupSpecifier["type"][]; // Track which grouping types have been applied
+  report: GeneratedReportSource;
+  groupFilters: EntryFilters;
+  contractorNameLookup?: (contractorId: number) => string | undefined;
+  onDrillDown: (
+    groupKey: string,
+    groupName: string,
+    groupType: GroupSpecifier["type"],
+    drillDownType: GroupSpecifier["type"],
+  ) => void;
+  onShowRawData: (
+    groupKey: string,
+    groupName: string,
+    groupType: GroupSpecifier["type"],
+  ) => void;
+}
+
+function GroupSummaryItem(props: GroupSummaryItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    GroupSpecifier["type"] | "raw" | null
+  >(null);
+  const [subGroups, setSubGroups] = useState<GroupedEntrySummary[]>([]);
+
+  const {
+    group,
+    level,
+    groupPath,
+    currentGroupBy,
+    appliedGroupTypes,
+    services,
+    report,
+    groupFilters,
+    contractorNameLookup,
+    onDrillDown,
+    onShowRawData,
+  } = props;
+
+  const indent = level * 20;
+  const currentGroupPath = [...groupPath, group.groupKey];
+
+  const toggleExpansion = () => {
+    if (!isExpanded) {
+      // First click - just expand (no default tab)
+      setIsExpanded(true);
+      setActiveTab(null);
+      setSubGroups([]);
+    } else {
+      // Click again - collapse
+      setIsExpanded(false);
+      setActiveTab(null);
+      setSubGroups([]);
+    }
+  };
+
+  const handleTabClick = async (tabType: GroupSpecifier["type"] | "raw") => {
+    if (activeTab === tabType) {
+      // Same tab clicked - toggle off
+      setIsExpanded(false);
+      setActiveTab(null);
+      setSubGroups([]);
+      return;
+    }
+
+    if (tabType === "raw") {
+      // Show raw data
+      setActiveTab("raw");
+      setIsExpanded(true);
+      setSubGroups([]);
+      return;
+    }
+
+    // Create filters for this specific group
+    const groupFilters = { ...props.groupFilters };
+    switch (currentGroupBy) {
+      case "contractor":
+        groupFilters.contractorIds = [Number(group.groupKey)];
+        break;
+      case "role":
+        groupFilters.roleIds = [group.groupKey];
+        break;
+      case "task":
+        groupFilters.taskIds = [group.groupKey];
+        break;
+      case "activity":
+        groupFilters.activityIds = [group.groupKey];
+        break;
+      case "project":
+        groupFilters.projectIds = [group.groupKey];
+        break;
+    }
+
+    // Get the drill-down view for this specific group
+    const drillDownView =
+      props.services.generatedReportViewService.getGroupedView(
+        props.report,
+        groupFilters,
+        { type: tabType },
+        props.contractorNameLookup,
+      );
+
+    setSubGroups(drillDownView.groups);
+    setActiveTab(tabType);
+    setIsExpanded(true);
+  };
+
+  return (
+    <div key={group.groupKey} className="border rounded-lg">
+      <div
+        className="p-3 cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
+        style={{ paddingLeft: `${12 + indent}px` }}
+        onClick={toggleExpansion}
+        title="Click to view time entries"
+      >
+        {/* Main content row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1">
+            <div className="w-4 h-4 flex items-center justify-center">
+              {isExpanded ? (
+                <ChevronDown className="w-3 h-3 text-slate-500" />
+              ) : (
+                <ChevronRight className="w-3 h-3 text-slate-500" />
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">{group.groupName}</h4>
+                {group.groupDescription && (
+                  <span className="text-sm text-slate-600">
+                    {group.groupDescription}
+                  </span>
+                )}
+                {activeTab && activeTab !== "raw" && (
+                  <Badge variant="secondary" className="text-xs">
+                    {currentGroupBy} → {activeTab}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-sm text-slate-600 mt-1">
+                <span>{group.entriesCount} entries</span>
+                <span>{group.totalHours.toFixed(1)}h</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <CostToBillingWidget
+              cost={group.costBudget}
+              billing={group.billingBudget}
+              services={services}
+              size="sm"
+            />
+          </div>
+        </div>
+
+        {/* Tab buttons row - left aligned */}
+        <div className="flex items-center gap-1 mt-2 ml-6">
+          {/* Raw Data button - always first */}
+          <SimpleTooltip title="View raw time entries">
+            <Button
+              variant={activeTab === "raw" ? "default" : "outline"}
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTabClick("raw");
+              }}
+            >
+              📊
+            </Button>
+          </SimpleTooltip>
+
+          {/* Filter out grouping options that are already applied in the group hierarchy */}
+          {currentGroupBy !== "contractor" &&
+            !appliedGroupTypes.includes("contractor") && (
+              <SimpleTooltip title="Group by contractor">
+                <Button
+                  variant={activeTab === "contractor" ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTabClick("contractor");
+                  }}
+                >
+                  👥
+                </Button>
+              </SimpleTooltip>
+            )}
+          {currentGroupBy !== "role" && !appliedGroupTypes.includes("role") && (
+            <SimpleTooltip title="Group by role">
+              <Button
+                variant={activeTab === "role" ? "default" : "outline"}
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTabClick("role");
+                }}
+              >
+                🎭
+              </Button>
+            </SimpleTooltip>
+          )}
+          {currentGroupBy !== "task" && !appliedGroupTypes.includes("task") && (
+            <SimpleTooltip title="Group by task">
+              <Button
+                variant={activeTab === "task" ? "default" : "outline"}
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTabClick("task");
+                }}
+              >
+                📋
+              </Button>
+            </SimpleTooltip>
+          )}
+          {currentGroupBy !== "activity" &&
+            !appliedGroupTypes.includes("activity") && (
+              <SimpleTooltip title="Group by activity">
+                <Button
+                  variant={activeTab === "activity" ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTabClick("activity");
+                  }}
+                >
+                  🎯
+                </Button>
+              </SimpleTooltip>
+            )}
+          {currentGroupBy !== "project" &&
+            !appliedGroupTypes.includes("project") && (
+              <SimpleTooltip title="Group by project">
+                <Button
+                  variant={activeTab === "project" ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTabClick("project");
+                  }}
+                >
+                  📁
+                </Button>
+              </SimpleTooltip>
+            )}
+        </div>
+      </div>
+
+      {/* Show sub-groups or time entries when group is expanded */}
+      {isExpanded && (
+        <div className="border-t bg-white">
+          <div className="p-4">
+            {activeTab === "raw" ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium text-slate-600">
+                    Time Entries
+                  </h4>
+                  <Badge variant="secondary" className="text-xs">
+                    {group.entriesCount} entries
+                  </Badge>
+                </div>
+                <TimeEntriesForGroup
+                  groupPath={currentGroupPath}
+                  report={report}
+                  services={services}
+                  filters={groupFilters}
+                  groupBy={[{ type: currentGroupBy }]}
+                />
+              </div>
+            ) : activeTab &&
+              (activeTab === "contractor" ||
+                activeTab === "role" ||
+                activeTab === "task" ||
+                activeTab === "activity" ||
+                activeTab === "project") ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium text-slate-600">
+                    {activeTab === "contractor"
+                      ? "👥 Contractors"
+                      : activeTab === "role"
+                        ? "🎭 Roles"
+                        : activeTab === "task"
+                          ? "📋 Tasks"
+                          : activeTab === "activity"
+                            ? "🎯 Activities"
+                            : activeTab === "project"
+                              ? "📁 Projects"
+                              : "Sub-groups"}{" "}
+                    in {group.groupName}
+                  </h4>
+                  <Badge variant="secondary" className="text-xs">
+                    {subGroups.length} groups
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {subGroups.map((subGroup) => (
+                    <GroupSummaryItem
+                      key={subGroup.groupKey}
+                      group={subGroup}
+                      level={level + 1}
+                      groupPath={currentGroupPath}
+                      currentGroupBy={activeTab}
+                      appliedGroupTypes={[...appliedGroupTypes, activeTab]}
+                      services={services}
+                      report={report}
+                      groupFilters={groupFilters}
+                      contractorNameLookup={contractorNameLookup}
+                      onDrillDown={onDrillDown}
+                      onShowRawData={onShowRawData}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-slate-500 text-sm">
+                Click a tab above to view data
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const [config, setConfig] = useState<GroupedViewConfig>({
     filters: {},
@@ -468,7 +808,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   });
 
   const [showFilters, setShowFilters] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Fetch contractor data for name lookup
   const contractorIds = Array.from(
@@ -502,15 +841,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       contractorNameLookup,
     );
 
-  const toggleGroupExpansion = (groupKey: string) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupKey)) {
-      newExpanded.delete(groupKey);
-    } else {
-      newExpanded.add(groupKey);
-    }
-    setExpandedGroups(newExpanded);
-  };
+  // toggleGroupExpansion removed - now handled by individual GroupSummaryItem components
 
   const updateFilters = (newFilters: Partial<EntryFilters>) => {
     setConfig((prev) => ({
@@ -519,12 +850,14 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     }));
   };
 
-  const updateGroupBy = (newType: GroupSpecifier["type"]) => {
+  const updateGroupBy = (newGroupBy: GroupSpecifier) => {
     setConfig((prev) => ({
       ...prev,
-      groupBy: { type: newType },
+      groupBy: newGroupBy,
     }));
   };
+
+  // updateGroupBy removed - now using zoom-in dropdowns for drill-down
 
   // addGroupBy removed - now using single-level grouping only
 
@@ -532,85 +865,9 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
 
   // moveGroupBy removed - now using single-level grouping only
 
-  // Drag and drop functions removed - now using single-level grouping only
+  // Drill-down functions removed - individual components handle their own state
 
-  const renderGroupSummary = (
-    group: GroupedEntrySummary,
-    level: number = 0,
-    groupPath: string[] = [],
-  ) => {
-    const isExpanded = expandedGroups.has(group.groupKey);
-    const indent = level * 20;
-    const currentGroupPath = [...groupPath, group.groupKey];
-
-    return (
-      <div key={group.groupKey} className="border rounded-lg">
-        <div
-          className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
-          style={{ paddingLeft: `${12 + indent}px` }}
-          onClick={() => toggleGroupExpansion(group.groupKey)}
-          title="Click to view time entries"
-        >
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-4 h-4 flex items-center justify-center">
-              {isExpanded ? (
-                <ChevronDown className="w-3 h-3 text-slate-500" />
-              ) : (
-                <ChevronRight className="w-3 h-3 text-slate-500" />
-              )}
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium">{group.groupName}</h4>
-                {group.groupDescription && (
-                  <span className="text-sm text-slate-600">
-                    {group.groupDescription}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-sm text-slate-600 mt-1">
-                <span>{group.entriesCount} entries</span>
-                <span>{group.totalHours.toFixed(1)}h</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <CostToBillingWidget
-              cost={group.costBudget}
-              billing={group.billingBudget}
-              services={props.services}
-              size="sm"
-            />
-          </div>
-        </div>
-
-        {/* Show time entries when group is expanded */}
-        {isExpanded && (
-          <div className="border-t bg-white">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-slate-700">
-                  Time Entries
-                </h4>
-                <Badge variant="secondary" className="text-xs">
-                  {group.entriesCount} entries
-                </Badge>
-              </div>
-              <TimeEntriesForGroup
-                groupPath={currentGroupPath}
-                report={props.report}
-                services={props.services}
-                filters={config.filters}
-                groupBy={[config.groupBy]}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+  // renderGroupSummary removed - now using GroupSummaryItem component
 
   return (
     <div className="space-y-6">
@@ -727,50 +984,89 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
           </div>
 
           <Separator />
-
-          {/* Grouping Configuration */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Grouping</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 border rounded-lg bg-white">
-                <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-medium">
-                  1
-                </div>
-                <Select
-                  value={config.groupBy.type}
-                  onValueChange={(value: GroupSpecifier["type"]) =>
-                    updateGroupBy(value)
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="contractor">Contractor</SelectItem>
-                    <SelectItem value="role">Role</SelectItem>
-                    <SelectItem value="task">Task</SelectItem>
-                    <SelectItem value="activity">Activity</SelectItem>
-                    <SelectItem value="project">Project</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="text-sm text-slate-600">
-                💡 For detailed drill-down, click on individual groups to see
-                their time entries
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
       {/* Results Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Results Summary</CardTitle>
-          <CardDescription>
-            Total entries: {groupedView.totalEntries} • Total hours:{" "}
-            {groupedView.totalHours.toFixed(1)}h
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Results Summary</CardTitle>
+              <CardDescription>
+                Total entries: {groupedView.totalEntries} • Total hours:{" "}
+                {groupedView.totalHours.toFixed(1)}h
+              </CardDescription>
+            </div>
+            {/* Root level grouping selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Group by:</span>
+              <div className="flex items-center gap-1">
+                <SimpleTooltip title="Group by contractor">
+                  <Button
+                    variant={
+                      config.groupBy.type === "contractor"
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => updateGroupBy({ type: "contractor" })}
+                  >
+                    👥
+                  </Button>
+                </SimpleTooltip>
+                <SimpleTooltip title="Group by role">
+                  <Button
+                    variant={
+                      config.groupBy.type === "role" ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => updateGroupBy({ type: "role" })}
+                  >
+                    🎭
+                  </Button>
+                </SimpleTooltip>
+                <SimpleTooltip title="Group by task">
+                  <Button
+                    variant={
+                      config.groupBy.type === "task" ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => updateGroupBy({ type: "task" })}
+                  >
+                    📋
+                  </Button>
+                </SimpleTooltip>
+                <SimpleTooltip title="Group by activity">
+                  <Button
+                    variant={
+                      config.groupBy.type === "activity" ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => updateGroupBy({ type: "activity" })}
+                  >
+                    🎯
+                  </Button>
+                </SimpleTooltip>
+                <SimpleTooltip title="Group by project">
+                  <Button
+                    variant={
+                      config.groupBy.type === "project" ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => updateGroupBy({ type: "project" })}
+                  >
+                    📁
+                  </Button>
+                </SimpleTooltip>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -819,9 +1115,22 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {groupedView.groups.map((group) =>
-              renderGroupSummary(group, 0, []),
-            )}
+            {groupedView.groups.map((group) => (
+              <GroupSummaryItem
+                key={group.groupKey}
+                group={group}
+                level={0}
+                groupPath={[]}
+                currentGroupBy={config.groupBy.type}
+                appliedGroupTypes={[config.groupBy.type]}
+                services={props.services}
+                report={props.report}
+                groupFilters={config.filters}
+                contractorNameLookup={contractorNameLookup}
+                onDrillDown={() => {}} // No longer needed
+                onShowRawData={() => {}} // No longer needed
+              />
+            ))}
           </div>
         </CardContent>
       </Card>
