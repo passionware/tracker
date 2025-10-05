@@ -2,17 +2,19 @@ import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
-  CurrencyService,
   CurrencyValue,
+  ExchangeService,
 } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { rd } from "@passionware/monads";
 
 export interface CurrencyValueWidgetProps
   extends WithServices<[WithFormatService]> {
-  currencyService: CurrencyService;
+  exchangeService: ExchangeService;
   values: CurrencyValue[];
   targetCurrency?: string;
   showApproximation?: boolean;
+  showSumInOriginalCurrencies?: boolean;
   className?: string;
 }
 
@@ -20,10 +22,45 @@ export function CurrencyValueWidget({
   values,
   targetCurrency = "EUR",
   showApproximation = true,
+  showSumInOriginalCurrencies = true,
   services,
-  currencyService,
+  exchangeService,
   className,
 }: CurrencyValueWidgetProps) {
+  // Helper function to get unique currencies from values
+  const getUniqueCurrencies = (values: CurrencyValue[]): string[] => {
+    return Array.from(new Set(values.map((value) => value.currency)));
+  };
+
+  // Always call hooks at the top level to avoid conditional hook calls
+  const exchangeRates = exchangeService.useExchangeRates(
+    values.map((value) => ({
+      from: value.currency,
+      to: targetCurrency,
+    })),
+  );
+
+  // For single currency conversion (always call hook, but with conditional values)
+  const singleCurrencyConversion = exchangeService.useExchange(
+    values.length === 1 ? values[0].currency : "USD",
+    targetCurrency,
+    values.length === 1 ? values[0].amount : 0,
+  );
+
+  const approximateTotal =
+    rd.tryMap(exchangeRates, (rates) => {
+      return values.reduce((total, value, index) => {
+        const rate = rates[index];
+        return total + value.amount * rate.rate;
+      }, 0);
+    }) || 0;
+
+  // Pre-calculate conversions for all unique currencies to avoid conditional hooks
+  const uniqueCurrencies = getUniqueCurrencies(values);
+  const currencyConversions = uniqueCurrencies.map((currency) =>
+    exchangeService.useExchange(targetCurrency, currency, approximateTotal),
+  );
+
   if (values.length === 0) {
     return <span className={className}>No budget data</span>;
   }
@@ -41,12 +78,7 @@ export function CurrencyValueWidget({
       );
     }
 
-    // Show original value with tooltip showing converted value
-    const convertedValue = currencyService.convertCurrencyValue(
-      value,
-      targetCurrency,
-    );
-
+    // For single currency conversion, use the pre-calculated hook result
     return (
       <SimpleTooltip
         light
@@ -57,7 +89,12 @@ export function CurrencyValueWidget({
               {services.formatService.financial.currencySymbol(targetCurrency)}
             </PopoverHeader>
             <div className="font-semibold">
-              {services.formatService.financial.currency(convertedValue)}
+              {rd.tryMap(singleCurrencyConversion, (amount: number) =>
+                services.formatService.financial.currency({
+                  amount,
+                  currency: targetCurrency,
+                }),
+              ) || "Loading..."}
             </div>
           </div>
         }
@@ -69,26 +106,66 @@ export function CurrencyValueWidget({
     );
   }
 
-  // Multiple currencies - show approximation
+  // Handle case where we don't want approximation
   if (!showApproximation) {
-    return <span className={className}>{values.length} currencies</span>;
-  }
+    if (showSumInOriginalCurrencies) {
+      return (
+        <SimpleTooltip
+          light
+          title={
+            <div className="space-y-2">
+              <PopoverHeader>Currency breakdown</PopoverHeader>
+              <div className="space-y-1">
+                {values.map((value, index) => (
+                  <div key={index} className="font-medium">
+                    {services.formatService.financial.currency(value)}
+                  </div>
+                ))}
+              </div>
+              <div className="border-t pt-2">
+                <div className="text-sm text-slate-600">
+                  Approximate total in each currency
+                </div>
+                <div className="space-y-1">
+                  {uniqueCurrencies.map((currency, index) => {
+                    const convertedAmount = currencyConversions[index];
 
-  // Calculate approximate total in target currency
-  let approximateTotal = 0;
-  let hasAllRates = true;
+                    // If converting to the same currency, show the approximate total directly
+                    if (
+                      currency.toUpperCase() === targetCurrency.toUpperCase()
+                    ) {
+                      return (
+                        <div key={index} className="font-medium">
+                          {services.formatService.financial.currency({
+                            amount: approximateTotal,
+                            currency,
+                          })}
+                        </div>
+                      );
+                    }
 
-  for (const value of values) {
-    try {
-      const converted = currencyService.convertCurrencyValue(
-        value,
-        targetCurrency,
+                    return (
+                      <div key={index} className="font-medium">
+                        {rd.tryMap(convertedAmount, (amount: number) =>
+                          services.formatService.financial.currency({
+                            amount,
+                            currency,
+                          }),
+                        ) || "Loading..."}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          }
+        >
+          <span className={className}>{values.length} currencies</span>
+        </SimpleTooltip>
       );
-      approximateTotal += converted.amount;
-    } catch {
-      hasAllRates = false;
-      break;
     }
+
+    return <span className={className}>{values.length} currencies</span>;
   }
 
   const approximateValue: CurrencyValue = {
@@ -96,8 +173,11 @@ export function CurrencyValueWidget({
     currency: targetCurrency,
   };
 
-  if (!hasAllRates) {
-    return <span className={className}>{values.length} currencies</span>;
+  // Check if we have exchange rates for approximation
+  const hasRates = rd.tryMap(exchangeRates, () => true) || false;
+
+  if (!hasRates) {
+    return <span className={className}>Loading exchange rates...</span>;
   }
 
   return (
@@ -113,6 +193,43 @@ export function CurrencyValueWidget({
               </div>
             ))}
           </div>
+
+          {showSumInOriginalCurrencies && uniqueCurrencies.length > 0 && (
+            <div className="border-t pt-2">
+              <div className="text-sm text-slate-600">
+                Approximate total in each currency
+              </div>
+              <div className="space-y-1">
+                {uniqueCurrencies.map((currency, index) => {
+                  const convertedAmount = currencyConversions[index];
+
+                  // If converting to the same currency, show the approximate total directly
+                  if (currency.toUpperCase() === targetCurrency.toUpperCase()) {
+                    return (
+                      <div key={index} className="font-medium">
+                        {services.formatService.financial.currency({
+                          amount: approximateTotal,
+                          currency,
+                        })}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={index} className="font-medium">
+                      {rd.tryMap(convertedAmount, (amount: number) =>
+                        services.formatService.financial.currency({
+                          amount,
+                          currency,
+                        }),
+                      ) || "Loading..."}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="border-t pt-2">
             <div className="text-sm text-slate-600">Total (approximate)</div>
             <div className="font-semibold">
