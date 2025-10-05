@@ -580,7 +580,6 @@ function GroupSummaryItem(props: GroupSummaryItemProps) {
         className="p-3 cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
         style={{ paddingLeft: `${12 + indent}px` }}
         onClick={toggleExpansion}
-        title="Click to view time entries"
       >
         {/* Main content row */}
         <div className="flex items-center justify-between">
