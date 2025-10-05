@@ -28,6 +28,7 @@ import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx"
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -422,38 +423,102 @@ function BasicInformationView(
                   props.services.generatedReportViewService.getContractorsSummaryView(
                     props.report,
                   );
+
+                // Fetch contractor details for all contractors
+                const contractorIds = contractorsSummary.contractors.map(
+                  (c) => c.contractorId,
+                );
+                const contractorsQuery =
+                  props.services.contractorService.useContractors(
+                    contractorQueryUtils.getBuilder().build((q) => [
+                      q.withFilter("id", {
+                        operator: "oneOf",
+                        value: contractorIds,
+                      }),
+                    ]),
+                  );
+
                 return (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="cursor-pointer select-none">
-                        {BudgetPieThumb(props.services, {
+                  rd.tryMap(contractorsQuery, (contractors) => {
+                    // Create a map for quick lookup
+                    const contractorMap = new Map(
+                      contractors.map((c) => [c.id, c]),
+                    );
+
+                    return (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="cursor-pointer select-none">
+                            {BudgetPieThumb(props.services, {
+                              items: contractorsSummary.contractors.map(
+                                (c) => ({
+                                  name:
+                                    contractorMap.get(c.contractorId)
+                                      ?.fullName ||
+                                    `Contractor #${c.contractorId}`,
+                                  budget: c.costBudget,
+                                }),
+                              ),
+                              size: 64,
+                            })}
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>Budget by Contractor</DialogTitle>
+                            <DialogDescription>
+                              Approximate in EUR
+                            </DialogDescription>
+                          </DialogHeader>
+                          {BudgetPieChart(props.services, {
+                            title: "Budget by Contractor",
+                            description: "Approximate in EUR",
+                            items: contractorsSummary.contractors.map((c) => ({
+                              name:
+                                contractorMap.get(c.contractorId)?.fullName ||
+                                `Contractor #${c.contractorId}`,
+                              budget: c.costBudget,
+                            })),
+                            height: 360,
+                            showLabels: true,
+                          })}
+                        </DialogContent>
+                      </Dialog>
+                    );
+                  }) || (
+                    // Fallback while loading
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <div className="cursor-pointer select-none">
+                          {BudgetPieThumb(props.services, {
+                            items: contractorsSummary.contractors.map((c) => ({
+                              name: `Contractor #${c.contractorId}`,
+                              budget: c.costBudget,
+                            })),
+                            size: 64,
+                          })}
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                          <DialogTitle>Budget by Contractor</DialogTitle>
+                          <DialogDescription>
+                            Approximate in EUR
+                          </DialogDescription>
+                        </DialogHeader>
+                        {BudgetPieChart(props.services, {
+                          title: "Budget by Contractor",
+                          description: "Approximate in EUR",
                           items: contractorsSummary.contractors.map((c) => ({
-                            name: `#${c.contractorId}`,
+                            name: `Contractor #${c.contractorId}`,
                             budget: c.costBudget,
                           })),
-                          size: 64,
+                          height: 360,
+                          showLabels: true,
                         })}
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>Budget by Contractor</DialogTitle>
-                        <DialogDescription>
-                          Approximate in EUR
-                        </DialogDescription>
-                      </DialogHeader>
-                      {BudgetPieChart(props.services, {
-                        title: "Budget by Contractor",
-                        description: "Approximate in EUR",
-                        items: contractorsSummary.contractors.map((c) => ({
-                          name: `#${c.contractorId}`,
-                          budget: c.costBudget,
-                        })),
-                        height: 360,
-                        showLabels: true,
-                      })}
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
+                  )
                 );
               })()}
             </div>
