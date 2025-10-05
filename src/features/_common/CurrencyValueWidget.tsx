@@ -33,8 +33,12 @@ export function CurrencyValueWidget({
   };
 
   // Always call hooks at the top level to avoid conditional hook calls
+  // Use safe defaults to ensure hooks are always called with valid parameters
+  const safeValues =
+    values.length > 0 ? values : [{ amount: 0, currency: "USD" }];
+
   const exchangeRates = exchangeService.useExchangeRates(
-    values.map((value) => ({
+    safeValues.map((value) => ({
       from: value.currency,
       to: targetCurrency,
     })),
@@ -42,25 +46,29 @@ export function CurrencyValueWidget({
 
   // For single currency conversion (always call hook, but with conditional values)
   const singleCurrencyConversion = exchangeService.useExchange(
-    values.length === 1 ? values[0].currency : "USD",
+    safeValues.length === 1 ? safeValues[0].currency : "USD",
     targetCurrency,
-    values.length === 1 ? values[0].amount : 0,
+    safeValues.length === 1 ? safeValues[0].amount : 0,
   );
 
   const approximateTotal =
     rd.tryMap(exchangeRates, (rates) => {
-      return values.reduce((total, value, index) => {
+      return safeValues.reduce((total, value, index) => {
         const rate = rates[index];
         return total + value.amount * rate.rate;
       }, 0);
     }) || 0;
 
   // Pre-calculate conversions for all unique currencies to avoid conditional hooks
-  const uniqueCurrencies = getUniqueCurrencies(values);
-  const currencyConversions = uniqueCurrencies.map((currency) =>
-    exchangeService.useExchange(targetCurrency, currency, approximateTotal),
+  const uniqueCurrencies = getUniqueCurrencies(safeValues);
+  const currencyConversionRates = exchangeService.useExchangeRates(
+    uniqueCurrencies.map((currency) => ({
+      from: targetCurrency,
+      to: currency,
+    })),
   );
 
+  // Now we can safely handle the empty case after all hooks are called
   if (values.length === 0) {
     return <span className={className}>No budget data</span>;
   }
@@ -128,8 +136,6 @@ export function CurrencyValueWidget({
                 </div>
                 <div className="space-y-1">
                   {uniqueCurrencies.map((currency, index) => {
-                    const convertedAmount = currencyConversions[index];
-
                     // If converting to the same currency, show the approximate total directly
                     if (
                       currency.toUpperCase() === targetCurrency.toUpperCase()
@@ -144,14 +150,23 @@ export function CurrencyValueWidget({
                       );
                     }
 
+                    // Use the exchange rates to calculate the converted amount
+                    const convertedAmount = rd.tryMap(
+                      currencyConversionRates,
+                      (rates) => {
+                        const rate = rates[index];
+                        return approximateTotal * rate.rate;
+                      },
+                    );
+
                     return (
                       <div key={index} className="font-medium">
-                        {rd.tryMap(convertedAmount, (amount: number) =>
-                          services.formatService.financial.currency({
-                            amount,
-                            currency,
-                          }),
-                        ) || "Loading..."}
+                        {convertedAmount
+                          ? services.formatService.financial.currency({
+                              amount: convertedAmount,
+                              currency,
+                            })
+                          : "Loading..."}
                       </div>
                     );
                   })}
@@ -201,8 +216,6 @@ export function CurrencyValueWidget({
               </div>
               <div className="space-y-1">
                 {uniqueCurrencies.map((currency, index) => {
-                  const convertedAmount = currencyConversions[index];
-
                   // If converting to the same currency, show the approximate total directly
                   if (currency.toUpperCase() === targetCurrency.toUpperCase()) {
                     return (
@@ -215,14 +228,23 @@ export function CurrencyValueWidget({
                     );
                   }
 
+                  // Use the exchange rates to calculate the converted amount
+                  const convertedAmount = rd.tryMap(
+                    currencyConversionRates,
+                    (rates) => {
+                      const rate = rates[index];
+                      return approximateTotal * rate.rate;
+                    },
+                  );
+
                   return (
                     <div key={index} className="font-medium">
-                      {rd.tryMap(convertedAmount, (amount: number) =>
-                        services.formatService.financial.currency({
-                          amount,
-                          currency,
-                        }),
-                      ) || "Loading..."}
+                      {convertedAmount
+                        ? services.formatService.financial.currency({
+                            amount: convertedAmount,
+                            currency,
+                          })
+                        : "Loading..."}
                     </div>
                   );
                 })}

@@ -38,6 +38,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { GeneratedReportTabs } from "./GeneratedReportHeader";
+import { GroupedViewWidget } from "./GroupedViewWidget";
 import { TimeEntriesView } from "./TimeEntriesView";
 
 function BudgetPieChart(
@@ -943,8 +944,13 @@ export function GeneratedReportDetail(
               path="time-entries"
               element={<TimeEntriesView report={report} {...props} />}
             />
+            <Route
+              path="grouped-view"
+              element={<GroupedViewWidget report={report} {...props} />}
+            />
           </Routes>
         ))}
     </div>
   );
 }
+// todo: maybe we should also introduce a 'project' - also breakdown by project (ongoing, in-app-payment) etc - so we can make triggers later
