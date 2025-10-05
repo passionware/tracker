@@ -8,6 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
@@ -20,8 +28,200 @@ import {
 import { maybe, rd, RemoteData } from "@passionware/monads";
 import { Calendar, Database, FileText } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import { GeneratedReportTabs } from "./GeneratedReportHeader";
 import { TimeEntriesView } from "./TimeEntriesView";
+
+function BudgetPieChart(
+  services: WithFrontServices["services"],
+  props2: {
+    title: string;
+    description?: string;
+    items: { name: string; budget: { amount: number; currency: string }[] }[];
+    height?: number;
+    showLabels?: boolean;
+  },
+) {
+  const targetCurrency = "EUR";
+  const allCurrencies = Array.from(
+    new Set(
+      props2.items.flatMap((it) =>
+        it.budget.map((b) => b.currency.toUpperCase()),
+      ),
+    ),
+  );
+
+  const exchangeRates = services.exchangeService.useExchangeRates(
+    allCurrencies.map((from) => ({ from, to: targetCurrency })),
+  );
+
+  const colors = [
+    "#6366F1",
+    "#22C55E",
+    "#F59E0B",
+    "#EF4444",
+    "#14B8A6",
+    "#A855F7",
+    "#3B82F6",
+    "#F97316",
+    "#84CC16",
+    "#06B6D4",
+  ];
+
+  const data =
+    rd.tryMap(exchangeRates, (rates) => {
+      const rateMap = new Map<string, number>();
+      rates.forEach((r) =>
+        rateMap.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate),
+      );
+
+      return props2.items
+        .map((it) => {
+          const value = it.budget.reduce((sum, b) => {
+            const key = `${b.currency.toUpperCase()}->${targetCurrency}`;
+            const rate = rateMap.get(key) ?? 0;
+            return sum + b.amount * rate;
+          }, 0);
+          return { name: it.name, value };
+        })
+        .filter((d) => d.value > 0);
+    }) || [];
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{props2.title}</CardTitle>
+          {props2.description ? (
+            <CardDescription>{props2.description}</CardDescription>
+          ) : null}
+        </CardHeader>
+        <CardContent className="text-sm text-slate-600">No data</CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{props2.title}</CardTitle>
+        {props2.description ? (
+          <CardDescription>{props2.description}</CardDescription>
+        ) : null}
+      </CardHeader>
+      <CardContent style={{ height: props2.height ?? 220 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <RechartsTooltip
+              formatter={(value: number) =>
+                services.formatService.financial.currency({
+                  amount: value,
+                  currency: targetCurrency,
+                })
+              }
+            />
+            <Legend />
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              outerRadius={80}
+              label={props2.showLabels ? (entry) => `${entry.name}` : false}
+            >
+              {data.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={colors[index % colors.length]}
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BudgetPieThumb(
+  services: WithFrontServices["services"],
+  props2: {
+    items: { name: string; budget: { amount: number; currency: string }[] }[];
+    size?: number; // px
+  },
+) {
+  const targetCurrency = "EUR";
+  const allCurrencies = Array.from(
+    new Set(
+      props2.items.flatMap((it) =>
+        it.budget.map((b) => b.currency.toUpperCase()),
+      ),
+    ),
+  );
+
+  const exchangeRates = services.exchangeService.useExchangeRates(
+    allCurrencies.map((from) => ({ from, to: targetCurrency })),
+  );
+
+  const colors = [
+    "#6366F1",
+    "#22C55E",
+    "#F59E0B",
+    "#EF4444",
+    "#14B8A6",
+    "#A855F7",
+    "#3B82F6",
+    "#F97316",
+  ];
+
+  const data =
+    rd.tryMap(exchangeRates, (rates) => {
+      const rateMap = new Map<string, number>();
+      rates.forEach((r) =>
+        rateMap.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate),
+      );
+      return props2.items
+        .map((it) => {
+          const value = it.budget.reduce((sum, b) => {
+            const key = `${b.currency.toUpperCase()}->${targetCurrency}`;
+            const rate = rateMap.get(key) ?? 0;
+            return sum + b.amount * rate;
+          }, 0);
+          return { name: it.name, value };
+        })
+        .filter((d) => d.value > 0);
+    }) || [];
+
+  const size = props2.size ?? 96;
+
+  return (
+    <div style={{ width: size, height: size }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            outerRadius={size / 2.6}
+          >
+            {data.map((_, index) => (
+              <Cell
+                key={`cell-thumb-${index}`}
+                fill={colors[index % colors.length]}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 function BasicInformationView(
   props: WithFrontServices & {
@@ -154,16 +354,59 @@ function BasicInformationView(
         </Card>
       </div>
 
-      {/* Budget Breakdown */}
+      {/* Quick Visualizations + Budget Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Budget by Role */}
         <Card>
           <CardHeader>
-            <CardTitle>Roles</CardTitle>
-            <CardDescription>
-              Roles are independent of contractors. Contractors may have
-              multiple roles.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Roles</CardTitle>
+                <CardDescription>
+                  Roles are independent of contractors. Contractors may have
+                  multiple roles.
+                </CardDescription>
+              </div>
+              {(() => {
+                const rolesSummary =
+                  props.services.generatedReportViewService.getRolesSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: rolesSummary.roles.map((r) => ({
+                            name: r.name,
+                            budget: r.costBudget,
+                          })),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Role</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Role",
+                        description: "Approximate in EUR",
+                        items: rolesSummary.roles.map((r) => ({
+                          name: r.name,
+                          budget: r.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -227,8 +470,51 @@ function BasicInformationView(
         {/* Budget by Contractor */}
         <Card>
           <CardHeader>
-            <CardTitle>Contractors</CardTitle>
-            <CardDescription>Cost breakdown by contractor</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Contractors</CardTitle>
+                <CardDescription>Cost breakdown by contractor</CardDescription>
+              </div>
+              {(() => {
+                const contractorsSummary =
+                  props.services.generatedReportViewService.getContractorsSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: contractorsSummary.contractors.map((c) => ({
+                            name: `#${c.contractorId}`,
+                            budget: c.costBudget,
+                          })),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Contractor</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Contractor",
+                        description: "Approximate in EUR",
+                        items: contractorsSummary.contractors.map((c) => ({
+                          name: `Contractor #${c.contractorId}`,
+                          budget: c.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -298,10 +584,53 @@ function BasicInformationView(
         {/* Task Types */}
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Task Types</CardTitle>
-            <CardDescription>
-              Available task types in this report
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Task Types</CardTitle>
+                <CardDescription>
+                  Available task types in this report
+                </CardDescription>
+              </div>
+              {(() => {
+                const taskTypesSummary =
+                  props.services.generatedReportViewService.getTaskTypesSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: taskTypesSummary.taskTypes.map((t) => ({
+                            name: t.name,
+                            budget: t.costBudget,
+                          })),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Task Type</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Task Type",
+                        description: "Approximate in EUR",
+                        items: taskTypesSummary.taskTypes.map((t) => ({
+                          name: t.name,
+                          budget: t.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto">
             <div className="space-y-3">
@@ -372,10 +701,55 @@ function BasicInformationView(
         {/* Activity Types */}
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Activity Types</CardTitle>
-            <CardDescription>
-              Available activity types in this report
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Activity Types</CardTitle>
+                <CardDescription>
+                  Available activity types in this report
+                </CardDescription>
+              </div>
+              {(() => {
+                const activityTypesSummary =
+                  props.services.generatedReportViewService.getActivityTypesSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: activityTypesSummary.activityTypes.map(
+                            (a) => ({
+                              name: a.name,
+                              budget: a.costBudget,
+                            }),
+                          ),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Activity Type</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Activity Type",
+                        description: "Approximate in EUR",
+                        items: activityTypesSummary.activityTypes.map((a) => ({
+                          name: a.name,
+                          budget: a.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto">
             <div className="space-y-3">

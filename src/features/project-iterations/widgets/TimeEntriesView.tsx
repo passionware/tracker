@@ -8,10 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { AdvancedTimelineVisualization } from "@/features/_common/AdvancedTimelineVisualization.tsx";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { TimelineVisualization } from "@/features/_common/TimeLineVisualization.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -48,6 +50,14 @@ export function TimeEntriesView(
 
   return (
     <div className="space-y-6">
+      {/* Timeline Visualizations */}
+      <AdvancedTimelineVisualization
+        report={report}
+        services={props.services}
+      />
+
+      <TimelineVisualization report={report} services={props.services} />
+
       <Card>
         <CardHeader>
           <CardTitle>Time Entries</CardTitle>
