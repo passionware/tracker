@@ -84,6 +84,11 @@ export function TimeEntriesView(
                 timeEntryColumns.startTime(props.services),
                 timeEntryColumns.endTime(props.services),
                 timeEntryColumns.duration,
+                timeEntryColumns.costRate(report.data, props.services),
+                timeEntryColumns.billingRate(report.data, props.services),
+                timeEntryColumns.costAmount(report.data, props.services),
+                timeEntryColumns.billingAmount(report.data, props.services),
+                timeEntryColumns.profitAmount(report.data, props.services),
                 timeEntryColumns.note,
               ]}
             />
