@@ -19,6 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { renderError } from "@/features/_common/renderError.tsx";
 import {
@@ -26,7 +27,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd, RemoteData } from "@passionware/monads";
-import { Calendar, Database, FileText } from "lucide-react";
+import { Calendar, Database, FileText, ArrowRight } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
 import {
   Cell,
@@ -340,16 +341,55 @@ function BasicInformationView(
                 {basicInfo.statistics.roleTypesCount}
               </Badge>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Total Budget</span>
-              <Badge variant="primary">
-                <CurrencyValueWidget
-                  values={basicInfo.statistics.totalCostBudget}
-                  services={props.services}
-                  exchangeService={props.services.exchangeService}
-                  className="text-inherit"
-                />
-              </Badge>
+            {/* Cost vs Billing quick viz */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Cost → Billing</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    <CurrencyValueWidget
+                      values={basicInfo.statistics.totalCostBudget}
+                      services={props.services}
+                      exchangeService={props.services.exchangeService}
+                      className="text-inherit"
+                    />
+                  </Badge>
+                  <ArrowRight className="h-4 w-4 text-slate-400" />
+                  <Badge variant="primary">
+                    <CurrencyValueWidget
+                      values={basicInfo.statistics.totalBillingBudget}
+                      services={props.services}
+                      exchangeService={props.services.exchangeService}
+                      className="text-inherit"
+                    />
+                  </Badge>
+                  <span
+                    className={
+                      "text-xs font-semibold px-2 py-1 rounded " +
+                      (basicInfo.statistics.totalEarningsPercentage > 0
+                        ? "bg-emerald-100 text-emerald-700"
+                        : basicInfo.statistics.totalEarningsPercentage < 0
+                          ? "bg-red-100 text-red-700"
+                          : "bg-slate-100 text-slate-700")
+                    }
+                    title="(Billing - Cost) / Cost"
+                  >
+                    {basicInfo.statistics.totalEarningsPercentage.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Earnings</span>
+                <Badge variant="secondary">
+                  <CurrencyValueWidget
+                    values={basicInfo.statistics.totalEarningsBudget}
+                    services={props.services}
+                    exchangeService={props.services.exchangeService}
+                    className="text-inherit"
+                  />
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -456,15 +496,16 @@ function BasicInformationView(
                     <div key={role.roleId} className="p-3 border rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-medium">{role.name}</h4>
-                        <div className="text-right text-sm">
+                        <div className="text-right text-sm space-y-1">
                           <div className="font-semibold">
                             {role.costBudget.length === 0 ? (
                               "No rates"
                             ) : (
-                              <CurrencyValueWidget
-                                values={role.costBudget}
+                              <CostToBillingWidget
+                                cost={role.costBudget}
+                                billing={role.billingBudget}
+                                percentage={role.earningsPercentage}
                                 services={props.services}
-                                exchangeService={props.services.exchangeService}
                               />
                             )}
                           </div>
@@ -571,15 +612,16 @@ function BasicInformationView(
                           size="sm"
                         />
                       </div>
-                      <div className="text-right text-sm">
+                      <div className="text-right text-sm space-y-1">
                         <div className="font-semibold">
                           {contractor.costBudget.length === 0 ? (
                             "No rates"
                           ) : (
-                            <CurrencyValueWidget
-                              values={contractor.costBudget}
+                            <CostToBillingWidget
+                              cost={contractor.costBudget}
+                              billing={contractor.billingBudget}
+                              percentage={contractor.earningsPercentage}
                               services={props.services}
-                              exchangeService={props.services.exchangeService}
                             />
                           )}
                         </div>
@@ -688,15 +730,16 @@ function BasicInformationView(
                             {taskType.description}
                           </p>
                         </div>
-                        <div className="text-right text-sm">
+                        <div className="text-right text-sm space-y-1">
                           <div className="font-semibold">
                             {taskType.costBudget.length === 0 ? (
                               "No rates"
                             ) : (
-                              <CurrencyValueWidget
-                                values={taskType.costBudget}
+                              <CostToBillingWidget
+                                cost={taskType.costBudget}
+                                billing={taskType.billingBudget}
+                                percentage={taskType.earningsPercentage}
                                 services={props.services}
-                                exchangeService={props.services.exchangeService}
                               />
                             )}
                           </div>
@@ -808,17 +851,16 @@ function BasicInformationView(
                               {activityType.description}
                             </p>
                           </div>
-                          <div className="text-right text-sm">
+                          <div className="text-right text-sm space-y-1">
                             <div className="font-semibold">
                               {activityType.costBudget.length === 0 ? (
                                 "No rates"
                               ) : (
-                                <CurrencyValueWidget
-                                  values={activityType.costBudget}
+                                <CostToBillingWidget
+                                  cost={activityType.costBudget}
+                                  billing={activityType.billingBudget}
+                                  percentage={activityType.earningsPercentage}
                                   services={props.services}
-                                  exchangeService={
-                                    props.services.exchangeService
-                                  }
                                 />
                               )}
                             </div>
