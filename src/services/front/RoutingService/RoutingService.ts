@@ -105,6 +105,7 @@ export interface RoutingService {
             root: () => string;
             basic: () => string;
             timeEntries: () => string;
+            groupedView: () => string;
           };
           billings: () => string;
         };

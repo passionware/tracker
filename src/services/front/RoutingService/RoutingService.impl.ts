@@ -63,6 +63,8 @@ export function createRoutingService(): RoutingService {
                           `${base2}/generated-reports/${reportId}/basic`,
                         timeEntries: () =>
                           `${base2}/generated-reports/${reportId}/time-entries`,
+                        groupedView: () =>
+                          `${base2}/generated-reports/${reportId}/grouped-view`,
                       };
                     },
                     billings: () => `${base2}/billings`,
