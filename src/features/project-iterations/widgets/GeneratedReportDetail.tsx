@@ -82,7 +82,7 @@ function BudgetPieChart(
         rateMap.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate),
       );
 
-      return props2.items
+      const raw = props2.items
         .map((it) => {
           const value = it.budget.reduce((sum, b) => {
             const key = `${b.currency.toUpperCase()}->${targetCurrency}`;
@@ -92,6 +92,16 @@ function BudgetPieChart(
           return { name: it.name, value };
         })
         .filter((d) => d.value > 0);
+
+      // Aggregate small slices into "Others" to avoid overflows
+      const maxSlices = 12;
+      if (raw.length <= maxSlices) return raw;
+      const sorted = [...raw].sort((a, b) => b.value - a.value);
+      const head = sorted.slice(0, maxSlices - 1);
+      const tailSum = sorted
+        .slice(maxSlices - 1)
+        .reduce((s, x) => s + x.value, 0);
+      return [...head, { name: "Others", value: tailSum }];
     }) || [];
 
   if (data.length === 0) {
@@ -118,7 +128,7 @@ function BudgetPieChart(
       </CardHeader>
       <CardContent style={{ height: props2.height ?? 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <RechartsTooltip
               formatter={(value: number) =>
                 services.formatService.financial.currency({
@@ -127,13 +137,37 @@ function BudgetPieChart(
                 })
               }
             />
-            <Legend />
+            {(() => {
+              const showLegend = data.length <= 12;
+              if (!showLegend) return null;
+              return (
+                <Legend
+                  layout="vertical"
+                  verticalAlign="middle"
+                  align="right"
+                  wrapperStyle={{ maxHeight: 180, overflowY: "auto" }}
+                  formatter={(value: string) =>
+                    value.length > 18 ? `${value.slice(0, 18)}…` : value
+                  }
+                />
+              );
+            })()}
             <Pie
               data={data}
               dataKey="value"
               nameKey="name"
               outerRadius={80}
-              label={props2.showLabels ? (entry) => `${entry.name}` : false}
+              labelLine={false}
+              paddingAngle={1}
+              label={(() => {
+                const maxLabeledSlices = 8;
+                const allowLabels =
+                  props2.showLabels && data.length <= maxLabeledSlices;
+                if (!allowLabels) return false as const;
+                const truncate = (text: string) =>
+                  text.length > 18 ? `${text.slice(0, 18)}…` : text;
+                return (entry: { name: string }) => truncate(entry.name);
+              })()}
             >
               {data.map((_, index) => (
                 <Cell
