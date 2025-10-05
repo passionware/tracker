@@ -5,6 +5,9 @@ export interface GeneratedReportViewService {
   getBasicInformationView: (
     report: GeneratedReportSource,
   ) => BasicInformationView;
+  getProjectsSummaryView: (
+    report: GeneratedReportSource,
+  ) => ProjectsSummaryView;
   getRolesSummaryView: (report: GeneratedReportSource) => RolesSummaryView;
   getContractorsSummaryView: (
     report: GeneratedReportSource,
@@ -79,6 +82,29 @@ export interface BasicInformationView {
   };
 }
 
+export interface ProjectSummary {
+  projectId: string;
+  name: string;
+  description: string;
+  entriesCount: number;
+  totalHours: number;
+  costBudget: CurrencyValue[]; // What we pay contractors
+  billingBudget: CurrencyValue[]; // What we charge clients
+  earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+  budgetCap?: {
+    amount: number;
+    currency: string;
+  };
+  budgetByRole: {
+    roleId: string;
+    roleName: string;
+    hours: number;
+    costBudget: CurrencyValue[];
+    billingBudget: CurrencyValue[];
+    earningsBudget: CurrencyValue[];
+  }[];
+}
+
 export interface RoleSummary {
   roleId: string;
   name: string;
@@ -91,11 +117,16 @@ export interface RoleSummary {
   rates: {
     activityType: string;
     taskType: string;
+    projectId?: string;
     costRate: number;
     costCurrency: string;
     billingRate: number;
     billingCurrency: string;
   }[];
+}
+
+export interface ProjectsSummaryView {
+  projects: ProjectSummary[];
 }
 
 export interface RolesSummaryView {
@@ -175,6 +206,7 @@ export interface FilteredEntrySummary {
   roleId: string;
   taskId: string;
   activityId: string;
+  projectId: string;
   startAt: Date;
   endAt: Date;
   duration: number; // in hours

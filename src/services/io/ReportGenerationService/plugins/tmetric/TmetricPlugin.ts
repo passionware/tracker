@@ -142,6 +142,7 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     definitions: {
       taskTypes: { ...reports[0].definitions.taskTypes },
       activityTypes: { ...reports[0].definitions.activityTypes },
+      projectTypes: { ...reports[0].definitions.projectTypes },
       roleTypes: { ...reports[0].definitions.roleTypes },
     },
     timeEntries: [...reports[0].timeEntries],
@@ -158,6 +159,12 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     Object.assign(
       merged.definitions.activityTypes,
       report.definitions.activityTypes,
+    );
+
+    // Merge project types
+    Object.assign(
+      merged.definitions.projectTypes,
+      report.definitions.projectTypes,
     );
 
     // Keep role types separate - each contractor has their own role

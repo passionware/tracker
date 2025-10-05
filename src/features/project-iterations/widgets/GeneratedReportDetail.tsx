@@ -657,6 +657,139 @@ function BasicInformationView(
             </div>
           </CardContent>
         </Card>
+        {/* Budget by Project */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Projects</CardTitle>
+                <CardDescription>
+                  Projects represent client-facing budget categories. Each
+                  project has its own budget and can span multiple roles.
+                </CardDescription>
+              </div>
+              {(() => {
+                const projectsSummary =
+                  props.services.generatedReportViewService.getProjectsSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: projectsSummary.projects.map((p) => ({
+                            name: p.name,
+                            budget: p.costBudget,
+                          })),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Project</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Project",
+                        description: "Approximate in EUR",
+                        items: projectsSummary.projects.map((p) => ({
+                          name: p.name,
+                          budget: p.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(() => {
+                const projectsSummary =
+                  props.services.generatedReportViewService.getProjectsSummaryView(
+                    props.report,
+                  );
+                return projectsSummary.projects.map((project) => {
+                  if (project.entriesCount === 0) return null;
+
+                  return (
+                    <div
+                      key={project.projectId}
+                      className="p-3 border rounded-lg"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{project.name}</h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {project.description}
+                          </p>
+                        </div>
+                        <div className="text-right text-sm space-y-1">
+                          <div className="font-semibold">
+                            {project.costBudget.length === 0 ? (
+                              "No rates"
+                            ) : (
+                              <CostToBillingWidget
+                                cost={project.costBudget}
+                                billing={project.billingBudget}
+                                services={props.services}
+                              />
+                            )}
+                          </div>
+                          <div className="text-slate-600">
+                            {project.entriesCount} entries •{" "}
+                            {project.totalHours.toFixed(1)}h
+                          </div>
+                          {project.budgetCap && (
+                            <div className="text-xs text-slate-500">
+                              Cap:{" "}
+                              {props.services.formatService.financial.currency(
+                                project.budgetCap,
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2 mt-3 pt-2 border-t border-slate-200">
+                        <div className="text-xs font-medium text-slate-700 mb-2">
+                          Breakdown by Role:
+                        </div>
+                        {project.budgetByRole.map((role) => (
+                          <div
+                            key={role.roleId}
+                            className="flex justify-between items-center text-xs bg-slate-50 p-2 rounded"
+                          >
+                            <span className="font-medium">{role.roleName}</span>
+                            <div className="text-right">
+                              <div className="font-semibold">
+                                <CostToBillingWidget
+                                  cost={role.costBudget}
+                                  billing={role.billingBudget}
+                                  services={props.services}
+                                  size="sm"
+                                />
+                              </div>
+                              <div className="text-slate-600">
+                                {role.hours.toFixed(1)}h
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </CardContent>
+        </Card>
         {/* Budget by Role */}
         <Card>
           <CardHeader>
@@ -752,6 +885,11 @@ function BasicInformationView(
                                             {rate.activityType} -{" "}
                                             {rate.taskType}
                                           </div>
+                                          {rate.projectId && (
+                                            <div className="text-xs text-slate-500 mt-1">
+                                              Project: {rate.projectId}
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                       <div className="grid grid-cols-2 gap-4 text-xs">
@@ -813,6 +951,7 @@ function BasicInformationView(
                           >
                             <span>
                               {rate.activityType} - {rate.taskType}
+                              {rate.projectId && ` (${rate.projectId})`}
                             </span>
                             <span>
                               {props.services.formatService.financial.amount(

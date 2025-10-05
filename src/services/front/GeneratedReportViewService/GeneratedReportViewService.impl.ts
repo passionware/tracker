@@ -11,6 +11,7 @@ import {
   GroupedEntrySummary,
   GroupedView,
   GroupSpecifier,
+  ProjectsSummaryView,
   RolesSummaryView,
   TaskTypesSummaryView,
 } from "./GeneratedReportViewService.ts";
@@ -18,6 +19,7 @@ import {
 export function createGeneratedReportViewService(): GeneratedReportViewService {
   return {
     getBasicInformationView: (report) => getBasicInformationView(report),
+    getProjectsSummaryView: (report) => getProjectsSummaryView(report),
     getRolesSummaryView: (report) => getRolesSummaryView(report),
     getContractorsSummaryView: (report) => getContractorsSummaryView(report),
     getTaskTypesSummaryView: (report) => getTaskTypesSummaryView(report),
@@ -156,8 +158,21 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
             roleType.rates.find(
               (rate) =>
                 rate.activityType === entry.activityId &&
+                rate.taskType === entry.taskId &&
+                rate.projectId === entry.projectId,
+            ) ||
+            roleType.rates.find(
+              (rate) =>
+                rate.activityType === entry.activityId &&
+                rate.taskType === entry.taskId &&
+                rate.projectId === undefined,
+            ) ||
+            roleType.rates.find(
+              (rate) =>
+                rate.activityType === entry.activityId &&
                 rate.taskType === entry.taskId,
-            ) || roleType.rates[0];
+            ) ||
+            roleType.rates[0];
 
           const hours =
             (entry.endAt.getTime() - entry.startAt.getTime()) /
@@ -178,8 +193,21 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
             roleType.rates.find(
               (rate) =>
                 rate.activityType === entry.activityId &&
+                rate.taskType === entry.taskId &&
+                rate.projectId === entry.projectId,
+            ) ||
+            roleType.rates.find(
+              (rate) =>
+                rate.activityType === entry.activityId &&
+                rate.taskType === entry.taskId &&
+                rate.projectId === undefined,
+            ) ||
+            roleType.rates.find(
+              (rate) =>
+                rate.activityType === entry.activityId &&
                 rate.taskType === entry.taskId,
-            ) || roleType.rates[0];
+            ) ||
+            roleType.rates[0];
 
           const hours =
             (entry.endAt.getTime() - entry.startAt.getTime()) /
@@ -244,6 +272,234 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
   );
 
   return { roles };
+}
+
+function getProjectsSummaryView(
+  report: GeneratedReportSource,
+): ProjectsSummaryView {
+  const projects = Object.entries(report.data.definitions.projectTypes).map(
+    ([projectId, projectType]) => {
+      const projectEntries = report.data.timeEntries.filter(
+        (entry) => entry.projectId === projectId,
+      );
+
+      if (projectEntries.length === 0) {
+        return {
+          projectId,
+          name: projectType.name,
+          description: projectType.description,
+          entriesCount: 0,
+          totalHours: 0,
+          costBudget: [],
+          billingBudget: [],
+          earningsBudget: [],
+          budgetCap: projectType.budgetCap,
+          budgetByRole: [],
+        };
+      }
+
+      // Group entries by role within this project
+      const entriesByRole = projectEntries.reduce(
+        (acc, entry) => {
+          if (!acc[entry.roleId]) {
+            acc[entry.roleId] = [];
+          }
+          acc[entry.roleId].push(entry);
+          return acc;
+        },
+        {} as Record<string, typeof projectEntries>,
+      );
+
+      // Calculate budget by role
+      const budgetByRole = Object.entries(entriesByRole).map(
+        ([roleId, roleEntries]) => {
+          const roleType = report.data.definitions.roleTypes[roleId];
+          if (!roleType) {
+            return {
+              roleId,
+              roleName: "Unknown Role",
+              hours: 0,
+              costBudget: [],
+              billingBudget: [],
+              earningsBudget: [],
+            };
+          }
+
+          const costBudgetByCurrency = roleEntries.reduce(
+            (acc, entry) => {
+              const matchingRate =
+                roleType.rates.find(
+                  (rate) =>
+                    rate.activityType === entry.activityId &&
+                    rate.taskType === entry.taskId &&
+                    (rate.projectId === undefined ||
+                      rate.projectId === projectId),
+                ) ||
+                roleType.rates.find(
+                  (rate) =>
+                    rate.activityType === entry.activityId &&
+                    rate.taskType === entry.taskId,
+                ) ||
+                roleType.rates[0];
+
+              const hours =
+                (entry.endAt.getTime() - entry.startAt.getTime()) /
+                (1000 * 60 * 60);
+              const cost = hours * matchingRate.costRate;
+              const currency = matchingRate.costCurrency;
+
+              if (!acc[currency]) acc[currency] = 0;
+              acc[currency] += cost;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
+
+          const billingBudgetByCurrency = roleEntries.reduce(
+            (acc, entry) => {
+              const matchingRate =
+                roleType.rates.find(
+                  (rate) =>
+                    rate.activityType === entry.activityId &&
+                    rate.taskType === entry.taskId &&
+                    (rate.projectId === undefined ||
+                      rate.projectId === projectId),
+                ) ||
+                roleType.rates.find(
+                  (rate) =>
+                    rate.activityType === entry.activityId &&
+                    rate.taskType === entry.taskId,
+                ) ||
+                roleType.rates[0];
+
+              const hours =
+                (entry.endAt.getTime() - entry.startAt.getTime()) /
+                (1000 * 60 * 60);
+              const billing = hours * matchingRate.billingRate;
+              const currency = matchingRate.billingCurrency;
+
+              if (!acc[currency]) acc[currency] = 0;
+              acc[currency] += billing;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
+
+          const costBudget: CurrencyValue[] = Object.entries(
+            costBudgetByCurrency,
+          ).map(([currency, amount]) => ({ amount, currency }));
+
+          const billingBudget: CurrencyValue[] = Object.entries(
+            billingBudgetByCurrency,
+          ).map(([currency, amount]) => ({ amount, currency }));
+
+          // Calculate earnings (billing - cost)
+          const earningsBudgetByCurrency: Record<string, number> = {};
+          const allCurrencies = new Set([
+            ...Object.keys(costBudgetByCurrency),
+            ...Object.keys(billingBudgetByCurrency),
+          ]);
+
+          for (const currency of allCurrencies) {
+            const costAmount = costBudgetByCurrency[currency] || 0;
+            const billingAmount = billingBudgetByCurrency[currency] || 0;
+            earningsBudgetByCurrency[currency] = billingAmount - costAmount;
+          }
+
+          const earningsBudget: CurrencyValue[] = Object.entries(
+            earningsBudgetByCurrency,
+          ).map(([currency, amount]) => ({ amount, currency }));
+
+          const totalHours = roleEntries.reduce((total, entry) => {
+            return (
+              total +
+              (entry.endAt.getTime() - entry.startAt.getTime()) /
+                (1000 * 60 * 60)
+            );
+          }, 0);
+
+          return {
+            roleId,
+            roleName: roleType.name,
+            hours: totalHours,
+            costBudget,
+            billingBudget,
+            earningsBudget,
+          };
+        },
+      );
+
+      // Calculate total project budget by aggregating all roles
+      const costBudgetByCurrency = budgetByRole.reduce(
+        (acc, role) => {
+          role.costBudget.forEach(({ currency, amount }) => {
+            if (!acc[currency]) acc[currency] = 0;
+            acc[currency] += amount;
+          });
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      const billingBudgetByCurrency = budgetByRole.reduce(
+        (acc, role) => {
+          role.billingBudget.forEach(({ currency, amount }) => {
+            if (!acc[currency]) acc[currency] = 0;
+            acc[currency] += amount;
+          });
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      const costBudget: CurrencyValue[] = Object.entries(
+        costBudgetByCurrency,
+      ).map(([currency, amount]) => ({ amount, currency }));
+
+      const billingBudget: CurrencyValue[] = Object.entries(
+        billingBudgetByCurrency,
+      ).map(([currency, amount]) => ({ amount, currency }));
+
+      // Calculate earnings (billing - cost)
+      const earningsBudgetByCurrency: Record<string, number> = {};
+      const allCurrencies = new Set([
+        ...Object.keys(costBudgetByCurrency),
+        ...Object.keys(billingBudgetByCurrency),
+      ]);
+
+      for (const currency of allCurrencies) {
+        const costAmount = costBudgetByCurrency[currency] || 0;
+        const billingAmount = billingBudgetByCurrency[currency] || 0;
+        earningsBudgetByCurrency[currency] = billingAmount - costAmount;
+      }
+
+      const earningsBudget: CurrencyValue[] = Object.entries(
+        earningsBudgetByCurrency,
+      ).map(([currency, amount]) => ({ amount, currency }));
+
+      const totalHours = projectEntries.reduce((total, entry) => {
+        return (
+          total +
+          (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60)
+        );
+      }, 0);
+
+      return {
+        projectId,
+        name: projectType.name,
+        description: projectType.description,
+        entriesCount: projectEntries.length,
+        totalHours,
+        costBudget,
+        billingBudget,
+        earningsBudget,
+        budgetCap: projectType.budgetCap,
+        budgetByRole,
+      };
+    },
+  );
+
+  return { projects };
 }
 
 function getContractorsSummaryView(
@@ -423,8 +679,21 @@ function getFilteredEntriesView(
       roleType?.rates.find(
         (rate) =>
           rate.activityType === entry.activityId &&
+          rate.taskType === entry.taskId &&
+          rate.projectId === entry.projectId,
+      ) ||
+      roleType?.rates.find(
+        (rate) =>
+          rate.activityType === entry.activityId &&
+          rate.taskType === entry.taskId &&
+          rate.projectId === undefined,
+      ) ||
+      roleType?.rates.find(
+        (rate) =>
+          rate.activityType === entry.activityId &&
           rate.taskType === entry.taskId,
-      ) || roleType?.rates[0];
+      ) ||
+      roleType?.rates[0];
 
     const hours =
       (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -437,6 +706,7 @@ function getFilteredEntriesView(
       roleId: entry.roleId,
       taskId: entry.taskId,
       activityId: entry.activityId,
+      projectId: entry.projectId,
       startAt: entry.startAt,
       endAt: entry.endAt,
       duration: hours,

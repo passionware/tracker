@@ -55,6 +55,9 @@ export function adaptTMetricToGeneric(
 ): GenericReport {
   // Build unique task types from notes, with fallbacks for missing data
   const uniqueDescriptions = new Map<string, string>();
+  // Build unique project types from project names
+  const uniqueProjects = new Map<string, string>();
+
   for (const e of input.entries) {
     let taskName = "Unnamed task";
 
@@ -79,6 +82,12 @@ export function adaptTMetricToGeneric(
     if (!uniqueDescriptions.has(taskName)) {
       uniqueDescriptions.set(taskName, taskName);
     }
+
+    // Extract project names
+    const projectName = e.project?.name?.trim() || "default";
+    if (!uniqueProjects.has(projectName)) {
+      uniqueProjects.set(projectName, projectName);
+    }
   }
 
   const taskTypes: Record<
@@ -89,6 +98,18 @@ export function adaptTMetricToGeneric(
     taskTypes[taskId] = {
       name: taskName,
       description: taskName,
+      parameters: {},
+    };
+  }
+
+  const projectTypes: Record<
+    string,
+    { name: string; description: string; parameters: Record<string, any> }
+  > = {};
+  for (const [projectId, projectName] of uniqueProjects.entries()) {
+    projectTypes[projectId] = {
+      name: projectName,
+      description: projectName,
       parameters: {},
     };
   }
@@ -198,6 +219,7 @@ export function adaptTMetricToGeneric(
       note: e.note || "",
       taskId,
       activityId,
+      projectId: e.project?.name || "default", // Use TMetric project name as projectId
       roleId: input.defaultRoleId,
       contractorId: input.contractorId,
       createdAt: startAt,
@@ -211,6 +233,7 @@ export function adaptTMetricToGeneric(
     definitions: {
       taskTypes,
       activityTypes,
+      projectTypes,
       roleTypes,
     },
     timeEntries,

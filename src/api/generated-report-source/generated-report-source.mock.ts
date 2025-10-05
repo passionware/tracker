@@ -9,6 +9,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
       definitions: {
         taskTypes: { [key: string]: any };
         activityTypes: { [key: string]: any };
+        projectTypes: { [key: string]: any };
         roleTypes: { [key: string]: any };
       };
       timeEntries: Array<{
@@ -16,6 +17,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         note: string;
         taskId: string;
         activityId: string;
+        projectId: string;
         contractorId: number;
         roleId: string;
         createdAt: Date;
@@ -54,6 +56,18 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               description: "Reviewing code changes",
             },
           },
+          projectTypes: {
+            webapp: {
+              name: "Web Application",
+              description: "Main web application project",
+              parameters: { type: "frontend" },
+            },
+            mobile: {
+              name: "Mobile App",
+              description: "Mobile application development",
+              parameters: { platform: "cross-platform" },
+            },
+          },
           roleTypes: {
             developer: {
               name: "Developer",
@@ -61,9 +75,12 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               rates: [
                 {
                   billing: "hourly",
+                  activityType: "coding",
                   taskType: "development",
-                  currency: "USD",
-                  rate: 75,
+                  costRate: 50,
+                  costCurrency: "USD",
+                  billingRate: 75,
+                  billingCurrency: "USD",
                 },
               ],
             },
@@ -75,6 +92,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             note: "Implemented user authentication",
             taskId: "development",
             activityId: "coding",
+            projectId: "webapp",
             roleId: "developer",
             contractorId: 1,
             createdAt: new Date("2024-01-15T08:00:00Z"),
@@ -87,6 +105,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             note: "Code review for auth module",
             taskId: "testing",
             activityId: "review",
+            projectId: "webapp",
             roleId: "developer",
             contractorId: 1,
             createdAt: new Date("2024-01-15T16:30:00Z"),
@@ -136,6 +155,13 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               description: "Bug fixing and debugging",
             },
           },
+          projectTypes: {
+            dashboard: {
+              name: "Dashboard Project",
+              description: "Main dashboard development",
+              parameters: { priority: "high" },
+            },
+          },
           roleTypes: {
             "senior-dev": {
               name: "Senior Developer",
@@ -143,9 +169,12 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               rates: [
                 {
                   billing: "hourly",
+                  activityType: "implementation",
                   taskType: "frontend",
-                  currency: "USD",
-                  rate: 95,
+                  costRate: 70,
+                  costCurrency: "USD",
+                  billingRate: 95,
+                  billingCurrency: "USD",
                 },
               ],
             },
@@ -157,6 +186,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             note: "Built dashboard components",
             taskId: "frontend",
             activityId: "implementation",
+            projectId: "dashboard",
             roleId: "senior-dev",
             contractorId: 2,
             createdAt: new Date("2024-01-20T09:00:00Z"),
@@ -169,6 +199,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             note: "Fixed API integration bugs",
             taskId: "backend",
             activityId: "debugging",
+            projectId: "dashboard",
             roleId: "senior-dev",
             contractorId: 2,
             createdAt: new Date("2024-01-20T17:30:00Z"),
@@ -209,6 +240,13 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               description: "Code refactoring and optimization",
             },
           },
+          projectTypes: {
+            maintenance: {
+              name: "Maintenance Project",
+              description: "Code maintenance and refactoring",
+              parameters: { type: "ongoing" },
+            },
+          },
           roleTypes: {
             maintainer: {
               name: "Code Maintainer",
@@ -216,9 +254,12 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
               rates: [
                 {
                   billing: "hourly",
+                  activityType: "refactoring",
                   taskType: "maintenance",
-                  currency: "USD",
-                  rate: 65,
+                  costRate: 45,
+                  costCurrency: "USD",
+                  billingRate: 65,
+                  billingCurrency: "USD",
                 },
               ],
             },
@@ -230,6 +271,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
             note: "Refactored authentication service",
             taskId: "maintenance",
             activityId: "refactoring",
+            projectId: "maintenance",
             roleId: "maintainer",
             contractorId: 3,
             createdAt: new Date("2024-02-01T08:00:00Z"),

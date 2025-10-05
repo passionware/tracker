@@ -14,6 +14,18 @@ const activityType$ = z.object({
   parameters: z.record(z.any()),
 });
 
+const projectType$ = z.object({
+  name: z.string(),
+  description: z.string(),
+  parameters: z.record(z.any()),
+  budgetCap: z
+    .object({
+      amount: z.number(),
+      currency: z.string(),
+    })
+    .optional(),
+});
+
 const roleType$ = z.object({
   name: z.string(),
   description: z.string(),
@@ -22,6 +34,7 @@ const roleType$ = z.object({
       billing: z.literal("hourly"),
       activityType: z.string(),
       taskType: z.string(),
+      projectId: z.string().optional(),
       costRate: z.number(),
       costCurrency: z.string(),
       billingRate: z.number(),
@@ -34,6 +47,7 @@ const genericReport$ = z.object({
   definitions: z.object({
     taskTypes: z.record(taskType$),
     activityTypes: z.record(activityType$),
+    projectTypes: z.record(projectType$),
     roleTypes: z.record(roleType$),
   }),
   timeEntries: z.array(
@@ -42,6 +56,7 @@ const genericReport$ = z.object({
       note: z.string(),
       taskId: z.string(),
       activityId: z.string(),
+      projectId: z.string(),
       roleId: z.string(),
       contractorId: z.number(),
       createdAt: z.coerce.date(),
