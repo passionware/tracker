@@ -17,8 +17,10 @@ export interface RoleType {
     billing: "hourly";
     activityType: string;
     taskType: string;
-    currency: string;
-    rate: number;
+    costRate: number; // What we pay the contractor
+    costCurrency: string; // Currency for cost rate
+    billingRate: number; // What we charge the client
+    billingCurrency: string; // Currency for billing rate
   }>;
 }
 export interface GenericReport {

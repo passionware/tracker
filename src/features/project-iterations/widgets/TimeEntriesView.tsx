@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
+import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
@@ -16,19 +17,6 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
-
-// Helper function to calculate approximate total in EUR when multiple currencies exist
-function calculateApproximateTotal(
-  budgetByCurrency: Record<string, number>,
-): number | null {
-  const currencies = Object.keys(budgetByCurrency);
-  if (currencies.length <= 1) return null;
-
-  // For now, return null to avoid complex async logic
-  // In a real implementation, we'd need to use useExchangeRates hook
-  // which requires React component context
-  return null;
-}
 
 export function TimeEntriesView(
   props: WithFrontServices & {
@@ -41,6 +29,14 @@ export function TimeEntriesView(
   },
 ) {
   const { report } = props;
+
+  // Use the view service to get processed data
+  const basicInfo =
+    props.services.generatedReportViewService.getBasicInformationView(report);
+  const rolesSummary =
+    props.services.generatedReportViewService.getRolesSummaryView(report);
+  const contractorsSummary =
+    props.services.generatedReportViewService.getContractorsSummaryView(report);
 
   // Create a simple query object for the ListView
   const query = {
@@ -93,7 +89,7 @@ export function TimeEntriesView(
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {report.data.timeEntries.length}
+              {basicInfo.statistics.timeEntriesCount}
             </div>
           </CardContent>
         </Card>
@@ -121,7 +117,7 @@ export function TimeEntriesView(
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(report.data.timeEntries.map((e) => e.taskId)).size}
+              {basicInfo.statistics.taskTypesCount}
             </div>
           </CardContent>
         </Card>
@@ -131,56 +127,19 @@ export function TimeEntriesView(
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(() => {
-                // Group by currency and format
-                const budgetByCurrency = report.data.timeEntries.reduce(
-                  (acc, entry) => {
-                    const roleType =
-                      report.data.definitions.roleTypes[entry.roleId];
-                    if (!roleType || roleType.rates.length === 0) return acc;
-
-                    const matchingRate =
-                      roleType.rates.find(
-                        (rate) =>
-                          rate.activityType === entry.activityId &&
-                          rate.taskType === entry.taskId,
-                      ) || roleType.rates[0];
-
-                    const hours =
-                      (entry.endAt.getTime() - entry.startAt.getTime()) /
-                      (1000 * 60 * 60);
-                    const cost = hours * matchingRate.rate;
-                    const currency = matchingRate.currency;
-
-                    if (!acc[currency]) acc[currency] = 0;
-                    acc[currency] += cost;
-                    return acc;
-                  },
-                  {} as Record<string, number>,
-                );
-
-                const currencies = Object.keys(budgetByCurrency);
-                if (currencies.length === 0) return "No rates";
-                if (currencies.length === 1) {
-                  const currency = currencies[0];
-                  return props.services.formatService.financial.amount(
-                    budgetByCurrency[currency],
-                    currency,
-                  );
-                }
-
-                // Multiple currencies - show approximate total in EUR
-                const approximateTotal =
-                  calculateApproximateTotal(budgetByCurrency);
-                if (approximateTotal !== null) {
-                  return `≈${props.services.formatService.financial.amount(
-                    approximateTotal,
-                    "EUR",
-                  )}`;
-                }
-
-                return `${currencies.length} currencies`;
-              })()}
+              {basicInfo.statistics.totalCostBudget.length === 0 ? (
+                "No rates"
+              ) : basicInfo.statistics.totalCostBudget.length === 1 ? (
+                props.services.formatService.financial.currency(
+                  basicInfo.statistics.totalCostBudget[0],
+                )
+              ) : (
+                <CurrencyValueWidget
+                  values={basicInfo.statistics.totalCostBudget}
+                  services={props.services}
+                  exchangeService={props.services.exchangeService}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -195,83 +154,39 @@ export function TimeEntriesView(
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(report.data.definitions.roleTypes).map(
-                ([roleId, roleType]) => {
-                  const roleEntries = report.data.timeEntries.filter(
-                    (entry) => entry.roleId === roleId,
-                  );
-                  if (roleEntries.length === 0) return null;
-
-                  const budgetByCurrency = roleEntries.reduce(
-                    (acc, entry) => {
-                      const matchingRate =
-                        roleType.rates.find(
-                          (rate) =>
-                            rate.activityType === entry.activityId &&
-                            rate.taskType === entry.taskId,
-                        ) || roleType.rates[0];
-
-                      const hours =
-                        (entry.endAt.getTime() - entry.startAt.getTime()) /
-                        (1000 * 60 * 60);
-                      const cost = hours * matchingRate.rate;
-                      const currency = matchingRate.currency;
-
-                      if (!acc[currency]) acc[currency] = 0;
-                      acc[currency] += cost;
-                      return acc;
-                    },
-                    {} as Record<string, number>,
-                  );
-
-                  const currencies = Object.keys(budgetByCurrency);
-                  const totalHours = roleEntries.reduce((total, entry) => {
-                    return (
-                      total +
-                      (entry.endAt.getTime() - entry.startAt.getTime()) /
-                        (1000 * 60 * 60)
-                    );
-                  }, 0);
-
-                  return (
-                    <Card key={roleId} className="border-l-4 border-l-blue-500">
-                      <CardContent className="pt-4">
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm">
-                            {roleType.name}
-                          </h4>
-                          <div className="text-xs text-slate-600">
-                            {roleEntries.length} entries •{" "}
-                            {totalHours.toFixed(1)}h
-                          </div>
-                          <div className="text-sm font-semibold">
-                            {currencies.length === 0
-                              ? "No rates"
-                              : currencies.length === 1
-                                ? props.services.formatService.financial.amount(
-                                    budgetByCurrency[currencies[0]],
-                                    currencies[0],
-                                  )
-                                : (() => {
-                                    const approximateTotal =
-                                      calculateApproximateTotal(
-                                        budgetByCurrency,
-                                      );
-                                    if (approximateTotal !== null) {
-                                      return `≈${props.services.formatService.financial.amount(
-                                        approximateTotal,
-                                        "EUR",
-                                      )}`;
-                                    }
-                                    return `${currencies.length} currencies`;
-                                  })()}
-                          </div>
+              {rolesSummary.roles
+                .filter((role) => role.entriesCount > 0)
+                .map((role) => (
+                  <Card
+                    key={role.roleId}
+                    className="border-l-4 border-l-blue-500"
+                  >
+                    <CardContent className="pt-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{role.name}</h4>
+                        <div className="text-xs text-slate-600">
+                          {role.entriesCount} entries •{" "}
+                          {role.totalHours.toFixed(1)}h
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                },
-              )}
+                        <div className="text-sm font-semibold">
+                          {role.costBudget.length === 0 ? (
+                            "No rates"
+                          ) : role.costBudget.length === 1 ? (
+                            props.services.formatService.financial.currency(
+                              role.costBudget[0],
+                            )
+                          ) : (
+                            <CurrencyValueWidget
+                              values={role.costBudget}
+                              services={props.services}
+                              exchangeService={props.services.exchangeService}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -286,102 +201,42 @@ export function TimeEntriesView(
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(() => {
-                // Group entries by contractorId
-                const entriesByContractor = report.data.timeEntries.reduce(
-                  (acc, entry) => {
-                    const contractorId = entry.contractorId;
-                    if (!acc[contractorId]) acc[contractorId] = [];
-                    acc[contractorId].push(entry);
-                    return acc;
-                  },
-                  {} as Record<number, typeof report.data.timeEntries>,
-                );
-
-                return Object.entries(entriesByContractor).map(
-                  ([contractorId, entries]) => {
-                    const budgetByCurrency = entries.reduce(
-                      (acc, entry) => {
-                        const roleType =
-                          report.data.definitions.roleTypes[entry.roleId];
-                        if (!roleType || roleType.rates.length === 0)
-                          return acc;
-
-                        const matchingRate =
-                          roleType.rates.find(
-                            (rate) =>
-                              rate.activityType === entry.activityId &&
-                              rate.taskType === entry.taskId,
-                          ) || roleType.rates[0];
-
-                        const hours =
-                          (entry.endAt.getTime() - entry.startAt.getTime()) /
-                          (1000 * 60 * 60);
-                        const cost = hours * matchingRate.rate;
-                        const currency = matchingRate.currency;
-
-                        if (!acc[currency]) acc[currency] = 0;
-                        acc[currency] += cost;
-                        return acc;
-                      },
-                      {} as Record<string, number>,
-                    );
-
-                    const currencies = Object.keys(budgetByCurrency);
-                    const totalHours = entries.reduce((total, entry) => {
-                      return (
-                        total +
-                        (entry.endAt.getTime() - entry.startAt.getTime()) /
-                          (1000 * 60 * 60)
-                      );
-                    }, 0);
-
-                    return (
-                      <Card
-                        key={contractorId}
-                        className="border-l-4 border-l-green-500"
-                      >
-                        <CardContent className="pt-4">
-                          <div className="space-y-2">
-                            <ContractorWidget
-                              contractorId={maybe.of(Number(contractorId))}
-                              services={props.services}
-                              layout="full"
-                              size="sm"
-                            />
-                            <div className="text-xs text-slate-600">
-                              {entries.length} entries • {totalHours.toFixed(1)}
-                              h
-                            </div>
-                            <div className="text-sm font-semibold">
-                              {currencies.length === 0
-                                ? "No rates"
-                                : currencies.length === 1
-                                  ? props.services.formatService.financial.amount(
-                                      budgetByCurrency[currencies[0]],
-                                      currencies[0],
-                                    )
-                                  : (() => {
-                                      const approximateTotal =
-                                        calculateApproximateTotal(
-                                          budgetByCurrency,
-                                        );
-                                      if (approximateTotal !== null) {
-                                        return `≈${props.services.formatService.financial.amount(
-                                          approximateTotal,
-                                          "EUR",
-                                        )}`;
-                                      }
-                                      return `${currencies.length} currencies`;
-                                    })()}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  },
-                );
-              })()}
+              {contractorsSummary.contractors.map((contractor) => (
+                <Card
+                  key={contractor.contractorId}
+                  className="border-l-4 border-l-green-500"
+                >
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <ContractorWidget
+                        contractorId={maybe.of(contractor.contractorId)}
+                        services={props.services}
+                        layout="full"
+                        size="sm"
+                      />
+                      <div className="text-xs text-slate-600">
+                        {contractor.entriesCount} entries •{" "}
+                        {contractor.totalHours.toFixed(1)}h
+                      </div>
+                      <div className="text-sm font-semibold">
+                        {contractor.costBudget.length === 0 ? (
+                          "No rates"
+                        ) : contractor.costBudget.length === 1 ? (
+                          props.services.formatService.financial.currency(
+                            contractor.costBudget[0],
+                          )
+                        ) : (
+                          <CurrencyValueWidget
+                            values={contractor.costBudget}
+                            services={props.services}
+                            exchangeService={props.services.exchangeService}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </CardContent>
         </Card>

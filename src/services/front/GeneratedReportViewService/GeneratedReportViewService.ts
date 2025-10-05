@@ -41,7 +41,10 @@ export interface BasicInformationView {
     taskTypesCount: number;
     activityTypesCount: number;
     roleTypesCount: number;
-    totalBudget: CurrencyValue[];
+    totalCostBudget: CurrencyValue[]; // What we pay contractors
+    totalBillingBudget: CurrencyValue[]; // What we charge clients
+    totalEarningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+    totalEarningsPercentage: number; // (Billing - Cost) / Cost * 100
   };
 }
 
@@ -51,12 +54,17 @@ export interface RoleSummary {
   description: string;
   entriesCount: number;
   totalHours: number;
-  budget: CurrencyValue[];
+  costBudget: CurrencyValue[]; // What we pay contractors
+  billingBudget: CurrencyValue[]; // What we charge clients
+  earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   rates: {
     activityType: string;
     taskType: string;
-    rate: number;
-    currency: string;
+    costRate: number;
+    costCurrency: string;
+    billingRate: number;
+    billingCurrency: string;
   }[];
 }
 
@@ -68,12 +76,18 @@ export interface ContractorSummary {
   contractorId: number;
   entriesCount: number;
   totalHours: number;
-  budget: CurrencyValue[];
+  costBudget: CurrencyValue[]; // What we pay contractors
+  billingBudget: CurrencyValue[]; // What we charge clients
+  earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
     hours: number;
-    budget: CurrencyValue[];
+    costBudget: CurrencyValue[];
+    billingBudget: CurrencyValue[];
+    earningsBudget: CurrencyValue[];
+    earningsPercentage: number;
   }[];
 }
 
@@ -87,12 +101,18 @@ export interface TaskTypeSummary {
   description: string;
   entriesCount: number;
   totalHours: number;
-  budget: CurrencyValue[];
+  costBudget: CurrencyValue[]; // What we pay contractors
+  billingBudget: CurrencyValue[]; // What we charge clients
+  earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
     hours: number;
-    budget: CurrencyValue[];
+    costBudget: CurrencyValue[];
+    billingBudget: CurrencyValue[];
+    earningsBudget: CurrencyValue[];
+    earningsPercentage: number;
   }[];
 }
 
@@ -106,12 +126,18 @@ export interface ActivityTypeSummary {
   description: string;
   entriesCount: number;
   totalHours: number;
-  budget: CurrencyValue[];
+  costBudget: CurrencyValue[]; // What we pay contractors
+  billingBudget: CurrencyValue[]; // What we charge clients
+  earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
+  earningsPercentage: number; // (Billing - Cost) / Cost * 100
   budgetByRole: {
     roleId: string;
     roleName: string;
     hours: number;
-    budget: CurrencyValue[];
+    costBudget: CurrencyValue[];
+    billingBudget: CurrencyValue[];
+    earningsBudget: CurrencyValue[];
+    earningsPercentage: number;
   }[];
 }
 

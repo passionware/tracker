@@ -110,7 +110,7 @@ function BasicInformationView(
               <span className="text-sm font-medium">Total Budget</span>
               <Badge variant="primary">
                 <CurrencyValueWidget
-                  values={basicInfo.statistics.totalBudget}
+                  values={basicInfo.statistics.totalCostBudget}
                   services={props.services}
                   exchangeService={props.services.exchangeService}
                   className="text-inherit"
@@ -181,11 +181,11 @@ function BasicInformationView(
                         <h4 className="font-medium">{role.name}</h4>
                         <div className="text-right text-sm">
                           <div className="font-semibold">
-                            {role.budget.length === 0 ? (
+                            {role.costBudget.length === 0 ? (
                               "No rates"
                             ) : (
                               <CurrencyValueWidget
-                                values={role.budget}
+                                values={role.costBudget}
                                 services={props.services}
                                 exchangeService={props.services.exchangeService}
                               />
@@ -208,8 +208,8 @@ function BasicInformationView(
                             </span>
                             <span>
                               {props.services.formatService.financial.amount(
-                                rate.rate,
-                                rate.currency,
+                                rate.costRate,
+                                rate.costCurrency,
                               )}
                               /h
                             </span>
@@ -253,11 +253,11 @@ function BasicInformationView(
                       </div>
                       <div className="text-right text-sm">
                         <div className="font-semibold">
-                          {contractor.budget.length === 0 ? (
+                          {contractor.costBudget.length === 0 ? (
                             "No rates"
                           ) : (
                             <CurrencyValueWidget
-                              values={contractor.budget}
+                              values={contractor.costBudget}
                               services={props.services}
                               exchangeService={props.services.exchangeService}
                             />
@@ -270,7 +270,7 @@ function BasicInformationView(
                       </div>
                     </div>
                     <div className="space-y-1">
-                      {contractor.budget.map((currencyValue, index) => (
+                      {contractor.costBudget.map((currencyValue, index) => (
                         <div
                           key={index}
                           className="flex justify-between text-xs text-slate-600"
@@ -327,11 +327,11 @@ function BasicInformationView(
                         </div>
                         <div className="text-right text-sm">
                           <div className="font-semibold">
-                            {taskType.budget.length === 0 ? (
+                            {taskType.costBudget.length === 0 ? (
                               "No rates"
                             ) : (
                               <CurrencyValueWidget
-                                values={taskType.budget}
+                                values={taskType.costBudget}
                                 services={props.services}
                                 exchangeService={props.services.exchangeService}
                               />
@@ -343,9 +343,9 @@ function BasicInformationView(
                           </div>
                         </div>
                       </div>
-                      {taskType.budget.length > 1 && (
+                      {taskType.costBudget.length > 1 && (
                         <div className="space-y-1 mt-2 pt-2 border-t border-slate-200">
-                          {taskType.budget.map((currencyValue, index) => (
+                          {taskType.costBudget.map((currencyValue, index) => (
                             <div
                               key={index}
                               className="flex justify-between text-xs text-slate-600"
@@ -402,11 +402,11 @@ function BasicInformationView(
                           </div>
                           <div className="text-right text-sm">
                             <div className="font-semibold">
-                              {activityType.budget.length === 0 ? (
+                              {activityType.costBudget.length === 0 ? (
                                 "No rates"
                               ) : (
                                 <CurrencyValueWidget
-                                  values={activityType.budget}
+                                  values={activityType.costBudget}
                                   services={props.services}
                                   exchangeService={
                                     props.services.exchangeService
@@ -420,22 +420,24 @@ function BasicInformationView(
                             </div>
                           </div>
                         </div>
-                        {activityType.budget.length > 1 && (
+                        {activityType.costBudget.length > 1 && (
                           <div className="space-y-1 mt-2 pt-2 border-t border-slate-200">
-                            {activityType.budget.map((currencyValue, index) => (
-                              <div
-                                key={index}
-                                className="flex justify-between text-xs text-slate-600"
-                              >
-                                <span>{currencyValue.currency}</span>
-                                <span>
-                                  {props.services.formatService.financial.amount(
-                                    currencyValue.amount,
-                                    currencyValue.currency,
-                                  )}
-                                </span>
-                              </div>
-                            ))}
+                            {activityType.costBudget.map(
+                              (currencyValue, index) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between text-xs text-slate-600"
+                                >
+                                  <span>{currencyValue.currency}</span>
+                                  <span>
+                                    {props.services.formatService.financial.amount(
+                                      currencyValue.amount,
+                                      currencyValue.currency,
+                                    )}
+                                  </span>
+                                </div>
+                              ),
+                            )}
                           </div>
                         )}
                       </div>

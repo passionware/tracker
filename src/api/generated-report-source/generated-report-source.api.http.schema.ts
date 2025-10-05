@@ -22,8 +22,10 @@ const roleType$ = z.object({
       billing: z.literal("hourly"),
       activityType: z.string(),
       taskType: z.string(),
-      currency: z.string(),
-      rate: z.number(),
+      costRate: z.number(),
+      costCurrency: z.string(),
+      billingRate: z.number(),
+      billingCurrency: z.string(),
     }),
   ),
 });
@@ -63,5 +65,8 @@ export type GeneratedReportSource$ = z.infer<typeof generatedReportSource$>;
 export function generatedReportSourceFromHttp(
   generatedReportSource: GeneratedReportSource$,
 ): GeneratedReportSource {
-  return camelcaseKeys(generatedReportSource) as GeneratedReportSource; // camelCaseKeys for some reason makes the original_data optional
+  return {
+    ...camelcaseKeys(generatedReportSource),
+    originalData: generatedReportSource.original_data,
+  }; // camelCaseKeys for some reason makes the original_data optional
 }

@@ -174,10 +174,7 @@ export const myServices = {
   generatedReportSourceService,
   formatService,
   exchangeService,
-  generatedReportViewService: createGeneratedReportViewService({
-    formatService,
-    exchangeService,
-  }),
+  generatedReportViewService: createGeneratedReportViewService(),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

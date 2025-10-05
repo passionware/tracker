@@ -28,9 +28,12 @@ export function createFormatService(clock: () => Date): FormatService {
     currency: "EUR" | "USD" | string,
     fullPrecision = false,
   ) => {
+    // Fallback to EUR if currency is undefined or empty
+    const safeCurrency = currency || "EUR";
+
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "currency",
-      currency,
+      currency: safeCurrency,
       currencyDisplay: "symbol",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -348,13 +351,16 @@ export function createFormatService(clock: () => Date): FormatService {
         );
       },
       currencySymbol: (currency: string) => {
+        // Fallback to EUR if currency is undefined or empty
+        const safeCurrency = currency || "EUR";
+
         const formatter = new Intl.NumberFormat("de-DE", {
           style: "currency",
-          currency,
+          currency: safeCurrency,
           currencyDisplay: "symbol",
           minimumFractionDigits: 2,
         });
-        return formatter.format(0).split(" ")[1];
+        return formatter.format(0).split(" ")[1];
       },
     },
   };

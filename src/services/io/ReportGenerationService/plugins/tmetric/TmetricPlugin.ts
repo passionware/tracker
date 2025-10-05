@@ -49,22 +49,61 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             currency: trackerReport.currency,
             contractorId: trackerReport.contractorId,
           });
+          // Helper function to parse rate with currency from environment variable
+          const parseRateWithCurrency = (
+            rateString: string,
+          ): { rate: number; currency: string } => {
+            const trimmed = rateString.toString().trim();
+            const parts = trimmed.split(/\s+/);
+
+            if (parts.length >= 2) {
+              // Format: "100 EUR" or "100 eur"
+              const rate = Number(parts[0]);
+              const currency = parts[1].toUpperCase();
+              return { rate, currency };
+            } else {
+              // Format: "100" (no currency specified)
+              const rate = Number(parts[0]);
+              return { rate, currency: trackerReport.currency || "EUR" };
+            }
+          };
+
+          // Get cost rate (what we pay the contractor)
+          const costRateString =
+            await config.services.expressionService.ensureExpressionValue(
+              {
+                workspaceId: trackerReport.workspaceId,
+                clientId: trackerReport.clientId,
+                contractorId: trackerReport.contractorId,
+              },
+              `vars.hour_rate`,
+              {},
+            );
+          const { rate: costRate, currency: costCurrency } =
+            parseRateWithCurrency(String(costRateString));
+
+          // Get billing rate (what we charge the client) - with markup/interest
+          const billingRateString =
+            await config.services.expressionService.ensureExpressionValue(
+              {
+                workspaceId: trackerReport.workspaceId,
+                clientId: trackerReport.clientId,
+                contractorId: trackerReport.contractorId,
+              },
+              `vars.hour_billing_rate`,
+              { fallback: `${costRate} ${costCurrency}` }, // fallback to cost rate if billing rate not set
+            );
+          const { rate: billingRate, currency: billingCurrency } =
+            parseRateWithCurrency(String(billingRateString));
+
           adapted.definitions.roleTypes[contractorRoleId].rates.push({
             billing: "hourly",
             activityType: "development",
             taskType: "development",
-            currency: trackerReport.currency,
-            rate: Number(
-              await config.services.expressionService.ensureExpressionValue(
-                {
-                  workspaceId: trackerReport.workspaceId,
-                  clientId: trackerReport.clientId,
-                  contractorId: trackerReport.contractorId,
-                },
-                `vars.hour_rate`,
-                {},
-              ),
-            ),
+            costRate,
+            costCurrency,
+            billingRate,
+            billingCurrency,
           });
           return {
             reportData: adapted,
