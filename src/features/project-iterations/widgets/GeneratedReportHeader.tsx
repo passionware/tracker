@@ -116,6 +116,13 @@ export function GeneratedReportTabs(
             .timeEntries(),
         );
         break;
+      case "grouped-view":
+        navigate(
+          forIteration
+            .forGeneratedReport(props.reportId.toString())
+            .groupedView(),
+        );
+        break;
     }
   };
 
@@ -125,9 +132,10 @@ export function GeneratedReportTabs(
       onValueChange={handleTabChange}
       className="w-full"
     >
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="basic">Basic Information</TabsTrigger>
         <TabsTrigger value="time-entries">Time Entries</TabsTrigger>
+        <TabsTrigger value="grouped-view">Grouped View</TabsTrigger>
       </TabsList>
     </Tabs>
   );
