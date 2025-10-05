@@ -19,6 +19,11 @@ export interface GeneratedReportViewService {
     report: GeneratedReportSource,
     filters: EntryFilters,
   ) => FilteredEntriesView;
+  getGroupedView: (
+    report: GeneratedReportSource,
+    filters: EntryFilters,
+    groupBy: GroupSpecifier[],
+  ) => GroupedView;
 }
 
 export interface WithGeneratedReportViewService {
@@ -30,6 +35,33 @@ export interface EntryFilters {
   contractorIds?: number[];
   taskIds?: string[];
   activityIds?: string[];
+}
+
+export type GroupSpecifier =
+  | { type: "contractor" }
+  | { type: "role" }
+  | { type: "task" }
+  | { type: "activity" };
+
+export interface GroupedEntrySummary {
+  groupKey: string;
+  groupName: string;
+  groupDescription?: string;
+  entriesCount: number;
+  totalHours: number;
+  costBudget: CurrencyValue[];
+  billingBudget: CurrencyValue[];
+  earningsBudget: CurrencyValue[];
+  subGroups?: GroupedEntrySummary[];
+}
+
+export interface GroupedView {
+  groups: GroupedEntrySummary[];
+  totalEntries: number;
+  totalHours: number;
+  totalCostBudget: CurrencyValue[];
+  totalBillingBudget: CurrencyValue[];
+  totalEarningsBudget: CurrencyValue[];
 }
 
 export interface BasicInformationView {
