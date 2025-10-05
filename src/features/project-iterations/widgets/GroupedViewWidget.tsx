@@ -67,11 +67,7 @@ function RoleMultiPicker({
     renderItem: (item: Unassigned | ReportEntity) =>
       unassignedUtils.mapOrElse(
         item,
-        (entity) => (
-          <div className="px-1">
-            {entity.name}
-          </div>
-        ),
+        (entity) => <div className="px-1">{entity.name}</div>,
         <div>Unassigned</div>,
       ),
     renderOption: (item: ReportEntity) => (
@@ -278,6 +274,80 @@ function ActivityMultiPicker({
   );
 }
 
+function ProjectMultiPicker({
+  report,
+  value,
+  onSelect,
+  ...props
+}: {
+  report: GeneratedReportSource;
+  value: string[];
+  onSelect: (value: string[]) => void;
+} & Omit<
+  React.ComponentProps<typeof AbstractMultiPicker<string, ReportEntity>>,
+  "value" | "onSelect" | "config"
+>) {
+  const config = {
+    renderItem: (item: Unassigned | ReportEntity) =>
+      unassignedUtils.mapOrElse(
+        item,
+        (entity) => <div className="px-1">{entity.name}</div>,
+        <div>Unassigned</div>,
+      ),
+    renderOption: (item: ReportEntity) => (
+      <div className="flex flex-col">
+        <span className="font-medium">{item.name}</span>
+        {item.description && (
+          <span className="text-sm text-slate-500">{item.description}</span>
+        )}
+      </div>
+    ),
+    getItemId: (item: ReportEntity) => item.id,
+    getKey: (item: ReportEntity) => item.id,
+    useSelectedItems: (ids: Array<Unassigned | string>) => {
+      const stringIds = ids.filter(
+        (id): id is string => typeof id === "string",
+      );
+      const entities = stringIds.map((id) => ({
+        id,
+        name: report.data.definitions.projectTypes[id]?.name || id,
+        description: report.data.definitions.projectTypes[id]?.description,
+      }));
+      return rd.of(entities);
+    },
+    useItems: (query: string) => {
+      const entities = Object.entries(report.data.definitions.projectTypes)
+        .map(([id, projectType]) => ({
+          id,
+          name: projectType.name,
+          description: projectType.description,
+        }))
+        .filter(
+          (entity) =>
+            entity.name.toLowerCase().includes(query.toLowerCase()) ||
+            entity.description?.toLowerCase().includes(query.toLowerCase()),
+        );
+      return rd.of(entities);
+    },
+    searchPlaceholder: "Search projects...",
+    placeholder: "Select projects...",
+  };
+
+  return (
+    <AbstractMultiPicker
+      {...props}
+      value={value}
+      onSelect={(value, _selectedItem, _action) => {
+        const stringValues = value.filter(
+          (id): id is string => typeof id === "string",
+        );
+        onSelect(stringValues);
+      }}
+      config={config}
+    />
+  );
+}
+
 interface GroupedViewWidgetProps extends WithFrontServices {
   report: GeneratedReportSource;
 }
@@ -395,7 +465,7 @@ interface GroupedViewConfig {
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const [config, setConfig] = useState<GroupedViewConfig>({
     filters: {},
-    groupBy: [{ type: "activity" }, { type: "task" }],
+    groupBy: [{ type: "project" }, { type: "activity" }],
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -680,6 +750,21 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
                     }
                   />
                 </div>
+
+                {/* Project Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Projects</label>
+                  <ProjectMultiPicker
+                    size="sm"
+                    report={props.report}
+                    value={config.filters.projectIds || []}
+                    onSelect={(value) =>
+                      updateFilters({
+                        projectIds: value.length > 0 ? value : undefined,
+                      })
+                    }
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -724,6 +809,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
                       <SelectItem value="role">Role</SelectItem>
                       <SelectItem value="task">Task</SelectItem>
                       <SelectItem value="activity">Activity</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
                     </SelectContent>
                   </Select>
                   {config.groupBy.length > 1 && (

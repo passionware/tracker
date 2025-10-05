@@ -673,6 +673,12 @@ function getFilteredEntriesView(
     );
   }
 
+  if (filters.projectIds && filters.projectIds.length > 0) {
+    filteredEntries = filteredEntries.filter((entry) =>
+      filters.projectIds!.includes(entry.projectId),
+    );
+  }
+
   const entries: FilteredEntrySummary[] = filteredEntries.map((entry) => {
     const roleType = report.data.definitions.roleTypes[entry.roleId];
     const matchingRate =
@@ -939,6 +945,12 @@ function getGroupedView(
     );
   }
 
+  if (filters.projectIds && filters.projectIds.length > 0) {
+    filteredEntries = filteredEntries.filter((entry) =>
+      filters.projectIds!.includes(entry.projectId),
+    );
+  }
+
   // Group entries by the first group specifier
   const groups = groupEntriesBySpecifier(filteredEntries, report, groupBy, 0);
 
@@ -1063,6 +1075,9 @@ function groupEntriesBySpecifier(
         case "activity":
           groupKey = entry.activityId;
           break;
+        case "project":
+          groupKey = entry.projectId;
+          break;
         default:
           groupKey = "unknown";
       }
@@ -1100,6 +1115,11 @@ function groupEntriesBySpecifier(
           const activityType = report.data.definitions.activityTypes[groupKey];
           groupName = activityType?.name || "Unknown Activity";
           groupDescription = activityType?.description;
+          break;
+        case "project":
+          const projectType = report.data.definitions.projectTypes[groupKey];
+          groupName = projectType?.name || "Unknown Project";
+          groupDescription = projectType?.description;
           break;
         default:
           groupName = "Unknown";

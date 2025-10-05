@@ -38,13 +38,15 @@ export interface EntryFilters {
   contractorIds?: number[];
   taskIds?: string[];
   activityIds?: string[];
+  projectIds?: string[];
 }
 
 export type GroupSpecifier =
   | { type: "contractor" }
   | { type: "role" }
   | { type: "task" }
-  | { type: "activity" };
+  | { type: "activity" }
+  | { type: "project" };
 
 export interface GroupedEntrySummary {
   groupKey: string;

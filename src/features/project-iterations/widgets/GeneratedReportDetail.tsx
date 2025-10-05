@@ -33,7 +33,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd, RemoteData } from "@passionware/monads";
-import { ArrowRight, Calendar, Database, FileText } from "lucide-react";
+import { ArrowRight, Database, FileText } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
 import {
   Cell,
@@ -281,15 +281,15 @@ function BasicInformationView(
     <div className="space-y-6">
       {/* Basic Information Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Basic Information */}
+        {/* Basic Information & Time Range */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Basic Information
+              Report Information
             </CardTitle>
             <CardDescription>
-              Report metadata and creation details
+              Report metadata and time period details
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -311,6 +311,26 @@ function BasicInformationView(
                 {basicInfo.projectIterationId}
               </span>
             </div>
+            {rd.tryMap(props.iteration, (iter: ProjectIteration) => (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Start Date</span>
+                  <span className="text-sm text-slate-600">
+                    {props.services.formatService.temporal.single.compact(
+                      iter.periodStart,
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">End Date</span>
+                  <span className="text-sm text-slate-600">
+                    {props.services.formatService.temporal.single.compact(
+                      iter.periodEnd,
+                    )}
+                  </span>
+                </div>
+              </>
+            ))}
           </CardContent>
         </Card>
 
@@ -389,36 +409,114 @@ function BasicInformationView(
           </CardContent>
         </Card>
 
-        {/* Time Range */}
+        {/* Contractors */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Time Range
-            </CardTitle>
-            <CardDescription>Period covered by this report</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Contractors</CardTitle>
+                <CardDescription>Cost breakdown by contractor</CardDescription>
+              </div>
+              {(() => {
+                const contractorsSummary =
+                  props.services.generatedReportViewService.getContractorsSummaryView(
+                    props.report,
+                  );
+                return (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer select-none">
+                        {BudgetPieThumb(props.services, {
+                          items: contractorsSummary.contractors.map((c) => ({
+                            name: `#${c.contractorId}`,
+                            budget: c.costBudget,
+                          })),
+                          size: 64,
+                        })}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>Budget by Contractor</DialogTitle>
+                        <DialogDescription>
+                          Approximate in EUR
+                        </DialogDescription>
+                      </DialogHeader>
+                      {BudgetPieChart(props.services, {
+                        title: "Budget by Contractor",
+                        description: "Approximate in EUR",
+                        items: contractorsSummary.contractors.map((c) => ({
+                          name: `#${c.contractorId}`,
+                          budget: c.costBudget,
+                        })),
+                        height: 360,
+                        showLabels: true,
+                      })}
+                    </DialogContent>
+                  </Dialog>
+                );
+              })()}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {rd.tryMap(props.iteration, (iter: ProjectIteration) => (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Start Date</span>
-                  <span className="text-sm text-slate-600">
-                    {props.services.formatService.temporal.single.compact(
-                      iter.periodStart,
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">End Date</span>
-                  <span className="text-sm text-slate-600">
-                    {props.services.formatService.temporal.single.compact(
-                      iter.periodEnd,
-                    )}
-                  </span>
-                </div>
-              </>
-            ))}
+          <CardContent>
+            <div className="space-y-3">
+              {(() => {
+                const contractorsSummary =
+                  props.services.generatedReportViewService.getContractorsSummaryView(
+                    props.report,
+                  );
+                return contractorsSummary.contractors.map((contractor) => (
+                  <div
+                    key={contractor.contractorId}
+                    className="p-3 border rounded-lg"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <ContractorWidget
+                          contractorId={maybe.of(contractor.contractorId)}
+                          services={props.services}
+                          layout="full"
+                          size="sm"
+                        />
+                      </div>
+                      <div className="text-right text-sm space-y-1">
+                        <div className="font-semibold">
+                          {contractor.costBudget.length === 0 ? (
+                            "No rates"
+                          ) : (
+                            <CostToBillingWidget
+                              cost={contractor.costBudget}
+                              billing={contractor.billingBudget}
+                              services={props.services}
+                            />
+                          )}
+                        </div>
+                        <div className="text-slate-600">
+                          {contractor.entriesCount} entries •{" "}
+                          {contractor.totalHours.toFixed(1)}h
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {contractor.costBudget.map((currencyValue, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between text-xs text-slate-600"
+                        >
+                          <span>{currencyValue.currency}</span>
+                          <span>
+                            {props.services.formatService.financial.amount(
+                              currencyValue.amount,
+                              currencyValue.currency,
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -547,116 +645,6 @@ function BasicInformationView(
             </div>
           </CardContent>
         </Card>
-        {/* Budget by Contractor */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Contractors</CardTitle>
-                <CardDescription>Cost breakdown by contractor</CardDescription>
-              </div>
-              {(() => {
-                const contractorsSummary =
-                  props.services.generatedReportViewService.getContractorsSummaryView(
-                    props.report,
-                  );
-                return (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="cursor-pointer select-none">
-                        {BudgetPieThumb(props.services, {
-                          items: contractorsSummary.contractors.map((c) => ({
-                            name: `#${c.contractorId}`,
-                            budget: c.costBudget,
-                          })),
-                          size: 64,
-                        })}
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>Budget by Contractor</DialogTitle>
-                        <DialogDescription>
-                          Approximate in EUR
-                        </DialogDescription>
-                      </DialogHeader>
-                      {BudgetPieChart(props.services, {
-                        title: "Budget by Contractor",
-                        description: "Approximate in EUR",
-                        items: contractorsSummary.contractors.map((c) => ({
-                          name: `Contractor #${c.contractorId}`,
-                          budget: c.costBudget,
-                        })),
-                        height: 360,
-                        showLabels: true,
-                      })}
-                    </DialogContent>
-                  </Dialog>
-                );
-              })()}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {(() => {
-                const contractorsSummary =
-                  props.services.generatedReportViewService.getContractorsSummaryView(
-                    props.report,
-                  );
-                return contractorsSummary.contractors.map((contractor) => (
-                  <div
-                    key={contractor.contractorId}
-                    className="p-3 border rounded-lg"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <ContractorWidget
-                          contractorId={maybe.of(contractor.contractorId)}
-                          services={props.services}
-                          layout="full"
-                          size="sm"
-                        />
-                      </div>
-                      <div className="text-right text-sm space-y-1">
-                        <div className="font-semibold">
-                          {contractor.costBudget.length === 0 ? (
-                            "No rates"
-                          ) : (
-                            <CostToBillingWidget
-                              cost={contractor.costBudget}
-                              billing={contractor.billingBudget}
-                              services={props.services}
-                            />
-                          )}
-                        </div>
-                        <div className="text-slate-600">
-                          {contractor.entriesCount} entries •{" "}
-                          {contractor.totalHours.toFixed(1)}h
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {contractor.costBudget.map((currencyValue, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between text-xs text-slate-600"
-                        >
-                          <span>{currencyValue.currency}</span>
-                          <span>
-                            {props.services.formatService.financial.amount(
-                              currencyValue.amount,
-                              currencyValue.currency,
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </CardContent>
-        </Card>
         {/* Budget by Project */}
         <Card>
           <CardHeader>
@@ -756,32 +744,6 @@ function BasicInformationView(
                             </div>
                           )}
                         </div>
-                      </div>
-                      <div className="space-y-2 mt-3 pt-2 border-t border-slate-200">
-                        <div className="text-xs font-medium text-slate-700 mb-2">
-                          Breakdown by Role:
-                        </div>
-                        {project.budgetByRole.map((role) => (
-                          <div
-                            key={role.roleId}
-                            className="flex justify-between items-center text-xs bg-slate-50 p-2 rounded"
-                          >
-                            <span className="font-medium">{role.roleName}</span>
-                            <div className="text-right">
-                              <div className="font-semibold">
-                                <CostToBillingWidget
-                                  cost={role.costBudget}
-                                  billing={role.billingBudget}
-                                  services={props.services}
-                                  size="sm"
-                                />
-                              </div>
-                              <div className="text-slate-600">
-                                {role.hours.toFixed(1)}h
-                              </div>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     </div>
                   );
