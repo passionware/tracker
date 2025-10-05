@@ -3,8 +3,8 @@ import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx"
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { ArrowRight } from "lucide-react";
 import { rd } from "@passionware/monads";
+import { ArrowRight } from "lucide-react";
 
 export interface CostToBillingWidgetProps
   extends WithServices<[WithFormatService, WithExchangeService]> {
@@ -80,10 +80,7 @@ export function CostToBillingWidget({
 
   return (
     <div className="flex items-center gap-2">
-      <Badge
-        variant="secondary"
-        className="bg-purple-100 text-purple-700 border-purple-200"
-      >
+      <Badge variant="purple" tone="secondary">
         <CurrencyValueWidget
           values={cost}
           services={services}
@@ -92,10 +89,7 @@ export function CostToBillingWidget({
         />
       </Badge>
       <ArrowRight className={`${iconSize} text-slate-400`} />
-      <Badge
-        variant="primary"
-        className="bg-blue-100 text-blue-700 border-blue-200"
-      >
+      <Badge variant="info" tone="secondary">
         <CurrencyValueWidget
           values={billing}
           services={services}

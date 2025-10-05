@@ -39,7 +39,6 @@ export function createFormatService(clock: () => Date): FormatService {
       maximumFractionDigits: 2,
     });
 
-    // eslint-disable-next-line no-compare-neg-zero
     const clearedValue = Math.abs(value);
 
     let formattedValue = formatter.format(clearedValue);
