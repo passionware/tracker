@@ -238,11 +238,15 @@ export function createLocationService(
       const timeEntriesMatch = config.services.navigationService.useMatch(
         forGeneratedReport.timeEntries() + "/*",
       );
+      const groupedViewMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.groupedView() + "/*",
+      );
       const rootMatch = config.services.navigationService.useMatch(
         forGeneratedReport.root() + "/*",
       );
 
       if (timeEntriesMatch) return "time-entries";
+      if (groupedViewMatch) return "grouped-view";
       if (basicMatch) return "basic";
       if (rootMatch) return "basic"; // Default to basic for root path
       return maybe.ofAbsent();

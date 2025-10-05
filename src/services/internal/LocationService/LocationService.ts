@@ -24,7 +24,9 @@ export interface LocationService {
   useCurrentProjectIterationTab: () => Maybe<
     "positions" | "reports" | "billings" | "events" | "generated-reports"
   >;
-  useCurrentGeneratedReportTab: () => Maybe<"basic" | "time-entries">;
+  useCurrentGeneratedReportTab: () => Maybe<
+    "basic" | "time-entries" | "grouped-view"
+  >;
   // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;
   // maybe - we can be in the route which neither specific workspace nor all workspaces
