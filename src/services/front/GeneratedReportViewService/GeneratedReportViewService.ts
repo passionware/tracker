@@ -26,6 +26,7 @@ export interface GeneratedReportViewService {
     report: GeneratedReportSource,
     filters: EntryFilters,
     groupBy: GroupSpecifier[],
+    contractorNameLookup?: (contractorId: number) => string | undefined,
   ) => GroupedView;
 }
 

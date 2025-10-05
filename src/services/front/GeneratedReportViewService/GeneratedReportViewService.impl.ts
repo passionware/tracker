@@ -27,8 +27,8 @@ export function createGeneratedReportViewService(): GeneratedReportViewService {
       getActivityTypesSummaryView(report),
     getFilteredEntriesView: (report, filters) =>
       getFilteredEntriesView(report, filters),
-    getGroupedView: (report, filters, groupBy) =>
-      getGroupedView(report, filters, groupBy),
+    getGroupedView: (report, filters, groupBy, contractorNameLookup) =>
+      getGroupedView(report, filters, groupBy, contractorNameLookup),
   };
 }
 
@@ -917,6 +917,7 @@ function getGroupedView(
   report: GeneratedReportSource,
   filters: EntryFilters,
   groupBy: GroupSpecifier[],
+  contractorNameLookup?: (contractorId: number) => string | undefined,
 ): GroupedView {
   // Apply filters first
   let filteredEntries = report.data.timeEntries;
@@ -952,7 +953,13 @@ function getGroupedView(
   }
 
   // Group entries by the first group specifier
-  const groups = groupEntriesBySpecifier(filteredEntries, report, groupBy, 0);
+  const groups = groupEntriesBySpecifier(
+    filteredEntries,
+    report,
+    groupBy,
+    0,
+    contractorNameLookup,
+  );
 
   // Calculate totals
   const totalHours = filteredEntries.reduce((total, entry) => {
@@ -1050,6 +1057,7 @@ function groupEntriesBySpecifier(
   report: GeneratedReportSource,
   groupBy: GroupSpecifier[],
   specifierIndex: number,
+  contractorNameLookup?: (contractorId: number) => string | undefined,
 ): GroupedEntrySummary[] {
   if (specifierIndex >= groupBy.length) {
     return [];
@@ -1098,7 +1106,10 @@ function groupEntriesBySpecifier(
 
       switch (specifier.type) {
         case "contractor":
-          groupName = `Contractor ${groupKey}`;
+          const contractorId = Number(groupKey);
+          groupName =
+            contractorNameLookup?.(contractorId) ||
+            `Contractor #${contractorId}`;
           groupDescription = undefined;
           break;
         case "role":
@@ -1216,6 +1227,7 @@ function groupEntriesBySpecifier(
               report,
               groupBy,
               specifierIndex + 1,
+              contractorNameLookup,
             )
           : undefined;
 

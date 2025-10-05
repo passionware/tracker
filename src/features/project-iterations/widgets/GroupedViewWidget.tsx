@@ -6,6 +6,7 @@ import {
   GeneratedReportSource,
   generatedReportSourceQueryUtils,
 } from "@/api/generated-report-source/generated-report-source.api.ts";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -475,12 +476,36 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  // Fetch contractor data for name lookup
+  const contractorIds = Array.from(
+    new Set(props.report.data.timeEntries.map((entry) => entry.contractorId)),
+  );
+  const contractorsQuery = props.services.contractorService.useContractors(
+    contractorQueryUtils
+      .getBuilder()
+      .build((q) => [
+        q.withFilter("id", { operator: "oneOf", value: contractorIds }),
+      ]),
+  );
+
+  // Create contractor lookup function
+  const contractorNameLookup = (contractorId: number) => {
+    return (
+      rd.tryMap(
+        contractorsQuery,
+        (contractors) =>
+          contractors.find((c) => c.id === contractorId)?.fullName,
+      ) || undefined
+    );
+  };
+
   // Get the grouped view data
   const groupedView: GroupedView =
     props.services.generatedReportViewService.getGroupedView(
       props.report,
       config.filters,
       config.groupBy,
+      contractorNameLookup,
     );
 
   const toggleGroupExpansion = (groupKey: string) => {
