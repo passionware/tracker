@@ -739,13 +739,7 @@ export function CubeView({
       <div className="flex gap-4">
         {/* Summary Sidebar - shows totals for current zoom level */}
         {showGrandTotals && (
-          <motion.div
-            className="w-80 flex-shrink-0"
-            key={zoomPath.map((b) => b.dimensionKey).join("-") || "root"}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <div className="w-80 flex-shrink-0">
             <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
               <CardHeader>
                 <CardTitle className="text-base">
@@ -1034,7 +1028,7 @@ export function CubeView({
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         )}
 
         {/* Groups or Raw Data */}

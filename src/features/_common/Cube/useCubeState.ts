@@ -3,6 +3,11 @@
  *
  * Manages the state and interactions for a multidimensional cube.
  * Follows the react-stately/react-aria pattern for separation of state and presentation.
+ *
+ * STATE DESIGN:
+ * - Minimal normalized state
+ * - No redundant data (no groups, no labels, no cube result in state)
+ * - Derived data computed via useMemo
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -12,12 +17,31 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
   CubeResult,
-  CubeGroup,
-  BreakdownMap,
   DimensionFilter,
 } from "./CubeService.types.ts";
 import { calculateCube } from "./CubeService.ts";
-import type { BreadcrumbItem } from "./CubeView.tsx";
+
+/**
+ * Normalized path item - stores only dimension ID and value
+ */
+export interface PathItem {
+  dimensionId: string;
+  dimensionValue: unknown;
+}
+
+/**
+ * Node state - per-node UI state
+ */
+export interface NodeState {
+  isExpanded: boolean;
+  childDimensionId?: string;
+}
+
+/**
+ * Node key - unique identifier for a node
+ * Format: "dimensionId:value|dimensionId2:value2"
+ */
+type NodeKey = string;
 
 export interface UseCubeStateProps<TData extends CubeDataItem> {
   /** Raw data to analyze */
@@ -48,25 +72,26 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
 }
 
 export interface CubeState {
-  /** Current cube result */
+  // ===== DERIVED DATA (computed) =====
+  /** Current cube result (derived from state + data) */
   cube: CubeResult;
-  /** Current breakdown map (for per-node mode) */
-  breakdownMap: BreakdownMap;
+
+  // ===== NORMALIZED STATE =====
+  /** Current path (zoom level) */
+  path: PathItem[];
+  /** Node states (expansion + child dimension per node) */
+  nodeStates: Map<NodeKey, NodeState>;
   /** Current filters */
   filters: DimensionFilter[];
-  /** Current zoom path */
-  zoomPath: BreadcrumbItem[];
-  /** Set breakdown dimension for root */
-  setRootDimension: (dimensionId: string) => void;
-  /** Set breakdown dimension for a specific group */
-  setGroupBreakdown: (
-    group: CubeGroup,
-    dimensionId: string,
-    ancestorPath: BreadcrumbItem[],
-  ) => void;
-  /** Zoom into a group */
-  zoomIn: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
-  /** Navigate to a specific level in zoom path */
+
+  // ===== ACTIONS =====
+  /** Set child dimension for a node */
+  setNodeChildDimension: (path: PathItem[], dimensionId: string) => void;
+  /** Toggle node expansion */
+  toggleNodeExpansion: (path: PathItem[]) => void;
+  /** Zoom into a node (set as root) */
+  zoomIn: (pathItem: PathItem) => void;
+  /** Navigate to a specific level in path */
   navigateToLevel: (index: number) => void;
   /** Reset to root */
   resetZoom: () => void;
@@ -76,8 +101,24 @@ export interface CubeState {
   removeFilter: (dimensionId: string) => void;
   /** Clear all filters */
   clearFilters: () => void;
-  /** Update the entire breakdown map */
-  setBreakdownMap: (map: BreakdownMap) => void;
+}
+
+/**
+ * Helper: Convert PathItem[] to NodeKey string
+ */
+function pathToKey(
+  path: PathItem[],
+  dimensions: DimensionDescriptor<any, unknown>[],
+): NodeKey {
+  return path
+    .map((p) => {
+      const dim = dimensions.find((d) => d.id === p.dimensionId);
+      const key = dim?.getKey
+        ? dim.getKey(p.dimensionValue)
+        : String(p.dimensionValue ?? "null");
+      return `${p.dimensionId}:${key}`;
+    })
+    .join("|");
 }
 
 /**
@@ -99,33 +140,39 @@ export function useCubeState<TData extends CubeDataItem>(
     skipEmptyGroups = false,
   } = props;
 
-  // State: Breakdown map (per-node breakdown configuration)
-  const [breakdownMap, setBreakdownMap] = useState<BreakdownMap>(() => {
-    const map: BreakdownMap = {};
+  // ===== NORMALIZED STATE =====
 
+  // State: Path (where we are in the tree)
+  const [path, setPath] = useState<PathItem[]>([]);
+
+  // State: Node states (expansion + child dimension per node)
+  const [nodeStates, setNodeStates] = useState<Map<NodeKey, NodeState>>(() => {
+    const map = new Map<NodeKey, NodeState>();
+
+    // Initialize root node with initial dimension
     if (initialRootDimension) {
-      // Per-node mode with initial root dimension
-      map[""] = initialRootDimension;
+      map.set("", {
+        isExpanded: false,
+        childDimensionId: initialRootDimension,
+      });
     } else if (
       initialDefaultDimensionSequence &&
       initialDefaultDimensionSequence.length > 0
     ) {
-      // Simple mode: Convert sequence to wildcard breakdown map
-      map[""] = initialDefaultDimensionSequence[0];
+      // Set root dimension from sequence
+      map.set("", {
+        isExpanded: false,
+        childDimensionId: initialDefaultDimensionSequence[0],
+      });
 
-      // Build wildcard patterns for subsequent levels
-      let pathPattern = "";
+      // Set wildcard defaults for subsequent levels
       for (let i = 0; i < initialDefaultDimensionSequence.length - 1; i++) {
-        const currentDimension = initialDefaultDimensionSequence[i];
-        const nextDimension = initialDefaultDimensionSequence[i + 1];
-
-        if (pathPattern === "") {
-          pathPattern = `${currentDimension}:*`;
-        } else {
-          pathPattern += `|${currentDimension}:*`;
-        }
-
-        map[pathPattern] = nextDimension;
+        const pattern =
+          initialDefaultDimensionSequence.slice(0, i + 1).join(":*|") + ":*";
+        map.set(pattern, {
+          isExpanded: false,
+          childDimensionId: initialDefaultDimensionSequence[i + 1],
+        });
       }
     }
 
@@ -135,8 +182,18 @@ export function useCubeState<TData extends CubeDataItem>(
   // State: Filters
   const [filters, setFilters] = useState<DimensionFilter[]>(initialFilters);
 
-  // State: Zoom path (for zoom navigation)
-  const [zoomPath, setZoomPath] = useState<BreadcrumbItem[]>([]);
+  // ===== DERIVED DATA =====
+
+  // Convert nodeStates Map to breakdownMap for cube calculation
+  const breakdownMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    nodeStates.forEach((state, key) => {
+      if (state.childDimensionId) {
+        map[key] = state.childDimensionId;
+      }
+    });
+    return map;
+  }, [nodeStates]);
 
   // Calculate cube configuration
   const config: CubeConfig<TData> = useMemo(
@@ -151,7 +208,7 @@ export function useCubeState<TData extends CubeDataItem>(
     [data, dimensions, measures, filters, breakdownMap, activeMeasures],
   );
 
-  // Calculate cube result
+  // Calculate cube result (derived from state + data)
   const cube = useMemo(
     () =>
       calculateCube(config, {
@@ -162,54 +219,53 @@ export function useCubeState<TData extends CubeDataItem>(
     [config, includeItems, maxDepth, skipEmptyGroups],
   );
 
-  // Set root dimension
-  const setRootDimension = useCallback((dimensionId: string) => {
-    setBreakdownMap((prev) => ({
-      ...prev,
-      "": dimensionId,
-    }));
-    // Reset zoom when changing root dimension
-    setZoomPath([]);
+  // ===== ACTIONS =====
+
+  // Set child dimension for a node
+  const setNodeChildDimension = useCallback(
+    (nodePath: PathItem[], dimensionId: string) => {
+      const key = pathToKey(nodePath, dimensions);
+      setNodeStates((prev) => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(key) || { isExpanded: false };
+        newMap.set(key, { ...existing, childDimensionId: dimensionId });
+        return newMap;
+      });
+    },
+    [dimensions],
+  );
+
+  // Toggle node expansion
+  const toggleNodeExpansion = useCallback(
+    (nodePath: PathItem[]) => {
+      const key = pathToKey(nodePath, dimensions);
+      setNodeStates((prev) => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(key) || { isExpanded: false };
+        newMap.set(key, { ...existing, isExpanded: !existing.isExpanded });
+        return newMap;
+      });
+    },
+    [dimensions],
+  );
+
+  // Zoom into a node (set as root)
+  const zoomIn = useCallback((pathItem: PathItem) => {
+    setPath((prev) => [...prev, pathItem]);
   }, []);
-
-  // Set breakdown for a specific group
-  const setGroupBreakdown = useCallback(
-    (group: CubeGroup, dimensionId: string, ancestorPath: BreadcrumbItem[]) => {
-      // Build the path for this group
-      const pathSegments = [
-        ...ancestorPath.map((b) => `${b.dimensionId}:${b.dimensionKey}`),
-        `${group.dimensionId}:${group.dimensionKey}`,
-      ];
-      const nodePath = pathSegments.join("|");
-
-      setBreakdownMap((prev) => ({
-        ...prev,
-        [nodePath]: dimensionId,
-      }));
-    },
-    [],
-  );
-
-  // Zoom in to a group
-  const zoomIn = useCallback(
-    (_group: CubeGroup, fullPath: BreadcrumbItem[]) => {
-      setZoomPath(fullPath);
-    },
-    [],
-  );
 
   // Navigate to specific level
   const navigateToLevel = useCallback((index: number) => {
     if (index === -1) {
-      setZoomPath([]);
+      setPath([]);
     } else {
-      setZoomPath((prev) => prev.slice(0, index + 1));
+      setPath((prev) => prev.slice(0, index + 1));
     }
   }, []);
 
   // Reset zoom
   const resetZoom = useCallback(() => {
-    setZoomPath([]);
+    setPath([]);
   }, []);
 
   // Add filter
@@ -233,17 +289,16 @@ export function useCubeState<TData extends CubeDataItem>(
 
   return {
     cube,
-    breakdownMap,
+    path,
+    nodeStates,
     filters,
-    zoomPath,
-    setRootDimension,
-    setGroupBreakdown,
+    setNodeChildDimension,
+    toggleNodeExpansion,
     zoomIn,
     navigateToLevel,
     resetZoom,
     addFilter,
     removeFilter,
     clearFilters,
-    setBreakdownMap,
   };
 }

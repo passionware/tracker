@@ -20,6 +20,7 @@ import {
 } from "@/features/_common/Cube/index.ts";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
+import { TimeReportingDashboard } from "./TimeReportingBI.story";
 
 // Sample data types
 interface SalesTransaction {
@@ -1726,5 +1727,11 @@ export const DynamicDimensionPicker: Story = {
         />
       </div>
     );
+  },
+};
+
+export const FullFeaturedTimeTrackingCube: Story = {
+  render: () => {
+    return <TimeReportingDashboard />;
   },
 };
