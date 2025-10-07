@@ -643,9 +643,19 @@ export function CubeView({
 
   // For the dropdown, we need to exclude:
   // 1. Dimensions used in the zoom path (ancestors)
-  // 2. The current group's dimension (what's being displayed now)
+  // Note: We DO show the current group's dimension in the sidebar (it's just not selectable in dropdown)
   const availableDimensions = config.dimensions.filter(
-    (d) => !usedDimensionIds.includes(d.id) && d.id !== currentGroupDimensionId,
+    (d) => !usedDimensionIds.includes(d.id),
+  );
+
+  // For the sidebar, show all dimensions that aren't in the ancestor path
+  const sidebarDimensions = config.dimensions.filter(
+    (d) => !usedDimensionIds.includes(d.id),
+  );
+
+  // For the dropdown, exclude the current group dimension
+  const dropdownDimensions = availableDimensions.filter(
+    (d) => d.id !== currentGroupDimensionId,
   );
 
   return (
@@ -688,7 +698,7 @@ export function CubeView({
             </div>
 
             {/* Dimension Picker - show at all levels when zoomed in */}
-            {enableDimensionPicker && availableDimensions.length > 0 && (
+            {enableDimensionPicker && dropdownDimensions.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-600 whitespace-nowrap">
                   {zoomPath.length === 0
@@ -717,7 +727,7 @@ export function CubeView({
                     <SelectValue placeholder="Select dimension..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableDimensions.map((dim) => (
+                    {dropdownDimensions.map((dim) => (
                       <SelectItem
                         key={dim.id}
                         value={dim.id}
@@ -809,7 +819,7 @@ export function CubeView({
                   })}
 
                   {/* Multi-dimensional breakdowns */}
-                  {availableDimensions.length > 0 &&
+                  {sidebarDimensions.length > 0 &&
                     (() => {
                       // Get current data items (either root or zoomed group)
                       const currentItems =
@@ -826,7 +836,7 @@ export function CubeView({
                             Explore by Dimension
                           </div>
 
-                          {availableDimensions.map((dimension) => {
+                          {sidebarDimensions.map((dimension) => {
                             // Group items by this dimension
                             const grouped = new Map<
                               string,
@@ -873,17 +883,24 @@ export function CubeView({
                             );
                             const topGroups = sortedGroups.slice(0, 5);
 
-                            const isCurrentDimension =
+                            // Check if this is the child dimension (what will be used for breakdown)
+                            const isChildDimension =
                               currentChildDimensionId === dimension.id;
+
+                            // Check if this is the currently displayed dimension (what we're viewing now)
+                            const isDisplayedDimension =
+                              currentGroupDimensionId === dimension.id;
 
                             return (
                               <div
                                 key={dimension.id}
                                 className={cn(
                                   "space-y-2 p-2 rounded-lg transition-all cursor-pointer",
-                                  isCurrentDimension
+                                  isChildDimension
                                     ? "bg-indigo-50 ring-2 ring-indigo-200"
-                                    : "hover:bg-slate-50",
+                                    : isDisplayedDimension
+                                      ? "bg-blue-50 ring-2 ring-blue-300"
+                                      : "hover:bg-slate-50",
                                 )}
                                 onClick={() => {
                                   // Set this dimension as the breakdown for current level's children
@@ -910,9 +927,11 @@ export function CubeView({
                                   <span
                                     className={cn(
                                       "text-xs font-medium",
-                                      isCurrentDimension
+                                      isChildDimension
                                         ? "text-indigo-700"
-                                        : "text-slate-700",
+                                        : isDisplayedDimension
+                                          ? "text-blue-700"
+                                          : "text-slate-700",
                                     )}
                                   >
                                     {dimension.name}
@@ -920,8 +939,11 @@ export function CubeView({
                                   <span className="text-[10px] text-slate-400">
                                     ({grouped.size})
                                   </span>
-                                  {isCurrentDimension && (
-                                    <span className="ml-auto text-indigo-600">
+                                  {isChildDimension && (
+                                    <span
+                                      className="ml-auto text-indigo-600"
+                                      title="Child dimension"
+                                    >
                                       <svg
                                         className="w-3 h-3"
                                         fill="currentColor"
@@ -930,6 +952,25 @@ export function CubeView({
                                         <path
                                           fillRule="evenodd"
                                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                          clipRule="evenodd"
+                                        />
+                                      </svg>
+                                    </span>
+                                  )}
+                                  {isDisplayedDimension && (
+                                    <span
+                                      className="ml-auto text-blue-600"
+                                      title="Currently viewing"
+                                    >
+                                      <svg
+                                        className="w-3 h-3"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                      >
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path
+                                          fillRule="evenodd"
+                                          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
                                           clipRule="evenodd"
                                         />
                                       </svg>
@@ -1006,7 +1047,14 @@ export function CubeView({
                                         </div>
                                         <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center">
                                           <div
-                                            className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-1 rounded-full transition-all duration-500"
+                                            className={cn(
+                                              "h-1 rounded-full transition-all duration-500",
+                                              isChildDimension
+                                                ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
+                                                : isDisplayedDimension
+                                                  ? "bg-gradient-to-r from-blue-400 to-blue-600"
+                                                  : "bg-gradient-to-r from-slate-400 to-slate-600",
+                                            )}
                                             style={{ width: `${pct}%` }}
                                           />
                                         </div>
