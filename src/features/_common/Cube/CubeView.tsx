@@ -13,7 +13,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronRight, Home, ZoomIn } from "lucide-react";
+import { useEffect, useState } from "react";
 import type {
   CubeCell,
   CubeDataItem,
@@ -22,9 +32,6 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
-import { ChevronRight } from "lucide-react";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * Animation variants for smooth transitions
@@ -101,6 +108,17 @@ const dataContainerVariants = {
 };
 
 /**
+ * Breadcrumb item for zoom navigation
+ */
+export interface BreadcrumbItem {
+  dimensionId: string;
+  dimensionValue: unknown;
+  dimensionKey: string;
+  label: string;
+  group: CubeGroup;
+}
+
+/**
  * Props for CubeView component
  */
 export interface CubeViewProps {
@@ -118,14 +136,22 @@ export interface CubeViewProps {
   onDrillDown?: (group: CubeGroup, newDimensionId: string) => void;
   /** Optional: Callback when viewing raw data */
   onViewRawData?: (group: CubeGroup) => void;
+  /** Optional: Callback when zooming into a group */
+  onZoomIn?: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
+  /** Optional: Callback when user changes breakdown dimension at current level */
+  onDimensionChange?: (dimensionId: string, level: number) => void;
   /** Optional: Available dimensions for drill-down */
   availableDrillDowns?: string[]; // dimension IDs not yet used in groupBy
+  /** Optional: Enable dimension picker */
+  enableDimensionPicker?: boolean;
   /** Optional: Show grand totals */
   showGrandTotals?: boolean;
   /** Optional: Maximum initial expansion depth */
   maxInitialDepth?: number;
   /** Optional: Enable raw data viewing (requires includeItems in cube calculation) */
   enableRawDataView?: boolean;
+  /** Optional: Enable zoom-in feature */
+  enableZoomIn?: boolean;
   /** Optional: Custom class name */
   className?: string;
 }
@@ -145,9 +171,12 @@ interface CubeGroupItemProps {
   onGroupExpand?: (group: CubeGroup, isExpanded: boolean) => void;
   onDrillDown?: (group: CubeGroup, newDimensionId: string) => void;
   onViewRawData?: (group: CubeGroup) => void;
+  onZoomIn?: (group: CubeGroup, ancestorPath: BreadcrumbItem[]) => void;
   availableDrillDowns?: string[];
   enableRawDataView?: boolean;
+  enableZoomIn?: boolean;
   maxInitialDepth?: number;
+  ancestorPath?: BreadcrumbItem[];
 }
 
 /**
@@ -165,9 +194,12 @@ function CubeGroupItem({
   onGroupExpand,
   onDrillDown,
   onViewRawData,
+  onZoomIn,
   availableDrillDowns,
   enableRawDataView = false,
+  enableZoomIn = false,
   maxInitialDepth = 1,
+  ancestorPath = [],
 }: CubeGroupItemProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
   const hasRawData = enableRawDataView && group.items && group.items.length > 0;
@@ -185,7 +217,11 @@ function CubeGroupItem({
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
     if (!newExpanded) {
+      // Collapsing - turn off raw data
       setShowRawData(false);
+    } else if (shouldAutoShowRawData) {
+      // Expanding and should auto-show raw data
+      setShowRawData(true);
     }
     onGroupExpand?.(group, newExpanded);
   };
@@ -271,9 +307,10 @@ function CubeGroupItem({
           </div>
         </div>
 
-        {/* Drill-down and raw data buttons */}
+        {/* Drill-down, zoom, and raw data buttons */}
         <AnimatePresence>
-          {(hasRawData || hasSubGroups) && !shouldAutoShowRawData && (
+          {(((hasRawData || hasSubGroups) && !shouldAutoShowRawData) ||
+            enableZoomIn) && (
             <motion.div
               className="flex items-center gap-1 mt-2 ml-6"
               variants={buttonGroupVariants}
@@ -281,6 +318,34 @@ function CubeGroupItem({
               animate="visible"
               exit="hidden"
             >
+              {/* Zoom in button */}
+              {enableZoomIn && hasSubGroups && (
+                <motion.div variants={buttonVariants}>
+                  <SimpleTooltip title="Zoom into this group">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Build full path including all ancestors
+                        const currentBreadcrumb: BreadcrumbItem = {
+                          dimensionId: group.dimensionId,
+                          dimensionValue: group.dimensionValue,
+                          dimensionKey: group.dimensionKey,
+                          label: group.dimensionLabel,
+                          group,
+                        };
+                        onZoomIn?.(group, [...ancestorPath, currentBreadcrumb]);
+                      }}
+                    >
+                      <ZoomIn className="w-3 h-3 mr-1" />
+                      Zoom In
+                    </Button>
+                  </SimpleTooltip>
+                </motion.div>
+              )}
+
               {/* Raw data button - only show if there are also sub-groups */}
               {hasRawData && hasSubGroups && (
                 <motion.div variants={buttonVariants}>
@@ -365,28 +430,43 @@ function CubeGroupItem({
                 </div>
               ) : hasSubGroups ? (
                 <div className="space-y-2">
-                  {group.subGroups!.map((subGroup, idx) => (
-                    <CubeGroupItem
-                      key={subGroup.dimensionKey + idx}
-                      group={subGroup}
-                      level={level + 1}
-                      appliedDimensions={[
-                        ...appliedDimensions,
-                        group.dimensionId,
-                      ]}
-                      measures={measures}
-                      dimensions={dimensions}
-                      renderGroupHeader={renderGroupHeader}
-                      renderCell={renderCell}
-                      renderRawData={renderRawData}
-                      onGroupExpand={onGroupExpand}
-                      onDrillDown={onDrillDown}
-                      onViewRawData={onViewRawData}
-                      availableDrillDowns={availableDrillDowns}
-                      enableRawDataView={enableRawDataView}
-                      maxInitialDepth={maxInitialDepth}
-                    />
-                  ))}
+                  {group.subGroups!.map((subGroup, idx) => {
+                    // Build path for child including current group
+                    const currentBreadcrumb: BreadcrumbItem = {
+                      dimensionId: group.dimensionId,
+                      dimensionValue: group.dimensionValue,
+                      dimensionKey: group.dimensionKey,
+                      label: group.dimensionLabel,
+                      group,
+                    };
+                    const childPath = [...ancestorPath, currentBreadcrumb];
+
+                    return (
+                      <CubeGroupItem
+                        key={subGroup.dimensionKey + idx}
+                        group={subGroup}
+                        level={level + 1}
+                        appliedDimensions={[
+                          ...appliedDimensions,
+                          group.dimensionId,
+                        ]}
+                        measures={measures}
+                        dimensions={dimensions}
+                        renderGroupHeader={renderGroupHeader}
+                        renderCell={renderCell}
+                        renderRawData={renderRawData}
+                        onGroupExpand={onGroupExpand}
+                        onDrillDown={onDrillDown}
+                        onViewRawData={onViewRawData}
+                        onZoomIn={onZoomIn}
+                        availableDrillDowns={availableDrillDowns}
+                        enableRawDataView={enableRawDataView}
+                        enableZoomIn={enableZoomIn}
+                        maxInitialDepth={maxInitialDepth}
+                        ancestorPath={childPath}
+                      />
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6 text-slate-400 text-sm">
@@ -413,10 +493,14 @@ export function CubeView({
   onGroupExpand,
   onDrillDown,
   onViewRawData,
+  onZoomIn,
+  onDimensionChange,
   availableDrillDowns,
+  enableDimensionPicker = false,
   showGrandTotals = true,
   maxInitialDepth = 1,
   enableRawDataView = false,
+  enableZoomIn = false,
   className,
 }: CubeViewProps) {
   const config = cube.config;
@@ -426,79 +510,298 @@ export function CubeView({
 
   const appliedDimensions = config.groupBy || [];
 
+  // Zoom state management
+  const [zoomPath, setZoomPath] = useState<BreadcrumbItem[]>([]);
+  const [displayGroups, setDisplayGroups] = useState<CubeGroup[]>(cube.groups);
+
+  // Reset zoom when cube changes
+  useEffect(() => {
+    setZoomPath([]);
+    setDisplayGroups(cube.groups);
+  }, [cube]);
+
+  // Handle zoom in - receives the full path from the child component
+  const handleZoomIn = (group: CubeGroup, fullPath: BreadcrumbItem[]) => {
+    setZoomPath(fullPath);
+    setDisplayGroups(group.subGroups || []);
+    onZoomIn?.(group, fullPath);
+  };
+
+  // Handle breadcrumb navigation
+  const handleBreadcrumbClick = (index: number) => {
+    if (index === -1) {
+      // Go to root
+      setZoomPath([]);
+      setDisplayGroups(cube.groups);
+    } else {
+      // Go to specific level
+      const newPath = zoomPath.slice(0, index + 1);
+      setZoomPath(newPath);
+      const targetGroup = newPath[index].group;
+      setDisplayGroups(targetGroup.subGroups || []);
+    }
+  };
+
+  // Get available dimensions for current level
+  const usedDimensionIds = zoomPath.map((b) => b.dimensionId);
+  const currentDimensionId = config.groupBy?.[zoomPath.length];
+  const availableDimensions = config.dimensions.filter(
+    (d) => !usedDimensionIds.includes(d.id),
+  );
+
   return (
     <div className={className}>
-      {/* Grand Totals */}
-      {showGrandTotals && (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle>Summary</CardTitle>
-            <CardDescription>Total items: {cube.totalItems}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {cube.grandTotals.map((cell) => {
-                const measure = measures.find((m) => m.id === cell.measureId);
-                return (
-                  <div
-                    key={cell.measureId}
-                    className="text-center p-4 border rounded-lg"
+      {/* Navigation Bar - always visible when zoom or dimension picker enabled */}
+      {(enableZoomIn || enableDimensionPicker) && (
+        <motion.div
+          className="mb-4 p-3 bg-slate-50 rounded-lg border"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {/* Breadcrumbs */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => handleBreadcrumbClick(-1)}
+              >
+                <Home className="w-3 h-3 mr-1" />
+                Root
+              </Button>
+              {zoomPath.map((breadcrumb, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                  <Button
+                    variant={
+                      index === zoomPath.length - 1 ? "secondary" : "ghost"
+                    }
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => handleBreadcrumbClick(index)}
                   >
-                    <div className="text-sm text-slate-600 mb-1 flex items-center justify-center gap-1">
-                      {measure?.icon && <span>{measure.icon}</span>}
-                      <span>{measure?.name || cell.measureId}</span>
-                    </div>
-                    <div className="font-semibold text-lg">
-                      {cell.formattedValue}
-                    </div>
-                  </div>
-                );
-              })}
+                    {breadcrumb.label}
+                  </Button>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Dimension Picker */}
+            {enableDimensionPicker && availableDimensions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-600 whitespace-nowrap">
+                  Break down by:
+                </span>
+                <Select
+                  value={currentDimensionId || ""}
+                  onValueChange={(value) => {
+                    onDimensionChange?.(value, zoomPath.length);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-[180px] text-xs">
+                    <SelectValue placeholder="Select dimension..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDimensions.map((dim) => (
+                      <SelectItem
+                        key={dim.id}
+                        value={dim.id}
+                        className="text-xs"
+                      >
+                        {dim.icon && <span className="mr-2">{dim.icon}</span>}
+                        {dim.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
 
-      {/* Groups */}
-      <motion.div
-        className="space-y-3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        {cube.groups.length === 0 ? (
+      {/* Main Content Area - with optional sidebar */}
+      <div className="flex gap-4">
+        {/* Summary Sidebar - shows totals for current zoom level */}
+        {showGrandTotals && (
           <motion.div
-            className="text-center py-8 text-slate-500"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="w-64 flex-shrink-0"
+            key={zoomPath.map((b) => b.dimensionKey).join("-") || "root"}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
           >
-            No data to display
+            <Card className="sticky top-4">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {zoomPath.length === 0
+                    ? "Summary"
+                    : zoomPath[zoomPath.length - 1].label}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {zoomPath.length === 0 ? (
+                    <>{cube.totalItems} items</>
+                  ) : (
+                    <>
+                      {zoomPath[zoomPath.length - 1].group.itemCount} items in{" "}
+                      {zoomPath[zoomPath.length - 1].dimensionId}
+                    </>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(zoomPath.length === 0
+                    ? cube.grandTotals
+                    : zoomPath[zoomPath.length - 1].group.cells
+                  ).map((cell, _idx, arr) => {
+                    const measure = measures.find(
+                      (m) => m.id === cell.measureId,
+                    );
+
+                    // Calculate percentage of total for visual bar
+                    const numValue =
+                      typeof cell.value === "number" ? cell.value : 0;
+                    const maxValue = Math.max(
+                      ...arr.map((c) =>
+                        typeof c.value === "number" ? c.value : 0,
+                      ),
+                    );
+                    const percentage =
+                      maxValue > 0 ? (numValue / maxValue) * 100 : 0;
+
+                    return (
+                      <div key={cell.measureId} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-slate-600 flex items-center gap-1">
+                            {measure?.icon && <span>{measure.icon}</span>}
+                            <span>{measure?.name || cell.measureId}</span>
+                          </div>
+                          {arr.length > 1 && (
+                            <div className="text-xs text-slate-400">
+                              {percentage.toFixed(0)}%
+                            </div>
+                          )}
+                        </div>
+                        <div className="font-semibold text-lg">
+                          {cell.formattedValue}
+                        </div>
+                        {/* Visual progress bar */}
+                        {arr.length > 1 && typeof cell.value === "number" && (
+                          <div className="w-full bg-slate-100 rounded-full h-1.5">
+                            <div
+                              className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Mini sparkline-style breakdown chart */}
+                  {displayGroups.length > 0 && displayGroups.length <= 10 && (
+                    <div className="pt-4 border-t space-y-2">
+                      <div className="text-xs font-medium text-slate-600">
+                        Breakdown
+                      </div>
+                      <div className="space-y-1">
+                        {displayGroups.slice(0, 5).map((group) => {
+                          const firstCell = group.cells[0];
+                          const numValue =
+                            typeof firstCell?.value === "number"
+                              ? firstCell.value
+                              : 0;
+                          const total =
+                            zoomPath.length === 0
+                              ? cube.grandTotals[0]?.value
+                              : zoomPath[zoomPath.length - 1].group.cells[0]
+                                  ?.value;
+                          const totalNum =
+                            typeof total === "number" ? total : 1;
+                          const pct =
+                            totalNum > 0 ? (numValue / totalNum) * 100 : 0;
+
+                          return (
+                            <div key={group.dimensionKey} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 truncate max-w-[140px]">
+                                  {group.dimensionLabel}
+                                </span>
+                                <span className="text-slate-500 text-[10px]">
+                                  {pct.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1">
+                                <div
+                                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {displayGroups.length > 5 && (
+                          <div className="text-xs text-slate-400 text-center pt-1">
+                            +{displayGroups.length - 5} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
-        ) : (
-          cube.groups.map((group, idx) => (
-            <CubeGroupItem
-              key={group.dimensionKey + idx}
-              group={group}
-              level={0}
-              appliedDimensions={appliedDimensions}
-              measures={measures as MeasureDescriptor<CubeDataItem>[]}
-              dimensions={
-                config.dimensions as DimensionDescriptor<CubeDataItem>[]
-              }
-              renderGroupHeader={renderGroupHeader}
-              renderCell={renderCell}
-              renderRawData={renderRawData}
-              onGroupExpand={onGroupExpand}
-              onDrillDown={onDrillDown}
-              onViewRawData={onViewRawData}
-              availableDrillDowns={availableDrillDowns}
-              enableRawDataView={enableRawDataView}
-              maxInitialDepth={maxInitialDepth}
-            />
-          ))
         )}
-      </motion.div>
+
+        {/* Groups */}
+        <motion.div
+          className="flex-1 space-y-3"
+          key={zoomPath.length} // Re-render when zoom level changes
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          {displayGroups.length === 0 ? (
+            <motion.div
+              className="text-center py-8 text-slate-500"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              No data to display
+            </motion.div>
+          ) : (
+            displayGroups.map((group, idx) => (
+              <CubeGroupItem
+                key={group.dimensionKey + idx}
+                group={group}
+                level={zoomPath.length}
+                appliedDimensions={appliedDimensions}
+                measures={measures as MeasureDescriptor<CubeDataItem>[]}
+                dimensions={
+                  config.dimensions as DimensionDescriptor<CubeDataItem>[]
+                }
+                renderGroupHeader={renderGroupHeader}
+                renderCell={renderCell}
+                renderRawData={renderRawData}
+                onGroupExpand={onGroupExpand}
+                onDrillDown={onDrillDown}
+                onViewRawData={onViewRawData}
+                onZoomIn={enableZoomIn ? handleZoomIn : undefined}
+                availableDrillDowns={availableDrillDowns}
+                enableRawDataView={enableRawDataView}
+                enableZoomIn={enableZoomIn}
+                maxInitialDepth={maxInitialDepth}
+                ancestorPath={zoomPath}
+              />
+            ))
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 }

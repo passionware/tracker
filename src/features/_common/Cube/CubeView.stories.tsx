@@ -2,14 +2,8 @@
  * Storybook examples for CubeView component
  */
 
-import type { Meta, StoryObj } from "@storybook/react";
-import {
-  CubeView,
-  cubeService,
-  type CubeConfig,
-  type DimensionDescriptor,
-  type MeasureDescriptor,
-} from "@/features/_common/Cube/index.ts";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
   CardContent,
@@ -17,9 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import { Button } from "@/components/ui/button.tsx";
+import {
+  type CubeConfig,
+  cubeService,
+  CubeView,
+  type DimensionDescriptor,
+  type MeasureDescriptor,
+} from "@/features/_common/Cube/index.ts";
+import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge.tsx";
 
 // Sample data types
 interface SalesTransaction {
@@ -1399,6 +1399,189 @@ export const InteractiveProjectDashboard: Story = {
         </Card>
 
         <CubeView cube={cube} maxInitialDepth={1} />
+      </div>
+    );
+  },
+};
+
+/**
+ * Story 15: Zoom-In Navigation with Dynamic Dimension Picker
+ */
+export const ZoomInNavigation: Story = {
+  render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([
+      "region",
+      "category",
+      "product",
+    ]);
+
+    const config: CubeConfig<SalesTransaction> = {
+      data: salesData,
+      dimensions: salesDimensions,
+      measures: salesMeasures,
+      groupBy: groupBy,
+      activeMeasures: ["totalRevenue", "profit", "transactionCount"],
+    };
+
+    const cube = cubeService.calculateCube(config, {
+      includeItems: true,
+    });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              🔍 Zoom-In Navigation + 🎛️ Dynamic Dimension Picker
+            </CardTitle>
+            <CardDescription>
+              This example shows nested subgroups (Region → Category → Product).
+              Click "Zoom In" to focus on a group, use breadcrumbs to navigate
+              back, or change dimensions from the dropdown.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm space-y-2">
+              <div>
+                <strong>Current breakdown:</strong>{" "}
+                {groupBy
+                  .map((id) => {
+                    const dim = salesDimensions.find((d) => d.id === id);
+                    return dim ? `${dim.icon} ${dim.name}` : id;
+                  })
+                  .join(" → ") || "None selected"}
+              </div>
+              <div className="text-xs text-slate-600">
+                <strong>Features to try:</strong>
+              </div>
+              <ul className="text-xs text-slate-600 space-y-1 ml-4">
+                <li>
+                  📂 <strong>Expand groups</strong> - Click any group to see its
+                  subgroups
+                </li>
+                <li>
+                  🔍 <strong>Zoom In</strong> - Click "Zoom In" button to focus
+                  on that group only
+                </li>
+                <li>
+                  🏠 <strong>Navigate back</strong> - Click breadcrumbs to go
+                  back up the hierarchy
+                </li>
+                <li>
+                  🎛️ <strong>Change dimension</strong> - Use dropdown to rebuild
+                  with different breakdown
+                </li>
+                <li>
+                  📊 <strong>View data</strong> - Click "Data" button to see raw
+                  entries
+                </li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        <CubeView
+          cube={cube}
+          enableZoomIn={true}
+          enableDimensionPicker={true}
+          enableRawDataView={true}
+          maxInitialDepth={1}
+          onDimensionChange={handleDimensionChange}
+          onZoomIn={(group, fullPath) => {
+            console.log("Zoomed into:", group.dimensionLabel);
+            console.log(
+              "Full path:",
+              fullPath.map((b) => `${b.dimensionId}=${b.label}`).join(" > "),
+            );
+            console.log(
+              "Path details:",
+              fullPath.map((b) => ({
+                dimension: b.dimensionId,
+                value: b.dimensionValue,
+                key: b.dimensionKey,
+              })),
+            );
+          }}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Story 16: Dynamic Dimension Picker
+ */
+export const DynamicDimensionPicker: Story = {
+  render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["region"]);
+
+    const config: CubeConfig<SalesTransaction> = {
+      data: salesData,
+      dimensions: salesDimensions,
+      measures: salesMeasures,
+      groupBy: groupBy,
+      activeMeasures: ["totalRevenue", "profit"],
+    };
+
+    const cube = cubeService.calculateCube(config, {
+      includeItems: true,
+    });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      // Remove any dimensions after this level
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>🎛️ Dynamic Dimension Picker</CardTitle>
+            <CardDescription>
+              Choose which dimension to break down by at each level. Select from
+              the dropdown to change the current breakdown.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm space-y-2">
+              <div>
+                <strong>Current breakdown:</strong>{" "}
+                {groupBy
+                  .map((id) => {
+                    const dim = salesDimensions.find((d) => d.id === id);
+                    return dim ? `${dim.icon} ${dim.name}` : id;
+                  })
+                  .join(" → ") || "None"}
+              </div>
+              <div className="text-xs text-slate-600">
+                Available dimensions: Region, Category, Product, Salesperson
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <CubeView
+          cube={cube}
+          enableDimensionPicker={true}
+          enableZoomIn={true}
+          enableRawDataView={true}
+          maxInitialDepth={1}
+          onDimensionChange={handleDimensionChange}
+          onZoomIn={(_group, fullPath) => {
+            console.log(
+              "Zoomed into:",
+              fullPath.map((b) => `${b.dimensionId}=${b.label}`).join(" > "),
+            );
+          }}
+        />
       </div>
     );
   },

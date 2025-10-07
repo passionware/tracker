@@ -66,7 +66,10 @@ const cube = cubeService.calculateCube(config);
 - ✅ **React Integration**: Pre-built UI components
 - ✅ **Drill-down Support**: Interactive data exploration
 - ✅ **Raw Data Viewing**: View underlying data items for any group
+- ✅ **Zoom-In Navigation**: Focus on specific groups with breadcrumb navigation
+- ✅ **Dynamic Dimension Picker**: Let users choose breakdown dimensions on the fly
 - ✅ **Performance Optimized**: Efficient in-memory processing
+- ✅ **Smooth Animations**: Framer Motion for polished UX
 
 ## Files
 
@@ -77,12 +80,16 @@ const cube = cubeService.calculateCube(config);
 - **CUBE_SERVICE.md** - Complete documentation
 - **INTEGRATION_EXAMPLE.md** - GroupedViewWidget migration guide
 - **QUICK_START.tsx** - Quick start example
+- **ZOOM_FEATURE.md** - Zoom-in navigation guide
+- **DIMENSION_PICKER.md** - Dynamic dimension selection guide
 - **README.md** - This file
 
 ## Documentation
 
 - 📘 [Complete Documentation](CUBE_SERVICE.md) - Full API reference and examples
 - 🔗 [Integration Guide](INTEGRATION_EXAMPLE.md) - Migrate GroupedViewWidget to Cube Widget
+- 🔍 [Zoom Feature Guide](ZOOM_FEATURE.md) - Zoom-in navigation with breadcrumbs
+- 🎛️ [Dimension Picker Guide](DIMENSION_PICKER.md) - Dynamic dimension selection
 - 📚 [Storybook](CubeView.stories.tsx) - Live interactive examples
 - ⚡ [Quick Start](QUICK_START.tsx) - Copy-paste example to get started
 
@@ -161,6 +168,58 @@ const cube = cubeService.calculateCube(config, {
   )}
 />
 ```
+
+### Zoom-In Navigation
+
+```typescript
+<CubeView
+  cube={cube}
+  enableZoomIn={true}
+  onZoomIn={(group, fullPath) => {
+    // fullPath is an array of dimension filters: [dimensionId -> value]
+    console.log("Zoomed into:", group.dimensionLabel);
+    console.log("Path:", fullPath.map(b => `${b.dimensionId}=${b.label}`).join(" > "));
+    // Example: "region=North > category=Electronics > product=Laptop Pro"
+  }}
+/>
+```
+
+**Features:**
+
+- 🔍 Click "Zoom In" to focus on a group's sub-groups only
+- 🏠 Breadcrumb navigation shows your current dimension path
+- ↩️ Click any breadcrumb to navigate back to that level
+- 📊 Grand totals hidden when zoomed in
+- 🗺️ Full path tracking: `[dimensionId → value, dimensionId2 → value2, ...]`
+- ✨ Smooth Framer Motion animations
+
+See [ZOOM_FEATURE.md](ZOOM_FEATURE.md) for detailed documentation.
+
+### Dynamic Dimension Selection
+
+```typescript
+const [groupBy, setGroupBy] = useState<string[]>(["region"]);
+
+<CubeView
+  cube={cube}
+  enableDimensionPicker={true}
+  onDimensionChange={(dimensionId, level) => {
+    const newGroupBy = [...groupBy];
+    newGroupBy[level] = dimensionId;
+    setGroupBy(newGroupBy.slice(0, level + 1));
+  }}
+/>
+```
+
+**Features:**
+
+- 🎛️ Navigation bar with dimension selector dropdown
+- 📋 "Break down by:" label with available dimensions
+- 🔄 Only shows dimensions not already used in the path
+- 🏠 Always visible breadcrumb navigation
+- ⚡ Real-time cube recalculation on selection change
+
+See [DIMENSION_PICKER.md](DIMENSION_PICKER.md) for detailed documentation.
 
 ## Common Use Cases
 
