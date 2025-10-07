@@ -146,7 +146,7 @@ export interface CubeViewProps {
   enableDimensionPicker?: boolean;
   /** Optional: Show grand totals */
   showGrandTotals?: boolean;
-  /** Optional: Maximum initial expansion depth */
+  /** Optional: Maximum initial expansion depth (0 = all collapsed) */
   maxInitialDepth?: number;
   /** Optional: Enable raw data viewing (requires includeItems in cube calculation) */
   enableRawDataView?: boolean;
@@ -198,7 +198,7 @@ function CubeGroupItem({
   availableDrillDowns,
   enableRawDataView = false,
   enableZoomIn = false,
-  maxInitialDepth = 1,
+  maxInitialDepth = 0,
   ancestorPath = [],
 }: CubeGroupItemProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
@@ -498,7 +498,7 @@ export function CubeView({
   availableDrillDowns,
   enableDimensionPicker = false,
   showGrandTotals = true,
-  maxInitialDepth = 1,
+  maxInitialDepth = 0,
   enableRawDataView = false,
   enableZoomIn = false,
   className,

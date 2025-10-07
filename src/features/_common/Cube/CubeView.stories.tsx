@@ -631,13 +631,20 @@ export const SalesByRegionAndCategory: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region", "category"],
+      groupBy: ["region", "category", "product"],
       activeMeasures: ["revenue", "cost", "profit"],
     };
 
-    const cube = cubeService.calculateCube(config);
+    const cube = cubeService.calculateCube(config, { includeItems: true });
 
-    return <CubeView cube={cube} maxInitialDepth={2} />;
+    return (
+      <CubeView
+        cube={cube}
+        maxInitialDepth={2}
+        enableZoomIn={true}
+        enableRawDataView={true}
+      />
+    );
   },
 };
 
@@ -753,7 +760,12 @@ export const InteractiveSalesCube: Story = {
           </CardContent>
         </Card>
 
-        <CubeView cube={cube} />
+        <CubeView
+          cube={cube}
+          enableZoomIn={true}
+          enableDimensionPicker={true}
+          enableRawDataView={true}
+        />
       </div>
     );
   },
@@ -766,13 +778,20 @@ export const TimeTrackingCube: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      groupBy: ["project", "contractor"],
+      groupBy: ["project", "contractor", "role"],
       activeMeasures: ["hours", "cost", "billing", "profit"],
     };
 
-    const cube = cubeService.calculateCube(config);
+    const cube = cubeService.calculateCube(config, { includeItems: true });
 
-    return <CubeView cube={cube} maxInitialDepth={2} />;
+    return (
+      <CubeView
+        cube={cube}
+        maxInitialDepth={2}
+        enableZoomIn={true}
+        enableRawDataView={true}
+      />
+    );
   },
 };
 
@@ -1022,11 +1041,11 @@ export const ProjectTrackingByUser: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: ["user", "project"],
+      groupBy: ["user", "project", "task"],
       activeMeasures: ["totalHours", "billableHours", "entryCount"],
     };
 
-    const cube = cubeService.calculateCube(config);
+    const cube = cubeService.calculateCube(config, { includeItems: true });
 
     return (
       <div className="space-y-4">
@@ -1034,12 +1053,18 @@ export const ProjectTrackingByUser: Story = {
           <CardHeader>
             <CardTitle>Project Tracking - By User</CardTitle>
             <CardDescription>
-              Track time entries grouped by user and project
+              Track time entries grouped by user and project with zoom
+              navigation
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <CubeView cube={cube} maxInitialDepth={1} />
+        <CubeView
+          cube={cube}
+          maxInitialDepth={1}
+          enableZoomIn={true}
+          enableRawDataView={true}
+        />
       </div>
     );
   },
@@ -1056,7 +1081,7 @@ export const ProjectTrackingHierarchy: Story = {
       activeMeasures: ["totalHours", "billableHours", "avgDuration"],
     };
 
-    const cube = cubeService.calculateCube(config);
+    const cube = cubeService.calculateCube(config, { includeItems: true });
 
     return (
       <div className="space-y-4">
@@ -1064,12 +1089,18 @@ export const ProjectTrackingHierarchy: Story = {
           <CardHeader>
             <CardTitle>Project Hierarchy View</CardTitle>
             <CardDescription>
-              Project → Task → Activity breakdown with time tracking
+              Project → Task → Activity breakdown with zoom navigation and raw
+              data
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <CubeView cube={cube} maxInitialDepth={2} />
+        <CubeView
+          cube={cube}
+          maxInitialDepth={2}
+          enableZoomIn={true}
+          enableRawDataView={true}
+        />
       </div>
     );
   },
