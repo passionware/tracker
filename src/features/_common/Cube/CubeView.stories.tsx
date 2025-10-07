@@ -663,16 +663,7 @@ export const SalesByRegionAndCategory: Story = {
       setGroupBy(newGroupBy.slice(0, level + 1));
     };
 
-    return (
-      <CubeView
-        cube={cube}
-        maxInitialDepth={2}
-        enableZoomIn={true}
-        enableDimensionPicker={true}
-        enableRawDataView={true}
-        onDimensionChange={handleDimensionChange}
-      />
-    );
+    return <CubeView cube={cube} onDimensionChange={handleDimensionChange} />;
   },
 };
 
@@ -790,9 +781,6 @@ export const InteractiveSalesCube: Story = {
 
         <CubeView
           cube={cube}
-          enableZoomIn={true}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
           onDimensionChange={(dimensionId, level) => {
             const newGroupBy = [...groupBy];
             newGroupBy[level] = dimensionId;
@@ -829,16 +817,7 @@ export const TimeTrackingCube: Story = {
       setGroupBy(newGroupBy.slice(0, level + 1));
     };
 
-    return (
-      <CubeView
-        cube={cube}
-        maxInitialDepth={2}
-        enableZoomIn={true}
-        enableDimensionPicker={true}
-        enableRawDataView={true}
-        onDimensionChange={handleDimensionChange}
-      />
-    );
+    return <CubeView cube={cube} onDimensionChange={handleDimensionChange} />;
   },
 };
 
@@ -995,13 +974,7 @@ export const WithRawDataView: Story = {
           </CardHeader>
         </Card>
 
-        <CubeView
-          cube={cube}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
-          maxInitialDepth={1}
-          onDimensionChange={handleDimensionChange}
-        />
+        <CubeView cube={cube} onDimensionChange={handleDimensionChange} />
       </div>
     );
   },
@@ -1043,8 +1016,6 @@ export const CustomRawDataRendering: Story = {
 
         <CubeView
           cube={cube}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
           onDimensionChange={handleDimensionChange}
           renderRawData={(items, group) => (
             <div className="overflow-x-auto">
@@ -1180,14 +1151,7 @@ export const ProjectTrackingByUser: Story = {
           </CardHeader>
         </Card>
 
-        <CubeView
-          cube={cube}
-          maxInitialDepth={1}
-          enableZoomIn={true}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
-          onDimensionChange={handleDimensionChange}
-        />
+        <CubeView cube={cube} onDimensionChange={handleDimensionChange} />
       </div>
     );
   },
@@ -1230,14 +1194,7 @@ export const ProjectTrackingHierarchy: Story = {
           </CardHeader>
         </Card>
 
-        <CubeView
-          cube={cube}
-          maxInitialDepth={2}
-          enableZoomIn={true}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
-          onDimensionChange={handleDimensionChange}
-        />
+        <CubeView cube={cube} onDimensionChange={handleDimensionChange} />
       </div>
     );
   },
@@ -1279,8 +1236,6 @@ export const ProjectTrackingWithRawData: Story = {
 
         <CubeView
           cube={cube}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
           onDimensionChange={handleDimensionChange}
           renderRawData={(items, group) => (
             <div className="overflow-x-auto">
@@ -1408,8 +1363,6 @@ export const BillableAnalysis: Story = {
 
         <CubeView
           cube={cube}
-          maxInitialDepth={2}
-          enableDimensionPicker={true}
           onDimensionChange={handleDimensionChange}
           renderCell={(cell, group) => {
             // Highlight billable hours in green
@@ -1685,10 +1638,6 @@ export const ZoomInNavigation: Story = {
 
         <CubeView
           cube={cube}
-          enableZoomIn={true}
-          enableDimensionPicker={true}
-          enableRawDataView={true}
-          maxInitialDepth={1}
           onDimensionChange={handleDimensionChange}
           onZoomIn={(group, fullPath) => {
             console.log("Zoomed into:", group.dimensionLabel);
@@ -1767,10 +1716,6 @@ export const DynamicDimensionPicker: Story = {
 
         <CubeView
           cube={cube}
-          enableDimensionPicker={true}
-          enableZoomIn={true}
-          enableRawDataView={true}
-          maxInitialDepth={1}
           onDimensionChange={handleDimensionChange}
           onZoomIn={(_group, fullPath) => {
             console.log(

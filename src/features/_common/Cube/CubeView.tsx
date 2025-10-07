@@ -140,6 +140,12 @@ export interface CubeViewProps {
   onZoomIn?: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
   /** Optional: Callback when user changes breakdown dimension at current level */
   onDimensionChange?: (dimensionId: string, level: number) => void;
+  /** Optional: Callback when user selects dimension for a specific group's breakdown */
+  onGroupDimensionSelect?: (
+    group: CubeGroup,
+    dimensionId: string,
+    ancestorPath: BreadcrumbItem[],
+  ) => void;
   /** Optional: Available dimensions for drill-down */
   availableDrillDowns?: string[]; // dimension IDs not yet used in groupBy
   /** Optional: Enable dimension picker */
@@ -172,9 +178,15 @@ interface CubeGroupItemProps {
   onDrillDown?: (group: CubeGroup, newDimensionId: string) => void;
   onViewRawData?: (group: CubeGroup) => void;
   onZoomIn?: (group: CubeGroup, ancestorPath: BreadcrumbItem[]) => void;
+  onGroupDimensionSelect?: (
+    group: CubeGroup,
+    dimensionId: string,
+    ancestorPath: BreadcrumbItem[],
+  ) => void;
   availableDrillDowns?: string[];
   enableRawDataView?: boolean;
   enableZoomIn?: boolean;
+  enableDimensionPicker?: boolean;
   maxInitialDepth?: number;
   ancestorPath?: BreadcrumbItem[];
 }
@@ -195,14 +207,26 @@ function CubeGroupItem({
   onDrillDown,
   onViewRawData,
   onZoomIn,
+  onGroupDimensionSelect,
   availableDrillDowns,
   enableRawDataView = false,
   enableZoomIn = false,
+  enableDimensionPicker = false,
   maxInitialDepth = 0,
   ancestorPath = [],
 }: CubeGroupItemProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
   const hasRawData = enableRawDataView && group.items && group.items.length > 0;
+
+  // Calculate available dimensions for this group's breakdown
+  // Exclude dimensions already used in the ancestor path + this group's dimension
+  const usedDimensions = [
+    ...ancestorPath.map((b) => b.dimensionId),
+    group.dimensionId,
+  ];
+  const availableDimensionsForGroup = dimensions.filter(
+    (d) => !usedDimensions.includes(d.id),
+  );
 
   // Auto-show raw data if no sub-groups exist but raw data is available
   const shouldAutoShowRawData = hasRawData && !hasSubGroups;
@@ -386,6 +410,28 @@ function CubeGroupItem({
                   </SimpleTooltip>
                 </motion.div>
               )}
+
+              {/* Dimension selection buttons */}
+              {enableDimensionPicker &&
+                availableDimensionsForGroup.length > 0 &&
+                availableDimensionsForGroup.map((dim) => (
+                  <motion.div key={dim.id} variants={buttonVariants}>
+                    <SimpleTooltip title={`Break down by ${dim.name}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onGroupDimensionSelect?.(group, dim.id, ancestorPath);
+                        }}
+                      >
+                        {dim.icon && <span className="mr-1">{dim.icon}</span>}
+                        {dim.name}
+                      </Button>
+                    </SimpleTooltip>
+                  </motion.div>
+                ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -459,9 +505,11 @@ function CubeGroupItem({
                         onDrillDown={onDrillDown}
                         onViewRawData={onViewRawData}
                         onZoomIn={onZoomIn}
+                        onGroupDimensionSelect={onGroupDimensionSelect}
                         availableDrillDowns={availableDrillDowns}
                         enableRawDataView={enableRawDataView}
                         enableZoomIn={enableZoomIn}
+                        enableDimensionPicker={enableDimensionPicker}
                         maxInitialDepth={maxInitialDepth}
                         ancestorPath={childPath}
                       />
@@ -495,6 +543,7 @@ export function CubeView({
   onViewRawData,
   onZoomIn,
   onDimensionChange,
+  onGroupDimensionSelect,
   availableDrillDowns,
   enableDimensionPicker = true,
   showGrandTotals = true,
@@ -823,9 +872,11 @@ export function CubeView({
                 onDrillDown={onDrillDown}
                 onViewRawData={onViewRawData}
                 onZoomIn={enableZoomIn ? handleZoomIn : undefined}
+                onGroupDimensionSelect={onGroupDimensionSelect}
                 availableDrillDowns={availableDrillDowns}
                 enableRawDataView={enableRawDataView}
                 enableZoomIn={enableZoomIn}
+                enableDimensionPicker={enableDimensionPicker}
                 maxInitialDepth={maxInitialDepth}
                 ancestorPath={zoomPath}
               />
