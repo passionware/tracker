@@ -394,6 +394,7 @@ export const TimeReportingDashboard = () => {
     // State: Use breakdownMap for per-node dimension control
     const [breakdownMap, setBreakdownMap] = useState<Record<string, string>>({
       "": "project", // Root level starts with project dimension
+      "project:*": "taskType", // All projects break down by task type
     });
 
     const config: CubeConfig<TimeEntryData> = {
@@ -530,12 +531,6 @@ export const TimeReportingDashboard = () => {
           )}
           onDimensionChange={handleDimensionChange}
           onGroupDimensionSelect={handleGroupDimensionSelect}
-          onZoomIn={(_group, fullPath) => {
-            console.log(
-              "Zoomed into:",
-              fullPath.map((b) => `${b.dimensionId}=${b.label}`).join(" > "),
-            );
-          }}
         />
       </div>
     );

@@ -1003,6 +1003,28 @@ export function CubeView({
                                               onClick={(e) => {
                                                 e.stopPropagation();
 
+                                                // Calculate cells for all active measures
+                                                const cells = measures.map(
+                                                  (measure) => {
+                                                    const values =
+                                                      group.items.map((item) =>
+                                                        measure.getValue(item),
+                                                      );
+                                                    const value =
+                                                      measure.aggregate(values);
+                                                    return {
+                                                      measureId: measure.id,
+                                                      value,
+                                                      formattedValue:
+                                                        measure.formatValue
+                                                          ? measure.formatValue(
+                                                              value,
+                                                            )
+                                                          : String(value),
+                                                    };
+                                                  },
+                                                );
+
                                                 // Build the breadcrumb for this specific group
                                                 const breadcrumbItem: BreadcrumbItem =
                                                   {
@@ -1024,17 +1046,25 @@ export function CubeView({
                                                         group.label,
                                                       itemCount:
                                                         group.items.length,
-                                                      cells: [],
+                                                      cells,
                                                       items: group.items,
                                                     },
                                                   };
 
                                                 // Pin (zoom into) this group
-                                                const fullPath = [
-                                                  ...zoomPath,
-                                                  breadcrumbItem,
-                                                ];
-                                                onZoomIn?.(
+                                                // If this is a different dimension than currently displayed,
+                                                // start a fresh path from root
+                                                const fullPath =
+                                                  dimension.id ===
+                                                  currentGroupDimensionId
+                                                    ? // Same dimension - append to current path
+                                                      [
+                                                        ...zoomPath,
+                                                        breadcrumbItem,
+                                                      ]
+                                                    : // Different dimension - start fresh from root
+                                                      [breadcrumbItem];
+                                                handleZoomIn(
                                                   breadcrumbItem.group,
                                                   fullPath,
                                                 );
