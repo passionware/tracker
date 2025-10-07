@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
+import { cn } from "@/lib/utils.ts";
 import type {
   CubeCell,
   CubeDataItem,
@@ -272,6 +273,7 @@ function CubeGroupItem({
         className="p-3 cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
         style={{ paddingLeft: `${12 + indent}px` }}
         onClick={toggleExpansion}
+        data-group-key={`${group.dimensionId}:${group.dimensionKey}`}
       >
         {/* Main content row */}
         <div className="flex items-center justify-between gap-4">
@@ -631,9 +633,19 @@ export function CubeView({
 
   // Get available dimensions for current level
   const usedDimensionIds = zoomPath.map((b) => b.dimensionId);
-  const currentDimensionId = displayGroups[0]?.dimensionId;
+
+  // Current dimension shown in the groups (e.g., "region" if showing North, South, etc.)
+  const currentGroupDimensionId = displayGroups[0]?.dimensionId;
+
+  // Dimension used for children of these groups (what the dropdown should show/set)
+  // If we have groups, check if they have a childDimensionId set
+  const currentChildDimensionId = displayGroups[0]?.childDimensionId;
+
+  // For the dropdown, we need to exclude:
+  // 1. Dimensions used in the zoom path (ancestors)
+  // 2. The current group's dimension (what's being displayed now)
   const availableDimensions = config.dimensions.filter(
-    (d) => !usedDimensionIds.includes(d.id),
+    (d) => !usedDimensionIds.includes(d.id) && d.id !== currentGroupDimensionId,
   );
 
   return (
@@ -684,7 +696,7 @@ export function CubeView({
                     : "Break down children by:"}
                 </span>
                 <Select
-                  value={currentDimensionId || ""}
+                  value={currentChildDimensionId}
                   onValueChange={(value) => {
                     if (zoomPath.length === 0) {
                       // Root level - use onDimensionChange
@@ -728,13 +740,13 @@ export function CubeView({
         {/* Summary Sidebar - shows totals for current zoom level */}
         {showGrandTotals && (
           <motion.div
-            className="w-64 flex-shrink-0"
+            className="w-80 flex-shrink-0"
             key={zoomPath.map((b) => b.dimensionKey).join("-") || "root"}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="sticky top-4">
+            <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
               <CardHeader>
                 <CardTitle className="text-base">
                   {zoomPath.length === 0
@@ -802,56 +814,223 @@ export function CubeView({
                     );
                   })}
 
-                  {/* Mini sparkline-style breakdown chart */}
-                  {displayGroups.length > 0 && displayGroups.length <= 10 && (
-                    <div className="pt-4 border-t space-y-2">
-                      <div className="text-xs font-medium text-slate-600">
-                        Breakdown
-                      </div>
-                      <div className="space-y-1">
-                        {displayGroups.slice(0, 5).map((group) => {
-                          const firstCell = group.cells[0];
-                          const numValue =
-                            typeof firstCell?.value === "number"
-                              ? firstCell.value
-                              : 0;
-                          const total =
-                            zoomPath.length === 0
-                              ? cube.grandTotals[0]?.value
-                              : zoomPath[zoomPath.length - 1].group.cells[0]
-                                  ?.value;
-                          const totalNum =
-                            typeof total === "number" ? total : 1;
-                          const pct =
-                            totalNum > 0 ? (numValue / totalNum) * 100 : 0;
+                  {/* Multi-dimensional breakdowns */}
+                  {availableDimensions.length > 0 &&
+                    (() => {
+                      // Get current data items (either root or zoomed group)
+                      const currentItems =
+                        zoomPath.length === 0
+                          ? config.data
+                          : zoomPath[zoomPath.length - 1].group.items || [];
 
-                          return (
-                            <div key={group.dimensionKey} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-700 truncate max-w-[140px]">
-                                  {group.dimensionLabel}
-                                </span>
-                                <span className="text-slate-500 text-[10px]">
-                                  {pct.toFixed(1)}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-slate-100 rounded-full h-1">
-                                <div
-                                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {displayGroups.length > 5 && (
-                          <div className="text-xs text-slate-400 text-center pt-1">
-                            +{displayGroups.length - 5} more
+                      if (!currentItems.length) return null;
+
+                      // Calculate breakdowns for all available dimensions
+                      return (
+                        <div className="pt-4 border-t space-y-4">
+                          <div className="text-xs font-medium text-slate-600">
+                            Explore by Dimension
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+
+                          {availableDimensions.map((dimension) => {
+                            // Group items by this dimension
+                            const grouped = new Map<
+                              string,
+                              typeof currentItems
+                            >();
+                            currentItems.forEach((item) => {
+                              const value = dimension.getValue(item);
+                              const key = dimension.getKey
+                                ? dimension.getKey(value)
+                                : String(value ?? "null");
+                              if (!grouped.has(key)) {
+                                grouped.set(key, []);
+                              }
+                              grouped.get(key)!.push(item);
+                            });
+
+                            // Sort by size and take top 5
+                            const sortedGroups = Array.from(grouped.entries())
+                              .map(([key, items]) => {
+                                const value = dimension.getValue(items[0]);
+                                const label = dimension.formatValue
+                                  ? dimension.formatValue(value)
+                                  : String(value);
+
+                                // Calculate measure value (use first measure)
+                                const measure = measures[0];
+                                const measureValues = items.map((item) =>
+                                  measure.getValue(item),
+                                );
+                                const aggregatedValue =
+                                  measure.aggregate(measureValues);
+                                const numValue =
+                                  typeof aggregatedValue === "number"
+                                    ? aggregatedValue
+                                    : 0;
+
+                                return { key, label, items, numValue };
+                              })
+                              .sort((a, b) => b.numValue - a.numValue);
+
+                            const totalValue = sortedGroups.reduce(
+                              (sum, g) => sum + g.numValue,
+                              0,
+                            );
+                            const topGroups = sortedGroups.slice(0, 5);
+
+                            const isCurrentDimension =
+                              currentChildDimensionId === dimension.id;
+
+                            return (
+                              <div
+                                key={dimension.id}
+                                className={cn(
+                                  "space-y-2 p-2 rounded-lg transition-all cursor-pointer",
+                                  isCurrentDimension
+                                    ? "bg-indigo-50 ring-2 ring-indigo-200"
+                                    : "hover:bg-slate-50",
+                                )}
+                                onClick={() => {
+                                  // Set this dimension as the breakdown for current level's children
+                                  if (zoomPath.length === 0) {
+                                    onDimensionChange?.(dimension.id, 0);
+                                  } else {
+                                    const currentBreadcrumb =
+                                      zoomPath[zoomPath.length - 1];
+                                    const ancestorPath = zoomPath.slice(0, -1);
+                                    onGroupDimensionSelect?.(
+                                      currentBreadcrumb.group,
+                                      dimension.id,
+                                      ancestorPath,
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  {dimension.icon && (
+                                    <span className="text-xs">
+                                      {dimension.icon}
+                                    </span>
+                                  )}
+                                  <span
+                                    className={cn(
+                                      "text-xs font-medium",
+                                      isCurrentDimension
+                                        ? "text-indigo-700"
+                                        : "text-slate-700",
+                                    )}
+                                  >
+                                    {dimension.name}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    ({grouped.size})
+                                  </span>
+                                  {isCurrentDimension && (
+                                    <span className="ml-auto text-indigo-600">
+                                      <svg
+                                        className="w-3 h-3"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                      >
+                                        <path
+                                          fillRule="evenodd"
+                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                          clipRule="evenodd"
+                                        />
+                                      </svg>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="space-y-1">
+                                  {topGroups.map((group) => {
+                                    const pct =
+                                      totalValue > 0
+                                        ? (group.numValue / totalValue) * 100
+                                        : 0;
+
+                                    return (
+                                      <div
+                                        key={group.key}
+                                        className="space-y-0.5 group/item p-1 -mx-1 rounded transition-colors"
+                                      >
+                                        <div className="flex items-center justify-between text-[11px]">
+                                          <span className="text-slate-600 truncate max-w-[120px]">
+                                            {group.label}
+                                          </span>
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-slate-400">
+                                              {pct.toFixed(0)}%
+                                            </span>
+                                            <button
+                                              className="p-0.5 hover:bg-indigo-100 rounded transition-colors"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+
+                                                // Build the breadcrumb for this specific group
+                                                const breadcrumbItem: BreadcrumbItem =
+                                                  {
+                                                    dimensionId: dimension.id,
+                                                    dimensionValue:
+                                                      dimension.getValue(
+                                                        group.items[0],
+                                                      ),
+                                                    dimensionKey: group.key,
+                                                    label: group.label,
+                                                    group: {
+                                                      dimensionId: dimension.id,
+                                                      dimensionValue:
+                                                        dimension.getValue(
+                                                          group.items[0],
+                                                        ),
+                                                      dimensionKey: group.key,
+                                                      dimensionLabel:
+                                                        group.label,
+                                                      itemCount:
+                                                        group.items.length,
+                                                      cells: [],
+                                                      items: group.items,
+                                                    },
+                                                  };
+
+                                                // Pin (zoom into) this group
+                                                const fullPath = [
+                                                  ...zoomPath,
+                                                  breadcrumbItem,
+                                                ];
+                                                onZoomIn?.(
+                                                  breadcrumbItem.group,
+                                                  fullPath,
+                                                );
+                                              }}
+                                              title="Pin this group"
+                                            >
+                                              <ZoomIn className="w-3 h-3 text-slate-500 hover:text-indigo-700" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center">
+                                          <div
+                                            className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-1 rounded-full transition-all duration-500"
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {grouped.size > 5 && (
+                                    <div className="text-[10px] text-slate-400 text-right pt-0.5">
+                                      +{grouped.size - 5} more
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                 </div>
               </CardContent>
             </Card>
