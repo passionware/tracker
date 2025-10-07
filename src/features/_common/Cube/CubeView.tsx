@@ -680,21 +680,32 @@ export function CubeView({
                 <Home className="w-3 h-3 mr-1" />
                 Root
               </Button>
-              {zoomPath.map((breadcrumb, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <ChevronRight className="w-3 h-3 text-slate-400" />
-                  <Button
-                    variant={
-                      index === zoomPath.length - 1 ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2"
-                    onClick={() => handleBreadcrumbClick(index)}
-                  >
-                    {breadcrumb.label}
-                  </Button>
-                </div>
-              ))}
+              {zoomPath.map((breadcrumb, index) => {
+                const dimension = config.dimensions.find(
+                  (d) => d.id === breadcrumb.dimensionId,
+                );
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-slate-400" />
+                    <Button
+                      variant={
+                        index === zoomPath.length - 1 ? "secondary" : "ghost"
+                      }
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => handleBreadcrumbClick(index)}
+                    >
+                      {dimension?.icon && (
+                        <span className="mr-1">{dimension.icon}</span>
+                      )}
+                      <span className="text-slate-500 font-normal">
+                        {dimension?.name || breadcrumb.dimensionId}:
+                      </span>
+                      <span className="ml-1">{breadcrumb.label}</span>
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Dimension Picker - show at all levels when zoomed in */}

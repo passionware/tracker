@@ -318,7 +318,11 @@ export function calculateCube<TData extends CubeDataItem>(
     groups,
     totalItems: filteredData.length,
     grandTotals,
-    config: config as CubeConfig<CubeDataItem>,
+    config: {
+      ...config,
+      // Include the effective breakdownMap so CubeView can access it
+      breakdownMap: effectiveBreakdownMap,
+    } as CubeConfig<CubeDataItem>,
   };
 }
 
