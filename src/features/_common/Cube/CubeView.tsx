@@ -13,17 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Home, ZoomIn } from "lucide-react";
-import { useEffect, useState } from "react";
 import type {
   CubeCell,
   CubeDataItem,
@@ -32,6 +22,16 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
+import { ChevronRight, ZoomIn, Home } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 
 /**
  * Animation variants for smooth transitions
@@ -318,8 +318,8 @@ function CubeGroupItem({
               animate="visible"
               exit="hidden"
             >
-              {/* Zoom in button */}
-              {enableZoomIn && hasSubGroups && (
+              {/* Zoom in button - show for groups with subgroups OR raw data */}
+              {enableZoomIn && (hasSubGroups || hasRawData) && (
                 <motion.div variants={buttonVariants}>
                   <SimpleTooltip title="Zoom into this group">
                     <Button
@@ -496,11 +496,11 @@ export function CubeView({
   onZoomIn,
   onDimensionChange,
   availableDrillDowns,
-  enableDimensionPicker = false,
+  enableDimensionPicker = true,
   showGrandTotals = true,
   maxInitialDepth = 0,
-  enableRawDataView = false,
-  enableZoomIn = false,
+  enableRawDataView = true,
+  enableZoomIn = true,
   className,
 }: CubeViewProps) {
   const config = cube.config;
@@ -523,7 +523,14 @@ export function CubeView({
   // Handle zoom in - receives the full path from the child component
   const handleZoomIn = (group: CubeGroup, fullPath: BreadcrumbItem[]) => {
     setZoomPath(fullPath);
-    setDisplayGroups(group.subGroups || []);
+    // If the group has sub-groups, show them
+    // Otherwise, show the leaf group itself so raw data can be displayed
+    if (group.subGroups && group.subGroups.length > 0) {
+      setDisplayGroups(group.subGroups);
+    } else {
+      // Leaf node - show it as a single group so raw data can be displayed
+      setDisplayGroups([group]);
+    }
     onZoomIn?.(group, fullPath);
   };
 
@@ -757,7 +764,7 @@ export function CubeView({
           </motion.div>
         )}
 
-        {/* Groups */}
+        {/* Groups or Raw Data */}
         <motion.div
           className="flex-1 space-y-3"
           key={zoomPath.length} // Re-render when zoom level changes
@@ -774,6 +781,30 @@ export function CubeView({
             >
               No data to display
             </motion.div>
+          ) : displayGroups.length === 1 &&
+            !displayGroups[0].subGroups &&
+            displayGroups[0].items &&
+            displayGroups[0].items.length > 0 ? (
+            // Zoomed into a leaf node - show raw data directly
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Raw Data</CardTitle>
+                <CardDescription className="text-xs">
+                  {displayGroups[0].items.length} items
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderRawData ? (
+                  renderRawData(displayGroups[0].items, displayGroups[0])
+                ) : (
+                  <div className="bg-slate-50 rounded p-3 max-h-96 overflow-auto">
+                    <pre className="text-xs">
+                      {JSON.stringify(displayGroups[0].items, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             displayGroups.map((group, idx) => (
               <CubeGroupItem

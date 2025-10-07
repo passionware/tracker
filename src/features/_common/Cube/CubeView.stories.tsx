@@ -610,39 +610,67 @@ type Story = StoryObj<typeof CubeView>;
 // Story 1: Basic sales cube grouped by region
 export const SalesByRegion: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["region"]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region"],
+      groupBy: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
     const cube = cubeService.calculateCube(config);
 
-    return <CubeView cube={cube} />;
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
+    return (
+      <CubeView
+        cube={cube}
+        enableDimensionPicker={true}
+        onDimensionChange={handleDimensionChange}
+      />
+    );
   },
 };
 
 // Story 2: Multi-level grouping (region > category)
 export const SalesByRegionAndCategory: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([
+      "region",
+      "category",
+      "product",
+    ]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region", "category", "product"],
+      groupBy: groupBy,
       activeMeasures: ["revenue", "cost", "profit"],
     };
 
     const cube = cubeService.calculateCube(config, { includeItems: true });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <CubeView
         cube={cube}
         maxInitialDepth={2}
         enableZoomIn={true}
+        enableDimensionPicker={true}
         enableRawDataView={true}
+        onDimensionChange={handleDimensionChange}
       />
     );
   },
@@ -765,6 +793,11 @@ export const InteractiveSalesCube: Story = {
           enableZoomIn={true}
           enableDimensionPicker={true}
           enableRawDataView={true}
+          onDimensionChange={(dimensionId, level) => {
+            const newGroupBy = [...groupBy];
+            newGroupBy[level] = dimensionId;
+            setGroupBy(newGroupBy.slice(0, level + 1));
+          }}
         />
       </div>
     );
@@ -774,22 +807,36 @@ export const InteractiveSalesCube: Story = {
 // Story 4: Time tracking cube
 export const TimeTrackingCube: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([
+      "project",
+      "contractor",
+      "role",
+    ]);
+
     const config: CubeConfig<TimeEntry> = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      groupBy: ["project", "contractor", "role"],
+      groupBy: groupBy,
       activeMeasures: ["hours", "cost", "billing", "profit"],
     };
 
     const cube = cubeService.calculateCube(config, { includeItems: true });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <CubeView
         cube={cube}
         maxInitialDepth={2}
         enableZoomIn={true}
+        enableDimensionPicker={true}
         enableRawDataView={true}
+        onDimensionChange={handleDimensionChange}
       />
     );
   },
@@ -798,19 +845,29 @@ export const TimeTrackingCube: Story = {
 // Story 5: Custom rendering
 export const CustomRendering: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["region", "category"]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region", "category"],
+      groupBy: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
     const cube = cubeService.calculateCube(config);
 
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
     return (
       <CubeView
         cube={cube}
+        enableDimensionPicker={true}
+        onDimensionChange={handleDimensionChange}
         renderGroupHeader={(group, level) => (
           <div className="flex items-center gap-2">
             <Badge variant={level === 0 ? "primary" : "secondary"}>
@@ -845,44 +902,74 @@ export const CustomRendering: Story = {
 // Story 6: All measures
 export const AllMeasures: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["project"]);
+
     const config: CubeConfig<TimeEntry> = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      groupBy: ["project"],
+      groupBy: groupBy,
       // All measures active (default)
     };
 
     const cube = cubeService.calculateCube(config);
 
-    return <CubeView cube={cube} />;
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
+    return (
+      <CubeView
+        cube={cube}
+        enableDimensionPicker={true}
+        onDimensionChange={handleDimensionChange}
+      />
+    );
   },
 };
 
 // Story 7: No grouping (grand totals only)
 export const GrandTotalsOnly: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: [], // No grouping
+      groupBy: groupBy, // No grouping
     };
 
     const cube = cubeService.calculateCube(config);
 
-    return <CubeView cube={cube} />;
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
+
+    return (
+      <CubeView
+        cube={cube}
+        enableDimensionPicker={true}
+        onDimensionChange={handleDimensionChange}
+      />
+    );
   },
 };
 
 // Story 8: With raw data viewing
 export const WithRawDataView: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["region", "category"]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region", "category"],
+      groupBy: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
@@ -890,6 +977,12 @@ export const WithRawDataView: Story = {
     const cube = cubeService.calculateCube(config, {
       includeItems: true,
     });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -902,7 +995,13 @@ export const WithRawDataView: Story = {
           </CardHeader>
         </Card>
 
-        <CubeView cube={cube} enableRawDataView={true} maxInitialDepth={1} />
+        <CubeView
+          cube={cube}
+          enableDimensionPicker={true}
+          enableRawDataView={true}
+          maxInitialDepth={1}
+          onDimensionChange={handleDimensionChange}
+        />
       </div>
     );
   },
@@ -911,17 +1010,25 @@ export const WithRawDataView: Story = {
 // Story 9: Custom raw data rendering
 export const CustomRawDataRendering: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["region"]);
+
     const config: CubeConfig<SalesTransaction> = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: ["region"],
+      groupBy: groupBy,
       activeMeasures: ["revenue", "profit", "quantity"],
     };
 
     const cube = cubeService.calculateCube(config, {
       includeItems: true,
     });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -936,7 +1043,9 @@ export const CustomRawDataRendering: Story = {
 
         <CubeView
           cube={cube}
+          enableDimensionPicker={true}
           enableRawDataView={true}
+          onDimensionChange={handleDimensionChange}
           renderRawData={(items, group) => (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -1037,15 +1146,27 @@ export const CustomRawDataRendering: Story = {
 // Story 10: Project Tracking by User
 export const ProjectTrackingByUser: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([
+      "user",
+      "project",
+      "task",
+    ]);
+
     const config: CubeConfig<ProjectTimeEntry> = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: ["user", "project", "task"],
+      groupBy: groupBy,
       activeMeasures: ["totalHours", "billableHours", "entryCount"],
     };
 
     const cube = cubeService.calculateCube(config, { includeItems: true });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -1063,7 +1184,9 @@ export const ProjectTrackingByUser: Story = {
           cube={cube}
           maxInitialDepth={1}
           enableZoomIn={true}
+          enableDimensionPicker={true}
           enableRawDataView={true}
+          onDimensionChange={handleDimensionChange}
         />
       </div>
     );
@@ -1073,15 +1196,27 @@ export const ProjectTrackingByUser: Story = {
 // Story 11: Project Tracking by Project → Task → Activity
 export const ProjectTrackingHierarchy: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>([
+      "project",
+      "task",
+      "activity",
+    ]);
+
     const config: CubeConfig<ProjectTimeEntry> = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: ["project", "task", "activity"],
+      groupBy: groupBy,
       activeMeasures: ["totalHours", "billableHours", "avgDuration"],
     };
 
     const cube = cubeService.calculateCube(config, { includeItems: true });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -1099,7 +1234,9 @@ export const ProjectTrackingHierarchy: Story = {
           cube={cube}
           maxInitialDepth={2}
           enableZoomIn={true}
+          enableDimensionPicker={true}
           enableRawDataView={true}
+          onDimensionChange={handleDimensionChange}
         />
       </div>
     );
@@ -1109,17 +1246,25 @@ export const ProjectTrackingHierarchy: Story = {
 // Story 12: Project Tracking with Raw Data View
 export const ProjectTrackingWithRawData: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["project", "user"]);
+
     const config: CubeConfig<ProjectTimeEntry> = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: ["project", "user"],
+      groupBy: groupBy,
       activeMeasures: ["totalHours", "billableHours"],
     };
 
     const cube = cubeService.calculateCube(config, {
       includeItems: true,
     });
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -1134,7 +1279,9 @@ export const ProjectTrackingWithRawData: Story = {
 
         <CubeView
           cube={cube}
+          enableDimensionPicker={true}
           enableRawDataView={true}
+          onDimensionChange={handleDimensionChange}
           renderRawData={(items, group) => (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -1230,15 +1377,23 @@ export const ProjectTrackingWithRawData: Story = {
 // Story 13: Billable vs Non-Billable Analysis
 export const BillableAnalysis: Story = {
   render: () => {
+    const [groupBy, setGroupBy] = useState<string[]>(["billable", "project"]);
+
     const config: CubeConfig<ProjectTimeEntry> = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: ["billable", "project"],
+      groupBy: groupBy,
       activeMeasures: ["totalHours", "entryCount"],
     };
 
     const cube = cubeService.calculateCube(config);
+
+    const handleDimensionChange = (dimensionId: string, level: number) => {
+      const newGroupBy = [...groupBy];
+      newGroupBy[level] = dimensionId;
+      setGroupBy(newGroupBy.slice(0, level + 1));
+    };
 
     return (
       <div className="space-y-4">
@@ -1254,6 +1409,8 @@ export const BillableAnalysis: Story = {
         <CubeView
           cube={cube}
           maxInitialDepth={2}
+          enableDimensionPicker={true}
+          onDimensionChange={handleDimensionChange}
           renderCell={(cell, group) => {
             // Highlight billable hours in green
             const isBillableGroup = group.dimensionLabel === "Billable";
@@ -1429,7 +1586,16 @@ export const InteractiveProjectDashboard: Story = {
           </CardContent>
         </Card>
 
-        <CubeView cube={cube} maxInitialDepth={1} />
+        <CubeView
+          cube={cube}
+          maxInitialDepth={1}
+          enableDimensionPicker={true}
+          onDimensionChange={(dimensionId, level) => {
+            const newGroupBy = [...groupBy];
+            newGroupBy[level] = dimensionId;
+            setGroupBy(newGroupBy.slice(0, level + 1));
+          }}
+        />
       </div>
     );
   },
