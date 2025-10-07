@@ -81,6 +81,16 @@ export interface DimensionFilter<TValue = unknown> {
 }
 
 /**
+ * Per-node breakdown configuration
+ * Maps a path to the dimension to use for that node's children
+ */
+export interface BreakdownMap {
+  /** Key: path string (e.g., "region:North" or "region:North|category:Electronics") */
+  /** Value: dimension ID to use for children */
+  [path: string]: string;
+}
+
+/**
  * Configuration for cube calculation
  */
 export interface CubeConfig<TData extends CubeDataItem> {
@@ -92,8 +102,15 @@ export interface CubeConfig<TData extends CubeDataItem> {
   measures: MeasureDescriptor<TData, unknown>[];
   /** Active filters */
   filters?: DimensionFilter[];
-  /** Dimensions to group by (in order) */
-  groupBy?: string[]; // dimension IDs
+  /** Per-node breakdown configuration - PRIMARY way to define hierarchies */
+  breakdownMap?: BreakdownMap;
+  /**
+   * Default dimension sequence for simple cases (legacy support)
+   * This is a convenience option that gets converted to breakdownMap internally
+   * For full flexibility, use breakdownMap directly
+   * @deprecated Use breakdownMap for better control
+   */
+  defaultDimensionSequence?: string[]; // dimension IDs
   /** Measures to include in results */
   activeMeasures?: string[]; // measure IDs (defaults to all)
 }
@@ -127,6 +144,10 @@ export interface CubeGroup {
   subGroups?: CubeGroup[];
   /** Reference to original data items (optional, for drill-through) */
   items?: CubeDataItem[];
+  /** Path to this node (for breakdown map lookup) */
+  path?: string;
+  /** Dimension ID used for this group's children (from breakdownMap) */
+  childDimensionId?: string;
 }
 
 /**

@@ -13,7 +13,12 @@ import {
   type MeasureDescriptor,
 } from "@/features/_common/Cube/index.ts";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 
 // ============================================================================
@@ -148,7 +153,7 @@ export function QuickStartCubeExample() {
     data: salesData,
     dimensions,
     measures,
-    groupBy, // e.g., ["region"] or ["region", "product"] for multi-level
+    defaultDimensionSequence: groupBy, // e.g., ["region"] or ["region", "product"] for multi-level
     activeMeasures: selectedMeasures, // Which measures to show
     filters: [
       // Optional: Add filters
@@ -315,7 +320,7 @@ export function QuickStartCubeExample() {
    ]
 
 4. MULTI-LEVEL GROUPING:
-   groupBy: ["region", "product", "salesperson"]
+   defaultDimensionSequence: ["region", "product", "salesperson"]
    Creates: Region → Product → Salesperson hierarchy
 
 5. CUSTOM CELL RENDERING:

@@ -616,7 +616,7 @@ export const SalesByRegion: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
@@ -651,7 +651,7 @@ export const SalesByRegionAndCategory: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "cost", "profit"],
     };
 
@@ -677,7 +677,7 @@ export const InteractiveSalesCube: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "profit", "quantity"],
       filters: selectedRegion
         ? [{ dimensionId: "region", operator: "equals", value: selectedRegion }]
@@ -805,7 +805,7 @@ export const TimeTrackingCube: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["hours", "cost", "billing", "profit"],
     };
 
@@ -830,7 +830,7 @@ export const CustomRendering: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
@@ -887,7 +887,7 @@ export const AllMeasures: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       // All measures active (default)
     };
 
@@ -918,7 +918,7 @@ export const GrandTotalsOnly: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy, // No grouping
+      defaultDimensionSequence: groupBy, // No grouping
     };
 
     const cube = cubeService.calculateCube(config);
@@ -948,7 +948,7 @@ export const WithRawDataView: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "profit"],
     };
 
@@ -989,7 +989,7 @@ export const CustomRawDataRendering: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["revenue", "profit", "quantity"],
     };
 
@@ -1127,7 +1127,7 @@ export const ProjectTrackingByUser: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalHours", "billableHours", "entryCount"],
     };
 
@@ -1170,7 +1170,7 @@ export const ProjectTrackingHierarchy: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalHours", "billableHours", "avgDuration"],
     };
 
@@ -1209,7 +1209,7 @@ export const ProjectTrackingWithRawData: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalHours", "billableHours"],
     };
 
@@ -1338,7 +1338,7 @@ export const BillableAnalysis: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalHours", "entryCount"],
     };
 
@@ -1401,7 +1401,7 @@ export const InteractiveProjectDashboard: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: selectedMeasures,
       filters:
         filterBillable !== null
@@ -1569,7 +1569,7 @@ export const ZoomInNavigation: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalRevenue", "profit", "transactionCount"],
     };
 
@@ -1671,7 +1671,7 @@ export const DynamicDimensionPicker: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      groupBy: groupBy,
+      defaultDimensionSequence: groupBy,
       activeMeasures: ["totalRevenue", "profit"],
     };
 

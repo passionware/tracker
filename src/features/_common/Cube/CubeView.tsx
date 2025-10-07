@@ -557,17 +557,48 @@ export function CubeView({
     ? config.measures.filter((m) => config.activeMeasures!.includes(m.id))
     : config.measures;
 
-  const appliedDimensions = config.groupBy || [];
+  // Get list of applied dimensions from breakdownMap (extract unique dimension IDs)
+  const appliedDimensions = config.breakdownMap
+    ? Object.values(config.breakdownMap).filter(
+        (v, i, arr) => arr.indexOf(v) === i,
+      ) // unique
+    : [];
 
   // Zoom state management
   const [zoomPath, setZoomPath] = useState<BreadcrumbItem[]>([]);
   const [displayGroups, setDisplayGroups] = useState<CubeGroup[]>(cube.groups);
 
-  // Reset zoom when cube changes
+  // Reset zoom and update display groups when cube changes
   useEffect(() => {
-    setZoomPath([]);
-    setDisplayGroups(cube.groups);
-  }, [cube]);
+    if (zoomPath.length === 0) {
+      // At root - just update groups
+      setDisplayGroups(cube.groups);
+    } else {
+      // Zoomed in - need to find the corresponding group in new cube
+      // and update displayGroups to match
+      let currentGroups = cube.groups;
+
+      // Navigate through the zoom path to find the current groups
+      for (const breadcrumb of zoomPath) {
+        const foundGroup = currentGroups.find(
+          (g) =>
+            g.dimensionKey === breadcrumb.dimensionKey &&
+            g.dimensionId === breadcrumb.dimensionId,
+        );
+
+        if (foundGroup) {
+          currentGroups = foundGroup.subGroups || [foundGroup];
+        } else {
+          // Path no longer valid - reset to root
+          setZoomPath([]);
+          setDisplayGroups(cube.groups);
+          return;
+        }
+      }
+
+      setDisplayGroups(currentGroups);
+    }
+  }, [cube, zoomPath]);
 
   // Handle zoom in - receives the full path from the child component
   const handleZoomIn = (group: CubeGroup, fullPath: BreadcrumbItem[]) => {
@@ -600,7 +631,7 @@ export function CubeView({
 
   // Get available dimensions for current level
   const usedDimensionIds = zoomPath.map((b) => b.dimensionId);
-  const currentDimensionId = config.groupBy?.[zoomPath.length];
+  const currentDimensionId = displayGroups[0]?.dimensionId;
   const availableDimensions = config.dimensions.filter(
     (d) => !usedDimensionIds.includes(d.id),
   );
@@ -644,16 +675,30 @@ export function CubeView({
               ))}
             </div>
 
-            {/* Dimension Picker */}
+            {/* Dimension Picker - show at all levels when zoomed in */}
             {enableDimensionPicker && availableDimensions.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-600 whitespace-nowrap">
-                  Break down by:
+                  {zoomPath.length === 0
+                    ? "Break down by:"
+                    : "Break down children by:"}
                 </span>
                 <Select
                   value={currentDimensionId || ""}
                   onValueChange={(value) => {
-                    onDimensionChange?.(value, zoomPath.length);
+                    if (zoomPath.length === 0) {
+                      // Root level - use onDimensionChange
+                      onDimensionChange?.(value, zoomPath.length);
+                    } else {
+                      // Zoomed in - use onGroupDimensionSelect for current group
+                      const currentBreadcrumb = zoomPath[zoomPath.length - 1];
+                      const ancestorPath = zoomPath.slice(0, -1);
+                      onGroupDimensionSelect?.(
+                        currentBreadcrumb.group,
+                        value,
+                        ancestorPath,
+                      );
+                    }
                   }}
                 >
                   <SelectTrigger className="h-7 w-[180px] text-xs">

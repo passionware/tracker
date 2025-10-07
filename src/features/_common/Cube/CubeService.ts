@@ -15,6 +15,7 @@ import type {
   MeasureDescriptor,
   CubeCalculationOptions,
   FilterOperator,
+  BreakdownMap,
 } from "./CubeService.types.ts";
 
 /**
@@ -111,23 +112,24 @@ function calculateMeasures<TData extends CubeDataItem>(
 }
 
 /**
- * Build hierarchical groups
+ * Build hierarchical groups with per-node breakdown support
  */
-function buildGroups<TData extends CubeDataItem>(
+function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   data: TData[],
-  groupBy: string[],
+  dimensionId: string,
+  breakdownMap: Record<string, string>,
   dimensions: DimensionDescriptor<TData, unknown>[],
   measures: MeasureDescriptor<TData, unknown>[],
-  depth: number,
+  parentPath: string,
   maxDepth: number,
+  currentDepth: number,
   includeItems: boolean,
   skipEmptyGroups: boolean,
 ): CubeGroup[] {
-  if (depth >= maxDepth || depth >= groupBy.length || data.length === 0) {
+  if (currentDepth >= maxDepth || data.length === 0) {
     return [];
   }
 
-  const dimensionId = groupBy[depth];
   const dimension = dimensions.find((d) => d.id === dimensionId);
   if (!dimension) return [];
 
@@ -155,24 +157,42 @@ function buildGroups<TData extends CubeDataItem>(
       ? dimension.formatValue(firstValue)
       : String(firstValue);
 
+    // Build path for this node
+    const nodePath = parentPath
+      ? `${parentPath}|${dimensionId}:${key}`
+      : `${dimensionId}:${key}`;
+
+    // Check if there's a breakdown defined for this node's children
+    // First try exact match, then try wildcard match
+    let childDimensionId = breakdownMap[nodePath];
+
+    if (!childDimensionId) {
+      // Try wildcard match by replacing the last value with *
+      const wildcardPath = parentPath
+        ? `${parentPath}|${dimensionId}:*`
+        : `${dimensionId}:*`;
+      childDimensionId = breakdownMap[wildcardPath];
+    }
+
     const cells = calculateMeasures(
       items,
       measures as MeasureDescriptor<TData>[],
     );
 
-    const subGroups =
-      depth + 1 < groupBy.length
-        ? buildGroups(
-            items,
-            groupBy,
-            dimensions,
-            measures,
-            depth + 1,
-            maxDepth,
-            includeItems,
-            skipEmptyGroups,
-          )
-        : undefined;
+    const subGroups = childDimensionId
+      ? buildGroupsWithBreakdownMap(
+          items,
+          childDimensionId,
+          breakdownMap,
+          dimensions,
+          measures,
+          nodePath,
+          maxDepth,
+          currentDepth + 1,
+          includeItems,
+          skipEmptyGroups,
+        )
+      : undefined;
 
     groups.push({
       dimensionId,
@@ -183,10 +203,52 @@ function buildGroups<TData extends CubeDataItem>(
       cells,
       subGroups,
       items: includeItems ? items : undefined,
+      path: nodePath,
+      childDimensionId,
     });
   });
 
   return groups;
+}
+
+/**
+ * Convert a simple dimension sequence to a breakdownMap with wildcards
+ * This is a convenience function for backward compatibility
+ *
+ * Example:
+ *   ["region", "category", "product"]
+ * Becomes:
+ *   {
+ *     "": "region",
+ *     "region:*": "category",
+ *     "region:*|category:*": "product"
+ *   }
+ */
+function dimensionSequenceToBreakdownMap(dimensionIds: string[]): BreakdownMap {
+  const map: BreakdownMap = {};
+
+  if (dimensionIds.length === 0) return map;
+
+  // Root level uses first dimension
+  map[""] = dimensionIds[0];
+
+  // Build wildcard patterns for each depth level
+  let pathPattern = "";
+  for (let i = 0; i < dimensionIds.length - 1; i++) {
+    const currentDimension = dimensionIds[i];
+    const nextDimension = dimensionIds[i + 1];
+
+    // Build the wildcard path for this level
+    if (pathPattern === "") {
+      pathPattern = `${currentDimension}:*`;
+    } else {
+      pathPattern += `|${currentDimension}:*`;
+    }
+
+    map[pathPattern] = nextDimension;
+  }
+
+  return map;
 }
 
 /**
@@ -214,23 +276,39 @@ export function calculateCube<TData extends CubeDataItem>(
     ? config.measures.filter((m) => config.activeMeasures!.includes(m.id))
     : config.measures;
 
-  // Step 3: Build groups
-  const groupBy = config.groupBy || [];
-  const groups =
-    groupBy.length > 0
-      ? buildGroups(
-          filteredData,
-          groupBy,
-          config.dimensions,
-          activeMeasures,
-          0,
-          maxDepth,
-          includeItems,
-          skipEmptyGroups,
-        )
-      : [];
+  // Step 3: Determine the breakdown map
+  let effectiveBreakdownMap: BreakdownMap | undefined = config.breakdownMap;
 
-  // Step 4: Calculate grand totals
+  // If no breakdownMap but defaultDimensionSequence is provided, convert it
+  if (!effectiveBreakdownMap && config.defaultDimensionSequence) {
+    effectiveBreakdownMap = dimensionSequenceToBreakdownMap(
+      config.defaultDimensionSequence,
+    );
+  }
+
+  // Step 4: Build groups
+  let groups: CubeGroup[] = [];
+
+  if (effectiveBreakdownMap) {
+    // Use per-node breakdown mode (PRIMARY mode)
+    const rootDimensionId = effectiveBreakdownMap[""];
+    if (rootDimensionId) {
+      groups = buildGroupsWithBreakdownMap(
+        filteredData,
+        rootDimensionId,
+        effectiveBreakdownMap,
+        config.dimensions,
+        activeMeasures,
+        "",
+        maxDepth,
+        0,
+        includeItems,
+        skipEmptyGroups,
+      );
+    }
+  }
+
+  // Step 5: Calculate grand totals
   const grandTotals = calculateMeasures(
     filteredData,
     activeMeasures as MeasureDescriptor<TData>[],
