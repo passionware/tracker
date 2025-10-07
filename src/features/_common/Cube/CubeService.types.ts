@@ -146,8 +146,8 @@ export interface CubeGroup {
   items?: CubeDataItem[];
   /** Path to this node (for breakdown map lookup) */
   path?: string;
-  /** Dimension ID used for this group's children (from breakdownMap) */
-  childDimensionId?: string;
+  /** Dimension ID used for this group's children (from breakdownMap), or null to show raw data */
+  childDimensionId?: string | null;
 }
 
 /**

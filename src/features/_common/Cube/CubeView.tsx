@@ -141,10 +141,10 @@ export interface CubeViewProps {
   onZoomIn?: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
   /** Optional: Callback when user changes breakdown dimension at current level */
   onDimensionChange?: (dimensionId: string, level: number) => void;
-  /** Optional: Callback when user selects dimension for a specific group's breakdown */
+  /** Optional: Callback when user selects dimension for a specific group's breakdown (null = show raw data) */
   onGroupDimensionSelect?: (
     group: CubeGroup,
-    dimensionId: string,
+    dimensionId: string | null,
     ancestorPath: BreadcrumbItem[],
   ) => void;
   /** Optional: Available dimensions for drill-down */
@@ -181,7 +181,7 @@ interface CubeGroupItemProps {
   onZoomIn?: (group: CubeGroup, ancestorPath: BreadcrumbItem[]) => void;
   onGroupDimensionSelect?: (
     group: CubeGroup,
-    dimensionId: string,
+    dimensionId: string | null,
     ancestorPath: BreadcrumbItem[],
   ) => void;
   availableDrillDowns?: string[];
@@ -229,35 +229,36 @@ function CubeGroupItem({
     (d) => !usedDimensions.includes(d.id),
   );
 
-  // Auto-show raw data if no sub-groups exist but raw data is available
-  const shouldAutoShowRawData = hasRawData && !hasSubGroups;
-
   const [isExpanded, setIsExpanded] = useState(level < maxInitialDepth);
-  const [showRawData, setShowRawData] = useState(shouldAutoShowRawData);
 
   const indent = level * 20;
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
 
+  // Auto-show raw data if no sub-groups exist but raw data is available
+  const shouldAutoShowRawData = hasRawData && !hasSubGroups;
+
+  // Using childDimensionId to track state:
+  // - null = show raw data
+  // - undefined = not set yet (use default: auto-show raw data if no subgroups)
+  // - string = show breakdown by that dimension
+  const showRawData =
+    (group.childDimensionId === null ||
+      (group.childDimensionId === undefined && shouldAutoShowRawData)) &&
+    hasRawData;
+
   const toggleExpansion = () => {
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
-    if (!newExpanded) {
-      // Collapsing - turn off raw data
-      setShowRawData(false);
-    } else if (shouldAutoShowRawData) {
-      // Expanding and should auto-show raw data
-      setShowRawData(true);
-    }
     onGroupExpand?.(group, newExpanded);
   };
 
   const handleViewRawData = () => {
     if (showRawData) {
-      setShowRawData(false);
       setIsExpanded(false);
     } else {
-      setShowRawData(true);
       setIsExpanded(true);
+      // Set childDimensionId to null to indicate raw data view
+      onGroupDimensionSelect?.(group, null, ancestorPath);
       onViewRawData?.(group);
     }
   };
@@ -372,12 +373,14 @@ function CubeGroupItem({
                 </motion.div>
               )}
 
-              {/* Raw data button - only show if there are also sub-groups */}
-              {hasRawData && hasSubGroups && (
+              {/* Raw data button - show when raw data is available and not auto-showing it */}
+              {hasRawData && (
                 <motion.div variants={buttonVariants}>
                   <SimpleTooltip title="View raw data items">
                     <Button
-                      variant={showRawData ? "default" : "outline"}
+                      variant={
+                        isExpanded && showRawData ? "secondary" : "ghost"
+                      }
                       size="sm"
                       className="h-6 px-2 text-xs"
                       onClick={(e) => {
@@ -392,18 +395,17 @@ function CubeGroupItem({
               )}
 
               {/* Show sub-groups button if they exist */}
-              {hasSubGroups && (
+              {hasSubGroups && !enableDimensionPicker && (
                 <motion.div variants={buttonVariants}>
                   <SimpleTooltip title="View sub-groups">
                     <Button
-                      variant={
-                        isExpanded && !showRawData ? "default" : "outline"
-                      }
+                      variant={isExpanded && !showRawData ? "default" : "ghost"}
                       size="sm"
                       className="h-6 px-2 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowRawData(false);
+                        // Request to show sub-groups (not raw data)
+                        // This should trigger parent to set childDimensionId to a dimension
                         setIsExpanded(true);
                       }}
                     >
@@ -420,12 +422,23 @@ function CubeGroupItem({
                   <motion.div key={dim.id} variants={buttonVariants}>
                     <SimpleTooltip title={`Break down by ${dim.name}`}>
                       <Button
-                        variant="ghost"
                         size="sm"
                         className="h-6 px-2 text-xs"
+                        variant={
+                          isExpanded &&
+                          !showRawData &&
+                          group.childDimensionId === dim.id
+                            ? "secondary"
+                            : "ghost"
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
                           onGroupDimensionSelect?.(group, dim.id, ancestorPath);
+                          if (group.childDimensionId !== dim.id) {
+                            setIsExpanded(true);
+                          } else {
+                            setIsExpanded(!isExpanded);
+                          }
                         }}
                       >
                         {dim.icon && <span className="mr-1">{dim.icon}</span>}
@@ -717,7 +730,7 @@ export function CubeView({
                     : "Break down children by:"}
                 </span>
                 <Select
-                  value={currentChildDimensionId}
+                  value={currentChildDimensionId ?? undefined}
                   onValueChange={(value) => {
                     if (zoomPath.length === 0) {
                       // Root level - use onDimensionChange
