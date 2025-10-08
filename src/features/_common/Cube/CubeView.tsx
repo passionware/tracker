@@ -19,12 +19,12 @@ import type {
   CubeCell,
   CubeDataItem,
   CubeGroup,
-  CubeResult,
   DimensionDescriptor,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
+import type { CubeState } from "./useCubeState.ts";
 import { ChevronRight, ZoomIn, Home } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -120,32 +120,14 @@ export interface BreadcrumbItem {
  * Props for CubeView component
  */
 export interface CubeViewProps {
-  /** The calculated cube result */
-  cube: CubeResult;
+  /** Cube state from useCubeState hook */
+  state: CubeState;
   /** Optional: Render custom content for a group header */
   renderGroupHeader?: (group: CubeGroup, level: number) => React.ReactNode;
   /** Optional: Render custom content for a cell */
   renderCell?: (cell: CubeCell, group: CubeGroup) => React.ReactNode;
   /** Optional: Render raw data items */
   renderRawData?: (items: CubeDataItem[], group: CubeGroup) => React.ReactNode;
-  /** Optional: Callback when a group is expanded */
-  onGroupExpand?: (group: CubeGroup, isExpanded: boolean) => void;
-  /** Optional: Callback when drilling down into a group */
-  onDrillDown?: (group: CubeGroup, newDimensionId: string) => void;
-  /** Optional: Callback when viewing raw data */
-  onViewRawData?: (group: CubeGroup) => void;
-  /** Optional: Callback when zooming into a group */
-  onZoomIn?: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
-  /** Optional: Callback when user changes breakdown dimension at current level */
-  onDimensionChange?: (dimensionId: string, level: number) => void;
-  /** Optional: Callback when user selects dimension for a specific group's breakdown (null = show raw data) */
-  onGroupDimensionSelect?: (
-    group: CubeGroup,
-    dimensionId: string | null,
-    ancestorPath: BreadcrumbItem[],
-  ) => void;
-  /** Optional: Available dimensions for drill-down */
-  availableDrillDowns?: string[]; // dimension IDs not yet used in groupBy
   /** Optional: Enable dimension picker */
   enableDimensionPicker?: boolean;
   /** Optional: Show grand totals */
@@ -166,27 +148,17 @@ export interface CubeViewProps {
 interface CubeGroupItemProps {
   group: CubeGroup;
   level: number;
-  appliedDimensions: string[];
+  state: CubeState;
   measures: MeasureDescriptor<CubeDataItem>[];
   dimensions: DimensionDescriptor<CubeDataItem>[];
   renderGroupHeader?: (group: CubeGroup, level: number) => React.ReactNode;
   renderCell?: (cell: CubeCell, group: CubeGroup) => React.ReactNode;
   renderRawData?: (items: CubeDataItem[], group: CubeGroup) => React.ReactNode;
-  onGroupExpand?: (group: CubeGroup, isExpanded: boolean) => void;
-  onDrillDown?: (group: CubeGroup, newDimensionId: string) => void;
-  onViewRawData?: (group: CubeGroup) => void;
-  onZoomIn?: (group: CubeGroup, ancestorPath: BreadcrumbItem[]) => void;
-  onGroupDimensionSelect?: (
-    group: CubeGroup,
-    dimensionId: string | null,
-    ancestorPath: BreadcrumbItem[],
-  ) => void;
-  availableDrillDowns?: string[];
   enableRawDataView?: boolean;
   enableZoomIn?: boolean;
   enableDimensionPicker?: boolean;
   maxInitialDepth?: number;
-  ancestorPath?: BreadcrumbItem[];
+  currentPath: import("./useCubeState.ts").PathItem[];
 }
 
 /**
@@ -195,31 +167,25 @@ interface CubeGroupItemProps {
 function CubeGroupItem({
   group,
   level,
-  appliedDimensions,
+  state,
   measures,
   dimensions,
   renderGroupHeader,
   renderCell,
   renderRawData,
-  onGroupExpand,
-  onDrillDown,
-  onViewRawData,
-  onZoomIn,
-  onGroupDimensionSelect,
-  availableDrillDowns,
   enableRawDataView = false,
   enableZoomIn = false,
   enableDimensionPicker = false,
   maxInitialDepth = 0,
-  ancestorPath = [],
+  currentPath,
 }: CubeGroupItemProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
   const hasRawData = enableRawDataView && group.items && group.items.length > 0;
 
   // Calculate available dimensions for this group's breakdown
-  // Exclude dimensions already used in the ancestor path + this group's dimension
+  // Exclude dimensions already used in the current path + this group's dimension
   const usedDimensions = [
-    ...ancestorPath.map((b) => b.dimensionId),
+    ...currentPath.map((p) => p.dimensionId),
     group.dimensionId,
   ];
   const availableDimensionsForGroup = dimensions.filter(
@@ -246,7 +212,6 @@ function CubeGroupItem({
   const toggleExpansion = () => {
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
-    onGroupExpand?.(group, newExpanded);
   };
 
   const handleViewRawData = () => {
@@ -255,8 +220,7 @@ function CubeGroupItem({
     } else {
       setIsExpanded(true);
       // Set childDimensionId to null to indicate raw data view
-      onGroupDimensionSelect?.(group, null, ancestorPath);
-      onViewRawData?.(group);
+      state.setNodeChildDimension(currentPath, null as any);
     }
   };
 
@@ -352,12 +316,11 @@ function CubeGroupItem({
                       className="h-6 px-2 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Build full path including all ancestors
-                        const currentBreadcrumb: BreadcrumbItem = {
+                        // Zoom into this group
+                        state.zoomIn({
                           dimensionId: group.dimensionId,
-                          dimensionKey: group.dimensionKey,
-                        };
-                        onZoomIn?.(group, [...ancestorPath, currentBreadcrumb]);
+                          dimensionValue: group.dimensionValue,
+                        });
                       }}
                     >
                       <ZoomIn className="w-3 h-3 mr-1" />
@@ -427,7 +390,8 @@ function CubeGroupItem({
                         }
                         onClick={(e) => {
                           e.stopPropagation();
-                          onGroupDimensionSelect?.(group, dim.id, ancestorPath);
+                          // Set the child dimension for this group
+                          state.setNodeChildDimension(currentPath, dim.id);
                           if (group.childDimensionId !== dim.id) {
                             setIsExpanded(true);
                           } else {
@@ -487,37 +451,30 @@ function CubeGroupItem({
                 <div className="space-y-2">
                   {group.subGroups!.map((subGroup, idx) => {
                     // Build path for child including current group
-                    const currentBreadcrumb: BreadcrumbItem = {
-                      dimensionId: group.dimensionId,
-                      dimensionKey: group.dimensionKey,
-                    };
-                    const childPath = [...ancestorPath, currentBreadcrumb];
+                    const childPath = [
+                      ...currentPath,
+                      {
+                        dimensionId: group.dimensionId,
+                        dimensionValue: group.dimensionValue,
+                      },
+                    ];
 
                     return (
                       <CubeGroupItem
                         key={subGroup.dimensionKey + idx}
                         group={subGroup}
                         level={level + 1}
-                        appliedDimensions={[
-                          ...appliedDimensions,
-                          group.dimensionId,
-                        ]}
+                        state={state}
                         measures={measures}
                         dimensions={dimensions}
                         renderGroupHeader={renderGroupHeader}
                         renderCell={renderCell}
                         renderRawData={renderRawData}
-                        onGroupExpand={onGroupExpand}
-                        onDrillDown={onDrillDown}
-                        onViewRawData={onViewRawData}
-                        onZoomIn={onZoomIn}
-                        onGroupDimensionSelect={onGroupDimensionSelect}
-                        availableDrillDowns={availableDrillDowns}
                         enableRawDataView={enableRawDataView}
                         enableZoomIn={enableZoomIn}
                         enableDimensionPicker={enableDimensionPicker}
                         maxInitialDepth={maxInitialDepth}
-                        ancestorPath={childPath}
+                        currentPath={childPath}
                       />
                     );
                   })}
@@ -540,17 +497,10 @@ function CubeGroupItem({
  * Main CubeView component
  */
 export function CubeView({
-  cube,
+  state,
   renderGroupHeader,
   renderCell,
   renderRawData,
-  onGroupExpand,
-  onDrillDown,
-  onViewRawData,
-  onZoomIn,
-  onDimensionChange,
-  onGroupDimensionSelect,
-  availableDrillDowns,
   enableDimensionPicker = true,
   showGrandTotals = true,
   maxInitialDepth = 0,
@@ -558,17 +508,11 @@ export function CubeView({
   enableZoomIn = true,
   className,
 }: CubeViewProps) {
+  const cube = state.cube;
   const config = cube.config;
   const measures = config.activeMeasures
     ? config.measures.filter((m) => config.activeMeasures!.includes(m.id))
     : config.measures;
-
-  // Get list of applied dimensions from breakdownMap (extract unique dimension IDs)
-  const appliedDimensions = config.breakdownMap
-    ? Object.values(config.breakdownMap).filter(
-        (v, i, arr) => arr.indexOf(v) === i,
-      ) // unique
-    : [];
 
   // Helper function to find a group in the cube by following a breadcrumb path
   const findGroupByPath = (
@@ -591,73 +535,46 @@ export function CubeView({
     return foundGroup;
   };
 
-  // Zoom state management
-  const [zoomPath, setZoomPath] = useState<BreadcrumbItem[]>([]);
-  const [displayGroups, setDisplayGroups] = useState<CubeGroup[]>(cube.groups);
+  // Convert PathItem[] from state to BreadcrumbItem[] for view
+  const zoomPath: BreadcrumbItem[] = state.path.map((pathItem) => {
+    const dim = config.dimensions.find((d) => d.id === pathItem.dimensionId);
+    const key = dim?.getKey
+      ? dim.getKey(pathItem.dimensionValue)
+      : String(pathItem.dimensionValue ?? "null");
+    return {
+      dimensionId: pathItem.dimensionId,
+      dimensionKey: key,
+    };
+  });
 
-  // Reset zoom and update display groups when cube changes
-  useEffect(() => {
+  // Compute display groups based on current path
+  const displayGroups = (() => {
     if (zoomPath.length === 0) {
-      // At root - just update groups
-      setDisplayGroups(cube.groups);
-    } else {
-      // Zoomed in - need to find the corresponding group in new cube
-      // and update displayGroups to match
-      let currentGroups = cube.groups;
-
-      // Navigate through the zoom path to find the current groups
-      for (const breadcrumb of zoomPath) {
-        const foundGroup = currentGroups.find(
-          (g) =>
-            g.dimensionKey === breadcrumb.dimensionKey &&
-            g.dimensionId === breadcrumb.dimensionId,
-        );
-
-        if (foundGroup) {
-          currentGroups = foundGroup.subGroups || [foundGroup];
-        } else {
-          // Path no longer valid - reset to root
-          setZoomPath([]);
-          setDisplayGroups(cube.groups);
-          return;
-        }
-      }
-
-      setDisplayGroups(currentGroups);
+      return cube.groups;
     }
-  }, [cube, zoomPath]);
+    const currentGroup = findGroupByPath(zoomPath);
+    if (!currentGroup) return [];
+    // If group has subgroups, show them; otherwise show the group itself for raw data
+    return currentGroup.subGroups && currentGroup.subGroups.length > 0
+      ? currentGroup.subGroups
+      : [currentGroup];
+  })();
 
-  // Handle zoom in - receives the full path from the child component
-  const handleZoomIn = (group: CubeGroup, fullPath: BreadcrumbItem[]) => {
-    setZoomPath(fullPath);
-    // If the group has sub-groups, show them
-    // Otherwise, show the leaf group itself so raw data can be displayed
-    if (group.subGroups && group.subGroups.length > 0) {
-      setDisplayGroups(group.subGroups);
-    } else {
-      // Leaf node - show it as a single group so raw data can be displayed
-      setDisplayGroups([group]);
-    }
-    onZoomIn?.(group, fullPath);
+  // Handlers
+  const handleBreadcrumbClick = (index: number) => {
+    state.navigateToLevel(index);
   };
 
-  // Handle breadcrumb navigation
-  const handleBreadcrumbClick = (index: number) => {
-    if (index === -1) {
-      // Go to root
-      setZoomPath([]);
-      setDisplayGroups(cube.groups);
-    } else {
-      // Go to specific level
-      const newPath = zoomPath.slice(0, index + 1);
-      setZoomPath(newPath);
-      const targetGroup = findGroupByPath(newPath);
-      setDisplayGroups(targetGroup?.subGroups || []);
-    }
+  const handleZoomIn = (group: CubeGroup, _fullPath: BreadcrumbItem[]) => {
+    // Convert group to PathItem and zoom in
+    state.zoomIn({
+      dimensionId: group.dimensionId,
+      dimensionValue: group.dimensionValue,
+    });
   };
 
   // Get available dimensions for current level
-  const usedDimensionIds = zoomPath.map((b) => b.dimensionId);
+  const usedDimensionIds = state.path.map((p) => p.dimensionId);
 
   // Current dimension shown in the groups (e.g., "region" if showing North, South, etc.)
   const currentGroupDimensionId = displayGroups[0]?.dimensionId;
@@ -748,21 +665,8 @@ export function CubeView({
                 <Select
                   value={currentChildDimensionId ?? undefined}
                   onValueChange={(value) => {
-                    if (zoomPath.length === 0) {
-                      // Root level - use onDimensionChange
-                      onDimensionChange?.(value, zoomPath.length);
-                    } else {
-                      // Zoomed in - use onGroupDimensionSelect for current group
-                      const currentGroup = findGroupByPath(zoomPath);
-                      const ancestorPath = zoomPath.slice(0, -1);
-                      if (currentGroup) {
-                        onGroupDimensionSelect?.(
-                          currentGroup,
-                          value,
-                          ancestorPath,
-                        );
-                      }
-                    }
+                    // Set the child dimension for the current path
+                    state.setNodeChildDimension(state.path, value);
                   }}
                 >
                   <SelectTrigger className="h-7 w-[180px] text-xs">
@@ -952,20 +856,10 @@ export function CubeView({
                                 )}
                                 onClick={() => {
                                   // Set this dimension as the breakdown for current level's children
-                                  if (zoomPath.length === 0) {
-                                    onDimensionChange?.(dimension.id, 0);
-                                  } else {
-                                    const currentGroup =
-                                      findGroupByPath(zoomPath);
-                                    const ancestorPath = zoomPath.slice(0, -1);
-                                    if (currentGroup) {
-                                      onGroupDimensionSelect?.(
-                                        currentGroup,
-                                        dimension.id,
-                                        ancestorPath,
-                                      );
-                                    }
-                                  }
+                                  state.setNodeChildDimension(
+                                    state.path,
+                                    dimension.id,
+                                  );
                                 }}
                               >
                                 <div className="flex items-center gap-1.5">
@@ -1202,8 +1096,8 @@ export function CubeView({
               <CubeGroupItem
                 key={group.dimensionKey + idx}
                 group={group}
-                level={zoomPath.length}
-                appliedDimensions={appliedDimensions}
+                level={state.path.length}
+                state={state}
                 measures={measures as MeasureDescriptor<CubeDataItem>[]}
                 dimensions={
                   config.dimensions as DimensionDescriptor<CubeDataItem>[]
@@ -1211,17 +1105,11 @@ export function CubeView({
                 renderGroupHeader={renderGroupHeader}
                 renderCell={renderCell}
                 renderRawData={renderRawData}
-                onGroupExpand={onGroupExpand}
-                onDrillDown={onDrillDown}
-                onViewRawData={onViewRawData}
-                onZoomIn={enableZoomIn ? handleZoomIn : undefined}
-                onGroupDimensionSelect={onGroupDimensionSelect}
-                availableDrillDowns={availableDrillDowns}
                 enableRawDataView={enableRawDataView}
                 enableZoomIn={enableZoomIn}
                 enableDimensionPicker={enableDimensionPicker}
                 maxInitialDepth={maxInitialDepth}
-                ancestorPath={zoomPath}
+                currentPath={state.path}
               />
             ))
           )}

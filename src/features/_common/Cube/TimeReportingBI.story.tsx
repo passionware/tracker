@@ -4,15 +4,12 @@
  * Full-featured business intelligence tool for time tracking analysis
  */
 
-import { CubeView, type BreadcrumbItem } from "./CubeView.tsx";
-import { cubeService } from "./CubeService.ts";
+import { CubeView } from "./CubeView.tsx";
 import type {
-  CubeConfig,
   DimensionDescriptor,
   MeasureDescriptor,
-  CubeGroup,
 } from "./CubeService.types.ts";
-import { useState } from "react";
+import { useCubeState } from "./useCubeState.ts";
 
 interface TimeEntryData {
   entryId: string;
@@ -391,62 +388,14 @@ export const TimeReportingDashboard = () => {
       },
     ];
 
-    // State: Use breakdownMap for per-node dimension control
-    const [breakdownMap, setBreakdownMap] = useState<Record<string, string>>({
-      "": "project", // Root level starts with project dimension
-      "project:*": "taskType", // All projects break down by task type
-    });
-
-    const config: CubeConfig<TimeEntryData> = {
+    const state = useCubeState({
       data: timeEntries,
       dimensions,
       measures,
-      breakdownMap,
+      initialDefaultDimensionSequence: ["project", "taskType"], // Default hierarchy
       activeMeasures: ["totalHours", "cost", "billing", "profit"],
-    };
-
-    const cube = cubeService.calculateCube(config, {
       includeItems: true,
     });
-
-    // Helper to build path key from breadcrumb items
-    const buildPathKey = (
-      ancestorPath: BreadcrumbItem[],
-      group: CubeGroup,
-    ): string => {
-      const fullPath = [
-        ...ancestorPath,
-        {
-          dimensionId: group.dimensionId,
-          dimensionValue: group.dimensionValue,
-          dimensionKey: group.dimensionKey,
-          label: group.dimensionLabel,
-          group,
-        },
-      ];
-
-      return fullPath
-        .map((item) => `${item.dimensionId}:${item.dimensionKey}`)
-        .join("|");
-    };
-
-    // Handle dimension change at root level
-    const handleDimensionChange = (dimensionId: string) => {
-      setBreakdownMap({ "": dimensionId });
-    };
-
-    // Handle dimension selection for a specific group
-    const handleGroupDimensionSelect = (
-      group: CubeGroup,
-      dimensionId: string,
-      ancestorPath: BreadcrumbItem[],
-    ) => {
-      const pathKey = buildPathKey(ancestorPath, group);
-      setBreakdownMap((prev) => ({
-        ...prev,
-        [pathKey]: dimensionId,
-      }));
-    };
 
     return (
       <div className="p-8 max-w-full">
@@ -470,7 +419,7 @@ export const TimeReportingDashboard = () => {
         </div>
 
         <CubeView
-          cube={cube}
+          state={state}
           showGrandTotals={true}
           enableRawDataView={true}
           enableZoomIn={true}
@@ -529,8 +478,6 @@ export const TimeReportingDashboard = () => {
               )}
             </div>
           )}
-          onDimensionChange={handleDimensionChange}
-          onGroupDimensionSelect={handleGroupDimensionSelect}
         />
       </div>
     );

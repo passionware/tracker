@@ -31,5 +31,3 @@ export type {
 } from "./CubeService.types.ts";
 export { useCubeState } from "./useCubeState.ts";
 export type { UseCubeStateProps, CubeState, PathItem } from "./useCubeState.ts";
-export { useCubeView } from "./useCubeView.ts";
-export type { UseCubeViewProps, CubeViewState } from "./useCubeView.ts";

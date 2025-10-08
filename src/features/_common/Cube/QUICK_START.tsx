@@ -6,9 +6,8 @@
  */
 
 import {
-  cubeService,
   CubeView,
-  type CubeConfig,
+  useCubeState,
   type DimensionDescriptor,
   type MeasureDescriptor,
 } from "@/features/_common/Cube/index.ts";
@@ -147,25 +146,19 @@ export function QuickStartCubeExample() {
   ]);
 
   // ============================================================================
-  // 5. CONFIGURE THE CUBE
+  // 5. CREATE CUBE STATE
   // ============================================================================
-  const config: CubeConfig<SalesRecord> = {
+  const state = useCubeState({
     data: salesData,
     dimensions,
     measures,
-    defaultDimensionSequence: groupBy, // e.g., ["region"] or ["region", "product"] for multi-level
+    initialDefaultDimensionSequence: groupBy, // e.g., ["region"] or ["region", "product"] for multi-level
     activeMeasures: selectedMeasures, // Which measures to show
-    filters: [
+    initialFilters: [
       // Optional: Add filters
       // { dimensionId: "region", operator: "in", value: ["North", "South"] },
       // { dimensionId: "revenue", operator: "greaterThan", value: 1000 },
     ],
-  };
-
-  // ============================================================================
-  // 6. CALCULATE THE CUBE
-  // ============================================================================
-  const cube = cubeService.calculateCube(config, {
     includeItems: false, // Set true for drill-through capability
     skipEmptyGroups: true,
     maxDepth: 10,
@@ -266,7 +259,7 @@ export function QuickStartCubeExample() {
 
       {/* Results */}
       <CubeView
-        cube={cube}
+        state={state}
         showGrandTotals={true}
         maxInitialDepth={1}
         // Optional: Custom rendering
