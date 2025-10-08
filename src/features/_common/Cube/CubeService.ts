@@ -112,6 +112,35 @@ function calculateMeasures<TData extends CubeDataItem>(
 }
 
 /**
+ * Resolve the child dimension ID for a given path using breakdown map logic
+ * This is the shared logic used by both tree expansion and zoom-in modes
+ */
+function resolveChildDimensionId(
+  nodePath: string,
+  breakdownMap: Record<string, string | null>,
+): string | null | undefined {
+  // First try exact match
+  let childDimensionId = breakdownMap[nodePath];
+
+  // If no exact match found (undefined), try wildcard match
+  // If exact match is null, don't try wildcard (user explicitly wants raw data)
+  if (childDimensionId === undefined) {
+    // Try wildcard match by replacing ALL concrete keys in the path with '*'
+    const wildcardPath = nodePath
+      .split("|")
+      .map((segment) => {
+        const [dim] = segment.split(":");
+        return `${dim}:*`;
+      })
+      .join("|");
+
+    childDimensionId = breakdownMap[wildcardPath];
+  }
+
+  return childDimensionId;
+}
+
+/**
  * Build hierarchical groups with per-node breakdown support
  */
 function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
@@ -163,32 +192,8 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
       : `${dimensionId}:${key}`;
 
     // Check if there's a breakdown defined for this node's children
-    // First try exact match, then try wildcard match
-    let childDimensionId = breakdownMap[nodePath];
-
-    // If no exact match found (undefined), try wildcard match
-    // If exact match is null, don't try wildcard (user explicitly wants raw data)
-    if (childDimensionId === undefined) {
-      // Try wildcard match by replacing ALL concrete keys in the parent path with '*'
-      // and appending the current dimension wildcard. This allows patterns like
-      //   "project:*|taskType:*" to match a node whose parentPath is
-      //   "project:Web Application" and the current dimension is "taskType".
-      const wildcardParent = parentPath
-        ? parentPath
-            .split("|")
-            .map((segment) => {
-              const [dim] = segment.split(":");
-              return `${dim}:*`;
-            })
-            .join("|")
-        : "";
-
-      const wildcardPath = wildcardParent
-        ? `${wildcardParent}|${dimensionId}:*`
-        : `${dimensionId}:*`;
-
-      childDimensionId = breakdownMap[wildcardPath];
-    }
+    // Use shared utility function for consistent logic across tree expansion and zoom-in
+    const childDimensionId = resolveChildDimensionId(nodePath, breakdownMap);
 
     const cells = calculateMeasures(
       items,
@@ -278,14 +283,30 @@ export function calculateCube<TData extends CubeDataItem>(
     includeItems = false,
     maxDepth = 10,
     skipEmptyGroups = false,
+    zoomPath = [], // New option for zoom functionality
   } = options;
 
   // Step 1: Apply filters
-  const filteredData = applyFilters(
+  let filteredData = applyFilters(
     config.data,
     config.filters || [],
     config.dimensions,
   );
+
+  // Step 1.5: If there's a zoom path, filter data to match the path
+  if (zoomPath.length > 0) {
+    filteredData = filteredData.filter((item) => {
+      return zoomPath.every((pathItem) => {
+        const dimension = config.dimensions.find(
+          (d) => d.id === pathItem.dimensionId,
+        );
+        if (!dimension) return false;
+
+        const itemValue = dimension.getValue(item);
+        return itemValue === pathItem.dimensionValue;
+      });
+    });
+  }
 
   // Step 2: Determine active measures
   const activeMeasures = config.activeMeasures
@@ -306,21 +327,56 @@ export function calculateCube<TData extends CubeDataItem>(
   let groups: CubeGroup[] = [];
 
   if (effectiveBreakdownMap) {
-    // Use per-node breakdown mode (PRIMARY mode)
-    const rootDimensionId = effectiveBreakdownMap[""];
-    if (rootDimensionId) {
-      groups = buildGroupsWithBreakdownMap(
-        filteredData,
-        rootDimensionId,
+    if (zoomPath.length === 0) {
+      // Normal mode: build from root
+      const rootDimensionId = effectiveBreakdownMap[""];
+      if (rootDimensionId) {
+        groups = buildGroupsWithBreakdownMap(
+          filteredData,
+          rootDimensionId,
+          effectiveBreakdownMap,
+          config.dimensions,
+          activeMeasures,
+          "",
+          maxDepth,
+          0,
+          includeItems,
+          skipEmptyGroups,
+        );
+      }
+    } else {
+      // Zoom mode: find what dimension to use for children of the zoomed node
+      const zoomPathString = zoomPath
+        .map((p) => {
+          const dim = config.dimensions.find((d) => d.id === p.dimensionId);
+          const key = dim?.getKey
+            ? dim.getKey(p.dimensionValue)
+            : String(p.dimensionValue ?? "null");
+          return `${p.dimensionId}:${key}`;
+        })
+        .join("|");
+
+      // Find the child dimension for this zoom path using the same logic as buildGroupsWithBreakdownMap
+      const childDimensionId = resolveChildDimensionId(
+        zoomPathString,
         effectiveBreakdownMap,
-        config.dimensions,
-        activeMeasures,
-        "",
-        maxDepth,
-        0,
-        includeItems,
-        skipEmptyGroups,
       );
+
+      // If we found a child dimension, build groups for it
+      if (childDimensionId) {
+        groups = buildGroupsWithBreakdownMap(
+          filteredData,
+          childDimensionId,
+          effectiveBreakdownMap,
+          config.dimensions,
+          activeMeasures,
+          zoomPathString,
+          maxDepth,
+          zoomPath.length,
+          includeItems,
+          skipEmptyGroups,
+        );
+      }
     }
   }
 

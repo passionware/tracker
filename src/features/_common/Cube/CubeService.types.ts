@@ -174,4 +174,6 @@ export interface CubeCalculationOptions {
   maxDepth?: number;
   /** Skip empty groups */
   skipEmptyGroups?: boolean;
+  /** Zoom path for filtering data to a specific node (for zoom functionality) */
+  zoomPath?: Array<{ dimensionId: string; dimensionValue: unknown }>;
 }

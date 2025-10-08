@@ -216,8 +216,9 @@ export function useCubeState<TData extends CubeDataItem>(
         includeItems,
         maxDepth,
         skipEmptyGroups,
+        zoomPath: path, // Pass the current zoom path
       }),
-    [config, includeItems, maxDepth, skipEmptyGroups],
+    [config, includeItems, maxDepth, skipEmptyGroups, path],
   );
 
   // ===== ACTIONS =====
