@@ -104,7 +104,16 @@ export function CubeTreeNode({
     } else {
       setIsExpanded(true);
       // Set childDimensionId to null to indicate raw data view
-      state.setNodeChildDimension(currentPath, null);
+      state.setNodeChildDimension(
+        [
+          ...currentPath,
+          {
+            dimensionId: group.dimensionId,
+            dimensionValue: group.dimensionValue,
+          },
+        ],
+        null,
+      );
     }
   };
 
@@ -274,8 +283,17 @@ export function CubeTreeNode({
                         }
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Set the child dimension for this group
-                          state.setNodeChildDimension(currentPath, dim.id);
+                          // Set the child dimension for this node (not the current path)
+                          state.setNodeChildDimension(
+                            [
+                              ...currentPath,
+                              {
+                                dimensionId: group.dimensionId,
+                                dimensionValue: group.dimensionValue,
+                              },
+                            ],
+                            dim.id,
+                          );
                           if (group.childDimensionId !== dim.id) {
                             setIsExpanded(true);
                           } else {
