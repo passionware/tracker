@@ -25,6 +25,7 @@ import {
   buttonVariants,
   dataContainerVariants,
 } from "./cube.animations.ts";
+import { maybe } from "@passionware/monads";
 
 /**
  * Props for CubeTreeNode component
@@ -79,16 +80,12 @@ export function CubeTreeNode({
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
 
   // Auto-show raw data if no sub-groups exist but raw data is available
-  const shouldAutoShowRawData = hasRawData && !hasSubGroups;
 
   // Using childDimensionId to track state:
   // - null = show raw data
   // - undefined = not set yet (use default: auto-show raw data if no subgroups)
   // - string = show breakdown by that dimension
-  const showRawData =
-    (group.childDimensionId === null ||
-      (group.childDimensionId === undefined && shouldAutoShowRawData)) &&
-    hasRawData;
+  const showRawData = maybe.isAbsent(group.childDimensionId) && hasRawData;
 
   const toggleExpansion = () => {
     const newExpanded = !isExpanded;
@@ -96,13 +93,13 @@ export function CubeTreeNode({
   };
 
   const handleViewRawData = () => {
-    if (showRawData) {
-      setIsExpanded(false);
-    } else {
+    if (!showRawData) {
       setIsExpanded(true);
+    } else {
+      setIsExpanded(!isExpanded);
       // Set childDimensionId to null to indicate raw data view
-      state.setNodeChildDimension(nodePath, null);
     }
+    state.setNodeChildDimension(nodePath, null);
   };
 
   return (
@@ -178,8 +175,7 @@ export function CubeTreeNode({
 
         {/* Drill-down, zoom, and raw data buttons */}
         <AnimatePresence>
-          {(((hasRawData || hasSubGroups) && !shouldAutoShowRawData) ||
-            enableZoomIn) && (
+          {(hasRawData || hasSubGroups || enableZoomIn) && (
             <motion.div
               className="flex items-center gap-1 mt-2 ml-6"
               variants={buttonGroupVariants}

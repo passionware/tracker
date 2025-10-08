@@ -117,7 +117,7 @@ function calculateMeasures<TData extends CubeDataItem>(
 function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   data: TData[],
   dimensionId: string,
-  breakdownMap: Record<string, string>,
+  breakdownMap: Record<string, string | null>,
   dimensions: DimensionDescriptor<TData, unknown>[],
   measures: MeasureDescriptor<TData, unknown>[],
   parentPath: string,
@@ -166,7 +166,9 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
     // First try exact match, then try wildcard match
     let childDimensionId = breakdownMap[nodePath];
 
-    if (!childDimensionId) {
+    // If no exact match found (undefined), try wildcard match
+    // If exact match is null, don't try wildcard (user explicitly wants raw data)
+    if (childDimensionId === undefined) {
       // Try wildcard match by replacing ALL concrete keys in the parent path with '*'
       // and appending the current dimension wildcard. This allows patterns like
       //   "project:*|taskType:*" to match a node whose parentPath is

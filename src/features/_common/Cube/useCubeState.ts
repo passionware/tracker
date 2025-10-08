@@ -157,7 +157,7 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // Build default breakdownMap from initialDefaultDimensionSequence (configuration, not state)
   const defaultBreakdownMap = useMemo(() => {
-    const map: Record<string, string> = {};
+    const map: Record<string, string | null> = {};
 
     if (initialRootDimension) {
       map[""] = initialRootDimension;
@@ -181,16 +181,16 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // Merge defaults with explicit user overrides to create final breakdownMap
   const breakdownMap = useMemo(() => {
-    const map: Record<string, string> = { ...defaultBreakdownMap };
+    const map: Record<string, string | null> = { ...defaultBreakdownMap };
 
     // User overrides take precedence over defaults
     nodeStates.forEach((state, key) => {
-      if (state.childDimensionId) {
+      // Only apply override if childDimensionId has been explicitly set (not undefined)
+      if (state.childDimensionId !== undefined) {
+        // Set the value (including null for raw data)
         map[key] = state.childDimensionId;
-      } else if (state.childDimensionId === null) {
-        // Explicit null means "show raw data" - remove any default
-        delete map[key];
       }
+      // If childDimensionId is undefined, use the default (don't modify map)
     });
 
     return map;

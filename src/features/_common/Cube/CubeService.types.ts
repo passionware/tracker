@@ -86,8 +86,8 @@ export interface DimensionFilter<TValue = unknown> {
  */
 export interface BreakdownMap {
   /** Key: path string (e.g., "region:North" or "region:North|category:Electronics") */
-  /** Value: dimension ID to use for children */
-  [path: string]: string;
+  /** Value: dimension ID to use for children, or null to show raw data */
+  [path: string]: string | null;
 }
 
 /**
