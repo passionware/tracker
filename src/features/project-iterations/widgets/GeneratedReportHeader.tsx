@@ -1,5 +1,6 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
+import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
@@ -13,7 +14,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { FileText } from "lucide-react";
+import { FileText, Maximize } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function GeneratedReportHeader(
@@ -63,18 +64,35 @@ export function GeneratedReportHeader(
           .wait(<Skeleton className="h-8 w-24" />)
           .catch(renderError)
           .map(() => (
-            <ActionMenu services={props.services}>
-              <ActionMenuDeleteItem
-                onClick={async () => {
-                  await props.services.generatedReportSourceWriteService.deleteGeneratedReportSource(
-                    props.reportId,
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigate(
+                    forIteration
+                      .forGeneratedReport(props.reportId.toString())
+                      .standaloneGroupedView(),
                   );
-                  navigate(forIteration.generatedReports());
                 }}
+                className="flex items-center gap-2"
               >
-                Delete Report
-              </ActionMenuDeleteItem>
-            </ActionMenu>
+                <Maximize className="h-4 w-4" />
+                Full Screen
+              </Button>
+              <ActionMenu services={props.services}>
+                <ActionMenuDeleteItem
+                  onClick={async () => {
+                    await props.services.generatedReportSourceWriteService.deleteGeneratedReportSource(
+                      props.reportId,
+                    );
+                    navigate(forIteration.generatedReports());
+                  }}
+                >
+                  Delete Report
+                </ActionMenuDeleteItem>
+              </ActionMenu>
+            </>
           ))}
       </div>
     </div>

@@ -71,6 +71,14 @@ export function createRoutingService(): RoutingService {
                             ? `${baseUrl}/${cubePathSegment}`
                             : baseUrl;
                         },
+                        standaloneGroupedView: (cubePath) => {
+                          const cubePathSegment =
+                            routingUtils.cubePath.toString(cubePath);
+                          const baseUrl = `${base2}/generated-reports/${reportId}/standalone-grouped-view`;
+                          return cubePathSegment
+                            ? `${baseUrl}/${cubePathSegment}`
+                            : baseUrl;
+                        },
                       };
                     },
                     billings: () => `${base2}/billings`,
