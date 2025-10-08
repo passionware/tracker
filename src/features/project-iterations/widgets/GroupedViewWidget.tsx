@@ -330,8 +330,8 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
         sidebarOptions: {
           mode: "divergent",
-          positiveColorClassName: "bg-emerald-500",
-          negativeColorClassName: "bg-rose-500",
+          positiveColorClassName: "bg-teal-500",
+          negativeColorClassName: "bg-pink-500",
         },
       }),
       factory.createMeasure({
