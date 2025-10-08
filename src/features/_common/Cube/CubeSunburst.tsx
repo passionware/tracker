@@ -74,28 +74,12 @@ function convertToNivoFormat(
   });
 }
 
-/**
- * Check if a node is in the current zoom path
- */
-function isNodeInZoomPath(
-  node: NivoSunburstNode,
-  zoomPath: Array<{ dimensionId: string; dimensionValue: unknown }>,
-): boolean {
-  return zoomPath.some(
-    (pathItem) =>
-      pathItem.dimensionId === node.dimensionId &&
-      pathItem.dimensionValue === node.dimensionValue,
-  );
-}
-
 export function CubeSunburst({
   state,
   measure,
   dimensions,
   rootData,
 }: CubeSunburstProps) {
-  const currentZoomPath = state.path;
-
   // Build sunburst data from ROOT data always (not filtered by zoom)
   const nivoData = useMemo(() => {
     if (!rootData || rootData.length === 0) {
@@ -156,63 +140,18 @@ export function CubeSunburst({
         <ResponsiveSunburst
           key={`sunburst-${measure.id}`}
           data={nivoData}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+          margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
           id="name"
           value="value"
-          cornerRadius={2}
-          borderWidth={1}
-          borderColor={{ from: "color", modifiers: [["darker", 0.5]] }}
-          colors={{ scheme: "set3" }}
+          cornerRadius={0}
+          borderWidth={0}
+          colors={{ scheme: "paired" }}
           childColor={{
             from: "color",
-            modifiers: [["brighter", 0.2]],
+            modifiers: [["brighter", 0.1]],
           }}
-          enableArcLabels={true}
-          arcLabel={(d) => {
-            // Only show labels for larger arcs to reduce clutter
-            const node = d.data as NivoSunburstNode;
-            return d.percentage > 8 ? node.name : "";
-          }}
-          arcLabelsSkipAngle={15}
-          arcLabelsTextColor="#ffffff"
-          arcLabelsRadiusOffset={0.7}
-          // Custom arc styling based on zoom path
-          layers={[
-            "arcs",
-            "arcLabels",
-            ({ nodes, arcGenerator }) => {
-              // Custom layer to highlight zoomed path
-              return (
-                <g>
-                  {nodes.map((node) => {
-                    const nivoNode = node.data as NivoSunburstNode;
-                    const isZoomed = isNodeInZoomPath(
-                      nivoNode,
-                      currentZoomPath,
-                    );
-
-                    if (!isZoomed || !node.arc) return null;
-
-                    // Draw a highlighted border for zoomed nodes
-                    const arc = arcGenerator(node.arc);
-                    if (!arc) return null;
-
-                    return (
-                      <path
-                        key={`highlight-${node.id}`}
-                        d={arc}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth={3}
-                        opacity={0.9}
-                        pointerEvents="none"
-                      />
-                    );
-                  })}
-                </g>
-              );
-            },
-          ]}
+          enableArcLabels={false}
+          layers={["arcs"]}
           animate={true}
           motionConfig="gentle"
           transitionMode="centerRadius"
@@ -309,14 +248,8 @@ export function CubeSunburst({
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span>Current zoom</span>
-        </div>
-        <div className="text-center">
-          Click segments to zoom • Click center to reset
-        </div>
+      <div className="text-xs text-slate-500 text-center">
+        Click segments to zoom • Click center to reset
       </div>
     </div>
   );

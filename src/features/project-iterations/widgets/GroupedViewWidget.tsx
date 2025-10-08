@@ -469,17 +469,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-            <div className="text-sm text-slate-600">
-              Dataset: {cubeState.cube.totalItems} time entries •{" "}
-              {contractorIds.length} contractors •{" "}
-              {Object.keys(props.report.data.definitions.projectTypes).length}{" "}
-              projects • Total:{" "}
-              {cubeState.cube.grandTotals.find((c) => c.measureId === "hours")
-                ?.formattedValue || "0.00h"}
-            </div>
-          </div>
-
           <CubeView
             state={cubeState}
             renderRawData={renderRawData}

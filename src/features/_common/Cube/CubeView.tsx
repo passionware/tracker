@@ -4,13 +4,18 @@
  * Renders a multidimensional cube with expandable groups and drill-down capabilities.
  */
 
-import {motion} from "framer-motion";
-import {CubeDebugPanel} from "./CubeDebugPanel.tsx";
-import {type BreadcrumbItem, CubeNavigation} from "./CubeNavigation.tsx";
-import type {CubeCell, CubeDataItem, CubeGroup, DimensionDescriptor, MeasureDescriptor,} from "./CubeService.types.ts";
-import {CubeSidebar} from "./CubeSidebar.tsx";
-import {CubeTreeNode} from "./CubeTreeNode.tsx";
-import type {CubeState} from "./useCubeState.ts";
+import { motion } from "framer-motion";
+import { type BreadcrumbItem, CubeNavigation } from "./CubeNavigation.tsx";
+import type {
+  CubeCell,
+  CubeDataItem,
+  CubeGroup,
+  DimensionDescriptor,
+  MeasureDescriptor,
+} from "./CubeService.types.ts";
+import { CubeSidebar } from "./CubeSidebar.tsx";
+import { CubeTreeNode } from "./CubeTreeNode.tsx";
+import type { CubeState } from "./useCubeState.ts";
 
 /**
  * Props for CubeView component
@@ -161,7 +166,7 @@ export function CubeView({
   return (
     <div className={className}>
       {/* DEBUG: Temporary state dump */}
-      <CubeDebugPanel state={state} displayGroups={displayGroups} />
+      {/* <CubeDebugPanel state={state} displayGroups={displayGroups} /> */}
 
       {/* Navigation Bar - always visible when zoom or dimension picker enabled */}
       {(enableZoomIn || enableDimensionPicker) && (
