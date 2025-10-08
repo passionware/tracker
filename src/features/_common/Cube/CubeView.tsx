@@ -200,26 +200,37 @@ export function CubeView({
                 "Try selecting a different dimension or go back."}
             </motion.div>
           ) : (
-            displayGroups.map((group, idx) => (
-              <CubeTreeNode
-                key={group.dimensionKey + idx}
-                group={group}
-                level={state.path.length}
-                state={state}
-                measures={measures as MeasureDescriptor<CubeDataItem>[]}
-                dimensions={
-                  config.dimensions as DimensionDescriptor<CubeDataItem>[]
-                }
-                renderGroupHeader={renderGroupHeader}
-                renderCell={renderCell}
-                renderRawData={renderRawData}
-                enableRawDataView={enableRawDataView}
-                enableZoomIn={enableZoomIn}
-                enableDimensionPicker={enableDimensionPicker}
-                maxInitialDepth={maxInitialDepth}
-                currentPath={state.path}
-              />
-            ))
+            displayGroups.map((group, idx) => {
+              // Build this node's full path: current zoom path + this node
+              const nodePath = [
+                ...state.path,
+                {
+                  dimensionId: group.dimensionId,
+                  dimensionValue: group.dimensionValue,
+                },
+              ];
+
+              return (
+                <CubeTreeNode
+                  key={group.dimensionKey + idx}
+                  group={group}
+                  level={state.path.length}
+                  state={state}
+                  measures={measures as MeasureDescriptor<CubeDataItem>[]}
+                  dimensions={
+                    config.dimensions as DimensionDescriptor<CubeDataItem>[]
+                  }
+                  renderGroupHeader={renderGroupHeader}
+                  renderCell={renderCell}
+                  renderRawData={renderRawData}
+                  enableRawDataView={enableRawDataView}
+                  enableZoomIn={enableZoomIn}
+                  enableDimensionPicker={enableDimensionPicker}
+                  maxInitialDepth={maxInitialDepth}
+                  nodePath={nodePath}
+                />
+              );
+            })
           )}
         </motion.div>
       </div>

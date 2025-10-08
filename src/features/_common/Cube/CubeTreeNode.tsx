@@ -42,7 +42,7 @@ export interface CubeTreeNodeProps {
   enableZoomIn?: boolean;
   enableDimensionPicker?: boolean;
   maxInitialDepth?: number;
-  currentPath: PathItem[];
+  nodePath: PathItem[]; // Path from root TO this node (this node's address)
 }
 
 /**
@@ -61,17 +61,14 @@ export function CubeTreeNode({
   enableZoomIn = false,
   enableDimensionPicker = false,
   maxInitialDepth = 0,
-  currentPath,
+  nodePath,
 }: CubeTreeNodeProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
   const hasRawData = enableRawDataView && group.items && group.items.length > 0;
 
-  // Calculate available dimensions for this group's breakdown
-  // Exclude dimensions already used in the current path + this group's dimension
-  const usedDimensions = [
-    ...currentPath.map((p) => p.dimensionId),
-    group.dimensionId,
-  ];
+  // Calculate available dimensions for this group's children
+  // Exclude dimensions already used in this node's path
+  const usedDimensions = nodePath.map((p) => p.dimensionId);
   const availableDimensionsForGroup = dimensions.filter(
     (d) => !usedDimensions.includes(d.id),
   );
@@ -104,16 +101,7 @@ export function CubeTreeNode({
     } else {
       setIsExpanded(true);
       // Set childDimensionId to null to indicate raw data view
-      state.setNodeChildDimension(
-        [
-          ...currentPath,
-          {
-            dimensionId: group.dimensionId,
-            dimensionValue: group.dimensionValue,
-          },
-        ],
-        null,
-      );
+      state.setNodeChildDimension(nodePath, null);
     }
   };
 
@@ -283,17 +271,8 @@ export function CubeTreeNode({
                         }
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Set the child dimension for this node (not the current path)
-                          state.setNodeChildDimension(
-                            [
-                              ...currentPath,
-                              {
-                                dimensionId: group.dimensionId,
-                                dimensionValue: group.dimensionValue,
-                              },
-                            ],
-                            dim.id,
-                          );
+                          // Set the child dimension for this node
+                          state.setNodeChildDimension(nodePath, dim.id);
                           if (group.childDimensionId !== dim.id) {
                             setIsExpanded(true);
                           } else {
@@ -352,12 +331,12 @@ export function CubeTreeNode({
               ) : hasSubGroups ? (
                 <div className="space-y-2">
                   {group.subGroups!.map((subGroup, idx) => {
-                    // Build path for child including current group
-                    const childPath = [
-                      ...currentPath,
+                    // Build child's path: this node's path + the child node
+                    const childNodePath = [
+                      ...nodePath,
                       {
-                        dimensionId: group.dimensionId,
-                        dimensionValue: group.dimensionValue,
+                        dimensionId: subGroup.dimensionId,
+                        dimensionValue: subGroup.dimensionValue,
                       },
                     ];
 
@@ -376,7 +355,7 @@ export function CubeTreeNode({
                         enableZoomIn={enableZoomIn}
                         enableDimensionPicker={enableDimensionPicker}
                         maxInitialDepth={maxInitialDepth}
-                        currentPath={childPath}
+                        nodePath={childNodePath}
                       />
                     );
                   })}
