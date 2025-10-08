@@ -59,8 +59,8 @@ export function CubeSidebar({
   );
 
   return (
-    <div className="w-80 flex-shrink-0">
-      <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+    <div className="w-80 flex-shrink-0 overflow-y-auto">
+      <Card className="">
         <CardHeader>
           <CardTitle className="text-base">
             {zoomPath.length === 0 ? "Summary" : "Summary"}
@@ -419,7 +419,7 @@ export function CubeSidebar({
                                     </div>
                                   </div>
                                   {sidebarMode === "divergent" ? (
-                                    <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center overflow-hidden">
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center ">
                                       {/* Left (negative) side */}
                                       <div className="h-1.5 flex-1 relative">
                                         {group.numValue < 0 && maxAbs > 0 && (

@@ -182,7 +182,7 @@ export function CubeView({
       )}
 
       {/* Main Content Area - with optional sidebar */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 h-full w-full min-h-0">
         {/* Summary Sidebar */}
         {showGrandTotals && (
           <CubeSidebar
@@ -198,7 +198,7 @@ export function CubeView({
 
         {/* Groups or Raw Data */}
         <motion.div
-          className="flex-1 space-y-3"
+          className="flex-1 space-y-3 min-w-0 overflow-auto"
           key={zoomPath.length} // Re-render when zoom level changes
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

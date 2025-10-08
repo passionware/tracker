@@ -4,13 +4,6 @@ import {
   generatedReportSourceQueryUtils,
 } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
 import {
@@ -457,28 +450,14 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Cube Analytics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Report BI Analysis</CardTitle>
-          <CardDescription>
-            Comprehensive analytics for time tracking, costs, billing, and
-            profitability. Explore by contractor, project, task type, activity,
-            role, and time period.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CubeView
-            state={cubeState}
-            renderRawData={renderRawData}
-            enableDimensionPicker={true}
-            enableRawDataView={true}
-            enableZoomIn={true}
-            showGrandTotals={true}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <CubeView
+      className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col"
+      state={cubeState}
+      renderRawData={renderRawData}
+      enableDimensionPicker={true}
+      enableRawDataView={true}
+      enableZoomIn={true}
+      showGrandTotals={true}
+    />
   );
 }
