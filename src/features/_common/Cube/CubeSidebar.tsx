@@ -135,7 +135,7 @@ export function CubeSidebar({
                   <div className="pt-4 border-t space-y-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-xs font-medium text-slate-600">
-                        Explore by Dimension
+                        Explore data
                       </div>
                       <Select
                         value={selectedMeasureId}
@@ -204,6 +204,17 @@ export function CubeSidebar({
                         0,
                       );
                       const topGroups = sortedGroups.slice(0, 5);
+
+                      // Sidebar visualization mode comes from measure definition
+                      const sidebarMode =
+                        selectedMeasure.sidebarOptions?.mode || "percentage";
+                      const isProfit = sidebarMode === "divergent";
+                      const maxAbs = isProfit
+                        ? Math.max(
+                            0,
+                            ...sortedGroups.map((g) => Math.abs(g.numValue)),
+                          )
+                        : 0;
 
                       // Check if this is the child dimension (what will be used for breakdown)
                       const isChildDimension =
@@ -296,6 +307,9 @@ export function CubeSidebar({
                                 totalValue > 0
                                   ? (group.numValue / totalValue) * 100
                                   : 0;
+                              const formattedValue = selectedMeasure.formatValue
+                                ? selectedMeasure.formatValue(group.numValue)
+                                : String(group.numValue);
 
                               return (
                                 <div
@@ -308,7 +322,10 @@ export function CubeSidebar({
                                     </span>
                                     <div className="flex items-center gap-1">
                                       <span className="text-slate-400">
-                                        {pct.toFixed(0)}%
+                                        {sidebarMode === "percentage" &&
+                                          `${pct.toFixed(0)}%`}
+                                        {sidebarMode !== "percentage" &&
+                                          formattedValue}
                                       </span>
                                       <button
                                         className="p-0.5 hover:bg-indigo-100 rounded transition-colors"
@@ -375,19 +392,58 @@ export function CubeSidebar({
                                       </button>
                                     </div>
                                   </div>
-                                  <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center">
-                                    <div
-                                      className={cn(
-                                        "h-1 rounded-full transition-all duration-500",
-                                        isChildDimension
-                                          ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
-                                          : isDisplayedDimension
-                                            ? "bg-gradient-to-r from-blue-400 to-blue-600"
-                                            : "bg-gradient-to-r from-slate-400 to-slate-600",
-                                      )}
-                                      style={{ width: `${pct}%` }}
-                                    />
-                                  </div>
+                                  {sidebarMode === "divergent" ? (
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center overflow-hidden">
+                                      {/* Left (negative) side */}
+                                      <div className="h-1.5 flex-1 relative">
+                                        {group.numValue < 0 && maxAbs > 0 && (
+                                          <div
+                                            className={cn(
+                                              "absolute right-0 top-0 h-1.5",
+                                              selectedMeasure.sidebarOptions
+                                                ?.negativeColorClassName ||
+                                                "bg-rose-500",
+                                            )}
+                                            style={{
+                                              width: `${(Math.abs(group.numValue) / maxAbs) * 100}%`,
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                      {/* Zero baseline */}
+                                      <div className="w-0.5 h-2 bg-slate-300" />
+                                      {/* Right (positive) side */}
+                                      <div className="h-1.5 flex-1 relative">
+                                        {group.numValue > 0 && maxAbs > 0 && (
+                                          <div
+                                            className={cn(
+                                              "absolute left-0 top-0 h-1.5",
+                                              selectedMeasure.sidebarOptions
+                                                ?.positiveColorClassName ||
+                                                "bg-emerald-500",
+                                            )}
+                                            style={{
+                                              width: `${(group.numValue / maxAbs) * 100}%`,
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5 flex items-center">
+                                      <div
+                                        className={cn(
+                                          "h-1 rounded-full transition-all duration-500",
+                                          isChildDimension
+                                            ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
+                                            : isDisplayedDimension
+                                              ? "bg-gradient-to-r from-blue-400 to-blue-600"
+                                              : "bg-gradient-to-r from-slate-400 to-slate-600",
+                                        )}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

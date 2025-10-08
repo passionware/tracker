@@ -253,6 +253,9 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         },
         aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
         formatValue: (value) => `${value.toFixed(2)}h`,
+        sidebarOptions: {
+          mode: "percentage",
+        },
       }),
       factory.createMeasure({
         id: "cost",
@@ -275,6 +278,9 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         },
         aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
         formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+        sidebarOptions: {
+          mode: "absolute",
+        },
       }),
       factory.createMeasure({
         id: "billing",
@@ -297,6 +303,9 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         },
         aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
         formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+        sidebarOptions: {
+          mode: "absolute",
+        },
       }),
       factory.createMeasure({
         id: "profit",
@@ -319,6 +328,11 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         },
         aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
         formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+        sidebarOptions: {
+          mode: "divergent",
+          positiveColorClassName: "bg-emerald-500",
+          negativeColorClassName: "bg-rose-500",
+        },
       }),
       factory.createMeasure({
         id: "entries",
@@ -327,6 +341,9 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         getValue: () => 1, // Each item counts as 1 entry
         aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
         formatValue: (value) => `${value} entries`,
+        sidebarOptions: {
+          mode: "percentage",
+        },
       }),
     ];
   }, [props.report.data.definitions.roleTypes]);

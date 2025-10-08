@@ -47,6 +47,21 @@ export function withDataType<TData extends CubeDataItem>() {
   };
 }
 
+export type MeasureSidebarMode = "percentage" | "absolute" | "divergent";
+
+export interface MeasureSidebarOptions {
+  /**
+   * Controls how this measure should be visualized in sidebar breakdown charts.
+   * - percentage: show % of total with a single-direction progress bar
+   * - absolute: show formatted absolute value in label; progress bar relative to max
+   * - divergent: bipole bar with 0 baseline; negatives left, positives right
+   */
+  mode: MeasureSidebarMode;
+  /** Optional custom colors for divergent mode */
+  positiveColorClassName?: string;
+  negativeColorClassName?: string;
+}
+
 /**
  * Defines how to calculate a measure/metric from data items
  */
@@ -66,6 +81,8 @@ export interface MeasureDescriptor<TData extends CubeDataItem, TValue = any> {
   formatValue?: (value: TValue) => string;
   /** Optional icon or emoji for UI */
   icon?: string;
+  /** Sidebar visualization preferences */
+  sidebarOptions?: MeasureSidebarOptions;
 }
 
 /**
