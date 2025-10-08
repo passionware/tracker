@@ -160,11 +160,31 @@ export function CubeSunburst({
                 <g transform={`translate(${centerX}, ${centerY})`}>
                   {nodes.map((node) => {
                     const nivoNode = node.data as NivoSunburstNode;
-                    const isInZoomPath = currentZoomPath.some(
-                      (pathItem) =>
-                        pathItem.dimensionId === nivoNode.dimensionId &&
-                        pathItem.dimensionValue === nivoNode.dimensionValue,
-                    );
+
+                    // Check if this specific node is in the current zoom path by comparing full paths
+                    const isInZoomPath =
+                      currentZoomPath.length > 0 &&
+                      nivoNode.path &&
+                      currentZoomPath.some((_, index) => {
+                        // Build the path up to this level from the zoom path
+                        const zoomPathUpToLevel = currentZoomPath.slice(
+                          0,
+                          index + 1,
+                        );
+                        const zoomPathString = zoomPathUpToLevel
+                          .map((p) => {
+                            // Find the dimension to get the correct key format
+                            const dim = dimensions.find(
+                              (d) => d.id === p.dimensionId,
+                            );
+                            const key = dim?.getKey
+                              ? dim.getKey(p.dimensionValue)
+                              : String(p.dimensionValue ?? "null");
+                            return `${p.dimensionId}:${key}`;
+                          })
+                          .join("|");
+                        return nivoNode.path === zoomPathString;
+                      });
 
                     if (!isInZoomPath || !node.arc) return null;
 
