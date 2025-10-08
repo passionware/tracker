@@ -91,6 +91,8 @@ export interface CubeState {
   toggleNodeExpansion: (path: PathItem[]) => void;
   /** Zoom into a node (set as root) */
   zoomIn: (pathItem: PathItem) => void;
+  /** Set complete zoom path at once */
+  setZoomPath: (path: PathItem[]) => void;
   /** Navigate to a specific level in path */
   navigateToLevel: (index: number) => void;
   /** Reset to root */
@@ -256,6 +258,11 @@ export function useCubeState<TData extends CubeDataItem>(
     setPath((prev) => [...prev, pathItem]);
   }, []);
 
+  // Set complete zoom path at once
+  const setZoomPath = useCallback((newPath: PathItem[]) => {
+    setPath(newPath);
+  }, []);
+
   // Navigate to specific level
   const navigateToLevel = useCallback((index: number) => {
     if (index === -1) {
@@ -297,6 +304,7 @@ export function useCubeState<TData extends CubeDataItem>(
     setNodeChildDimension,
     toggleNodeExpansion,
     zoomIn,
+    setZoomPath,
     navigateToLevel,
     resetZoom,
     addFilter,

@@ -193,11 +193,8 @@ export function CubeTreeNode({
                       className="h-6 px-2 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Zoom into this group
-                        state.zoomIn({
-                          dimensionId: group.dimensionId,
-                          dimensionValue: group.dimensionValue,
-                        });
+                        // Zoom into this group - nodePath already contains the full path to this node
+                        state.setZoomPath(nodePath);
                       }}
                     >
                       <ZoomIn className="w-3 h-3 mr-1" />

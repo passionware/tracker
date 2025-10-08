@@ -356,7 +356,9 @@ export function calculateCube<TData extends CubeDataItem>(
         })
         .join("|");
 
-      // Find the child dimension for this zoom path using the same logic as buildGroupsWithBreakdownMap
+      // Find the child dimension for this zoom path
+      // The effectiveBreakdownMap already includes user overrides from useCubeState,
+      // so we use the shared utility to get consistent behavior with tree expansion
       const childDimensionId = resolveChildDimensionId(
         zoomPathString,
         effectiveBreakdownMap,
