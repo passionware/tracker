@@ -548,16 +548,15 @@ export function CubeView({
   });
 
   // Compute display groups based on current path
+  // Always show the children of the current node (determined by childDimensionId)
   const displayGroups = (() => {
     if (zoomPath.length === 0) {
+      // At root: show top-level groups
       return cube.groups;
     }
+    // Zoomed in: show children of the current group
     const currentGroup = findGroupByPath(zoomPath);
-    if (!currentGroup) return [];
-    // If group has subgroups, show them; otherwise show the group itself for raw data
-    return currentGroup.subGroups && currentGroup.subGroups.length > 0
-      ? currentGroup.subGroups
-      : [currentGroup];
+    return currentGroup?.subGroups || [];
   })();
 
   // Handlers
@@ -1065,32 +1064,10 @@ export function CubeView({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              No data to display
+              No groups to display.{" "}
+              {state.path.length > 0 &&
+                "Try selecting a different dimension or go back."}
             </motion.div>
-          ) : displayGroups.length === 1 &&
-            !displayGroups[0].subGroups &&
-            displayGroups[0].items &&
-            displayGroups[0].items.length > 0 ? (
-            // Zoomed into a leaf node - show raw data directly
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Raw Data</CardTitle>
-                <CardDescription className="text-xs">
-                  {displayGroups[0].items.length} items
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderRawData ? (
-                  renderRawData(displayGroups[0].items, displayGroups[0])
-                ) : (
-                  <div className="bg-slate-50 rounded p-3 max-h-96 overflow-auto">
-                    <pre className="text-xs">
-                      {JSON.stringify(displayGroups[0].items, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           ) : (
             displayGroups.map((group, idx) => (
               <CubeGroupItem
