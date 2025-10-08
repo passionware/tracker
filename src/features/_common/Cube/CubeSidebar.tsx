@@ -28,6 +28,7 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
+import { CubeSunburst } from "./CubeSunburst.tsx";
 import type { CubeState } from "./useCubeState.ts";
 
 interface CubeSidebarProps {
@@ -115,6 +116,32 @@ export function CubeSidebar({
                 </div>
               );
             })}
+
+            {/* Sunburst Chart - Hierarchical Breakdown */}
+            {cube.groups.length > 0 &&
+              selectedMeasureId &&
+              (() => {
+                const selectedMeasure =
+                  measures.find((m) => m.id === selectedMeasureId) ||
+                  measures[0];
+
+                return (
+                  <div className="pt-4 border-t">
+                    <CubeSunburst
+                      state={state}
+                      measure={selectedMeasure}
+                      dimensions={
+                        config.dimensions as DimensionDescriptor<
+                          CubeDataItem,
+                          unknown
+                        >[]
+                      }
+                      maxLevels={4}
+                      rootData={config.data}
+                    />
+                  </div>
+                );
+              })()}
 
             {/* Multi-dimensional breakdowns */}
             {sidebarDimensions.length > 0 &&
