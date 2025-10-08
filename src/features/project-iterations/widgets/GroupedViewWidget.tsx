@@ -25,13 +25,17 @@ import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { rd } from "@passionware/monads";
 import { useMemo } from "react";
+import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
+
+// Type for time entry data
+type TimeEntry = GenericReport["timeEntries"][0];
 
 interface GroupedViewWidgetProps extends WithFrontServices {
   report: GeneratedReportSource;
 }
 
 interface TimeEntriesForCubeProps extends WithFrontServices {
-  timeEntries: any[];
+  timeEntries: TimeEntry[];
   report: GeneratedReportSource;
 }
 
@@ -85,7 +89,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   );
 
   // Create cube dimensions from report data
-  const dimensions = useMemo((): DimensionDescriptor<any>[] => {
+  const dimensions = useMemo((): DimensionDescriptor<TimeEntry>[] => {
     const contractorNameLookup = (contractorId: number) => {
       return (
         rd.tryMap(
@@ -101,7 +105,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "contractor",
         name: "Contractor",
         icon: "👥",
-        getValue: (item: any) => item.contractorId,
+        getValue: (item: TimeEntry) => item.contractorId,
         getKey: (value: unknown) => String(value),
         formatValue: (value: unknown) => contractorNameLookup(value as number),
       },
@@ -109,7 +113,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "role",
         name: "Role",
         icon: "🎭",
-        getValue: (item: any) => item.roleId,
+        getValue: (item: TimeEntry) => item.roleId,
         getKey: (value: unknown) => value as string,
         formatValue: (value: unknown) =>
           props.report.data.definitions.roleTypes[value as string]?.name ||
@@ -119,7 +123,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "task",
         name: "Task Type",
         icon: "📋",
-        getValue: (item: any) => item.taskId,
+        getValue: (item: TimeEntry) => item.taskId,
         getKey: (value: unknown) => value as string,
         formatValue: (value: unknown) =>
           props.report.data.definitions.taskTypes[value as string]?.name ||
@@ -129,7 +133,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "activity",
         name: "Activity",
         icon: "🎯",
-        getValue: (item: any) => item.activityId,
+        getValue: (item: TimeEntry) => item.activityId,
         getKey: (value: unknown) => value as string,
         formatValue: (value: unknown) =>
           props.report.data.definitions.activityTypes[value as string]?.name ||
@@ -139,7 +143,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "project",
         name: "Project",
         icon: "📁",
-        getValue: (item: any) => item.projectId,
+        getValue: (item: TimeEntry) => item.projectId,
         getKey: (value: unknown) => value as string,
         formatValue: (value: unknown) =>
           props.report.data.definitions.projectTypes[value as string]?.name ||
@@ -149,8 +153,8 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "month",
         name: "Month",
         icon: "📅",
-        getValue: (item: any) => {
-          const date = new Date(item.startTime);
+        getValue: (item: TimeEntry) => {
+          const date = new Date(item.startAt);
           return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         },
         getKey: (value: unknown) => value as string,
@@ -167,8 +171,8 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         id: "weekday",
         name: "Day of Week",
         icon: "📆",
-        getValue: (item: any) => {
-          const date = new Date(item.startTime);
+        getValue: (item: TimeEntry) => {
+          const date = new Date(item.startAt);
           return date.getDay();
         },
         getKey: (value: unknown) => String(value),
@@ -189,15 +193,15 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   }, [contractorsQuery, props.report.data.definitions]);
 
   // Create cube measures from report data
-  const measures = useMemo((): MeasureDescriptor<any>[] => {
+  const measures = useMemo((): MeasureDescriptor<TimeEntry>[] => {
     return [
       {
         id: "hours",
         name: "Hours",
         icon: "⏱️",
-        getValue: (item: any) => {
-          const start = new Date(item.startTime);
-          const end = new Date(item.endTime);
+        getValue: (item: TimeEntry) => {
+          const start = new Date(item.startAt);
+          const end = new Date(item.endAt);
           return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
         },
         aggregate: (values: number[]) =>
@@ -285,7 +289,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
           </Badge>
         </div>
         <TimeEntriesForCube
-          timeEntries={items}
+          timeEntries={items as TimeEntry[]}
           report={props.report}
           services={props.services}
         />
