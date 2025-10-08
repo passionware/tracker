@@ -29,7 +29,6 @@ interface CubeSidebarProps {
   sidebarDimensions: DimensionDescriptor<any>[];
   currentGroupDimensionId?: string;
   currentChildDimensionId?: string | null;
-  findGroupByPath: (breadcrumbs: BreadcrumbItem[]) => CubeGroup | undefined;
   handleZoomIn: (group: CubeGroup, fullPath: BreadcrumbItem[]) => void;
 }
 
@@ -40,7 +39,6 @@ export function CubeSidebar({
   sidebarDimensions,
   currentGroupDimensionId,
   currentChildDimensionId,
-  findGroupByPath,
   handleZoomIn,
 }: CubeSidebarProps) {
   const cube = state.cube;
@@ -51,32 +49,22 @@ export function CubeSidebar({
       <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <CardHeader>
           <CardTitle className="text-base">
-            {(() => {
-              if (zoomPath.length === 0) return "Summary";
-              const currentGroup = findGroupByPath(zoomPath);
-              return currentGroup?.dimensionLabel || "Summary";
-            })()}
+            {zoomPath.length === 0 ? "Summary" : "Summary"}
           </CardTitle>
           <CardDescription className="text-xs">
             {zoomPath.length === 0 ? (
               <>{cube.totalItems} items</>
             ) : (
               <>
-                {(() => {
-                  const currentGroup = findGroupByPath(zoomPath);
-                  return currentGroup?.itemCount || 0;
-                })()}{" "}
-                items in {zoomPath[zoomPath.length - 1].dimensionId}
+                {cube.totalItems} items in{" "}
+                {zoomPath[zoomPath.length - 1].dimensionId}
               </>
             )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {(zoomPath.length === 0
-              ? cube.grandTotals
-              : findGroupByPath(zoomPath)?.cells || []
-            ).map((cell, _idx, arr) => {
+            {cube.grandTotals.map((cell, _idx, arr) => {
               const measure = measures.find((m) => m.id === cell.measureId);
 
               // Calculate percentage of total for visual bar
@@ -118,11 +106,17 @@ export function CubeSidebar({
             {/* Multi-dimensional breakdowns */}
             {sidebarDimensions.length > 0 &&
               (() => {
-                // Get current data items (either root or zoomed group)
+                // Get current data items (either root or zoomed filtered data)
                 const currentItems =
-                  zoomPath.length === 0
-                    ? config.data
-                    : findGroupByPath(zoomPath)?.items || [];
+                  zoomPath.length === 0 ? config.data : cube.filteredData || [];
+
+                console.log("🔍 Sidebar Debug:", {
+                  zoomPathLength: zoomPath.length,
+                  hasFilteredData: !!cube.filteredData,
+                  filteredDataLength: cube.filteredData?.length || 0,
+                  currentItemsLength: currentItems.length,
+                  totalItems: cube.totalItems,
+                });
 
                 if (!currentItems.length) return null;
 

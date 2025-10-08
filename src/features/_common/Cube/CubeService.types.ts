@@ -160,6 +160,8 @@ export interface CubeResult {
   totalItems: number;
   /** Grand total cells (aggregated across all groups) */
   grandTotals: CubeCell[];
+  /** Filtered data items (for dimensional breakdowns in sidebar) */
+  filteredData?: CubeDataItem[];
   /** Applied configuration */
   config: CubeConfig<CubeDataItem>;
 }

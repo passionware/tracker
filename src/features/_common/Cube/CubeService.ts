@@ -392,6 +392,7 @@ export function calculateCube<TData extends CubeDataItem>(
     groups,
     totalItems: filteredData.length,
     grandTotals,
+    filteredData: includeItems ? filteredData : undefined,
     config: {
       ...config,
       // Include the effective breakdownMap so CubeView can access it

@@ -4,13 +4,19 @@
  * Renders a multidimensional cube with expandable groups and drill-down capabilities.
  */
 
-import {motion} from "framer-motion";
-import {CubeDebugPanel} from "./CubeDebugPanel.tsx";
-import {type BreadcrumbItem, CubeNavigation} from "./CubeNavigation.tsx";
-import type {CubeCell, CubeDataItem, CubeGroup, DimensionDescriptor, MeasureDescriptor,} from "./CubeService.types.ts";
-import {CubeSidebar} from "./CubeSidebar.tsx";
-import {CubeTreeNode} from "./CubeTreeNode.tsx";
-import type {CubeState} from "./useCubeState.ts";
+import { motion } from "framer-motion";
+import { CubeDebugPanel } from "./CubeDebugPanel.tsx";
+import { type BreadcrumbItem, CubeNavigation } from "./CubeNavigation.tsx";
+import type {
+  CubeCell,
+  CubeDataItem,
+  CubeGroup,
+  DimensionDescriptor,
+  MeasureDescriptor,
+} from "./CubeService.types.ts";
+import { CubeSidebar } from "./CubeSidebar.tsx";
+import { CubeTreeNode } from "./CubeTreeNode.tsx";
+import type { CubeState } from "./useCubeState.ts";
 
 /**
  * Props for CubeView component
@@ -99,9 +105,9 @@ export function CubeView({
       // At root: show top-level groups
       return cube.groups;
     }
-    // Zoomed in: show children of the current group
-    const currentGroup = findGroupByPath(zoomPath);
-    return currentGroup?.subGroups || [];
+    // Zoomed in: the cube.groups already contains the children of the zoomed node
+    // because the zoom logic in calculateCube filters data and builds groups for the zoomed perspective
+    return cube.groups;
   })();
 
   // Handlers
@@ -169,7 +175,6 @@ export function CubeView({
             sidebarDimensions={sidebarDimensions as DimensionDescriptor<any>[]}
             currentGroupDimensionId={currentGroupDimensionId}
             currentChildDimensionId={currentChildDimensionId}
-            findGroupByPath={findGroupByPath}
             handleZoomIn={handleZoomIn}
           />
         )}
