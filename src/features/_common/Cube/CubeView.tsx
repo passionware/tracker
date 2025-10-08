@@ -4,19 +4,13 @@
  * Renders a multidimensional cube with expandable groups and drill-down capabilities.
  */
 
-import { motion } from "framer-motion";
-import { CubeDebugPanel } from "./CubeDebugPanel.tsx";
-import { type BreadcrumbItem, CubeNavigation } from "./CubeNavigation.tsx";
-import type {
-  CubeCell,
-  CubeDataItem,
-  CubeGroup,
-  DimensionDescriptor,
-  MeasureDescriptor,
-} from "./CubeService.types.ts";
-import { CubeSidebar } from "./CubeSidebar.tsx";
-import { CubeTreeNode } from "./CubeTreeNode.tsx";
-import type { CubeState } from "./useCubeState.ts";
+import {motion} from "framer-motion";
+import {CubeDebugPanel} from "./CubeDebugPanel.tsx";
+import {type BreadcrumbItem, CubeNavigation} from "./CubeNavigation.tsx";
+import type {CubeCell, CubeDataItem, CubeGroup, DimensionDescriptor, MeasureDescriptor,} from "./CubeService.types.ts";
+import {CubeSidebar} from "./CubeSidebar.tsx";
+import {CubeTreeNode} from "./CubeTreeNode.tsx";
+import type {CubeState} from "./useCubeState.ts";
 
 /**
  * Props for CubeView component
@@ -126,8 +120,26 @@ export function CubeView({
   const currentGroupDimensionId = displayGroups[0]?.dimensionId;
 
   // Dimension used for children of these groups (what the dropdown should show/set)
-  // If we have groups, check if they have a childDimensionId set
-  const currentChildDimensionId = displayGroups[0]?.childDimensionId;
+  // This should match the logic used in the sidebar for highlighting
+  const currentChildDimensionId = (() => {
+    if (zoomPath.length === 0) {
+      // At root: look at the breakdown map for the root path
+      return config.breakdownMap?.[""];
+    } else {
+      // When zoomed in: look up the child dimension for the current zoom path
+      const zoomPathString = state.path
+        .map((p) => {
+          const dim = config.dimensions.find((d) => d.id === p.dimensionId);
+          const key = dim?.getKey
+            ? dim.getKey(p.dimensionValue)
+            : String(p.dimensionValue ?? "null");
+          return `${p.dimensionId}:${key}`;
+        })
+        .join("|");
+
+      return config.breakdownMap?.[zoomPathString];
+    }
+  })();
 
   // For the dropdown, we need to exclude:
   // 1. Dimensions used in the zoom path (ancestors)
@@ -188,16 +200,56 @@ export function CubeView({
           transition={{ duration: 0.3, delay: 0.1 }}
         >
           {displayGroups.length === 0 ? (
-            <motion.div
-              className="text-center py-8 text-slate-500"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              No groups to display.{" "}
-              {state.path.length > 0 &&
-                "Try selecting a different dimension or go back."}
-            </motion.div>
+            // No groups to display - check if we should show raw data
+            cube.totalItems > 0 && enableRawDataView && cube.filteredData ? (
+              // Show raw data
+              <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-slate-600">
+                    Raw Data Items
+                  </h4>
+                  <div className="text-xs text-slate-500">
+                    {cube.totalItems} items
+                  </div>
+                </div>
+                {renderRawData ? (
+                  renderRawData(cube.filteredData, {
+                    dimensionId: "root",
+                    dimensionValue: "root",
+                    dimensionKey: "root",
+                    dimensionLabel: "Root",
+                    itemCount: cube.totalItems,
+                    cells: cube.grandTotals,
+                    subGroups: undefined,
+                    items: cube.filteredData,
+                    path: "",
+                    childDimensionId: null,
+                  })
+                ) : (
+                  <div className="bg-slate-50 rounded p-3 max-h-96 overflow-auto">
+                    <pre className="text-xs">
+                      {JSON.stringify(cube.filteredData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                className="text-center py-8 text-slate-500"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                No groups to display.{" "}
+                {state.path.length > 0 &&
+                  "Try selecting a different dimension or go back."}
+              </motion.div>
+            )
           ) : (
             displayGroups.map((group, idx) => {
               // Build this node's full path: current zoom path + this node

@@ -5,17 +5,17 @@
  */
 
 import type {
-  CubeCell,
-  CubeConfig,
-  CubeDataItem,
-  CubeGroup,
-  CubeResult,
-  DimensionDescriptor,
-  DimensionFilter,
-  MeasureDescriptor,
-  CubeCalculationOptions,
-  FilterOperator,
-  BreakdownMap,
+    BreakdownMap,
+    CubeCalculationOptions,
+    CubeCell,
+    CubeConfig,
+    CubeDataItem,
+    CubeGroup,
+    CubeResult,
+    DimensionDescriptor,
+    DimensionFilter,
+    FilterOperator,
+    MeasureDescriptor,
 } from "./CubeService.types.ts";
 
 /**
@@ -365,6 +365,7 @@ export function calculateCube<TData extends CubeDataItem>(
       );
 
       // If we found a child dimension, build groups for it
+      // If childDimensionId is null, don't build groups (raw data mode)
       if (childDimensionId) {
         groups = buildGroupsWithBreakdownMap(
           filteredData,
@@ -379,6 +380,7 @@ export function calculateCube<TData extends CubeDataItem>(
           skipEmptyGroups,
         );
       }
+      // If childDimensionId is null, groups remains empty (raw data mode)
     }
   }
 

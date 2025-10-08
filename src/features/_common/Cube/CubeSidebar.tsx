@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { cn } from "@/lib/utils.ts";
+import { ZoomIn } from "lucide-react";
+import type { BreadcrumbItem } from "./CubeNavigation.tsx";
 import type {
   CubeDataItem,
   CubeGroup,
@@ -19,8 +21,6 @@ import type {
   MeasureDescriptor,
 } from "./CubeService.types.ts";
 import type { CubeState } from "./useCubeState.ts";
-import type { BreadcrumbItem } from "./CubeNavigation.tsx";
-import { ZoomIn } from "lucide-react";
 
 interface CubeSidebarProps {
   state: CubeState;
@@ -109,14 +109,6 @@ export function CubeSidebar({
                 // Get current data items (either root or zoomed filtered data)
                 const currentItems =
                   zoomPath.length === 0 ? config.data : cube.filteredData || [];
-
-                console.log("🔍 Sidebar Debug:", {
-                  zoomPathLength: zoomPath.length,
-                  hasFilteredData: !!cube.filteredData,
-                  filteredDataLength: cube.filteredData?.length || 0,
-                  currentItemsLength: currentItems.length,
-                  totalItems: cube.totalItems,
-                });
 
                 if (!currentItems.length) return null;
 

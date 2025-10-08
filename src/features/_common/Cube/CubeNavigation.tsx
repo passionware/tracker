@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
-import type { DimensionDescriptor, CubeGroup } from "./CubeService.types.ts";
-import type { CubeState } from "./useCubeState.ts";
-import { ChevronRight, Home } from "lucide-react";
 import { motion } from "framer-motion";
+import { ChevronRight, Home } from "lucide-react";
+import type { CubeGroup, DimensionDescriptor } from "./CubeService.types.ts";
+import type { CubeState } from "./useCubeState.ts";
 
 export interface BreadcrumbItem {
   dimensionId: string;
@@ -105,22 +105,57 @@ export function CubeNavigation({
                 : "Break down children by:"}
             </span>
             <Select
-              value={currentChildDimensionId ?? undefined}
+              value={currentChildDimensionId ?? "raw-data"}
               onValueChange={(value) => {
                 // Set the child dimension for the current path
-                state.setNodeChildDimension(state.path, value);
+                // Convert "raw-data" back to null
+                const dimensionValue = value === "raw-data" ? null : value;
+                state.setNodeChildDimension(state.path, dimensionValue);
               }}
             >
               <SelectTrigger className="h-7 w-[180px] text-xs">
                 <SelectValue placeholder="Select dimension..." />
               </SelectTrigger>
               <SelectContent>
+                {/* Always include "Raw Data" option */}
+                <SelectItem value="raw-data" className="text-xs">
+                  <span className="mr-2">📊</span>
+                  Raw Data
+                </SelectItem>
+
+                {/* Include all available dimensions */}
                 {dropdownDimensions.map((dim) => (
                   <SelectItem key={dim.id} value={dim.id} className="text-xs">
                     {dim.icon && <span className="mr-2">{dim.icon}</span>}
                     {dim.name}
                   </SelectItem>
                 ))}
+
+                {/* Include currently selected dimension if it's not in dropdownDimensions */}
+                {currentChildDimensionId &&
+                  !dropdownDimensions.some(
+                    (d) => d.id === currentChildDimensionId,
+                  ) && (
+                    <SelectItem
+                      value={currentChildDimensionId}
+                      className="text-xs"
+                    >
+                      {dimensions.find((d) => d.id === currentChildDimensionId)
+                        ?.icon && (
+                        <span className="mr-2">
+                          {
+                            dimensions.find(
+                              (d) => d.id === currentChildDimensionId,
+                            )?.icon
+                          }
+                        </span>
+                      )}
+                      {
+                        dimensions.find((d) => d.id === currentChildDimensionId)
+                          ?.name
+                      }
+                    </SelectItem>
+                  )}
               </SelectContent>
             </Select>
           </div>
