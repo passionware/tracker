@@ -36,6 +36,7 @@ interface NivoSunburstNode {
   path?: string;
   formattedValue?: string;
   itemCount?: number;
+  originalLabel?: string; // Store the original readable label
 }
 
 /**
@@ -49,15 +50,19 @@ function convertToNivoFormat(
     const cell = group.cells.find((c) => c.measureId === measure.id);
     const value = typeof cell?.value === "number" ? Math.abs(cell.value) : 0;
 
+    // Create unique ID using full path to avoid duplicate keys
+    const uniqueId = group.path || `${group.dimensionId}:${group.dimensionKey}`;
+
     const node: NivoSunburstNode = {
-      id: group.path || `${group.dimensionId}:${group.dimensionKey}`,
-      name: group.dimensionLabel,
+      id: uniqueId,
+      name: uniqueId, // Use unique ID as name to prevent duplicate keys
       value,
       dimensionId: group.dimensionId,
       dimensionValue: group.dimensionValue,
       path: group.path,
       formattedValue: cell?.formattedValue || String(value),
       itemCount: group.itemCount,
+      originalLabel: group.dimensionLabel, // Store the original readable label
     };
 
     // Recursively convert children
@@ -119,9 +124,9 @@ export function CubeSunburst({
     // Convert to Nivo format
     const nivoNodes = convertToNivoFormat(rootCube.groups, measure);
 
-    // Wrap in root node as required by Nivo
+    // Wrap in root node as required by Nivo with stable ID
     return {
-      id: "root",
+      id: "sunburst-root",
       name: "All Data",
       value: 0, // Will be calculated from children
       children: nivoNodes,
@@ -149,6 +154,7 @@ export function CubeSunburst({
 
       <div className="h-[400px] w-full">
         <ResponsiveSunburst
+          key={`sunburst-${measure.id}`}
           data={nivoData}
           margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
           id="name"
@@ -214,7 +220,7 @@ export function CubeSunburst({
             const nivoNode = node.data as NivoSunburstNode;
 
             // Don't zoom into root
-            if (node.id === "root") {
+            if (node.id === "sunburst-root") {
               // Click on root to reset zoom
               state.resetZoom();
               return;
@@ -263,6 +269,14 @@ export function CubeSunburst({
           }}
           tooltip={({ value, color, data }) => {
             const nivoNode = data as NivoSunburstNode;
+            // Use the original readable label
+            const displayName =
+              nivoNode.id === "sunburst-root"
+                ? "All Data"
+                : nivoNode.originalLabel ||
+                  nivoNode.id.split(":").pop() ||
+                  nivoNode.id;
+
             return (
               <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-3 max-w-xs">
                 <div className="flex items-center gap-2 mb-3">
@@ -271,7 +285,7 @@ export function CubeSunburst({
                     style={{ backgroundColor: color }}
                   />
                   <div className="font-semibold text-white text-sm truncate">
-                    {nivoNode.name}
+                    {displayName}
                   </div>
                 </div>
                 <div className="space-y-2">
