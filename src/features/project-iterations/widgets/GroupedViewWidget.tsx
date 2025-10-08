@@ -207,6 +207,72 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         formatValue: (value) => `${value.toFixed(2)}h`,
       }),
       factory.createMeasure({
+        id: "cost",
+        name: "Cost",
+        icon: "💸",
+        getValue: (item) => {
+          const roleType = props.report.data.definitions.roleTypes[item.roleId];
+          const matchingRate =
+            roleType?.rates.find(
+              (rate) =>
+                rate.activityType === item.activityId &&
+                rate.taskType === item.taskId,
+            ) || roleType?.rates[0]; // Fallback to first rate
+
+          if (!matchingRate) return 0;
+
+          const hours =
+            (item.endAt.getTime() - item.startAt.getTime()) / (1000 * 60 * 60);
+          return hours * matchingRate.costRate;
+        },
+        aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
+        formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+      }),
+      factory.createMeasure({
+        id: "billing",
+        name: "Billing",
+        icon: "💰",
+        getValue: (item) => {
+          const roleType = props.report.data.definitions.roleTypes[item.roleId];
+          const matchingRate =
+            roleType?.rates.find(
+              (rate) =>
+                rate.activityType === item.activityId &&
+                rate.taskType === item.taskId,
+            ) || roleType?.rates[0]; // Fallback to first rate
+
+          if (!matchingRate) return 0;
+
+          const hours =
+            (item.endAt.getTime() - item.startAt.getTime()) / (1000 * 60 * 60);
+          return hours * matchingRate.billingRate;
+        },
+        aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
+        formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+      }),
+      factory.createMeasure({
+        id: "profit",
+        name: "Profit",
+        icon: "📈",
+        getValue: (item) => {
+          const roleType = props.report.data.definitions.roleTypes[item.roleId];
+          const matchingRate =
+            roleType?.rates.find(
+              (rate) =>
+                rate.activityType === item.activityId &&
+                rate.taskType === item.taskId,
+            ) || roleType?.rates[0]; // Fallback to first rate
+
+          if (!matchingRate) return 0;
+
+          const hours =
+            (item.endAt.getTime() - item.startAt.getTime()) / (1000 * 60 * 60);
+          return hours * (matchingRate.billingRate - matchingRate.costRate);
+        },
+        aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
+        formatValue: (value) => `${value.toFixed(2)} EUR`, // TODO: Use currency from rate
+      }),
+      factory.createMeasure({
         id: "entries",
         name: "Entries",
         icon: "📊",
@@ -215,7 +281,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
         formatValue: (value) => `${value} entries`,
       }),
     ];
-  }, []);
+  }, [props.report.data.definitions.roleTypes]);
 
   // Initialize cube state
   const cubeState = useCubeState({
