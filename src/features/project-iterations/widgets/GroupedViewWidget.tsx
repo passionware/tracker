@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/card.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
-import type {
-  DimensionDescriptor,
-  MeasureDescriptor,
+import {
+  type DimensionDescriptor,
+  type MeasureDescriptor,
+  withDataType,
 } from "@/features/_common/Cube/CubeService.types.ts";
 import {
   CubeView,
@@ -23,9 +24,9 @@ import {
 } from "@/features/_common/Cube/CubeView.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
+import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { rd } from "@passionware/monads";
 import { useMemo } from "react";
-import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
 
 // Type for time entry data
 type TimeEntry = GenericReport["timeEntries"][0];
@@ -75,6 +76,8 @@ function TimeEntriesForCube({
   );
 }
 
+const factory = withDataType<TimeEntry>();
+
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   // Fetch contractor data for name lookup
   const contractorIds = Array.from(
@@ -89,7 +92,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   );
 
   // Create cube dimensions from report data
-  const dimensions = useMemo((): DimensionDescriptor<TimeEntry>[] => {
+  const dimensions = useMemo(() => {
     const contractorNameLookup = (contractorId: number) => {
       return (
         rd.tryMap(
@@ -101,82 +104,78 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     };
 
     return [
-      {
+      factory.createDimension({
         id: "contractor",
         name: "Contractor",
         icon: "👥",
-        getValue: (item: TimeEntry) => item.contractorId,
-        getKey: (value: unknown) => String(value),
-        formatValue: (value: unknown) => contractorNameLookup(value as number),
-      },
-      {
+        getValue: (item) => item.contractorId,
+        getKey: (value) => String(value),
+        formatValue: (value) => contractorNameLookup(value),
+      }),
+      factory.createDimension({
         id: "role",
         name: "Role",
         icon: "🎭",
-        getValue: (item: TimeEntry) => item.roleId,
-        getKey: (value: unknown) => value as string,
-        formatValue: (value: unknown) =>
-          props.report.data.definitions.roleTypes[value as string]?.name ||
-          (value as string),
-      },
-      {
+        getValue: (item) => item.roleId,
+        getKey: (value) => value,
+        formatValue: (value) =>
+          props.report.data.definitions.roleTypes[value]?.name || value,
+      }),
+      factory.createDimension({
         id: "task",
         name: "Task Type",
         icon: "📋",
-        getValue: (item: TimeEntry) => item.taskId,
-        getKey: (value: unknown) => value as string,
-        formatValue: (value: unknown) =>
-          props.report.data.definitions.taskTypes[value as string]?.name ||
-          (value as string),
-      },
-      {
+        getValue: (item) => item.taskId,
+        getKey: (value) => value,
+        formatValue: (value) =>
+          props.report.data.definitions.taskTypes[value]?.name || value,
+      }),
+      factory.createDimension({
         id: "activity",
         name: "Activity",
         icon: "🎯",
-        getValue: (item: TimeEntry) => item.activityId,
-        getKey: (value: unknown) => value as string,
-        formatValue: (value: unknown) =>
-          props.report.data.definitions.activityTypes[value as string]?.name ||
-          (value as string),
-      },
-      {
+        getValue: (item) => item.activityId,
+        getKey: (value) => value,
+        formatValue: (value) =>
+          props.report.data.definitions.activityTypes[value]?.name || value,
+      }),
+      factory.createDimension({
         id: "project",
         name: "Project",
         icon: "📁",
-        getValue: (item: TimeEntry) => item.projectId,
-        getKey: (value: unknown) => value as string,
-        formatValue: (value: unknown) =>
-          props.report.data.definitions.projectTypes[value as string]?.name ||
-          (value as string),
-      },
-      {
+        getValue: (item) => item.projectId,
+        getKey: (value) => value,
+        formatValue: (value) =>
+          props.report.data.definitions.projectTypes[value]?.name || value,
+      }),
+      factory.createDimension({
         id: "month",
         name: "Month",
         icon: "📅",
-        getValue: (item: TimeEntry) => {
+        getValue: (item) => {
           const date = new Date(item.startAt);
           return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         },
-        getKey: (value: unknown) => value as string,
-        formatValue: (value: unknown) => {
-          const [year, month] = (value as string).split("-");
+        getKey: (value) => value,
+        formatValue: (value) => {
+          const [year, month] = value.split("-");
           const date = new Date(parseInt(year), parseInt(month) - 1);
           return date.toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
           });
         },
-      },
-      {
+      }),
+      factory.createDimension({
         id: "weekday",
         name: "Day of Week",
         icon: "📆",
-        getValue: (item: TimeEntry) => {
+        getValue: (item) => {
           const date = new Date(item.startAt);
           return date.getDay();
         },
-        getKey: (value: unknown) => String(value),
-        formatValue: (value: unknown) => {
+        getKey: (value) => String(value),
+        formatValue: (value) => {
           const days = [
             "Sunday",
             "Monday",
@@ -186,45 +185,43 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
             "Friday",
             "Saturday",
           ];
-          return days[value as number];
+          return days[value];
         },
-      },
+      }),
     ];
   }, [contractorsQuery, props.report.data.definitions]);
 
   // Create cube measures from report data
-  const measures = useMemo((): MeasureDescriptor<TimeEntry>[] => {
+  const measures = useMemo(() => {
     return [
-      {
+      factory.createMeasure({
         id: "hours",
         name: "Hours",
         icon: "⏱️",
-        getValue: (item: TimeEntry) => {
+        getValue: (item) => {
           const start = new Date(item.startAt);
           const end = new Date(item.endAt);
           return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
         },
-        aggregate: (values: number[]) =>
-          values.reduce((sum, val) => sum + val, 0),
-        formatValue: (value: number) => `${value.toFixed(2)}h`,
-      },
-      {
+        aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
+        formatValue: (value) => `${value.toFixed(2)}h`,
+      }),
+      factory.createMeasure({
         id: "entries",
         name: "Entries",
         icon: "📊",
         getValue: () => 1, // Each item counts as 1 entry
-        aggregate: (values: number[]) =>
-          values.reduce((sum, val) => sum + val, 0),
-        formatValue: (value: number) => `${value} entries`,
-      },
+        aggregate: (values) => values.reduce((sum, val) => sum + val, 0),
+        formatValue: (value) => `${value} entries`,
+      }),
     ];
   }, []);
 
   // Initialize cube state
   const cubeState = useCubeState({
     data: props.report.data.timeEntries,
-    dimensions,
-    measures,
+    dimensions: dimensions as DimensionDescriptor<TimeEntry, unknown>[],
+    measures: measures as MeasureDescriptor<TimeEntry, unknown>[],
     initialDefaultDimensionSequence: [
       "project",
       "task",

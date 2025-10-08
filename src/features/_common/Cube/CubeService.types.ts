@@ -34,6 +34,19 @@ export interface DimensionDescriptor<
   icon?: string;
 }
 
+export function withDataType<TData extends CubeDataItem>() {
+  return {
+    createDimension: <TValue>(
+      descriptor: DimensionDescriptor<TData, TValue>,
+    ) => {
+      return descriptor;
+    },
+    createMeasure: <TValue>(descriptor: MeasureDescriptor<TData, TValue>) => {
+      return descriptor;
+    },
+  };
+}
+
 /**
  * Defines how to calculate a measure/metric from data items
  */
