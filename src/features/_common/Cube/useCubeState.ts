@@ -30,11 +30,11 @@ export interface PathItem {
 }
 
 /**
- * Node state - per-node UI state
+ * Node state - per-node UI state (stores ONLY explicit user overrides)
  */
 export interface NodeState {
   isExpanded: boolean;
-  childDimensionId?: string;
+  childDimensionId?: string | null; // string = dimension, null = raw data, undefined = use default
 }
 
 /**
@@ -85,8 +85,8 @@ export interface CubeState {
   filters: DimensionFilter[];
 
   // ===== ACTIONS =====
-  /** Set child dimension for a node */
-  setNodeChildDimension: (path: PathItem[], dimensionId: string) => void;
+  /** Set child dimension for a node (null = show raw data) */
+  setNodeChildDimension: (path: PathItem[], dimensionId: string | null) => void;
   /** Toggle node expansion */
   toggleNodeExpansion: (path: PathItem[]) => void;
   /** Zoom into a node (set as root) */
@@ -145,55 +145,56 @@ export function useCubeState<TData extends CubeDataItem>(
   // State: Path (where we are in the tree)
   const [path, setPath] = useState<PathItem[]>([]);
 
-  // State: Node states (expansion + child dimension per node)
-  const [nodeStates, setNodeStates] = useState<Map<NodeKey, NodeState>>(() => {
-    const map = new Map<NodeKey, NodeState>();
-
-    // Initialize root node with initial dimension
-    if (initialRootDimension) {
-      map.set("", {
-        isExpanded: false,
-        childDimensionId: initialRootDimension,
-      });
-    } else if (
-      initialDefaultDimensionSequence &&
-      initialDefaultDimensionSequence.length > 0
-    ) {
-      // Set root dimension from sequence
-      map.set("", {
-        isExpanded: false,
-        childDimensionId: initialDefaultDimensionSequence[0],
-      });
-
-      // Set wildcard defaults for subsequent levels
-      for (let i = 0; i < initialDefaultDimensionSequence.length - 1; i++) {
-        const pattern =
-          initialDefaultDimensionSequence.slice(0, i + 1).join(":*|") + ":*";
-        map.set(pattern, {
-          isExpanded: false,
-          childDimensionId: initialDefaultDimensionSequence[i + 1],
-        });
-      }
-    }
-
-    return map;
-  });
+  // State: Node states - ONLY stores explicit user overrides (not defaults!)
+  const [nodeStates, setNodeStates] = useState<Map<NodeKey, NodeState>>(
+    () => new Map(),
+  );
 
   // State: Filters
   const [filters, setFilters] = useState<DimensionFilter[]>(initialFilters);
 
   // ===== DERIVED DATA =====
 
-  // Convert nodeStates Map to breakdownMap for cube calculation
-  const breakdownMap = useMemo(() => {
+  // Build default breakdownMap from initialDefaultDimensionSequence (configuration, not state)
+  const defaultBreakdownMap = useMemo(() => {
     const map: Record<string, string> = {};
+
+    if (initialRootDimension) {
+      map[""] = initialRootDimension;
+    } else if (
+      initialDefaultDimensionSequence &&
+      initialDefaultDimensionSequence.length > 0
+    ) {
+      // Root level
+      map[""] = initialDefaultDimensionSequence[0];
+
+      // Wildcard patterns for each level
+      for (let i = 0; i < initialDefaultDimensionSequence.length - 1; i++) {
+        const pattern =
+          initialDefaultDimensionSequence.slice(0, i + 1).join(":*|") + ":*";
+        map[pattern] = initialDefaultDimensionSequence[i + 1];
+      }
+    }
+
+    return map;
+  }, [initialRootDimension, initialDefaultDimensionSequence]);
+
+  // Merge defaults with explicit user overrides to create final breakdownMap
+  const breakdownMap = useMemo(() => {
+    const map: Record<string, string> = { ...defaultBreakdownMap };
+
+    // User overrides take precedence over defaults
     nodeStates.forEach((state, key) => {
       if (state.childDimensionId) {
         map[key] = state.childDimensionId;
+      } else if (state.childDimensionId === null) {
+        // Explicit null means "show raw data" - remove any default
+        delete map[key];
       }
     });
+
     return map;
-  }, [nodeStates]);
+  }, [defaultBreakdownMap, nodeStates]);
 
   // Calculate cube configuration
   const config: CubeConfig<TData> = useMemo(
@@ -221,9 +222,9 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // ===== ACTIONS =====
 
-  // Set child dimension for a node
+  // Set child dimension for a node (null = show raw data, string = dimension)
   const setNodeChildDimension = useCallback(
-    (nodePath: PathItem[], dimensionId: string) => {
+    (nodePath: PathItem[], dimensionId: string | null) => {
       const key = pathToKey(nodePath, dimensions);
       setNodeStates((prev) => {
         const newMap = new Map(prev);
