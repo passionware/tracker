@@ -109,14 +109,11 @@ const dataContainerVariants = {
 };
 
 /**
- * Breadcrumb item for zoom navigation
+ * Breadcrumb item for zoom navigation - stores only minimal data needed to identify a group
  */
 export interface BreadcrumbItem {
   dimensionId: string;
-  dimensionValue: unknown;
   dimensionKey: string;
-  label: string;
-  group: CubeGroup;
 }
 
 /**
@@ -358,10 +355,7 @@ function CubeGroupItem({
                         // Build full path including all ancestors
                         const currentBreadcrumb: BreadcrumbItem = {
                           dimensionId: group.dimensionId,
-                          dimensionValue: group.dimensionValue,
                           dimensionKey: group.dimensionKey,
-                          label: group.dimensionLabel,
-                          group,
                         };
                         onZoomIn?.(group, [...ancestorPath, currentBreadcrumb]);
                       }}
@@ -495,10 +489,7 @@ function CubeGroupItem({
                     // Build path for child including current group
                     const currentBreadcrumb: BreadcrumbItem = {
                       dimensionId: group.dimensionId,
-                      dimensionValue: group.dimensionValue,
                       dimensionKey: group.dimensionKey,
-                      label: group.dimensionLabel,
-                      group,
                     };
                     const childPath = [...ancestorPath, currentBreadcrumb];
 
@@ -579,6 +570,27 @@ export function CubeView({
       ) // unique
     : [];
 
+  // Helper function to find a group in the cube by following a breadcrumb path
+  const findGroupByPath = (
+    breadcrumbs: BreadcrumbItem[],
+  ): CubeGroup | undefined => {
+    let currentGroups = cube.groups;
+    let foundGroup: CubeGroup | undefined;
+
+    for (const breadcrumb of breadcrumbs) {
+      foundGroup = currentGroups.find(
+        (g) =>
+          g.dimensionKey === breadcrumb.dimensionKey &&
+          g.dimensionId === breadcrumb.dimensionId,
+      );
+
+      if (!foundGroup) return undefined;
+      currentGroups = foundGroup.subGroups || [];
+    }
+
+    return foundGroup;
+  };
+
   // Zoom state management
   const [zoomPath, setZoomPath] = useState<BreadcrumbItem[]>([]);
   const [displayGroups, setDisplayGroups] = useState<CubeGroup[]>(cube.groups);
@@ -639,8 +651,8 @@ export function CubeView({
       // Go to specific level
       const newPath = zoomPath.slice(0, index + 1);
       setZoomPath(newPath);
-      const targetGroup = newPath[index].group;
-      setDisplayGroups(targetGroup.subGroups || []);
+      const targetGroup = findGroupByPath(newPath);
+      setDisplayGroups(targetGroup?.subGroups || []);
     }
   };
 
@@ -697,6 +709,10 @@ export function CubeView({
                 const dimension = config.dimensions.find(
                   (d) => d.id === breadcrumb.dimensionId,
                 );
+                // Derive the label from the group in the cube
+                const group = findGroupByPath(zoomPath.slice(0, index + 1));
+                const label = group?.dimensionLabel || breadcrumb.dimensionKey;
+
                 return (
                   <div key={index} className="flex items-center gap-2">
                     <ChevronRight className="w-3 h-3 text-slate-400" />
@@ -714,7 +730,7 @@ export function CubeView({
                       <span className="text-slate-500 font-normal">
                         {dimension?.name || breadcrumb.dimensionId}:
                       </span>
-                      <span className="ml-1">{breadcrumb.label}</span>
+                      <span className="ml-1">{label}</span>
                     </Button>
                   </div>
                 );
@@ -737,13 +753,15 @@ export function CubeView({
                       onDimensionChange?.(value, zoomPath.length);
                     } else {
                       // Zoomed in - use onGroupDimensionSelect for current group
-                      const currentBreadcrumb = zoomPath[zoomPath.length - 1];
+                      const currentGroup = findGroupByPath(zoomPath);
                       const ancestorPath = zoomPath.slice(0, -1);
-                      onGroupDimensionSelect?.(
-                        currentBreadcrumb.group,
-                        value,
-                        ancestorPath,
-                      );
+                      if (currentGroup) {
+                        onGroupDimensionSelect?.(
+                          currentGroup,
+                          value,
+                          ancestorPath,
+                        );
+                      }
                     }
                   }}
                 >
@@ -777,17 +795,22 @@ export function CubeView({
             <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
               <CardHeader>
                 <CardTitle className="text-base">
-                  {zoomPath.length === 0
-                    ? "Summary"
-                    : zoomPath[zoomPath.length - 1].label}
+                  {(() => {
+                    if (zoomPath.length === 0) return "Summary";
+                    const currentGroup = findGroupByPath(zoomPath);
+                    return currentGroup?.dimensionLabel || "Summary";
+                  })()}
                 </CardTitle>
                 <CardDescription className="text-xs">
                   {zoomPath.length === 0 ? (
                     <>{cube.totalItems} items</>
                   ) : (
                     <>
-                      {zoomPath[zoomPath.length - 1].group.itemCount} items in{" "}
-                      {zoomPath[zoomPath.length - 1].dimensionId}
+                      {(() => {
+                        const currentGroup = findGroupByPath(zoomPath);
+                        return currentGroup?.itemCount || 0;
+                      })()}{" "}
+                      items in {zoomPath[zoomPath.length - 1].dimensionId}
                     </>
                   )}
                 </CardDescription>
@@ -796,7 +819,7 @@ export function CubeView({
                 <div className="space-y-4">
                   {(zoomPath.length === 0
                     ? cube.grandTotals
-                    : zoomPath[zoomPath.length - 1].group.cells
+                    : findGroupByPath(zoomPath)?.cells || []
                   ).map((cell, _idx, arr) => {
                     const measure = measures.find(
                       (m) => m.id === cell.measureId,
@@ -849,7 +872,7 @@ export function CubeView({
                       const currentItems =
                         zoomPath.length === 0
                           ? config.data
-                          : zoomPath[zoomPath.length - 1].group.items || [];
+                          : findGroupByPath(zoomPath)?.items || [];
 
                       if (!currentItems.length) return null;
 
@@ -866,7 +889,7 @@ export function CubeView({
                               string,
                               typeof currentItems
                             >();
-                            currentItems.forEach((item) => {
+                            currentItems.forEach((item: CubeDataItem) => {
                               const value = dimension.getValue(item);
                               const key = dimension.getKey
                                 ? dimension.getKey(value)
@@ -887,8 +910,9 @@ export function CubeView({
 
                                 // Calculate measure value (use first measure)
                                 const measure = measures[0];
-                                const measureValues = items.map((item) =>
-                                  measure.getValue(item),
+                                const measureValues = items.map(
+                                  (item: CubeDataItem) =>
+                                    measure.getValue(item),
                                 );
                                 const aggregatedValue =
                                   measure.aggregate(measureValues);
@@ -931,14 +955,16 @@ export function CubeView({
                                   if (zoomPath.length === 0) {
                                     onDimensionChange?.(dimension.id, 0);
                                   } else {
-                                    const currentBreadcrumb =
-                                      zoomPath[zoomPath.length - 1];
+                                    const currentGroup =
+                                      findGroupByPath(zoomPath);
                                     const ancestorPath = zoomPath.slice(0, -1);
-                                    onGroupDimensionSelect?.(
-                                      currentBreadcrumb.group,
-                                      dimension.id,
-                                      ancestorPath,
-                                    );
+                                    if (currentGroup) {
+                                      onGroupDimensionSelect?.(
+                                        currentGroup,
+                                        dimension.id,
+                                        ancestorPath,
+                                      );
+                                    }
                                   }
                                 }}
                               >
@@ -1031,8 +1057,8 @@ export function CubeView({
                                                 const cells = measures.map(
                                                   (measure) => {
                                                     const values =
-                                                      group.items.map((item) =>
-                                                        measure.getValue(item),
+                                                      group.items.map(
+                                                        measure.getValue,
                                                       );
                                                     const value =
                                                       measure.aggregate(values);
@@ -1053,26 +1079,23 @@ export function CubeView({
                                                 const breadcrumbItem: BreadcrumbItem =
                                                   {
                                                     dimensionId: dimension.id,
+                                                    dimensionKey: group.key,
+                                                  };
+
+                                                // Build the actual CubeGroup for this synthetic group
+                                                const syntheticGroup: CubeGroup =
+                                                  {
+                                                    dimensionId: dimension.id,
                                                     dimensionValue:
                                                       dimension.getValue(
                                                         group.items[0],
                                                       ),
                                                     dimensionKey: group.key,
-                                                    label: group.label,
-                                                    group: {
-                                                      dimensionId: dimension.id,
-                                                      dimensionValue:
-                                                        dimension.getValue(
-                                                          group.items[0],
-                                                        ),
-                                                      dimensionKey: group.key,
-                                                      dimensionLabel:
-                                                        group.label,
-                                                      itemCount:
-                                                        group.items.length,
-                                                      cells,
-                                                      items: group.items,
-                                                    },
+                                                    dimensionLabel: group.label,
+                                                    itemCount:
+                                                      group.items.length,
+                                                    cells,
+                                                    items: group.items,
                                                   };
 
                                                 // Pin (zoom into) this group
@@ -1089,7 +1112,7 @@ export function CubeView({
                                                     : // Different dimension - start fresh from root
                                                       [breadcrumbItem];
                                                 handleZoomIn(
-                                                  breadcrumbItem.group,
+                                                  syntheticGroup,
                                                   fullPath,
                                                 );
                                               }}
