@@ -63,8 +63,14 @@ export function createRoutingService(): RoutingService {
                           `${base2}/generated-reports/${reportId}/basic`,
                         timeEntries: () =>
                           `${base2}/generated-reports/${reportId}/time-entries`,
-                        groupedView: () =>
-                          `${base2}/generated-reports/${reportId}/grouped-view`,
+                        groupedView: (cubePath) => {
+                          const cubePathSegment =
+                            routingUtils.cubePath.toString(cubePath);
+                          const baseUrl = `${base2}/generated-reports/${reportId}/grouped-view`;
+                          return cubePathSegment
+                            ? `${baseUrl}/${cubePathSegment}`
+                            : baseUrl;
+                        },
                       };
                     },
                     billings: () => `${base2}/billings`,

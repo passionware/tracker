@@ -22,11 +22,16 @@ import {
   CubeView,
   type CubeViewProps,
 } from "@/features/_common/Cube/CubeView.tsx";
+import type { PathItem } from "@/features/_common/Cube/useCubeState.ts";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date.ts";
+import { routingUtils } from "@/services/front/RoutingService/RoutingService.ts";
 import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
+import { CalendarDate } from "@internationalized/date";
 import { rd } from "@passionware/monads";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useMatch, useNavigate } from "react-router-dom";
 
 // Type for time entry data
 type TimeEntry = GenericReport["timeEntries"][0];
@@ -79,6 +84,28 @@ function TimeEntriesForCube({
 const factory = withDataType<TimeEntry>();
 
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
+  const navigate = useNavigate();
+
+  // Use useMatch to get the wildcard path parameter
+  const match = useMatch(
+    "/w/:workspaceId/clients/:clientId/project/:projectId/iteration/:iterationId/generated-reports/:reportId/grouped-view/*",
+  );
+
+  // Parse cube path segments from URL (dimensionId:valueKey strings)
+  const cubePathSegmentsFromUrl = useMemo(() => {
+    const wildcard = match?.params["*"];
+    if (!wildcard) {
+      return [];
+    }
+    const pathSegments = routingUtils.cubePath.fromString(wildcard);
+
+    // Keep raw segments; we'll resolve to PathItem after dimensions are ready
+    return pathSegments.map((segment) => {
+      const [dimensionId, valueStr] = segment.split(":");
+      return { dimensionId, valueStr };
+    });
+  }, [match?.params]);
+
   // Fetch contractor data for name lookup
   const contractorIds = Array.from(
     new Set(props.report.data.timeEntries.map((entry) => entry.contractorId)),
@@ -186,6 +213,27 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
             "Saturday",
           ];
           return days[value];
+        },
+      }),
+      factory.createDimension({
+        id: "date",
+        name: "Date",
+        icon: "📅",
+        getValue: (item) => {
+          const date = new Date(item.startAt);
+          return dateToCalendarDate(date);
+        },
+        getKey: (value) => {
+          const calendarDate = value as CalendarDate;
+          return `${calendarDate.year}-${String(calendarDate.month).padStart(2, "0")}-${String(calendarDate.day).padStart(2, "0")}`;
+        },
+        formatValue: (value) => {
+          const calendarDate = value as CalendarDate;
+          return calendarDate.toDate("UTC").toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
         },
       }),
     ];
@@ -297,48 +345,79 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     includeItems: true, // Enable raw data viewing
   });
 
-  // Custom render functions for the cube
-  const renderGroupHeader: CubeViewProps["renderGroupHeader"] = (
-    group,
-    level,
-  ) => {
-    const indent = level * 20;
-    return (
-      <div
-        className="p-3 border rounded-lg mb-2"
-        style={{ marginLeft: `${indent}px` }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <span className="text-sm text-slate-600">
-                {group.dimensionLabel}
-              </span>
-              <Badge variant="secondary" className="text-xs">
-                {group.itemCount} entries
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <span className="text-slate-600">Hours: </span>
-              <span className="font-medium">
-                {group.cells.find((c) => c.measureId === "hours")
-                  ?.formattedValue || "0.00h"}
-              </span>
-            </div>
-            <div className="text-sm">
-              <span className="text-slate-600">Entries: </span>
-              <span className="font-medium">
-                {group.cells.find((c) => c.measureId === "entries")
-                  ?.formattedValue || "0 entries"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Sync cube path from URL on mount (resolve keys to actual values using dimensions & data)
+  useEffect(() => {
+    if (cubePathSegmentsFromUrl.length === 0) return;
+
+    const resolvedPath: PathItem[] = [];
+    for (const seg of cubePathSegmentsFromUrl) {
+      const dimension = dimensions.find((d) => d.id === seg.dimensionId);
+      if (!dimension) continue;
+
+      let resolvedValue: unknown = seg.valueStr;
+
+      // Prefer resolving via getKey by scanning data for a matching key
+      if (dimension.getKey) {
+        const match = props.report.data.timeEntries.find((item) => {
+          const val = dimension.getValue(item);
+          const key = (dimension.getKey as (v: unknown) => string)(val);
+          return key === seg.valueStr;
+        });
+        if (match) {
+          resolvedValue = dimension.getValue(match);
+        }
+      } else {
+        // Heuristics when no getKey defined
+        if (seg.valueStr === "null") {
+          resolvedValue = null;
+        } else if (/^\d+$/.test(seg.valueStr)) {
+          resolvedValue = Number(seg.valueStr);
+        }
+      }
+
+      resolvedPath.push({
+        dimensionId: seg.dimensionId,
+        dimensionValue: resolvedValue,
+      });
+    }
+
+    if (resolvedPath.length > 0) {
+      cubeState.setZoomPath(resolvedPath);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
+  // Sync URL when cube path changes
+  useEffect(() => {
+    const currentPath = cubeState.path;
+
+    // Convert cube path to URL segments
+    const urlSegments = currentPath.map((pathItem) => {
+      // Find the dimension to get its getKey function
+      const dimension = dimensions.find((d) => d.id === pathItem.dimensionId);
+      const key = dimension?.getKey
+        ? (dimension.getKey as (v: unknown) => string)(pathItem.dimensionValue)
+        : String(pathItem.dimensionValue ?? "null");
+      return `${pathItem.dimensionId}:${key}`;
+    });
+
+    // Build the URL using the match params
+    if (match?.params) {
+      const { workspaceId, clientId, projectId, iterationId, reportId } =
+        match.params;
+      const basePath = `/w/${workspaceId}/clients/${clientId}/project/${projectId}/iteration/${iterationId}/generated-reports/${reportId}/grouped-view`;
+      const newPath =
+        urlSegments.length > 0
+          ? `${basePath}/${urlSegments.join("/")}`
+          : basePath;
+
+      // Only navigate if the path has changed
+      const currentPathname = window.location.pathname;
+      if (currentPathname !== newPath) {
+        navigate(newPath);
+      }
+    }
+  }, [cubeState.path, dimensions, navigate, match?.params]);
 
   const renderRawData: CubeViewProps["renderRawData"] = (items) => {
     return (
@@ -386,7 +465,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
 
           <CubeView
             state={cubeState}
-            renderGroupHeader={renderGroupHeader}
             renderRawData={renderRawData}
             enableDimensionPicker={true}
             enableRawDataView={true}

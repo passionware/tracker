@@ -1,3 +1,4 @@
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -28,7 +29,6 @@ import { CostToBillingWidget } from "@/features/_common/CostToBillingWidget.tsx"
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -1181,7 +1181,7 @@ export function GeneratedReportDetail(
               element={<TimeEntriesView report={report} {...props} />}
             />
             <Route
-              path="grouped-view"
+              path="grouped-view/*"
               element={<GroupedViewWidget report={report} {...props} />}
             />
           </Routes>

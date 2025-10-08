@@ -120,7 +120,7 @@ export function GeneratedReportTabs(
         navigate(
           forIteration
             .forGeneratedReport(props.reportId.toString())
-            .groupedView(),
+            .groupedView(undefined), // No cube path - start at root
         );
         break;
     }

@@ -16,6 +16,10 @@ export type ContractorSpec = IdSpec<Contractor["id"]>;
 export type ContractorPathSegment = string | ":contractorId";
 type ContractorParam = Maybe<ContractorSpec>;
 
+export type CubePathSegment = string | ":cubePath*";
+export type CubePath = string[]; // Array of path segments like ["project:abc", "task:xyz"]
+type CubePathParam = Maybe<CubePath>;
+
 export const routingUtils = {
   workspace: {
     fromString: (value: WorkspacePathSegment): WorkspaceSpec => {
@@ -68,6 +72,22 @@ export const routingUtils = {
       return value.toString();
     },
   },
+  cubePath: {
+    fromString: (value: string): CubePath => {
+      // Parse URL path segments like "project:abc/task:xyz" into ["project:abc", "task:xyz"]
+      if (!value || value === ":cubePath*") {
+        return [];
+      }
+      return value.split("/").filter(Boolean);
+    },
+    toString: (value: CubePathParam): CubePathSegment => {
+      if (maybe.isAbsent(value) || value.length === 0) {
+        return "";
+      }
+      // Join path segments with "/"
+      return value.join("/");
+    },
+  },
 };
 
 export interface RoutingService {
@@ -105,7 +125,7 @@ export interface RoutingService {
             root: () => string;
             basic: () => string;
             timeEntries: () => string;
-            groupedView: () => string;
+            groupedView: (cubePath?: CubePathParam) => string;
           };
           billings: () => string;
         };
