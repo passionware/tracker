@@ -18,6 +18,8 @@
     "@faker-js/faker": "^9.5.0",
     "@hookform/resolvers": "^5.2.2",
     "@internationalized/date": "^3.9.0",
+    "@nivo/core": "^0.99.0",
+    "@nivo/sunburst": "^0.99.0",
     "@passionware/entities": "^0.0.0-dev-20250822161245",
     "@passionware/messaging-react": "^0.0.0-dev-20250822161245",
     "@passionware/monads": "^0.0.0-dev-20250822161245",

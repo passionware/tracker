@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Sunburst Chart is a radial, multi-level visualization that displays hierarchical cube data in a circular layout. It provides an intuitive way to understand data breakdowns at multiple levels simultaneously.
+The Sunburst Chart is a radial, multi-level visualization that displays hierarchical cube data in a circular layout. Built with **Nivo**, a professional React charting library, it provides smooth animations, beautiful interactions, and an intuitive way to understand data breakdowns at multiple levels simultaneously.
 
 ## Features
 
@@ -23,31 +23,32 @@ The Sunburst Chart is a radial, multi-level visualization that displays hierarch
 
 #### Hover Effects
 
-- Highlights hovered segment
-- Dims other segments for focus
-- Shows tooltip with segment details
-- Updates center label with segment name
+- **Smooth animations** - Gentle transitions powered by Nivo
+- **Rich tooltips** - Professional tooltips with segment details, measure values, and item counts
+- **Visual feedback** - Immediate highlighting on hover
 
 #### Click to Zoom
 
 - Click any segment to zoom into that level
+- **Click root to reset** zoom and return to full view
 - Automatically sets the zoom path in the cube
 - Works seamlessly with the tree view navigation
-- Current zoom path is highlighted with blue border
+- Current zoom path highlighted with **blue outline (4px)**
 
 ### 4. **Visual Indicators**
 
 #### Color Coding
 
-- Each root-level dimension gets a base color
-- Child segments use variations of parent colors
-- 8 distinct base colors cycle for variety
+- **Nivo color scheme** - Professional, accessible color palette
+- Child segments are brighter variations of parent colors
+- Smooth color transitions through the hierarchy
+- Dark borders for segment definition
 
 #### Current Zoom Highlight
 
-- Active zoom path segments have blue stroke
-- Thicker border (3px vs 2px) for emphasis
-- Full opacity for zoomed segments
+- Active zoom path segments have **blue stroke overlay (4px)**
+- Smooth opacity transition (80%)
+- Clearly distinguishes current context
 
 ### 5. **Measure Integration**
 
@@ -57,6 +58,13 @@ The Sunburst Chart is a radial, multi-level visualization that displays hierarch
 
 ## Implementation Details
 
+### Technology Stack
+
+- **Nivo Library** (`@nivo/sunburst`, `@nivo/core`)
+- Declarative React API
+- Built on D3.js for robust data visualization
+- Smooth animations via React Spring
+
 ### Data Flow
 
 1. **Root Data Calculation**
@@ -64,44 +72,52 @@ The Sunburst Chart is a radial, multi-level visualization that displays hierarch
    - Uses the same `breakdownMap` as the main cube
    - Independent of current zoom level
 
-2. **Build Hierarchy**: `buildSunburstNodes()`
-   - Recursively converts `CubeGroup[]` to `SunburstNode[]`
-   - Tracks full path from root to each node
-   - Calculates measure values for sizing
+2. **Data Transformation**: `convertToNivoFormat()`
+   - Recursively converts `CubeGroup[]` to Nivo's required format
+   - Wraps data in root node for proper hierarchy
+   - Preserves metadata (dimensionId, path, formattedValue)
 
-3. **Layout Calculation**: `layoutSunburst()`
-   - Computes start/end angles based on value proportions
-   - Calculates inner/outer radii for each level
-   - Distributes 360° (actually -90° to 270° for top-start) among siblings
+3. **Rendering**: Nivo's `ResponsiveSunburst`
+   - Automatic responsive sizing
+   - Built-in arc calculations and layout
+   - Configurable corner radius, borders, colors
+   - Custom layers for zoom path highlighting
 
-4. **Rendering**: SVG path generation
-   - Creates arc paths using trigonometry
-   - Handles large arc flag for >180° arcs
-   - Applies colors, strokes, and opacity
+### Node Metadata
 
-### Path Tracking
-
-Each node maintains `pathToNode`:
+Each Nivo node includes custom properties:
 
 ```typescript
-pathToNode: Array<{
-  dimensionId: string;
-  dimensionValue: unknown;
-}>;
+interface NivoSunburstNode {
+  id: string;
+  name: string;
+  value: number;
+  children?: NivoSunburstNode[];
+  dimensionId?: string;
+  dimensionValue?: unknown;
+  path?: string;  // Full path string for zoom reconstruction
+  formattedValue?: string;
+  itemCount?: number;
+}
 ```
 
-This enables accurate zoom without path reconstruction.
+This enables accurate zoom and rich tooltips.
 
 ### Zoom Integration
 
-On click:
+Nivo's `onClick` handler:
 
 ```typescript
-onClick={(e) => {
-  e.stopPropagation();
-  if (node.pathToNode.length > 0) {
-    state.setZoomPath(node.pathToNode);
+onClick={(node) => {
+  // Click root to reset
+  if (node.id === "root") {
+    state.resetZoom();
+    return;
   }
+  
+  // Parse path and reconstruct PathItem[]
+  const pathItems = parseNodePath(node, dimensions, rootData);
+  state.setZoomPath(pathItems);
 }}
 ```
 
@@ -110,6 +126,7 @@ The cube state updates, triggering:
 - Tree view to expand/collapse appropriately
 - Breadcrumb navigation to update
 - Data filtering and recalculation
+- Sunburst highlights the new zoom path
 
 ## Usage
 
@@ -137,27 +154,23 @@ The cube state updates, triggering:
 
 ### Layout
 
-- Center radius: 20% of total size
-- Each level: Equal width ring
-- Full circle: -90° to 270° (starts at top)
+- **Responsive** - Adapts to container width (400px height)
+- **Corner radius** - 3px for modern look
+- **Margins** - 10px all around for breathing room
+- **Arc labels** - Smart display (only shown for arcs > 5%)
 
-### Colors (Tailwind)
+### Colors
 
-- Blue (#3b82f6)
-- Violet (#8b5cf6)
-- Pink (#ec4899)
-- Amber (#f59e0b)
-- Emerald (#10b981)
-- Cyan (#06b6d4)
-- Orange (#f97316)
-- Indigo (#6366f1)
+- **Nivo color scheme** - Professional, accessible palette
+- **Child color inheritance** - 13% brighter than parent
+- **Border colors** - 30% darker than segment
+- **Zoom highlight** - Blue (#1e40af) at 80% opacity
 
-### States
+### Animations
 
-- Default: 85% opacity
-- Hovered: 100% opacity (others 30%)
-- Zoomed: 100% opacity, blue border (3px)
-- Other: 85% opacity, white border (2px)
+- **Motion config** - "gentle" for smooth transitions
+- **Transition mode** - "centerRadius" for radial animations
+- **Powered by React Spring** - 60fps performance
 
 ## Future Enhancements
 

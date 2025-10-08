@@ -2,10 +2,12 @@
  * Sunburst Chart Component for Cube Visualization
  *
  * Displays a multi-level radial chart showing the hierarchical breakdown of cube data.
- * Works independently of zoom level, always showing the full hierarchy from root.
+ * Uses Nivo library for professional animations and interactions.
+ * Always shows the full hierarchy from root, regardless of zoom level.
  */
 
-import { useMemo, useState } from "react";
+import { ResponsiveSunburst } from "@nivo/sunburst";
+import { useMemo } from "react";
 import { calculateCube } from "./CubeService.ts";
 import type {
   CubeDataItem,
@@ -15,235 +17,94 @@ import type {
 } from "./CubeService.types.ts";
 import type { CubeState } from "./useCubeState.ts";
 
-interface SunburstNode {
-  id: string;
-  label: string;
-  value: number;
-  color: string;
-  level: number;
-  parent: string | null;
-  group: CubeGroup;
-  children: SunburstNode[];
-  startAngle: number;
-  endAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  pathToNode: Array<{ dimensionId: string; dimensionValue: unknown }>; // Full path from root to this node
-}
-
 interface CubeSunburstProps {
   state: CubeState;
   measure: MeasureDescriptor<CubeDataItem, unknown>;
   dimensions: DimensionDescriptor<CubeDataItem, unknown>[];
   maxLevels?: number;
-  rootData: CubeDataItem[]; // Always pass the original unfiltered data
+  rootData: CubeDataItem[];
 }
 
-const COLORS = [
-  "#3b82f6", // blue-500
-  "#8b5cf6", // violet-500
-  "#ec4899", // pink-500
-  "#f59e0b", // amber-500
-  "#10b981", // emerald-500
-  "#06b6d4", // cyan-500
-  "#f97316", // orange-500
-  "#6366f1", // indigo-500
-];
+interface NivoSunburstNode {
+  id: string;
+  name: string;
+  value: number;
+  children?: NivoSunburstNode[];
+  // Custom properties for interactivity
+  dimensionId?: string;
+  dimensionValue?: unknown;
+  path?: string;
+  formattedValue?: string;
+  itemCount?: number;
+}
 
 /**
- * Convert cube groups hierarchy to sunburst nodes
+ * Convert CubeGroup hierarchy to Nivo sunburst data format
  */
-function buildSunburstNodes(
+function convertToNivoFormat(
   groups: CubeGroup[],
   measure: MeasureDescriptor<CubeDataItem, unknown>,
-  level: number = 0,
-  parentId: string | null = null,
-  colorOffset: number = 0,
-  parentPath: Array<{ dimensionId: string; dimensionValue: unknown }> = [],
-): SunburstNode[] {
-  const nodes: SunburstNode[] = [];
-
-  groups.forEach((group, index) => {
+): NivoSunburstNode[] {
+  return groups.map((group) => {
     const cell = group.cells.find((c) => c.measureId === measure.id);
     const value = typeof cell?.value === "number" ? Math.abs(cell.value) : 0;
 
-    const nodeId = group.path || `${group.dimensionId}:${group.dimensionKey}`;
-    const color = COLORS[(colorOffset + index) % COLORS.length];
-
-    // Build full path to this node
-    const pathToNode = [
-      ...parentPath,
-      { dimensionId: group.dimensionId, dimensionValue: group.dimensionValue },
-    ];
-
-    const node: SunburstNode = {
-      id: nodeId,
-      label: group.dimensionLabel,
+    const node: NivoSunburstNode = {
+      id: group.path || `${group.dimensionId}:${group.dimensionKey}`,
+      name: group.dimensionLabel,
       value,
-      color,
-      level,
-      parent: parentId,
-      group,
-      children: [],
-      startAngle: 0,
-      endAngle: 0,
-      innerRadius: 0,
-      outerRadius: 0,
-      pathToNode,
+      dimensionId: group.dimensionId,
+      dimensionValue: group.dimensionValue,
+      path: group.path,
+      formattedValue: cell?.formattedValue || String(value),
+      itemCount: group.itemCount,
     };
 
-    // Recursively build children if they exist
+    // Recursively convert children
     if (group.subGroups && group.subGroups.length > 0) {
-      node.children = buildSunburstNodes(
-        group.subGroups,
-        measure,
-        level + 1,
-        nodeId,
-        colorOffset + index,
-        pathToNode,
-      );
+      node.children = convertToNivoFormat(group.subGroups, measure);
     }
 
-    nodes.push(node);
-  });
-
-  return nodes;
-}
-
-/**
- * Calculate angles and radii for sunburst layout
- */
-function layoutSunburst(
-  nodes: SunburstNode[],
-  startAngle: number,
-  endAngle: number,
-  innerRadius: number,
-  outerRadius: number,
-  maxLevels: number,
-): void {
-  const totalValue = nodes.reduce((sum, node) => sum + node.value, 0);
-  if (totalValue === 0) return;
-
-  const levelHeight = (outerRadius - innerRadius) / maxLevels;
-
-  let currentAngle = startAngle;
-
-  nodes.forEach((node) => {
-    const angleSize = ((endAngle - startAngle) * node.value) / totalValue;
-    node.startAngle = currentAngle;
-    node.endAngle = currentAngle + angleSize;
-    node.innerRadius = innerRadius + node.level * levelHeight;
-    node.outerRadius = node.innerRadius + levelHeight;
-
-    // Layout children
-    if (node.children.length > 0) {
-      layoutSunburst(
-        node.children,
-        node.startAngle,
-        node.endAngle,
-        node.innerRadius + levelHeight,
-        outerRadius,
-        maxLevels,
-      );
-    }
-
-    currentAngle += angleSize;
+    return node;
   });
 }
 
 /**
- * Flatten node tree to array for rendering
+ * Check if a node is in the current zoom path
  */
-function flattenNodes(nodes: SunburstNode[]): SunburstNode[] {
-  const result: SunburstNode[] = [];
-  nodes.forEach((node) => {
-    result.push(node);
-    if (node.children.length > 0) {
-      result.push(...flattenNodes(node.children));
-    }
-  });
-  return result;
-}
-
-/**
- * Create SVG path for a sunburst arc
- */
-function createArcPath(
-  startAngle: number,
-  endAngle: number,
-  innerRadius: number,
-  outerRadius: number,
-): string {
-  const startAngleRad = (startAngle * Math.PI) / 180;
-  const endAngleRad = (endAngle * Math.PI) / 180;
-
-  const x1 = innerRadius * Math.cos(startAngleRad);
-  const y1 = innerRadius * Math.sin(startAngleRad);
-  const x2 = outerRadius * Math.cos(startAngleRad);
-  const y2 = outerRadius * Math.sin(startAngleRad);
-  const x3 = outerRadius * Math.cos(endAngleRad);
-  const y3 = outerRadius * Math.sin(endAngleRad);
-  const x4 = innerRadius * Math.cos(endAngleRad);
-  const y4 = innerRadius * Math.sin(endAngleRad);
-
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-
-  return [
-    `M ${x1} ${y1}`,
-    `L ${x2} ${y2}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x3} ${y3}`,
-    `L ${x4} ${y4}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1} ${y1}`,
-    "Z",
-  ].join(" ");
-}
-
-/**
- * Calculate max depth of hierarchy
- */
-function getMaxDepth(groups: CubeGroup[], currentDepth: number = 0): number {
-  if (!groups || groups.length === 0) return currentDepth;
-
-  let maxDepth = currentDepth;
-  groups.forEach((group) => {
-    if (group.subGroups && group.subGroups.length > 0) {
-      const childDepth = getMaxDepth(group.subGroups, currentDepth + 1);
-      maxDepth = Math.max(maxDepth, childDepth);
-    }
-  });
-
-  return maxDepth;
+function isNodeInZoomPath(
+  node: NivoSunburstNode,
+  zoomPath: Array<{ dimensionId: string; dimensionValue: unknown }>,
+): boolean {
+  return zoomPath.some(
+    (pathItem) =>
+      pathItem.dimensionId === node.dimensionId &&
+      pathItem.dimensionValue === node.dimensionValue,
+  );
 }
 
 export function CubeSunburst({
   state,
   measure,
   dimensions,
-  maxLevels = 4,
   rootData,
 }: CubeSunburstProps) {
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-
-  // Get current zoom path for highlighting
   const currentZoomPath = state.path;
 
   // Build sunburst data from ROOT data always (not filtered by zoom)
-  const { allNodes, maxDepth } = useMemo(() => {
-    // Calculate groups from the original root data, not the zoomed cube
-    // We need to build the hierarchy from scratch using the root data
+  const nivoData = useMemo(() => {
     if (!rootData || rootData.length === 0) {
-      return { allNodes: [], maxDepth: 0 };
+      return null;
     }
 
-    // Get the root dimension from the cube config
     const config = state.cube.config;
     const rootDimensionId = config.breakdownMap?.[""];
 
     if (!rootDimensionId) {
-      return { allNodes: [], maxDepth: 0 };
+      return null;
     }
 
-    // Build groups from root data using the same breakdown map
+    // Calculate cube from root data
     const rootCube = calculateCube({
       data: rootData,
       dimensions: dimensions,
@@ -251,38 +112,29 @@ export function CubeSunburst({
       breakdownMap: config.breakdownMap || {},
     });
 
-    const groups = rootCube.groups;
-
-    if (groups.length === 0) {
-      return { allNodes: [], maxDepth: 0 };
+    if (rootCube.groups.length === 0) {
+      return null;
     }
 
-    const depth = Math.min(getMaxDepth(groups) + 1, maxLevels);
-    const sunburstNodes = buildSunburstNodes(groups, measure);
+    // Convert to Nivo format
+    const nivoNodes = convertToNivoFormat(rootCube.groups, measure);
 
-    // Layout the nodes
-    const size = 200;
-    const centerRadius = size * 0.2;
-    layoutSunburst(sunburstNodes, -90, 270, centerRadius, size, depth);
-
-    const flattened = flattenNodes(sunburstNodes);
-
+    // Wrap in root node as required by Nivo
     return {
-      allNodes: flattened,
-      maxDepth: depth,
+      id: "root",
+      name: "All Data",
+      value: 0, // Will be calculated from children
+      children: nivoNodes,
     };
-  }, [rootData, measure, maxLevels, dimensions, state.cube.config]);
+  }, [rootData, measure, dimensions, state.cube.config]);
 
-  if (allNodes.length === 0) {
+  if (!nivoData) {
     return (
       <div className="flex items-center justify-center h-64 text-sm text-slate-400">
         No data to visualize
       </div>
     );
   }
-
-  const size = 200;
-  const viewBox = `${-size} ${-size} ${size * 2} ${size * 2}`;
 
   return (
     <div className="space-y-3">
@@ -295,133 +147,162 @@ export function CubeSunburst({
         </div>
       </div>
 
-      <div className="relative">
-        <svg
-          viewBox={viewBox}
-          className="w-full h-auto max-w-md mx-auto"
-          style={{ maxHeight: "400px" }}
-        >
-          {/* Render arcs */}
-          {allNodes.map((node) => {
-            const isHovered = hoveredNode === node.id;
-
-            // Check if this node is in the current zoom path
-            const isInZoomPath = currentZoomPath.some(
-              (pathItem) =>
-                pathItem.dimensionId === node.group.dimensionId &&
-                pathItem.dimensionValue === node.group.dimensionValue,
-            );
-
-            const path = createArcPath(
-              node.startAngle,
-              node.endAngle,
-              node.innerRadius,
-              node.outerRadius,
-            );
-
-            return (
-              <g key={node.id}>
-                <path
-                  d={path}
-                  fill={node.color}
-                  opacity={
-                    hoveredNode
-                      ? isHovered
-                        ? 1
-                        : 0.3
-                      : isInZoomPath
-                        ? 1
-                        : 0.85
-                  }
-                  stroke={isInZoomPath ? "#1e40af" : "white"}
-                  strokeWidth={isInZoomPath ? 3 : 2}
-                  className="transition-all duration-200 cursor-pointer"
-                  onMouseEnter={() => setHoveredNode(node.id)}
-                  onMouseLeave={() => setHoveredNode(null)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Zoom into this node using the pre-built path
-                    if (node.pathToNode.length > 0) {
-                      state.setZoomPath(node.pathToNode);
-                    }
-                  }}
-                >
-                  <title>
-                    {node.label}:{" "}
-                    {node.group.cells.find((c) => c.measureId === measure.id)
-                      ?.formattedValue || node.value}
-                  </title>
-                </path>
-              </g>
-            );
-          })}
-
-          {/* Center label */}
-          <text
-            x={0}
-            y={0}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-slate-600 text-xs font-medium pointer-events-none"
-          >
-            {hoveredNode
-              ? allNodes
-                  .find((n) => n.id === hoveredNode)
-                  ?.label.substring(0, 15)
-              : rootData.length + " items"}
-          </text>
-        </svg>
-
-        {/* Legend for hovered node */}
-        {hoveredNode && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white/95 border rounded p-2 text-xs">
-            {(() => {
-              const node = allNodes.find((n) => n.id === hoveredNode);
-              if (!node) return null;
-              const cell = node.group.cells.find(
-                (c) => c.measureId === measure.id,
-              );
+      <div className="h-[400px] w-full">
+        <ResponsiveSunburst
+          data={nivoData}
+          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+          id="name"
+          value="value"
+          cornerRadius={2}
+          borderWidth={1}
+          borderColor={{ from: "color", modifiers: [["darker", 0.5]] }}
+          colors={{ scheme: "set3" }}
+          childColor={{
+            from: "color",
+            modifiers: [["brighter", 0.2]],
+          }}
+          enableArcLabels={true}
+          arcLabel={(d) => {
+            // Only show labels for larger arcs to reduce clutter
+            const node = d.data as NivoSunburstNode;
+            return d.percentage > 8 ? node.name : "";
+          }}
+          arcLabelsSkipAngle={15}
+          arcLabelsTextColor="#ffffff"
+          arcLabelsRadiusOffset={0.7}
+          // Custom arc styling based on zoom path
+          layers={[
+            "arcs",
+            "arcLabels",
+            ({ nodes, arcGenerator }) => {
+              // Custom layer to highlight zoomed path
               return (
-                <div className="space-y-1">
-                  <div className="font-medium truncate">{node.label}</div>
-                  <div className="text-slate-600">
-                    {cell?.formattedValue || node.value}
-                  </div>
-                  <div className="text-slate-500">
-                    {node.group.itemCount} items
+                <g>
+                  {nodes.map((node) => {
+                    const nivoNode = node.data as NivoSunburstNode;
+                    const isZoomed = isNodeInZoomPath(
+                      nivoNode,
+                      currentZoomPath,
+                    );
+
+                    if (!isZoomed || !node.arc) return null;
+
+                    // Draw a highlighted border for zoomed nodes
+                    const arc = arcGenerator(node.arc);
+                    if (!arc) return null;
+
+                    return (
+                      <path
+                        key={`highlight-${node.id}`}
+                        d={arc}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        opacity={0.9}
+                        pointerEvents="none"
+                      />
+                    );
+                  })}
+                </g>
+              );
+            },
+          ]}
+          animate={true}
+          motionConfig="gentle"
+          transitionMode="centerRadius"
+          onClick={(node) => {
+            const nivoNode = node.data as NivoSunburstNode;
+
+            // Don't zoom into root
+            if (node.id === "root") {
+              // Click on root to reset zoom
+              state.resetZoom();
+              return;
+            }
+
+            // Build path from root to this node
+            // Nivo doesn't give us the full path, so we need to reconstruct it
+            // For now, we'll use a simpler approach: zoom to this specific node
+            if (nivoNode.dimensionId && nivoNode.dimensionValue !== undefined) {
+              // Parse the path from the node's path string if available
+              if (nivoNode.path) {
+                const pathSegments = nivoNode.path.split("|");
+                const pathItems = pathSegments.map((segment) => {
+                  const [dimensionId, key] = segment.split(":");
+                  const dimension = dimensions.find(
+                    (d) => d.id === dimensionId,
+                  );
+
+                  // Try to find the actual value from root data
+                  if (dimension) {
+                    const foundItem = rootData.find((item) => {
+                      const itemValue = dimension.getValue(item);
+                      const itemKey = dimension.getKey
+                        ? dimension.getKey(itemValue)
+                        : String(itemValue ?? "null");
+                      return itemKey === key;
+                    });
+
+                    if (foundItem) {
+                      return {
+                        dimensionId,
+                        dimensionValue: dimension.getValue(foundItem),
+                      };
+                    }
+                  }
+
+                  return {
+                    dimensionId,
+                    dimensionValue: key,
+                  };
+                });
+
+                state.setZoomPath(pathItems);
+              }
+            }
+          }}
+          tooltip={({ value, color, data }) => {
+            const nivoNode = data as NivoSunburstNode;
+            return (
+              <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-3 max-w-xs">
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className="w-4 h-4 rounded-full shrink-0 border-2 border-white/20"
+                    style={{ backgroundColor: color }}
+                  />
+                  <div className="font-semibold text-white text-sm truncate">
+                    {nivoNode.name}
                   </div>
                 </div>
-              );
-            })()}
-          </div>
-        )}
-      </div>
-
-      {/* Dimension legend */}
-      <div className="flex flex-wrap gap-2">
-        {Array.from(new Set(allNodes.map((n) => n.group.dimensionId)))
-          .slice(0, maxDepth)
-          .map((dimId, index) => {
-            const dimension = dimensions.find((d) => d.id === dimId);
-            if (!dimension) return null;
-            return (
-              <div
-                key={dimId}
-                className="flex items-center gap-1.5 text-xs text-slate-600"
-              >
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: COLORS[index % COLORS.length],
-                    opacity: 0.6,
-                  }}
-                />
-                <span>
-                  {dimension.icon} {dimension.name}
-                </span>
+                <div className="space-y-2">
+                  <div className="bg-slate-800 rounded px-2 py-1">
+                    <div className="text-slate-300 text-xs">
+                      {measure.icon} {measure.name}
+                    </div>
+                    <div className="text-white font-bold text-sm">
+                      {nivoNode.formattedValue || value}
+                    </div>
+                  </div>
+                  {nivoNode.itemCount && (
+                    <div className="text-slate-400 text-xs">
+                      {nivoNode.itemCount} items
+                    </div>
+                  )}
+                </div>
               </div>
             );
-          })}
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span>Current zoom</span>
+        </div>
+        <div className="text-center">
+          Click segments to zoom • Click center to reset
+        </div>
       </div>
     </div>
   );
