@@ -4,19 +4,13 @@
  * Renders a multidimensional cube with expandable groups and drill-down capabilities.
  */
 
-import type {
-  CubeCell,
-  CubeDataItem,
-  CubeGroup,
-  DimensionDescriptor,
-  MeasureDescriptor,
-} from "./CubeService.types.ts";
-import type { CubeState } from "./useCubeState.ts";
-import { motion } from "framer-motion";
-import { CubeDebugPanel } from "./CubeDebugPanel.tsx";
-import { CubeNavigation, type BreadcrumbItem } from "./CubeNavigation.tsx";
-import { CubeSidebar } from "./CubeSidebar.tsx";
-import { CubeTreeNode } from "./CubeTreeNode.tsx";
+import {motion} from "framer-motion";
+import {CubeDebugPanel} from "./CubeDebugPanel.tsx";
+import {type BreadcrumbItem, CubeNavigation} from "./CubeNavigation.tsx";
+import type {CubeCell, CubeDataItem, CubeGroup, DimensionDescriptor, MeasureDescriptor,} from "./CubeService.types.ts";
+import {CubeSidebar} from "./CubeSidebar.tsx";
+import {CubeTreeNode} from "./CubeTreeNode.tsx";
+import type {CubeState} from "./useCubeState.ts";
 
 /**
  * Props for CubeView component

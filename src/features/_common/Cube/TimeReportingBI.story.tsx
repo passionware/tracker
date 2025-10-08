@@ -10,6 +10,7 @@ import type {
   MeasureDescriptor,
 } from "./CubeService.types.ts";
 import { useCubeState } from "./useCubeState.ts";
+import { sum } from "lodash";
 
 interface TimeEntryData {
   entryId: string;
@@ -315,8 +316,7 @@ export const TimeReportingDashboard = () => {
         name: "Total Hours",
         icon: "⏱️",
         getValue: (item) => item.hours,
-        aggregate: (values) =>
-          values.reduce((sum, v) => (sum as number) + (v as number), 0),
+        aggregate: sum,
         formatValue: (value) => `${(value as number).toFixed(2)}h`,
       },
       {
@@ -324,8 +324,7 @@ export const TimeReportingDashboard = () => {
         name: "Total Cost",
         icon: "💰",
         getValue: (item) => item.costAmount,
-        aggregate: (values) =>
-          values.reduce((sum, v) => (sum as number) + (v as number), 0),
+        aggregate: sum,
         formatValue: (value) =>
           `$${(value as number).toLocaleString("en-US", {
             minimumFractionDigits: 2,
@@ -337,8 +336,7 @@ export const TimeReportingDashboard = () => {
         name: "Billable Amount",
         icon: "💵",
         getValue: (item) => item.billingAmount,
-        aggregate: (values) =>
-          values.reduce((sum, v) => (sum as number) + (v as number), 0),
+        aggregate: sum,
         formatValue: (value) =>
           `$${(value as number).toLocaleString("en-US", {
             minimumFractionDigits: 2,
@@ -350,8 +348,7 @@ export const TimeReportingDashboard = () => {
         name: "Profit",
         icon: "📈",
         getValue: (item) => item.profit,
-        aggregate: (values) =>
-          values.reduce((sum, v) => (sum as number) + (v as number), 0),
+        aggregate: sum,
         formatValue: (value) =>
           `$${(value as number).toLocaleString("en-US", {
             minimumFractionDigits: 2,
@@ -363,13 +360,7 @@ export const TimeReportingDashboard = () => {
         name: "Profit Margin %",
         icon: "📊",
         getValue: (item) => item.profitMargin,
-        aggregate: (values) => {
-          const sum = values.reduce(
-            (sum, v) => (sum as number) + (v as number),
-            0,
-          ) as number;
-          return sum / values.length; // Average profit margin
-        },
+        aggregate: (values) => sum(values) / values.length,
         formatValue: (value) => `${(value as number).toFixed(2)}%`,
       },
       {
@@ -377,13 +368,7 @@ export const TimeReportingDashboard = () => {
         name: "Avg Hourly Rate",
         icon: "💲",
         getValue: (item) => item.billingRate,
-        aggregate: (values) => {
-          const sum = values.reduce(
-            (sum, v) => (sum as number) + (v as number),
-            0,
-          ) as number;
-          return sum / values.length;
-        },
+        aggregate: (values) => sum(values) / values.length,
         formatValue: (value) => `$${(value as number).toFixed(2)}/h`,
       },
     ];
@@ -392,7 +377,12 @@ export const TimeReportingDashboard = () => {
       data: timeEntries,
       dimensions,
       measures,
-      initialDefaultDimensionSequence: ["project", "taskType"], // Default hierarchy
+      initialDefaultDimensionSequence: [
+        "project",
+        "taskType",
+        "activityType",
+        "contractor",
+      ], // Default hierarchy
       activeMeasures: ["totalHours", "cost", "billing", "profit"],
       includeItems: true,
     });
