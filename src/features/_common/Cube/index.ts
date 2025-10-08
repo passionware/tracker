@@ -15,7 +15,8 @@ export {
 } from "./CubeService.ts";
 export type { CubeService } from "./CubeService.ts";
 export { CubeView } from "./CubeView.tsx";
-export type { CubeViewProps, BreadcrumbItem } from "./CubeView.tsx";
+export type { CubeViewProps } from "./CubeView.tsx";
+export type { BreadcrumbItem } from "./CubeNavigation.tsx";
 export type {
   CubeDataItem,
   DimensionDescriptor,
