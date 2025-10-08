@@ -11,8 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ZoomIn } from "lucide-react";
+import { useState } from "react";
 import type { BreadcrumbItem } from "./CubeNavigation.tsx";
 import type {
   CubeDataItem,
@@ -43,6 +51,11 @@ export function CubeSidebar({
 }: CubeSidebarProps) {
   const cube = state.cube;
   const config = cube.config;
+
+  // State for selected measure for dimensional breakdowns
+  const [selectedMeasureId, setSelectedMeasureId] = useState<string>(
+    measures[0]?.id || "",
+  );
 
   return (
     <div className="w-80 flex-shrink-0">
@@ -112,11 +125,40 @@ export function CubeSidebar({
 
                 if (!currentItems.length) return null;
 
+                // Get the selected measure
+                const selectedMeasure =
+                  measures.find((m) => m.id === selectedMeasureId) ||
+                  measures[0];
+
                 // Calculate breakdowns for all available dimensions
                 return (
                   <div className="pt-4 border-t space-y-4">
-                    <div className="text-xs font-medium text-slate-600">
-                      Explore by Dimension
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-medium text-slate-600">
+                        Explore by Dimension
+                      </div>
+                      <Select
+                        value={selectedMeasureId}
+                        onValueChange={setSelectedMeasureId}
+                      >
+                        <SelectTrigger className="h-6 w-[140px] text-[11px]">
+                          <SelectValue placeholder="Choose measure..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {measures.map((measure) => (
+                            <SelectItem
+                              key={measure.id}
+                              value={measure.id}
+                              className="text-xs"
+                            >
+                              {measure.icon && (
+                                <span className="mr-1">{measure.icon}</span>
+                              )}
+                              {measure.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {sidebarDimensions.map((dimension) => {
@@ -141,13 +183,13 @@ export function CubeSidebar({
                             ? dimension.formatValue(value)
                             : String(value);
 
-                          // Calculate measure value (use first measure)
-                          const measure = measures[0];
+                          // Calculate measure value (use selected measure)
                           const measureValues = items.map(
-                            (item: CubeDataItem) => measure.getValue(item),
+                            (item: CubeDataItem) =>
+                              selectedMeasure.getValue(item),
                           );
                           const aggregatedValue =
-                            measure.aggregate(measureValues);
+                            selectedMeasure.aggregate(measureValues);
                           const numValue =
                             typeof aggregatedValue === "number"
                               ? aggregatedValue
