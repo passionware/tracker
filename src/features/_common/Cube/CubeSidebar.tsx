@@ -118,8 +118,7 @@ export function CubeSidebar({
             })}
 
             {/* Sunburst Chart - Hierarchical Breakdown */}
-            {cube.groups.length > 0 &&
-              selectedMeasureId &&
+            {selectedMeasureId &&
               (() => {
                 const selectedMeasure =
                   measures.find((m) => m.id === selectedMeasureId) ||

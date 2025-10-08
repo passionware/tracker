@@ -80,6 +80,7 @@ export function CubeSunburst({
   dimensions,
   rootData,
 }: CubeSunburstProps) {
+  const currentZoomPath = state.path;
   // Build sunburst data from ROOT data always (not filtered by zoom)
   const nivoData = useMemo(() => {
     if (!rootData || rootData.length === 0) {
@@ -140,7 +141,7 @@ export function CubeSunburst({
         <ResponsiveSunburst
           key={`sunburst-${measure.id}`}
           data={nivoData}
-          margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
+          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
           id="name"
           value="value"
           cornerRadius={0}
@@ -151,7 +152,42 @@ export function CubeSunburst({
             modifiers: [["brighter", 0.1]],
           }}
           enableArcLabels={false}
-          layers={["arcs"]}
+          layers={[
+            "arcs",
+            ({ nodes, arcGenerator, centerX, centerY }) => {
+              // Custom layer to highlight current zoom path
+              return (
+                <g transform={`translate(${centerX}, ${centerY})`}>
+                  {nodes.map((node) => {
+                    const nivoNode = node.data as NivoSunburstNode;
+                    const isInZoomPath = currentZoomPath.some(
+                      (pathItem) =>
+                        pathItem.dimensionId === nivoNode.dimensionId &&
+                        pathItem.dimensionValue === nivoNode.dimensionValue,
+                    );
+
+                    if (!isInZoomPath || !node.arc) return null;
+
+                    // Draw a highlighted border for zoomed nodes
+                    const arc = arcGenerator(node.arc);
+                    if (!arc) return null;
+
+                    return (
+                      <path
+                        key={`zoom-highlight-${node.id}`}
+                        d={arc}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        opacity={0.9}
+                        pointerEvents="none"
+                      />
+                    );
+                  })}
+                </g>
+              );
+            },
+          ]}
           animate={true}
           motionConfig="gentle"
           transitionMode="centerRadius"
@@ -248,8 +284,14 @@ export function CubeSunburst({
         />
       </div>
 
-      <div className="text-xs text-slate-500 text-center">
-        Click segments to zoom • Click center to reset
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span>Current zoom</span>
+        </div>
+        <div className="text-center">
+          Click segments to zoom • Click center to reset
+        </div>
       </div>
     </div>
   );
