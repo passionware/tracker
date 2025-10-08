@@ -167,10 +167,24 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
     let childDimensionId = breakdownMap[nodePath];
 
     if (!childDimensionId) {
-      // Try wildcard match by replacing the last value with *
-      const wildcardPath = parentPath
-        ? `${parentPath}|${dimensionId}:*`
+      // Try wildcard match by replacing ALL concrete keys in the parent path with '*'
+      // and appending the current dimension wildcard. This allows patterns like
+      //   "project:*|taskType:*" to match a node whose parentPath is
+      //   "project:Web Application" and the current dimension is "taskType".
+      const wildcardParent = parentPath
+        ? parentPath
+            .split("|")
+            .map((segment) => {
+              const [dim] = segment.split(":");
+              return `${dim}:*`;
+            })
+            .join("|")
+        : "";
+
+      const wildcardPath = wildcardParent
+        ? `${wildcardParent}|${dimensionId}:*`
         : `${dimensionId}:*`;
+
       childDimensionId = breakdownMap[wildcardPath];
     }
 
