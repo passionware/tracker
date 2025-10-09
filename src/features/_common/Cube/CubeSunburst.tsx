@@ -139,18 +139,14 @@ export function CubeSunburst({
 
       <div className="h-[400px] w-full">
         <ResponsiveSunburst
-          key={`sunburst-${measure.id}`}
           data={nivoData}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+          margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
           id="name"
           value="value"
           cornerRadius={0}
           borderWidth={0}
-          colors={{ scheme: "paired" }}
-          childColor={{
-            from: "color",
-            modifiers: [["brighter", 0.1]],
-          }}
+          colors={{ scheme: "red_yellow_blue", size: 11 }}
+          inheritColorFromParent={false}
           enableArcLabels={false}
           layers={[
             "arcs",
