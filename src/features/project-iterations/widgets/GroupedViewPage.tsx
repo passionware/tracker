@@ -10,6 +10,8 @@ import { maybe, rd } from "@passionware/monads";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GroupedViewWidget } from "./GroupedViewWidget";
+import { SummarySidebar } from "./SummarySidebar";
+import { DimensionExplorer } from "./DimensionExplorer";
 
 interface GroupedViewPageProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -90,8 +92,8 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
         </div>
       </div>
 
-      {/* Main content - takes remaining space */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main content - three columns: left summary, main analysis, right explorer */}
+      <div className="flex-1 overflow-hidden flex">
         {rd
           .journey(generatedReport)
           .wait(
@@ -114,9 +116,23 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
             </div>
           ))
           .map((report) => (
-            <div className="h-full w-full">
-              <GroupedViewWidget report={report} services={props.services} />
-            </div>
+            <>
+              {/* Left column - summary sidebar */}
+              <SummarySidebar report={report} services={props.services} />
+
+              {/* Middle column - main cube analysis */}
+              <div className="flex-1 overflow-hidden">
+                <div className="h-full w-full">
+                  <GroupedViewWidget
+                    report={report}
+                    services={props.services}
+                  />
+                </div>
+              </div>
+
+              {/* Right column - dimension selector + charts */}
+              <DimensionExplorer report={report} services={props.services} />
+            </>
           ))}
       </div>
     </div>
