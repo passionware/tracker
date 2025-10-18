@@ -68,9 +68,13 @@ export function CubeNavigation({
             const dimension = dimensions.find(
               (d) => d.id === breadcrumb.dimensionId,
             );
-            // Derive the label from the group in the cube
-            const group = findGroupByPath(zoomPath.slice(0, index + 1));
-            const label = group?.dimensionLabel || breadcrumb.dimensionKey;
+            // Use the dimension's formatValue directly on the dimensionValue from the zoom path
+            // This works the same way as the sidebar charts and doesn't depend on finding groups
+            const pathItem = state.path[index];
+            const label =
+              dimension?.formatValue && pathItem?.dimensionValue
+                ? dimension.formatValue(pathItem.dimensionValue)
+                : breadcrumb.dimensionKey;
 
             return (
               <div key={index} className="flex items-center gap-2">
