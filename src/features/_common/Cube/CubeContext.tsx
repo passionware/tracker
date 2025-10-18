@@ -5,7 +5,7 @@
  * the same cube state, measurements, dimensions, and data.
  */
 
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useState } from "react";
 import type { CubeState } from "./useCubeState.ts";
 import type {
   DimensionDescriptor,
@@ -26,17 +26,33 @@ interface CubeContextValue {
 
   // Report metadata
   reportId?: string;
+
+  // Measure selection
+  selectedMeasureId: string;
+  setSelectedMeasureId: (measureId: string) => void;
 }
 
 const CubeContext = createContext<CubeContextValue | null>(null);
 
 interface CubeProviderProps {
   children: ReactNode;
-  value: CubeContextValue;
+  value: Omit<CubeContextValue, "selectedMeasureId" | "setSelectedMeasureId">;
 }
 
 export function CubeProvider({ children, value }: CubeProviderProps) {
-  return <CubeContext.Provider value={value}>{children}</CubeContext.Provider>;
+  const [selectedMeasureId, setSelectedMeasureId] = useState(
+    value.measures[0]?.id || "",
+  );
+
+  const contextValue: CubeContextValue = {
+    ...value,
+    selectedMeasureId,
+    setSelectedMeasureId,
+  };
+
+  return (
+    <CubeContext.Provider value={contextValue}>{children}</CubeContext.Provider>
+  );
 }
 
 export function useCubeContext(): CubeContextValue {
@@ -65,4 +81,21 @@ export function useCubeMeasures(): MeasureDescriptor<CubeDataItem, unknown>[] {
 
 export function useCubeData(): CubeDataItem[] {
   return useCubeContext().data;
+}
+
+export function useSelectedMeasure(): {
+  selectedMeasureId: string;
+  setSelectedMeasureId: (measureId: string) => void;
+  selectedMeasure: MeasureDescriptor<CubeDataItem, unknown>;
+} {
+  const { selectedMeasureId, setSelectedMeasureId, measures } =
+    useCubeContext();
+  const selectedMeasure =
+    measures.find((m) => m.id === selectedMeasureId) || measures[0];
+
+  return {
+    selectedMeasureId,
+    setSelectedMeasureId,
+    selectedMeasure,
+  };
 }

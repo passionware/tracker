@@ -6,7 +6,10 @@
  */
 
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
-import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
+import {
+  useCubeContext,
+  useSelectedMeasure,
+} from "@/features/_common/Cube/CubeContext.tsx";
 import { CubeSunburst } from "@/features/_common/Cube/CubeSunburst.tsx";
 import {
   Card,
@@ -33,8 +36,8 @@ interface SummarySidebarProps {
 }
 
 export function SummarySidebar({ report }: SummarySidebarProps) {
-  const { state, measures, dimensions } = useCubeContext();
-  const selectedMeasure = measures[0];
+  const { state, dimensions, measures } = useCubeContext();
+  const { selectedMeasure } = useSelectedMeasure();
   const cube = state.cube;
 
   // State for sunburst view mode

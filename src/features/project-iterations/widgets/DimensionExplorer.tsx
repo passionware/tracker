@@ -7,7 +7,10 @@
 
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
+import {
+  useCubeContext,
+  useSelectedMeasure,
+} from "@/features/_common/Cube/CubeContext.tsx";
 import {
   Card,
   CardContent,
@@ -23,7 +26,6 @@ import {
 } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ZoomIn, Check } from "lucide-react";
-import { useState } from "react";
 
 interface DimensionExplorerProps extends WithFrontServices {
   report: GeneratedReportSource;
@@ -31,10 +33,8 @@ interface DimensionExplorerProps extends WithFrontServices {
 
 export function DimensionExplorer({}: DimensionExplorerProps) {
   const { state, dimensions, measures, data } = useCubeContext();
-  const [selectedMeasureId, setSelectedMeasureId] = useState(measures[0]?.id);
-
-  const selectedMeasure =
-    measures.find((m) => m.id === selectedMeasureId) || measures[0];
+  const { selectedMeasureId, setSelectedMeasureId, selectedMeasure } =
+    useSelectedMeasure();
   const cube = state.cube;
 
   // Get current zoom level data - this is what's shown in breadcrumbs

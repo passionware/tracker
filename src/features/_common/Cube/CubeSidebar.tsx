@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ZoomIn } from "lucide-react";
-import { useState } from "react";
 import type { BreadcrumbItem } from "./CubeNavigation.tsx";
 import type {
   CubeDataItem,
@@ -30,6 +29,7 @@ import type {
 } from "./CubeService.types.ts";
 import { CubeSunburst } from "./CubeSunburst.tsx";
 import type { CubeState } from "./useCubeState.ts";
+import { useSelectedMeasure } from "./CubeContext.tsx";
 
 interface CubeSidebarProps {
   state: CubeState;
@@ -53,10 +53,9 @@ export function CubeSidebar({
   const cube = state.cube;
   const config = cube.config;
 
-  // State for selected measure for dimensional breakdowns
-  const [selectedMeasureId, setSelectedMeasureId] = useState<string>(
-    measures[0]?.id || "",
-  );
+  // Use shared measure selection from context
+  const { selectedMeasureId, setSelectedMeasureId, selectedMeasure } =
+    useSelectedMeasure();
 
   return (
     <div className="w-80 flex-shrink-0 overflow-y-auto">
@@ -118,29 +117,22 @@ export function CubeSidebar({
             })}
 
             {/* Sunburst Chart - Hierarchical Breakdown */}
-            {selectedMeasureId &&
-              (() => {
-                const selectedMeasure =
-                  measures.find((m) => m.id === selectedMeasureId) ||
-                  measures[0];
-
-                return (
-                  <div className="pt-4 border-t">
-                    <CubeSunburst
-                      state={state}
-                      measure={selectedMeasure}
-                      dimensions={
-                        config.dimensions as DimensionDescriptor<
-                          CubeDataItem,
-                          unknown
-                        >[]
-                      }
-                      maxLevels={4}
-                      rootData={config.data}
-                    />
-                  </div>
-                );
-              })()}
+            {selectedMeasureId && (
+              <div className="pt-4 border-t">
+                <CubeSunburst
+                  state={state}
+                  measure={selectedMeasure}
+                  dimensions={
+                    config.dimensions as DimensionDescriptor<
+                      CubeDataItem,
+                      unknown
+                    >[]
+                  }
+                  maxLevels={4}
+                  rootData={config.data}
+                />
+              </div>
+            )}
 
             {/* Multi-dimensional breakdowns */}
             {sidebarDimensions.length > 0 &&
