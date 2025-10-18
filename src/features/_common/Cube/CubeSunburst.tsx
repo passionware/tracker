@@ -7,7 +7,8 @@
  */
 
 import { ResponsiveSunburst } from "@nivo/sunburst";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Portal } from "@radix-ui/react-portal";
 import { calculateCube } from "./CubeService.ts";
 import type {
   CubeDataItem,
@@ -80,6 +81,12 @@ export function CubeSunburst({
   dimensions,
   rootData,
 }: CubeSunburstProps) {
+  const [tooltipData, setTooltipData] = useState<{
+    x: number;
+    y: number;
+    content: React.ReactNode;
+  } | null>(null);
+
   const currentZoomPath = state.path;
   // Build sunburst data from ROOT data always (not filtered by zoom)
   const nivoData = useMemo(() => {
@@ -261,34 +268,54 @@ export function CubeSunburst({
                   nivoNode.id.split(":").pop() ||
                   nivoNode.id;
 
-            return (
-              <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-3 max-w-xs">
-                <div className="flex items-center gap-2 mb-3">
-                  <div
-                    className="w-4 h-4 rounded-full shrink-0 border-2 border-white/20"
-                    style={{ backgroundColor: color }}
-                  />
-                  <div className="font-semibold text-white text-sm truncate">
-                    {displayName}
+            // Return null to prevent inline tooltip rendering
+            // We'll handle tooltip via onMouseMove instead
+            return null;
+          }}
+          onMouseMove={(node, event) => {
+            const nivoNode = node.data as NivoSunburstNode;
+            const displayName =
+              nivoNode.id === "sunburst-root"
+                ? "All Data"
+                : nivoNode.originalLabel ||
+                  nivoNode.id.split(":").pop() ||
+                  nivoNode.id;
+
+            setTooltipData({
+              x: event.clientX + 10,
+              y: event.clientY - 10,
+              content: (
+                <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-3 max-w-xs">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div
+                      className="w-4 h-4 rounded-full shrink-0 border-2 border-white/20"
+                      style={{ backgroundColor: node.color }}
+                    />
+                    <div className="font-semibold text-white text-sm truncate">
+                      {displayName}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="bg-slate-800 rounded px-2 py-1">
+                      <div className="text-slate-300 text-xs">
+                        {measure.icon} {measure.name}
+                      </div>
+                      <div className="text-white font-bold text-sm">
+                        {nivoNode.formattedValue || node.value}
+                      </div>
+                    </div>
+                    {nivoNode.itemCount && (
+                      <div className="text-slate-400 text-xs">
+                        {nivoNode.itemCount} items
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="bg-slate-800 rounded px-2 py-1">
-                    <div className="text-slate-300 text-xs">
-                      {measure.icon} {measure.name}
-                    </div>
-                    <div className="text-white font-bold text-sm">
-                      {nivoNode.formattedValue || value}
-                    </div>
-                  </div>
-                  {nivoNode.itemCount && (
-                    <div className="text-slate-400 text-xs">
-                      {nivoNode.itemCount} items
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
+              ),
+            });
+          }}
+          onMouseLeave={() => {
+            setTooltipData(null);
           }}
         />
       </div>
@@ -305,6 +332,21 @@ export function CubeSunburst({
           Click center to reset
         </div>
       </div>
+
+      {/* Portal-based tooltip rendered outside chart container */}
+      {tooltipData && (
+        <Portal>
+          <div
+            className="fixed pointer-events-none z-50"
+            style={{
+              left: tooltipData.x,
+              top: tooltipData.y,
+            }}
+          >
+            {tooltipData.content}
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
