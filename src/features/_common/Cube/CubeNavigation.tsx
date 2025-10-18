@@ -5,16 +5,9 @@
  */
 
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
 import { motion } from "framer-motion";
 import { ChevronRight, Home } from "lucide-react";
-import type { CubeGroup, DimensionDescriptor } from "./CubeService.types.ts";
+import type { DimensionDescriptor } from "./CubeService.types.ts";
 import type { CubeState } from "./useCubeState.ts";
 
 export interface BreadcrumbItem {
@@ -26,20 +19,12 @@ interface CubeNavigationProps {
   state: CubeState;
   zoomPath: BreadcrumbItem[];
   dimensions: DimensionDescriptor<any>[];
-  currentChildDimensionId?: string | null;
-  dropdownDimensions: DimensionDescriptor<any>[];
-  enableDimensionPicker: boolean;
-  findGroupByPath: (breadcrumbs: BreadcrumbItem[]) => CubeGroup | undefined;
 }
 
 export function CubeNavigation({
   state,
   zoomPath,
   dimensions,
-  currentChildDimensionId,
-  dropdownDimensions,
-  enableDimensionPicker,
-  findGroupByPath,
 }: CubeNavigationProps) {
   const handleBreadcrumbClick = (index: number) => {
     state.navigateToLevel(index);
@@ -99,71 +84,6 @@ export function CubeNavigation({
             );
           })}
         </div>
-
-        {/* Dimension Picker - show at all levels when zoomed in */}
-        {enableDimensionPicker && dropdownDimensions.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-600 whitespace-nowrap">
-              {zoomPath.length === 0
-                ? "Break down by:"
-                : "Break down children by:"}
-            </span>
-            <Select
-              value={currentChildDimensionId ?? "raw-data"}
-              onValueChange={(value) => {
-                // Set the child dimension for the current path
-                // Convert "raw-data" back to null
-                const dimensionValue = value === "raw-data" ? null : value;
-                state.setNodeChildDimension(state.path, dimensionValue);
-              }}
-            >
-              <SelectTrigger className="h-7 w-[180px] text-xs">
-                <SelectValue placeholder="Select dimension..." />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Always include "Raw Data" option */}
-                <SelectItem value="raw-data" className="text-xs">
-                  <span className="mr-2">📊</span>
-                  Raw Data
-                </SelectItem>
-
-                {/* Include all available dimensions */}
-                {dropdownDimensions.map((dim) => (
-                  <SelectItem key={dim.id} value={dim.id} className="text-xs">
-                    {dim.icon && <span className="mr-2">{dim.icon}</span>}
-                    {dim.name}
-                  </SelectItem>
-                ))}
-
-                {/* Include currently selected dimension if it's not in dropdownDimensions */}
-                {currentChildDimensionId &&
-                  !dropdownDimensions.some(
-                    (d) => d.id === currentChildDimensionId,
-                  ) && (
-                    <SelectItem
-                      value={currentChildDimensionId}
-                      className="text-xs"
-                    >
-                      {dimensions.find((d) => d.id === currentChildDimensionId)
-                        ?.icon && (
-                        <span className="mr-2">
-                          {
-                            dimensions.find(
-                              (d) => d.id === currentChildDimensionId,
-                            )?.icon
-                          }
-                        </span>
-                      )}
-                      {
-                        dimensions.find((d) => d.id === currentChildDimensionId)
-                          ?.name
-                      }
-                    </SelectItem>
-                  )}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
     </motion.div>
   );

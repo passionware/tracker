@@ -5,7 +5,8 @@
  */
 
 import { motion } from "framer-motion";
-import { type BreadcrumbItem, CubeNavigation } from "./CubeNavigation.tsx";
+import type { BreadcrumbItem } from "./CubeNavigation.tsx";
+import { CubeNavigation } from "./CubeNavigation.tsx";
 import type {
   CubeCell,
   CubeDataItem,
@@ -63,27 +64,6 @@ export function CubeView({
   const measures = config.activeMeasures
     ? config.measures.filter((m) => config.activeMeasures!.includes(m.id))
     : config.measures;
-
-  // Helper function to find a group in the cube by following a breadcrumb path
-  const findGroupByPath = (
-    breadcrumbs: BreadcrumbItem[],
-  ): CubeGroup | undefined => {
-    let currentGroups = cube.groups;
-    let foundGroup: CubeGroup | undefined;
-
-    for (const breadcrumb of breadcrumbs) {
-      foundGroup = currentGroups.find(
-        (g) =>
-          g.dimensionKey === breadcrumb.dimensionKey &&
-          g.dimensionId === breadcrumb.dimensionId,
-      );
-
-      if (!foundGroup) return undefined;
-      currentGroups = foundGroup.subGroups || [];
-    }
-
-    return foundGroup;
-  };
 
   // Convert PathItem[] from state to BreadcrumbItem[] for view
   const zoomPath: BreadcrumbItem[] = state.path.map((pathItem) => {
@@ -146,21 +126,9 @@ export function CubeView({
     }
   })();
 
-  // For the dropdown, we need to exclude:
-  // 1. Dimensions used in the zoom path (ancestors)
-  // Note: We DO show the current group's dimension in the sidebar (it's just not selectable in dropdown)
-  const availableDimensions = config.dimensions.filter(
-    (d) => !usedDimensionIds.includes(d.id),
-  );
-
   // For the sidebar, show all dimensions that aren't in the ancestor path
   const sidebarDimensions = config.dimensions.filter(
     (d) => !usedDimensionIds.includes(d.id),
-  );
-
-  // For the dropdown, exclude the current group dimension
-  const dropdownDimensions = availableDimensions.filter(
-    (d) => d.id !== currentGroupDimensionId,
   );
 
   return (
@@ -174,10 +142,6 @@ export function CubeView({
           state={state}
           zoomPath={zoomPath}
           dimensions={config.dimensions}
-          currentChildDimensionId={currentChildDimensionId}
-          dropdownDimensions={dropdownDimensions}
-          enableDimensionPicker={enableDimensionPicker}
-          findGroupByPath={findGroupByPath}
         />
       )}
 
