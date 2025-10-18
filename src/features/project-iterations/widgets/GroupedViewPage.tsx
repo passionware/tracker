@@ -12,6 +12,9 @@ import { useNavigate } from "react-router-dom";
 import { GroupedViewWidget } from "./GroupedViewWidget";
 import { SummarySidebar } from "./SummarySidebar";
 import { DimensionExplorer } from "./DimensionExplorer";
+import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
+import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
+import { useCubeDefinitions } from "./CubeDefinitions";
 
 interface GroupedViewPageProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -115,25 +118,55 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
               </div>
             </div>
           ))
-          .map((report) => (
-            <>
-              {/* Left column - summary sidebar */}
-              <SummarySidebar report={report} services={props.services} />
+          .map((report) => {
+            // Create shared cube state and definitions at the top level
+            const { dimensions, measures } = useCubeDefinitions(
+              report,
+              props.services,
+            );
+            const cubeState = useCubeState({
+              data: report.data.timeEntries,
+              dimensions: dimensions as any,
+              measures: measures as any,
+              initialDefaultDimensionSequence: [
+                "project",
+                "contractor",
+                "role",
+                "task",
+                "activity",
+              ],
+              includeItems: true,
+            });
 
-              {/* Middle column - main cube analysis */}
-              <div className="flex-1 overflow-hidden">
-                <div className="h-full w-full">
-                  <GroupedViewWidget
-                    report={report}
-                    services={props.services}
-                  />
+            // Create context value
+            const contextValue = {
+              state: cubeState,
+              dimensions,
+              measures,
+              data: report.data.timeEntries,
+              reportId: String(report.id),
+            };
+
+            return (
+              <CubeProvider value={contextValue}>
+                {/* Left column - summary sidebar */}
+                <SummarySidebar report={report} services={props.services} />
+
+                {/* Middle column - main cube analysis */}
+                <div className="flex-1 overflow-hidden">
+                  <div className="h-full w-full">
+                    <GroupedViewWidget
+                      report={report}
+                      services={props.services}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Right column - dimension selector + charts */}
-              <DimensionExplorer report={report} services={props.services} />
-            </>
-          ))}
+                {/* Right column - dimension selector + charts */}
+                <DimensionExplorer report={report} services={props.services} />
+              </CubeProvider>
+            );
+          })}
       </div>
     </div>
   );

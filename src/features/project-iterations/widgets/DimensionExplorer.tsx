@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import { cn } from "@/lib/utils.ts";
+import { ZoomIn, Check } from "lucide-react";
 import { useState } from "react";
 
 interface DimensionExplorerProps extends WithFrontServices {
@@ -28,26 +30,30 @@ interface DimensionExplorerProps extends WithFrontServices {
 }
 
 export function DimensionExplorer({}: DimensionExplorerProps) {
-  const { state, dimensions, measures } = useCubeContext();
+  const { state, dimensions, measures, data } = useCubeContext();
   const [selectedMeasureId, setSelectedMeasureId] = useState(measures[0]?.id);
 
   const selectedMeasure =
     measures.find((m) => m.id === selectedMeasureId) || measures[0];
   const cube = state.cube;
 
-  // Determine which dimensions to show in sidebar (same rule as CubeView)
-  const usedDimensionIds = state.path.map((p) => p.dimensionId);
-  const sidebarDimensions = dimensions.filter(
-    (d) => !usedDimensionIds.includes(d.id),
-  );
+  // Get current zoom level data - this is what's shown in breadcrumbs
+  const currentItems = state.path.length === 0 ? data : cube.filteredData || [];
 
-  const currentChildDimensionId =
-    cube.config.breakdownMap?.[
+  // Show all dimensions at the current level (not filtered by used dimensions)
+  const sidebarDimensions = dimensions;
+
+  // Get current breakdown dimension ID for highlighting
+  const currentBreakdownDimensionId =
+    state.cube.config.breakdownMap?.[
       state.path
-        .map(
-          (p) =>
-            `${p.dimensionId}:${dimensions.find((d) => d.id === p.dimensionId)?.getKey?.(p.dimensionValue) || p.dimensionValue}`,
-        )
+        .map((p) => {
+          const dim = dimensions.find((d) => d.id === p.dimensionId);
+          const key = dim?.getKey
+            ? dim.getKey(p.dimensionValue)
+            : String(p.dimensionValue ?? "null");
+          return `${p.dimensionId}:${key}`;
+        })
         .join("|") || ""
     ];
 
@@ -83,132 +89,262 @@ export function DimensionExplorer({}: DimensionExplorerProps) {
           </CardContent>
         </Card>
 
-        {/* Dimension Selector */}
-        <Card>
+        {/* Raw Data Chart */}
+        <Card
+          className={cn(
+            "cursor-pointer transition-all duration-200 hover:shadow-md",
+            currentBreakdownDimensionId === null
+              ? "ring-2 ring-indigo-200 bg-indigo-50"
+              : "hover:bg-slate-50",
+          )}
+          onClick={() => {
+            // Set raw data as the breakdown (null dimension)
+            state.setNodeChildDimension(state.path, null);
+          }}
+        >
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700">
-              Break down children by
+            <CardTitle className="text-sm font-medium flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span>📊</span>
+                <span className="text-slate-700">Raw Data</span>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Select
-              value={currentChildDimensionId ?? "raw-data"}
-              onValueChange={(value) => {
-                const dimensionValue = value === "raw-data" ? null : value;
-                state.setNodeChildDimension(state.path, dimensionValue);
-              }}
-            >
-              <SelectTrigger className="h-8 w-full text-xs">
-                <SelectValue placeholder="Select dimension..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="raw-data" className="text-xs">
-                  <span className="mr-2">📊</span>
-                  Raw Data
-                </SelectItem>
-                {sidebarDimensions.map((dim) => (
-                  <SelectItem key={dim.id} value={dim.id} className="text-xs">
-                    {dim.icon && <span className="mr-2">{dim.icon}</span>}
-                    {dim.name}
-                  </SelectItem>
-                ))}
-                {currentChildDimensionId &&
-                  !sidebarDimensions.some(
-                    (d) => d.id === currentChildDimensionId,
-                  ) && (
-                    <SelectItem
-                      value={currentChildDimensionId}
-                      className="text-xs"
-                    >
-                      {dimensions.find((d) => d.id === currentChildDimensionId)
-                        ?.icon && (
-                        <span className="mr-2">
-                          {
-                            dimensions.find(
-                              (d) => d.id === currentChildDimensionId,
-                            )?.icon
-                          }
+          <CardContent className="space-y-2">
+            <div className="text-xs text-slate-500 mb-2">
+              {currentItems.length} entries
+            </div>
+            <div className="space-y-1">
+              {/* Time-based breakdown for raw data */}
+              {(() => {
+                // Group entries by date (daily breakdown)
+                const dateGroups = new Map<string, any[]>();
+                currentItems.forEach((item) => {
+                  const date = new Date(item.startAt)
+                    .toISOString()
+                    .split("T")[0];
+                  if (!dateGroups.has(date)) {
+                    dateGroups.set(date, []);
+                  }
+                  dateGroups.get(date)!.push(item);
+                });
+
+                const sortedDates = Array.from(dateGroups.entries())
+                  .sort(
+                    ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
+                  )
+                  .slice(0, 5); // Show top 5 days
+
+                const totalValue = currentItems.reduce((sum, item) => {
+                  const value = selectedMeasure.getValue(item);
+                  return (
+                    sum + (typeof value === "number" ? Math.abs(value) : 0)
+                  );
+                }, 0);
+
+                return sortedDates.map(([date, items]) => {
+                  const dayValue = items.reduce((sum, item) => {
+                    const value = selectedMeasure.getValue(item);
+                    return (
+                      sum + (typeof value === "number" ? Math.abs(value) : 0)
+                    );
+                  }, 0);
+
+                  const percentage =
+                    totalValue > 0 ? (dayValue / totalValue) * 100 : 0;
+                  const formattedValue = selectedMeasure.formatValue
+                    ? selectedMeasure.formatValue(dayValue)
+                    : String(dayValue);
+
+                  const displayDate = new Date(date).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                    },
+                  );
+
+                  return (
+                    <div key={date} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="truncate flex-1 min-w-0">
+                          {displayDate} ({items.length} entries)
                         </span>
-                      )}
-                      {
-                        dimensions.find((d) => d.id === currentChildDimensionId)
-                          ?.name
-                      }
-                    </SelectItem>
-                  )}
-              </SelectContent>
-            </Select>
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
+                          <span className="text-slate-500">
+                            {formattedValue}
+                          </span>
+                          <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-slate-400 to-slate-600"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+              {currentItems.length > 0 && (
+                <div className="text-xs text-slate-400 pt-1">
+                  Daily breakdown
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Dimensional Breakdown Charts */}
+        {/* Interactive Dimension Cards - All dimensions at current level */}
         {sidebarDimensions.map((dimension) => {
-          const groups = cube.groups.filter(
-            (g) => g.dimensionId === dimension.id,
-          );
-          if (groups.length === 0) return null;
+          // Calculate breakdown from current zoom level data
+          const dimensionGroups = new Map<string, any[]>();
 
-          const totalValue = groups.reduce((sum, group) => {
-            const cell = group.cells.find(
-              (c) => c.measureId === selectedMeasure.id,
-            );
-            return (
-              sum + (typeof cell?.value === "number" ? Math.abs(cell.value) : 0)
-            );
-          }, 0);
+          currentItems.forEach((item) => {
+            const value = dimension.getValue(item);
+            const key = dimension.getKey
+              ? dimension.getKey(value)
+              : String(value ?? "null");
+
+            if (!dimensionGroups.has(key)) {
+              dimensionGroups.set(key, []);
+            }
+            dimensionGroups.get(key)!.push(item);
+          });
+
+          if (dimensionGroups.size === 0) return null;
+
+          const totalValue = Array.from(dimensionGroups.values()).reduce(
+            (sum, items) => {
+              const groupTotal = items.reduce((groupSum, item) => {
+                const value = selectedMeasure.getValue(item);
+                return (
+                  groupSum + (typeof value === "number" ? Math.abs(value) : 0)
+                );
+              }, 0);
+              return sum + groupTotal;
+            },
+            0,
+          );
+
+          // Check if this dimension is the current breakdown dimension (same as "breakdown children by")
+          const isActive = currentBreakdownDimensionId === dimension.id;
 
           return (
-            <Card key={dimension.id}>
+            <Card
+              key={dimension.id}
+              className={cn(
+                "cursor-pointer transition-all duration-200 hover:shadow-md",
+                isActive
+                  ? "ring-2 ring-indigo-200 bg-indigo-50"
+                  : "hover:bg-slate-50",
+              )}
+              onClick={() => {
+                // Handle dimension selection - set as breakdown dimension
+                state.setNodeChildDimension(state.path, dimension.id);
+              }}
+            >
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                  {dimension.icon && <span>{dimension.icon}</span>}
-                  {dimension.name}
+                <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {dimension.icon && <span>{dimension.icon}</span>}
+                    <span
+                      className={cn(
+                        isActive ? "text-indigo-700" : "text-slate-700",
+                      )}
+                    >
+                      {dimension.name}
+                    </span>
+                  </div>
+                  {isActive && <Check className="h-4 w-4 text-indigo-600" />}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {groups
-                  .sort((a, b) => {
-                    const aValue =
-                      a.cells.find((c) => c.measureId === selectedMeasure.id)
-                        ?.value ?? 0;
-                    const bValue =
-                      b.cells.find((c) => c.measureId === selectedMeasure.id)
-                        ?.value ?? 0;
-                    return Math.abs(Number(bValue)) - Math.abs(Number(aValue));
-                  })
-                  .slice(0, 8)
-                  .map((group) => {
-                    const cell = group.cells.find(
-                      (c) => c.measureId === selectedMeasure.id,
-                    );
-                    const value =
-                      typeof cell?.value === "number"
-                        ? Math.abs(cell.value)
-                        : 0;
-                    const percentage =
-                      totalValue > 0 ? (value / totalValue) * 100 : 0;
-                    const formattedValue =
-                      cell?.formattedValue ?? String(value);
+                <div className="text-xs text-slate-500 mb-2">
+                  {dimensionGroups.size} groups
+                </div>
+                {Array.from(dimensionGroups.entries())
+                  .map(([key, items]) => {
+                    const groupTotal = items.reduce((sum, item) => {
+                      const value = selectedMeasure.getValue(item);
+                      return (
+                        sum + (typeof value === "number" ? Math.abs(value) : 0)
+                      );
+                    }, 0);
 
-                    return (
-                      <div key={group.dimensionKey} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="truncate flex-1 min-w-0">
-                            {group.dimensionLabel}
+                    const percentage =
+                      totalValue > 0 ? (groupTotal / totalValue) * 100 : 0;
+                    const formattedValue = selectedMeasure.formatValue
+                      ? selectedMeasure.formatValue(groupTotal)
+                      : String(groupTotal);
+
+                    // Get the display label for this group
+                    const firstItem = items[0];
+                    const value = dimension.getValue(firstItem);
+                    const displayLabel = dimension.formatValue
+                      ? dimension.formatValue(value)
+                      : String(value ?? "Unknown");
+
+                    return {
+                      key,
+                      items,
+                      groupTotal,
+                      percentage,
+                      formattedValue,
+                      displayLabel,
+                    };
+                  })
+                  .sort(
+                    (a, b) => Math.abs(b.groupTotal) - Math.abs(a.groupTotal),
+                  )
+                  .slice(0, 5)
+                  .map((group) => (
+                    <div
+                      key={group.key}
+                      className="space-y-1 group cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle zoom into this specific group
+                        const newPath = [
+                          ...state.path,
+                          {
+                            dimensionId: dimension.id,
+                            dimensionValue: dimension.getValue(group.items[0]),
+                          },
+                        ];
+                        state.setZoomPath(newPath);
+                      }}
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="truncate flex-1 min-w-0 group-hover:font-medium transition-all">
+                          {group.displayLabel}
+                        </span>
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
+                          <span className="text-slate-500">
+                            {group.formattedValue}
                           </span>
-                          <span className="text-slate-500 ml-2 shrink-0">
-                            {formattedValue}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${percentage}%` }}
-                          />
+                          <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="w-full bg-slate-200 rounded-full h-1.5">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-200",
+                            isActive
+                              ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
+                              : "bg-gradient-to-r from-slate-400 to-slate-600 group-hover:from-indigo-500 group-hover:to-indigo-700",
+                          )}
+                          style={{ width: `${group.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                {dimensionGroups.size > 5 && (
+                  <div className="text-xs text-slate-400 pt-1">
+                    +{dimensionGroups.size - 5} more
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

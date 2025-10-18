@@ -157,17 +157,12 @@ export function CubeSunburst({
                   {nodes.map((node) => {
                     const nivoNode = node.data as NivoSunburstNode;
 
-                    // Check if this specific node is in the current zoom path by comparing full paths
-                    const isInZoomPath =
+                    // Check if this node is at the current zoom level only (not the full path)
+                    const isAtCurrentLevel =
                       currentZoomPath.length > 0 &&
                       nivoNode.path &&
-                      currentZoomPath.some((_, index) => {
-                        // Build the path up to this level from the zoom path
-                        const zoomPathUpToLevel = currentZoomPath.slice(
-                          0,
-                          index + 1,
-                        );
-                        const zoomPathString = zoomPathUpToLevel
+                      nivoNode.path ===
+                        currentZoomPath
                           .map((p) => {
                             // Find the dimension to get the correct key format
                             const dim = dimensions.find(
@@ -179,10 +174,8 @@ export function CubeSunburst({
                             return `${p.dimensionId}:${key}`;
                           })
                           .join("|");
-                        return nivoNode.path === zoomPathString;
-                      });
 
-                    if (!isInZoomPath || !node.arc) return null;
+                    if (!isAtCurrentLevel || !node.arc) return null;
 
                     // Draw a highlighted border for zoomed nodes
                     const arc = arcGenerator(node.arc);

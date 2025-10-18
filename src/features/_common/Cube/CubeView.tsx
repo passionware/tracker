@@ -214,14 +214,6 @@ export function CubeView({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium text-slate-600">
-                    Raw Data Items
-                  </h4>
-                  <div className="text-xs text-slate-500">
-                    {cube.totalItems} items
-                  </div>
-                </div>
                 {renderRawData ? (
                   renderRawData(cube.filteredData, {
                     dimensionId: "root",

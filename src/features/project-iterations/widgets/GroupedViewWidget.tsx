@@ -2,27 +2,20 @@ import {
   GeneratedReportSource,
   generatedReportSourceQueryUtils,
 } from "@/api/generated-report-source/generated-report-source.api.ts";
-import { Badge } from "@/components/ui/badge.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
-import {
-  type DimensionDescriptor,
-  type MeasureDescriptor,
-} from "@/features/_common/Cube/CubeService.types.ts";
 import {
   CubeView,
   type CubeViewProps,
 } from "@/features/_common/Cube/CubeView.tsx";
 import type { PathItem } from "@/features/_common/Cube/useCubeState.ts";
-import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
-import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
+import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { routingUtils } from "@/services/front/RoutingService/RoutingService.ts";
 import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { rd } from "@passionware/monads";
 import { useEffect, useMemo } from "react";
 import { useMatch, useNavigate } from "react-router-dom";
-import { useCubeDefinitions } from "./CubeDefinitions";
 
 // Type for time entry data
 type TimeEntry = GenericReport["timeEntries"][0];
@@ -77,6 +70,9 @@ function TimeEntriesForCube({
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const navigate = useNavigate();
 
+  // Use shared cube state from context instead of creating our own
+  const { state: cubeState, dimensions } = useCubeContext();
+
   // Use useMatch to get the wildcard path parameter
   const match = useMatch(
     "/w/:workspaceId/clients/:clientId/project/:projectId/iteration/:iterationId/generated-reports/:reportId/grouped-view/*",
@@ -96,26 +92,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       return { dimensionId, valueStr };
     });
   }, [match?.params]);
-
-  // Get shared cube definitions
-  const { dimensions, measures } = useCubeDefinitions(
-    props.report,
-    props.services,
-  );
-
-  // Initialize cube state
-  const cubeState = useCubeState({
-    data: props.report.data.timeEntries,
-    dimensions: dimensions as DimensionDescriptor<TimeEntry, unknown>[],
-    measures: measures as MeasureDescriptor<TimeEntry, unknown>[],
-    initialDefaultDimensionSequence: [
-      "project",
-      "task",
-      "activity",
-      "contractor",
-    ],
-    includeItems: true, // Enable raw data viewing
-  });
 
   // Sync cube path from URL on mount (resolve keys to actual values using dimensions & data)
   useEffect(() => {
@@ -194,14 +170,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const renderRawData: CubeViewProps["renderRawData"] = (items) => {
     return (
       <div className="mt-4">
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-slate-600 mb-2">
-            Raw Time Entries
-          </h4>
-          <Badge variant="secondary" className="text-xs">
-            {items.length} entries
-          </Badge>
-        </div>
         <TimeEntriesForCube
           timeEntries={items as TimeEntry[]}
           report={props.report}
@@ -211,26 +179,15 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
     );
   };
 
-  // Create context value
-  const contextValue = {
-    state: cubeState,
-    dimensions,
-    measures,
-    data: props.report.data.timeEntries,
-    reportId: String(props.report.id),
-  };
-
   return (
-    <CubeProvider value={contextValue}>
-      <CubeView
-        className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col"
-        state={cubeState}
-        renderRawData={renderRawData}
-        enableDimensionPicker={true}
-        enableRawDataView={true}
-        enableZoomIn={true}
-        showGrandTotals={false} // Disable internal sidebar since we'll use context-based components
-      />
-    </CubeProvider>
+    <CubeView
+      className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col"
+      state={cubeState}
+      renderRawData={renderRawData}
+      enableDimensionPicker={true}
+      enableRawDataView={true}
+      enableZoomIn={true}
+      showGrandTotals={false} // Disable internal sidebar since we'll use context-based components
+    />
   );
 }
