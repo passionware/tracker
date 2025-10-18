@@ -70,14 +70,15 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
   return (
     <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
       <div className="p-4 space-y-4 flex-1">
-        {/* Current Location Breadcrumb */}
-        {state.path.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-slate-700">
-                  Current Location
-                </CardTitle>
+        {/* Summary Statistics */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-slate-700">
+                Summary{" "}
+                {state.path.length > 0 ? "(Current Level)" : "(All Data)"}
+              </CardTitle>
+              {state.path.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -91,39 +92,8 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
                 >
                   <ArrowUp className="h-3 w-3" />
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs text-slate-600 space-y-1">
-                {state.path.map((pathItem, index) => {
-                  const dimension = dimensions.find(
-                    (d) => d.id === pathItem.dimensionId,
-                  );
-
-                  // Use the dimension's formatValue function which should handle contractor names correctly
-                  const formattedValue = dimension?.formatValue
-                    ? dimension.formatValue(pathItem.dimensionValue)
-                    : String(pathItem.dimensionValue);
-
-                  return (
-                    <div key={index} className="flex items-center gap-1">
-                      {dimension?.icon && <span>{dimension.icon}</span>}
-                      <span className="font-medium">{dimension?.name}:</span>
-                      <span>{formattedValue}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Summary Statistics */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700">
-              Summary {state.path.length > 0 ? "(Current Level)" : "(All Data)"}
-            </CardTitle>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {measures.map((measure) => {
