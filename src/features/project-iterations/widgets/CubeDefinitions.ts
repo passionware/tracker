@@ -7,6 +7,8 @@
 
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
+import { rd } from "@passionware/monads";
 import { useMemo } from "react";
 import type {
   DimensionDescriptor,
@@ -18,7 +20,28 @@ export function useCubeDefinitions(
   report: GeneratedReportSource,
   services: WithFrontServices["services"],
 ) {
+  // Get unique contractor IDs from the report
+  const contractorIds = useMemo(() => {
+    const uniqueIds = new Set(
+      report.data.timeEntries.map((entry) => entry.contractorId),
+    );
+    return Array.from(uniqueIds);
+  }, [report.data.timeEntries]);
+
+  // Fetch contractor data
+  const contractorsQuery = services.contractorService.useContractors(
+    contractorQueryUtils.getBuilder().build((q) => [
+      q.withFilter("id", {
+        operator: "oneOf",
+        value: contractorIds,
+      }),
+    ]),
+  );
+
   return useMemo(() => {
+    // Get contractor data for name resolution
+    const contractors = rd.mapOrElse(contractorsQuery, (data) => data, []);
+
     const dimensions: DimensionDescriptor<CubeDataItem, unknown>[] = [
       {
         id: "project",
@@ -38,7 +61,17 @@ export function useCubeDefinitions(
         icon: "👤",
         getValue: (item) => item.contractorId,
         getKey: (value) => String(value ?? "null"),
-        formatValue: (value) => String(value ?? "Unknown"),
+        formatValue: (value) => {
+          const contractorId = value as string;
+          const contractor = contractors.find(
+            (c: any) => c.id === contractorId,
+          );
+          return (
+            contractor?.fullName ||
+            contractor?.name ||
+            String(value ?? "Unknown")
+          );
+        },
       },
       {
         id: "role",
@@ -205,5 +238,5 @@ export function useCubeDefinitions(
     ];
 
     return { dimensions, measures };
-  }, [report, services]);
+  }, [report, services, contractorsQuery]);
 }
