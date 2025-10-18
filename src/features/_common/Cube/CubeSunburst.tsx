@@ -293,13 +293,16 @@ export function CubeSunburst({
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-col items-start justify-between text-xs text-slate-500 gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
           <span>Current zoom</span>
         </div>
-        <div className="text-center">
-          Click segments to zoom • Click center to reset
+        <div className="text-center whitespace-nowrap flex-shrink-0">
+          Click segments to zoom
+        </div>
+        <div className="text-center whitespace-nowrap flex-shrink-0">
+          Click center to reset
         </div>
       </div>
     </div>

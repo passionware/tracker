@@ -40,8 +40,10 @@ export function DimensionExplorer({}: DimensionExplorerProps) {
   // Get current zoom level data - this is what's shown in breadcrumbs
   const currentItems = state.path.length === 0 ? data : cube.filteredData || [];
 
-  // Show all dimensions at the current level (not filtered by used dimensions)
-  const sidebarDimensions = dimensions;
+  // Filter out dimensions that are already used in the current path (they would only have 1 group)
+  const sidebarDimensions = dimensions.filter((dim) => {
+    return !state.path.some((pathItem) => pathItem.dimensionId === dim.id);
+  });
 
   // Get current breakdown dimension ID for highlighting
   const currentBreakdownDimensionId =

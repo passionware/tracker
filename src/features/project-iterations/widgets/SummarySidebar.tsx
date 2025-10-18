@@ -6,7 +6,6 @@
  */
 
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
-import { WithFrontServices } from "@/core/frontServices.ts";
 import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
 import { CubeSunburst } from "@/features/_common/Cube/CubeSunburst.tsx";
 import {
@@ -25,9 +24,11 @@ import {
 } from "@/components/ui/select.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { Label } from "@/components/ui/label.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 
-interface SummarySidebarProps extends WithFrontServices {
+interface SummarySidebarProps {
   report: GeneratedReportSource;
 }
 
@@ -61,6 +62,11 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
     (d) => d.id === currentLevelDimensionId,
   );
 
+  // Filter out dimensions that are already used in the current path (they would only have 1 group)
+  const availableDimensions = dimensions.filter((dim) => {
+    return !state.path.some((pathItem) => pathItem.dimensionId === dim.id);
+  });
+
   return (
     <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
       <div className="p-4 space-y-4 flex-1">
@@ -68,19 +74,37 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
         {state.path.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">
-                Current Location
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-slate-700">
+                  Current Location
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Go to parent by removing the last path item
+                    const parentPath = state.path.slice(0, -1);
+                    state.setZoomPath(parentPath);
+                  }}
+                  className="h-6 w-6 p-0"
+                  title="Go to parent"
+                >
+                  <ArrowUp className="h-3 w-3" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-xs text-slate-600 space-y-1">
                 {state.path.map((pathItem, index) => {
-                  const dimension = useCubeContext().dimensions.find(
+                  const dimension = dimensions.find(
                     (d) => d.id === pathItem.dimensionId,
                   );
+
+                  // Use the dimension's formatValue function which should handle contractor names correctly
                   const formattedValue = dimension?.formatValue
                     ? dimension.formatValue(pathItem.dimensionValue)
                     : String(pathItem.dimensionValue);
+
                   return (
                     <div key={index} className="flex items-center gap-1">
                       {dimension?.icon && <span>{dimension.icon}</span>}
@@ -158,7 +182,7 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
                   <span className="mr-2">📊</span>
                   Raw Data
                 </SelectItem>
-                {dimensions.map((dim) => (
+                {availableDimensions.map((dim) => (
                   <SelectItem key={dim.id} value={dim.id} className="text-xs">
                     {dim.icon && <span className="mr-2">{dim.icon}</span>}
                     {dim.name}
@@ -194,8 +218,8 @@ export function SummarySidebar({ report }: SummarySidebarProps) {
             {/* Sunburst Chart */}
             <CubeSunburst
               state={state}
-              measure={selectedMeasure as any}
-              dimensions={dimensions as any}
+              measure={selectedMeasure}
+              dimensions={dimensions}
               maxLevels={4}
               rootData={showAllLevels ? report.data.timeEntries : currentItems}
             />

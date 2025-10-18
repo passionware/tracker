@@ -1,6 +1,7 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ClientSpec,
@@ -15,6 +16,57 @@ import { DimensionExplorer } from "./DimensionExplorer";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { useCubeDefinitions } from "./CubeDefinitions";
+
+// Separate component to handle cube logic and avoid hooks order issues
+function GroupedViewWithCube({
+  report,
+  services,
+}: {
+  report: GeneratedReportSource;
+  services: WithFrontServices["services"];
+}) {
+  // Create shared cube state and definitions at the top level
+  const { dimensions, measures } = useCubeDefinitions(report, services);
+  const cubeState = useCubeState({
+    data: report.data.timeEntries,
+    dimensions,
+    measures,
+    initialDefaultDimensionSequence: [
+      "project",
+      "contractor",
+      "role",
+      "task",
+      "activity",
+    ],
+    includeItems: true,
+  });
+
+  // Create context value
+  const contextValue = {
+    state: cubeState,
+    dimensions,
+    measures,
+    data: report.data.timeEntries,
+    reportId: String(report.id),
+  };
+
+  return (
+    <CubeProvider value={contextValue}>
+      {/* Left column - summary sidebar */}
+      <SummarySidebar report={report} />
+
+      {/* Middle column - main cube analysis */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full w-full">
+          <GroupedViewWidget report={report} services={services} />
+        </div>
+      </div>
+
+      {/* Right column - dimension selector + charts */}
+      <DimensionExplorer report={report} services={services} />
+    </CubeProvider>
+  );
+}
 
 interface GroupedViewPageProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -100,10 +152,60 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
         {rd
           .journey(generatedReport)
           .wait(
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-slate-600">Loading report data...</p>
+            <div className="flex-1 overflow-hidden flex">
+              {/* Left sidebar skeleton */}
+              <div className="w-80 border-r border-slate-200 bg-white p-4 space-y-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              </div>
+
+              {/* Main content skeleton */}
+              <div className="flex-1 bg-white p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-8 w-24" />
+                  </div>
+                  <div className="space-y-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right sidebar skeleton */}
+              <div className="w-80 border-l border-slate-200 bg-white p-4 space-y-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
               </div>
             </div>,
           )
@@ -118,55 +220,13 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
               </div>
             </div>
           ))
-          .map((report) => {
-            // Create shared cube state and definitions at the top level
-            const { dimensions, measures } = useCubeDefinitions(
-              report,
-              props.services,
-            );
-            const cubeState = useCubeState({
-              data: report.data.timeEntries,
-              dimensions: dimensions as any,
-              measures: measures as any,
-              initialDefaultDimensionSequence: [
-                "project",
-                "contractor",
-                "role",
-                "task",
-                "activity",
-              ],
-              includeItems: true,
-            });
-
-            // Create context value
-            const contextValue = {
-              state: cubeState,
-              dimensions,
-              measures,
-              data: report.data.timeEntries,
-              reportId: String(report.id),
-            };
-
-            return (
-              <CubeProvider value={contextValue}>
-                {/* Left column - summary sidebar */}
-                <SummarySidebar report={report} services={props.services} />
-
-                {/* Middle column - main cube analysis */}
-                <div className="flex-1 overflow-hidden">
-                  <div className="h-full w-full">
-                    <GroupedViewWidget
-                      report={report}
-                      services={props.services}
-                    />
-                  </div>
-                </div>
-
-                {/* Right column - dimension selector + charts */}
-                <DimensionExplorer report={report} services={props.services} />
-              </CubeProvider>
-            );
-          })}
+          .map((report) => (
+            <GroupedViewWithCube
+              key={report.id}
+              report={report}
+              services={props.services}
+            />
+          ))}
       </div>
     </div>
   );
