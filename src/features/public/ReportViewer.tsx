@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   FileText,
@@ -24,6 +23,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import { ReportData } from "./ReportExplorer";
 
 interface ReportViewerProps {
@@ -86,70 +86,6 @@ export function ReportViewer({
     link.download = report.name;
     link.click();
     URL.revokeObjectURL(url);
-  };
-
-  const renderJsonValue = (value: any, depth = 0): React.ReactNode => {
-    if (value === null)
-      return <span className="text-muted-foreground">null</span>;
-    if (typeof value === "string")
-      return <span className="text-green-600">"{value}"</span>;
-    if (typeof value === "number")
-      return <span className="text-blue-600">{value}</span>;
-    if (typeof value === "boolean")
-      return <span className="text-purple-600">{value.toString()}</span>;
-
-    if (Array.isArray(value)) {
-      return (
-        <div className="ml-4">
-          <span className="text-muted-foreground">[</span>
-          {value.length > 0 && (
-            <div className="ml-4">
-              {value.slice(0, 3).map((item, index) => (
-                <div key={index}>
-                  {renderJsonValue(item, depth + 1)}
-                  {index < value.length - 1 && (
-                    <span className="text-muted-foreground">,</span>
-                  )}
-                </div>
-              ))}
-              {value.length > 3 && (
-                <span className="text-muted-foreground">
-                  ... and {value.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
-          <span className="text-muted-foreground">]</span>
-        </div>
-      );
-    }
-
-    if (typeof value === "object") {
-      const keys = Object.keys(value);
-      return (
-        <div className="ml-4">
-          <span className="text-muted-foreground">{"{"}</span>
-          {keys.slice(0, 3).map((key, index) => (
-            <div key={key} className="ml-4">
-              <span className="text-orange-600">"{key}"</span>
-              <span className="text-muted-foreground">: </span>
-              {renderJsonValue(value[key], depth + 1)}
-              {index < keys.length - 1 && (
-                <span className="text-muted-foreground">,</span>
-              )}
-            </div>
-          ))}
-          {keys.length > 3 && (
-            <span className="text-muted-foreground">
-              ... and {keys.length - 3} more properties
-            </span>
-          )}
-          <span className="text-muted-foreground">{"}"}</span>
-        </div>
-      );
-    }
-
-    return <span>{String(value)}</span>;
   };
 
   if (reports.length === 0) {
@@ -236,11 +172,12 @@ export function ReportViewer({
             <CollapsibleContent>
               <Separator />
               <CardContent className="pt-4">
-                <ScrollArea className="h-64 w-full">
-                  <pre className="text-sm font-mono">
-                    {renderJsonValue(report.data)}
-                  </pre>
-                </ScrollArea>
+                <JsonTreeViewer
+                  data={report.data}
+                  title="Data Preview"
+                  className="h-64"
+                  initiallyExpanded={false}
+                />
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
@@ -262,11 +199,12 @@ export function ReportViewer({
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-96 w-full">
-                <pre className="text-sm font-mono whitespace-pre-wrap">
-                  {JSON.stringify(selectedReport.data, null, 2)}
-                </pre>
-              </ScrollArea>
+              <JsonTreeViewer
+                data={selectedReport.data}
+                title="Report Data"
+                className="h-96"
+                initiallyExpanded={true}
+              />
             </CardContent>
           </Card>
         </div>

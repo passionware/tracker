@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +17,8 @@ import {
 } from "@/features/_common/Cube";
 import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView";
 import { useCubeState } from "@/features/_common/Cube/useCubeState";
+import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
+import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import { Grid3X3, Code, ArrowLeft } from "lucide-react";
 
 interface CubeViewerProps {
@@ -75,9 +77,12 @@ export function CubeViewer({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm font-mono whitespace-pre-wrap overflow-auto max-h-96">
-                {JSON.stringify(serializedConfig, null, 2)}
-              </pre>
+              <JsonTreeViewer
+                data={serializedConfig}
+                title="Serialized Configuration"
+                className="h-96"
+                initiallyExpanded={true}
+              />
             </CardContent>
           </Card>
         </div>
@@ -85,11 +90,18 @@ export function CubeViewer({
     );
   }
 
-  // Create cube state from serialized config
+  // Deserialize the cube configuration properly
+  const cubeConfig = useMemo(() => {
+    return deserializeCubeConfig(
+      serializedConfig.config,
+      serializedConfig.data,
+    );
+  }, [serializedConfig.config, serializedConfig.data]);
+
   const cubeState = useCubeState({
-    data: serializedConfig.data,
-    dimensions: serializedConfig.config.dimensions,
-    measures: serializedConfig.config.measures,
+    data: cubeConfig.data,
+    dimensions: cubeConfig.dimensions,
+    measures: cubeConfig.measures,
     includeItems: true,
     rawDataDimension: {
       id: "raw-data",
@@ -185,9 +197,12 @@ export function CubeViewer({
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-full">
-                <pre className="text-sm font-mono whitespace-pre-wrap overflow-auto h-full">
-                  {JSON.stringify(serializedConfig, null, 2)}
-                </pre>
+                <JsonTreeViewer
+                  data={serializedConfig}
+                  title="Serialized Cube Configuration"
+                  className="h-full"
+                  initiallyExpanded={true}
+                />
               </CardContent>
             </Card>
           </div>
