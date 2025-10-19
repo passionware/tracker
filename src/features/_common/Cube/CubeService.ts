@@ -277,21 +277,36 @@ export function calculateCube<TData extends CubeDataItem>(
 
   if (config.dimensions.length > 0) {
     if (zoomPath.length === 0) {
-      // Normal mode: build from root using first dimension
-      const rootDimensionId = config.dimensions[0].id;
-      groups = buildGroupsWithBreakdownMap(
-        filteredData,
-        rootDimensionId,
-        config.nodeStates,
-        config.dimensions,
-        activeMeasures,
-        "",
-        maxDepth,
-        0,
-        includeItems,
-        skipEmptyGroups,
-        config.dimensions.map((d) => d.id),
-      );
+      // Normal mode: build from root - check for user override first
+      let rootDimensionId = config.dimensions[0].id; // Default to first dimension
+
+      // Check if user has overridden the root dimension
+      if (config.nodeStates) {
+        const rootState = config.nodeStates.get("");
+        if (
+          rootState?.childDimensionId !== undefined &&
+          rootState.childDimensionId !== null
+        ) {
+          rootDimensionId = rootState.childDimensionId;
+        }
+      }
+
+      // Only build groups if we have a valid dimension (not null)
+      if (rootDimensionId) {
+        groups = buildGroupsWithBreakdownMap(
+          filteredData,
+          rootDimensionId,
+          config.nodeStates,
+          config.dimensions,
+          activeMeasures,
+          "",
+          maxDepth,
+          0,
+          includeItems,
+          skipEmptyGroups,
+          config.dimensions.map((d) => d.id),
+        );
+      }
     } else {
       // Zoom mode: find what dimension to use for children of the zoomed node
       const zoomPathString = zoomPath

@@ -69,15 +69,14 @@ export function findFirstUnusedDimension(
     nodePath.split("|").map((segment) => segment.split(":")[0]),
   );
 
-  // Consider any dimensions that are explicitly set in node states as "used"
-  nodeStates.forEach((state) => {
-    if (
-      state.childDimensionId !== undefined &&
-      state.childDimensionId !== null
-    ) {
-      usedDimensions.add(state.childDimensionId);
-    }
-  });
+  // Consider the root dimension as "used" if it was overridden
+  const rootState = nodeStates.get("");
+  if (
+    rootState?.childDimensionId !== undefined &&
+    rootState.childDimensionId !== null
+  ) {
+    usedDimensions.add(rootState.childDimensionId);
+  }
 
   // Find first dimension from priority list that isn't used
   for (const dimensionId of priorityList) {
