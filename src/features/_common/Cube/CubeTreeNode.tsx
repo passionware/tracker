@@ -200,27 +200,6 @@ export function CubeTreeNode({
                 </motion.div>
               )}
 
-              {/* Raw data button - show when raw data is available and not auto-showing it */}
-              {hasRawData && (
-                <motion.div variants={buttonVariants}>
-                  <SimpleTooltip title="View raw data items">
-                    <Button
-                      variant={
-                        isExpanded && showRawData ? "secondary" : "ghost"
-                      }
-                      size="sm"
-                      className="h-6 px-2 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewRawData();
-                      }}
-                    >
-                      📊 Data
-                    </Button>
-                  </SimpleTooltip>
-                </motion.div>
-              )}
-
               {/* Dimension selection buttons - always show when available */}
               {availableDimensionsForGroup.length > 0 &&
                 availableDimensionsForGroup.map((dim) => (
@@ -253,6 +232,26 @@ export function CubeTreeNode({
                     </SimpleTooltip>
                   </motion.div>
                 ))}
+              {/* Raw data button - show when raw data is available and not auto-showing it */}
+              {hasRawData && (
+                <motion.div variants={buttonVariants}>
+                  <SimpleTooltip title="View raw data items">
+                    <Button
+                      variant={
+                        isExpanded && showRawData ? "secondary" : "ghost"
+                      }
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewRawData();
+                      }}
+                    >
+                      📊 Data
+                    </Button>
+                  </SimpleTooltip>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
