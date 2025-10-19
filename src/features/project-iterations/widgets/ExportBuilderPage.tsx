@@ -30,6 +30,7 @@ import { CubeView } from "@/features/_common/Cube/CubeView.tsx";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
 import { useReportCube } from "./useReportCube";
 import { transformAndAnonymize } from "./reportCubeTransformation";
+import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -125,7 +126,13 @@ function ExportBuilderContent({
       contractorQueryUtils.getBuilder().build((q) => [
         q.withFilter("id", {
           operator: "oneOf",
-          value: Array.from(new Set(data.map((entry) => entry.contractorId))),
+          value: Array.from(
+            new Set(
+              data
+                .map((entry) => entry.contractorId)
+                .filter((id): id is number => id !== undefined),
+            ),
+          ),
         }),
       ]),
     ),
@@ -545,14 +552,13 @@ function ExportBuilderContent({
                     </StoryLayoutWrapper>
                   </CubeProvider>
                 ) : (
-                  <div className="h-full p-4 bg-slate-50">
-                    <div className="h-full overflow-auto">
-                      <pre className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {serializableConfig
-                          ? JSON.stringify(serializableConfig, null, 2)
-                          : "No configuration available"}
-                      </pre>
-                    </div>
+                  <div className="h-full p-4">
+                    <JsonTreeViewer
+                      data={serializableConfig || {}}
+                      title="Cube Configuration"
+                      className="h-full"
+                      initiallyExpanded={true}
+                    />
                   </div>
                 )}
               </div>
