@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Check } from "lucide-react";
 import * as React from "react";
+import { Label } from "./label";
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
@@ -24,4 +25,53 @@ const Checkbox = React.forwardRef<
 ));
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
-export { Checkbox };
+// CheckboxWithLabel component
+interface CheckboxWithLabelProps {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  title: string;
+  description?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+const CheckboxWithLabel = React.forwardRef<
+  HTMLLabelElement,
+  CheckboxWithLabelProps
+>(
+  (
+    { id, checked, onCheckedChange, title, description, className, disabled },
+    ref,
+  ) => (
+    <Label
+      ref={ref}
+      htmlFor={id}
+      className={cn(
+        "hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+        "has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50",
+        "dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950",
+        disabled && "opacity-50 cursor-not-allowed",
+        className,
+      )}
+    >
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+        className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+      />
+      <div className="grid gap-1.5 font-normal">
+        <p className="text-sm leading-none font-medium">{title}</p>
+        {description && (
+          <p className="text-muted-foreground text-sm">{description}</p>
+        )}
+      </div>
+    </Label>
+  ),
+);
+
+CheckboxWithLabel.displayName = "CheckboxWithLabel";
+
+export { Checkbox, CheckboxWithLabel };

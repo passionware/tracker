@@ -18,7 +18,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { CheckboxWithLabel } from "@/components/ui/checkbox.tsx";
 import {
   Select,
   SelectContent,
@@ -294,16 +294,13 @@ function ExportBuilderContent({
                     name="flattening.enabled"
                     control={control}
                     render={({ field }) => (
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="enable-flattening"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                        <Label htmlFor="enable-flattening">
-                          Enable data flattening
-                        </Label>
-                      </div>
+                      <CheckboxWithLabel
+                        id="enable-flattening"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        title="Enable data flattening"
+                        description="Flatten data for pre-aggregation (e.g., merge daily entries)"
+                      />
                     )}
                   />
 
@@ -318,24 +315,21 @@ function ExportBuilderContent({
                           name="flattening.flattenDimensions"
                           control={control}
                           render={({ field }) => (
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`flatten-${dim.id}`}
-                                checked={field.value.includes(dim.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, dim.id]);
-                                  } else {
-                                    field.onChange(
-                                      field.value.filter((id) => id !== dim.id),
-                                    );
-                                  }
-                                }}
-                              />
-                              <Label htmlFor={`flatten-${dim.id}`}>
-                                {dim.name}
-                              </Label>
-                            </div>
+                            <CheckboxWithLabel
+                              id={`flatten-${dim.id}`}
+                              checked={field.value.includes(dim.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([...field.value, dim.id]);
+                                } else {
+                                  field.onChange(
+                                    field.value.filter((id) => id !== dim.id),
+                                  );
+                                }
+                              }}
+                              title={dim.name}
+                              description={`Flatten data by ${dim.name} dimension`}
+                            />
                           )}
                         />
                       ))}
@@ -386,8 +380,8 @@ function ExportBuilderContent({
                       name="selectedDimensions"
                       control={control}
                       render={({ field }) => (
-                        <div className="flex items-center space-x-2 p-2 border rounded">
-                          <Checkbox
+                        <div className="flex items-center gap-3">
+                          <CheckboxWithLabel
                             id={`dimension-${dim.id}`}
                             checked={field.value.includes(dim.id)}
                             onCheckedChange={(checked) => {
@@ -399,13 +393,10 @@ function ExportBuilderContent({
                                 );
                               }
                             }}
-                          />
-                          <Label
-                            htmlFor={`dimension-${dim.id}`}
+                            title={dim.name}
+                            description={`Include ${dim.name} in export`}
                             className="flex-1"
-                          >
-                            {dim.name}
-                          </Label>
+                          />
                           <Badge variant="secondary">{dim.id}</Badge>
                         </div>
                       )}
@@ -429,8 +420,8 @@ function ExportBuilderContent({
                       name="selectedMeasures"
                       control={control}
                       render={({ field }) => (
-                        <div className="flex items-center space-x-2 p-2 border rounded">
-                          <Checkbox
+                        <div className="flex items-center gap-3">
+                          <CheckboxWithLabel
                             id={`measure-${measure.id}`}
                             checked={field.value.includes(measure.id)}
                             onCheckedChange={(checked) => {
@@ -442,13 +433,10 @@ function ExportBuilderContent({
                                 );
                               }
                             }}
-                          />
-                          <Label
-                            htmlFor={`measure-${measure.id}`}
+                            title={measure.name}
+                            description={`Include ${measure.name} in export`}
                             className="flex-1"
-                          >
-                            {measure.name}
-                          </Label>
+                          />
                           <Badge variant="secondary">{measure.id}</Badge>
                         </div>
                       )}
