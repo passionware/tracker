@@ -16,8 +16,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
 import { CheckboxWithLabel } from "@/components/ui/checkbox.tsx";
+import { SortableList, type SortableItem } from "@/components/ui/SortableList";
 import { Download, Eye, ArrowLeft, Code } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -154,12 +154,14 @@ function ExportBuilderContent({
     (dim) => !isDimensionDisabled(dim.id),
   );
 
-  const selectedDimensions = availableDimensions.filter((dim) =>
-    watchedValues.selectedDimensions.includes(dim.id),
-  );
-  const selectedMeasures = measures.filter((measure) =>
-    watchedValues.selectedMeasures.includes(measure.id),
-  );
+  // Maintain order from form state for dimensions and measures
+  const selectedDimensions = watchedValues.selectedDimensions
+    .map((dimId) => availableDimensions.find((dim) => dim.id === dimId))
+    .filter(Boolean) as typeof availableDimensions;
+
+  const selectedMeasures = watchedValues.selectedMeasures
+    .map((measureId) => measures.find((measure) => measure.id === measureId))
+    .filter(Boolean) as typeof measures;
 
   // Auto-update selected dimensions if they become unavailable due to anonymization
   const currentSelectedDimensions = watchedValues.selectedDimensions;
@@ -305,7 +307,7 @@ function ExportBuilderContent({
         };
       }),
       measures: selectedMeasures,
-      activeMeasures: previewCubeState.cube.config.activeMeasures,
+      activeMeasures: watchedValues.selectedMeasures,
       listView: {
         columns: [
           {
@@ -471,7 +473,13 @@ function ExportBuilderContent({
             visible: true,
             width: "150px",
           },
-        ].filter((column) => watchedValues.selectedColumns.includes(column.id)),
+        ]
+          .filter((column) => watchedValues.selectedColumns.includes(column.id))
+          .sort((a, b) => {
+            const indexA = watchedValues.selectedColumns.indexOf(a.id);
+            const indexB = watchedValues.selectedColumns.indexOf(b.id);
+            return indexA - indexB;
+          }),
         maxInitialItems: 50,
         enablePagination: true,
         itemsPerPage: 25,
@@ -611,75 +619,39 @@ function ExportBuilderContent({
                   Select and reorder dimensions for your export
                 </p>
 
-                <div className="space-y-2">
-                  {dimensions.map((dim) => {
-                    const isDisabled = isDimensionDisabled(dim.id);
+                <Controller
+                  name="selectedDimensions"
+                  control={control}
+                  render={({ field }) => {
+                    const dimensionItems: SortableItem[] = dimensions.map(
+                      (dim) => ({
+                        id: dim.id,
+                        name: dim.name,
+                        icon: dim.icon,
+                        badge: dim.id,
+                        description: isDimensionDisabled(dim.id)
+                          ? `Cannot be used with ${
+                              dim.id === "contractor" || dim.id === "role"
+                                ? "contractor anonymization"
+                                : "time entry optimization"
+                            }`
+                          : `Include ${dim.name} in export`,
+                        disabled: isDimensionDisabled(dim.id),
+                      }),
+                    );
+
                     return (
-                      <Controller
-                        key={dim.id}
-                        name="selectedDimensions"
-                        control={control}
-                        render={({ field }) => (
-                          <div className="flex items-center gap-3">
-                            <CheckboxWithLabel
-                              id={`dimension-${dim.id}`}
-                              checked={field.value.includes(dim.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  field.onChange([...field.value, dim.id]);
-                                } else {
-                                  field.onChange(
-                                    field.value.filter((id) => id !== dim.id),
-                                  );
-                                }
-                              }}
-                              title={dim.name}
-                              description={
-                                <>
-                                  {isDisabled ? (
-                                    <>
-                                      <span className="text-amber-600">
-                                        Cannot be used with{" "}
-                                        {dim.id === "contractor" ||
-                                        dim.id === "role"
-                                          ? "contractor anonymization"
-                                          : "time entry optimization"}
-                                      </span>
-                                      <Badge
-                                        variant="secondary"
-                                        tone="secondary"
-                                        className="ml-auto"
-                                      >
-                                        {dim.id}
-                                      </Badge>
-                                    </>
-                                  ) : (
-                                    <>
-                                      Include {dim.name} in export
-                                      <Badge
-                                        variant={
-                                          field.value.includes(dim.id)
-                                            ? "info"
-                                            : "secondary"
-                                        }
-                                        tone="secondary"
-                                        className="ml-auto"
-                                      >
-                                        {dim.id}
-                                      </Badge>
-                                    </>
-                                  )}
-                                </>
-                              }
-                              className="flex-1"
-                              disabled={isDisabled}
-                            />
-                          </div>
-                        )}
+                      <SortableList
+                        items={dimensionItems}
+                        selectedItems={field.value}
+                        onSelectionChange={field.onChange}
+                        onReorder={field.onChange}
+                        showReorderHandle={true}
+                        showRemoveButton={true}
                       />
                     );
-                  })}
-                </div>
+                  }}
+                />
               </div>
             </TabsContent>
 
@@ -690,50 +662,32 @@ function ExportBuilderContent({
                   Select and reorder measures for your export
                 </p>
 
-                <div className="space-y-2">
-                  {measures.map((measure) => (
-                    <Controller
-                      key={measure.id}
-                      name="selectedMeasures"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center gap-3">
-                          <CheckboxWithLabel
-                            id={`measure-${measure.id}`}
-                            checked={field.value.includes(measure.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                field.onChange([...field.value, measure.id]);
-                              } else {
-                                field.onChange(
-                                  field.value.filter((id) => id !== measure.id),
-                                );
-                              }
-                            }}
-                            title={measure.name}
-                            description={
-                              <>
-                                Include {measure.name} in export
-                                <Badge
-                                  variant={
-                                    field.value.includes(measure.id)
-                                      ? "info"
-                                      : "secondary"
-                                  }
-                                  tone="secondary"
-                                  className="ml-auto"
-                                >
-                                  {measure.id}
-                                </Badge>
-                              </>
-                            }
-                            className="flex-1"
-                          />
-                        </div>
-                      )}
-                    />
-                  ))}
-                </div>
+                <Controller
+                  name="selectedMeasures"
+                  control={control}
+                  render={({ field }) => {
+                    const measureItems: SortableItem[] = measures.map(
+                      (measure) => ({
+                        id: measure.id,
+                        name: measure.name,
+                        icon: measure.icon,
+                        badge: measure.id,
+                        description: `Include ${measure.name} in export`,
+                      }),
+                    );
+
+                    return (
+                      <SortableList
+                        items={measureItems}
+                        selectedItems={field.value}
+                        onSelectionChange={field.onChange}
+                        onReorder={field.onChange}
+                        showReorderHandle={true}
+                        showRemoveButton={true}
+                      />
+                    );
+                  }}
+                />
               </div>
             </TabsContent>
 
@@ -744,135 +698,104 @@ function ExportBuilderContent({
                   Configure which columns to include in the exported data
                 </p>
 
-                <div className="space-y-4">
-                  {/* Available columns for listView */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Available Columns</h4>
-                    <div className="space-y-2">
-                      {[
-                        {
-                          id: "id",
-                          name: "ID",
-                          description: "Entry identifier",
-                        },
-                        {
-                          id: "note",
-                          name: "Note",
-                          description: "Entry description",
-                        },
-                        {
-                          id: "taskId",
-                          name: "Task",
-                          description: "Task type",
-                        },
-                        {
-                          id: "activityId",
-                          name: "Activity",
-                          description: "Activity type",
-                        },
-                        {
-                          id: "projectId",
-                          name: "Project",
-                          description: "Project name",
-                        },
-                        {
-                          id: "roleId",
-                          name: "Role",
-                          description: "Role type",
-                        },
-                        {
-                          id: "contractorId",
-                          name: "Contractor",
-                          description: "Contractor ID",
-                        },
-                        {
-                          id: "startAt",
-                          name: "Start Time",
-                          description: "Entry start time",
-                        },
-                        {
-                          id: "endAt",
-                          name: "End Time",
-                          description: "Entry end time",
-                        },
-                        {
-                          id: "numHours",
-                          name: "Hours",
-                          description: "Total hours worked",
-                        },
-                        {
-                          id: "costValue",
-                          name: "Cost",
-                          description: "Cost value",
-                        },
-                        {
-                          id: "billingValue",
-                          name: "Billing",
-                          description: "Billing value",
-                        },
-                        {
-                          id: "profitValue",
-                          name: "Profit",
-                          description: "Profit value",
-                        },
-                      ].map((column) => {
-                        const isDisabled =
-                          (column.id === "contractorId" &&
-                            anonymizeContractor) ||
-                          (column.id === "roleId" && anonymizeContractor) ||
-                          (column.id === "startAt" && anonymizeTimeEntries) ||
-                          (column.id === "endAt" && anonymizeTimeEntries);
+                <Controller
+                  name="selectedColumns"
+                  control={control}
+                  render={({ field }) => {
+                    const columnItems: SortableItem[] = [
+                      {
+                        id: "id",
+                        name: "ID",
+                        description: "Entry identifier",
+                      },
+                      {
+                        id: "note",
+                        name: "Note",
+                        description: "Entry description",
+                      },
+                      {
+                        id: "taskId",
+                        name: "Task",
+                        description: "Task type",
+                      },
+                      {
+                        id: "activityId",
+                        name: "Activity",
+                        description: "Activity type",
+                      },
+                      {
+                        id: "projectId",
+                        name: "Project",
+                        description: "Project name",
+                      },
+                      {
+                        id: "roleId",
+                        name: "Role",
+                        description: "Role type",
+                        disabled: anonymizeContractor,
+                      },
+                      {
+                        id: "contractorId",
+                        name: "Contractor",
+                        description: "Contractor ID",
+                        disabled: anonymizeContractor,
+                      },
+                      {
+                        id: "startAt",
+                        name: "Start Time",
+                        description: "Entry start time",
+                        disabled: anonymizeTimeEntries,
+                      },
+                      {
+                        id: "endAt",
+                        name: "End Time",
+                        description: "Entry end time",
+                        disabled: anonymizeTimeEntries,
+                      },
+                      {
+                        id: "numHours",
+                        name: "Hours",
+                        description: "Total hours worked",
+                      },
+                      {
+                        id: "costValue",
+                        name: "Cost",
+                        description: "Cost value",
+                      },
+                      {
+                        id: "billingValue",
+                        name: "Billing",
+                        description: "Billing value",
+                      },
+                      {
+                        id: "profitValue",
+                        name: "Profit",
+                        description: "Profit value",
+                      },
+                    ].map((column) => ({
+                      ...column,
+                      description: column.disabled
+                        ? `Cannot be used with ${
+                            column.id === "contractorId" ||
+                            column.id === "roleId"
+                              ? "contractor anonymization"
+                              : "time entry optimization"
+                          }`
+                        : column.description,
+                    }));
 
-                        return (
-                          <div
-                            key={column.id}
-                            className="flex items-center gap-3"
-                          >
-                            <CheckboxWithLabel
-                              id={`column-${column.id}`}
-                              checked={watchedValues.selectedColumns.includes(
-                                column.id,
-                              )}
-                              onCheckedChange={(checked) => {
-                                const currentColumns =
-                                  watchedValues.selectedColumns;
-                                if (checked) {
-                                  form.setValue("selectedColumns", [
-                                    ...currentColumns,
-                                    column.id,
-                                  ]);
-                                } else {
-                                  form.setValue(
-                                    "selectedColumns",
-                                    currentColumns.filter(
-                                      (id) => id !== column.id,
-                                    ),
-                                  );
-                                }
-                              }}
-                              disabled={isDisabled}
-                              title={column.name}
-                              description={
-                                isDisabled ? (
-                                  <span className="text-amber-600">
-                                    Cannot be used with{" "}
-                                    {column.id === "contractorId" ||
-                                    column.id === "roleId"
-                                      ? "contractor anonymization"
-                                      : "time entry optimization"}
-                                  </span>
-                                ) : (
-                                  column.description
-                                )
-                              }
-                              className="flex-1"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                    return (
+                      <SortableList
+                        items={columnItems}
+                        selectedItems={field.value}
+                        onSelectionChange={field.onChange}
+                        onReorder={field.onChange}
+                        showReorderHandle={true}
+                        showRemoveButton={true}
+                      />
+                    );
+                  }}
+                />
               </div>
             </TabsContent>
           </Tabs>
