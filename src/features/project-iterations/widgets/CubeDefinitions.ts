@@ -5,17 +5,16 @@
  * across all cube-related components.
  */
 
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
-import { rd } from "@passionware/monads";
-import { useMemo } from "react";
 import {
-  type DimensionDescriptor,
-  type MeasureDescriptor,
   type CubeDataItem,
+  type MeasureDescriptor,
   withDataType,
 } from "@/features/_common/Cube/CubeService.types.ts";
+import { rd } from "@passionware/monads";
+import { useMemo } from "react";
 
 export function useCubeDefinitions(
   report: GeneratedReportSource,
@@ -231,7 +230,7 @@ export function useCubeDefinitions(
     return {
       dimensions,
       measures,
-      rawDataDimension: factory.createDimension({
+      rawDataDimension: factory.createDimension<any>({
         id: "date",
         name: "Date",
         icon: "📅",
