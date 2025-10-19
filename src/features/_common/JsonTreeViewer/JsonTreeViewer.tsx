@@ -135,6 +135,15 @@ function JsonTreeNode({
     );
   }
 
+  // Handle Date objects
+  if (value instanceof Date) {
+    return (
+      <span className="text-orange-600 bg-orange-100 rounded-sm px-1">
+        {value.toISOString()}
+      </span>
+    );
+  }
+
   // Render arrays
   if (Array.isArray(value)) {
     if (value.length === 0) {
