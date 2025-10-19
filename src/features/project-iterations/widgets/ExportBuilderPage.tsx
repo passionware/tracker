@@ -39,6 +39,7 @@ import type {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Form schema for export builder
 interface ExportBuilderFormData {
@@ -48,7 +49,7 @@ interface ExportBuilderFormData {
   };
   selectedDimensions: string[];
   selectedMeasures: string[];
-  rawDataDimension: string;
+  selectedColumns: string[];
 }
 
 export interface ExportBuilderPageProps extends WithFrontServices {
@@ -107,7 +108,21 @@ function ExportBuilderContent({
               measures.some((measure) => measure.id === id),
             )
           : [],
-      rawDataDimension: dimensions.length > 0 ? "date" : "",
+      selectedColumns: [
+        "id",
+        "note",
+        "taskId",
+        "activityId",
+        "projectId",
+        "roleId",
+        "contractorId",
+        "startAt",
+        "endAt",
+        "numHours",
+        "costValue",
+        "billingValue",
+        "profitValue",
+      ],
     },
   });
 
@@ -157,16 +172,25 @@ function ExportBuilderContent({
     form.setValue("selectedDimensions", availableSelectedDimensions);
   }
 
-  // Auto-update raw data dimension based on anonymization settings
-  const currentRawDataDimension = watchedValues.rawDataDimension;
+  // Auto-update selected columns based on anonymization settings
+  const currentSelectedColumns = watchedValues.selectedColumns;
+  let updatedColumns = [...currentSelectedColumns];
 
-  // If time entries are anonymized and current dimension is "date", switch to "entry"
-  if (anonymizeTimeEntries && currentRawDataDimension === "date") {
-    form.setValue("rawDataDimension", "entry");
+  // Remove columns that become unavailable due to anonymization
+  if (anonymizeContractor) {
+    updatedColumns = updatedColumns.filter(
+      (col) => col !== "contractorId" && col !== "roleId",
+    );
   }
-  // If time entries are not anonymized and current dimension is "entry", switch to "date"
-  else if (!anonymizeTimeEntries && currentRawDataDimension === "entry") {
-    form.setValue("rawDataDimension", "date");
+  if (anonymizeTimeEntries) {
+    updatedColumns = updatedColumns.filter(
+      (col) => col !== "startAt" && col !== "endAt",
+    );
+  }
+
+  // Update form if columns changed
+  if (updatedColumns.length !== currentSelectedColumns.length) {
+    form.setValue("selectedColumns", updatedColumns);
   }
 
   // Fetch contractor data for labelMapping
@@ -482,7 +506,7 @@ function ExportBuilderContent({
               <TabsTrigger value="anonymization">Anonymize</TabsTrigger>
               <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="measures">Measures</TabsTrigger>
-              <TabsTrigger value="raw-data">Raw Data</TabsTrigger>
+              <TabsTrigger value="raw-data">Columns</TabsTrigger>
             </TabsList>
 
             <TabsContent
@@ -664,49 +688,139 @@ function ExportBuilderContent({
 
             <TabsContent value="raw-data" className="flex-1 overflow-y-auto">
               <div className="space-y-4 p-4">
-                <h3 className="text-lg font-semibold">
-                  Raw Data Configuration
-                </h3>
+                <h3 className="text-lg font-semibold">Column Configuration</h3>
                 <p className="text-sm text-slate-600">
-                  Configure how raw data is displayed
+                  Configure which columns to include in the exported data
                 </p>
 
                 <div className="space-y-4">
-                  <Controller
-                    name="rawDataDimension"
-                    control={control}
-                    render={({ field }) => (
-                      <div>
-                        <label className="text-sm font-medium">
-                          Raw Data Dimension
-                        </label>
-                        <select
-                          className="w-full mt-1 p-2 border rounded"
-                          value={field.value}
-                          onChange={field.onChange}
-                        >
-                          <option value="">
-                            Select dimension for raw data
-                          </option>
-                          {dimensions.map((dim) => {
-                            const isDisabled = isDimensionDisabled(dim.id);
-                            return (
-                              <option
-                                key={dim.id}
-                                value={dim.id}
-                                disabled={isDisabled}
-                              >
-                                {dim.name}
-                                {isDisabled
-                                  ? " (disabled due to anonymization)"
-                                  : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    )}
-                  />
+                  {/* Available columns for listView */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Available Columns</h4>
+                    <div className="space-y-2">
+                      {[
+                        {
+                          id: "id",
+                          name: "ID",
+                          description: "Entry identifier",
+                        },
+                        {
+                          id: "note",
+                          name: "Note",
+                          description: "Entry description",
+                        },
+                        {
+                          id: "taskId",
+                          name: "Task",
+                          description: "Task type",
+                        },
+                        {
+                          id: "activityId",
+                          name: "Activity",
+                          description: "Activity type",
+                        },
+                        {
+                          id: "projectId",
+                          name: "Project",
+                          description: "Project name",
+                        },
+                        {
+                          id: "roleId",
+                          name: "Role",
+                          description: "Role type",
+                        },
+                        {
+                          id: "contractorId",
+                          name: "Contractor",
+                          description: "Contractor ID",
+                        },
+                        {
+                          id: "startAt",
+                          name: "Start Time",
+                          description: "Entry start time",
+                        },
+                        {
+                          id: "endAt",
+                          name: "End Time",
+                          description: "Entry end time",
+                        },
+                        {
+                          id: "numHours",
+                          name: "Hours",
+                          description: "Total hours worked",
+                        },
+                        {
+                          id: "costValue",
+                          name: "Cost",
+                          description: "Cost value",
+                        },
+                        {
+                          id: "billingValue",
+                          name: "Billing",
+                          description: "Billing value",
+                        },
+                        {
+                          id: "profitValue",
+                          name: "Profit",
+                          description: "Profit value",
+                        },
+                      ].map((column) => {
+                        const isDisabled =
+                          (column.id === "contractorId" &&
+                            anonymizeContractor) ||
+                          (column.id === "roleId" && anonymizeContractor) ||
+                          (column.id === "startAt" && anonymizeTimeEntries) ||
+                          (column.id === "endAt" && anonymizeTimeEntries);
+
+                        return (
+                          <div
+                            key={column.id}
+                            className="flex items-center gap-3"
+                          >
+                            <CheckboxWithLabel
+                              id={`column-${column.id}`}
+                              checked={watchedValues.selectedColumns.includes(
+                                column.id,
+                              )}
+                              onCheckedChange={(checked) => {
+                                const currentColumns =
+                                  watchedValues.selectedColumns;
+                                if (checked) {
+                                  form.setValue("selectedColumns", [
+                                    ...currentColumns,
+                                    column.id,
+                                  ]);
+                                } else {
+                                  form.setValue(
+                                    "selectedColumns",
+                                    currentColumns.filter(
+                                      (id) => id !== column.id,
+                                    ),
+                                  );
+                                }
+                              }}
+                              disabled={isDisabled}
+                              title={column.name}
+                              description={
+                                isDisabled ? (
+                                  <span className="text-amber-600">
+                                    Cannot be used with{" "}
+                                    {column.id === "contractorId" ||
+                                    column.id === "roleId"
+                                      ? "contractor anonymization"
+                                      : "time entry optimization"}
+                                  </span>
+                                ) : (
+                                  column.description
+                                )
+                              }
+                              className="flex-1"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -813,19 +927,11 @@ export function ExportBuilderPage(props: ExportBuilderPageProps) {
   return rd
     .journey(generatedReport)
     .wait(
-      <div className="min-h-screen bg-slate-50">
-        <div className="max-w-7xl mx-auto p-6">
+      <div className="w-full h-full bg-slate-50">
+        <div className="p-6">
           <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNavigateBack}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+            <Skeleton className="h-8 w-20" />
+            <div className="h-8 w-full bg-slate-200 rounded animate-pulse" />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-200px)]">
