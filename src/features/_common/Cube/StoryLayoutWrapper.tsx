@@ -7,30 +7,23 @@
 
 import React from "react";
 import {
-  CubeLayout,
-  CubeDimensionExplorer,
-  CubeSummary,
   CubeBreakdownControl,
+  CubeDimensionExplorer,
   CubeHierarchicalBreakdown,
-  CubeProvider,
+  CubeLayout,
+  CubeSummary,
 } from "./index.ts";
 
 interface StoryLayoutWrapperProps {
   title: string;
   description: string;
   children: React.ReactNode;
-  showSidebars?: boolean;
-  cubeState?: any;
-  reportId?: string;
 }
 
 export function StoryLayoutWrapper({
   title,
   description,
   children,
-  showSidebars = true,
-  cubeState,
-  reportId = "story",
 }: StoryLayoutWrapperProps) {
   const content = (
     <div className="h-full flex flex-col bg-slate-50">
@@ -46,39 +39,26 @@ export function StoryLayoutWrapper({
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden flex">
-        {showSidebars ? (
-          <CubeLayout
-            className="w-full"
-            leftSidebar={
-              <>
-                <div className="p-4 space-y-4 flex-1">
-                  <CubeSummary />
-                  <CubeBreakdownControl />
-                </div>
-                <div className="p-4 pt-0">
-                  <CubeHierarchicalBreakdown />
-                </div>
-              </>
-            }
-            rightSidebar={<CubeDimensionExplorer />}
-          >
-            {children}
-          </CubeLayout>
-        ) : (
-          <div className="w-full">{children}</div>
-        )}
+        <CubeLayout
+          className="w-full"
+          leftSidebar={
+            <>
+              <div className="p-4 space-y-4 flex-1">
+                <CubeSummary />
+                <CubeBreakdownControl />
+              </div>
+              <div className="p-4 pt-0">
+                <CubeHierarchicalBreakdown />
+              </div>
+            </>
+          }
+          rightSidebar={<CubeDimensionExplorer />}
+        >
+          {children}
+        </CubeLayout>
       </div>
     </div>
   );
-
-  // Wrap with CubeProvider if cubeState is provided
-  if (cubeState) {
-    return (
-      <CubeProvider value={{ state: cubeState, reportId }}>
-        {content}
-      </CubeProvider>
-    );
-  }
 
   return content;
 }

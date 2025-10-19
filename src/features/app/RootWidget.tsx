@@ -28,6 +28,7 @@ import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
+import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 export function RootWidget(props: WithFrontServices) {
@@ -409,6 +410,8 @@ export function RootWidget(props: WithFrontServices) {
             </ProtectedRoute>
           }
         />
+        {/* Public routes - no authentication required */}
+        <Route path="/p/*" element={<PublicApp />} />
       </Routes>
       <RenderIfAuthenticated services={props.services}>
         <VariableEditModalWidget services={props.services} />

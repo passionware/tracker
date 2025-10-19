@@ -18,7 +18,14 @@ import {
 } from "@/components/ui/tabs.tsx";
 import { CheckboxWithLabel } from "@/components/ui/checkbox.tsx";
 import { SortableList, type SortableItem } from "@/components/ui/SortableList";
-import { Download, Eye, ArrowLeft, Code } from "lucide-react";
+import {
+  Download,
+  Eye,
+  ArrowLeft,
+  Code,
+  ExternalLink,
+  Grid3X3,
+} from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +38,7 @@ import { useReportCube } from "./useReportCube";
 import { transformAndAnonymize } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
+import { CubeViewer } from "@/features/public/CubeViewer";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -130,6 +138,7 @@ function ExportBuilderContent({
 
   // Preview mode state
   const [previewMode, setPreviewMode] = useState<"cube" | "json">("cube");
+  const [showCubeViewer, setShowCubeViewer] = useState(false);
 
   // Watch form values
   const watchedValues = watch();
@@ -515,6 +524,10 @@ function ExportBuilderContent({
     URL.revokeObjectURL(url);
   }, [serializableConfig]);
 
+  const handleOpenInPublic = useCallback(() => {
+    window.open("/p/explorer", "_blank");
+  }, []);
+
   const handleBack = () => {
     onNavigateBack();
   };
@@ -545,14 +558,25 @@ function ExportBuilderContent({
             </div>
           </div>
 
-          <Button
-            onClick={handleExport}
-            disabled={!serializableConfig}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export JSON
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleOpenInPublic}
+              disabled={!serializableConfig}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open Public Explorer
+            </Button>
+            <Button
+              onClick={handleExport}
+              disabled={!serializableConfig}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export JSON
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -843,8 +867,6 @@ function ExportBuilderContent({
                     <StoryLayoutWrapper
                       title="Export Preview"
                       description="Preview of your configured cube export"
-                      cubeState={previewCubeState}
-                      reportId="export-builder-preview"
                     >
                       {serializableConfig && (
                         <SerializedCubeView
