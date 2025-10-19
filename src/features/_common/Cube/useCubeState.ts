@@ -68,6 +68,8 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
   maxDepth?: number;
   /** Skip empty groups */
   skipEmptyGroups?: boolean;
+  /** Dimension to use for raw data breakdown */
+  rawDataDimension: DimensionDescriptor<TData, unknown>;
 }
 
 export interface CubeState {
@@ -102,6 +104,8 @@ export interface CubeState {
   removeFilter: (dimensionId: string) => void;
   /** Clear all filters */
   clearFilters: () => void;
+  /** Dimension to use for raw data breakdown */
+  rawDataDimension: DimensionDescriptor<any, unknown>;
 }
 
 /**
@@ -319,5 +323,6 @@ export function useCubeState<TData extends CubeDataItem>(
     addFilter,
     removeFilter,
     clearFilters,
+    rawDataDimension: props.rawDataDimension,
   };
 }

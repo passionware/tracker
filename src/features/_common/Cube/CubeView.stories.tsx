@@ -15,10 +15,10 @@ import {
   CubeView,
   type DimensionDescriptor,
   type MeasureDescriptor,
-  type CubeDataItem,
   useCubeState,
   CubeProvider,
 } from "@/features/_common/Cube/index.ts";
+import { StoryLayoutWrapper } from "./StoryLayoutWrapper.tsx";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { TimeReportingDashboard } from "./TimeReportingBI.story";
@@ -61,6 +61,50 @@ interface ProjectTimeEntry {
   notes?: string;
   billable: boolean;
 }
+
+// Raw data dimensions for different data types
+const salesRawDataDimension: DimensionDescriptor<SalesTransaction, unknown> = {
+  id: "date",
+  name: "Date",
+  icon: "📅",
+  getValue: (item) => item.date,
+  formatValue: (value) => {
+    const d = new Date(value as string | number | Date);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  },
+};
+
+const timeRawDataDimension: DimensionDescriptor<TimeEntry, unknown> = {
+  id: "date",
+  name: "Date",
+  icon: "📅",
+  getValue: (item) => item.date,
+  formatValue: (value) => {
+    const d = new Date(value as string | number | Date);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  },
+};
+
+const projectRawDataDimension: DimensionDescriptor<ProjectTimeEntry, unknown> =
+  {
+    id: "date",
+    name: "Date",
+    icon: "📅",
+    getValue: (item) => item.date,
+    formatValue: (value) => {
+      const d = new Date(value as string | number | Date);
+      return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    },
+  };
 
 // Sample sales data
 const salesData: SalesTransaction[] = [
@@ -601,7 +645,7 @@ const projectTrackingMeasures: MeasureDescriptor<ProjectTimeEntry>[] = [
 const meta: Meta<typeof CubeView> = {
   component: CubeView,
   parameters: {
-    layout: "padded",
+    layout: "fullscreen",
   },
   tags: ["autodocs"],
 };
@@ -618,17 +662,30 @@ export const SalesByRegion: Story = {
       measures: salesMeasures,
       initialGrouping: ["region"],
       activeMeasures: ["revenue", "profit"],
+      rawDataDimension: {
+        id: "date",
+        name: "Date",
+        icon: "📅",
+        getValue: (item) => item.date,
+        formatValue: (value) => {
+          const d = new Date(value as string | number | Date);
+          return d.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+        },
+      },
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "sales-by-region",
-        }}
+      <StoryLayoutWrapper
+        title="Sales by Region"
+        description="Basic sales analysis grouped by region with revenue and profit metrics"
+        cubeState={state}
+        reportId="sales-by-region"
       >
         <CubeView state={state} enableDimensionPicker={true} />
-      </CubeProvider>
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -643,17 +700,18 @@ export const SalesByRegionAndCategory: Story = {
       initialGrouping: ["region", "category", "product"],
       activeMeasures: ["revenue", "cost", "profit"],
       includeItems: true,
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "sales-by-region-category",
-        }}
+      <StoryLayoutWrapper
+        title="Sales by Region and Category"
+        description="Multi-level grouping with region → category → product hierarchy"
+        cubeState={state}
+        reportId="sales-by-region-category"
       >
         <CubeView state={state} />
-      </CubeProvider>
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -676,6 +734,7 @@ export const InteractiveSalesCube: Story = {
       initialFilters: selectedRegion
         ? [{ dimensionId: "region", operator: "equals", value: selectedRegion }]
         : [],
+      rawDataDimension: salesRawDataDimension,
     });
 
     // Update filters when selected region changes
@@ -696,16 +755,16 @@ export const InteractiveSalesCube: Story = {
     }
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "interactive-sales-cube",
-        }}
+      <StoryLayoutWrapper
+        title="Interactive Sales Cube"
+        description="Interactive cube with dynamic grouping and filtering controls"
+        cubeState={state}
+        reportId="interactive-sales-cube"
       >
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Interactive Sales Cube</CardTitle>
+              <CardTitle>Interactive Controls</CardTitle>
               <CardDescription>
                 Change grouping and filters to explore the data
               </CardDescription>
@@ -826,7 +885,7 @@ export const InteractiveSalesCube: Story = {
 
           <CubeView state={state} />
         </div>
-      </CubeProvider>
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -841,17 +900,18 @@ export const TimeTrackingCube: Story = {
       initialGrouping: ["project", "contractor", "role"],
       activeMeasures: ["hours", "cost", "billing", "profit"],
       includeItems: true,
+      rawDataDimension: timeRawDataDimension,
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "time-tracking-cube",
-        }}
+      <StoryLayoutWrapper
+        title="Time Tracking Cube"
+        description="Time tracking analysis with project, contractor, and role breakdown"
+        cubeState={state}
+        reportId="time-tracking-cube"
       >
         <CubeView state={state} />
-      </CubeProvider>
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -865,6 +925,7 @@ export const CustomRendering: Story = {
       measures: salesMeasures,
       initialGrouping: ["region", "category"],
       activeMeasures: ["revenue", "profit"],
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
@@ -922,6 +983,7 @@ export const AllMeasures: Story = {
       measures: timeMeasures,
       initialGrouping: ["project"],
       // All measures active (default)
+      rawDataDimension: timeRawDataDimension,
     });
 
     return (
@@ -945,6 +1007,7 @@ export const GrandTotalsOnly: Story = {
       dimensions: salesDimensions,
       measures: salesMeasures,
       initialGrouping: [], // No grouping
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
@@ -971,6 +1034,7 @@ export const WithRawDataView: Story = {
       activeMeasures: ["revenue", "profit"],
       // IMPORTANT: Set includeItems to true to enable raw data viewing
       includeItems: true,
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
@@ -1008,6 +1072,7 @@ export const CustomRawDataRendering: Story = {
       initialGrouping: ["region"],
       activeMeasures: ["revenue", "profit", "quantity"],
       includeItems: true,
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
@@ -1138,6 +1203,7 @@ export const ProjectTrackingByUser: Story = {
       initialGrouping: ["user", "project", "task"],
       activeMeasures: ["totalHours", "billableHours", "entryCount"],
       includeItems: true,
+      rawDataDimension: projectRawDataDimension,
     });
 
     return (
@@ -1175,6 +1241,7 @@ export const ProjectTrackingHierarchy: Story = {
       initialGrouping: ["project", "task", "activity"],
       activeMeasures: ["totalHours", "billableHours", "avgDuration"],
       includeItems: true,
+      rawDataDimension: projectRawDataDimension,
     });
 
     return (
@@ -1212,6 +1279,7 @@ export const ProjectTrackingWithRawData: Story = {
       initialGrouping: ["project", "user"],
       activeMeasures: ["totalHours", "billableHours"],
       includeItems: true,
+      rawDataDimension: projectRawDataDimension,
     });
 
     return (
@@ -1336,6 +1404,7 @@ export const BillableAnalysis: Story = {
       measures: projectTrackingMeasures,
       initialGrouping: ["billable", "project"],
       activeMeasures: ["totalHours", "entryCount"],
+      rawDataDimension: projectRawDataDimension,
     });
 
     return (
@@ -1407,6 +1476,7 @@ export const InteractiveProjectDashboard: Story = {
               },
             ]
           : [],
+      rawDataDimension: projectRawDataDimension,
     });
 
     return (
@@ -1560,6 +1630,7 @@ export const ZoomInNavigation: Story = {
       initialGrouping: ["region", "category", "product"],
       activeMeasures: ["totalRevenue", "profit", "transactionCount"],
       includeItems: true,
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (
@@ -1644,6 +1715,7 @@ export const DynamicDimensionPicker: Story = {
       initialGrouping: ["region"],
       activeMeasures: ["totalRevenue", "profit"],
       includeItems: true,
+      rawDataDimension: salesRawDataDimension,
     });
 
     return (

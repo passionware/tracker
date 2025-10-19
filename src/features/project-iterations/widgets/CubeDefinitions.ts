@@ -10,10 +10,11 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { rd } from "@passionware/monads";
 import { useMemo } from "react";
-import type {
-  DimensionDescriptor,
-  MeasureDescriptor,
-  CubeDataItem,
+import {
+  type DimensionDescriptor,
+  type MeasureDescriptor,
+  type CubeDataItem,
+  withDataType,
 } from "@/features/_common/Cube/CubeService.types.ts";
 
 export function useCubeDefinitions(
@@ -39,11 +40,12 @@ export function useCubeDefinitions(
   );
 
   return useMemo(() => {
+    const factory = withDataType<CubeDataItem>();
     // Get contractor data for name resolution
     const contractors = rd.mapOrElse(contractorsQuery, (data) => data, []);
 
-    const dimensions: DimensionDescriptor<CubeDataItem, unknown>[] = [
-      {
+    const dimensions = [
+      factory.createDimension({
         id: "project",
         name: "Project",
         icon: "🏗️",
@@ -54,8 +56,8 @@ export function useCubeDefinitions(
             report.data.definitions.projectTypes[value as string];
           return projectType?.name || String(value ?? "Unknown");
         },
-      },
-      {
+      }),
+      factory.createDimension({
         id: "contractor",
         name: "Contractor",
         icon: "👤",
@@ -72,8 +74,8 @@ export function useCubeDefinitions(
             String(value ?? "Unknown");
           return result;
         },
-      },
-      {
+      }),
+      factory.createDimension({
         id: "role",
         name: "Role",
         icon: "🎭",
@@ -83,8 +85,8 @@ export function useCubeDefinitions(
           const roleType = report.data.definitions.roleTypes[value as string];
           return roleType?.name || String(value ?? "Unknown");
         },
-      },
-      {
+      }),
+      factory.createDimension({
         id: "task",
         name: "Task",
         icon: "📋",
@@ -94,8 +96,8 @@ export function useCubeDefinitions(
           const taskType = report.data.definitions.taskTypes[value as string];
           return taskType?.name || String(value ?? "Unknown");
         },
-      },
-      {
+      }),
+      factory.createDimension({
         id: "activity",
         name: "Activity",
         icon: "⚡",
@@ -106,18 +108,7 @@ export function useCubeDefinitions(
             report.data.definitions.activityTypes[value as string];
           return activityType?.name || String(value ?? "Unknown");
         },
-      },
-      {
-        id: "date",
-        name: "Date",
-        icon: "📅",
-        getValue: (item) => {
-          const date = new Date(item.startAt);
-          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDay()).padStart(2, "0")}`;
-        },
-        getKey: (value) => String(value ?? "null"),
-        formatValue: (value) => String(value ?? "Unknown"),
-      },
+      }),
     ];
 
     const measures: MeasureDescriptor<CubeDataItem, unknown>[] = [
@@ -237,6 +228,20 @@ export function useCubeDefinitions(
       },
     ];
 
-    return { dimensions, measures };
+    return {
+      dimensions,
+      measures,
+      rawDataDimension: factory.createDimension({
+        id: "date",
+        name: "Date",
+        icon: "📅",
+        getValue: (item) => {
+          const date = new Date(item.startAt);
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDay()).padStart(2, "0")}`;
+        },
+        getKey: (value) => String(value ?? "null"),
+        formatValue: (value) => String(value ?? "Unknown"),
+      }),
+    };
   }, [report, services, contractorsQuery]);
 }

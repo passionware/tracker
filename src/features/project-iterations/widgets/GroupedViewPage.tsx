@@ -31,13 +31,17 @@ function GroupedViewWithCube({
   services: WithFrontServices["services"];
 }) {
   // Create shared cube state and definitions at the top level
-  const { dimensions, measures } = useCubeDefinitions(report, services);
+  const { dimensions, measures, rawDataDimension } = useCubeDefinitions(
+    report,
+    services,
+  );
   const cubeState = useCubeState({
     data: report.data.timeEntries,
     dimensions,
     measures,
     initialGrouping: ["project", "contractor", "task", "activity"],
     includeItems: true,
+    rawDataDimension,
   });
 
   // Create context value

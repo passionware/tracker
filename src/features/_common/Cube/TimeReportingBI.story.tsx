@@ -381,6 +381,19 @@ export const TimeReportingDashboard = () => {
       initialGrouping: ["project", "taskType", "activityType", "contractor"], // Default hierarchy
       activeMeasures: ["totalHours", "cost", "billing", "profit"],
       includeItems: true,
+      rawDataDimension: {
+        id: "date",
+        name: "Date",
+        icon: "📅",
+        getValue: (item) => item.date,
+        formatValue: (value) => {
+          const d = new Date(value as string | number | Date);
+          return d.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+        },
+      },
     });
 
     return (

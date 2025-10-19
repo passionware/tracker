@@ -162,6 +162,19 @@ export function QuickStartCubeExample() {
     includeItems: false, // Set true for drill-through capability
     skipEmptyGroups: true,
     maxDepth: 10,
+    rawDataDimension: {
+      id: "date",
+      name: "Date",
+      icon: "📅",
+      getValue: (item) => item.date,
+      formatValue: (value) => {
+        const d = new Date(value as string | number | Date);
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      },
+    },
   });
 
   // ============================================================================

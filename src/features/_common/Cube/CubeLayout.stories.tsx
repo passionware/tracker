@@ -84,7 +84,7 @@ function CubeStoryWrapper({ children }: { children: React.ReactNode }) {
       id: "hours",
       name: "Hours",
       icon: "⏱️",
-      getValue: (item: any) => 8, // Mock hours
+      getValue: (_item: any) => 8, // Mock hours
       aggregate: (values: unknown[]) =>
         values.reduce(
           (sum: number, v) => sum + (typeof v === "number" ? v : 0),
@@ -97,7 +97,7 @@ function CubeStoryWrapper({ children }: { children: React.ReactNode }) {
       id: "cost",
       name: "Cost",
       icon: "💰",
-      getValue: (item: any) => 400, // Mock cost
+      getValue: (_item: any) => 400, // Mock cost
       aggregate: (values: unknown[]) =>
         values.reduce(
           (sum: number, v) => sum + (typeof v === "number" ? v : 0),
@@ -112,6 +112,19 @@ function CubeStoryWrapper({ children }: { children: React.ReactNode }) {
     data: mockReport.data.timeEntries,
     dimensions,
     measures,
+    rawDataDimension: {
+      id: "date",
+      name: "Date",
+      icon: "📅",
+      getValue: (item) => item.startAt || item.createdAt,
+      formatValue: (value) => {
+        const d = new Date(value as string | number | Date);
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      },
+    },
   });
 
   const contextValue = {

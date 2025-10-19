@@ -106,30 +106,69 @@ export function CubeDimensionExplorer({
             {currentItems.length} entries
           </div>
           <div className="space-y-1">
-            {/* Time-based breakdown for raw data */}
+            {/* Raw data breakdown */}
             {(() => {
-              // Group entries by date (daily breakdown)
-              const dateGroups = new Map<string, any[]>();
+              const rawDataDim = state.rawDataDimension;
+              const groups = new Map<string, any[]>();
+
               currentItems.forEach((item) => {
-                const date = new Date(item.startAt).toISOString().split("T")[0];
-                if (!dateGroups.has(date)) {
-                  dateGroups.set(date, []);
+                try {
+                  const dimensionValue = rawDataDim.getValue(item);
+                  if (dimensionValue) {
+                    // Try to parse as date if it's a string/number
+                    let dateString;
+                    if (
+                      typeof dimensionValue === "string" ||
+                      typeof dimensionValue === "number"
+                    ) {
+                      const date = new Date(dimensionValue);
+                      if (!isNaN(date.getTime())) {
+                        dateString = date.toISOString().split("T")[0];
+                      } else {
+                        dateString = String(dimensionValue);
+                      }
+                    } else {
+                      dateString = String(dimensionValue);
+                    }
+
+                    if (!groups.has(dateString)) {
+                      groups.set(dateString, []);
+                    }
+                    groups.get(dateString)!.push(item);
+                  }
+                } catch (error) {
+                  console.warn("Invalid dimension value in item:", item, error);
                 }
-                dateGroups.get(date)!.push(item);
               });
 
-              const sortedDates = Array.from(dateGroups.entries())
-                .sort(
-                  ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
-                )
-                .slice(0, 5); // Show top 5 days
+              const sortedGroups = Array.from(groups.entries())
+                .sort(([a], [b]) => {
+                  // Sort by value (descending) by default
+                  // Could be made configurable in the future
+                  const valueA =
+                    groups.get(a)?.reduce((sum, item) => {
+                      const value = selectedMeasure.getValue(item);
+                      return (
+                        sum + (typeof value === "number" ? Math.abs(value) : 0)
+                      );
+                    }, 0) || 0;
+                  const valueB =
+                    groups.get(b)?.reduce((sum, item) => {
+                      const value = selectedMeasure.getValue(item);
+                      return (
+                        sum + (typeof value === "number" ? Math.abs(value) : 0)
+                      );
+                    }, 0) || 0;
+                  return valueB - valueA;
+                })
+                .slice(0, 5); // Show top 5 groups
 
               const totalValue = currentItems.reduce((sum, item) => {
                 const value = selectedMeasure.getValue(item);
                 return sum + (typeof value === "number" ? Math.abs(value) : 0);
               }, 0);
 
-              return sortedDates.map(([date, items]) => {
+              return sortedGroups.map(([date, items]) => {
                 const dayValue = items.reduce((sum, item) => {
                   const value = selectedMeasure.getValue(item);
                   return (
@@ -143,16 +182,35 @@ export function CubeDimensionExplorer({
                   ? selectedMeasure.formatValue(dayValue)
                   : String(dayValue);
 
-                const displayDate = new Date(date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
+                let displayValue;
+                if (rawDataDim.formatValue) {
+                  try {
+                    displayValue = rawDataDim.formatValue(date);
+                  } catch {
+                    displayValue = date;
+                  }
+                } else {
+                  // Try to format as date if it looks like a date
+                  try {
+                    const dateObj = new Date(date);
+                    if (!isNaN(dateObj.getTime())) {
+                      displayValue = dateObj.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                    } else {
+                      displayValue = date;
+                    }
+                  } catch {
+                    displayValue = date;
+                  }
+                }
 
                 return (
                   <div key={date} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="truncate flex-1 min-w-0">
-                        {displayDate} ({items.length} entries)
+                        {displayValue} ({items.length} entries)
                       </span>
                       <div className="flex items-center gap-1 ml-2 shrink-0">
                         <span className="text-slate-500">{formattedValue}</span>
@@ -169,12 +227,146 @@ export function CubeDimensionExplorer({
                 );
               });
             })()}
-            {currentItems.length > 0 && (
-              <div className="text-xs text-slate-400 pt-1">Daily breakdown</div>
-            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Raw Data Dimension Chart */}
+      {(() => {
+        const rawDataDim = state.rawDataDimension;
+        const rawDataGroups = new Map<string, any[]>();
+
+        currentItems.forEach((item) => {
+          try {
+            const dimensionValue = rawDataDim.getValue(item);
+            let dateString;
+
+            if (
+              typeof dimensionValue === "string" ||
+              typeof dimensionValue === "number"
+            ) {
+              const date = new Date(dimensionValue);
+              if (!isNaN(date.getTime())) {
+                dateString = date.toISOString().split("T")[0];
+              } else {
+                dateString = String(dimensionValue);
+              }
+            } else {
+              dateString = String(dimensionValue);
+            }
+
+            if (!rawDataGroups.has(dateString)) {
+              rawDataGroups.set(dateString, []);
+            }
+            rawDataGroups.get(dateString)!.push(item);
+          } catch {
+            // Skip items with invalid dates
+          }
+        });
+
+        if (rawDataGroups.size === 0) return null;
+
+        const totalValue = Array.from(rawDataGroups.values()).reduce(
+          (sum, items) => {
+            const groupTotal = items.reduce((groupSum, item) => {
+              const value = selectedMeasure.getValue(item);
+              return (
+                groupSum + (typeof value === "number" ? Math.abs(value) : 0)
+              );
+            }, 0);
+            return sum + groupTotal;
+          },
+          0,
+        );
+
+        const sortedGroups = Array.from(rawDataGroups.entries())
+          .map(([date, items]) => {
+            const groupTotal = items.reduce((sum, item) => {
+              const value = selectedMeasure.getValue(item);
+              return sum + (typeof value === "number" ? Math.abs(value) : 0);
+            }, 0);
+            return { date, items, total: groupTotal };
+          })
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 5);
+
+        return (
+          <Card className="bg-white border border-slate-200 rounded-lg shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                  📊
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-medium text-slate-900">
+                    {rawDataDim.name} Breakdown
+                  </CardTitle>
+                  <p className="text-xs text-slate-500">
+                    {rawDataGroups.size} groups • {currentItems.length} items
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="space-y-1">
+                {sortedGroups.map(({ date, items, total }) => {
+                  const percentage =
+                    totalValue > 0 ? (total / totalValue) * 100 : 0;
+                  const formattedValue = selectedMeasure.formatValue
+                    ? selectedMeasure.formatValue(total)
+                    : String(total);
+
+                  let displayValue;
+                  if (rawDataDim.formatValue) {
+                    try {
+                      displayValue = rawDataDim.formatValue(date);
+                    } catch {
+                      displayValue = date;
+                    }
+                  } else {
+                    // Try to format as date if it looks like a date
+                    try {
+                      const dateObj = new Date(date);
+                      if (!isNaN(dateObj.getTime())) {
+                        displayValue = dateObj.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      } else {
+                        displayValue = date;
+                      }
+                    } catch {
+                      displayValue = date;
+                    }
+                  }
+
+                  return (
+                    <div key={date} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="truncate flex-1 min-w-0">
+                          {displayValue} ({items.length} entries)
+                        </span>
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
+                          <span className="text-slate-500">
+                            {formattedValue}
+                          </span>
+                          <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Interactive Dimension Cards - All dimensions at current level */}
       {sidebarDimensions.map((dimension) => {

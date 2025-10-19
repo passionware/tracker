@@ -17,6 +17,7 @@ import {
   CubeBreakdownControl,
   CubeHierarchicalBreakdown,
 } from "../index.ts";
+import type { DimensionDescriptor } from "../CubeService.types.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { CubeDataItem } from "../CubeService.types.ts";
@@ -40,41 +41,65 @@ export default meta;
 type Story = StoryObj;
 
 // Mock report data for stories
-const mockReport = {
-  id: 1,
-  createdAt: new Date("2024-01-15T10:00:00Z"),
-  projectIterationId: 1,
-  data: {
-    definitions: {
-      taskTypes: {},
-      activityTypes: {},
-      projectTypes: {},
-      roleTypes: {},
-    },
-    timeEntries: [],
-  },
-  originalData: [],
-};
+// const mockReport = {
+//   id: 1,
+//   createdAt: new Date("2024-01-15T10:00:00Z"),
+//   projectIterationId: 1,
+//   data: {
+//     definitions: {
+//       taskTypes: {},
+//       activityTypes: {},
+//       projectTypes: {},
+//       roleTypes: {},
+//     },
+//     timeEntries: [],
+//   },
+//   originalData: [],
+// };
 
-// Layout wrapper using new Cube components
-function CubeLayoutWrapper({ children }: { children: React.ReactNode }) {
+// Layout wrapper using new Cube components with consistent header
+function CubeLayoutWrapper({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
-    <CubeLayout
-      leftSidebar={
-        <>
-          <div className="p-4 space-y-4 flex-1">
-            <CubeSummary />
-            <CubeBreakdownControl />
+    <div className="h-full flex flex-col bg-slate-50">
+      {/* Header with title */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
+            <p className="text-sm text-slate-600">{description}</p>
           </div>
-          <div className="p-4 pt-0">
-            <CubeHierarchicalBreakdown />
-          </div>
-        </>
-      }
-      rightSidebar={<CubeDimensionExplorer />}
-    >
-      {children}
-    </CubeLayout>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-hidden flex">
+        <CubeLayout
+          className="w-full"
+          leftSidebar={
+            <>
+              <div className="p-4 space-y-4 flex-1">
+                <CubeSummary />
+                <CubeBreakdownControl />
+              </div>
+              <div className="p-4 pt-0">
+                <CubeHierarchicalBreakdown />
+              </div>
+            </>
+          }
+          rightSidebar={<CubeDimensionExplorer />}
+        >
+          {children}
+        </CubeLayout>
+      </div>
+    </div>
   );
 }
 
@@ -139,6 +164,21 @@ function SerializedCubeListView({
     </div>
   );
 }
+
+// Raw data dimension for CubeDataItem
+const cubeDataRawDataDimension: DimensionDescriptor<CubeDataItem, unknown> = {
+  id: "date",
+  name: "Date",
+  icon: "📅",
+  getValue: (item: CubeDataItem) => item.date,
+  formatValue: (value: unknown) => {
+    const d = new Date(value as string | number | Date);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  },
+};
 
 // Sample time tracking data
 const timeTrackingData: CubeDataItem[] = [
@@ -364,6 +404,7 @@ export const TimeTrackingPreAggregated: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      rawDataDimension: cubeDataRawDataDimension,
     });
 
     if (!cubeConfig) {
@@ -387,7 +428,10 @@ export const TimeTrackingPreAggregated: Story = {
             reportId: "serialization-story",
           }}
         >
-          <CubeLayoutWrapper>
+          <CubeLayoutWrapper
+            title="Time Tracking Pre-Aggregated"
+            description="Demonstrates cube serialization with pre-aggregated time tracking data"
+          >
             <CubeView
               state={cubeState}
               enableDimensionPicker={false}
@@ -672,6 +716,7 @@ export const SimpleDataSchema: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      rawDataDimension: cubeDataRawDataDimension,
     });
 
     if (!cubeConfig) {
@@ -695,7 +740,10 @@ export const SimpleDataSchema: Story = {
             reportId: "serialization-story",
           }}
         >
-          <CubeLayoutWrapper>
+          <CubeLayoutWrapper
+            title="Time Tracking Pre-Aggregated"
+            description="Demonstrates cube serialization with pre-aggregated time tracking data"
+          >
             <CubeView
               state={cubeState}
               enableDimensionPicker={false}
@@ -944,6 +992,7 @@ export const IdBasedDimensions: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      rawDataDimension: cubeDataRawDataDimension,
     });
 
     if (!cubeConfig) {
@@ -1007,7 +1056,10 @@ export const IdBasedDimensions: Story = {
               reportId: "id-based-story",
             }}
           >
-            <CubeLayoutWrapper>
+            <CubeLayoutWrapper
+              title="Time Tracking Pre-Aggregated"
+              description="Demonstrates cube serialization with pre-aggregated time tracking data"
+            >
               <CubeView
                 state={cubeState}
                 enableDimensionPicker={false}
