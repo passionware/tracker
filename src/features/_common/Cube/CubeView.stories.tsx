@@ -16,12 +16,10 @@ import {
   type DimensionDescriptor,
   type MeasureDescriptor,
   useCubeState,
-  CubeProvider,
 } from "@/features/_common/Cube/index.ts";
 import { StoryLayoutWrapper } from "./StoryLayoutWrapper.tsx";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { TimeReportingDashboard } from "./TimeReportingBI.story";
 
 // Sample data types
 interface SalesTransaction {
@@ -929,11 +927,11 @@ export const CustomRendering: Story = {
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "custom-rendering",
-        }}
+      <StoryLayoutWrapper
+        title="Custom Rendering"
+        description="Custom group headers and cell rendering with color coding"
+        cubeState={state}
+        reportId="custom-rendering"
       >
         <CubeView
           state={state}
@@ -969,56 +967,7 @@ export const CustomRendering: Story = {
             );
           }}
         />
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 6: All measures
-export const AllMeasures: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: timeData,
-      dimensions: timeDimensions,
-      measures: timeMeasures,
-      initialGrouping: ["project"],
-      // All measures active (default)
-      rawDataDimension: timeRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "all-measures",
-        }}
-      >
-        <CubeView state={state} enableDimensionPicker={true} />
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 7: No grouping (grand totals only)
-export const GrandTotalsOnly: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: salesData,
-      dimensions: salesDimensions,
-      measures: salesMeasures,
-      initialGrouping: [], // No grouping
-      rawDataDimension: salesRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "grand-totals-only",
-        }}
-      >
-        <CubeView state={state} enableDimensionPicker={true} />
-      </CubeProvider>
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -1038,233 +987,14 @@ export const WithRawDataView: Story = {
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "raw-data-view",
-        }}
+      <StoryLayoutWrapper
+        title="Raw Data Viewing"
+        description="Click the '📊 Data' button on any group to view the raw data items"
+        cubeState={state}
+        reportId="raw-data-view"
       >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Raw Data Viewing Example</CardTitle>
-              <CardDescription>
-                Click the "📊 Data" button on any group to view the raw data
-                items
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView state={state} />
-        </div>
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 9: Custom raw data rendering
-export const CustomRawDataRendering: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: salesData,
-      dimensions: salesDimensions,
-      measures: salesMeasures,
-      initialGrouping: ["region"],
-      activeMeasures: ["revenue", "profit", "quantity"],
-      includeItems: true,
-      rawDataDimension: salesRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "custom-raw-data",
-        }}
-      >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Raw Data Rendering</CardTitle>
-              <CardDescription>
-                Custom table view for raw data items
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView
-            state={state}
-            renderRawData={(items, group) => (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-100">
-                    <tr>
-                      <th className="text-left p-2 border">Date</th>
-                      <th className="text-left p-2 border">Product</th>
-                      <th className="text-left p-2 border">Salesperson</th>
-                      <th className="text-right p-2 border">Quantity</th>
-                      <th className="text-right p-2 border">Revenue</th>
-                      <th className="text-right p-2 border">Cost</th>
-                      <th className="text-right p-2 border">Profit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, idx) => {
-                      const sales = item as SalesTransaction;
-                      const profit = sales.revenue - sales.cost;
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2 border">{sales.date}</td>
-                          <td className="p-2 border">{sales.product}</td>
-                          <td className="p-2 border">{sales.salesperson}</td>
-                          <td className="text-right p-2 border">
-                            {sales.quantity}
-                          </td>
-                          <td className="text-right p-2 border">
-                            ${sales.revenue.toLocaleString()}
-                          </td>
-                          <td className="text-right p-2 border">
-                            ${sales.cost.toLocaleString()}
-                          </td>
-                          <td
-                            className={`text-right p-2 border ${
-                              profit >= 0 ? "text-green-600" : "text-red-600"
-                            }`}
-                          >
-                            ${profit.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="bg-slate-100 font-semibold">
-                    <tr>
-                      <td colSpan={3} className="p-2 border">
-                        Total for {group.dimensionLabel}
-                      </td>
-                      <td className="text-right p-2 border">
-                        {items.reduce(
-                          (sum, item) =>
-                            sum + (item as SalesTransaction).quantity,
-                          0,
-                        )}
-                      </td>
-                      <td className="text-right p-2 border">
-                        $
-                        {items
-                          .reduce(
-                            (sum, item) =>
-                              sum + (item as SalesTransaction).revenue,
-                            0,
-                          )
-                          .toLocaleString()}
-                      </td>
-                      <td className="text-right p-2 border">
-                        $
-                        {items
-                          .reduce(
-                            (sum, item) =>
-                              sum + (item as SalesTransaction).cost,
-                            0,
-                          )
-                          .toLocaleString()}
-                      </td>
-                      <td className="text-right p-2 border text-green-600">
-                        $
-                        {items
-                          .reduce(
-                            (sum, item) =>
-                              sum +
-                              ((item as SalesTransaction).revenue -
-                                (item as SalesTransaction).cost),
-                            0,
-                          )
-                          .toLocaleString()}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          />
-        </div>
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 10: Project Tracking by User
-export const ProjectTrackingByUser: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: projectTrackingData,
-      dimensions: projectTrackingDimensions,
-      measures: projectTrackingMeasures,
-      initialGrouping: ["user", "project", "task"],
-      activeMeasures: ["totalHours", "billableHours", "entryCount"],
-      includeItems: true,
-      rawDataDimension: projectRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "project-tracking-by-user",
-        }}
-      >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Tracking - By User</CardTitle>
-              <CardDescription>
-                Track time entries grouped by user and project with zoom
-                navigation
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView state={state} />
-        </div>
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 11: Project Tracking by Project → Task → Activity
-export const ProjectTrackingHierarchy: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: projectTrackingData,
-      dimensions: projectTrackingDimensions,
-      measures: projectTrackingMeasures,
-      initialGrouping: ["project", "task", "activity"],
-      activeMeasures: ["totalHours", "billableHours", "avgDuration"],
-      includeItems: true,
-      rawDataDimension: projectRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "project-tracking-hierarchy",
-        }}
-      >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Hierarchy View</CardTitle>
-              <CardDescription>
-                Project → Task → Activity breakdown with zoom navigation and raw
-                data
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView state={state} />
-        </div>
-      </CubeProvider>
+        <CubeView state={state} />
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -1283,169 +1013,102 @@ export const ProjectTrackingWithRawData: Story = {
     });
 
     return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "project-tracking-raw-data",
-        }}
+      <StoryLayoutWrapper
+        title="Project Tracking with Time Entries"
+        description="Click '📊 Data' to view detailed time entries with start/end times"
+        cubeState={state}
+        reportId="project-tracking-raw-data"
       >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Tracking with Time Entries</CardTitle>
-              <CardDescription>
-                Click "📊 Data" to view detailed time entries with start/end
-                times
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView
-            state={state}
-            renderRawData={(items, group) => (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-100">
-                    <tr>
-                      <th className="text-left p-2 border">User</th>
-                      <th className="text-left p-2 border">Task</th>
-                      <th className="text-left p-2 border">Activity</th>
-                      <th className="text-left p-2 border">Start Time</th>
-                      <th className="text-left p-2 border">End Time</th>
-                      <th className="text-right p-2 border">Duration</th>
-                      <th className="text-center p-2 border">Billable</th>
-                      <th className="text-left p-2 border">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, idx) => {
-                      const entry = item as ProjectTimeEntry;
-                      const duration = calculateDuration(
-                        entry.startTime,
-                        entry.endTime,
-                      );
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2 border">{entry.user}</td>
-                          <td className="p-2 border">{entry.task}</td>
-                          <td className="p-2 border">{entry.activity}</td>
-                          <td className="p-2 border">
-                            {formatTime(entry.startTime)}
-                          </td>
-                          <td className="p-2 border">
-                            {formatTime(entry.endTime)}
-                          </td>
-                          <td className="text-right p-2 border">
-                            {duration.toFixed(2)}h
-                          </td>
-                          <td className="text-center p-2 border">
-                            {entry.billable ? (
-                              <Badge variant="success" className="text-xs">
-                                Yes
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">
-                                No
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-2 border text-xs text-slate-600">
-                            {entry.notes || "-"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="bg-slate-100 font-semibold">
-                    <tr>
-                      <td colSpan={5} className="p-2 border">
-                        Total for {group.dimensionLabel}
-                      </td>
-                      <td className="text-right p-2 border">
-                        {items
-                          .reduce(
-                            (sum, item) =>
-                              sum +
-                              calculateDuration(
-                                (item as ProjectTimeEntry).startTime,
-                                (item as ProjectTimeEntry).endTime,
-                              ),
-                            0,
-                          )
-                          .toFixed(2)}
-                        h
-                      </td>
-                      <td colSpan={2} className="p-2 border">
-                        {
-                          items.filter(
-                            (item) => (item as ProjectTimeEntry).billable,
-                          ).length
-                        }{" "}
-                        billable
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          />
-        </div>
-      </CubeProvider>
-    );
-  },
-};
-
-// Story 13: Billable vs Non-Billable Analysis
-export const BillableAnalysis: Story = {
-  render: () => {
-    const state = useCubeState({
-      data: projectTrackingData,
-      dimensions: projectTrackingDimensions,
-      measures: projectTrackingMeasures,
-      initialGrouping: ["billable", "project"],
-      activeMeasures: ["totalHours", "entryCount"],
-      rawDataDimension: projectRawDataDimension,
-    });
-
-    return (
-      <CubeProvider
-        value={{
-          state,
-          reportId: "billable-analysis",
-        }}
-      >
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billable vs Non-Billable Analysis</CardTitle>
-              <CardDescription>
-                Compare billable and non-billable hours across projects
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <CubeView
-            state={state}
-            renderCell={(cell, group) => {
-              // Highlight billable hours in green
-              const isBillableGroup = group.dimensionLabel === "Billable";
-              const isHoursCell = cell.measureId === "totalHours";
-
-              return (
-                <div
-                  className={
-                    isBillableGroup && isHoursCell
-                      ? "text-green-600 font-semibold"
-                      : ""
-                  }
-                >
-                  {cell.formattedValue}
-                </div>
-              );
-            }}
-          />
-        </div>
-      </CubeProvider>
+        <CubeView
+          state={state}
+          renderRawData={(items, group) => (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="text-left p-2 border">User</th>
+                    <th className="text-left p-2 border">Task</th>
+                    <th className="text-left p-2 border">Activity</th>
+                    <th className="text-left p-2 border">Start Time</th>
+                    <th className="text-left p-2 border">End Time</th>
+                    <th className="text-right p-2 border">Duration</th>
+                    <th className="text-center p-2 border">Billable</th>
+                    <th className="text-left p-2 border">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, idx) => {
+                    const entry = item as ProjectTimeEntry;
+                    const duration = calculateDuration(
+                      entry.startTime,
+                      entry.endTime,
+                    );
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-2 border">{entry.user}</td>
+                        <td className="p-2 border">{entry.task}</td>
+                        <td className="p-2 border">{entry.activity}</td>
+                        <td className="p-2 border">
+                          {formatTime(entry.startTime)}
+                        </td>
+                        <td className="p-2 border">
+                          {formatTime(entry.endTime)}
+                        </td>
+                        <td className="text-right p-2 border">
+                          {duration.toFixed(2)}h
+                        </td>
+                        <td className="text-center p-2 border">
+                          {entry.billable ? (
+                            <Badge variant="success" className="text-xs">
+                              Yes
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              No
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-2 border text-xs text-slate-600">
+                          {entry.notes || "-"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-slate-100 font-semibold">
+                  <tr>
+                    <td colSpan={5} className="p-2 border">
+                      Total for {group.dimensionLabel}
+                    </td>
+                    <td className="text-right p-2 border">
+                      {items
+                        .reduce(
+                          (sum, item) =>
+                            sum +
+                            calculateDuration(
+                              (item as ProjectTimeEntry).startTime,
+                              (item as ProjectTimeEntry).endTime,
+                            ),
+                          0,
+                        )
+                        .toFixed(2)}
+                      h
+                    </td>
+                    <td colSpan={2} className="p-2 border">
+                      {
+                        items.filter(
+                          (item) => (item as ProjectTimeEntry).billable,
+                        ).length
+                      }{" "}
+                      billable
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        />
+      </StoryLayoutWrapper>
     );
   },
 };
@@ -1601,18 +1264,18 @@ export const InteractiveProjectDashboard: Story = {
           </CardContent>
         </Card>
 
-        <CubeProvider
-          value={{
-            state,
-            reportId: "interactive-project-dashboard",
-          }}
+        <StoryLayoutWrapper
+          title="Interactive Project Tracking Dashboard"
+          description="Customize grouping, metrics, and filters"
+          cubeState={state}
+          reportId="interactive-project-dashboard"
         >
           <CubeView
             state={state}
             maxInitialDepth={1}
             enableDimensionPicker={true}
           />
-        </CubeProvider>
+        </StoryLayoutWrapper>
       </div>
     );
   },
@@ -1690,14 +1353,14 @@ export const ZoomInNavigation: Story = {
           </CardContent>
         </Card>
 
-        <CubeProvider
-          value={{
-            state,
-            reportId: "zoom-in-navigation",
-          }}
+        <StoryLayoutWrapper
+          title="Zoom-In Navigation + Dynamic Dimension Picker"
+          description="This example shows nested subgroups (Region → Category → Product). Click 'Zoom In' to focus on a group, use breadcrumbs to navigate back, or change dimensions from the dropdown."
+          cubeState={state}
+          reportId="zoom-in-navigation"
         >
           <CubeView state={state} />
-        </CubeProvider>
+        </StoryLayoutWrapper>
       </div>
     );
   },
@@ -1750,21 +1413,15 @@ export const DynamicDimensionPicker: Story = {
           </CardContent>
         </Card>
 
-        <CubeProvider
-          value={{
-            state,
-            reportId: "dynamic-dimension-picker",
-          }}
+        <StoryLayoutWrapper
+          title="Dynamic Dimension Picker"
+          description="Choose which dimension to break down by at each level. Select from the dropdown to change the current breakdown."
+          cubeState={state}
+          reportId="dynamic-dimension-picker"
         >
           <CubeView state={state} />
-        </CubeProvider>
+        </StoryLayoutWrapper>
       </div>
     );
-  },
-};
-
-export const FullFeaturedTimeTrackingCube: Story = {
-  render: () => {
-    return <TimeReportingDashboard />;
   },
 };
