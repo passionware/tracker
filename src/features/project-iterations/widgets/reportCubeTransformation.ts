@@ -143,7 +143,7 @@ export function mergeEntries(
 export function anonymizeTimeEntries(
   transformedEntries: TransformedEntry[],
 ): TransformedEntry[] {
-  return mergeEntries(
+  const mergedEntries = mergeEntries(
     transformedEntries,
     // Group by all fields except time and calculated values
     [
@@ -175,6 +175,13 @@ export function anonymizeTimeEntries(
       },
     },
   );
+
+  // Explicitly remove time fields after merging
+  return mergedEntries.map((entry) => ({
+    ...entry,
+    startAt: undefined,
+    endAt: undefined,
+  }));
 }
 
 /**
