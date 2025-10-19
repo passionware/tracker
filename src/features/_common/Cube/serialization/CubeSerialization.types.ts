@@ -198,8 +198,6 @@ export interface SerializableCubeConfig {
   measures: SerializableMeasure[];
   /** Breakdown map for hierarchical grouping */
   breakdownMap?: BreakdownMap;
-  /** Initial dimension grouping sequence */
-  initialGrouping?: string[];
   /** Active measures to include */
   activeMeasures?: string[];
   /** Active filters */

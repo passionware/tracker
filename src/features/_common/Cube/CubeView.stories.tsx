@@ -658,7 +658,6 @@ export const SalesByRegion: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region"],
       activeMeasures: ["revenue", "profit"],
       rawDataDimension: {
         id: "date",
@@ -695,7 +694,6 @@ export const SalesByRegionAndCategory: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region", "category", "product"],
       activeMeasures: ["revenue", "cost", "profit"],
       includeItems: true,
       rawDataDimension: salesRawDataDimension,
@@ -727,7 +725,6 @@ export const InteractiveSalesCube: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: dimensionSequence,
       activeMeasures: ["revenue", "profit", "quantity"],
       initialFilters: selectedRegion
         ? [{ dimensionId: "region", operator: "equals", value: selectedRegion }]
@@ -895,7 +892,6 @@ export const TimeTrackingCube: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      initialGrouping: ["project", "contractor", "role"],
       activeMeasures: ["hours", "cost", "billing", "profit"],
       includeItems: true,
       rawDataDimension: timeRawDataDimension,
@@ -921,7 +917,6 @@ export const CustomRendering: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region", "category"],
       activeMeasures: ["revenue", "profit"],
       rawDataDimension: salesRawDataDimension,
     });
@@ -978,7 +973,6 @@ export const WithRawDataView: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region", "category"],
       activeMeasures: ["revenue", "profit"],
       // IMPORTANT: Set includeItems to true to enable raw data viewing
       includeItems: true,
@@ -1005,7 +999,6 @@ export const ProjectTrackingWithRawData: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialGrouping: ["project", "user"],
       activeMeasures: ["totalHours", "billableHours"],
       includeItems: true,
       rawDataDimension: projectRawDataDimension,
@@ -1126,7 +1119,6 @@ export const InteractiveProjectDashboard: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialGrouping: groupBy,
       activeMeasures: selectedMeasures,
       initialFilters:
         filterBillable !== null
@@ -1285,7 +1277,6 @@ export const ZoomInNavigation: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region", "category", "product"],
       activeMeasures: ["totalRevenue", "profit", "transactionCount"],
       includeItems: true,
       rawDataDimension: salesRawDataDimension,
@@ -1370,7 +1361,6 @@ export const DynamicDimensionPicker: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialGrouping: ["region"],
       activeMeasures: ["totalRevenue", "profit"],
       includeItems: true,
       rawDataDimension: salesRawDataDimension,

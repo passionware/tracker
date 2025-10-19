@@ -69,24 +69,11 @@ export function CubeTreeNode({
   const availableDimensionsForGroup = dimensions
     .filter((d) => !usedDimensions.includes(d.id))
     .sort((a, b) => {
-      // Get the initialGrouping from the cube config
-      const initialGrouping = state.cube.config.initialGrouping || [];
+      // Use the dimension array order for priority
+      const aIndex = dimensions.findIndex((d) => d.id === a.id);
+      const bIndex = dimensions.findIndex((d) => d.id === b.id);
 
-      // Find the index of each dimension in the priority order
-      const aIndex = initialGrouping.indexOf(a.id);
-      const bIndex = initialGrouping.indexOf(b.id);
-
-      // If both dimensions are in the priority order, sort by their position
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-
-      // If only one is in the priority order, prioritize it
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-
-      // If neither is in the priority order, maintain original order
-      return 0;
+      return aIndex - bIndex;
     });
 
   const [isExpanded, setIsExpanded] = useState(level < maxInitialDepth);

@@ -16,7 +16,7 @@ interface SummarySidebarProps {
   report: GeneratedReportSource;
 }
 
-export function SummarySidebar({ report }: SummarySidebarProps) {
+export function SummarySidebar({ report: _report }: SummarySidebarProps) {
   return (
     <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
       <div className="p-4 space-y-4 flex-1">

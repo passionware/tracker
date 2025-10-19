@@ -71,7 +71,7 @@ function ExportBuilderContent({
 }) {
   // Use the shared cube hook to get all cube data
   const {
-    cubeState,
+    cubeState: _cubeState,
     dimensions: _dimensions,
     rawDataDimension,
     measures,
@@ -156,7 +156,6 @@ function ExportBuilderContent({
     data: processedData,
     dimensions: selectedDimensions,
     measures: selectedMeasures,
-    initialGrouping: cubeState.cube.config.initialGrouping,
     includeItems: true,
     rawDataDimension,
   });
@@ -229,7 +228,6 @@ function ExportBuilderContent({
       }),
       measures: selectedMeasures,
       breakdownMap: previewCubeState.cube.config.breakdownMap,
-      initialGrouping: previewCubeState.cube.config.initialGrouping,
       activeMeasures: previewCubeState.cube.config.activeMeasures,
       listView: {
         columns: [

@@ -126,7 +126,7 @@ export interface BreakdownMap {
 export interface CubeConfig<TData extends CubeDataItem> {
   /** The raw data to analyze */
   data: TData[];
-  /** Available dimensions for grouping/filtering */
+  /** Available dimensions for grouping/filtering - order defines priority and default hierarchy */
   dimensions: DimensionDescriptor<TData, unknown>[];
   /** Available measures to calculate */
   measures: MeasureDescriptor<TData, unknown>[];
@@ -134,11 +134,7 @@ export interface CubeConfig<TData extends CubeDataItem> {
   filters?: DimensionFilter[];
   /** Per-node breakdown configuration - PRIMARY way to define hierarchies */
   breakdownMap?: BreakdownMap;
-  /**
-   * Initial dimension grouping sequence (e.g., ["project", "contractor", "task"])
-   * This defines both the default breakdown hierarchy and the dimension priority order.
-   * When no explicit breakdown is set, the system will use the next dimension in this sequence.
-   */
+  /** Initial dimension grouping sequence (derived from dimensions array order) */
   initialGrouping?: string[];
   /** Measures to include in results */
   activeMeasures?: string[]; // measure IDs (defaults to all)

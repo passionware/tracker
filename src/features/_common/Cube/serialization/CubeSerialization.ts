@@ -326,8 +326,6 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
     dataSchema,
     dimensions,
     measures,
-    breakdownMap: config.breakdownMap,
-    initialGrouping: config.initialGrouping,
     activeMeasures: config.activeMeasures,
     filters,
     listView: configWithListView.listView,
@@ -362,38 +360,39 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
   } = options;
 
   // Convert dimensions
-  const dimensions: DimensionDescriptor<TData, unknown>[] =
-    serialized.dimensions.map((dim) => ({
-      id: dim.id,
-      name: dim.name,
-      description: dim.description,
-      icon: dim.icon,
-      getValue: (item: TData) => {
-        const value = item[dim.fieldName as keyof TData];
-        return value;
-      },
-      formatValue: (value: unknown) => {
-        // First check if we have label mapping for this value
-        if (dim.labelMapping && dim.labelMapping[String(value)]) {
-          return dim.labelMapping[String(value)];
-        }
+  const dimensions: DimensionDescriptor<TData, unknown>[] = (
+    serialized.dimensions || []
+  ).map((dim) => ({
+    id: dim.id,
+    name: dim.name,
+    description: dim.description,
+    icon: dim.icon,
+    getValue: (item: TData) => {
+      const value = item[dim.fieldName as keyof TData];
+      return value;
+    },
+    formatValue: (value: unknown) => {
+      // First check if we have label mapping for this value
+      if (dim.labelMapping && dim.labelMapping[String(value)]) {
+        return dim.labelMapping[String(value)];
+      }
 
-        // Then check for built-in format function
-        if (dim.formatFunction) {
-          const formatter = formatFunctions[dim.formatFunction.type];
-          if (formatter) {
-            return formatter.format(value, dim.formatFunction.parameters);
-          }
+      // Then check for built-in format function
+      if (dim.formatFunction) {
+        const formatter = formatFunctions[dim.formatFunction.type];
+        if (formatter) {
+          return formatter.format(value, dim.formatFunction.parameters);
         }
+      }
 
-        // Fallback to string representation
-        return String(value);
-      },
-      getKey:
-        dim.keyFieldName && dim.keyFieldName !== "custom"
-          ? (value: unknown) => String((value as any)?.[dim.keyFieldName!])
-          : undefined,
-    }));
+      // Fallback to string representation
+      return String(value);
+    },
+    getKey:
+      dim.keyFieldName && dim.keyFieldName !== "custom"
+        ? (value: unknown) => String((value as any)?.[dim.keyFieldName!])
+        : undefined,
+  }));
 
   // Convert measures
   const measures: MeasureDescriptor<TData, unknown>[] = serialized.measures.map(
@@ -446,8 +445,6 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
     dimensions,
     measures,
     filters,
-    breakdownMap: serialized.breakdownMap,
-    initialGrouping: serialized.initialGrouping,
     activeMeasures: serialized.activeMeasures,
   };
 }
@@ -475,8 +472,6 @@ export function createSerializableCubeConfig(
   dimensions: SerializableDimension[],
   measures: SerializableMeasure[],
   options: {
-    breakdownMap?: Record<string, string | null>;
-    initialGrouping?: string[];
     activeMeasures?: string[];
     filters?: SerializableFilter[];
     isPreAggregated?: boolean;
@@ -496,8 +491,6 @@ export function createSerializableCubeConfig(
     },
     dimensions,
     measures,
-    breakdownMap: options.breakdownMap,
-    initialGrouping: options.initialGrouping,
     activeMeasures: options.activeMeasures,
     filters: options.filters,
   };

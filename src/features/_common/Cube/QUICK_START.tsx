@@ -152,7 +152,6 @@ export function QuickStartCubeExample() {
     data: salesData,
     dimensions,
     measures,
-    initialGrouping: groupBy, // e.g., ["region"] or ["region", "product"] for multi-level
     activeMeasures: selectedMeasures, // Which measures to show
     initialFilters: [
       // Optional: Add filters

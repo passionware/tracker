@@ -58,6 +58,17 @@ export function useCubeDefinitions(
         },
       }),
       factory.createDimension({
+        id: "task",
+        name: "Task",
+        icon: "📋",
+        getValue: (item) => item.taskId,
+        getKey: (value) => String(value ?? "null"),
+        formatValue: (value) => {
+          const taskType = report.data.definitions.taskTypes[value as string];
+          return taskType?.name || String(value ?? "Unknown");
+        },
+      }),
+      factory.createDimension({
         id: "contractor",
         name: "Contractor",
         icon: "👤",
@@ -76,28 +87,6 @@ export function useCubeDefinitions(
         },
       }),
       factory.createDimension({
-        id: "role",
-        name: "Role",
-        icon: "🎭",
-        getValue: (item) => item.roleId,
-        getKey: (value) => String(value ?? "null"),
-        formatValue: (value) => {
-          const roleType = report.data.definitions.roleTypes[value as string];
-          return roleType?.name || String(value ?? "Unknown");
-        },
-      }),
-      factory.createDimension({
-        id: "task",
-        name: "Task",
-        icon: "📋",
-        getValue: (item) => item.taskId,
-        getKey: (value) => String(value ?? "null"),
-        formatValue: (value) => {
-          const taskType = report.data.definitions.taskTypes[value as string];
-          return taskType?.name || String(value ?? "Unknown");
-        },
-      }),
-      factory.createDimension({
         id: "activity",
         name: "Activity",
         icon: "⚡",
@@ -107,6 +96,17 @@ export function useCubeDefinitions(
           const activityType =
             report.data.definitions.activityTypes[value as string];
           return activityType?.name || String(value ?? "Unknown");
+        },
+      }),
+      factory.createDimension({
+        id: "role",
+        name: "Role",
+        icon: "🎭",
+        getValue: (item) => item.roleId,
+        getKey: (value) => String(value ?? "null"),
+        formatValue: (value) => {
+          const roleType = report.data.definitions.roleTypes[value as string];
+          return roleType?.name || String(value ?? "Unknown");
         },
       }),
     ];

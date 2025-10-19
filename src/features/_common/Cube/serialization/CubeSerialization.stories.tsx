@@ -7,7 +7,6 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 import { useMemo } from "react";
-import { CubeView } from "../CubeView.tsx";
 import { useCubeState } from "../useCubeState.ts";
 import { CubeProvider } from "../CubeContext.tsx";
 import { StoryLayoutWrapper } from "../StoryLayoutWrapper.tsx";
@@ -292,7 +291,6 @@ export const TimeTrackingPreAggregated: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
-      initialGrouping: ["project", "category", "contractor"],
       includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });
@@ -601,7 +599,6 @@ export const SimpleDataSchema: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
-      initialGrouping: ["product", "category", "region"],
       includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });
@@ -874,7 +871,6 @@ export const IdBasedDimensions: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
-      initialGrouping: ["contractor", "project", "task"],
       includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });

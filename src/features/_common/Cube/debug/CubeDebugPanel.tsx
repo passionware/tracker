@@ -54,7 +54,11 @@ export function CubeDebugPanel({ state, displayGroups }: CubeDebugPanelProps) {
                 Final BreakdownMap (config + overrides):
               </div>
               <pre className="bg-white p-2 rounded overflow-auto max-h-60 text-[10px]">
-                {JSON.stringify(state.cube.config.breakdownMap, null, 2)}
+                {JSON.stringify(
+                  state.cube.config.dimensions.map((d) => d.id),
+                  null,
+                  2,
+                )}
               </pre>
             </div>
             <div className="flex-1 min-w-[200px]">

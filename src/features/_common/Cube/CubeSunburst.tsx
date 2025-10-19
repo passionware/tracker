@@ -95,7 +95,7 @@ export function CubeSunburst({
     }
 
     const config = state.cube.config;
-    const rootDimensionId = config.breakdownMap?.[""];
+    const rootDimensionId = config.dimensions[0]?.id;
 
     if (!rootDimensionId) {
       return null;
@@ -106,7 +106,6 @@ export function CubeSunburst({
       data: rootData,
       dimensions: dimensions,
       measures: [measure],
-      breakdownMap: config.breakdownMap || {},
     });
 
     if (rootCube.groups.length === 0) {

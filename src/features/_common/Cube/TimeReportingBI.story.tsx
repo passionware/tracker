@@ -378,7 +378,6 @@ export const TimeReportingDashboard = () => {
       data: timeEntries,
       dimensions,
       measures,
-      initialGrouping: ["project", "taskType", "activityType", "contractor"], // Default hierarchy
       activeMeasures: ["totalHours", "cost", "billing", "profit"],
       includeItems: true,
       rawDataDimension: {

@@ -531,20 +531,6 @@ export function createTimeTrackingCubeConfig(
     },
     dimensions,
     measures,
-    breakdownMap: {
-      "": includeProjects ? "project" : "date",
-      ...(includeProjects && includeCategories
-        ? {
-            "project:*": "category",
-          }
-        : {}),
-    },
-    initialGrouping: [
-      ...(includeProjects ? ["project"] : []),
-      ...(includeCategories ? ["category"] : []),
-      ...(includeContractors ? ["contractor"] : []),
-      "date",
-    ],
     activeMeasures: ["totalHours", "count"],
   };
 }

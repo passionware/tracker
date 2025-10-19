@@ -54,7 +54,6 @@ export function useReportCube({
     data: transformedData,
     dimensions,
     measures,
-    initialGrouping: ["project", "task", "contractor", "activity"],
     includeItems: true,
     rawDataDimension,
   });

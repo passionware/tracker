@@ -54,12 +54,6 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
   initialFilters?: DimensionFilter[];
   /** Initial root dimension (for per-node mode) */
   initialRootDimension?: string;
-  /**
-   * Initial dimension grouping sequence (e.g., ["project", "contractor", "task"])
-   * This defines both the default breakdown hierarchy and the dimension priority order.
-   * When no explicit breakdown is set, the system will use the next dimension in this sequence.
-   */
-  initialGrouping?: string[];
   /** Active measures (defaults to all) */
   activeMeasures?: string[];
   /** Include items in groups (for raw data viewing) */
@@ -138,7 +132,6 @@ export function useCubeState<TData extends CubeDataItem>(
     measures,
     initialFilters = [],
     initialRootDimension,
-    initialGrouping,
     activeMeasures,
     includeItems = true,
     maxDepth = 10,
@@ -160,30 +153,33 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // ===== DERIVED DATA =====
 
-  // Build default breakdownMap from initialGrouping (configuration, not state)
+  // Build default breakdownMap from dimension array order
   const defaultBreakdownMap = useMemo(() => {
     const map: Record<string, string | null> = {};
 
     if (initialRootDimension) {
       map[""] = initialRootDimension;
-    } else if (initialGrouping && initialGrouping.length > 0) {
-      // Root level
-      map[""] = initialGrouping[0];
+    } else if (dimensions.length > 0) {
+      // Root level - use first dimension
+      map[""] = dimensions[0].id;
 
-      // Wildcard patterns for each level
-      for (let i = 0; i < initialGrouping.length - 1; i++) {
-        const pattern = initialGrouping.slice(0, i + 1).join(":*|") + ":*";
-        map[pattern] = initialGrouping[i + 1];
+      // Wildcard patterns for each level based on dimension order
+      for (let i = 0; i < dimensions.length - 1; i++) {
+        const pattern = dimensions
+          .slice(0, i + 1)
+          .map((d) => `${d.id}:*`)
+          .join("|");
+        map[pattern] = dimensions[i + 1].id;
       }
     }
 
     return map;
-  }, [initialRootDimension, initialGrouping]);
+  }, [initialRootDimension, dimensions]);
 
-  // Use initialGrouping as the dimension priority list
-  const effectiveInitialGrouping = useMemo(() => {
-    return initialGrouping || [];
-  }, [initialGrouping]);
+  // Dimension priority order is derived from the dimensions array
+  const dimensionPriority = useMemo(() => {
+    return dimensions.map((d) => d.id);
+  }, [dimensions]);
 
   // Merge defaults with explicit user overrides to create final breakdownMap
   const breakdownMap = useMemo(() => {
@@ -210,7 +206,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      initialGrouping: effectiveInitialGrouping,
+      initialGrouping: dimensionPriority,
       activeMeasures,
     }),
     [
@@ -219,7 +215,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      effectiveInitialGrouping,
+      dimensionPriority,
       activeMeasures,
     ],
   );
