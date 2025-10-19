@@ -115,20 +115,5 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
     state.cube.config.initialGrouping,
   );
 
-  // Debug logging
-  console.log("useCurrentBreakdownDimensionId Debug:", {
-    path: state.path,
-    pathKey,
-    wildcardPath: pathKey
-      .split("|")
-      .map((segment) => {
-        const [dim] = segment.split(":");
-        return `${dim}:*`;
-      })
-      .join("|"),
-    breakdownMap: state.cube.config.breakdownMap,
-    breakdownId,
-  });
-
   return breakdownId;
 }
