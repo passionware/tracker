@@ -36,7 +36,7 @@ function GroupedViewWithCube({
     data: report.data.timeEntries,
     dimensions,
     measures,
-    initialGrouping: ["project", "contractor", "role", "task", "activity"],
+    initialGrouping: ["project", "contractor", "task", "activity"],
     includeItems: true,
   });
 
