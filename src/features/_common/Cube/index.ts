@@ -38,6 +38,9 @@ export {
   useSelectedMeasure,
 } from "./CubeContext.tsx";
 export { CubeSunburst } from "./CubeSunburst.tsx";
+export { CubeSummary } from "./CubeSummary.tsx";
+export { CubeBreakdownControl } from "./CubeBreakdownControl.tsx";
+export { CubeHierarchicalBreakdown } from "./CubeHierarchicalBreakdown.tsx";
 
 // Serialization exports
 export * from "./serialization/index.ts";
