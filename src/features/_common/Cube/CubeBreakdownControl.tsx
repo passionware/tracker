@@ -5,7 +5,10 @@
  * Allows users to choose how to group and drill down into the data.
  */
 
-import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
+import {
+  useCubeContext,
+  useCurrentBreakdownDimensionId,
+} from "@/features/_common/Cube/CubeContext.tsx";
 import {
   Card,
   CardContent,
@@ -29,33 +32,9 @@ export function CubeBreakdownControl({
 }: CubeBreakdownControlProps) {
   const { state } = useCubeContext();
   const dimensions = state.cube.config.dimensions;
-  const cube = state.cube;
 
   // Get the current level's breakdown dimension (what we're breaking down by)
-  const currentLevelDimensionId = (() => {
-    const pathKey =
-      state.path
-        .map((p) => {
-          const dim = dimensions.find((d) => d.id === p.dimensionId);
-          const key = dim?.getKey
-            ? dim.getKey(p.dimensionValue)
-            : String(p.dimensionValue ?? "null");
-          return `${p.dimensionId}:${key}`;
-        })
-        .join("|") || "";
-
-    const breakdownId = cube.config.breakdownMap?.[pathKey];
-
-    // Debug logging
-    console.log("CubeBreakdownControl Debug:", {
-      path: state.path,
-      pathKey,
-      breakdownMap: cube.config.breakdownMap,
-      breakdownId,
-    });
-
-    return breakdownId;
-  })();
+  const currentLevelDimensionId = useCurrentBreakdownDimensionId();
 
   const currentLevelDimension = dimensions.find(
     (d) => d.id === currentLevelDimensionId,

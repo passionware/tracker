@@ -8,6 +8,7 @@
 import {
   useCubeContext,
   useSelectedMeasure,
+  useCurrentBreakdownDimensionId,
 } from "@/features/_common/Cube/CubeContext.tsx";
 import {
   Card,
@@ -48,30 +49,7 @@ export function CubeDimensionExplorer({
   });
 
   // Get current breakdown dimension ID for highlighting
-  const currentBreakdownDimensionId = (() => {
-    const pathKey =
-      state.path
-        .map((p) => {
-          const dim = dimensions.find((d) => d.id === p.dimensionId);
-          const key = dim?.getKey
-            ? dim.getKey(p.dimensionValue)
-            : String(p.dimensionValue ?? "null");
-          return `${p.dimensionId}:${key}`;
-        })
-        .join("|") || "";
-
-    const breakdownId = state.cube.config.breakdownMap?.[pathKey];
-
-    // Debug logging
-    console.log("CubeDimensionExplorer Debug:", {
-      path: state.path,
-      pathKey,
-      breakdownMap: state.cube.config.breakdownMap,
-      breakdownId,
-    });
-
-    return breakdownId;
-  })();
+  const currentBreakdownDimensionId = useCurrentBreakdownDimensionId();
 
   return (
     <div className={`p-4 space-y-4 ${className}`}>

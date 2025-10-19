@@ -92,3 +92,31 @@ export function useSelectedMeasure(): {
     selectedMeasure,
   };
 }
+
+export function useCurrentBreakdownDimensionId(): string | null | undefined {
+  const { state } = useCubeContext();
+  const dimensions = state.cube.config.dimensions;
+
+  const pathKey =
+    state.path
+      .map((p) => {
+        const dim = dimensions.find((d) => d.id === p.dimensionId);
+        const key = dim?.getKey
+          ? dim.getKey(p.dimensionValue)
+          : String(p.dimensionValue ?? "null");
+        return `${p.dimensionId}:${key}`;
+      })
+      .join("|") || "";
+
+  const breakdownId = state.cube.config.breakdownMap?.[pathKey];
+
+  // Debug logging
+  console.log("useCurrentBreakdownDimensionId Debug:", {
+    path: state.path,
+    pathKey,
+    breakdownMap: state.cube.config.breakdownMap,
+    breakdownId,
+  });
+
+  return breakdownId;
+}
