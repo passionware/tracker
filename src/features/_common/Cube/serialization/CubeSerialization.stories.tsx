@@ -10,13 +10,7 @@ import { useMemo } from "react";
 import { CubeView } from "../CubeView.tsx";
 import { useCubeState } from "../useCubeState.ts";
 import { CubeProvider } from "../CubeContext.tsx";
-import {
-  CubeLayout,
-  CubeDimensionExplorer,
-  CubeSummary,
-  CubeBreakdownControl,
-  CubeHierarchicalBreakdown,
-} from "../index.ts";
+import { StoryLayoutWrapper } from "../StoryLayoutWrapper.tsx";
 import type { DimensionDescriptor } from "../CubeService.types.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -56,52 +50,6 @@ type Story = StoryObj;
 //   },
 //   originalData: [],
 // };
-
-// Layout wrapper using new Cube components with consistent header
-function CubeLayoutWrapper({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="h-full flex flex-col bg-slate-50">
-      {/* Header with title */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-            <p className="text-sm text-slate-600">{description}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 overflow-hidden flex">
-        <CubeLayout
-          className="w-full"
-          leftSidebar={
-            <>
-              <div className="p-4 space-y-4 flex-1">
-                <CubeSummary />
-                <CubeBreakdownControl />
-              </div>
-              <div className="p-4 pt-0">
-                <CubeHierarchicalBreakdown />
-              </div>
-            </>
-          }
-          rightSidebar={<CubeDimensionExplorer />}
-        >
-          {children}
-        </CubeLayout>
-      </div>
-    </div>
-  );
-}
 
 // Removed RightSidebar - now using CubeDimensionExplorer
 
@@ -319,7 +267,7 @@ export const TimeTrackingPreAggregated: Story = {
         {
           id: "entryCount",
           name: "Entry Count",
-          fieldName: "date",
+          fieldName: "numHours",
           aggregationFunction: "count",
           description: "Number of time entries",
         },
@@ -404,6 +352,8 @@ export const TimeTrackingPreAggregated: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      initialGrouping: ["project", "category", "contractor"],
+      includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });
 
@@ -421,31 +371,31 @@ export const TimeTrackingPreAggregated: Story = {
     }
 
     return (
-      <div className="flex h-screen border rounded-lg overflow-hidden">
-        <CubeProvider
-          value={{
-            state: cubeState,
-            reportId: "serialization-story",
-          }}
+      <CubeProvider
+        value={{
+          state: cubeState,
+          reportId: "serialization-story",
+        }}
+      >
+        <StoryLayoutWrapper
+          title="Time Tracking Pre-Aggregated"
+          description="Demonstrates cube serialization with pre-aggregated time tracking data"
+          cubeState={cubeState}
+          reportId="serialization-story"
         >
-          <CubeLayoutWrapper
-            title="Time Tracking Pre-Aggregated"
-            description="Demonstrates cube serialization with pre-aggregated time tracking data"
-          >
-            <CubeView
-              state={cubeState}
-              enableDimensionPicker={false}
-              enableRawDataView={true}
-              renderRawData={(items, _group) => (
-                <SerializedCubeListView
-                  serializedConfig={serializedConfig}
-                  data={items}
-                />
-              )}
-            />
-          </CubeLayoutWrapper>
-        </CubeProvider>
-      </div>
+          <CubeView
+            state={cubeState}
+            enableDimensionPicker={false}
+            enableRawDataView={true}
+            renderRawData={(items, _group) => (
+              <SerializedCubeListView
+                serializedConfig={serializedConfig}
+                data={items}
+              />
+            )}
+          />
+        </StoryLayoutWrapper>
+      </CubeProvider>
     );
   },
 };
@@ -716,6 +666,8 @@ export const SimpleDataSchema: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      initialGrouping: ["product", "category", "region"],
+      includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });
 
@@ -733,31 +685,31 @@ export const SimpleDataSchema: Story = {
     }
 
     return (
-      <div className="flex h-screen border rounded-lg overflow-hidden">
-        <CubeProvider
-          value={{
-            state: cubeState,
-            reportId: "serialization-story",
-          }}
+      <CubeProvider
+        value={{
+          state: cubeState,
+          reportId: "serialization-story",
+        }}
+      >
+        <StoryLayoutWrapper
+          title="Time Tracking Pre-Aggregated"
+          description="Demonstrates cube serialization with pre-aggregated time tracking data"
+          cubeState={cubeState}
+          reportId="serialization-story"
         >
-          <CubeLayoutWrapper
-            title="Time Tracking Pre-Aggregated"
-            description="Demonstrates cube serialization with pre-aggregated time tracking data"
-          >
-            <CubeView
-              state={cubeState}
-              enableDimensionPicker={false}
-              enableRawDataView={true}
-              renderRawData={(items, _group) => (
-                <SerializedCubeListView
-                  serializedConfig={serializedConfig}
-                  data={items}
-                />
-              )}
-            />
-          </CubeLayoutWrapper>
-        </CubeProvider>
-      </div>
+          <CubeView
+            state={cubeState}
+            enableDimensionPicker={false}
+            enableRawDataView={true}
+            renderRawData={(items, _group) => (
+              <SerializedCubeListView
+                serializedConfig={serializedConfig}
+                data={items}
+              />
+            )}
+          />
+        </StoryLayoutWrapper>
+      </CubeProvider>
     );
   },
 };
@@ -875,7 +827,7 @@ export const IdBasedDimensions: Story = {
         {
           id: "entryCount",
           name: "Entry Count",
-          fieldName: "date",
+          fieldName: "numHours",
           aggregationFunction: "count",
           description: "Number of time entries",
         },
@@ -992,6 +944,8 @@ export const IdBasedDimensions: Story = {
       dimensions: cubeConfig?.dimensions || [],
       measures: cubeConfig?.measures || [],
       initialFilters: cubeConfig?.filters,
+      initialGrouping: ["contractor", "project", "task"],
+      includeItems: true,
       rawDataDimension: cubeDataRawDataDimension,
     });
 
@@ -1009,72 +963,31 @@ export const IdBasedDimensions: Story = {
     }
 
     return (
-      <div className="p-6 space-y-6 h-screen flex flex-col">
-        <div className="bg-slate-50 rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-4">
-            ID-Based Dimensions with Label Mapping
-          </h2>
-          <p className="text-sm text-slate-600 mb-4">
-            This example shows how to use ID-based dimensions with label
-            resolution. Perfect for database scenarios where you have foreign
-            keys but want to display human-readable labels in the cube
-            interface.
-          </p>
-
-          <div className="mb-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
-            <h3 className="font-medium text-blue-800 mb-2">
-              Example Label Mapping:
-            </h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <div>
-                <strong>Contractor ID 1:</strong> "Passionware Adam Borowski"
-              </div>
-              <div>
-                <strong>Project ID 101:</strong> "Passionware Tracker"
-              </div>
-              <div>
-                <strong>Task ID 201:</strong> "Frontend Development"
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-4 p-3 bg-green-50 rounded border-l-4 border-green-400">
-            <h3 className="font-medium text-green-800 mb-2">
-              Configuration Status:
-            </h3>
-            <p className="text-sm text-green-600 mb-4">
-              ✓ Configuration created with {serializedConfig.dimensions.length}{" "}
-              dimensions and {serializedConfig.measures.length} measures
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-1 border rounded-lg overflow-hidden">
-          <CubeProvider
-            value={{
-              state: cubeState,
-              reportId: "id-based-story",
-            }}
-          >
-            <CubeLayoutWrapper
-              title="Time Tracking Pre-Aggregated"
-              description="Demonstrates cube serialization with pre-aggregated time tracking data"
-            >
-              <CubeView
-                state={cubeState}
-                enableDimensionPicker={false}
-                enableRawDataView={true}
-                renderRawData={(items, _group) => (
-                  <SerializedCubeListView
-                    serializedConfig={serializedConfig}
-                    data={items}
-                  />
-                )}
+      <CubeProvider
+        value={{
+          state: cubeState,
+          reportId: "id-based-story",
+        }}
+      >
+        <StoryLayoutWrapper
+          title="ID-Based Dimensions"
+          description="Time tracking with ID-based dimensions and label mapping"
+          cubeState={cubeState}
+          reportId="id-based-story"
+        >
+          <CubeView
+            state={cubeState}
+            enableDimensionPicker={false}
+            enableRawDataView={true}
+            renderRawData={(items, _group) => (
+              <SerializedCubeListView
+                serializedConfig={serializedConfig}
+                data={items}
               />
-            </CubeLayoutWrapper>
-          </CubeProvider>
-        </div>
-      </div>
+            )}
+          />
+        </StoryLayoutWrapper>
+      </CubeProvider>
     );
   },
 };
