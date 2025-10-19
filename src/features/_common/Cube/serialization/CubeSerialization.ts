@@ -313,6 +313,9 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
     }),
   );
 
+  // Check if config has listView (from our custom serialization)
+  const configWithListView = config as any;
+
   return {
     metadata: {
       version: "1.0.0",
@@ -327,6 +330,7 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
     initialGrouping: config.initialGrouping,
     activeMeasures: config.activeMeasures,
     filters,
+    listView: configWithListView.listView,
   };
 }
 

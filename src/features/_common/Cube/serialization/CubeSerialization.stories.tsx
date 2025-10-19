@@ -12,9 +12,6 @@ import { useCubeState } from "../useCubeState.ts";
 import { CubeProvider } from "../CubeContext.tsx";
 import { StoryLayoutWrapper } from "../StoryLayoutWrapper.tsx";
 import type { DimensionDescriptor } from "../CubeService.types.ts";
-import { ListView } from "@/features/_common/ListView.tsx";
-import { rd } from "@passionware/monads";
-import type { ColumnDef } from "@tanstack/react-table";
 import type { CubeDataItem } from "../CubeService.types.ts";
 import { deserializeCubeConfig } from "./CubeSerialization.ts";
 import { createDimensionWithLabels } from "./CubeSerialization.utils.ts";
@@ -54,65 +51,7 @@ type Story = StoryObj;
 
 // Removed RightSidebar - now using CubeDimensionExplorer
 
-// ListView Renderer Component for Serialized Cubes
-function SerializedCubeListView({
-  serializedConfig,
-  data,
-}: {
-  serializedConfig: any;
-  data: any[];
-}) {
-  if (!serializedConfig?.listView?.columns) {
-    return (
-      <div className="p-4 text-center text-slate-500">
-        <p>No ListView configuration provided</p>
-        <p className="text-sm mt-2">
-          Add listView.columns to the serialized config
-        </p>
-      </div>
-    );
-  }
-
-  // Convert serialized columns to TanStack Table columns
-  const columns: ColumnDef<any>[] = serializedConfig.listView.columns.map(
-    (col: any) => ({
-      id: col.id,
-      header: col.name,
-      accessorKey: col.fieldName,
-      cell: ({ getValue }: { getValue: () => any }) => {
-        const value = getValue();
-        if (col.formatFunction) {
-          // Apply format function if available
-          return String(value);
-        }
-        return String(value);
-      },
-      meta: {
-        tooltip: col.description,
-        sortKey: col.sortable ? col.fieldName : undefined,
-      },
-    }),
-  );
-
-  // Create query for ListView
-  const query = {
-    sort: [] as any[],
-    page: 1,
-    limit: serializedConfig.listView.maxInitialItems || 50,
-  };
-
-  return (
-    <div className="h-full">
-      <ListView
-        data={rd.of(data)}
-        columns={columns}
-        query={query as any}
-        onQueryChange={() => {}}
-        caption={`Raw data view with ${data.length} items`}
-      />
-    </div>
-  );
-}
+import { SerializedCubeView } from "../SerializedCubeView.tsx";
 
 // Raw data dimension for CubeDataItem
 const cubeDataRawDataDimension: DimensionDescriptor<CubeDataItem, unknown> = {
@@ -384,14 +323,11 @@ export const TimeTrackingPreAggregated: Story = {
           cubeState={cubeState}
           reportId="serialization-story"
         >
-          <CubeView
+          <SerializedCubeView
             state={cubeState}
-            renderRawData={(items, _group) => (
-              <SerializedCubeListView
-                serializedConfig={serializedConfig}
-                data={items}
-              />
-            )}
+            serializedConfig={serializedConfig}
+            maxInitialDepth={0}
+            enableZoomIn={true}
           />
         </StoryLayoutWrapper>
       </CubeProvider>
@@ -696,14 +632,11 @@ export const SimpleDataSchema: Story = {
           cubeState={cubeState}
           reportId="serialization-story"
         >
-          <CubeView
+          <SerializedCubeView
             state={cubeState}
-            renderRawData={(items, _group) => (
-              <SerializedCubeListView
-                serializedConfig={serializedConfig}
-                data={items}
-              />
-            )}
+            serializedConfig={serializedConfig}
+            maxInitialDepth={0}
+            enableZoomIn={true}
           />
         </StoryLayoutWrapper>
       </CubeProvider>
@@ -972,14 +905,11 @@ export const IdBasedDimensions: Story = {
           cubeState={cubeState}
           reportId="id-based-story"
         >
-          <CubeView
+          <SerializedCubeView
             state={cubeState}
-            renderRawData={(items, _group) => (
-              <SerializedCubeListView
-                serializedConfig={serializedConfig}
-                data={items}
-              />
-            )}
+            serializedConfig={serializedConfig}
+            maxInitialDepth={0}
+            enableZoomIn={true}
           />
         </StoryLayoutWrapper>
       </CubeProvider>

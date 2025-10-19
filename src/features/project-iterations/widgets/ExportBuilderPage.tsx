@@ -26,11 +26,11 @@ import { serializeCubeState } from "@/features/_common/Cube/serialization/CubeSe
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
-import { CubeView } from "@/features/_common/Cube/CubeView.tsx";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
 import { useReportCube } from "./useReportCube";
 import { transformAndAnonymize } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
+import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -231,6 +231,134 @@ function ExportBuilderContent({
       breakdownMap: previewCubeState.cube.config.breakdownMap,
       initialGrouping: previewCubeState.cube.config.initialGrouping,
       activeMeasures: previewCubeState.cube.config.activeMeasures,
+      listView: {
+        columns: [
+          {
+            id: "id",
+            name: "ID",
+            fieldName: "id",
+            type: "text" as const,
+            description: "Entry identifier",
+            sortable: true,
+            visible: true,
+            width: "100px",
+          },
+          {
+            id: "note",
+            name: "Note",
+            fieldName: "note",
+            type: "text" as const,
+            description: "Time entry note",
+            sortable: true,
+            visible: true,
+            width: "200px",
+          },
+          {
+            id: "project",
+            name: "Project",
+            fieldName: "projectId",
+            type: "text" as const,
+            description: "Project name",
+            sortable: true,
+            visible: true,
+            width: "150px",
+          },
+          {
+            id: "task",
+            name: "Task",
+            fieldName: "taskId",
+            type: "text" as const,
+            description: "Task name",
+            sortable: true,
+            visible: true,
+            width: "150px",
+          },
+          {
+            id: "contractor",
+            name: "Contractor",
+            fieldName: "contractorId",
+            type: "text" as const,
+            description: "Contractor name",
+            sortable: true,
+            visible: true,
+            width: "150px",
+          },
+          {
+            id: "activity",
+            name: "Activity",
+            fieldName: "activityId",
+            type: "text" as const,
+            description: "Activity name",
+            sortable: true,
+            visible: true,
+            width: "120px",
+          },
+          {
+            id: "numHours",
+            name: "Hours",
+            fieldName: "numHours",
+            type: "number" as const,
+            description: "Number of hours",
+            sortable: true,
+            visible: true,
+            width: "80px",
+          },
+          {
+            id: "costValue",
+            name: "Cost",
+            fieldName: "costValue",
+            type: "currency" as const,
+            description: "Cost value",
+            sortable: true,
+            visible: true,
+            width: "100px",
+          },
+          {
+            id: "billingValue",
+            name: "Billing",
+            fieldName: "billingValue",
+            type: "currency" as const,
+            description: "Billing value",
+            sortable: true,
+            visible: true,
+            width: "100px",
+          },
+          {
+            id: "profitValue",
+            name: "Profit",
+            fieldName: "profitValue",
+            type: "currency" as const,
+            description: "Profit value",
+            sortable: true,
+            visible: true,
+            width: "100px",
+          },
+          {
+            id: "startAt",
+            name: "Start Time",
+            fieldName: "startAt",
+            type: "date" as const,
+            description: "Start time",
+            sortable: true,
+            visible: true,
+            width: "150px",
+          },
+          {
+            id: "endAt",
+            name: "End Time",
+            fieldName: "endAt",
+            type: "date" as const,
+            description: "End time",
+            sortable: true,
+            visible: true,
+            width: "150px",
+          },
+        ],
+        maxInitialItems: 50,
+        enablePagination: true,
+        itemsPerPage: 25,
+        enableSearch: true,
+      },
     };
 
     // Serialize the complete cube state (config + data)
@@ -551,7 +679,14 @@ function ExportBuilderContent({
                       cubeState={previewCubeState}
                       reportId="export-builder-preview"
                     >
-                      <CubeView state={previewCubeState} />
+                      {serializableConfig && (
+                        <SerializedCubeView
+                          state={previewCubeState}
+                          serializedConfig={serializableConfig.config}
+                          maxInitialDepth={0}
+                          enableZoomIn={true}
+                        />
+                      )}
                     </StoryLayoutWrapper>
                   </CubeProvider>
                 ) : (
