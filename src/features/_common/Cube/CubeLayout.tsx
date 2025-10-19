@@ -31,7 +31,7 @@ export function CubeLayout({
   className = "",
 }: CubeLayoutProps) {
   return (
-    <div className={`flex h-full ${className}`}>
+    <div className={`flex h-full min-w-0 ${className}`}>
       {/* Left Sidebar - Summary and Controls */}
       <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
         {leftSidebar || (
