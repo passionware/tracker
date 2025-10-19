@@ -108,7 +108,38 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
       })
       .join("|") || "";
 
-  const breakdownId = state.cube.config.breakdownMap?.[pathKey];
+  // First try exact match
+  let breakdownId = state.cube.config.breakdownMap?.[pathKey];
+
+  // If no exact match found (undefined), try wildcard match
+  // If exact match is null, don't try wildcard (user explicitly wants raw data)
+  if (breakdownId === undefined) {
+    // Try wildcard match by replacing ALL concrete keys in the path with '*'
+    const wildcardPath = pathKey
+      .split("|")
+      .map((segment) => {
+        const [dim] = segment.split(":");
+        return `${dim}:*`;
+      })
+      .join("|");
+
+    breakdownId = state.cube.config.breakdownMap?.[wildcardPath];
+  }
+
+  // Debug logging
+  console.log("useCurrentBreakdownDimensionId Debug:", {
+    path: state.path,
+    pathKey,
+    wildcardPath: pathKey
+      .split("|")
+      .map((segment) => {
+        const [dim] = segment.split(":");
+        return `${dim}:*`;
+      })
+      .join("|"),
+    breakdownMap: state.cube.config.breakdownMap,
+    breakdownId,
+  });
 
   return breakdownId;
 }
