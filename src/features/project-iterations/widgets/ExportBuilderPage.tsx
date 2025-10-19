@@ -82,7 +82,11 @@ function ExportBuilderContent({
     services,
   });
 
-  const dimensions = [..._dimensions, rawDataDimension, anonymizedRawDataDimension];
+  const dimensions = [
+    ..._dimensions,
+    rawDataDimension,
+    anonymizedRawDataDimension,
+  ];
 
   // Initialize form with default values
   const form = useForm<ExportBuilderFormData>({
@@ -155,7 +159,7 @@ function ExportBuilderContent({
 
   // Auto-update raw data dimension based on anonymization settings
   const currentRawDataDimension = watchedValues.rawDataDimension;
-  
+
   // If time entries are anonymized and current dimension is "date", switch to "entry"
   if (anonymizeTimeEntries && currentRawDataDimension === "date") {
     form.setValue("rawDataDimension", "entry");
