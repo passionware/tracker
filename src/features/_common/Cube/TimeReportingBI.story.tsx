@@ -11,6 +11,7 @@ import type {
 } from "./CubeService.types.ts";
 import { useCubeState } from "./useCubeState.ts";
 import { sum } from "lodash";
+import { CubeProvider } from "./CubeContext.tsx";
 
 interface TimeEntryData {
   entryId: string;
@@ -388,88 +389,102 @@ export const TimeReportingDashboard = () => {
     });
 
     return (
-      <div className="p-8 max-w-full">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">⏱️ Time Reporting BI Tool</h2>
-          <p className="text-sm text-slate-600 mb-4">
-            Comprehensive analytics for time tracking, costs, billing, and
-            profitability. Explore by contractor, project, task type, activity,
-            role, and time period.
-          </p>
-          <div className="flex gap-2 items-center bg-blue-50 p-4 rounded-lg">
-            <div className="text-sm font-medium text-blue-900">📊 Dataset:</div>
-            <div className="text-sm text-blue-700">
-              {timeEntries.length} time entries •{" "}
-              {new Set(timeEntries.map((e) => e.contractorId)).size} contractors
-              • {new Set(timeEntries.map((e) => e.projectId)).size} projects •
-              Total:{" "}
-              {timeEntries.reduce((sum, e) => sum + e.hours, 0).toFixed(1)}h
+      <CubeProvider
+        value={{
+          state,
+          dimensions: dimensions as any,
+          measures: measures as any,
+          data: timeEntries,
+        }}
+      >
+        <div className="p-8 max-w-full">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">
+              ⏱️ Time Reporting BI Tool
+            </h2>
+            <p className="text-sm text-slate-600 mb-4">
+              Comprehensive analytics for time tracking, costs, billing, and
+              profitability. Explore by contractor, project, task type,
+              activity, role, and time period.
+            </p>
+            <div className="flex gap-2 items-center bg-blue-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-blue-900">
+                📊 Dataset:
+              </div>
+              <div className="text-sm text-blue-700">
+                {timeEntries.length} time entries •{" "}
+                {new Set(timeEntries.map((e) => e.contractorId)).size}{" "}
+                contractors •{" "}
+                {new Set(timeEntries.map((e) => e.projectId)).size} projects •
+                Total:{" "}
+                {timeEntries.reduce((sum, e) => sum + e.hours, 0).toFixed(1)}h
+              </div>
             </div>
           </div>
-        </div>
 
-        <CubeView
-          state={state}
-          showGrandTotals={true}
-          enableRawDataView={true}
-          enableZoomIn={true}
-          enableDimensionPicker={true}
-          maxInitialDepth={0}
-          renderRawData={(items) => (
-            <div className="space-y-2">
-              {items.slice(0, 10).map((item) => {
-                const entry = item as TimeEntryData;
-                return (
-                  <div
-                    key={entry.entryId}
-                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-900 truncate">
-                          {entry.note}
+          <CubeView
+            state={state}
+            showGrandTotals={true}
+            enableRawDataView={true}
+            enableZoomIn={true}
+            enableDimensionPicker={true}
+            maxInitialDepth={0}
+            renderRawData={(items) => (
+              <div className="space-y-2">
+                {items.slice(0, 10).map((item) => {
+                  const entry = item as TimeEntryData;
+                  return (
+                    <div
+                      key={entry.entryId}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-slate-900 truncate">
+                            {entry.note}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-600">
+                            <span className="flex items-center gap-1">
+                              👤 {entry.contractorName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              📁 {entry.projectName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              🎭 {entry.roleType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                            <span>📝 {entry.taskType}</span>
+                            <span>⚡ {entry.activityType}</span>
+                            <span>📅 {entry.date.toLocaleDateString()}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-600">
-                          <span className="flex items-center gap-1">
-                            👤 {entry.contractorName}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            📁 {entry.projectName}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            🎭 {entry.roleType}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                          <span>📝 {entry.taskType}</span>
-                          <span>⚡ {entry.activityType}</span>
-                          <span>📅 {entry.date.toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <div className="text-sm font-semibold text-slate-900">
-                          {entry.hours}h
-                        </div>
-                        <div className="text-xs text-green-700 font-medium">
-                          ${entry.billingAmount.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          Profit: ${entry.profit.toFixed(2)}
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <div className="text-sm font-semibold text-slate-900">
+                            {entry.hours}h
+                          </div>
+                          <div className="text-xs text-green-700 font-medium">
+                            ${entry.billingAmount.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            Profit: ${entry.profit.toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  );
+                })}
+                {items.length > 10 && (
+                  <div className="text-xs text-center text-slate-500 py-2">
+                    +{items.length - 10} more entries
                   </div>
-                );
-              })}
-              {items.length > 10 && (
-                <div className="text-xs text-center text-slate-500 py-2">
-                  +{items.length - 10} more entries
-                </div>
-              )}
-            </div>
-          )}
-        />
-      </div>
+                )}
+              </div>
+            )}
+          />
+        </div>
+      </CubeProvider>
     );
   })();
 };

@@ -15,7 +15,9 @@ import {
   CubeView,
   type DimensionDescriptor,
   type MeasureDescriptor,
+  type CubeDataItem,
   useCubeState,
+  CubeProvider,
 } from "@/features/_common/Cube/index.ts";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
@@ -618,7 +620,19 @@ export const SalesByRegion: Story = {
       activeMeasures: ["revenue", "profit"],
     });
 
-    return <CubeView state={state} enableDimensionPicker={true} />;
+    return (
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "sales-by-region",
+        }}
+      >
+        <CubeView state={state} enableDimensionPicker={true} />
+      </CubeProvider>
+    );
   },
 };
 
@@ -634,7 +648,19 @@ export const SalesByRegionAndCategory: Story = {
       includeItems: true,
     });
 
-    return <CubeView state={state} />;
+    return (
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "sales-by-region-category",
+        }}
+      >
+        <CubeView state={state} />
+      </CubeProvider>
+    );
   },
 };
 
@@ -676,126 +702,140 @@ export const InteractiveSalesCube: Story = {
     }
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Interactive Sales Cube</CardTitle>
-            <CardDescription>
-              Change grouping and filters to explore the data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Group By:
-              </label>
-              <div className="flex gap-2">
-                <Button
-                  variant={
-                    rootDimension === "region" && dimensionSequence.length === 1
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() => {
-                    setRootDimension("region");
-                    setDimensionSequence(["region"]);
-                  }}
-                >
-                  🌍 Region
-                </Button>
-                <Button
-                  variant={
-                    rootDimension === "category" &&
-                    dimensionSequence.length === 1
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() => {
-                    setRootDimension("category");
-                    setDimensionSequence(["category"]);
-                  }}
-                >
-                  📦 Category
-                </Button>
-                <Button
-                  variant={
-                    rootDimension === "salesperson" &&
-                    dimensionSequence.length === 1
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() => {
-                    setRootDimension("salesperson");
-                    setDimensionSequence(["salesperson"]);
-                  }}
-                >
-                  👤 Salesperson
-                </Button>
-                <Button
-                  variant={
-                    rootDimension === "region" && dimensionSequence.length === 2
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() => {
-                    setRootDimension("region");
-                    setDimensionSequence(["region", "category"]);
-                  }}
-                >
-                  🌍 Region → 📦 Category
-                </Button>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "interactive-sales-cube",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Interactive Sales Cube</CardTitle>
+              <CardDescription>
+                Change grouping and filters to explore the data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Group By:
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={
+                      rootDimension === "region" &&
+                      dimensionSequence.length === 1
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setRootDimension("region");
+                      setDimensionSequence(["region"]);
+                    }}
+                  >
+                    🌍 Region
+                  </Button>
+                  <Button
+                    variant={
+                      rootDimension === "category" &&
+                      dimensionSequence.length === 1
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setRootDimension("category");
+                      setDimensionSequence(["category"]);
+                    }}
+                  >
+                    📦 Category
+                  </Button>
+                  <Button
+                    variant={
+                      rootDimension === "salesperson" &&
+                      dimensionSequence.length === 1
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setRootDimension("salesperson");
+                      setDimensionSequence(["salesperson"]);
+                    }}
+                  >
+                    👤 Salesperson
+                  </Button>
+                  <Button
+                    variant={
+                      rootDimension === "region" &&
+                      dimensionSequence.length === 2
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setRootDimension("region");
+                      setDimensionSequence(["region", "category"]);
+                    }}
+                  >
+                    🌍 Region → 📦 Category
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Filter:</label>
-              <div className="flex gap-2">
-                <Button
-                  variant={selectedRegion === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedRegion(null)}
-                >
-                  All Regions
-                </Button>
-                <Button
-                  variant={selectedRegion === "North" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedRegion("North")}
-                >
-                  North
-                </Button>
-                <Button
-                  variant={selectedRegion === "South" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedRegion("South")}
-                >
-                  South
-                </Button>
-                <Button
-                  variant={selectedRegion === "East" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedRegion("East")}
-                >
-                  East
-                </Button>
-                <Button
-                  variant={selectedRegion === "West" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedRegion("West")}
-                >
-                  West
-                </Button>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Filter:
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectedRegion === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedRegion(null)}
+                  >
+                    All Regions
+                  </Button>
+                  <Button
+                    variant={selectedRegion === "North" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedRegion("North")}
+                  >
+                    North
+                  </Button>
+                  <Button
+                    variant={selectedRegion === "South" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedRegion("South")}
+                  >
+                    South
+                  </Button>
+                  <Button
+                    variant={selectedRegion === "East" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedRegion("East")}
+                  >
+                    East
+                  </Button>
+                  <Button
+                    variant={selectedRegion === "West" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedRegion("West")}
+                  >
+                    West
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <CubeView state={state} />
-      </div>
+          <CubeView state={state} />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -812,7 +852,19 @@ export const TimeTrackingCube: Story = {
       includeItems: true,
     });
 
-    return <CubeView state={state} />;
+    return (
+      <CubeProvider
+        value={{
+          state,
+          dimensions: timeDimensions as any,
+          measures: timeMeasures as any,
+          data: timeData as any,
+          reportId: "time-tracking-cube",
+        }}
+      >
+        <CubeView state={state} />
+      </CubeProvider>
+    );
   },
 };
 
@@ -828,36 +880,50 @@ export const CustomRendering: Story = {
     });
 
     return (
-      <CubeView
-        state={state}
-        enableDimensionPicker={true}
-        renderGroupHeader={(group, level) => (
-          <div className="flex items-center gap-2">
-            <Badge variant={level === 0 ? "primary" : "secondary"}>
-              {level === 0 ? "Region" : "Category"}
-            </Badge>
-            <h4 className="font-medium">{group.dimensionLabel}</h4>
-            <span className="text-sm text-slate-500">
-              ({group.itemCount} transactions)
-            </span>
-          </div>
-        )}
-        renderCell={(cell, _group) => {
-          const isProfit = cell.measureId === "profit";
-          const value = cell.value as number;
-          const isPositive = value > 0;
-
-          return (
-            <div
-              className={`text-sm font-medium ${
-                isProfit ? (isPositive ? "text-green-600" : "text-red-600") : ""
-              }`}
-            >
-              {cell.formattedValue}
-            </div>
-          );
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "custom-rendering",
         }}
-      />
+      >
+        <CubeView
+          state={state}
+          enableDimensionPicker={true}
+          renderGroupHeader={(group, level) => (
+            <div className="flex items-center gap-2">
+              <Badge variant={level === 0 ? "primary" : "secondary"}>
+                {level === 0 ? "Region" : "Category"}
+              </Badge>
+              <h4 className="font-medium">{group.dimensionLabel}</h4>
+              <span className="text-sm text-slate-500">
+                ({group.itemCount} transactions)
+              </span>
+            </div>
+          )}
+          renderCell={(cell, _group) => {
+            const isProfit = cell.measureId === "profit";
+            const value = cell.value as number;
+            const isPositive = value > 0;
+
+            return (
+              <div
+                className={`text-sm font-medium ${
+                  isProfit
+                    ? isPositive
+                      ? "text-green-600"
+                      : "text-red-600"
+                    : ""
+                }`}
+              >
+                {cell.formattedValue}
+              </div>
+            );
+          }}
+        />
+      </CubeProvider>
     );
   },
 };
@@ -873,7 +939,19 @@ export const AllMeasures: Story = {
       // All measures active (default)
     });
 
-    return <CubeView state={state} enableDimensionPicker={true} />;
+    return (
+      <CubeProvider
+        value={{
+          state,
+          dimensions: timeDimensions as any,
+          measures: timeMeasures as any,
+          data: timeData as any,
+          reportId: "all-measures",
+        }}
+      >
+        <CubeView state={state} enableDimensionPicker={true} />
+      </CubeProvider>
+    );
   },
 };
 
@@ -887,7 +965,19 @@ export const GrandTotalsOnly: Story = {
       initialDefaultDimensionSequence: [], // No grouping
     });
 
-    return <CubeView state={state} enableDimensionPicker={true} />;
+    return (
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "grand-totals-only",
+        }}
+      >
+        <CubeView state={state} enableDimensionPicker={true} />
+      </CubeProvider>
+    );
   },
 };
 
@@ -905,18 +995,29 @@ export const WithRawDataView: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Raw Data Viewing Example</CardTitle>
-            <CardDescription>
-              Click the "📊 Data" button on any group to view the raw data items
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "raw-data-view",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Raw Data Viewing Example</CardTitle>
+              <CardDescription>
+                Click the "📊 Data" button on any group to view the raw data
+                items
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView state={state} />
-      </div>
+          <CubeView state={state} />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -934,111 +1035,122 @@ export const CustomRawDataRendering: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Custom Raw Data Rendering</CardTitle>
-            <CardDescription>
-              Custom table view for raw data items
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: salesDimensions as any,
+          measures: salesMeasures as any,
+          data: salesData as any,
+          reportId: "custom-raw-data",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom Raw Data Rendering</CardTitle>
+              <CardDescription>
+                Custom table view for raw data items
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView
-          state={state}
-          renderRawData={(items, group) => (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="text-left p-2 border">Date</th>
-                    <th className="text-left p-2 border">Product</th>
-                    <th className="text-left p-2 border">Salesperson</th>
-                    <th className="text-right p-2 border">Quantity</th>
-                    <th className="text-right p-2 border">Revenue</th>
-                    <th className="text-right p-2 border">Cost</th>
-                    <th className="text-right p-2 border">Profit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => {
-                    const sales = item as SalesTransaction;
-                    const profit = sales.revenue - sales.cost;
-                    return (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-2 border">{sales.date}</td>
-                        <td className="p-2 border">{sales.product}</td>
-                        <td className="p-2 border">{sales.salesperson}</td>
-                        <td className="text-right p-2 border">
-                          {sales.quantity}
-                        </td>
-                        <td className="text-right p-2 border">
-                          ${sales.revenue.toLocaleString()}
-                        </td>
-                        <td className="text-right p-2 border">
-                          ${sales.cost.toLocaleString()}
-                        </td>
-                        <td
-                          className={`text-right p-2 border ${
-                            profit >= 0 ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          ${profit.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-slate-100 font-semibold">
-                  <tr>
-                    <td colSpan={3} className="p-2 border">
-                      Total for {group.dimensionLabel}
-                    </td>
-                    <td className="text-right p-2 border">
-                      {items.reduce(
-                        (sum, item) =>
-                          sum + (item as SalesTransaction).quantity,
-                        0,
-                      )}
-                    </td>
-                    <td className="text-right p-2 border">
-                      $
-                      {items
-                        .reduce(
+          <CubeView
+            state={state}
+            renderRawData={(items, group) => (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      <th className="text-left p-2 border">Date</th>
+                      <th className="text-left p-2 border">Product</th>
+                      <th className="text-left p-2 border">Salesperson</th>
+                      <th className="text-right p-2 border">Quantity</th>
+                      <th className="text-right p-2 border">Revenue</th>
+                      <th className="text-right p-2 border">Cost</th>
+                      <th className="text-right p-2 border">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, idx) => {
+                      const sales = item as SalesTransaction;
+                      const profit = sales.revenue - sales.cost;
+                      return (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-2 border">{sales.date}</td>
+                          <td className="p-2 border">{sales.product}</td>
+                          <td className="p-2 border">{sales.salesperson}</td>
+                          <td className="text-right p-2 border">
+                            {sales.quantity}
+                          </td>
+                          <td className="text-right p-2 border">
+                            ${sales.revenue.toLocaleString()}
+                          </td>
+                          <td className="text-right p-2 border">
+                            ${sales.cost.toLocaleString()}
+                          </td>
+                          <td
+                            className={`text-right p-2 border ${
+                              profit >= 0 ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            ${profit.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="bg-slate-100 font-semibold">
+                    <tr>
+                      <td colSpan={3} className="p-2 border">
+                        Total for {group.dimensionLabel}
+                      </td>
+                      <td className="text-right p-2 border">
+                        {items.reduce(
                           (sum, item) =>
-                            sum + (item as SalesTransaction).revenue,
+                            sum + (item as SalesTransaction).quantity,
                           0,
-                        )
-                        .toLocaleString()}
-                    </td>
-                    <td className="text-right p-2 border">
-                      $
-                      {items
-                        .reduce(
-                          (sum, item) => sum + (item as SalesTransaction).cost,
-                          0,
-                        )
-                        .toLocaleString()}
-                    </td>
-                    <td className="text-right p-2 border text-green-600">
-                      $
-                      {items
-                        .reduce(
-                          (sum, item) =>
-                            sum +
-                            ((item as SalesTransaction).revenue -
-                              (item as SalesTransaction).cost),
-                          0,
-                        )
-                        .toLocaleString()}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        />
-      </div>
+                        )}
+                      </td>
+                      <td className="text-right p-2 border">
+                        $
+                        {items
+                          .reduce(
+                            (sum, item) =>
+                              sum + (item as SalesTransaction).revenue,
+                            0,
+                          )
+                          .toLocaleString()}
+                      </td>
+                      <td className="text-right p-2 border">
+                        $
+                        {items
+                          .reduce(
+                            (sum, item) =>
+                              sum + (item as SalesTransaction).cost,
+                            0,
+                          )
+                          .toLocaleString()}
+                      </td>
+                      <td className="text-right p-2 border text-green-600">
+                        $
+                        {items
+                          .reduce(
+                            (sum, item) =>
+                              sum +
+                              ((item as SalesTransaction).revenue -
+                                (item as SalesTransaction).cost),
+                            0,
+                          )
+                          .toLocaleString()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -1056,19 +1168,29 @@ export const ProjectTrackingByUser: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Tracking - By User</CardTitle>
-            <CardDescription>
-              Track time entries grouped by user and project with zoom
-              navigation
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: projectTrackingDimensions as any,
+          measures: projectTrackingMeasures as any,
+          data: projectTrackingData as any,
+          reportId: "project-tracking-by-user",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Tracking - By User</CardTitle>
+              <CardDescription>
+                Track time entries grouped by user and project with zoom
+                navigation
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView state={state} />
-      </div>
+          <CubeView state={state} />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -1086,19 +1208,29 @@ export const ProjectTrackingHierarchy: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Hierarchy View</CardTitle>
-            <CardDescription>
-              Project → Task → Activity breakdown with zoom navigation and raw
-              data
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: projectTrackingDimensions as any,
+          measures: projectTrackingMeasures as any,
+          data: projectTrackingData as any,
+          reportId: "project-tracking-hierarchy",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Hierarchy View</CardTitle>
+              <CardDescription>
+                Project → Task → Activity breakdown with zoom navigation and raw
+                data
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView state={state} />
-      </div>
+          <CubeView state={state} />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -1116,106 +1248,117 @@ export const ProjectTrackingWithRawData: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Tracking with Time Entries</CardTitle>
-            <CardDescription>
-              Click "📊 Data" to view detailed time entries with start/end times
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: projectTrackingDimensions as any,
+          measures: projectTrackingMeasures as any,
+          data: projectTrackingData as any,
+          reportId: "project-tracking-raw-data",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Tracking with Time Entries</CardTitle>
+              <CardDescription>
+                Click "📊 Data" to view detailed time entries with start/end
+                times
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView
-          state={state}
-          renderRawData={(items, group) => (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="text-left p-2 border">User</th>
-                    <th className="text-left p-2 border">Task</th>
-                    <th className="text-left p-2 border">Activity</th>
-                    <th className="text-left p-2 border">Start Time</th>
-                    <th className="text-left p-2 border">End Time</th>
-                    <th className="text-right p-2 border">Duration</th>
-                    <th className="text-center p-2 border">Billable</th>
-                    <th className="text-left p-2 border">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => {
-                    const entry = item as ProjectTimeEntry;
-                    const duration = calculateDuration(
-                      entry.startTime,
-                      entry.endTime,
-                    );
-                    return (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-2 border">{entry.user}</td>
-                        <td className="p-2 border">{entry.task}</td>
-                        <td className="p-2 border">{entry.activity}</td>
-                        <td className="p-2 border">
-                          {formatTime(entry.startTime)}
-                        </td>
-                        <td className="p-2 border">
-                          {formatTime(entry.endTime)}
-                        </td>
-                        <td className="text-right p-2 border">
-                          {duration.toFixed(2)}h
-                        </td>
-                        <td className="text-center p-2 border">
-                          {entry.billable ? (
-                            <Badge variant="success" className="text-xs">
-                              Yes
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              No
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="p-2 border text-xs text-slate-600">
-                          {entry.notes || "-"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-slate-100 font-semibold">
-                  <tr>
-                    <td colSpan={5} className="p-2 border">
-                      Total for {group.dimensionLabel}
-                    </td>
-                    <td className="text-right p-2 border">
-                      {items
-                        .reduce(
-                          (sum, item) =>
-                            sum +
-                            calculateDuration(
-                              (item as ProjectTimeEntry).startTime,
-                              (item as ProjectTimeEntry).endTime,
-                            ),
-                          0,
-                        )
-                        .toFixed(2)}
-                      h
-                    </td>
-                    <td colSpan={2} className="p-2 border">
-                      {
-                        items.filter(
-                          (item) => (item as ProjectTimeEntry).billable,
-                        ).length
-                      }{" "}
-                      billable
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        />
-      </div>
+          <CubeView
+            state={state}
+            renderRawData={(items, group) => (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      <th className="text-left p-2 border">User</th>
+                      <th className="text-left p-2 border">Task</th>
+                      <th className="text-left p-2 border">Activity</th>
+                      <th className="text-left p-2 border">Start Time</th>
+                      <th className="text-left p-2 border">End Time</th>
+                      <th className="text-right p-2 border">Duration</th>
+                      <th className="text-center p-2 border">Billable</th>
+                      <th className="text-left p-2 border">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, idx) => {
+                      const entry = item as ProjectTimeEntry;
+                      const duration = calculateDuration(
+                        entry.startTime,
+                        entry.endTime,
+                      );
+                      return (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-2 border">{entry.user}</td>
+                          <td className="p-2 border">{entry.task}</td>
+                          <td className="p-2 border">{entry.activity}</td>
+                          <td className="p-2 border">
+                            {formatTime(entry.startTime)}
+                          </td>
+                          <td className="p-2 border">
+                            {formatTime(entry.endTime)}
+                          </td>
+                          <td className="text-right p-2 border">
+                            {duration.toFixed(2)}h
+                          </td>
+                          <td className="text-center p-2 border">
+                            {entry.billable ? (
+                              <Badge variant="success" className="text-xs">
+                                Yes
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                No
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="p-2 border text-xs text-slate-600">
+                            {entry.notes || "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="bg-slate-100 font-semibold">
+                    <tr>
+                      <td colSpan={5} className="p-2 border">
+                        Total for {group.dimensionLabel}
+                      </td>
+                      <td className="text-right p-2 border">
+                        {items
+                          .reduce(
+                            (sum, item) =>
+                              sum +
+                              calculateDuration(
+                                (item as ProjectTimeEntry).startTime,
+                                (item as ProjectTimeEntry).endTime,
+                              ),
+                            0,
+                          )
+                          .toFixed(2)}
+                        h
+                      </td>
+                      <td colSpan={2} className="p-2 border">
+                        {
+                          items.filter(
+                            (item) => (item as ProjectTimeEntry).billable,
+                          ).length
+                        }{" "}
+                        billable
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -1232,37 +1375,47 @@ export const BillableAnalysis: Story = {
     });
 
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Billable vs Non-Billable Analysis</CardTitle>
-            <CardDescription>
-              Compare billable and non-billable hours across projects
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <CubeProvider
+        value={{
+          state,
+          dimensions: projectTrackingDimensions as any,
+          measures: projectTrackingMeasures as any,
+          data: projectTrackingData as any,
+          reportId: "billable-analysis",
+        }}
+      >
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billable vs Non-Billable Analysis</CardTitle>
+              <CardDescription>
+                Compare billable and non-billable hours across projects
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-        <CubeView
-          state={state}
-          renderCell={(cell, group) => {
-            // Highlight billable hours in green
-            const isBillableGroup = group.dimensionLabel === "Billable";
-            const isHoursCell = cell.measureId === "totalHours";
+          <CubeView
+            state={state}
+            renderCell={(cell, group) => {
+              // Highlight billable hours in green
+              const isBillableGroup = group.dimensionLabel === "Billable";
+              const isHoursCell = cell.measureId === "totalHours";
 
-            return (
-              <div
-                className={
-                  isBillableGroup && isHoursCell
-                    ? "text-green-600 font-semibold"
-                    : ""
-                }
-              >
-                {cell.formattedValue}
-              </div>
-            );
-          }}
-        />
-      </div>
+              return (
+                <div
+                  className={
+                    isBillableGroup && isHoursCell
+                      ? "text-green-600 font-semibold"
+                      : ""
+                  }
+                >
+                  {cell.formattedValue}
+                </div>
+              );
+            }}
+          />
+        </div>
+      </CubeProvider>
     );
   },
 };
@@ -1417,11 +1570,27 @@ export const InteractiveProjectDashboard: Story = {
           </CardContent>
         </Card>
 
-        <CubeView
-          state={state}
-          maxInitialDepth={1}
-          enableDimensionPicker={true}
-        />
+        <CubeProvider
+          value={{
+            state,
+            dimensions: projectTrackingDimensions as DimensionDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            measures: projectTrackingMeasures as MeasureDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            data: projectTrackingData as any,
+            reportId: "interactive-project-dashboard",
+          }}
+        >
+          <CubeView
+            state={state}
+            maxInitialDepth={1}
+            enableDimensionPicker={true}
+          />
+        </CubeProvider>
       </div>
     );
   },
@@ -1498,7 +1667,23 @@ export const ZoomInNavigation: Story = {
           </CardContent>
         </Card>
 
-        <CubeView state={state} />
+        <CubeProvider
+          value={{
+            state,
+            dimensions: salesDimensions as DimensionDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            measures: salesMeasures as MeasureDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            data: salesData,
+            reportId: "zoom-in-navigation",
+          }}
+        >
+          <CubeView state={state} />
+        </CubeProvider>
       </div>
     );
   },
@@ -1550,7 +1735,23 @@ export const DynamicDimensionPicker: Story = {
           </CardContent>
         </Card>
 
-        <CubeView state={state} />
+        <CubeProvider
+          value={{
+            state,
+            dimensions: salesDimensions as DimensionDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            measures: salesMeasures as MeasureDescriptor<
+              CubeDataItem,
+              unknown
+            >[],
+            data: salesData,
+            reportId: "dynamic-dimension-picker",
+          }}
+        >
+          <CubeView state={state} />
+        </CubeProvider>
       </div>
     );
   },
