@@ -53,7 +53,7 @@ const config: CubeConfig<SalesData> = {
 const cube = cubeService.calculateCube(config);
 
 // 5. Render the results
-<CubeView cube={cube} showGrandTotals={true} />
+<CubeView cube={cube} />
 ```
 
 ## Features
@@ -299,4 +299,3 @@ When adding features:
 ## License
 
 Part of the Passionware Tracker project.
-

@@ -301,7 +301,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       {/* Results */}
       <CubeView
         cube={cube}
-        showGrandTotals={true}
         maxInitialDepth={1}
         renderCell={(cell, group) => {
           // Custom rendering for profit with color coding

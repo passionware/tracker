@@ -424,7 +424,6 @@ export const TimeReportingDashboard = () => {
 
           <CubeView
             state={state}
-            showGrandTotals={true}
             enableRawDataView={true}
             enableZoomIn={true}
             enableDimensionPicker={true}

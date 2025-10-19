@@ -95,7 +95,7 @@ interface NivoSunburstNode {
   children?: NivoSunburstNode[];
   dimensionId?: string;
   dimensionValue?: unknown;
-  path?: string;  // Full path string for zoom reconstruction
+  path?: string; // Full path string for zoom reconstruction
   formattedValue?: string;
   itemCount?: number;
 }
@@ -114,7 +114,7 @@ onClick={(node) => {
     state.resetZoom();
     return;
   }
-  
+
   // Parse path and reconstruct PathItem[]
   const pathItems = parseNodePath(node, dimensions, rootData);
   state.setZoomPath(pathItems);
@@ -130,7 +130,7 @@ The cube state updates, triggering:
 
 ## Usage
 
-### In CubeSidebar
+### In Cube Layout
 
 ```tsx
 <CubeSunburst

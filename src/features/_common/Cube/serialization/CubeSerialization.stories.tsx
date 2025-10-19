@@ -376,7 +376,6 @@ export const TimeTrackingPreAggregated: Story = {
               state={cubeState}
               enableDimensionPicker={false}
               enableRawDataView={true}
-              showGrandTotals={false}
               renderRawData={(items, _group) => (
                 <SerializedCubeListView
                   serializedConfig={serializedConfig}
@@ -688,7 +687,6 @@ export const SimpleDataSchema: Story = {
               state={cubeState}
               enableDimensionPicker={false}
               enableRawDataView={true}
-              showGrandTotals={false}
               renderRawData={(items, _group) => (
                 <SerializedCubeListView
                   serializedConfig={serializedConfig}
@@ -1004,7 +1002,6 @@ export const IdBasedDimensions: Story = {
                 state={cubeState}
                 enableDimensionPicker={false}
                 enableRawDataView={true}
-                showGrandTotals={false}
                 renderRawData={(items, _group) => (
                   <SerializedCubeListView
                     serializedConfig={serializedConfig}

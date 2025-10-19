@@ -260,7 +260,6 @@ export function QuickStartCubeExample() {
       {/* Results */}
       <CubeView
         state={state}
-        showGrandTotals={true}
         maxInitialDepth={1}
         // Optional: Custom rendering
         renderCell={(cell, _group) => {

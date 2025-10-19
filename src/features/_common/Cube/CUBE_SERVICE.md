@@ -183,7 +183,7 @@ const cube = cubeService.calculateCube(config, {
 import { CubeView } from "@/components/ui/cube-view";
 
 function MyCubeReport() {
-  return <CubeView cube={cube} showGrandTotals={true} maxInitialDepth={1} />;
+  return <CubeView cube={cube} maxInitialDepth={1} />;
 }
 ```
 

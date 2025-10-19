@@ -136,7 +136,6 @@ state.resetZoom(); // Reset to root
 - `renderCell`
 - `renderRawData`
 - `enableDimensionPicker`
-- `showGrandTotals`
 - `maxInitialDepth`
 - `enableRawDataView`
 - `enableZoomIn`
@@ -182,7 +181,6 @@ function MyComponent() {
     <CubeView
       state={state}
       enableDimensionPicker
-      showGrandTotals
       enableRawDataView
       enableZoomIn
       maxInitialDepth={1}

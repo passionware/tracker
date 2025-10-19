@@ -302,7 +302,6 @@ The `CubeView` component now accepts the cube state and callbacks:
 
   // Other features
   enableRawDataView={true}
-  showGrandTotals={true}
   maxInitialDepth={0}
 />
 ```

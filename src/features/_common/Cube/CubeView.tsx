@@ -14,7 +14,6 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
-import { CubeSidebar } from "./CubeSidebar.tsx";
 import { CubeTreeNode } from "./CubeTreeNode.tsx";
 import type { CubeState } from "./useCubeState.ts";
 
@@ -32,8 +31,6 @@ export interface CubeViewProps {
   renderRawData?: (items: CubeDataItem[], group: CubeGroup) => React.ReactNode;
   /** Optional: Enable dimension picker */
   enableDimensionPicker?: boolean;
-  /** Optional: Show grand totals */
-  showGrandTotals?: boolean;
   /** Optional: Maximum initial expansion depth (0 = all collapsed) */
   maxInitialDepth?: number;
   /** Optional: Enable raw data viewing (requires includeItems in cube calculation) */
@@ -53,7 +50,6 @@ export function CubeView({
   renderCell,
   renderRawData,
   enableDimensionPicker = true,
-  showGrandTotals = true,
   maxInitialDepth = 0,
   enableRawDataView = true,
   enableZoomIn = true,
@@ -89,48 +85,6 @@ export function CubeView({
     return cube.groups;
   })();
 
-  // Handlers
-  const handleZoomIn = (group: CubeGroup, _fullPath: BreadcrumbItem[]) => {
-    // Convert group to PathItem and zoom in
-    state.zoomIn({
-      dimensionId: group.dimensionId,
-      dimensionValue: group.dimensionValue,
-    });
-  };
-
-  // Get available dimensions for current level
-  const usedDimensionIds = state.path.map((p) => p.dimensionId);
-
-  // Current dimension shown in the groups (e.g., "region" if showing North, South, etc.)
-  const currentGroupDimensionId = displayGroups[0]?.dimensionId;
-
-  // Dimension used for children of these groups (what the dropdown should show/set)
-  // This should match the logic used in the sidebar for highlighting
-  const currentChildDimensionId = (() => {
-    if (zoomPath.length === 0) {
-      // At root: look at the breakdown map for the root path
-      return config.breakdownMap?.[""];
-    } else {
-      // When zoomed in: look up the child dimension for the current zoom path
-      const zoomPathString = state.path
-        .map((p) => {
-          const dim = config.dimensions.find((d) => d.id === p.dimensionId);
-          const key = dim?.getKey
-            ? dim.getKey(p.dimensionValue)
-            : String(p.dimensionValue ?? "null");
-          return `${p.dimensionId}:${key}`;
-        })
-        .join("|");
-
-      return config.breakdownMap?.[zoomPathString];
-    }
-  })();
-
-  // For the sidebar, show all dimensions that aren't in the ancestor path
-  const sidebarDimensions = config.dimensions.filter(
-    (d) => !usedDimensionIds.includes(d.id),
-  );
-
   return (
     <div className={className}>
       {/* DEBUG: Temporary state dump */}
@@ -147,19 +101,6 @@ export function CubeView({
 
       {/* Main Content Area - with optional sidebar */}
       <div className="flex gap-4 h-full w-full min-h-0">
-        {/* Summary Sidebar */}
-        {showGrandTotals && (
-          <CubeSidebar
-            state={state}
-            zoomPath={zoomPath}
-            measures={measures as MeasureDescriptor<any>[]}
-            sidebarDimensions={sidebarDimensions as DimensionDescriptor<any>[]}
-            currentGroupDimensionId={currentGroupDimensionId}
-            currentChildDimensionId={currentChildDimensionId}
-            handleZoomIn={handleZoomIn}
-          />
-        )}
-
         {/* Groups or Raw Data */}
         <motion.div
           className="flex-1 space-y-3 min-w-0 overflow-auto"
