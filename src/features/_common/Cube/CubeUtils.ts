@@ -31,14 +31,6 @@ export function findBreakdownDimensionId(
       initialGrouping,
       nodeStates,
     );
-
-    // Debug logging
-    console.log("findBreakdownDimensionId fallback result:", {
-      pathKey,
-      initialGrouping,
-      nodeStates: Array.from(nodeStates.entries()),
-      result: childDimensionId,
-    });
   }
 
   return childDimensionId;
@@ -65,38 +57,20 @@ export function findFirstUnusedDimension(
     return priorityList[0] || null;
   }
 
-  const usedDimensions = new Set(
-    nodePath.split("|").map((segment) => segment.split(":")[0]),
-  );
+  // Get dimensions used in current path
+  const pathDimensions = nodePath
+    .split("|")
+    .map((segment) => segment.split(":")[0]);
 
-  // Consider the root dimension as "used" if it was overridden
-  const rootState = nodeStates.get("");
-  if (
-    rootState?.childDimensionId !== undefined &&
-    rootState.childDimensionId !== null
-  ) {
-    usedDimensions.add(rootState.childDimensionId);
-  }
+  // Get root override dimension
+  const rootOverride = nodeStates.get("")?.childDimensionId;
 
-  // Find first dimension from priority list that isn't used
-  for (const dimensionId of priorityList) {
-    if (!usedDimensions.has(dimensionId)) {
-      console.log("findFirstUnusedDimension found:", dimensionId, {
-        nodePath,
-        priorityList,
-        usedDimensions: Array.from(usedDimensions),
-        nodeStates: Array.from(nodeStates.entries()),
-      });
-      return dimensionId;
-    }
-  }
+  // Combine used dimensions
+  const usedDimensions = new Set([
+    ...pathDimensions,
+    ...(rootOverride ? [rootOverride] : []),
+  ]);
 
-  // All dimensions from priority list are used
-  console.log("findFirstUnusedDimension: all dimensions used", {
-    nodePath,
-    priorityList,
-    usedDimensions: Array.from(usedDimensions),
-    nodeStates: Array.from(nodeStates.entries()),
-  });
-  return null;
+  // Find first unused dimension
+  return priorityList.find((dim) => !usedDimensions.has(dim)) || null;
 }

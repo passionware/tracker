@@ -16,10 +16,7 @@ import type {
   FilterOperator,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
-import {
-  findBreakdownDimensionId,
-  findFirstUnusedDimension,
-} from "./CubeUtils.ts";
+import { findBreakdownDimensionId } from "./CubeUtils.ts";
 
 /**
  * Evaluate a single filter condition
@@ -182,37 +179,22 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
       measures as MeasureDescriptor<TData>[],
     );
 
-    // Handle different cases for childDimensionId:
-    // - string: use that dimension for breakdown
-    // - null: user explicitly wants raw data, don't build subgroups
-    // - undefined: no explicit setting, try fallback logic
-    let finalChildDimensionId = childDimensionId;
-
-    if (childDimensionId === undefined && dimensionPriority) {
-      // Try fallback logic when no explicit setting exists
-      finalChildDimensionId = findFirstUnusedDimension(
-        nodePath,
-        dimensionPriority,
-        nodeStates,
-      );
-    }
-
-    const subGroups =
-      finalChildDimensionId !== null && finalChildDimensionId !== undefined
-        ? buildGroupsWithBreakdownMap(
-            items,
-            finalChildDimensionId,
-            nodeStates,
-            dimensions,
-            measures,
-            nodePath,
-            maxDepth,
-            currentDepth + 1,
-            includeItems,
-            skipEmptyGroups,
-            dimensionPriority,
-          )
-        : undefined;
+    // Build subgroups if we have a valid dimension
+    const subGroups = childDimensionId
+      ? buildGroupsWithBreakdownMap(
+          items,
+          childDimensionId,
+          nodeStates,
+          dimensions,
+          measures,
+          nodePath,
+          maxDepth,
+          currentDepth + 1,
+          includeItems,
+          skipEmptyGroups,
+          dimensionPriority,
+        )
+      : undefined;
 
     groups.push({
       dimensionId,
