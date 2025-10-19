@@ -29,7 +29,7 @@ interface CubeSunburstProps {
 interface NivoSunburstNode {
   id: string;
   name: string;
-  value: number;
+  value?: number; // Optional - only leaf nodes have values
   children?: NivoSunburstNode[];
   // Custom properties for interactivity
   dimensionId?: string;
@@ -57,11 +57,11 @@ function convertToNivoFormat(
     const node: NivoSunburstNode = {
       id: uniqueId,
       name: uniqueId, // Use unique ID as name to prevent duplicate keys
-      value,
+      value: group.subGroups && group.subGroups.length > 0 ? undefined : value, // Only leaf nodes have values
       dimensionId: group.dimensionId,
       dimensionValue: group.dimensionValue,
       path: group.path,
-      formattedValue: `${value} ${cell?.formattedValue || String(value)}`,
+      formattedValue: cell?.formattedValue || String(value),
       itemCount: group.itemCount,
       originalLabel: group.dimensionLabel, // Store the original readable label
     };
@@ -120,7 +120,7 @@ export function CubeSunburst({
     return {
       id: "sunburst-root",
       name: "All Data",
-      value: 0, // Will be calculated from children
+      // No value - Nivo will calculate from children
       children: nivoNodes,
     };
   }, [rootData, measure, dimensions, state.cube.config]);
@@ -258,7 +258,7 @@ export function CubeSunburst({
               }
             }
           }}
-          tooltip={({ value, color, data }) => {
+          tooltip={() => {
             return null;
           }}
           onMouseMove={(node, event) => {
