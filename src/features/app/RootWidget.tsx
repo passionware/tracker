@@ -20,6 +20,7 @@ import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { IterationWidget } from "@/features/project-iterations/IterationWidget.tsx";
 import { PositionEditModal } from "@/features/project-iterations/PositionEditModal.tsx";
 import { GroupedViewPage } from "@/features/project-iterations/widgets/GroupedViewPage.tsx";
+import { ExportBuilderPage } from "@/features/project-iterations/widgets/ExportBuilderPage.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
@@ -72,6 +73,48 @@ export function RootWidget(props: WithFrontServices) {
                             >
                               {(reportId) => (
                                 <GroupedViewPage
+                                  projectIterationId={iterationId}
+                                  workspaceId={workspaceId}
+                                  clientId={clientId}
+                                  projectId={projectId}
+                                  reportId={reportId}
+                                  services={props.services}
+                                />
+                              )}
+                            </GeneratedReportIdResolver>
+                          )}
+                        </ProjectIterationIdResolver>
+                      )}
+                    </ProjectIdResolver>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Export Builder Page */}
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .forProject()
+            .forIteration()
+            .forGeneratedReport()
+            .export()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <ProjectIdResolver services={props.services}>
+                      {(projectId) => (
+                        <ProjectIterationIdResolver services={props.services}>
+                          {(iterationId) => (
+                            <GeneratedReportIdResolver
+                              services={props.services}
+                            >
+                              {(reportId) => (
+                                <ExportBuilderPage
                                   projectIterationId={iterationId}
                                   workspaceId={workspaceId}
                                   clientId={clientId}

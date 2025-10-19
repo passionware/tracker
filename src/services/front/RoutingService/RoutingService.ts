@@ -127,6 +127,7 @@ export interface RoutingService {
             timeEntries: () => string;
             groupedView: (cubePath?: CubePathParam) => string;
             standaloneGroupedView: (cubePath?: CubePathParam) => string;
+            export: () => string;
           };
           billings: () => string;
         };

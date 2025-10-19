@@ -8,7 +8,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GroupedViewWidget } from "./GroupedViewWidget";
 import {
@@ -19,8 +19,7 @@ import {
   CubeHierarchicalBreakdown,
   CubeProvider,
 } from "@/features/_common/Cube/index.ts";
-import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
-import { useCubeDefinitions } from "./CubeDefinitions";
+import { useReportCube } from "./useReportCube";
 
 // Separate component to handle cube logic and avoid hooks order issues
 function GroupedViewWithCube({
@@ -30,19 +29,8 @@ function GroupedViewWithCube({
   report: GeneratedReportSource;
   services: WithFrontServices["services"];
 }) {
-  // Create shared cube state and definitions at the top level
-  const { dimensions, measures, rawDataDimension } = useCubeDefinitions(
-    report,
-    services,
-  );
-  const cubeState = useCubeState({
-    data: report.data.timeEntries,
-    dimensions,
-    measures,
-    initialGrouping: ["project", "task", "contractor", "activity"],
-    includeItems: true,
-    rawDataDimension,
-  });
+  // Use the shared cube hook
+  const { cubeState } = useReportCube({ report, services });
 
   // Create context value
   const contextValue = {
@@ -133,22 +121,44 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
             </div>
           </div>
 
-          {/* Report info */}
-          {rd.tryMap(generatedReport, (report) => (
-            <div className="text-right text-sm text-slate-600">
-              <div className="font-medium">Report #{report.id}</div>
-              <div>
-                {rd.tryMap(iteration, (iter) => (
-                  <span className="*:*:flex-row">
-                    {props.services.formatService.temporal.range.compact(
-                      iter.periodStart,
-                      iter.periodEnd,
-                    )}
-                  </span>
-                )) || <span>Loading...</span>}
+          {/* Actions and Report info */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Use routing service to construct the export URL
+                const exportUrl = props.services.routingService
+                  .forWorkspace(props.workspaceId)
+                  .forClient(props.clientId)
+                  .forProject(props.projectId.toString())
+                  .forIteration(props.projectIterationId.toString())
+                  .forGeneratedReport(props.reportId.toString())
+                  .export();
+                navigate(exportUrl);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+
+            {rd.tryMap(generatedReport, (report) => (
+              <div className="text-right text-sm text-slate-600">
+                <div className="font-medium">Report #{report.id}</div>
+                <div>
+                  {rd.tryMap(iteration, (iter) => (
+                    <span className="*:*:flex-row">
+                      {props.services.formatService.temporal.range.compact(
+                        iter.periodStart,
+                        iter.periodEnd,
+                      )}
+                    </span>
+                  )) || <span>Loading...</span>}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

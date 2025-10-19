@@ -79,6 +79,8 @@ export function createRoutingService(): RoutingService {
                             ? `${baseUrl}/${cubePathSegment}`
                             : baseUrl;
                         },
+                        export: () =>
+                          `${base2}/generated-reports/${reportId}/export`,
                       };
                     },
                     billings: () => `${base2}/billings`,
