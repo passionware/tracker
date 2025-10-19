@@ -378,62 +378,79 @@ function ExportBuilderContent({
             visible: true,
             width: "120px",
           },
-          {
-            id: "numHours",
-            name: "Hours",
-            fieldName: "numHours",
-            type: "number" as const,
-            description: "Number of hours",
-            sortable: true,
-            visible: true,
-            width: "80px",
-            formatFunction: {
-              type: "number",
-              parameters: { decimals: 2 },
-            },
-          },
-          {
-            id: "costValue",
-            name: "Cost",
-            fieldName: "costValue",
-            type: "currency" as const,
-            description: "Cost value",
-            sortable: true,
-            visible: true,
-            width: "100px",
-            formatFunction: {
-              type: "currency",
-              parameters: { currency: "USD", decimals: 2 },
-            },
-          },
-          {
-            id: "billingValue",
-            name: "Billing",
-            fieldName: "billingValue",
-            type: "currency" as const,
-            description: "Billing value",
-            sortable: true,
-            visible: true,
-            width: "100px",
-            formatFunction: {
-              type: "currency",
-              parameters: { currency: "USD", decimals: 2 },
-            },
-          },
-          {
-            id: "profitValue",
-            name: "Profit",
-            fieldName: "profitValue",
-            type: "currency" as const,
-            description: "Profit value",
-            sortable: true,
-            visible: true,
-            width: "100px",
-            formatFunction: {
-              type: "currency",
-              parameters: { currency: "USD", decimals: 2 },
-            },
-          },
+          // Only include measurement columns for selected measures
+          ...(watchedValues.selectedMeasures.includes("hours")
+            ? [
+                {
+                  id: "numHours",
+                  name: "Hours",
+                  fieldName: "numHours",
+                  type: "number" as const,
+                  description: "Number of hours",
+                  sortable: true,
+                  visible: true,
+                  width: "80px",
+                  formatFunction: {
+                    type: "number",
+                    parameters: { decimals: 2 },
+                  },
+                },
+              ]
+            : []),
+          ...(watchedValues.selectedMeasures.includes("cost")
+            ? [
+                {
+                  id: "costValue",
+                  name: "Cost",
+                  fieldName: "costValue",
+                  type: "currency" as const,
+                  description: "Cost value",
+                  sortable: true,
+                  visible: true,
+                  width: "100px",
+                  formatFunction: {
+                    type: "currency",
+                    parameters: { currency: "USD", decimals: 2 },
+                  },
+                },
+              ]
+            : []),
+          ...(watchedValues.selectedMeasures.includes("billing")
+            ? [
+                {
+                  id: "billingValue",
+                  name: "Billing",
+                  fieldName: "billingValue",
+                  type: "currency" as const,
+                  description: "Billing value",
+                  sortable: true,
+                  visible: true,
+                  width: "100px",
+                  formatFunction: {
+                    type: "currency",
+                    parameters: { currency: "USD", decimals: 2 },
+                  },
+                },
+              ]
+            : []),
+          ...(watchedValues.selectedMeasures.includes("profit")
+            ? [
+                {
+                  id: "profitValue",
+                  name: "Profit",
+                  fieldName: "profitValue",
+                  type: "currency" as const,
+                  description: "Profit value",
+                  sortable: true,
+                  visible: true,
+                  width: "100px",
+                  formatFunction: {
+                    type: "currency",
+                    parameters: { currency: "USD", decimals: 2 },
+                  },
+                },
+              ]
+            : []),
           {
             id: "startAt",
             name: "Start Time",
