@@ -25,9 +25,214 @@ import {
 } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
 import { ZoomIn, Check } from "lucide-react";
+import type { DimensionDescriptor } from "./CubeService.types.ts";
 
 interface CubeDimensionExplorerProps {
   className?: string;
+}
+
+interface DimensionChartProps {
+  dimension: DimensionDescriptor<any, unknown>;
+  items: any[];
+  selectedMeasure: any;
+  isActive?: boolean;
+  onClick?: () => void;
+  onGroupClick?: (groupItems: any[], dimensionValue: unknown) => void;
+  icon?: string;
+  title?: string;
+  className?: string;
+  interactive?: boolean;
+}
+
+function DimensionChart({
+  dimension,
+  items,
+  selectedMeasure,
+  isActive = false,
+  onClick,
+  onGroupClick,
+  icon = "📊",
+  title,
+  className = "",
+  interactive = true,
+}: DimensionChartProps) {
+  const dimensionGroups = new Map<string, any[]>();
+
+  items.forEach((item) => {
+    try {
+      const value = dimension.getValue(item);
+      let key: string;
+
+      if (dimension.getKey) {
+        key = dimension.getKey(value);
+      } else if (typeof value === "string" || typeof value === "number") {
+        // Try to parse as date if it's a string/number
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          key = date.toISOString().split("T")[0];
+        } else {
+          key = String(value);
+        }
+      } else {
+        key = String(value ?? "null");
+      }
+
+      if (!dimensionGroups.has(key)) {
+        dimensionGroups.set(key, []);
+      }
+      dimensionGroups.get(key)!.push(item);
+    } catch {
+      // Skip items with invalid values
+    }
+  });
+
+  if (dimensionGroups.size === 0) return null;
+
+  const totalValue = Array.from(dimensionGroups.values()).reduce(
+    (sum, items) => {
+      const groupTotal = items.reduce((groupSum, item) => {
+        const value = selectedMeasure.getValue(item);
+        return groupSum + (typeof value === "number" ? Math.abs(value) : 0);
+      }, 0);
+      return sum + groupTotal;
+    },
+    0,
+  );
+
+  const sortedGroups = Array.from(dimensionGroups.entries())
+    .map(([key, items]) => {
+      const groupTotal = items.reduce((sum, item) => {
+        const value = selectedMeasure.getValue(item);
+        return sum + (typeof value === "number" ? Math.abs(value) : 0);
+      }, 0);
+      return { key, items, total: groupTotal };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  return (
+    <Card
+      className={cn(
+        "transition-all duration-200",
+        "cursor-pointer hover:shadow-md",
+        isActive ? "ring-2 ring-indigo-200 bg-indigo-50" : "hover:bg-slate-50",
+        className,
+      )}
+      onClick={onClick}
+    >
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>{icon}</span>
+            <span
+              className={cn(isActive ? "text-indigo-700" : "text-slate-700")}
+            >
+              {title || dimension.name}
+            </span>
+          </div>
+          {isActive && <Check className="h-4 w-4 text-indigo-600" />}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="text-xs text-slate-500 mb-2">
+          {dimensionGroups.size} groups • {items.length} items
+        </div>
+        <div className="space-y-1">
+          {sortedGroups.map(({ key, items, total }) => {
+            const percentage = totalValue > 0 ? (total / totalValue) * 100 : 0;
+            const formattedValue = selectedMeasure.formatValue
+              ? selectedMeasure.formatValue(total)
+              : String(total);
+
+            let displayValue;
+            if (dimension.formatValue) {
+              try {
+                displayValue = dimension.formatValue(key);
+              } catch {
+                displayValue = key;
+              }
+            } else {
+              // Try to format as date if it looks like a date
+              try {
+                const dateObj = new Date(key);
+                if (!isNaN(dateObj.getTime())) {
+                  displayValue = dateObj.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  });
+                } else {
+                  displayValue = key;
+                }
+              } catch {
+                displayValue = key;
+              }
+            }
+
+            return (
+              <div
+                key={key}
+                className={cn(
+                  "space-y-1",
+                  interactive && "group cursor-pointer",
+                )}
+                onClick={
+                  interactive
+                    ? (e) => {
+                        e.stopPropagation();
+                        if (onGroupClick) {
+                          const firstItem = items[0];
+                          const dimensionValue = dimension.getValue(firstItem);
+                          onGroupClick(items, dimensionValue);
+                        }
+                      }
+                    : (e) => {
+                        // Prevent group clicks when not interactive, but don't stop propagation
+                        // so the card click still works
+                        e.stopPropagation();
+                      }
+                }
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span
+                    className={cn(
+                      "truncate flex-1 min-w-0 transition-all",
+                      interactive && "group-hover:font-medium",
+                    )}
+                  >
+                    {displayValue} ({items.length} entries)
+                  </span>
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <span className="text-slate-500">{formattedValue}</span>
+                    {interactive && (
+                      <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </div>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-200",
+                      isActive
+                        ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
+                        : interactive
+                          ? "bg-gradient-to-r from-slate-400 to-slate-600 group-hover:from-indigo-500 group-hover:to-indigo-700"
+                          : "bg-gradient-to-r from-slate-400 to-slate-600",
+                    )}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {dimensionGroups.size > 5 && (
+          <div className="text-xs text-slate-400 pt-1">
+            +{dimensionGroups.size - 5} more
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function CubeDimensionExplorer({
@@ -81,442 +286,48 @@ export function CubeDimensionExplorer({
       </Card>
 
       {/* Raw Data Chart */}
-      <Card
-        className={cn(
-          "cursor-pointer transition-all duration-200 hover:shadow-md",
-          currentBreakdownDimensionId === null
-            ? "ring-2 ring-indigo-200 bg-indigo-50"
-            : "hover:bg-slate-50",
-        )}
+      <DimensionChart
+        dimension={state.rawDataDimension}
+        items={currentItems}
+        selectedMeasure={selectedMeasure}
+        isActive={currentBreakdownDimensionId === null}
         onClick={() => {
           // Set raw data as the breakdown (null dimension)
           state.setNodeChildDimension(state.path, null);
         }}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span>📊</span>
-              <span className="text-slate-700">Raw Data</span>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-xs text-slate-500 mb-2">
-            {currentItems.length} entries
-          </div>
-          <div className="space-y-1">
-            {/* Raw data breakdown */}
-            {(() => {
-              const rawDataDim = state.rawDataDimension;
-              const groups = new Map<string, any[]>();
-
-              currentItems.forEach((item) => {
-                try {
-                  const dimensionValue = rawDataDim.getValue(item);
-                  if (dimensionValue) {
-                    // Try to parse as date if it's a string/number
-                    let dateString;
-                    if (
-                      typeof dimensionValue === "string" ||
-                      typeof dimensionValue === "number"
-                    ) {
-                      const date = new Date(dimensionValue);
-                      if (!isNaN(date.getTime())) {
-                        dateString = date.toISOString().split("T")[0];
-                      } else {
-                        dateString = String(dimensionValue);
-                      }
-                    } else {
-                      dateString = String(dimensionValue);
-                    }
-
-                    if (!groups.has(dateString)) {
-                      groups.set(dateString, []);
-                    }
-                    groups.get(dateString)!.push(item);
-                  }
-                } catch (error) {
-                  console.warn("Invalid dimension value in item:", item, error);
-                }
-              });
-
-              const sortedGroups = Array.from(groups.entries())
-                .sort(([a], [b]) => {
-                  // Sort by value (descending) by default
-                  // Could be made configurable in the future
-                  const valueA =
-                    groups.get(a)?.reduce((sum, item) => {
-                      const value = selectedMeasure.getValue(item);
-                      return (
-                        sum + (typeof value === "number" ? Math.abs(value) : 0)
-                      );
-                    }, 0) || 0;
-                  const valueB =
-                    groups.get(b)?.reduce((sum, item) => {
-                      const value = selectedMeasure.getValue(item);
-                      return (
-                        sum + (typeof value === "number" ? Math.abs(value) : 0)
-                      );
-                    }, 0) || 0;
-                  return valueB - valueA;
-                })
-                .slice(0, 5); // Show top 5 groups
-
-              const totalValue = currentItems.reduce((sum, item) => {
-                const value = selectedMeasure.getValue(item);
-                return sum + (typeof value === "number" ? Math.abs(value) : 0);
-              }, 0);
-
-              return sortedGroups.map(([date, items]) => {
-                const dayValue = items.reduce((sum, item) => {
-                  const value = selectedMeasure.getValue(item);
-                  return (
-                    sum + (typeof value === "number" ? Math.abs(value) : 0)
-                  );
-                }, 0);
-
-                const percentage =
-                  totalValue > 0 ? (dayValue / totalValue) * 100 : 0;
-                const formattedValue = selectedMeasure.formatValue
-                  ? selectedMeasure.formatValue(dayValue)
-                  : String(dayValue);
-
-                let displayValue;
-                if (rawDataDim.formatValue) {
-                  try {
-                    displayValue = rawDataDim.formatValue(date);
-                  } catch {
-                    displayValue = date;
-                  }
-                } else {
-                  // Try to format as date if it looks like a date
-                  try {
-                    const dateObj = new Date(date);
-                    if (!isNaN(dateObj.getTime())) {
-                      displayValue = dateObj.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      });
-                    } else {
-                      displayValue = date;
-                    }
-                  } catch {
-                    displayValue = date;
-                  }
-                }
-
-                return (
-                  <div key={date} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="truncate flex-1 min-w-0">
-                        {displayValue} ({items.length} entries)
-                      </span>
-                      <div className="flex items-center gap-1 ml-2 shrink-0">
-                        <span className="text-slate-500">{formattedValue}</span>
-                        <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-slate-400 to-slate-600"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Raw Data Dimension Chart */}
-      {(() => {
-        const rawDataDim = state.rawDataDimension;
-        const rawDataGroups = new Map<string, any[]>();
-
-        currentItems.forEach((item) => {
-          try {
-            const dimensionValue = rawDataDim.getValue(item);
-            let dateString;
-
-            if (
-              typeof dimensionValue === "string" ||
-              typeof dimensionValue === "number"
-            ) {
-              const date = new Date(dimensionValue);
-              if (!isNaN(date.getTime())) {
-                dateString = date.toISOString().split("T")[0];
-              } else {
-                dateString = String(dimensionValue);
-              }
-            } else {
-              dateString = String(dimensionValue);
-            }
-
-            if (!rawDataGroups.has(dateString)) {
-              rawDataGroups.set(dateString, []);
-            }
-            rawDataGroups.get(dateString)!.push(item);
-          } catch {
-            // Skip items with invalid dates
-          }
-        });
-
-        if (rawDataGroups.size === 0) return null;
-
-        const totalValue = Array.from(rawDataGroups.values()).reduce(
-          (sum, items) => {
-            const groupTotal = items.reduce((groupSum, item) => {
-              const value = selectedMeasure.getValue(item);
-              return (
-                groupSum + (typeof value === "number" ? Math.abs(value) : 0)
-              );
-            }, 0);
-            return sum + groupTotal;
-          },
-          0,
-        );
-
-        const sortedGroups = Array.from(rawDataGroups.entries())
-          .map(([date, items]) => {
-            const groupTotal = items.reduce((sum, item) => {
-              const value = selectedMeasure.getValue(item);
-              return sum + (typeof value === "number" ? Math.abs(value) : 0);
-            }, 0);
-            return { date, items, total: groupTotal };
-          })
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 5);
-
-        return (
-          <Card className="bg-white border border-slate-200 rounded-lg shadow-sm">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                  📊
-                </div>
-                <div>
-                  <CardTitle className="text-sm font-medium text-slate-900">
-                    {rawDataDim.name} Breakdown
-                  </CardTitle>
-                  <p className="text-xs text-slate-500">
-                    {rawDataGroups.size} groups • {currentItems.length} items
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                {sortedGroups.map(({ date, items, total }) => {
-                  const percentage =
-                    totalValue > 0 ? (total / totalValue) * 100 : 0;
-                  const formattedValue = selectedMeasure.formatValue
-                    ? selectedMeasure.formatValue(total)
-                    : String(total);
-
-                  let displayValue;
-                  if (rawDataDim.formatValue) {
-                    try {
-                      displayValue = rawDataDim.formatValue(date);
-                    } catch {
-                      displayValue = date;
-                    }
-                  } else {
-                    // Try to format as date if it looks like a date
-                    try {
-                      const dateObj = new Date(date);
-                      if (!isNaN(dateObj.getTime())) {
-                        displayValue = dateObj.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
-                      } else {
-                        displayValue = date;
-                      }
-                    } catch {
-                      displayValue = date;
-                    }
-                  }
-
-                  return (
-                    <div key={date} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="truncate flex-1 min-w-0">
-                          {displayValue} ({items.length} entries)
-                        </span>
-                        <div className="flex items-center gap-1 ml-2 shrink-0">
-                          <span className="text-slate-500">
-                            {formattedValue}
-                          </span>
-                          <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-1.5">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+        icon="📊"
+        title="Raw Data"
+        interactive={false}
+      />
 
       {/* Interactive Dimension Cards - All dimensions at current level */}
       {sidebarDimensions.map((dimension) => {
-        // Calculate breakdown from current zoom level data
-        const dimensionGroups = new Map<string, any[]>();
-
-        currentItems.forEach((item) => {
-          const value = dimension.getValue(item);
-          const key = dimension.getKey
-            ? dimension.getKey(value)
-            : String(value ?? "null");
-
-          if (!dimensionGroups.has(key)) {
-            dimensionGroups.set(key, []);
-          }
-          dimensionGroups.get(key)!.push(item);
-        });
-
-        if (dimensionGroups.size === 0) return null;
-
-        const totalValue = Array.from(dimensionGroups.values()).reduce(
-          (sum, items) => {
-            const groupTotal = items.reduce((groupSum, item) => {
-              const value = selectedMeasure.getValue(item);
-              return (
-                groupSum + (typeof value === "number" ? Math.abs(value) : 0)
-              );
-            }, 0);
-            return sum + groupTotal;
-          },
-          0,
-        );
-
-        // Check if this dimension is the current breakdown dimension (same as "breakdown children by")
         const isActive = currentBreakdownDimensionId === dimension.id;
 
         return (
-          <Card
+          <DimensionChart
             key={dimension.id}
-            className={cn(
-              "cursor-pointer transition-all duration-200 hover:shadow-md",
-              isActive
-                ? "ring-2 ring-indigo-200 bg-indigo-50"
-                : "hover:bg-slate-50",
-            )}
+            dimension={dimension}
+            items={currentItems}
+            selectedMeasure={selectedMeasure}
+            isActive={isActive}
             onClick={() => {
               // Handle dimension selection - set as breakdown dimension
               state.setNodeChildDimension(state.path, dimension.id);
             }}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {dimension.icon && <span>{dimension.icon}</span>}
-                  <span
-                    className={cn(
-                      isActive ? "text-indigo-700" : "text-slate-700",
-                    )}
-                  >
-                    {dimension.name}
-                  </span>
-                </div>
-                {isActive && <Check className="h-4 w-4 text-indigo-600" />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-xs text-slate-500 mb-2">
-                {dimensionGroups.size} groups
-              </div>
-              {Array.from(dimensionGroups.entries())
-                .map(([key, items]) => {
-                  const groupTotal = items.reduce((sum, item) => {
-                    const value = selectedMeasure.getValue(item);
-                    return (
-                      sum + (typeof value === "number" ? Math.abs(value) : 0)
-                    );
-                  }, 0);
-
-                  const percentage =
-                    totalValue > 0 ? (groupTotal / totalValue) * 100 : 0;
-                  const formattedValue = selectedMeasure.formatValue
-                    ? selectedMeasure.formatValue(groupTotal)
-                    : String(groupTotal);
-
-                  // Get the display label for this group
-                  const firstItem = items[0];
-                  const value = dimension.getValue(firstItem);
-                  const displayLabel = dimension.formatValue
-                    ? dimension.formatValue(value)
-                    : String(value ?? "Unknown");
-
-                  return {
-                    key,
-                    items,
-                    groupTotal,
-                    percentage,
-                    formattedValue,
-                    displayLabel,
-                  };
-                })
-                .sort((a, b) => Math.abs(b.groupTotal) - Math.abs(a.groupTotal))
-                .slice(0, 5)
-                .map((group) => (
-                  <div
-                    key={group.key}
-                    className="space-y-1 group cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Handle zoom into this specific group
-                      const newPath = [
-                        ...state.path,
-                        {
-                          dimensionId: dimension.id,
-                          dimensionValue: dimension.getValue(group.items[0]),
-                        },
-                      ];
-                      state.setZoomPath(newPath);
-                    }}
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="truncate flex-1 min-w-0 group-hover:font-medium transition-all">
-                        {group.displayLabel}
-                      </span>
-                      <div className="flex items-center gap-1 ml-2 shrink-0">
-                        <span className="text-slate-500">
-                          {group.formattedValue}
-                        </span>
-                        <ZoomIn className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all duration-200",
-                          isActive
-                            ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
-                            : "bg-gradient-to-r from-slate-400 to-slate-600 group-hover:from-indigo-500 group-hover:to-indigo-700",
-                        )}
-                        style={{ width: `${group.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              {dimensionGroups.size > 5 && (
-                <div className="text-xs text-slate-400 pt-1">
-                  +{dimensionGroups.size - 5} more
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            onGroupClick={(_, dimensionValue) => {
+              // Handle zoom into this specific group
+              const newPath = [
+                ...state.path,
+                {
+                  dimensionId: dimension.id,
+                  dimensionValue,
+                },
+              ];
+              state.setZoomPath(newPath);
+            }}
+            icon={dimension.icon}
+          />
         );
       })}
     </div>
