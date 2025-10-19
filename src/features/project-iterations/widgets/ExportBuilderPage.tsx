@@ -322,7 +322,7 @@ function ExportBuilderContent({
             width: "200px",
           },
           {
-            id: "project",
+            id: "projectId",
             name: "Project",
             fieldName: "projectId",
             type: "text" as const,
@@ -332,7 +332,7 @@ function ExportBuilderContent({
             width: "150px",
           },
           {
-            id: "task",
+            id: "taskId",
             name: "Task",
             fieldName: "taskId",
             type: "text" as const,
@@ -342,7 +342,17 @@ function ExportBuilderContent({
             width: "150px",
           },
           {
-            id: "contractor",
+            id: "roleId",
+            name: "Role",
+            fieldName: "roleId",
+            type: "text" as const,
+            description: "Role name",
+            sortable: true,
+            visible: true,
+            width: "120px",
+          },
+          {
+            id: "contractorId",
             name: "Contractor",
             fieldName: "contractorId",
             type: "text" as const,
@@ -352,7 +362,7 @@ function ExportBuilderContent({
             width: "150px",
           },
           {
-            id: "activity",
+            id: "activityId",
             name: "Activity",
             fieldName: "activityId",
             type: "text" as const,
@@ -370,6 +380,10 @@ function ExportBuilderContent({
             sortable: true,
             visible: true,
             width: "80px",
+            formatFunction: {
+              type: "number",
+              parameters: { decimals: 2 },
+            },
           },
           {
             id: "costValue",
@@ -380,6 +394,10 @@ function ExportBuilderContent({
             sortable: true,
             visible: true,
             width: "100px",
+            formatFunction: {
+              type: "currency",
+              parameters: { currency: "USD", decimals: 2 },
+            },
           },
           {
             id: "billingValue",
@@ -390,6 +408,10 @@ function ExportBuilderContent({
             sortable: true,
             visible: true,
             width: "100px",
+            formatFunction: {
+              type: "currency",
+              parameters: { currency: "USD", decimals: 2 },
+            },
           },
           {
             id: "profitValue",
@@ -400,6 +422,10 @@ function ExportBuilderContent({
             sortable: true,
             visible: true,
             width: "100px",
+            formatFunction: {
+              type: "currency",
+              parameters: { currency: "USD", decimals: 2 },
+            },
           },
           {
             id: "startAt",
@@ -421,7 +447,7 @@ function ExportBuilderContent({
             visible: true,
             width: "150px",
           },
-        ],
+        ].filter((column) => watchedValues.selectedColumns.includes(column.id)),
         maxInitialItems: 50,
         enablePagination: true,
         itemsPerPage: 25,
@@ -438,6 +464,7 @@ function ExportBuilderContent({
     selectedMeasures,
     report.data.definitions,
     contractors,
+    watchedValues.selectedColumns,
   ]);
 
   const handleExport = useCallback(() => {

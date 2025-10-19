@@ -10,6 +10,7 @@ import { CubeView } from "./CubeView";
 import { ListView } from "@/features/_common/ListView";
 import type { CubeState } from "./useCubeState";
 import type { SerializableCubeConfig } from "./serialization/CubeSerialization.types";
+import { defaultFormatFunctions } from "./serialization/CubeSerialization";
 
 export interface SerializedCubeViewProps {
   /** Cube state from useCubeState hook */
@@ -82,7 +83,10 @@ export function SerializedCubeView({
 
             // Apply format function if available
             if (col.formatFunction) {
-              return String(value);
+              const formatter = defaultFormatFunctions[col.formatFunction.type];
+              if (formatter) {
+                return formatter.format(value, col.formatFunction.parameters);
+              }
             }
 
             return String(value);
