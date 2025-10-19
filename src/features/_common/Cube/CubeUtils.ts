@@ -39,13 +39,6 @@ export function findBreakdownDimensionId(
     // If still no match and we have a priority list, use it
     if (childDimensionId === undefined && initialGrouping) {
       childDimensionId = findFirstUnusedDimension(pathKey, initialGrouping);
-
-      // Debug logging for priority fallback
-      console.log("Priority fallback applied:", {
-        pathKey,
-        priorityList: initialGrouping,
-        selectedDimension: childDimensionId,
-      });
     }
   }
 

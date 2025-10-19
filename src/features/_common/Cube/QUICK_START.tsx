@@ -340,7 +340,6 @@ export function QuickStartCubeExample() {
 
 7. DRILL-DOWN CALLBACKS:
    onDrillDown={(group, newDimensionId) => {
-     console.log(`Drilling down from ${group.dimensionLabel} into ${newDimensionId}`);
      // Your logic here
    }}
 
