@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Download, Eye, ArrowLeft, Code } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { serializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
@@ -77,26 +77,44 @@ function ExportBuilderContent({
   onNavigateBack: () => void;
 }) {
   // Use the shared cube hook to get all cube data
-  const { cubeState, dimensions, measures, data } = useReportCube({
+  const {
+    cubeState,
+    dimensions: _dimensions,
+    rawDataDimension,
+    measures,
+    data,
+  } = useReportCube({
     report,
     services,
   });
+
+  const dimensions = [..._dimensions, rawDataDimension];
 
   // Initialize form with default values
   const form = useForm<ExportBuilderFormData>({
     defaultValues: {
       flattening: {
         enabled: true,
-        flattenDimensions: [],
+        flattenDimensions: ["date"], // Default to date dimension
         aggregationMethod: "sum",
       },
-      selectedDimensions: [],
-      selectedMeasures: [],
-      rawDataDimension: "",
+      selectedDimensions:
+        dimensions.length > 0
+          ? ["project", "task", "contractor", "activity"].filter((id) =>
+              dimensions.some((dim) => dim.id === id),
+            )
+          : [],
+      selectedMeasures:
+        measures.length > 0
+          ? ["hours", "billing"].filter((id) =>
+              measures.some((measure) => measure.id === id),
+            )
+          : [],
+      rawDataDimension: dimensions.length > 0 ? "date" : "",
     },
   });
 
-  const { control, watch, setValue } = form;
+  const { control, watch } = form;
 
   // Preview mode state
   const [previewMode, setPreviewMode] = useState<"cube" | "json">("cube");
@@ -109,98 +127,16 @@ function ExportBuilderContent({
   const selectedMeasures = measures.filter((measure) =>
     watchedValues.selectedMeasures.includes(measure.id),
   );
-  const rawDataDimension =
-    dimensions.find((dim) => dim.id === watchedValues.rawDataDimension) || null;
-
-  // Initialize form with default values only once
-  useEffect(() => {
-    // Initialize default dimensions
-    if (
-      dimensions.length > 0 &&
-      watchedValues.selectedDimensions.length === 0
-    ) {
-      // Set default dimensions in order: project, task, contractor, activity
-      const defaultDimensionOrder = [
-        "project",
-        "task",
-        "contractor",
-        "activity",
-      ];
-      const orderedDimensionIds = defaultDimensionOrder.filter((id) =>
-        dimensions.some((dim) => dim.id === id),
-      );
-
-      // Add any remaining dimensions that weren't in the default order
-      const remainingDimensionIds = dimensions
-        .filter((dim) => !defaultDimensionOrder.includes(dim.id))
-        .map((dim) => dim.id);
-
-      setValue("selectedDimensions", [
-        ...orderedDimensionIds,
-        ...remainingDimensionIds,
-      ]);
-    }
-
-    // Initialize default measures
-    if (measures.length > 0 && watchedValues.selectedMeasures.length === 0) {
-      // Set default measures: hours, billing
-      const defaultMeasureIds = ["hours", "billing"];
-      const orderedMeasureIds = defaultMeasureIds.filter((id) =>
-        measures.some((measure) => measure.id === id),
-      );
-
-      // Add any remaining measures that weren't in the default list
-      const remainingMeasureIds = measures
-        .filter((measure) => !defaultMeasureIds.includes(measure.id))
-        .map((measure) => measure.id);
-
-      setValue("selectedMeasures", [
-        ...orderedMeasureIds,
-        ...remainingMeasureIds,
-      ]);
-    }
-
-    // Set default raw data dimension
-    if (dimensions.length > 0 && !watchedValues.rawDataDimension) {
-      const dateDimension = dimensions.find((dim) => dim.id === "date");
-      if (dateDimension) {
-        setValue("rawDataDimension", dateDimension.id);
-      }
-    }
-
-    // Set default flattening dimensions
-    if (
-      dimensions.length > 0 &&
-      watchedValues.flattening.flattenDimensions.length === 0
-    ) {
-      const dateDimension = dimensions.find((dim) => dim.id === "date");
-      if (dateDimension) {
-        setValue("flattening.flattenDimensions", [dateDimension.id]);
-      }
-    }
-  }, [
-    dimensions,
-    measures,
-    watchedValues.selectedDimensions.length,
-    watchedValues.selectedMeasures.length,
-    watchedValues.rawDataDimension,
-    watchedValues.flattening.flattenDimensions.length,
-    setValue,
-  ]);
 
   // Generate preview cube state
-  const previewCubeState = useMemo(() => {
-    if (!rawDataDimension) return null;
-
-    return useCubeState({
-      data,
-      dimensions: selectedDimensions,
-      measures: selectedMeasures,
-      initialGrouping: cubeState.cube.config.initialGrouping,
-      includeItems: true,
-      rawDataDimension,
-    });
-  }, [data, selectedDimensions, selectedMeasures, rawDataDimension, cubeState]);
+  const previewCubeState = useCubeState({
+    data,
+    dimensions: selectedDimensions,
+    measures: selectedMeasures,
+    initialGrouping: cubeState.cube.config.initialGrouping,
+    includeItems: true,
+    rawDataDimension,
+  });
 
   // Generate serializable config
   const serializableConfig = useMemo(() => {
