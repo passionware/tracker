@@ -30,6 +30,7 @@ export interface UseReportCubeReturn {
   dimensions: ReturnType<typeof useCubeDefinitions>["dimensions"];
   measures: ReturnType<typeof useCubeDefinitions>["measures"];
   rawDataDimension: ReturnType<typeof useCubeDefinitions>["rawDataDimension"];
+  anonymizedRawDataDimension: ReturnType<typeof useCubeDefinitions>["anonymizedRawDataDimension"];
   data: TransformedEntry[];
 }
 
@@ -44,7 +45,7 @@ export function useReportCube({
   const transformedData = useMemo(() => transformReportData(report), [report]);
 
   // Get cube definitions (dimensions, measures, raw data dimension)
-  const { dimensions, measures, rawDataDimension } = useCubeDefinitions(
+  const { dimensions, measures, rawDataDimension, anonymizedRawDataDimension } = useCubeDefinitions(
     report,
     services,
   );
@@ -63,6 +64,7 @@ export function useReportCube({
     dimensions,
     measures,
     rawDataDimension,
+    anonymizedRawDataDimension,
     data: transformedData,
   };
 }

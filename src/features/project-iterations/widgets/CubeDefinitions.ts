@@ -179,20 +179,44 @@ export function useCubeDefinitions(
       },
     ];
 
+    // Create raw data dimension - use date if available, otherwise use entry ID
+    const rawDataDimension = factory.createDimension<any>({
+      id: "date",
+      name: "Date",
+      icon: "📅",
+      getValue: (item) => {
+        // Handle anonymized time entries where startAt might be undefined
+        if (!item.startAt) {
+          return "Services";
+        }
+        const date = new Date(item.startAt);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          return "Invalid Date";
+        }
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDay()).padStart(2, "0")}`;
+      },
+      getKey: (value) => String(value ?? "null"),
+      formatValue: (value) => String(value ?? "Unknown"),
+    });
+
+    // Create alternative raw data dimension for anonymized data
+    const anonymizedRawDataDimension = factory.createDimension<any>({
+      id: "entry",
+      name: "Entry",
+      icon: "📋",
+      getValue: (item) => {
+        return item.id || "Unknown Entry";
+      },
+      getKey: (value) => String(value ?? "null"),
+      formatValue: (value) => String(value ?? "Unknown"),
+    });
+
     return {
       dimensions,
       measures,
-      rawDataDimension: factory.createDimension<any>({
-        id: "date",
-        name: "Date",
-        icon: "📅",
-        getValue: (item) => {
-          const date = new Date(item.startAt);
-          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDay()).padStart(2, "0")}`;
-        },
-        getKey: (value) => String(value ?? "null"),
-        formatValue: (value) => String(value ?? "Unknown"),
-      }),
+      rawDataDimension,
+      anonymizedRawDataDimension,
     };
   }, [report, services, contractorsQuery]);
 }

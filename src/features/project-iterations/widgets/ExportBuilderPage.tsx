@@ -74,6 +74,7 @@ function ExportBuilderContent({
     cubeState: _cubeState,
     dimensions: _dimensions,
     rawDataDimension,
+    anonymizedRawDataDimension,
     measures,
     data,
   } = useReportCube({
@@ -81,7 +82,7 @@ function ExportBuilderContent({
     services,
   });
 
-  const dimensions = [..._dimensions, rawDataDimension];
+  const dimensions = [..._dimensions, rawDataDimension, anonymizedRawDataDimension];
 
   // Initialize form with default values
   const form = useForm<ExportBuilderFormData>({
@@ -152,15 +153,16 @@ function ExportBuilderContent({
     form.setValue("selectedDimensions", availableSelectedDimensions);
   }
 
-  // Auto-update raw data dimension if it becomes unavailable due to anonymization
+  // Auto-update raw data dimension based on anonymization settings
   const currentRawDataDimension = watchedValues.rawDataDimension;
-  const isRawDataDimensionAvailable = availableDimensions.some(
-    (dim) => dim.id === currentRawDataDimension,
-  );
-
-  // If current raw data dimension is not available, reset to first available dimension
-  if (!isRawDataDimensionAvailable && availableDimensions.length > 0) {
-    form.setValue("rawDataDimension", availableDimensions[0].id);
+  
+  // If time entries are anonymized and current dimension is "date", switch to "entry"
+  if (anonymizeTimeEntries && currentRawDataDimension === "date") {
+    form.setValue("rawDataDimension", "entry");
+  }
+  // If time entries are not anonymized and current dimension is "entry", switch to "date"
+  else if (!anonymizeTimeEntries && currentRawDataDimension === "entry") {
+    form.setValue("rawDataDimension", "date");
   }
 
   // Fetch contractor data for labelMapping
