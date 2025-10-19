@@ -29,12 +29,8 @@ export interface CubeViewProps {
   renderCell?: (cell: CubeCell, group: CubeGroup) => React.ReactNode;
   /** Optional: Render raw data items */
   renderRawData?: (items: CubeDataItem[], group: CubeGroup) => React.ReactNode;
-  /** Optional: Enable dimension picker */
-  enableDimensionPicker?: boolean;
   /** Optional: Maximum initial expansion depth (0 = all collapsed) */
   maxInitialDepth?: number;
-  /** Optional: Enable raw data viewing (requires includeItems in cube calculation) */
-  enableRawDataView?: boolean;
   /** Optional: Enable zoom-in feature */
   enableZoomIn?: boolean;
   /** Optional: Custom class name */
@@ -49,9 +45,7 @@ export function CubeView({
   renderGroupHeader,
   renderCell,
   renderRawData,
-  enableDimensionPicker = true,
   maxInitialDepth = 0,
-  enableRawDataView = true,
   enableZoomIn = true,
   className,
 }: CubeViewProps) {
@@ -87,14 +81,12 @@ export function CubeView({
 
   return (
     <div className={className}>
-      {/* Navigation Bar - always visible when zoom or dimension picker enabled */}
-      {(enableZoomIn || enableDimensionPicker) && (
-        <CubeNavigation
-          state={state}
-          zoomPath={zoomPath}
-          dimensions={config.dimensions}
-        />
-      )}
+      {/* Navigation Bar - always visible */}
+      <CubeNavigation
+        state={state}
+        zoomPath={zoomPath}
+        dimensions={config.dimensions}
+      />
 
       {/* Main Content Area - with optional sidebar */}
       <div className="flex gap-4 h-full w-full min-h-0">
@@ -108,7 +100,7 @@ export function CubeView({
         >
           {displayGroups.length === 0 ? (
             // No groups to display - check if we should show raw data
-            cube.totalItems > 0 && enableRawDataView && cube.filteredData ? (
+            cube.totalItems > 0 && cube.filteredData ? (
               // Show raw data
               <motion.div
                 className="space-y-4"
@@ -173,9 +165,7 @@ export function CubeView({
                   renderGroupHeader={renderGroupHeader}
                   renderCell={renderCell}
                   renderRawData={renderRawData}
-                  enableRawDataView={enableRawDataView}
                   enableZoomIn={enableZoomIn}
-                  enableDimensionPicker={enableDimensionPicker}
                   maxInitialDepth={maxInitialDepth}
                   nodePath={nodePath}
                 />

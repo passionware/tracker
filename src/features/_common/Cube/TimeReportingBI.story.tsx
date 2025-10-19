@@ -429,9 +429,7 @@ export const TimeReportingDashboard = () => {
 
           <CubeView
             state={state}
-            enableRawDataView={true}
             enableZoomIn={true}
-            enableDimensionPicker={true}
             maxInitialDepth={0}
             renderRawData={(items) => (
               <div className="space-y-2">

@@ -682,7 +682,7 @@ export const SalesByRegion: Story = {
         cubeState={state}
         reportId="sales-by-region"
       >
-        <CubeView state={state} enableDimensionPicker={true} />
+        <CubeView state={state} />
       </StoryLayoutWrapper>
     );
   },
@@ -935,7 +935,6 @@ export const CustomRendering: Story = {
       >
         <CubeView
           state={state}
-          enableDimensionPicker={true}
           renderGroupHeader={(group, level) => (
             <div className="flex items-center gap-2">
               <Badge variant={level === 0 ? "primary" : "secondary"}>
@@ -1270,11 +1269,7 @@ export const InteractiveProjectDashboard: Story = {
           cubeState={state}
           reportId="interactive-project-dashboard"
         >
-          <CubeView
-            state={state}
-            maxInitialDepth={1}
-            enableDimensionPicker={true}
-          />
+          <CubeView state={state} maxInitialDepth={1} />
         </StoryLayoutWrapper>
       </div>
     );

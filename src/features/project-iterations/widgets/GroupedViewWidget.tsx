@@ -84,7 +84,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col"
       state={cubeState}
       renderRawData={renderRawData}
-      enableDimensionPicker={true}
       enableRawDataView={true}
       enableZoomIn={true}
     />

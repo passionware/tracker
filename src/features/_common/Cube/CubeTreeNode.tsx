@@ -39,9 +39,7 @@ export interface CubeTreeNodeProps {
   renderGroupHeader?: (group: CubeGroup, level: number) => React.ReactNode;
   renderCell?: (cell: CubeCell, group: CubeGroup) => React.ReactNode;
   renderRawData?: (items: CubeDataItem[], group: CubeGroup) => React.ReactNode;
-  enableRawDataView?: boolean;
   enableZoomIn?: boolean;
-  enableDimensionPicker?: boolean;
   maxInitialDepth?: number;
   nodePath: PathItem[]; // Path from root TO this node (this node's address)
 }
@@ -58,14 +56,12 @@ export function CubeTreeNode({
   renderGroupHeader,
   renderCell,
   renderRawData,
-  enableRawDataView = false,
   enableZoomIn = false,
-  enableDimensionPicker = false,
   maxInitialDepth = 0,
   nodePath,
 }: CubeTreeNodeProps) {
   const hasSubGroups = group.subGroups && group.subGroups.length > 0;
-  const hasRawData = enableRawDataView && group.items && group.items.length > 0;
+  const hasRawData = group.items && group.items.length > 0;
 
   // Calculate available dimensions for this group's children
   // Exclude dimensions already used in this node's path
@@ -225,30 +221,8 @@ export function CubeTreeNode({
                 </motion.div>
               )}
 
-              {/* Show sub-groups button if they exist */}
-              {hasSubGroups && !enableDimensionPicker && (
-                <motion.div variants={buttonVariants}>
-                  <SimpleTooltip title="View sub-groups">
-                    <Button
-                      variant={isExpanded && !showRawData ? "default" : "ghost"}
-                      size="sm"
-                      className="h-6 px-2 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Request to show sub-groups (not raw data)
-                        // This should trigger parent to set childDimensionId to a dimension
-                        setIsExpanded(true);
-                      }}
-                    >
-                      📂 Groups
-                    </Button>
-                  </SimpleTooltip>
-                </motion.div>
-              )}
-
-              {/* Dimension selection buttons */}
-              {enableDimensionPicker &&
-                availableDimensionsForGroup.length > 0 &&
+              {/* Dimension selection buttons - always show when available */}
+              {availableDimensionsForGroup.length > 0 &&
                 availableDimensionsForGroup.map((dim) => (
                   <motion.div key={dim.id} variants={buttonVariants}>
                     <SimpleTooltip title={`Break down by ${dim.name}`}>
@@ -344,9 +318,7 @@ export function CubeTreeNode({
                         renderGroupHeader={renderGroupHeader}
                         renderCell={renderCell}
                         renderRawData={renderRawData}
-                        enableRawDataView={enableRawDataView}
                         enableZoomIn={enableZoomIn}
-                        enableDimensionPicker={enableDimensionPicker}
                         maxInitialDepth={maxInitialDepth}
                         nodePath={childNodePath}
                       />
