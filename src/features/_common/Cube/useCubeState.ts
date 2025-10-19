@@ -55,18 +55,11 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
   /** Initial root dimension (for per-node mode) */
   initialRootDimension?: string;
   /**
-   * Initial default dimension sequence (for simple hierarchies)
-   * This is a convenience option for backward compatibility.
-   * Use initialRootDimension + setGroupBreakdown for full control.
-   * @deprecated Use initialRootDimension and dynamic breakdown instead
+   * Initial dimension grouping sequence (e.g., ["project", "contractor", "task"])
+   * This defines both the default breakdown hierarchy and the dimension priority order.
+   * When no explicit breakdown is set, the system will use the next dimension in this sequence.
    */
   initialGrouping?: string[];
-  /**
-   * Priority list for default dimensions when expanding nodes
-   * When a node doesn't have an explicit childDimensionId, the system will
-   * use the first dimension from this list that isn't already used by any parent
-   */
-  initialDefaultDimensionPriority?: string[];
   /** Active measures (defaults to all) */
   activeMeasures?: string[];
   /** Include items in groups (for raw data viewing) */
@@ -142,7 +135,6 @@ export function useCubeState<TData extends CubeDataItem>(
     initialFilters = [],
     initialRootDimension,
     initialGrouping,
-    initialDefaultDimensionPriority,
     activeMeasures,
     includeItems = true,
     maxDepth = 10,
@@ -184,6 +176,11 @@ export function useCubeState<TData extends CubeDataItem>(
     return map;
   }, [initialRootDimension, initialGrouping]);
 
+  // Use initialGrouping as the dimension priority list
+  const effectiveDefaultDimensionPriority = useMemo(() => {
+    return initialGrouping || [];
+  }, [initialGrouping]);
+
   // Merge defaults with explicit user overrides to create final breakdownMap
   const breakdownMap = useMemo(() => {
     const map: Record<string, string | null> = { ...defaultBreakdownMap };
@@ -209,7 +206,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      defaultDimensionPriority: initialDefaultDimensionPriority,
+      defaultDimensionPriority: effectiveDefaultDimensionPriority,
       activeMeasures,
     }),
     [
@@ -218,7 +215,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      initialDefaultDimensionPriority,
+      effectiveDefaultDimensionPriority,
       activeMeasures,
     ],
   );

@@ -42,6 +42,13 @@ export function findBreakdownDimensionId(
         pathKey,
         defaultDimensionPriority,
       );
+
+      // Debug logging for priority fallback
+      console.log("Priority fallback applied:", {
+        pathKey,
+        priorityList: defaultDimensionPriority,
+        selectedDimension: childDimensionId,
+      });
     }
   }
 
