@@ -52,8 +52,6 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
   measures: MeasureDescriptor<TData, unknown>[];
   /** Initial filters */
   initialFilters?: DimensionFilter[];
-  /** Initial root dimension (for per-node mode) */
-  initialRootDimension?: string;
   /** Active measures (defaults to all) */
   activeMeasures?: string[];
   /** Include items in groups (for raw data viewing) */
@@ -131,7 +129,6 @@ export function useCubeState<TData extends CubeDataItem>(
     dimensions,
     measures,
     initialFilters = [],
-    initialRootDimension,
     activeMeasures,
     includeItems = true,
     maxDepth = 10,
@@ -153,50 +150,10 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // ===== DERIVED DATA =====
 
-  // Build default breakdownMap from dimension array order
-  const defaultBreakdownMap = useMemo(() => {
-    const map: Record<string, string | null> = {};
-
-    if (initialRootDimension) {
-      map[""] = initialRootDimension;
-    } else if (dimensions.length > 0) {
-      // Root level - use first dimension
-      map[""] = dimensions[0].id;
-
-      // Wildcard patterns for each level based on dimension order
-      for (let i = 0; i < dimensions.length - 1; i++) {
-        const pattern = dimensions
-          .slice(0, i + 1)
-          .map((d) => `${d.id}:*`)
-          .join("|");
-        map[pattern] = dimensions[i + 1].id;
-      }
-    }
-
-    return map;
-  }, [initialRootDimension, dimensions]);
-
   // Dimension priority order is derived from the dimensions array
   const dimensionPriority = useMemo(() => {
     return dimensions.map((d) => d.id);
   }, [dimensions]);
-
-  // Merge defaults with explicit user overrides to create final breakdownMap
-  const breakdownMap = useMemo(() => {
-    const map: Record<string, string | null> = { ...defaultBreakdownMap };
-
-    // User overrides take precedence over defaults
-    nodeStates.forEach((state, key) => {
-      // Only apply override if childDimensionId has been explicitly set (not undefined)
-      if (state.childDimensionId !== undefined) {
-        // Set the value (including null for raw data)
-        map[key] = state.childDimensionId;
-      }
-      // If childDimensionId is undefined, use the default (don't modify map)
-    });
-
-    return map;
-  }, [defaultBreakdownMap, nodeStates]);
 
   // Calculate cube configuration
   const config: CubeConfig<TData> = useMemo(
@@ -205,7 +162,7 @@ export function useCubeState<TData extends CubeDataItem>(
       dimensions,
       measures,
       filters,
-      breakdownMap,
+      nodeStates,
       initialGrouping: dimensionPriority,
       activeMeasures,
     }),
@@ -214,7 +171,7 @@ export function useCubeState<TData extends CubeDataItem>(
       dimensions,
       measures,
       filters,
-      breakdownMap,
+      nodeStates,
       dimensionPriority,
       activeMeasures,
     ],

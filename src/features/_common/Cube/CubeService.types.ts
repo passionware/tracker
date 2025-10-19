@@ -111,16 +111,6 @@ export interface DimensionFilter<TValue = unknown> {
 }
 
 /**
- * Per-node breakdown configuration
- * Maps a path to the dimension to use for that node's children
- */
-export interface BreakdownMap {
-  /** Key: path string (e.g., "region:North" or "region:North|category:Electronics") */
-  /** Value: dimension ID to use for children, or null to show raw data */
-  [path: string]: string | null;
-}
-
-/**
  * Configuration for cube calculation
  */
 export interface CubeConfig<TData extends CubeDataItem> {
@@ -132,8 +122,11 @@ export interface CubeConfig<TData extends CubeDataItem> {
   measures: MeasureDescriptor<TData, unknown>[];
   /** Active filters */
   filters?: DimensionFilter[];
-  /** Per-node breakdown configuration - PRIMARY way to define hierarchies */
-  breakdownMap?: BreakdownMap;
+  /** Node states containing user overrides */
+  nodeStates: Map<
+    string,
+    { isExpanded: boolean; childDimensionId?: string | null }
+  >;
   /** Initial dimension grouping sequence (derived from dimensions array order) */
   initialGrouping?: string[];
   /** Measures to include in results */

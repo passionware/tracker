@@ -106,6 +106,7 @@ export function CubeSunburst({
       data: rootData,
       dimensions: dimensions,
       measures: [measure],
+      nodeStates: state.cube.config.nodeStates,
     });
 
     if (rootCube.groups.length === 0) {

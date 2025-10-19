@@ -205,6 +205,7 @@ function ExportBuilderContent({
 
     const config = {
       data: processedData,
+      nodeStates: previewCubeState.nodeStates,
       dimensions: selectedDimensions.map((dim) => {
         // Add labelMapping based on dimension type
         let labelMapping: Record<string, string> | undefined;
@@ -227,7 +228,6 @@ function ExportBuilderContent({
         };
       }),
       measures: selectedMeasures,
-      breakdownMap: previewCubeState.cube.config.breakdownMap,
       activeMeasures: previewCubeState.cube.config.activeMeasures,
       listView: {
         columns: [

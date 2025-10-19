@@ -5,7 +5,6 @@
  */
 
 import type {
-  BreakdownMap,
   CubeCalculationOptions,
   CubeCell,
   CubeConfig,
@@ -17,7 +16,10 @@ import type {
   FilterOperator,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
-import { findBreakdownDimensionId } from "./CubeUtils.ts";
+import {
+  findBreakdownDimensionId,
+  findFirstUnusedDimension,
+} from "./CubeUtils.ts";
 
 /**
  * Evaluate a single filter condition
@@ -113,24 +115,15 @@ function calculateMeasures<TData extends CubeDataItem>(
 }
 
 /**
- * Resolve the child dimension ID for a given path using breakdown map logic
- * This is the shared logic used by both tree expansion and zoom-in modes
- */
-function resolveChildDimensionId(
-  nodePath: string,
-  breakdownMap: Record<string, string | null>,
-  dimensionPriority?: string[],
-): string | null | undefined {
-  return findBreakdownDimensionId(nodePath, breakdownMap, dimensionPriority);
-}
-
-/**
  * Build hierarchical groups with per-node breakdown support
  */
 function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   data: TData[],
   dimensionId: string,
-  breakdownMap: Record<string, string | null>,
+  nodeStates: Map<
+    string,
+    { isExpanded: boolean; childDimensionId?: string | null }
+  >,
   dimensions: DimensionDescriptor<TData, unknown>[],
   measures: MeasureDescriptor<TData, unknown>[],
   parentPath: string,
@@ -178,9 +171,9 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
 
     // Check if there's a breakdown defined for this node's children
     // Use shared utility function for consistent logic across tree expansion and zoom-in
-    const childDimensionId = resolveChildDimensionId(
+    const childDimensionId = findBreakdownDimensionId(
       nodePath,
-      breakdownMap,
+      nodeStates,
       dimensionPriority,
     );
 
@@ -189,21 +182,37 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
       measures as MeasureDescriptor<TData>[],
     );
 
-    const subGroups = childDimensionId
-      ? buildGroupsWithBreakdownMap(
-          items,
-          childDimensionId,
-          breakdownMap,
-          dimensions,
-          measures,
-          nodePath,
-          maxDepth,
-          currentDepth + 1,
-          includeItems,
-          skipEmptyGroups,
-          dimensionPriority,
-        )
-      : undefined;
+    // Handle different cases for childDimensionId:
+    // - string: use that dimension for breakdown
+    // - null: user explicitly wants raw data, don't build subgroups
+    // - undefined: no explicit setting, try fallback logic
+    let finalChildDimensionId = childDimensionId;
+
+    if (childDimensionId === undefined && dimensionPriority) {
+      // Try fallback logic when no explicit setting exists
+      finalChildDimensionId = findFirstUnusedDimension(
+        nodePath,
+        dimensionPriority,
+        nodeStates,
+      );
+    }
+
+    const subGroups =
+      finalChildDimensionId !== null && finalChildDimensionId !== undefined
+        ? buildGroupsWithBreakdownMap(
+            items,
+            finalChildDimensionId,
+            nodeStates,
+            dimensions,
+            measures,
+            nodePath,
+            maxDepth,
+            currentDepth + 1,
+            includeItems,
+            skipEmptyGroups,
+            dimensionPriority,
+          )
+        : undefined;
 
     groups.push({
       dimensionId,
@@ -220,46 +229,6 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   });
 
   return groups;
-}
-
-/**
- * Convert a simple dimension sequence to a breakdownMap with wildcards
- * This is a convenience function for backward compatibility
- *
- * Example:
- *   ["region", "category", "product"]
- * Becomes:
- *   {
- *     "": "region",
- *     "region:*": "category",
- *     "region:*|category:*": "product"
- *   }
- */
-function dimensionSequenceToBreakdownMap(dimensionIds: string[]): BreakdownMap {
-  const map: BreakdownMap = {};
-
-  if (dimensionIds.length === 0) return map;
-
-  // Root level uses first dimension
-  map[""] = dimensionIds[0];
-
-  // Build wildcard patterns for each depth level
-  let pathPattern = "";
-  for (let i = 0; i < dimensionIds.length - 1; i++) {
-    const currentDimension = dimensionIds[i];
-    const nextDimension = dimensionIds[i + 1];
-
-    // Build the wildcard path for this level
-    if (pathPattern === "") {
-      pathPattern = `${currentDimension}:*`;
-    } else {
-      pathPattern += `|${currentDimension}:*`;
-    }
-
-    map[pathPattern] = nextDimension;
-  }
-
-  return map;
 }
 
 /**
@@ -303,37 +272,26 @@ export function calculateCube<TData extends CubeDataItem>(
     ? config.measures.filter((m) => config.activeMeasures!.includes(m.id))
     : config.measures;
 
-  // Step 3: Determine the breakdown map
-  let effectiveBreakdownMap: BreakdownMap | undefined = config.breakdownMap;
-
-  // If no breakdownMap, create one from dimension array order
-  if (!effectiveBreakdownMap && config.dimensions.length > 0) {
-    const dimensionIds = config.dimensions.map((d) => d.id);
-    effectiveBreakdownMap = dimensionSequenceToBreakdownMap(dimensionIds);
-  }
-
   // Step 4: Build groups
   let groups: CubeGroup[] = [];
 
-  if (effectiveBreakdownMap) {
+  if (config.dimensions.length > 0) {
     if (zoomPath.length === 0) {
-      // Normal mode: build from root
-      const rootDimensionId = effectiveBreakdownMap[""];
-      if (rootDimensionId) {
-        groups = buildGroupsWithBreakdownMap(
-          filteredData,
-          rootDimensionId,
-          effectiveBreakdownMap,
-          config.dimensions,
-          activeMeasures,
-          "",
-          maxDepth,
-          0,
-          includeItems,
-          skipEmptyGroups,
-          config.dimensions.map((d) => d.id),
-        );
-      }
+      // Normal mode: build from root using first dimension
+      const rootDimensionId = config.dimensions[0].id;
+      groups = buildGroupsWithBreakdownMap(
+        filteredData,
+        rootDimensionId,
+        config.nodeStates,
+        config.dimensions,
+        activeMeasures,
+        "",
+        maxDepth,
+        0,
+        includeItems,
+        skipEmptyGroups,
+        config.dimensions.map((d) => d.id),
+      );
     } else {
       // Zoom mode: find what dimension to use for children of the zoomed node
       const zoomPathString = zoomPath
@@ -346,12 +304,11 @@ export function calculateCube<TData extends CubeDataItem>(
         })
         .join("|");
 
-      // Find the child dimension for this zoom path
-      // The effectiveBreakdownMap already includes user overrides from useCubeState,
-      // so we use the shared utility to get consistent behavior with tree expansion
-      const childDimensionId = resolveChildDimensionId(
+      // Find the child dimension for this zoom path using node states
+      const childDimensionId = findBreakdownDimensionId(
         zoomPathString,
-        effectiveBreakdownMap,
+        config.nodeStates,
+        config.dimensions.map((d) => d.id),
       );
 
       // If we found a child dimension, build groups for it
@@ -360,7 +317,7 @@ export function calculateCube<TData extends CubeDataItem>(
         groups = buildGroupsWithBreakdownMap(
           filteredData,
           childDimensionId,
-          effectiveBreakdownMap,
+          config.nodeStates,
           config.dimensions,
           activeMeasures,
           zoomPathString,
@@ -372,29 +329,6 @@ export function calculateCube<TData extends CubeDataItem>(
         );
       }
       // If childDimensionId is null, groups remains empty (raw data mode)
-    }
-  } else if (config.dimensions.length > 0) {
-    // No breakdown map - use the first dimension from the dimension array
-    const rootDimensionId = config.dimensions[0].id;
-    if (rootDimensionId) {
-      // Create a minimal breakdown map with just the root dimension
-      const priorityBreakdownMap: BreakdownMap = {
-        "": rootDimensionId,
-      };
-
-      groups = buildGroupsWithBreakdownMap(
-        filteredData,
-        rootDimensionId,
-        priorityBreakdownMap,
-        config.dimensions,
-        activeMeasures,
-        "",
-        maxDepth,
-        0,
-        includeItems,
-        skipEmptyGroups,
-        config.dimensions.map((d) => d.id),
-      );
     }
   }
 
@@ -411,8 +345,6 @@ export function calculateCube<TData extends CubeDataItem>(
     filteredData: includeItems ? filteredData : undefined,
     config: {
       ...config,
-      // Include the effective breakdownMap so CubeView can access it
-      breakdownMap: effectiveBreakdownMap,
     } as CubeConfig<CubeDataItem>,
   };
 }

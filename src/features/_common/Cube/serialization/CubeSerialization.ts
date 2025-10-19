@@ -446,6 +446,7 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
     measures,
     filters,
     activeMeasures: serialized.activeMeasures,
+    nodeStates: new Map(),
   };
 }
 

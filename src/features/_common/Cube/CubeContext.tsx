@@ -111,7 +111,7 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
 
   const breakdownId = findBreakdownDimensionId(
     pathKey,
-    state.cube.config.breakdownMap || {},
+    state.nodeStates,
     state.cube.config.dimensions.map((d) => d.id),
   );
 

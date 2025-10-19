@@ -5,8 +5,6 @@
  * to/from JSON format for database storage and restoration.
  */
 
-import type { BreakdownMap } from "../CubeService.types.ts";
-
 /**
  * Supported data types for serialization
  */
@@ -196,8 +194,6 @@ export interface SerializableCubeConfig {
   dimensions: SerializableDimension[];
   /** Measure definitions */
   measures: SerializableMeasure[];
-  /** Breakdown map for hierarchical grouping */
-  breakdownMap?: BreakdownMap;
   /** Active measures to include */
   activeMeasures?: string[];
   /** Active filters */

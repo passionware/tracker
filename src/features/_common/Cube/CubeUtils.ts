@@ -5,45 +5,40 @@
  */
 
 /**
- * Find the breakdown dimension ID for a given path using exact match and wildcard fallback.
- *
- * This implements the same logic as CubeService.ts to ensure consistency.
+ * Find the breakdown dimension ID for a given path using node state and fallback logic.
  *
  * @param pathKey - The path key to match (e.g., "project:123" or "project:123|contractor:456")
- * @param breakdownMap - The breakdown map containing dimension mappings
- * @param initialGrouping - Optional priority list for fallback
+ * @param nodeStates - Map of node states containing user overrides
+ * @param initialGrouping - Priority list for fallback
  * @returns The breakdown dimension ID, or undefined if no match found
  */
 export function findBreakdownDimensionId(
   pathKey: string,
-  breakdownMap: Record<string, string | null>,
-  initialGrouping?: string[],
+  nodeStates: Map<
+    string,
+    { isExpanded: boolean; childDimensionId?: string | null }
+  >,
+  initialGrouping: string[],
 ): string | null | undefined {
-  // First try exact match
-  let childDimensionId = breakdownMap[pathKey];
+  // First try to get explicit user override from node state
+  const nodeState = nodeStates.get(pathKey);
+  let childDimensionId = nodeState?.childDimensionId;
 
-  // If no exact match found (undefined), try wildcard match
-  // If exact match is null, don't try wildcard (user explicitly wants raw data)
-  if (childDimensionId === undefined) {
-    // Try wildcard match by replacing ALL concrete keys in the path with '*'
-    const wildcardPath = pathKey
-      .split("|")
-      .map((segment) => {
-        const [dim] = segment.split(":");
-        return `${dim}:*`;
-      })
-      .join("|");
+  // If no explicit override and we have a priority list, use fallback logic
+  if (childDimensionId === undefined && initialGrouping) {
+    childDimensionId = findFirstUnusedDimension(
+      pathKey,
+      initialGrouping,
+      nodeStates,
+    );
 
-    childDimensionId = breakdownMap[wildcardPath];
-
-    // If still no match and we have a priority list, use it
-    if (childDimensionId === undefined && initialGrouping) {
-      childDimensionId = findFirstUnusedDimension(
-        pathKey,
-        initialGrouping,
-        breakdownMap,
-      );
-    }
+    // Debug logging
+    console.log("findBreakdownDimensionId fallback result:", {
+      pathKey,
+      initialGrouping,
+      nodeStates: Array.from(nodeStates.entries()),
+      result: childDimensionId,
+    });
   }
 
   return childDimensionId;
@@ -54,13 +49,16 @@ export function findBreakdownDimensionId(
  *
  * @param nodePath - The current path
  * @param priorityList - List of dimension IDs in priority order
- * @param breakdownMap - Optional breakdown map to check for overridden dimensions
+ * @param nodeStates - Map of node states to check for overridden dimensions
  * @returns The first unused dimension ID, or undefined if all are used
  */
-function findFirstUnusedDimension(
+export function findFirstUnusedDimension(
   nodePath: string,
   priorityList: string[],
-  breakdownMap?: Record<string, string | null>,
+  nodeStates: Map<
+    string,
+    { isExpanded: boolean; childDimensionId?: string | null }
+  >,
 ): string | null {
   if (!nodePath) {
     // Root node - return first dimension from priority list
@@ -71,36 +69,35 @@ function findFirstUnusedDimension(
     nodePath.split("|").map((segment) => segment.split(":")[0]),
   );
 
-  // If we have a breakdown map, also consider overridden dimensions as "used"
-  if (breakdownMap) {
-    // Check if there's an explicit override for this path
-    const overriddenDimension = breakdownMap[nodePath];
-    if (overriddenDimension !== undefined && overriddenDimension !== null) {
-      usedDimensions.add(overriddenDimension);
+  // Consider any dimensions that are explicitly set in node states as "used"
+  nodeStates.forEach((state) => {
+    if (
+      state.childDimensionId !== undefined &&
+      state.childDimensionId !== null
+    ) {
+      usedDimensions.add(state.childDimensionId);
     }
-
-    // Also consider the root dimension as "used" since it's being used at the top level
-    const rootDimension = breakdownMap[""];
-    if (rootDimension !== undefined && rootDimension !== null) {
-      usedDimensions.add(rootDimension);
-    }
-
-    // Also consider any dimensions that are explicitly set in the breakdown map
-    // This handles cases where the root dimension was changed but wildcard patterns weren't updated
-    Object.values(breakdownMap).forEach((dimensionId) => {
-      if (dimensionId !== undefined && dimensionId !== null) {
-        usedDimensions.add(dimensionId);
-      }
-    });
-  }
+  });
 
   // Find first dimension from priority list that isn't used
   for (const dimensionId of priorityList) {
     if (!usedDimensions.has(dimensionId)) {
+      console.log("findFirstUnusedDimension found:", dimensionId, {
+        nodePath,
+        priorityList,
+        usedDimensions: Array.from(usedDimensions),
+        nodeStates: Array.from(nodeStates.entries()),
+      });
       return dimensionId;
     }
   }
 
   // All dimensions from priority list are used
+  console.log("findFirstUnusedDimension: all dimensions used", {
+    nodePath,
+    priorityList,
+    usedDimensions: Array.from(usedDimensions),
+    nodeStates: Array.from(nodeStates.entries()),
+  });
   return null;
 }

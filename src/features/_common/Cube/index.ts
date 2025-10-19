@@ -28,7 +28,6 @@ export type {
   CubeGroup,
   CubeResult,
   CubeCalculationOptions,
-  BreakdownMap,
 } from "./CubeService.types.ts";
 export { useCubeState } from "./useCubeState.ts";
 export type { UseCubeStateProps, CubeState, PathItem } from "./useCubeState.ts";
