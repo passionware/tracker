@@ -140,13 +140,16 @@ function ExportBuilderContent({
     [],
   );
 
+  const { anonymizeTimeEntries, anonymizeContractor } =
+    watchedValues.anonymization;
+
   // Apply mandatory preparation and optional anonymization to data
   const processedData = useMemo(() => {
     return transformAndAnonymize(report, {
-      anonymizeTimeEntries: watchedValues.anonymization.anonymizeTimeEntries,
-      anonymizeContractor: watchedValues.anonymization.anonymizeContractor,
+      anonymizeTimeEntries,
+      anonymizeContractor,
     });
-  }, [data, watchedValues.anonymization, report]);
+  }, [data, anonymizeTimeEntries, anonymizeContractor, report]);
 
   // Generate preview cube state
   const previewCubeState = useCubeState({
