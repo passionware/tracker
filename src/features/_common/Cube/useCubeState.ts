@@ -210,7 +210,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      defaultDimensionPriority: effectiveDefaultDimensionPriority,
+      initialGrouping: effectiveDefaultDimensionPriority,
       activeMeasures,
     }),
     [
