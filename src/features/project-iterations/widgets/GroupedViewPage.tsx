@@ -14,6 +14,9 @@ import { GroupedViewWidget } from "./GroupedViewWidget";
 import {
   CubeLayout,
   CubeDimensionExplorer,
+  CubeSummary,
+  CubeBreakdownControl,
+  CubeHierarchicalBreakdown,
   CubeProvider,
 } from "@/features/_common/Cube/index.ts";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
@@ -54,7 +57,20 @@ function GroupedViewWithCube({
 
   return (
     <CubeProvider value={contextValue}>
-      <CubeLayout report={report} rightSidebar={<CubeDimensionExplorer />}>
+      <CubeLayout
+        leftSidebar={
+          <>
+            <div className="p-4 space-y-4 flex-1">
+              <CubeSummary report={report} />
+              <CubeBreakdownControl />
+            </div>
+            <div className="p-4 pt-0">
+              <CubeHierarchicalBreakdown report={report} />
+            </div>
+          </>
+        }
+        rightSidebar={<CubeDimensionExplorer />}
+      >
         <GroupedViewWidget report={report} services={services} />
       </CubeLayout>
     </CubeProvider>

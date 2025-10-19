@@ -5,6 +5,9 @@
 import {
   CubeLayout,
   CubeDimensionExplorer,
+  CubeSummary,
+  CubeBreakdownControl,
+  CubeHierarchicalBreakdown,
   CubeProvider,
   useCubeState,
 } from "@/features/_common/Cube/index.ts";
@@ -137,7 +140,7 @@ export const BasicLayout: Story = {
   render: () => (
     <div className="h-screen">
       <CubeStoryWrapper>
-        <CubeLayout report={mockReport}>
+        <CubeLayout>
           <div className="p-8 text-center">
             <h2 className="text-xl font-semibold mb-4">Main Content Area</h2>
             <p className="text-gray-600">
@@ -156,7 +159,6 @@ export const CustomLeftSidebar: Story = {
     <div className="h-screen">
       <CubeStoryWrapper>
         <CubeLayout
-          report={mockReport}
           leftSidebar={
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-4">
@@ -186,7 +188,6 @@ export const CustomRightSidebar: Story = {
     <div className="h-screen">
       <CubeStoryWrapper>
         <CubeLayout
-          report={mockReport}
           rightSidebar={
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-4">
@@ -210,16 +211,16 @@ export const CustomRightSidebar: Story = {
   ),
 };
 
-// Full Layout with Both Sidebars
-export const FullLayout: Story = {
+// Layout with Custom Styling
+export const CustomStyling: Story = {
   render: () => (
     <div className="h-screen">
       <CubeStoryWrapper>
         <CubeLayout
-          report={mockReport}
+          className="bg-slate-50"
           rightSidebar={<CubeDimensionExplorer />}
         >
-          <div className="p-8 text-center">
+          <div className="p-8 text-center bg-white m-4 rounded-lg shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Main Content Area</h2>
             <p className="text-gray-600">
               This is where your main cube view or analysis content would go.
@@ -231,17 +232,26 @@ export const FullLayout: Story = {
   ),
 };
 
-// Layout with Custom Styling
-export const CustomStyling: Story = {
+// Full Cube Layout with All Components
+export const FullCubeLayout: Story = {
   render: () => (
     <div className="h-screen">
       <CubeStoryWrapper>
         <CubeLayout
-          report={mockReport}
-          className="bg-slate-50"
+          leftSidebar={
+            <>
+              <div className="p-4 space-y-4 flex-1">
+                <CubeSummary report={mockReport} />
+                <CubeBreakdownControl />
+              </div>
+              <div className="p-4 pt-0">
+                <CubeHierarchicalBreakdown report={mockReport} />
+              </div>
+            </>
+          }
           rightSidebar={<CubeDimensionExplorer />}
         >
-          <div className="p-8 text-center bg-white m-4 rounded-lg shadow-sm">
+          <div className="p-8 text-center">
             <h2 className="text-xl font-semibold mb-4">Main Content Area</h2>
             <p className="text-gray-600">
               This is where your main cube view or analysis content would go.

@@ -10,7 +10,13 @@ import { useMemo } from "react";
 import { CubeView } from "../CubeView.tsx";
 import { useCubeState } from "../useCubeState.ts";
 import { CubeProvider } from "../CubeContext.tsx";
-import { CubeLayout, CubeDimensionExplorer } from "../index.ts";
+import {
+  CubeLayout,
+  CubeDimensionExplorer,
+  CubeSummary,
+  CubeBreakdownControl,
+  CubeHierarchicalBreakdown,
+} from "../index.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { CubeDataItem } from "../CubeService.types.ts";
@@ -53,7 +59,20 @@ const mockReport = {
 // Layout wrapper using new Cube components
 function CubeLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <CubeLayout report={mockReport} rightSidebar={<CubeDimensionExplorer />}>
+    <CubeLayout
+      leftSidebar={
+        <>
+          <div className="p-4 space-y-4 flex-1">
+            <CubeSummary report={mockReport} />
+            <CubeBreakdownControl />
+          </div>
+          <div className="p-4 pt-0">
+            <CubeHierarchicalBreakdown report={mockReport} />
+          </div>
+        </>
+      }
+      rightSidebar={<CubeDimensionExplorer />}
+    >
       {children}
     </CubeLayout>
   );

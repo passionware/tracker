@@ -1,59 +1,51 @@
 /**
  * Cube Layout Component
  *
- * Provides a standardized three-column layout for Cube analysis:
- * - Left sidebar: Summary and breakdown controls
- * - Center: Main cube view
- * - Right sidebar: Dimension explorer and charts
+ * A generic three-column layout component that accepts React nodes for its slots.
+ * Provides a standardized layout structure for Cube analysis interfaces.
  */
 
-import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ReactNode } from "react";
-import {
-  CubeSummary,
-  CubeBreakdownControl,
-  CubeHierarchicalBreakdown,
-} from "./index.ts";
 
 interface CubeLayoutProps {
-  report: GeneratedReportSource;
   children: ReactNode;
   leftSidebar?: ReactNode;
   rightSidebar?: ReactNode;
   className?: string;
+  leftSidebarWidth?: string;
+  rightSidebarWidth?: string;
 }
 
 export function CubeLayout({
-  report,
   children,
   leftSidebar,
   rightSidebar,
   className = "",
+  leftSidebarWidth = "w-80",
+  rightSidebarWidth = "w-80",
 }: CubeLayoutProps) {
   return (
     <div className={`flex h-full min-w-0 ${className}`}>
-      {/* Left Sidebar - Summary and Controls */}
-      <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
-        {leftSidebar || (
-          <>
-            <div className="p-4 space-y-4 flex-1">
-              <CubeSummary report={report} />
-              <CubeBreakdownControl />
-            </div>
-            <div className="p-4 pt-0">
-              <CubeHierarchicalBreakdown report={report} />
-            </div>
-          </>
-        )}
-      </div>
+      {/* Left Sidebar */}
+      {leftSidebar && (
+        <div
+          className={`${leftSidebarWidth} border-r border-slate-200 bg-white overflow-y-auto flex flex-col`}
+        >
+          {leftSidebar}
+        </div>
+      )}
 
-      {/* Main Content - Cube View */}
+      {/* Main Content */}
       <div className="flex-1 overflow-hidden">{children}</div>
 
-      {/* Right Sidebar - Dimension Explorer */}
-      <div className="w-80 border-l border-slate-200 bg-white overflow-y-auto">
-        {rightSidebar}
-      </div>
+      {/* Right Sidebar */}
+      {rightSidebar && (
+        <div
+          className={`${rightSidebarWidth} border-l border-slate-200 bg-white overflow-y-auto`}
+        >
+          {rightSidebar}
+        </div>
+      )}
     </div>
   );
 }
