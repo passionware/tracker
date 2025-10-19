@@ -41,6 +41,8 @@ export { CubeSunburst } from "./CubeSunburst.tsx";
 export { CubeSummary } from "./CubeSummary.tsx";
 export { CubeBreakdownControl } from "./CubeBreakdownControl.tsx";
 export { CubeHierarchicalBreakdown } from "./CubeHierarchicalBreakdown.tsx";
+export { CubeLayout } from "./CubeLayout.tsx";
+export { CubeDimensionExplorer } from "./CubeDimensionExplorer.tsx";
 
 // Serialization exports
 export * from "./serialization/index.ts";

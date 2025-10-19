@@ -9,27 +9,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useMemo } from "react";
 import { CubeView } from "../CubeView.tsx";
 import { useCubeState } from "../useCubeState.ts";
-import {
-  CubeProvider,
-  useCubeContext,
-  useSelectedMeasure,
-} from "../CubeContext.tsx";
-import { CubeSunburst } from "../CubeSunburst.tsx";
+import { CubeProvider } from "../CubeContext.tsx";
+import { CubeLayout, CubeDimensionExplorer } from "../index.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
 import type { CubeDataItem } from "../CubeService.types.ts";
 import { deserializeCubeConfig } from "./CubeSerialization.ts";
 import { createDimensionWithLabels } from "./CubeSerialization.utils.ts";
@@ -50,189 +33,33 @@ export default meta;
 
 type Story = StoryObj;
 
-// Left Sidebar Component (Summary + Sunburst)
-function LeftSidebar() {
-  const { state, dimensions, measures } = useCubeContext();
-  const { selectedMeasure } = useSelectedMeasure();
-  const cube = state.cube;
+// Mock report data for stories
+const mockReport = {
+  id: 1,
+  createdAt: new Date("2024-01-15T10:00:00Z"),
+  projectIterationId: 1,
+  data: {
+    definitions: {
+      taskTypes: {},
+      activityTypes: {},
+      projectTypes: {},
+      roleTypes: {},
+    },
+    timeEntries: [],
+  },
+  originalData: [],
+};
 
-  // Get current zoom level data
-  const currentItems =
-    state.path.length === 0 ? cube.filteredData || [] : cube.filteredData || [];
-
+// Layout wrapper using new Cube components
+function CubeLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-80 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
-      {/* Summary Section */}
-      <div className="p-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              {state.path.length === 0
-                ? "Summary (All Data)"
-                : "Summary (Current Level)"}
-            </CardTitle>
-            <div className="text-xs text-slate-500">
-              {state.path.length === 0 ? (
-                <>{cube.totalItems} items</>
-              ) : (
-                <>
-                  {cube.totalItems} items in{" "}
-                  {state.path[state.path.length - 1].dimensionId}
-                </>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {measures.map((measure: any) => {
-              // Calculate totals from current zoom level data
-              const totalValue = currentItems.reduce(
-                (sum: number, item: any) => {
-                  const value = measure.getValue(item);
-                  return sum + (typeof value === "number" ? value : 0);
-                },
-                0,
-              );
-
-              return (
-                <div
-                  key={measure.id}
-                  className="flex justify-between items-center"
-                >
-                  <div className="flex items-center gap-2">
-                    {measure.icon && <span>{measure.icon}</span>}
-                    <span className="text-sm font-medium">{measure.name}</span>
-                  </div>
-                  <div className="text-sm font-bold">
-                    {measure.formatValue
-                      ? measure.formatValue(totalValue)
-                      : String(totalValue)}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sunburst Chart */}
-      <div className="flex-1 p-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Hierarchical Breakdown</CardTitle>
-            <div className="text-xs text-slate-500">
-              {selectedMeasure.name} by dimensions
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <CubeSunburst
-                state={state}
-                dimensions={dimensions}
-                rootData={currentItems}
-                measure={selectedMeasure}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <CubeLayout report={mockReport} rightSidebar={<CubeDimensionExplorer />}>
+      {children}
+    </CubeLayout>
   );
 }
 
-// Right Sidebar Component (Measure Selector + Dimension Breakdowns)
-function RightSidebar() {
-  const { state, dimensions, measures, data } = useCubeContext();
-  const { selectedMeasureId, setSelectedMeasureId } = useSelectedMeasure();
-  const cube = state.cube;
-
-  // Get current zoom level data
-  const currentItems = state.path.length === 0 ? data : cube.filteredData || [];
-
-  // Filter out dimensions that are already used in the current path
-  const sidebarDimensions = dimensions.filter((dim: any) => {
-    const usedDimensions = state.path.map((p: any) => p.dimensionId);
-    return !usedDimensions.includes(dim.id);
-  });
-
-  return (
-    <div className="w-80 border-l border-slate-200 bg-white overflow-y-auto flex flex-col">
-      {/* Measure Selector */}
-      <div className="p-4 border-b border-slate-200">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Measure</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select
-              value={selectedMeasureId}
-              onValueChange={setSelectedMeasureId}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {measures.map((measure: any) => (
-                  <SelectItem key={measure.id} value={measure.id}>
-                    <div className="flex items-center gap-2">
-                      {measure.icon && <span>{measure.icon}</span>}
-                      <span>{measure.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Dimension Breakdowns */}
-      <div className="flex-1 p-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Breakdown by</CardTitle>
-            <div className="text-xs text-slate-500">
-              Click to drill down into dimensions
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {sidebarDimensions.map((dim: any) => {
-              // Get unique values for this dimension from current data
-              const uniqueValues = Array.from(
-                new Set(
-                  currentItems.map((item: any) => {
-                    const value = dim.getValue(item);
-                    return dim.formatValue
-                      ? dim.formatValue(value)
-                      : String(value);
-                  }),
-                ),
-              ).slice(0, 10); // Limit to 10 items for performance
-
-              return (
-                <div key={dim.id} className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    {dim.icon && <span>{dim.icon}</span>}
-                    <span className="text-sm font-medium">{dim.name}</span>
-                  </div>
-                  <div className="text-xs text-slate-600 space-y-1">
-                    {uniqueValues.map((value: any, index: number) => (
-                      <div key={index} className="truncate">
-                        {value}
-                      </div>
-                    ))}
-                    {uniqueValues.length === 10 && (
-                      <div className="text-slate-400">...</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+// Removed RightSidebar - now using CubeDimensionExplorer
 
 // ListView Renderer Component for Serialized Cubes
 function SerializedCubeListView({
@@ -544,11 +371,7 @@ export const TimeTrackingPreAggregated: Story = {
             reportId: "serialization-story",
           }}
         >
-          {/* Left Sidebar - Summary + Sunburst */}
-          <LeftSidebar />
-
-          {/* Main Content - Cube View */}
-          <div className="flex-1 overflow-hidden">
+          <CubeLayoutWrapper>
             <CubeView
               state={cubeState}
               enableDimensionPicker={false}
@@ -561,10 +384,7 @@ export const TimeTrackingPreAggregated: Story = {
                 />
               )}
             />
-          </div>
-
-          {/* Right Sidebar - Measure Selector + Dimension Breakdowns */}
-          <RightSidebar />
+          </CubeLayoutWrapper>
         </CubeProvider>
       </div>
     );
@@ -863,11 +683,7 @@ export const SimpleDataSchema: Story = {
             reportId: "serialization-story",
           }}
         >
-          {/* Left Sidebar - Summary + Sunburst */}
-          <LeftSidebar />
-
-          {/* Main Content - Cube View */}
-          <div className="flex-1 overflow-hidden">
+          <CubeLayoutWrapper>
             <CubeView
               state={cubeState}
               enableDimensionPicker={false}
@@ -880,10 +696,7 @@ export const SimpleDataSchema: Story = {
                 />
               )}
             />
-          </div>
-
-          {/* Right Sidebar - Measure Selector + Dimension Breakdowns */}
-          <RightSidebar />
+          </CubeLayoutWrapper>
         </CubeProvider>
       </div>
     );
@@ -1186,11 +999,7 @@ export const IdBasedDimensions: Story = {
               reportId: "id-based-story",
             }}
           >
-            {/* Left Sidebar - Summary + Sunburst */}
-            <LeftSidebar />
-
-            {/* Main Content - Cube View */}
-            <div className="flex-1 overflow-hidden">
+            <CubeLayoutWrapper>
               <CubeView
                 state={cubeState}
                 enableDimensionPicker={false}
@@ -1203,10 +1012,7 @@ export const IdBasedDimensions: Story = {
                   />
                 )}
               />
-            </div>
-
-            {/* Right Sidebar - Measure Selector + Dimension Breakdowns */}
-            <RightSidebar />
+            </CubeLayoutWrapper>
           </CubeProvider>
         </div>
       </div>

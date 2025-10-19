@@ -11,9 +11,11 @@ import { maybe, rd } from "@passionware/monads";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GroupedViewWidget } from "./GroupedViewWidget";
-import { SummarySidebar } from "./SummarySidebar";
-import { DimensionExplorer } from "./DimensionExplorer";
-import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
+import {
+  CubeLayout,
+  CubeDimensionExplorer,
+  CubeProvider,
+} from "@/features/_common/Cube/index.ts";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { useCubeDefinitions } from "./CubeDefinitions";
 
@@ -52,18 +54,9 @@ function GroupedViewWithCube({
 
   return (
     <CubeProvider value={contextValue}>
-      {/* Left column - summary sidebar */}
-      <SummarySidebar report={report} />
-
-      {/* Middle column - main cube analysis */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full w-full">
-          <GroupedViewWidget report={report} services={services} />
-        </div>
-      </div>
-
-      {/* Right column - dimension selector + charts */}
-      <DimensionExplorer report={report} services={services} />
+      <CubeLayout report={report} rightSidebar={<CubeDimensionExplorer />}>
+        <GroupedViewWidget report={report} services={services} />
+      </CubeLayout>
     </CubeProvider>
   );
 }
