@@ -27,8 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Label } from "@/components/ui/label.tsx";
-import { Download, Eye, ArrowLeft } from "lucide-react";
-import { useMemo, useCallback, useEffect } from "react";
+import { Download, Eye, ArrowLeft, Code } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { serializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
@@ -98,6 +98,9 @@ function ExportBuilderContent({
 
   const { control, watch, setValue } = form;
 
+  // Preview mode state
+  const [previewMode, setPreviewMode] = useState<"cube" | "json">("cube");
+
   // Watch form values
   const watchedValues = watch();
   const selectedDimensions = dimensions.filter((dim) =>
@@ -109,8 +112,9 @@ function ExportBuilderContent({
   const rawDataDimension =
     dimensions.find((dim) => dim.id === watchedValues.rawDataDimension) || null;
 
-  // Initialize form with default values when cube data is available
+  // Initialize form with default values only once
   useEffect(() => {
+    // Initialize default dimensions
     if (
       dimensions.length > 0 &&
       watchedValues.selectedDimensions.length === 0
@@ -137,6 +141,7 @@ function ExportBuilderContent({
       ]);
     }
 
+    // Initialize default measures
     if (measures.length > 0 && watchedValues.selectedMeasures.length === 0) {
       // Set default measures: hours, billing
       const defaultMeasureIds = ["hours", "billing"];
@@ -155,7 +160,7 @@ function ExportBuilderContent({
       ]);
     }
 
-    // Set default raw data dimension to date
+    // Set default raw data dimension
     if (dimensions.length > 0 && !watchedValues.rawDataDimension) {
       const dateDimension = dimensions.find((dim) => dim.id === "date");
       if (dateDimension) {
@@ -163,7 +168,7 @@ function ExportBuilderContent({
       }
     }
 
-    // Set default flattening dimensions to include date
+    // Set default flattening dimensions
     if (
       dimensions.length > 0 &&
       watchedValues.flattening.flattenDimensions.length === 0
@@ -517,29 +522,63 @@ function ExportBuilderContent({
 
         {/* Preview Panel */}
         <div className="flex-1 lg:w-1/2 flex flex-col min-h-0">
-          <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-            <Eye className="h-4 w-4" />
-            <h3 className="text-lg font-semibold">Preview</h3>
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              <h3 className="text-lg font-semibold">Preview</h3>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={previewMode === "cube" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewMode("cube")}
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Cube View
+              </Button>
+              <Button
+                variant={previewMode === "json" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewMode("json")}
+                className="flex items-center gap-2"
+              >
+                <Code className="h-4 w-4" />
+                JSON View
+              </Button>
+            </div>
           </div>
 
           <div className="flex-1 min-h-0">
             {previewCubeState ? (
               <div className="h-full border rounded overflow-hidden">
-                <CubeProvider
-                  value={{
-                    state: previewCubeState,
-                    reportId: "export-builder-preview",
-                  }}
-                >
-                  <StoryLayoutWrapper
-                    title="Export Preview"
-                    description="Preview of your configured cube export"
-                    cubeState={previewCubeState}
-                    reportId="export-builder-preview"
+                {previewMode === "cube" ? (
+                  <CubeProvider
+                    value={{
+                      state: previewCubeState,
+                      reportId: "export-builder-preview",
+                    }}
                   >
-                    <CubeView state={previewCubeState} />
-                  </StoryLayoutWrapper>
-                </CubeProvider>
+                    <StoryLayoutWrapper
+                      title="Export Preview"
+                      description="Preview of your configured cube export"
+                      cubeState={previewCubeState}
+                      reportId="export-builder-preview"
+                    >
+                      <CubeView state={previewCubeState} />
+                    </StoryLayoutWrapper>
+                  </CubeProvider>
+                ) : (
+                  <div className="h-full p-4 bg-slate-50">
+                    <div className="h-full overflow-auto">
+                      <pre className="text-sm text-slate-700 whitespace-pre-wrap">
+                        {serializableConfig
+                          ? JSON.stringify(serializableConfig, null, 2)
+                          : "No configuration available"}
+                      </pre>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="h-full border rounded flex items-center justify-center text-slate-500">
