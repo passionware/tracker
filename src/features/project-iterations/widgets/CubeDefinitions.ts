@@ -130,18 +130,7 @@ export function useCubeDefinitions(
         name: "Cost",
         icon: "💰",
         getValue: (item) => {
-          const roleType = report.data.definitions.roleTypes[item.roleId];
-          const matchingRate =
-            roleType?.rates.find(
-              (rate) =>
-                rate.activityType === item.activityId &&
-                rate.taskType === item.taskId,
-            ) || roleType?.rates[0]; // Fallback to first rate
-
-          if (!matchingRate) return 0;
-
-          const hours = item.numHours || 0;
-          return hours * matchingRate.costRate;
+          return item.costValue || 0; // Use pre-calculated costValue field
         },
         aggregate: (values) =>
           values.reduce((sum: any, val: any) => sum + val, 0),
@@ -155,18 +144,7 @@ export function useCubeDefinitions(
         name: "Billing",
         icon: "💳",
         getValue: (item) => {
-          const roleType = report.data.definitions.roleTypes[item.roleId];
-          const matchingRate =
-            roleType?.rates.find(
-              (rate) =>
-                rate.activityType === item.activityId &&
-                rate.taskType === item.taskId,
-            ) || roleType?.rates[0]; // Fallback to first rate
-
-          if (!matchingRate) return 0;
-
-          const hours = item.numHours || 0;
-          return hours * matchingRate.billingRate;
+          return item.billingValue || 0; // Use pre-calculated billingValue field
         },
         aggregate: (values) =>
           values.reduce((sum: any, val: any) => sum + val, 0),
@@ -180,18 +158,7 @@ export function useCubeDefinitions(
         name: "Profit",
         icon: "📈",
         getValue: (item) => {
-          const roleType = report.data.definitions.roleTypes[item.roleId];
-          const matchingRate =
-            roleType?.rates.find(
-              (rate) =>
-                rate.activityType === item.activityId &&
-                rate.taskType === item.taskId,
-            ) || roleType?.rates[0]; // Fallback to first rate
-
-          if (!matchingRate) return 0;
-
-          const hours = item.numHours || 0;
-          return hours * (matchingRate.billingRate - matchingRate.costRate);
+          return item.profitValue || 0; // Use pre-calculated profitValue field
         },
         aggregate: (values) =>
           values.reduce((sum: any, val: any) => sum + val, 0),

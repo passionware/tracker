@@ -29,7 +29,7 @@ import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { CubeView } from "@/features/_common/Cube/CubeView.tsx";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
 import { useReportCube } from "./useReportCube";
-import { applyAnonymization } from "./exportUtils";
+import { transformAndAnonymize } from "./reportCubeTransformation";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -119,14 +119,6 @@ function ExportBuilderContent({
     watchedValues.selectedMeasures.includes(measure.id),
   );
 
-  // Apply mandatory preparation and optional anonymization to data
-  const processedData = useMemo(() => {
-    return applyAnonymization(report, {
-      anonymizeTimeEntries: watchedValues.anonymization.anonymizeTimeEntries,
-      anonymizeContractor: watchedValues.anonymization.anonymizeContractor,
-    }).data.timeEntries;
-  }, [data, watchedValues.anonymization, report]);
-
   // Fetch contractor data for labelMapping
   const contractors = rd.mapOrElse(
     services.contractorService.useContractors(
@@ -140,6 +132,14 @@ function ExportBuilderContent({
     (data) => data,
     [],
   );
+
+  // Apply mandatory preparation and optional anonymization to data
+  const processedData = useMemo(() => {
+    return transformAndAnonymize(report, {
+      anonymizeTimeEntries: watchedValues.anonymization.anonymizeTimeEntries,
+      anonymizeContractor: watchedValues.anonymization.anonymizeContractor,
+    });
+  }, [data, watchedValues.anonymization, report]);
 
   // Generate preview cube state
   const previewCubeState = useCubeState({

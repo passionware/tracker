@@ -12,8 +12,13 @@
 
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { useCubeDefinitions } from "./CubeDefinitions";
+import {
+  transformReportData,
+  type TransformedEntry,
+} from "./reportCubeTransformation";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import type { WithFrontServices } from "@/core/frontServices.ts";
+import { useMemo } from "react";
 
 export interface UseReportCubeProps {
   report: GeneratedReportSource;
@@ -25,7 +30,7 @@ export interface UseReportCubeReturn {
   dimensions: ReturnType<typeof useCubeDefinitions>["dimensions"];
   measures: ReturnType<typeof useCubeDefinitions>["measures"];
   rawDataDimension: ReturnType<typeof useCubeDefinitions>["rawDataDimension"];
-  data: GeneratedReportSource["data"]["timeEntries"];
+  data: TransformedEntry[];
 }
 
 /**
@@ -35,15 +40,18 @@ export function useReportCube({
   report,
   services,
 }: UseReportCubeProps): UseReportCubeReturn {
+  // Transform report data with all calculated values
+  const transformedData = useMemo(() => transformReportData(report), [report]);
+
   // Get cube definitions (dimensions, measures, raw data dimension)
   const { dimensions, measures, rawDataDimension } = useCubeDefinitions(
     report,
     services,
   );
 
-  // Create cube state
+  // Create cube state with transformed data
   const cubeState = useCubeState({
-    data: report.data.timeEntries,
+    data: transformedData,
     dimensions,
     measures,
     initialGrouping: ["project", "task", "contractor", "activity"],
@@ -56,6 +64,6 @@ export function useReportCube({
     dimensions,
     measures,
     rawDataDimension,
-    data: report.data.timeEntries,
+    data: transformedData,
   };
 }
