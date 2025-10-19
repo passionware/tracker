@@ -53,11 +53,11 @@ function GroupedViewWithCube({
         leftSidebar={
           <>
             <div className="p-4 space-y-4 flex-1">
-              <CubeSummary report={report} />
+              <CubeSummary />
               <CubeBreakdownControl />
             </div>
             <div className="p-4 pt-0">
-              <CubeHierarchicalBreakdown report={report} />
+              <CubeHierarchicalBreakdown />
             </div>
           </>
         }

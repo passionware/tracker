@@ -238,11 +238,11 @@ export const FullCubeLayout: Story = {
           leftSidebar={
             <>
               <div className="p-4 space-y-4 flex-1">
-                <CubeSummary report={mockReport} />
+                <CubeSummary />
                 <CubeBreakdownControl />
               </div>
               <div className="p-4 pt-0">
-                <CubeHierarchicalBreakdown report={mockReport} />
+                <CubeHierarchicalBreakdown />
               </div>
             </>
           }

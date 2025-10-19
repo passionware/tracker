@@ -5,7 +5,6 @@
  * Shows measures with their calculated totals and formatted values.
  */
 
-import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
 import {
   Card,
@@ -18,21 +17,17 @@ import { Button } from "@/components/ui/button.tsx";
 import { ArrowUp } from "lucide-react";
 
 interface CubeSummaryProps {
-  report: GeneratedReportSource;
   showNavigation?: boolean;
 }
 
-export function CubeSummary({
-  report,
-  showNavigation = true,
-}: CubeSummaryProps) {
+export function CubeSummary({ showNavigation = true }: CubeSummaryProps) {
   const { state } = useCubeContext();
   const measures = state.cube.config.measures;
   const cube = state.cube;
 
   // Get current zoom level data - this is what's shown in breadcrumbs
   const currentItems =
-    state.path.length === 0 ? report.data.timeEntries : cube.filteredData || [];
+    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
 
   return (
     <Card>

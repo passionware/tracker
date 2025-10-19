@@ -5,7 +5,6 @@
  * Allows switching between "from root" and "from current zoom" views.
  */
 
-import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import {
   useCubeContext,
   useSelectedMeasure,
@@ -22,14 +21,12 @@ import { Label } from "@/components/ui/label.tsx";
 import { useState } from "react";
 
 interface CubeHierarchicalBreakdownProps {
-  report: GeneratedReportSource;
   title?: string;
   maxLevels?: number;
   showViewModeToggle?: boolean;
 }
 
 export function CubeHierarchicalBreakdown({
-  report,
   title = "Hierarchical Breakdown",
   maxLevels = 4,
   showViewModeToggle = true,
@@ -44,7 +41,7 @@ export function CubeHierarchicalBreakdown({
 
   // Get current zoom level data - this is what's shown in breadcrumbs
   const currentItems =
-    state.path.length === 0 ? report.data.timeEntries : cube.filteredData || [];
+    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
 
   return (
     <Card>
@@ -74,7 +71,7 @@ export function CubeHierarchicalBreakdown({
           measure={selectedMeasure}
           dimensions={dimensions}
           maxLevels={maxLevels}
-          rootData={showAllLevels ? report.data.timeEntries : currentItems}
+          rootData={showAllLevels ? state.cube.config.data : currentItems}
         />
       </CardContent>
     </Card>

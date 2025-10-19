@@ -32,8 +32,8 @@ export function CubeBreakdownControl({
   const cube = state.cube;
 
   // Get the current level's breakdown dimension (what we're breaking down by)
-  const currentLevelDimensionId =
-    cube.config.breakdownMap?.[
+  const currentLevelDimensionId = (() => {
+    const pathKey =
       state.path
         .map((p) => {
           const dim = dimensions.find((d) => d.id === p.dimensionId);
@@ -42,8 +42,20 @@ export function CubeBreakdownControl({
             : String(p.dimensionValue ?? "null");
           return `${p.dimensionId}:${key}`;
         })
-        .join("|") || ""
-    ];
+        .join("|") || "";
+
+    const breakdownId = cube.config.breakdownMap?.[pathKey];
+
+    // Debug logging
+    console.log("CubeBreakdownControl Debug:", {
+      path: state.path,
+      pathKey,
+      breakdownMap: cube.config.breakdownMap,
+      breakdownId,
+    });
+
+    return breakdownId;
+  })();
 
   const currentLevelDimension = dimensions.find(
     (d) => d.id === currentLevelDimensionId,

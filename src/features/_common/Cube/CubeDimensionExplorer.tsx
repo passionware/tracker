@@ -48,8 +48,8 @@ export function CubeDimensionExplorer({
   });
 
   // Get current breakdown dimension ID for highlighting
-  const currentBreakdownDimensionId =
-    state.cube.config.breakdownMap?.[
+  const currentBreakdownDimensionId = (() => {
+    const pathKey =
       state.path
         .map((p) => {
           const dim = dimensions.find((d) => d.id === p.dimensionId);
@@ -58,8 +58,20 @@ export function CubeDimensionExplorer({
             : String(p.dimensionValue ?? "null");
           return `${p.dimensionId}:${key}`;
         })
-        .join("|") || ""
-    ];
+        .join("|") || "";
+
+    const breakdownId = state.cube.config.breakdownMap?.[pathKey];
+
+    // Debug logging
+    console.log("CubeDimensionExplorer Debug:", {
+      path: state.path,
+      pathKey,
+      breakdownMap: state.cube.config.breakdownMap,
+      breakdownId,
+    });
+
+    return breakdownId;
+  })();
 
   return (
     <div className={`p-4 space-y-4 ${className}`}>
