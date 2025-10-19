@@ -116,9 +116,7 @@ export function useCubeDefinitions(
         name: "Hours",
         icon: "⏱️",
         getValue: (item) => {
-          const start = new Date(item.startAt);
-          const end = new Date(item.endAt);
-          return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
+          return item.numHours || 0; // Use pre-calculated numHours field
         },
         aggregate: (values) =>
           values.reduce((sum: any, val: any) => sum + val, 0),
@@ -142,10 +140,7 @@ export function useCubeDefinitions(
 
           if (!matchingRate) return 0;
 
-          const hours =
-            (new Date(item.endAt).getTime() -
-              new Date(item.startAt).getTime()) /
-            (1000 * 60 * 60);
+          const hours = item.numHours || 0;
           return hours * matchingRate.costRate;
         },
         aggregate: (values) =>
@@ -170,10 +165,7 @@ export function useCubeDefinitions(
 
           if (!matchingRate) return 0;
 
-          const hours =
-            (new Date(item.endAt).getTime() -
-              new Date(item.startAt).getTime()) /
-            (1000 * 60 * 60);
+          const hours = item.numHours || 0;
           return hours * matchingRate.billingRate;
         },
         aggregate: (values) =>
@@ -198,10 +190,7 @@ export function useCubeDefinitions(
 
           if (!matchingRate) return 0;
 
-          const hours =
-            (new Date(item.endAt).getTime() -
-              new Date(item.startAt).getTime()) /
-            (1000 * 60 * 60);
+          const hours = item.numHours || 0;
           return hours * (matchingRate.billingRate - matchingRate.costRate);
         },
         aggregate: (values) =>

@@ -5,7 +5,6 @@
  * - Dimension editing (exclude, reorder)
  * - Measure editing (exclude, reorder)
  * - Raw data configuration
- * - Data flattening/normalization
  * - Real-time preview
  * - JSON export download
  */
@@ -19,14 +18,6 @@ import {
 } from "@/components/ui/tabs.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { CheckboxWithLabel } from "@/components/ui/checkbox.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
-import { Label } from "@/components/ui/label.tsx";
 import { Download, Eye, ArrowLeft, Code } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -38,6 +29,7 @@ import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { CubeView } from "@/features/_common/Cube/CubeView.tsx";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
 import { useReportCube } from "./useReportCube";
+import { applyAnonymization } from "./exportUtils";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -49,10 +41,9 @@ import type {
 
 // Form schema for export builder
 interface ExportBuilderFormData {
-  flattening: {
-    enabled: boolean;
-    flattenDimensions: string[];
-    aggregationMethod: "sum" | "average" | "count";
+  anonymization: {
+    anonymizeTimeEntries: boolean;
+    anonymizeContractor: boolean;
   };
   selectedDimensions: string[];
   selectedMeasures: string[];
@@ -94,10 +85,9 @@ function ExportBuilderContent({
   // Initialize form with default values
   const form = useForm<ExportBuilderFormData>({
     defaultValues: {
-      flattening: {
-        enabled: true,
-        flattenDimensions: ["date"], // Default to date dimension
-        aggregationMethod: "sum",
+      anonymization: {
+        anonymizeTimeEntries: false,
+        anonymizeContractor: false,
       },
       selectedDimensions:
         dimensions.length > 0
@@ -129,6 +119,14 @@ function ExportBuilderContent({
     watchedValues.selectedMeasures.includes(measure.id),
   );
 
+  // Apply mandatory preparation and optional anonymization to data
+  const processedData = useMemo(() => {
+    return applyAnonymization(report, {
+      anonymizeTimeEntries: watchedValues.anonymization.anonymizeTimeEntries,
+      anonymizeContractor: watchedValues.anonymization.anonymizeContractor,
+    }).data.timeEntries;
+  }, [data, watchedValues.anonymization, report]);
+
   // Fetch contractor data for labelMapping
   const contractors = rd.mapOrElse(
     services.contractorService.useContractors(
@@ -145,7 +143,7 @@ function ExportBuilderContent({
 
   // Generate preview cube state
   const previewCubeState = useCubeState({
-    data,
+    data: processedData,
     dimensions: selectedDimensions,
     measures: selectedMeasures,
     initialGrouping: cubeState.cube.config.initialGrouping,
@@ -197,7 +195,7 @@ function ExportBuilderContent({
     );
 
     const config = {
-      data,
+      data: processedData,
       dimensions: selectedDimensions.map((dim) => {
         // Add labelMapping based on dimension type
         let labelMapping: Record<string, string> | undefined;
@@ -297,92 +295,52 @@ function ExportBuilderContent({
       <div className="flex-1 flex flex-col lg:flex-row gap-6 p-6 min-h-0">
         {/* Configuration Panel */}
         <div className="flex-1 lg:w-1/2 lg:max-w-lg">
-          <Tabs defaultValue="flattening" className="h-full flex flex-col">
+          <Tabs defaultValue="anonymization" className="h-full flex flex-col">
             <TabsList className="flex-shrink-0">
-              <TabsTrigger value="flattening">Flattening</TabsTrigger>
+              <TabsTrigger value="anonymization">Anonymize</TabsTrigger>
               <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="measures">Measures</TabsTrigger>
               <TabsTrigger value="raw-data">Raw Data</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="flattening" className="flex-1 overflow-y-auto">
+            <TabsContent
+              value="anonymization"
+              className="flex-1 overflow-y-auto"
+            >
               <div className="space-y-4 p-4">
-                <h3 className="text-lg font-semibold">Data Flattening</h3>
+                <h3 className="text-lg font-semibold">Data Anonymization</h3>
                 <p className="text-sm text-slate-600">
-                  Flatten data for pre-aggregation (e.g., merge daily entries)
+                  Anonymize sensitive data before export
                 </p>
 
                 <div className="space-y-4">
                   <Controller
-                    name="flattening.enabled"
+                    name="anonymization.anonymizeTimeEntries"
                     control={control}
                     render={({ field }) => (
                       <CheckboxWithLabel
-                        id="enable-flattening"
+                        id="anonymize-time-entries"
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        title="Enable data flattening"
-                        description="Flatten data for pre-aggregation (e.g., merge daily entries)"
+                        title="Anonymize time entries"
+                        description="Group identical entries and replace start/end times with total hours"
                       />
                     )}
                   />
 
-                  {watchedValues.flattening.enabled && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Flatten by dimensions:
-                      </Label>
-                      {dimensions.map((dim) => (
-                        <Controller
-                          key={dim.id}
-                          name="flattening.flattenDimensions"
-                          control={control}
-                          render={({ field }) => (
-                            <CheckboxWithLabel
-                              id={`flatten-${dim.id}`}
-                              checked={field.value.includes(dim.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  field.onChange([...field.value, dim.id]);
-                                } else {
-                                  field.onChange(
-                                    field.value.filter((id) => id !== dim.id),
-                                  );
-                                }
-                              }}
-                              title={dim.name}
-                              description={`Flatten data by ${dim.name} dimension`}
-                            />
-                          )}
-                        />
-                      ))}
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Aggregation Method
-                        </Label>
-                        <Controller
-                          name="flattening.aggregationMethod"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sum">Sum</SelectItem>
-                                <SelectItem value="average">Average</SelectItem>
-                                <SelectItem value="count">Count</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <Controller
+                    name="anonymization.anonymizeContractor"
+                    control={control}
+                    render={({ field }) => (
+                      <CheckboxWithLabel
+                        id="anonymize-contractor"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        title="Anonymize contractor information"
+                        description="Replace contractor IDs with anonymized values"
+                      />
+                    )}
+                  />
                 </div>
               </div>
             </TabsContent>
