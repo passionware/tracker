@@ -113,12 +113,55 @@ function ExportBuilderContent({
 
   // Watch form values
   const watchedValues = watch();
-  const selectedDimensions = dimensions.filter((dim) =>
+  const { anonymizeTimeEntries, anonymizeContractor } =
+    watchedValues.anonymization;
+
+  // Determine which dimensions should be disabled based on anonymization settings
+  const isDimensionDisabled = (dimId: string) => {
+    // If anonymizing contractor info, disable contractor and role dimensions
+    if (anonymizeContractor && (dimId === "contractor" || dimId === "role")) {
+      return true;
+    }
+    // If anonymizing time entries, disable date dimension
+    if (anonymizeTimeEntries && dimId === "date") {
+      return true;
+    }
+    return false;
+  };
+
+  // Filter available dimensions for selection (exclude disabled ones)
+  const availableDimensions = dimensions.filter(
+    (dim) => !isDimensionDisabled(dim.id),
+  );
+
+  const selectedDimensions = availableDimensions.filter((dim) =>
     watchedValues.selectedDimensions.includes(dim.id),
   );
   const selectedMeasures = measures.filter((measure) =>
     watchedValues.selectedMeasures.includes(measure.id),
   );
+
+  // Auto-update selected dimensions if they become unavailable due to anonymization
+  const currentSelectedDimensions = watchedValues.selectedDimensions;
+  const availableSelectedDimensions = currentSelectedDimensions.filter(
+    (dimId) => availableDimensions.some((dim) => dim.id === dimId),
+  );
+
+  // If some selected dimensions became unavailable, update the form
+  if (availableSelectedDimensions.length !== currentSelectedDimensions.length) {
+    form.setValue("selectedDimensions", availableSelectedDimensions);
+  }
+
+  // Auto-update raw data dimension if it becomes unavailable due to anonymization
+  const currentRawDataDimension = watchedValues.rawDataDimension;
+  const isRawDataDimensionAvailable = availableDimensions.some(
+    (dim) => dim.id === currentRawDataDimension,
+  );
+
+  // If current raw data dimension is not available, reset to first available dimension
+  if (!isRawDataDimensionAvailable && availableDimensions.length > 0) {
+    form.setValue("rawDataDimension", availableDimensions[0].id);
+  }
 
   // Fetch contractor data for labelMapping
   const contractors = rd.mapOrElse(
@@ -139,9 +182,6 @@ function ExportBuilderContent({
     (data) => data,
     [],
   );
-
-  const { anonymizeTimeEntries, anonymizeContractor } =
-    watchedValues.anonymization;
 
   // Apply mandatory preparation and optional anonymization to data
   const processedData = useMemo(() => {
@@ -491,48 +531,73 @@ function ExportBuilderContent({
                 </p>
 
                 <div className="space-y-2">
-                  {dimensions.map((dim) => (
-                    <Controller
-                      key={dim.id}
-                      name="selectedDimensions"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center gap-3">
-                          <CheckboxWithLabel
-                            id={`dimension-${dim.id}`}
-                            checked={field.value.includes(dim.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                field.onChange([...field.value, dim.id]);
-                              } else {
-                                field.onChange(
-                                  field.value.filter((id) => id !== dim.id),
-                                );
+                  {dimensions.map((dim) => {
+                    const isDisabled = isDimensionDisabled(dim.id);
+                    return (
+                      <Controller
+                        key={dim.id}
+                        name="selectedDimensions"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="flex items-center gap-3">
+                            <CheckboxWithLabel
+                              id={`dimension-${dim.id}`}
+                              checked={field.value.includes(dim.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([...field.value, dim.id]);
+                                } else {
+                                  field.onChange(
+                                    field.value.filter((id) => id !== dim.id),
+                                  );
+                                }
+                              }}
+                              title={dim.name}
+                              description={
+                                <>
+                                  {isDisabled ? (
+                                    <>
+                                      <span className="text-amber-600">
+                                        Cannot be used with{" "}
+                                        {dim.id === "contractor" ||
+                                        dim.id === "role"
+                                          ? "contractor anonymization"
+                                          : "time entry optimization"}
+                                      </span>
+                                      <Badge
+                                        variant="secondary"
+                                        tone="secondary"
+                                        className="ml-auto"
+                                      >
+                                        {dim.id}
+                                      </Badge>
+                                    </>
+                                  ) : (
+                                    <>
+                                      Include {dim.name} in export
+                                      <Badge
+                                        variant={
+                                          field.value.includes(dim.id)
+                                            ? "info"
+                                            : "secondary"
+                                        }
+                                        tone="secondary"
+                                        className="ml-auto"
+                                      >
+                                        {dim.id}
+                                      </Badge>
+                                    </>
+                                  )}
+                                </>
                               }
-                            }}
-                            title={dim.name}
-                            description={
-                              <>
-                                Include {dim.name} in export
-                                <Badge
-                                  variant={
-                                    field.value.includes(dim.id)
-                                      ? "info"
-                                      : "secondary"
-                                  }
-                                  tone="secondary"
-                                  className="ml-auto"
-                                >
-                                  {dim.id}
-                                </Badge>
-                              </>
-                            }
-                            className="flex-1"
-                          />
-                        </div>
-                      )}
-                    />
-                  ))}
+                              className="flex-1"
+                              disabled={isDisabled}
+                            />
+                          </div>
+                        )}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </TabsContent>
@@ -617,11 +682,21 @@ function ExportBuilderContent({
                           <option value="">
                             Select dimension for raw data
                           </option>
-                          {dimensions.map((dim) => (
-                            <option key={dim.id} value={dim.id}>
-                              {dim.name}
-                            </option>
-                          ))}
+                          {dimensions.map((dim) => {
+                            const isDisabled = isDimensionDisabled(dim.id);
+                            return (
+                              <option
+                                key={dim.id}
+                                value={dim.id}
+                                disabled={isDisabled}
+                              >
+                                {dim.name}
+                                {isDisabled
+                                  ? " (disabled due to anonymization)"
+                                  : ""}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
                     )}
