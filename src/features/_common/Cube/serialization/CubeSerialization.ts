@@ -21,6 +21,7 @@ import type {
   SerializableFilter,
   SerializableDataField,
   SerializableDataType,
+  SerializableFormatFunction,
   AggregationFunction,
   FormatFunctionRegistry,
   AggregationFunctionRegistry,
@@ -230,6 +231,9 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
       fieldName = match[1];
     }
 
+    // Check if this dimension has labelMapping (from our custom serialization)
+    const dimensionWithLabelMapping = dim as any;
+
     return {
       id: dim.id,
       name: dim.name,
@@ -237,12 +241,10 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
       icon: dim.icon,
       fieldName,
       keyFieldName: dim.getKey ? "custom" : undefined,
-      formatFunction: dim.formatValue
-        ? {
-            type: "custom",
-            parameters: { function: dim.formatValue.toString() },
-          }
-        : undefined,
+      // Use labelMapping if available, otherwise no formatFunction
+      // Custom formatValue functions are not serializable
+      labelMapping: dimensionWithLabelMapping.labelMapping,
+      formatFunction: undefined, // Custom functions are not allowed in serialization
     };
   });
 
@@ -272,6 +274,25 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
       aggregationFunction = "max";
     }
 
+    // For measures, we'll use built-in format functions instead of custom ones
+    let formatFunction: SerializableFormatFunction | undefined;
+    if (measure.formatValue) {
+      const formatStr = measure.formatValue.toString();
+      if (formatStr.includes("toFixed") && formatStr.includes("h")) {
+        // Hours formatting
+        formatFunction = {
+          type: "number",
+          parameters: { decimals: 2 },
+        };
+      } else if (formatStr.includes("$") && formatStr.includes("toFixed")) {
+        // Currency formatting
+        formatFunction = {
+          type: "currency",
+          parameters: { currency: "USD", decimals: 2 },
+        };
+      }
+    }
+
     return {
       id: measure.id,
       name: measure.name,
@@ -279,12 +300,7 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
       icon: measure.icon,
       fieldName,
       aggregationFunction,
-      formatFunction: measure.formatValue
-        ? {
-            type: "custom",
-            parameters: { function: measure.formatValue.toString() },
-          }
-        : undefined,
+      formatFunction,
       sidebarOptions: measure.sidebarOptions,
     };
   });
@@ -359,7 +375,7 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
           return dim.labelMapping[String(value)];
         }
 
-        // Then check for custom format function
+        // Then check for built-in format function
         if (dim.formatFunction) {
           const formatter = formatFunctions[dim.formatFunction.type];
           if (formatter) {

@@ -31,7 +31,8 @@ import { Download, Eye, ArrowLeft, Code } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { serializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
+import { serializeCubeState } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { CubeView } from "@/features/_common/Cube/CubeView.tsx";
@@ -128,6 +129,20 @@ function ExportBuilderContent({
     watchedValues.selectedMeasures.includes(measure.id),
   );
 
+  // Fetch contractor data for labelMapping
+  const contractors = rd.mapOrElse(
+    services.contractorService.useContractors(
+      contractorQueryUtils.getBuilder().build((q) => [
+        q.withFilter("id", {
+          operator: "oneOf",
+          value: Array.from(new Set(data.map((entry) => entry.contractorId))),
+        }),
+      ]),
+    ),
+    (data) => data,
+    [],
+  );
+
   // Generate preview cube state
   const previewCubeState = useCubeState({
     data,
@@ -138,21 +153,88 @@ function ExportBuilderContent({
     rawDataDimension,
   });
 
-  // Generate serializable config
+  // Generate serializable config with labelMapping
   const serializableConfig = useMemo(() => {
     if (!previewCubeState) return null;
 
+    // Create labelMapping for contractor names
+    const contractorLabelMapping: Record<string, string> = {};
+    contractors.forEach((contractor: any) => {
+      contractorLabelMapping[String(contractor.id)] =
+        contractor.fullName || contractor.name || String(contractor.id);
+    });
+
+    // Create labelMapping for project types
+    const projectLabelMapping: Record<string, string> = {};
+    Object.entries(report.data.definitions.projectTypes).forEach(
+      ([id, type]: [string, any]) => {
+        projectLabelMapping[id] = type.name || id;
+      },
+    );
+
+    // Create labelMapping for role types
+    const roleLabelMapping: Record<string, string> = {};
+    Object.entries(report.data.definitions.roleTypes).forEach(
+      ([id, type]: [string, any]) => {
+        roleLabelMapping[id] = type.name || id;
+      },
+    );
+
+    // Create labelMapping for task types
+    const taskLabelMapping: Record<string, string> = {};
+    Object.entries(report.data.definitions.taskTypes).forEach(
+      ([id, type]: [string, any]) => {
+        taskLabelMapping[id] = type.name || id;
+      },
+    );
+
+    // Create labelMapping for activity types
+    const activityLabelMapping: Record<string, string> = {};
+    Object.entries(report.data.definitions.activityTypes).forEach(
+      ([id, type]: [string, any]) => {
+        activityLabelMapping[id] = type.name || id;
+      },
+    );
+
     const config = {
       data,
-      dimensions: selectedDimensions,
+      dimensions: selectedDimensions.map((dim) => {
+        // Add labelMapping based on dimension type
+        let labelMapping: Record<string, string> | undefined;
+
+        if (dim.id === "contractor") {
+          labelMapping = contractorLabelMapping;
+        } else if (dim.id === "project") {
+          labelMapping = projectLabelMapping;
+        } else if (dim.id === "role") {
+          labelMapping = roleLabelMapping;
+        } else if (dim.id === "task") {
+          labelMapping = taskLabelMapping;
+        } else if (dim.id === "activity") {
+          labelMapping = activityLabelMapping;
+        }
+
+        return {
+          ...dim,
+          labelMapping,
+        };
+      }),
       measures: selectedMeasures,
       breakdownMap: previewCubeState.cube.config.breakdownMap,
       initialGrouping: previewCubeState.cube.config.initialGrouping,
       activeMeasures: previewCubeState.cube.config.activeMeasures,
     };
 
-    return serializeCubeConfig(config);
-  }, [previewCubeState, data, selectedDimensions, selectedMeasures]);
+    // Serialize the complete cube state (config + data)
+    return serializeCubeState(config);
+  }, [
+    previewCubeState,
+    data,
+    selectedDimensions,
+    selectedMeasures,
+    report.data.definitions,
+    contractors,
+  ]);
 
   const handleExport = useCallback(() => {
     if (!serializableConfig) return;

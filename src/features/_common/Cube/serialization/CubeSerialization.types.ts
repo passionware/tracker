@@ -132,10 +132,17 @@ export interface SerializableMeasure {
 
 /**
  * Serializable format function configuration
+ * Only built-in format functions are allowed for serialization
  */
 export interface SerializableFormatFunction {
-  /** Function type identifier */
-  type: string;
+  /** Built-in format function type */
+  type:
+    | "currency"
+    | "number"
+    | "percentage"
+    | "date"
+    | "uppercase"
+    | "lowercase";
   /** Function parameters as key-value pairs */
   parameters?: Record<string, unknown>;
 }
