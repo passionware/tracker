@@ -19,12 +19,12 @@ export interface TransformedEntry {
   taskId: string;
   activityId: string;
   projectId: string;
-  roleId: string;
 
   // Optional fields (can be removed during anonymization)
   startAt?: Date;
   endAt?: Date;
   contractorId?: number;
+  roleId?: string;
 
   // Calculated fields (present on not, depending on the export options)
   numHours: number;
@@ -66,12 +66,12 @@ export function transformReportData(
       taskId: entry.taskId,
       activityId: entry.activityId,
       projectId: entry.projectId,
-      roleId: entry.roleId,
 
       // Optional fields (can be removed during anonymization)
       startAt: entry.startAt,
       endAt: entry.endAt,
       contractorId: entry.contractorId,
+      roleId: entry.roleId,
 
       // Calculated fields (always present)
       numHours,
@@ -152,8 +152,8 @@ export function anonymizeTimeEntries(
       "taskId",
       "activityId",
       "projectId",
-      "roleId",
       "contractorId",
+      "roleId",
     ],
     // Define how to aggregate measurements
     {
@@ -181,18 +181,6 @@ export function anonymizeTimeEntries(
     ...entry,
     startAt: undefined,
     endAt: undefined,
-  }));
-}
-
-/**
- * Anonymize contractor information by removing contractorId.
- */
-export function anonymizeContractor(
-  transformedEntries: TransformedEntry[],
-): TransformedEntry[] {
-  return transformedEntries.map((entry) => ({
-    ...entry,
-    contractorId: undefined, // Remove contractor information
   }));
 }
 
@@ -258,7 +246,6 @@ export function transformAndAnonymize(
   report: GeneratedReportSource,
   options: {
     anonymizeTimeEntries?: boolean;
-    anonymizeContractor?: boolean;
     activeMeasures?: string[];
   },
 ): TransformedEntry[] {
@@ -267,10 +254,6 @@ export function transformAndAnonymize(
 
   if (options.anonymizeTimeEntries) {
     transformedEntries = anonymizeTimeEntries(transformedEntries);
-  }
-
-  if (options.anonymizeContractor) {
-    transformedEntries = anonymizeContractor(transformedEntries);
   }
 
   // Filter out unselected measurement fields
@@ -307,6 +290,135 @@ function filterUnselectedMeasurements(
     Object.entries(measurementFields).forEach(([measureId, fieldName]) => {
       if (!activeMeasures.includes(measureId)) {
         delete (filteredEntry as any)[fieldName];
+      }
+    });
+
+    return filteredEntry;
+  });
+}
+
+/**
+ * Filter out fields for inactive dimensions from transformed entries.
+ * This ensures we don't expose sensitive data when dimensions are not active.
+ */
+export function filterInactiveDimensionFields(
+  entries: TransformedEntry[],
+  activeDimensionIds: string[],
+): TransformedEntry[] {
+  const activeDimensionSet = new Set(activeDimensionIds);
+
+  return entries.map((entry) => {
+    const filteredEntry: any = {};
+
+    // Always include basic fields
+    if (entry.id !== undefined) filteredEntry.id = entry.id;
+    if (entry.note !== undefined) filteredEntry.note = entry.note;
+
+    // Include fields based on active dimensions
+    if (activeDimensionSet.has("project") && entry.projectId !== undefined) {
+      filteredEntry.projectId = entry.projectId;
+    }
+    if (activeDimensionSet.has("task") && entry.taskId !== undefined) {
+      filteredEntry.taskId = entry.taskId;
+    }
+    if (activeDimensionSet.has("activity") && entry.activityId !== undefined) {
+      filteredEntry.activityId = entry.activityId;
+    }
+    if (
+      activeDimensionSet.has("contractor") &&
+      entry.contractorId !== undefined
+    ) {
+      filteredEntry.contractorId = entry.contractorId;
+    }
+    if (activeDimensionSet.has("role") && entry.roleId !== undefined) {
+      filteredEntry.roleId = entry.roleId;
+    }
+    if (activeDimensionSet.has("date") && entry.startAt !== undefined) {
+      filteredEntry.startAt = entry.startAt;
+      filteredEntry.endAt = entry.endAt;
+    }
+
+    // Always include measure fields
+    if (entry.numHours !== undefined) filteredEntry.numHours = entry.numHours;
+    if (entry.costValue !== undefined)
+      filteredEntry.costValue = entry.costValue;
+    if (entry.billingValue !== undefined)
+      filteredEntry.billingValue = entry.billingValue;
+    if (entry.profitValue !== undefined)
+      filteredEntry.profitValue = entry.profitValue;
+
+    return filteredEntry;
+  });
+}
+
+/**
+ * Comprehensive anonymization that only includes fields used by:
+ * - Dimension definitions (for grouping/filtering)
+ * - Measurement definitions (for calculations)
+ * - Raw data (listView) definitions (for display)
+ */
+export function anonymizeByUsage(
+  entries: TransformedEntry[],
+  options: {
+    dimensions: Array<{ id: string; getValue: (item: any) => any }>;
+    measures: Array<{ id: string; getValue: (item: any) => any }>;
+    listViewColumns: Array<{ fieldName: string }>;
+  },
+): TransformedEntry[] {
+  // Collect all field names that are actually used
+  const usedFields = new Set<string>();
+
+  // Add fields used by dimensions
+  options.dimensions.forEach((dimension) => {
+    // For each dimension, we need to check what field it accesses
+    // This is a simplified approach - in practice, you'd need to analyze the getValue function
+    const dimensionFieldMap: Record<string, string> = {
+      project: "projectId",
+      task: "taskId",
+      activity: "activityId",
+      contractor: "contractorId",
+      role: "roleId",
+      date: "startAt", // date dimension typically uses startAt
+    };
+
+    const fieldName = dimensionFieldMap[dimension.id];
+    if (fieldName) {
+      usedFields.add(fieldName);
+    }
+  });
+
+  // Add fields used by measures
+  options.measures.forEach((measure) => {
+    const measureFieldMap: Record<string, string> = {
+      hours: "numHours",
+      cost: "costValue",
+      billing: "billingValue",
+      profit: "profitValue",
+    };
+
+    const fieldName = measureFieldMap[measure.id];
+    if (fieldName) {
+      usedFields.add(fieldName);
+    }
+  });
+
+  // Add fields used by listView columns
+  options.listViewColumns.forEach((column) => {
+    usedFields.add(column.fieldName);
+  });
+
+  // Always include basic fields
+  usedFields.add("id");
+  usedFields.add("note");
+
+  // Filter entries to only include used fields
+  return entries.map((entry) => {
+    const filteredEntry: any = {};
+
+    // Only include fields that are actually used
+    Object.keys(entry).forEach((key) => {
+      if (usedFields.has(key)) {
+        filteredEntry[key] = (entry as any)[key];
       }
     });
 

@@ -18,14 +18,7 @@ import {
 } from "@/components/ui/tabs.tsx";
 import { CheckboxWithLabel } from "@/components/ui/checkbox.tsx";
 import { SortableList, type SortableItem } from "@/components/ui/SortableList";
-import {
-  Download,
-  Eye,
-  ArrowLeft,
-  Code,
-  ExternalLink,
-  Grid3X3,
-} from "lucide-react";
+import { Download, Eye, ArrowLeft, Code, ExternalLink } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -35,10 +28,12 @@ import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
 import { useReportCube } from "./useReportCube";
-import { transformAndAnonymize } from "./reportCubeTransformation";
+import {
+  transformAndAnonymize,
+  anonymizeByUsage,
+} from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
-import { CubeViewer } from "@/features/public/CubeViewer";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -53,7 +48,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface ExportBuilderFormData {
   anonymization: {
     anonymizeTimeEntries: boolean;
-    anonymizeContractor: boolean;
   };
   selectedDimensions: string[];
   selectedMeasures: string[];
@@ -102,7 +96,6 @@ function ExportBuilderContent({
     defaultValues: {
       anonymization: {
         anonymizeTimeEntries: false,
-        anonymizeContractor: false,
       },
       selectedDimensions:
         dimensions.length > 0
@@ -138,19 +131,13 @@ function ExportBuilderContent({
 
   // Preview mode state
   const [previewMode, setPreviewMode] = useState<"cube" | "json">("cube");
-  const [showCubeViewer, setShowCubeViewer] = useState(false);
 
   // Watch form values
   const watchedValues = watch();
-  const { anonymizeTimeEntries, anonymizeContractor } =
-    watchedValues.anonymization;
+  const { anonymizeTimeEntries } = watchedValues.anonymization;
 
   // Determine which dimensions should be disabled based on anonymization settings
   const isDimensionDisabled = (dimId: string) => {
-    // If anonymizing contractor info, disable contractor and role dimensions
-    if (anonymizeContractor && (dimId === "contractor" || dimId === "role")) {
-      return true;
-    }
     // If anonymizing time entries, disable date dimension
     if (anonymizeTimeEntries && dimId === "date") {
       return true;
@@ -188,11 +175,6 @@ function ExportBuilderContent({
   let updatedColumns = [...currentSelectedColumns];
 
   // Remove columns that become unavailable due to anonymization
-  if (anonymizeContractor) {
-    updatedColumns = updatedColumns.filter(
-      (col) => col !== "contractorId" && col !== "roleId",
-    );
-  }
   if (anonymizeTimeEntries) {
     updatedColumns = updatedColumns.filter(
       (col) => col !== "startAt" && col !== "endAt",
@@ -235,17 +217,82 @@ function ExportBuilderContent({
 
   // Apply mandatory preparation and optional anonymization to data with active measures
   const processedData = useMemo(() => {
-    return transformAndAnonymize(report, {
+    let transformedData = transformAndAnonymize(report, {
       anonymizeTimeEntries,
-      anonymizeContractor,
       activeMeasures: watchedValues.selectedMeasures,
     });
+
+    // Apply comprehensive anonymization based on actual usage
+    const listViewColumns = [
+      {
+        id: "id",
+        fieldName: "id",
+      },
+      {
+        id: "note",
+        fieldName: "note",
+      },
+      {
+        id: "projectId",
+        fieldName: "projectId",
+      },
+      {
+        id: "taskId",
+        fieldName: "taskId",
+      },
+      {
+        id: "roleId",
+        fieldName: "roleId",
+      },
+      {
+        id: "contractorId",
+        fieldName: "contractorId",
+      },
+      {
+        id: "activityId",
+        fieldName: "activityId",
+      },
+      {
+        id: "startAt",
+        fieldName: "startAt",
+      },
+      {
+        id: "endAt",
+        fieldName: "endAt",
+      },
+      {
+        id: "numHours",
+        fieldName: "numHours",
+      },
+      {
+        id: "costValue",
+        fieldName: "costValue",
+      },
+      {
+        id: "billingValue",
+        fieldName: "billingValue",
+      },
+      {
+        id: "profitValue",
+        fieldName: "profitValue",
+      },
+    ].filter((column) => watchedValues.selectedColumns.includes(column.id));
+
+    transformedData = anonymizeByUsage(transformedData, {
+      dimensions: selectedDimensions,
+      measures: selectedMeasures,
+      listViewColumns,
+    });
+
+    return transformedData;
   }, [
     data,
     anonymizeTimeEntries,
-    anonymizeContractor,
     report,
     watchedValues.selectedMeasures,
+    selectedDimensions,
+    selectedMeasures,
+    watchedValues.selectedColumns,
   ]);
 
   // Generate serializable config with labelMapping
@@ -616,20 +663,6 @@ function ExportBuilderContent({
                       />
                     )}
                   />
-
-                  <Controller
-                    name="anonymization.anonymizeContractor"
-                    control={control}
-                    render={({ field }) => (
-                      <CheckboxWithLabel
-                        id="anonymize-contractor"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        title="Anonymize contractor information"
-                        description="Replace contractor IDs with anonymized values"
-                      />
-                    )}
-                  />
                 </div>
               </div>
             </TabsContent>
@@ -654,11 +687,7 @@ function ExportBuilderContent({
                         icon: dim.icon,
                         badge: dim.id,
                         description: isDimensionDisabled(dim.id)
-                          ? `Cannot be used with ${
-                              dim.id === "contractor" || dim.id === "role"
-                                ? "contractor anonymization"
-                                : "time entry optimization"
-                            }`
+                          ? "Cannot be used with time entry optimization"
                           : `Include ${dim.name} in export`,
                         disabled: isDimensionDisabled(dim.id),
                       }),
@@ -756,13 +785,13 @@ function ExportBuilderContent({
                         id: "roleId",
                         name: "Role",
                         description: "Role type",
-                        disabled: anonymizeContractor,
+                        disabled: false,
                       },
                       {
                         id: "contractorId",
                         name: "Contractor",
                         description: "Contractor ID",
-                        disabled: anonymizeContractor,
+                        disabled: false,
                       },
                       {
                         id: "startAt",
