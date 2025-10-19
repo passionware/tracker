@@ -138,7 +138,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   currentDepth: number,
   includeItems: boolean,
   skipEmptyGroups: boolean,
-  dimensionPriority?: string[],
+  dimensionPriority: string[],
 ): CubeGroup[] {
   if (currentDepth >= maxDepth || data.length === 0) {
     return [];
@@ -331,6 +331,7 @@ export function calculateCube<TData extends CubeDataItem>(
           0,
           includeItems,
           skipEmptyGroups,
+          config.dimensions.map((d) => d.id),
         );
       }
     } else {
@@ -367,6 +368,7 @@ export function calculateCube<TData extends CubeDataItem>(
           zoomPath.length,
           includeItems,
           skipEmptyGroups,
+          config.dimensions.map((d) => d.id),
         );
       }
       // If childDimensionId is null, groups remains empty (raw data mode)
@@ -391,6 +393,7 @@ export function calculateCube<TData extends CubeDataItem>(
         0,
         includeItems,
         skipEmptyGroups,
+        config.dimensions.map((d) => d.id),
       );
     }
   }

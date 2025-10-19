@@ -38,7 +38,11 @@ export function findBreakdownDimensionId(
 
     // If still no match and we have a priority list, use it
     if (childDimensionId === undefined && initialGrouping) {
-      childDimensionId = findFirstUnusedDimension(pathKey, initialGrouping);
+      childDimensionId = findFirstUnusedDimension(
+        pathKey,
+        initialGrouping,
+        breakdownMap,
+      );
     }
   }
 
@@ -50,11 +54,13 @@ export function findBreakdownDimensionId(
  *
  * @param nodePath - The current path
  * @param priorityList - List of dimension IDs in priority order
+ * @param breakdownMap - Optional breakdown map to check for overridden dimensions
  * @returns The first unused dimension ID, or undefined if all are used
  */
 function findFirstUnusedDimension(
   nodePath: string,
   priorityList: string[],
+  breakdownMap?: Record<string, string | null>,
 ): string | null {
   if (!nodePath) {
     // Root node - return first dimension from priority list
@@ -64,6 +70,29 @@ function findFirstUnusedDimension(
   const usedDimensions = new Set(
     nodePath.split("|").map((segment) => segment.split(":")[0]),
   );
+
+  // If we have a breakdown map, also consider overridden dimensions as "used"
+  if (breakdownMap) {
+    // Check if there's an explicit override for this path
+    const overriddenDimension = breakdownMap[nodePath];
+    if (overriddenDimension !== undefined && overriddenDimension !== null) {
+      usedDimensions.add(overriddenDimension);
+    }
+
+    // Also consider the root dimension as "used" since it's being used at the top level
+    const rootDimension = breakdownMap[""];
+    if (rootDimension !== undefined && rootDimension !== null) {
+      usedDimensions.add(rootDimension);
+    }
+
+    // Also consider any dimensions that are explicitly set in the breakdown map
+    // This handles cases where the root dimension was changed but wildcard patterns weren't updated
+    Object.values(breakdownMap).forEach((dimensionId) => {
+      if (dimensionId !== undefined && dimensionId !== null) {
+        usedDimensions.add(dimensionId);
+      }
+    });
+  }
 
   // Find first dimension from priority list that isn't used
   for (const dimensionId of priorityList) {
