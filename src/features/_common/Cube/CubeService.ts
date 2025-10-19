@@ -17,6 +17,7 @@ import type {
   FilterOperator,
   MeasureDescriptor,
 } from "./CubeService.types.ts";
+import { findBreakdownDimensionId } from "./CubeUtils.ts";
 
 /**
  * Evaluate a single filter condition
@@ -112,39 +113,6 @@ function calculateMeasures<TData extends CubeDataItem>(
 }
 
 /**
- * Find the first unused dimension from a priority list
- * Given a node path and a priority list, returns the first dimension
- * that isn't already used by any parent in the path
- */
-function findFirstUnusedDimension(
-  nodePath: string,
-  priorityList: string[],
-): string | null {
-  if (!nodePath) {
-    // Root node - return first dimension from priority list
-    return priorityList[0] || null;
-  }
-
-  // Extract dimension IDs already used in the path
-  const usedDimensions = new Set(
-    nodePath.split("|").map((segment) => {
-      const [dimensionId] = segment.split(":");
-      return dimensionId;
-    }),
-  );
-
-  // Find first dimension from priority list that isn't used
-  for (const dimensionId of priorityList) {
-    if (!usedDimensions.has(dimensionId)) {
-      return dimensionId;
-    }
-  }
-
-  // All dimensions from priority list are used
-  return null;
-}
-
-/**
  * Resolve the child dimension ID for a given path using breakdown map logic
  * This is the shared logic used by both tree expansion and zoom-in modes
  */
@@ -153,33 +121,11 @@ function resolveChildDimensionId(
   breakdownMap: Record<string, string | null>,
   defaultDimensionPriority?: string[],
 ): string | null | undefined {
-  // First try exact match
-  let childDimensionId = breakdownMap[nodePath];
-
-  // If no exact match found (undefined), try wildcard match
-  // If exact match is null, don't try wildcard (user explicitly wants raw data)
-  if (childDimensionId === undefined) {
-    // Try wildcard match by replacing ALL concrete keys in the path with '*'
-    const wildcardPath = nodePath
-      .split("|")
-      .map((segment) => {
-        const [dim] = segment.split(":");
-        return `${dim}:*`;
-      })
-      .join("|");
-
-    childDimensionId = breakdownMap[wildcardPath];
-
-    // If still no match and we have a priority list, use it
-    if (childDimensionId === undefined && defaultDimensionPriority) {
-      childDimensionId = findFirstUnusedDimension(
-        nodePath,
-        defaultDimensionPriority,
-      );
-    }
-  }
-
-  return childDimensionId;
+  return findBreakdownDimensionId(
+    nodePath,
+    breakdownMap,
+    defaultDimensionPriority,
+  );
 }
 
 /**

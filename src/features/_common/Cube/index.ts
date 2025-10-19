@@ -37,6 +37,7 @@ export {
   useCubeContext,
   useSelectedMeasure,
 } from "./CubeContext.tsx";
+export { findBreakdownDimensionId } from "./CubeUtils.ts";
 export { CubeSunburst } from "./CubeSunburst.tsx";
 export { CubeSummary } from "./CubeSummary.tsx";
 export { CubeBreakdownControl } from "./CubeBreakdownControl.tsx";

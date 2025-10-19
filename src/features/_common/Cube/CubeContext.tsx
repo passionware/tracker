@@ -12,6 +12,7 @@ import type {
   MeasureDescriptor,
   CubeDataItem,
 } from "./CubeService.types.ts";
+import { findBreakdownDimensionId } from "./CubeUtils.ts";
 
 interface CubeContextValue {
   // Core cube state
@@ -108,23 +109,11 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
       })
       .join("|") || "";
 
-  // First try exact match
-  let breakdownId = state.cube.config.breakdownMap?.[pathKey];
-
-  // If no exact match found (undefined), try wildcard match
-  // If exact match is null, don't try wildcard (user explicitly wants raw data)
-  if (breakdownId === undefined) {
-    // Try wildcard match by replacing ALL concrete keys in the path with '*'
-    const wildcardPath = pathKey
-      .split("|")
-      .map((segment) => {
-        const [dim] = segment.split(":");
-        return `${dim}:*`;
-      })
-      .join("|");
-
-    breakdownId = state.cube.config.breakdownMap?.[wildcardPath];
-  }
+  const breakdownId = findBreakdownDimensionId(
+    pathKey,
+    state.cube.config.breakdownMap || {},
+    state.cube.config.defaultDimensionPriority,
+  );
 
   // Debug logging
   console.log("useCurrentBreakdownDimensionId Debug:", {
