@@ -15,6 +15,7 @@ import {
 } from "@/features/_common/Cube/CubeService.types.ts";
 import { rd } from "@passionware/monads";
 import { useMemo } from "react";
+import { sum } from "lodash";
 
 export function useCubeDefinitions(
   report: GeneratedReportSource,
@@ -118,8 +119,7 @@ export function useCubeDefinitions(
         getValue: (item) => {
           return item.numHours || 0; // Use pre-calculated numHours field
         },
-        aggregate: (values) =>
-          values.reduce((sum: any, val: any) => sum + val, 0),
+        aggregate: sum,
         formatValue: (value: any) => `${value.toFixed(2)}h`,
         sidebarOptions: {
           mode: "percentage",
@@ -132,8 +132,7 @@ export function useCubeDefinitions(
         getValue: (item) => {
           return item.costValue || 0; // Use pre-calculated costValue field
         },
-        aggregate: (values) =>
-          values.reduce((sum: any, val: any) => sum + val, 0),
+        aggregate: sum,
         formatValue: (value: any) => `$${value.toFixed(2)}`,
         sidebarOptions: {
           mode: "absolute",
@@ -146,8 +145,7 @@ export function useCubeDefinitions(
         getValue: (item) => {
           return item.billingValue || 0; // Use pre-calculated billingValue field
         },
-        aggregate: (values) =>
-          values.reduce((sum: any, val: any) => sum + val, 0),
+        aggregate: sum,
         formatValue: (value: any) => `$${value.toFixed(2)}`,
         sidebarOptions: {
           mode: "absolute",
@@ -160,8 +158,7 @@ export function useCubeDefinitions(
         getValue: (item) => {
           return item.profitValue || 0; // Use pre-calculated profitValue field
         },
-        aggregate: (values) =>
-          values.reduce((sum: any, val: any) => sum + val, 0),
+        aggregate: sum,
         formatValue: (value: any) => `$${value.toFixed(2)}`,
         sidebarOptions: {
           mode: "divergent",
@@ -174,8 +171,7 @@ export function useCubeDefinitions(
         name: "Entries",
         icon: "📊",
         getValue: () => 1,
-        aggregate: (values) =>
-          values.reduce((sum: any, val: any) => sum + val, 0),
+        aggregate: sum,
         formatValue: (value: any) => `${value}`,
         sidebarOptions: {
           mode: "absolute",

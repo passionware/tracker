@@ -27,6 +27,7 @@ import type {
   AggregationFunctionRegistry,
   DeserializationOptions,
 } from "./CubeSerialization.types.ts";
+import { sum } from "lodash";
 
 /**
  * Default format function registry with common formatters
@@ -102,10 +103,10 @@ export const defaultFormatFunctions: FormatFunctionRegistry = {
 export const defaultAggregationFunctions: AggregationFunctionRegistry = {
   sum: {
     aggregate: (values: unknown[]) => {
-      return values
+      const nums = values
         .map((v) => (typeof v === "number" ? v : parseFloat(String(v))))
-        .filter((v) => !isNaN(v))
-        .reduce((sum, v) => sum + v, 0);
+        .filter((v) => !isNaN(v));
+      return sum(nums);
     },
   },
   count: {
@@ -116,9 +117,7 @@ export const defaultAggregationFunctions: AggregationFunctionRegistry = {
       const nums = values
         .map((v) => (typeof v === "number" ? v : parseFloat(String(v))))
         .filter((v) => !isNaN(v));
-      return nums.length > 0
-        ? nums.reduce((sum, v) => sum + v, 0) / nums.length
-        : 0;
+      return nums.length > 0 ? sum(nums) / nums.length : 0;
     },
   },
   min: {
