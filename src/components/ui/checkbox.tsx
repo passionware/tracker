@@ -31,7 +31,7 @@ interface CheckboxWithLabelProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   className?: string;
   disabled?: boolean;
 }
@@ -62,10 +62,12 @@ const CheckboxWithLabel = React.forwardRef<
         disabled={disabled}
         className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
       />
-      <div className="grid gap-1.5 font-normal">
-        <p className="text-sm leading-none font-medium">{title}</p>
+      <div className="grid gap-1.5 font-normal w-full">
+        <div className="text-sm leading-none font-medium">{title}</div>
         {description && (
-          <p className="text-muted-foreground text-sm">{description}</p>
+          <div className="text-muted-foreground text-sm w-full flex items-center gap-2 justify-between">
+            {description}
+          </div>
         )}
       </div>
     </Label>

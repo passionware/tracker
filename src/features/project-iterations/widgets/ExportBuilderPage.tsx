@@ -394,10 +394,24 @@ function ExportBuilderContent({
                               }
                             }}
                             title={dim.name}
-                            description={`Include ${dim.name} in export`}
+                            description={
+                              <>
+                                Include {dim.name} in export
+                                <Badge
+                                  variant={
+                                    field.value.includes(dim.id)
+                                      ? "info"
+                                      : "secondary"
+                                  }
+                                  tone="secondary"
+                                  className="ml-auto"
+                                >
+                                  {dim.id}
+                                </Badge>
+                              </>
+                            }
                             className="flex-1"
                           />
-                          <Badge variant="secondary">{dim.id}</Badge>
                         </div>
                       )}
                     />
@@ -434,10 +448,24 @@ function ExportBuilderContent({
                               }
                             }}
                             title={measure.name}
-                            description={`Include ${measure.name} in export`}
+                            description={
+                              <>
+                                Include {measure.name} in export
+                                <Badge
+                                  variant={
+                                    field.value.includes(measure.id)
+                                      ? "info"
+                                      : "secondary"
+                                  }
+                                  tone="secondary"
+                                  className="ml-auto"
+                                >
+                                  {measure.id}
+                                </Badge>
+                              </>
+                            }
                             className="flex-1"
                           />
-                          <Badge variant="secondary">{measure.id}</Badge>
                         </div>
                       )}
                     />
