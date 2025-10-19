@@ -141,6 +141,12 @@ export interface CubeConfig<TData extends CubeDataItem> {
    * @deprecated Use breakdownMap for better control
    */
   defaultDimensionSequence?: string[]; // dimension IDs
+  /**
+   * Priority list for default dimensions when expanding nodes
+   * When a node doesn't have an explicit childDimensionId, the system will
+   * use the first dimension from this list that isn't already used by any parent
+   */
+  defaultDimensionPriority?: string[]; // dimension IDs in priority order
   /** Measures to include in results */
   activeMeasures?: string[]; // measure IDs (defaults to all)
 }

@@ -545,6 +545,12 @@ export function createTimeTrackingCubeConfig(
       ...(includeContractors ? ["contractor"] : []),
       "date",
     ],
+    defaultDimensionPriority: [
+      ...(includeProjects ? ["project"] : []),
+      ...(includeCategories ? ["category"] : []),
+      ...(includeContractors ? ["contractor"] : []),
+      "date",
+    ],
     activeMeasures: ["totalHours", "count"],
   };
 }

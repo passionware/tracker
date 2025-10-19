@@ -26,7 +26,8 @@ export function CubeSummary({
   report,
   showNavigation = true,
 }: CubeSummaryProps) {
-  const { state, measures } = useCubeContext();
+  const { state } = useCubeContext();
+  const measures = state.cube.config.measures;
   const cube = state.cube;
 
   // Get current zoom level data - this is what's shown in breadcrumbs

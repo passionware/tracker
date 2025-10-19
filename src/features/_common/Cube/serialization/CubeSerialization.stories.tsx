@@ -384,9 +384,6 @@ export const TimeTrackingPreAggregated: Story = {
         <CubeProvider
           value={{
             state: cubeState,
-            dimensions: cubeConfig?.dimensions || [],
-            measures: cubeConfig?.measures || [],
-            data: cubeConfig?.data || [],
             reportId: "serialization-story",
           }}
         >
@@ -695,9 +692,6 @@ export const SimpleDataSchema: Story = {
         <CubeProvider
           value={{
             state: cubeState,
-            dimensions: cubeConfig?.dimensions || [],
-            measures: cubeConfig?.measures || [],
-            data: cubeConfig?.data || [],
             reportId: "serialization-story",
           }}
         >
@@ -1010,9 +1004,6 @@ export const IdBasedDimensions: Story = {
           <CubeProvider
             value={{
               state: cubeState,
-              dimensions: cubeConfig?.dimensions || [],
-              measures: cubeConfig?.measures || [],
-              data: cubeConfig?.data || [],
               reportId: "id-based-story",
             }}
           >

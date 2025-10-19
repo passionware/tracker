@@ -47,7 +47,7 @@ This is clearer because:
 ### 3. **React Hook** (`useCubeState.ts`)
 
 - ❌ Removed: `UseCubeStateProps.initialGroupBy`
-- ✅ Added: `UseCubeStateProps.initialDefaultDimensionSequence` (marked as `@deprecated`)
+- ✅ Added: `UseCubeStateProps.initialGrouping` (marked as `@deprecated`)
 - ✅ Updated: Initial state calculation converts sequence to wildcards
 
 ### 4. **View Component** (`CubeView.tsx`)
@@ -201,7 +201,7 @@ const cubeState = useCubeState({
   data: salesData,
   dimensions,
   measures,
-  initialDefaultDimensionSequence: ["region", "category"], // ✅
+  initialGrouping: ["region", "category"], // ✅
 });
 ```
 

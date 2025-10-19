@@ -5,6 +5,7 @@
  * Provides a standardized layout structure for Cube analysis interfaces.
  */
 
+import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
 interface CubeLayoutProps {
@@ -25,7 +26,7 @@ export function CubeLayout({
   rightSidebarWidth = "w-80",
 }: CubeLayoutProps) {
   return (
-    <div className={`flex h-full min-w-0 ${className}`}>
+    <div className={cn("flex h-full min-w-0", className)}>
       {/* Left Sidebar */}
       {leftSidebar && (
         <div

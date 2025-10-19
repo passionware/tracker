@@ -36,28 +36,20 @@ function GroupedViewWithCube({
     data: report.data.timeEntries,
     dimensions,
     measures,
-    initialDefaultDimensionSequence: [
-      "project",
-      "contractor",
-      "role",
-      "task",
-      "activity",
-    ],
+    initialGrouping: ["project", "contractor", "role", "task", "activity"],
     includeItems: true,
   });
 
   // Create context value
   const contextValue = {
     state: cubeState,
-    dimensions,
-    measures,
-    data: report.data.timeEntries,
     reportId: String(report.id),
   };
 
   return (
     <CubeProvider value={contextValue}>
       <CubeLayout
+        className="w-full"
         leftSidebar={
           <>
             <div className="p-4 space-y-4 flex-1">

@@ -96,7 +96,7 @@ const cubeState = useCubeState({
   data: salesData,
   dimensions,
   measures,
-  initialDefaultDimensionSequence: ["region", "category"], // ✅ New
+  initialGrouping: ["region", "category"], // ✅ New
 });
 ```
 
@@ -178,7 +178,7 @@ This allows `defaultDimensionSequence` to work (it creates wildcard patterns) wh
   - `calculateCube()` (line 255-331): Converts `defaultDimensionSequence` if needed
 
 - **`useCubeState.ts`**: React hook
-  - `UseCubeStateProps.initialDefaultDimensionSequence` (convenience)
+  - `UseCubeStateProps.initialGrouping` (convenience)
   - `UseCubeStateProps.initialRootDimension` (flexible)
   - Converts sequence to wildcards in `useState` initializer (line 102-133)
 

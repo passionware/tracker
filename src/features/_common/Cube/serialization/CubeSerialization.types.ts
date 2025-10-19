@@ -193,6 +193,8 @@ export interface SerializableCubeConfig {
   breakdownMap?: BreakdownMap;
   /** Default dimension sequence (legacy support) */
   defaultDimensionSequence?: string[];
+  /** Priority list for default dimensions when expanding nodes */
+  defaultDimensionPriority?: string[];
   /** Active measures to include */
   activeMeasures?: string[];
   /** Active filters */

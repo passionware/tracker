@@ -5,17 +5,17 @@
  */
 
 import type {
-    BreakdownMap,
-    CubeCalculationOptions,
-    CubeCell,
-    CubeConfig,
-    CubeDataItem,
-    CubeGroup,
-    CubeResult,
-    DimensionDescriptor,
-    DimensionFilter,
-    FilterOperator,
-    MeasureDescriptor,
+  BreakdownMap,
+  CubeCalculationOptions,
+  CubeCell,
+  CubeConfig,
+  CubeDataItem,
+  CubeGroup,
+  CubeResult,
+  DimensionDescriptor,
+  DimensionFilter,
+  FilterOperator,
+  MeasureDescriptor,
 } from "./CubeService.types.ts";
 
 /**
@@ -112,12 +112,46 @@ function calculateMeasures<TData extends CubeDataItem>(
 }
 
 /**
+ * Find the first unused dimension from a priority list
+ * Given a node path and a priority list, returns the first dimension
+ * that isn't already used by any parent in the path
+ */
+function findFirstUnusedDimension(
+  nodePath: string,
+  priorityList: string[],
+): string | null {
+  if (!nodePath) {
+    // Root node - return first dimension from priority list
+    return priorityList[0] || null;
+  }
+
+  // Extract dimension IDs already used in the path
+  const usedDimensions = new Set(
+    nodePath.split("|").map((segment) => {
+      const [dimensionId] = segment.split(":");
+      return dimensionId;
+    }),
+  );
+
+  // Find first dimension from priority list that isn't used
+  for (const dimensionId of priorityList) {
+    if (!usedDimensions.has(dimensionId)) {
+      return dimensionId;
+    }
+  }
+
+  // All dimensions from priority list are used
+  return null;
+}
+
+/**
  * Resolve the child dimension ID for a given path using breakdown map logic
  * This is the shared logic used by both tree expansion and zoom-in modes
  */
 function resolveChildDimensionId(
   nodePath: string,
   breakdownMap: Record<string, string | null>,
+  defaultDimensionPriority?: string[],
 ): string | null | undefined {
   // First try exact match
   let childDimensionId = breakdownMap[nodePath];
@@ -135,6 +169,14 @@ function resolveChildDimensionId(
       .join("|");
 
     childDimensionId = breakdownMap[wildcardPath];
+
+    // If still no match and we have a priority list, use it
+    if (childDimensionId === undefined && defaultDimensionPriority) {
+      childDimensionId = findFirstUnusedDimension(
+        nodePath,
+        defaultDimensionPriority,
+      );
+    }
   }
 
   return childDimensionId;
@@ -154,6 +196,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   currentDepth: number,
   includeItems: boolean,
   skipEmptyGroups: boolean,
+  defaultDimensionPriority?: string[],
 ): CubeGroup[] {
   if (currentDepth >= maxDepth || data.length === 0) {
     return [];
@@ -193,7 +236,11 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
 
     // Check if there's a breakdown defined for this node's children
     // Use shared utility function for consistent logic across tree expansion and zoom-in
-    const childDimensionId = resolveChildDimensionId(nodePath, breakdownMap);
+    const childDimensionId = resolveChildDimensionId(
+      nodePath,
+      breakdownMap,
+      defaultDimensionPriority,
+    );
 
     const cells = calculateMeasures(
       items,
@@ -212,6 +259,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
           currentDepth + 1,
           includeItems,
           skipEmptyGroups,
+          defaultDimensionPriority,
         )
       : undefined;
 
@@ -342,6 +390,7 @@ export function calculateCube<TData extends CubeDataItem>(
           0,
           includeItems,
           skipEmptyGroups,
+          config.defaultDimensionPriority,
         );
       }
     } else {
@@ -362,6 +411,7 @@ export function calculateCube<TData extends CubeDataItem>(
       const childDimensionId = resolveChildDimensionId(
         zoomPathString,
         effectiveBreakdownMap,
+        config.defaultDimensionPriority,
       );
 
       // If we found a child dimension, build groups for it
@@ -378,9 +428,36 @@ export function calculateCube<TData extends CubeDataItem>(
           zoomPath.length,
           includeItems,
           skipEmptyGroups,
+          config.defaultDimensionPriority,
         );
       }
       // If childDimensionId is null, groups remains empty (raw data mode)
+    }
+  } else if (
+    config.defaultDimensionPriority &&
+    config.defaultDimensionPriority.length > 0
+  ) {
+    // No breakdown map but we have a priority list - use the first dimension from priority
+    const rootDimensionId = config.defaultDimensionPriority[0];
+    if (rootDimensionId) {
+      // Create a minimal breakdown map with just the root dimension
+      const priorityBreakdownMap: BreakdownMap = {
+        "": rootDimensionId,
+      };
+
+      groups = buildGroupsWithBreakdownMap(
+        filteredData,
+        rootDimensionId,
+        priorityBreakdownMap,
+        config.dimensions,
+        activeMeasures,
+        "",
+        maxDepth,
+        0,
+        includeItems,
+        skipEmptyGroups,
+        config.defaultDimensionPriority,
+      );
     }
   }
 

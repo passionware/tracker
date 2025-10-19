@@ -34,7 +34,8 @@ export function CubeHierarchicalBreakdown({
   maxLevels = 4,
   showViewModeToggle = true,
 }: CubeHierarchicalBreakdownProps) {
-  const { state, dimensions } = useCubeContext();
+  const { state } = useCubeContext();
+  const dimensions = state.cube.config.dimensions;
   const { selectedMeasure } = useSelectedMeasure();
   const cube = state.cube;
 

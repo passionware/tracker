@@ -116,9 +116,6 @@ function CubeStoryWrapper({ children }: { children: React.ReactNode }) {
 
   const contextValue = {
     state: cubeState,
-    dimensions,
-    measures,
-    data: mockReport.data.timeEntries,
     reportId: String(mockReport.id),
   };
 

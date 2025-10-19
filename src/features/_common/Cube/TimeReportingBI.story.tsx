@@ -378,12 +378,7 @@ export const TimeReportingDashboard = () => {
       data: timeEntries,
       dimensions,
       measures,
-      initialDefaultDimensionSequence: [
-        "project",
-        "taskType",
-        "activityType",
-        "contractor",
-      ], // Default hierarchy
+      initialGrouping: ["project", "taskType", "activityType", "contractor"], // Default hierarchy
       activeMeasures: ["totalHours", "cost", "billing", "profit"],
       includeItems: true,
     });
@@ -392,9 +387,6 @@ export const TimeReportingDashboard = () => {
       <CubeProvider
         value={{
           state,
-          dimensions: dimensions as any,
-          measures: measures as any,
-          data: timeEntries,
         }}
       >
         <div className="p-8 max-w-full">

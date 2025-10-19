@@ -616,7 +616,7 @@ export const SalesByRegion: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region"],
+      initialGrouping: ["region"],
       activeMeasures: ["revenue", "profit"],
     });
 
@@ -624,9 +624,6 @@ export const SalesByRegion: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "sales-by-region",
         }}
       >
@@ -643,7 +640,7 @@ export const SalesByRegionAndCategory: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region", "category", "product"],
+      initialGrouping: ["region", "category", "product"],
       activeMeasures: ["revenue", "cost", "profit"],
       includeItems: true,
     });
@@ -652,9 +649,6 @@ export const SalesByRegionAndCategory: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "sales-by-region-category",
         }}
       >
@@ -677,7 +671,7 @@ export const InteractiveSalesCube: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: dimensionSequence,
+      initialGrouping: dimensionSequence,
       activeMeasures: ["revenue", "profit", "quantity"],
       initialFilters: selectedRegion
         ? [{ dimensionId: "region", operator: "equals", value: selectedRegion }]
@@ -705,9 +699,6 @@ export const InteractiveSalesCube: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "interactive-sales-cube",
         }}
       >
@@ -847,7 +838,7 @@ export const TimeTrackingCube: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      initialDefaultDimensionSequence: ["project", "contractor", "role"],
+      initialGrouping: ["project", "contractor", "role"],
       activeMeasures: ["hours", "cost", "billing", "profit"],
       includeItems: true,
     });
@@ -856,9 +847,6 @@ export const TimeTrackingCube: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: timeDimensions as any,
-          measures: timeMeasures as any,
-          data: timeData as any,
           reportId: "time-tracking-cube",
         }}
       >
@@ -875,7 +863,7 @@ export const CustomRendering: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region", "category"],
+      initialGrouping: ["region", "category"],
       activeMeasures: ["revenue", "profit"],
     });
 
@@ -883,9 +871,6 @@ export const CustomRendering: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "custom-rendering",
         }}
       >
@@ -935,7 +920,7 @@ export const AllMeasures: Story = {
       data: timeData,
       dimensions: timeDimensions,
       measures: timeMeasures,
-      initialDefaultDimensionSequence: ["project"],
+      initialGrouping: ["project"],
       // All measures active (default)
     });
 
@@ -943,9 +928,6 @@ export const AllMeasures: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: timeDimensions as any,
-          measures: timeMeasures as any,
-          data: timeData as any,
           reportId: "all-measures",
         }}
       >
@@ -962,16 +944,13 @@ export const GrandTotalsOnly: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: [], // No grouping
+      initialGrouping: [], // No grouping
     });
 
     return (
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "grand-totals-only",
         }}
       >
@@ -988,7 +967,7 @@ export const WithRawDataView: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region", "category"],
+      initialGrouping: ["region", "category"],
       activeMeasures: ["revenue", "profit"],
       // IMPORTANT: Set includeItems to true to enable raw data viewing
       includeItems: true,
@@ -998,9 +977,6 @@ export const WithRawDataView: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "raw-data-view",
         }}
       >
@@ -1029,7 +1005,7 @@ export const CustomRawDataRendering: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region"],
+      initialGrouping: ["region"],
       activeMeasures: ["revenue", "profit", "quantity"],
       includeItems: true,
     });
@@ -1038,9 +1014,6 @@ export const CustomRawDataRendering: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: salesDimensions as any,
-          measures: salesMeasures as any,
-          data: salesData as any,
           reportId: "custom-raw-data",
         }}
       >
@@ -1162,7 +1135,7 @@ export const ProjectTrackingByUser: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialDefaultDimensionSequence: ["user", "project", "task"],
+      initialGrouping: ["user", "project", "task"],
       activeMeasures: ["totalHours", "billableHours", "entryCount"],
       includeItems: true,
     });
@@ -1171,9 +1144,6 @@ export const ProjectTrackingByUser: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: projectTrackingDimensions as any,
-          measures: projectTrackingMeasures as any,
-          data: projectTrackingData as any,
           reportId: "project-tracking-by-user",
         }}
       >
@@ -1202,7 +1172,7 @@ export const ProjectTrackingHierarchy: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialDefaultDimensionSequence: ["project", "task", "activity"],
+      initialGrouping: ["project", "task", "activity"],
       activeMeasures: ["totalHours", "billableHours", "avgDuration"],
       includeItems: true,
     });
@@ -1211,9 +1181,6 @@ export const ProjectTrackingHierarchy: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: projectTrackingDimensions as any,
-          measures: projectTrackingMeasures as any,
-          data: projectTrackingData as any,
           reportId: "project-tracking-hierarchy",
         }}
       >
@@ -1242,7 +1209,7 @@ export const ProjectTrackingWithRawData: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialDefaultDimensionSequence: ["project", "user"],
+      initialGrouping: ["project", "user"],
       activeMeasures: ["totalHours", "billableHours"],
       includeItems: true,
     });
@@ -1251,9 +1218,6 @@ export const ProjectTrackingWithRawData: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: projectTrackingDimensions as any,
-          measures: projectTrackingMeasures as any,
-          data: projectTrackingData as any,
           reportId: "project-tracking-raw-data",
         }}
       >
@@ -1370,7 +1334,7 @@ export const BillableAnalysis: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialDefaultDimensionSequence: ["billable", "project"],
+      initialGrouping: ["billable", "project"],
       activeMeasures: ["totalHours", "entryCount"],
     });
 
@@ -1378,9 +1342,6 @@ export const BillableAnalysis: Story = {
       <CubeProvider
         value={{
           state,
-          dimensions: projectTrackingDimensions as any,
-          measures: projectTrackingMeasures as any,
-          data: projectTrackingData as any,
           reportId: "billable-analysis",
         }}
       >
@@ -1434,7 +1395,7 @@ export const InteractiveProjectDashboard: Story = {
       data: projectTrackingData,
       dimensions: projectTrackingDimensions,
       measures: projectTrackingMeasures,
-      initialDefaultDimensionSequence: groupBy,
+      initialGrouping: groupBy,
       activeMeasures: selectedMeasures,
       initialFilters:
         filterBillable !== null
@@ -1573,15 +1534,6 @@ export const InteractiveProjectDashboard: Story = {
         <CubeProvider
           value={{
             state,
-            dimensions: projectTrackingDimensions as DimensionDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            measures: projectTrackingMeasures as MeasureDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            data: projectTrackingData as any,
             reportId: "interactive-project-dashboard",
           }}
         >
@@ -1605,7 +1557,7 @@ export const ZoomInNavigation: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region", "category", "product"],
+      initialGrouping: ["region", "category", "product"],
       activeMeasures: ["totalRevenue", "profit", "transactionCount"],
       includeItems: true,
     });
@@ -1670,15 +1622,6 @@ export const ZoomInNavigation: Story = {
         <CubeProvider
           value={{
             state,
-            dimensions: salesDimensions as DimensionDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            measures: salesMeasures as MeasureDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            data: salesData,
             reportId: "zoom-in-navigation",
           }}
         >
@@ -1698,7 +1641,7 @@ export const DynamicDimensionPicker: Story = {
       data: salesData,
       dimensions: salesDimensions,
       measures: salesMeasures,
-      initialDefaultDimensionSequence: ["region"],
+      initialGrouping: ["region"],
       activeMeasures: ["totalRevenue", "profit"],
       includeItems: true,
     });
@@ -1738,15 +1681,6 @@ export const DynamicDimensionPicker: Story = {
         <CubeProvider
           value={{
             state,
-            dimensions: salesDimensions as DimensionDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            measures: salesMeasures as MeasureDescriptor<
-              CubeDataItem,
-              unknown
-            >[],
-            data: salesData,
             reportId: "dynamic-dimension-picker",
           }}
         >

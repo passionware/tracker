@@ -32,13 +32,15 @@ interface CubeDimensionExplorerProps {
 export function CubeDimensionExplorer({
   className = "",
 }: CubeDimensionExplorerProps) {
-  const { state, dimensions, data } = useCubeContext();
+  const { state } = useCubeContext();
+  const dimensions = state.cube.config.dimensions;
   const { selectedMeasureId, setSelectedMeasureId, selectedMeasure } =
     useSelectedMeasure();
   const cube = state.cube;
 
   // Get current zoom level data - this is what's shown in breadcrumbs
-  const currentItems = state.path.length === 0 ? data : cube.filteredData || [];
+  const currentItems =
+    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
 
   // Filter out dimensions that are already used in the current path (they would only have 1 group)
   const sidebarDimensions = dimensions.filter((dim) => {
@@ -77,7 +79,7 @@ export function CubeDimensionExplorer({
               <SelectValue placeholder="Choose measure..." />
             </SelectTrigger>
             <SelectContent>
-              {useCubeContext().measures.map((measure) => (
+              {state.cube.config.measures.map((measure) => (
                 <SelectItem key={measure.id} value={measure.id}>
                   {measure.icon && <span className="mr-1">{measure.icon}</span>}
                   {measure.name}

@@ -33,7 +33,7 @@ const state = useCubeState({
   data,
   dimensions,
   measures,
-  initialRootDimension: "region", // or use initialDefaultDimensionSequence
+  initialRootDimension: "region", // or use initialGrouping
 });
 
 <CubeView state={state} enableDimensionPicker />;

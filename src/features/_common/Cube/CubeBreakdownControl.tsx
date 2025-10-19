@@ -27,7 +27,8 @@ interface CubeBreakdownControlProps {
 export function CubeBreakdownControl({
   title = "Break down children by",
 }: CubeBreakdownControlProps) {
-  const { state, dimensions } = useCubeContext();
+  const { state } = useCubeContext();
+  const dimensions = state.cube.config.dimensions;
   const cube = state.cube;
 
   // Get the current level's breakdown dimension (what we're breaking down by)

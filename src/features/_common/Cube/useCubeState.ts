@@ -60,7 +60,13 @@ export interface UseCubeStateProps<TData extends CubeDataItem> {
    * Use initialRootDimension + setGroupBreakdown for full control.
    * @deprecated Use initialRootDimension and dynamic breakdown instead
    */
-  initialDefaultDimensionSequence?: string[];
+  initialGrouping?: string[];
+  /**
+   * Priority list for default dimensions when expanding nodes
+   * When a node doesn't have an explicit childDimensionId, the system will
+   * use the first dimension from this list that isn't already used by any parent
+   */
+  initialDefaultDimensionPriority?: string[];
   /** Active measures (defaults to all) */
   activeMeasures?: string[];
   /** Include items in groups (for raw data viewing) */
@@ -135,7 +141,8 @@ export function useCubeState<TData extends CubeDataItem>(
     measures,
     initialFilters = [],
     initialRootDimension,
-    initialDefaultDimensionSequence,
+    initialGrouping,
+    initialDefaultDimensionPriority,
     activeMeasures,
     includeItems = true,
     maxDepth = 10,
@@ -157,29 +164,25 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // ===== DERIVED DATA =====
 
-  // Build default breakdownMap from initialDefaultDimensionSequence (configuration, not state)
+  // Build default breakdownMap from initialGrouping (configuration, not state)
   const defaultBreakdownMap = useMemo(() => {
     const map: Record<string, string | null> = {};
 
     if (initialRootDimension) {
       map[""] = initialRootDimension;
-    } else if (
-      initialDefaultDimensionSequence &&
-      initialDefaultDimensionSequence.length > 0
-    ) {
+    } else if (initialGrouping && initialGrouping.length > 0) {
       // Root level
-      map[""] = initialDefaultDimensionSequence[0];
+      map[""] = initialGrouping[0];
 
       // Wildcard patterns for each level
-      for (let i = 0; i < initialDefaultDimensionSequence.length - 1; i++) {
-        const pattern =
-          initialDefaultDimensionSequence.slice(0, i + 1).join(":*|") + ":*";
-        map[pattern] = initialDefaultDimensionSequence[i + 1];
+      for (let i = 0; i < initialGrouping.length - 1; i++) {
+        const pattern = initialGrouping.slice(0, i + 1).join(":*|") + ":*";
+        map[pattern] = initialGrouping[i + 1];
       }
     }
 
     return map;
-  }, [initialRootDimension, initialDefaultDimensionSequence]);
+  }, [initialRootDimension, initialGrouping]);
 
   // Merge defaults with explicit user overrides to create final breakdownMap
   const breakdownMap = useMemo(() => {
@@ -206,9 +209,18 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
+      defaultDimensionPriority: initialDefaultDimensionPriority,
       activeMeasures,
     }),
-    [data, dimensions, measures, filters, breakdownMap, activeMeasures],
+    [
+      data,
+      dimensions,
+      measures,
+      filters,
+      breakdownMap,
+      initialDefaultDimensionPriority,
+      activeMeasures,
+    ],
   );
 
   // Calculate cube result (derived from state + data)
