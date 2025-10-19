@@ -110,13 +110,5 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
 
   const breakdownId = state.cube.config.breakdownMap?.[pathKey];
 
-  // Debug logging
-  console.log("useCurrentBreakdownDimensionId Debug:", {
-    path: state.path,
-    pathKey,
-    breakdownMap: state.cube.config.breakdownMap,
-    breakdownId,
-  });
-
   return breakdownId;
 }
