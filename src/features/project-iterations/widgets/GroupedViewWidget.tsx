@@ -87,7 +87,6 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       enableDimensionPicker={true}
       enableRawDataView={true}
       enableZoomIn={true}
-      showGrandTotals={false} // Disable internal sidebar since we'll use context-based components
     />
   );
 }
