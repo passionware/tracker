@@ -13,6 +13,7 @@ import { CubeProvider } from "../CubeContext.tsx";
 import { StoryLayoutWrapper } from "../StoryLayoutWrapper.tsx";
 import type { DimensionDescriptor } from "../CubeService.types.ts";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { rd } from "@passionware/monads";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { CubeDataItem } from "../CubeService.types.ts";
 import { deserializeCubeConfig } from "./CubeSerialization.ts";
@@ -103,7 +104,7 @@ function SerializedCubeListView({
   return (
     <div className="h-full">
       <ListView
-        data={{ type: "success", data } as any}
+        data={rd.of(data)}
         columns={columns}
         query={query as any}
         onQueryChange={() => {}}
