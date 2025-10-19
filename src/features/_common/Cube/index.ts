@@ -32,3 +32,12 @@ export type {
 } from "./CubeService.types.ts";
 export { useCubeState } from "./useCubeState.ts";
 export type { UseCubeStateProps, CubeState, PathItem } from "./useCubeState.ts";
+export {
+  CubeProvider,
+  useCubeContext,
+  useSelectedMeasure,
+} from "./CubeContext.tsx";
+export { CubeSunburst } from "./CubeSunburst.tsx";
+
+// Serialization exports
+export * from "./serialization/index.ts";
