@@ -11,13 +11,13 @@
  *
  * @param pathKey - The path key to match (e.g., "project:123" or "project:123|contractor:456")
  * @param breakdownMap - The breakdown map containing dimension mappings
- * @param defaultDimensionPriority - Optional priority list for fallback
+ * @param initialGrouping - Optional priority list for fallback
  * @returns The breakdown dimension ID, or undefined if no match found
  */
 export function findBreakdownDimensionId(
   pathKey: string,
   breakdownMap: Record<string, string | null>,
-  defaultDimensionPriority?: string[],
+  initialGrouping?: string[],
 ): string | null | undefined {
   // First try exact match
   let childDimensionId = breakdownMap[pathKey];
@@ -37,16 +37,13 @@ export function findBreakdownDimensionId(
     childDimensionId = breakdownMap[wildcardPath];
 
     // If still no match and we have a priority list, use it
-    if (childDimensionId === undefined && defaultDimensionPriority) {
-      childDimensionId = findFirstUnusedDimension(
-        pathKey,
-        defaultDimensionPriority,
-      );
+    if (childDimensionId === undefined && initialGrouping) {
+      childDimensionId = findFirstUnusedDimension(pathKey, initialGrouping);
 
       // Debug logging for priority fallback
       console.log("Priority fallback applied:", {
         pathKey,
-        priorityList: defaultDimensionPriority,
+        priorityList: initialGrouping,
         selectedDimension: childDimensionId,
       });
     }

@@ -181,7 +181,7 @@ export function useCubeState<TData extends CubeDataItem>(
   }, [initialRootDimension, initialGrouping]);
 
   // Use initialGrouping as the dimension priority list
-  const effectiveDefaultDimensionPriority = useMemo(() => {
+  const effectiveInitialGrouping = useMemo(() => {
     return initialGrouping || [];
   }, [initialGrouping]);
 
@@ -210,7 +210,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      initialGrouping: effectiveDefaultDimensionPriority,
+      initialGrouping: effectiveInitialGrouping,
       activeMeasures,
     }),
     [
@@ -219,7 +219,7 @@ export function useCubeState<TData extends CubeDataItem>(
       measures,
       filters,
       breakdownMap,
-      effectiveDefaultDimensionPriority,
+      effectiveInitialGrouping,
       activeMeasures,
     ],
   );
