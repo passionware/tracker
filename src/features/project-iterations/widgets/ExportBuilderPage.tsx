@@ -874,6 +874,7 @@ function ExportBuilderContent({
                     >
                       {serializableConfig && (
                         <SerializedCubeView
+                          className="m-4"
                           state={previewCubeState}
                           serializedConfig={serializableConfig.config}
                           maxInitialDepth={0}
