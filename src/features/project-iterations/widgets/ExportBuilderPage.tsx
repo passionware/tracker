@@ -213,22 +213,29 @@ function ExportBuilderContent({
     [],
   );
 
-  // Apply mandatory preparation and optional anonymization to data
-  const processedData = useMemo(() => {
-    return transformAndAnonymize(report, {
-      anonymizeTimeEntries,
-      anonymizeContractor,
-    });
-  }, [data, anonymizeTimeEntries, anonymizeContractor, report]);
-
-  // Generate preview cube state
+  // Generate preview cube state with all data first
   const previewCubeState = useCubeState({
-    data: processedData,
+    data: data,
     dimensions: selectedDimensions,
     measures: selectedMeasures,
     includeItems: true,
     rawDataDimension,
   });
+
+  // Apply mandatory preparation and optional anonymization to data with active measures
+  const processedData = useMemo(() => {
+    return transformAndAnonymize(report, {
+      anonymizeTimeEntries,
+      anonymizeContractor,
+      activeMeasures: watchedValues.selectedMeasures,
+    });
+  }, [
+    data,
+    anonymizeTimeEntries,
+    anonymizeContractor,
+    report,
+    watchedValues.selectedMeasures,
+  ]);
 
   // Generate serializable config with labelMapping
   const serializableConfig = useMemo(() => {

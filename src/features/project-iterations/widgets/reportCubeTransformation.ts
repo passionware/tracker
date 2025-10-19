@@ -259,6 +259,7 @@ export function transformAndAnonymize(
   options: {
     anonymizeTimeEntries?: boolean;
     anonymizeContractor?: boolean;
+    activeMeasures?: string[];
   },
 ): TransformedEntry[] {
   // Transform data with all calculated values
@@ -272,7 +273,45 @@ export function transformAndAnonymize(
     transformedEntries = anonymizeContractor(transformedEntries);
   }
 
+  // Filter out unselected measurement fields
+  if (options.activeMeasures) {
+    transformedEntries = filterUnselectedMeasurements(
+      transformedEntries,
+      options.activeMeasures,
+    );
+  }
+
   return transformedEntries;
+}
+
+/**
+ * Filter out unselected measurement fields from transformed entries.
+ */
+function filterUnselectedMeasurements(
+  entries: TransformedEntry[],
+  activeMeasures: string[],
+): TransformedEntry[] {
+  // Define measurement field mappings
+  const measurementFields = {
+    hours: "numHours",
+    cost: "costValue",
+    billing: "billingValue",
+    profit: "profitValue",
+    entries: "entries",
+  };
+
+  return entries.map((entry) => {
+    const filteredEntry = { ...entry };
+
+    // Remove unselected measurement fields
+    Object.entries(measurementFields).forEach(([measureId, fieldName]) => {
+      if (!activeMeasures.includes(measureId)) {
+        delete (filteredEntry as any)[fieldName];
+      }
+    });
+
+    return filteredEntry;
+  });
 }
 
 /**
