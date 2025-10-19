@@ -9,8 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import type { CubeState } from "./useCubeState.ts";
-import type { CubeGroup } from "./CubeService.types.ts";
+import type { CubeState } from "../useCubeState.ts";
+import type { CubeGroup } from "../CubeService.types.ts";
 
 interface CubeDebugPanelProps {
   state: CubeState;

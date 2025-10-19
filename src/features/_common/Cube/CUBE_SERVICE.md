@@ -96,7 +96,7 @@ interface SalesRecord {
 ### Step 2: Define Dimensions
 
 ```typescript
-import { DimensionDescriptor } from "@/services/front/CubeService";
+import { DimensionDescriptor } from "@/features/_common/Cube";
 
 const dimensions: DimensionDescriptor<SalesRecord>[] = [
   {
@@ -117,7 +117,7 @@ const dimensions: DimensionDescriptor<SalesRecord>[] = [
 ### Step 3: Define Measures
 
 ```typescript
-import { MeasureDescriptor } from "@/services/front/CubeService";
+import { MeasureDescriptor } from "@/features/_common/Cube";
 
 const measures: MeasureDescriptor<SalesRecord>[] = [
   {
@@ -153,7 +153,7 @@ const measures: MeasureDescriptor<SalesRecord>[] = [
 ### Step 4: Calculate the Cube
 
 ```typescript
-import { cubeService, CubeConfig } from "@/services/front/CubeService";
+import { cubeService, CubeConfig } from "@/features/_common/Cube";
 
 const config: CubeConfig<SalesRecord> = {
   data: salesData,
@@ -180,7 +180,7 @@ const cube = cubeService.calculateCube(config, {
 ### Step 5: Render the Cube
 
 ```typescript
-import { CubeView } from "@/components/ui/cube-view";
+import { CubeView } from "@/features/_common/Cube";
 
 function MyCubeReport() {
   return <CubeView cube={cube} maxInitialDepth={1} />;
@@ -296,8 +296,8 @@ Available operators:
 To integrate with your existing `GroupedViewWidget`:
 
 ```typescript
-import { cubeService, CubeConfig } from "@/services/front/CubeService";
-import { CubeView } from "@/components/ui/cube-view";
+import { cubeService, CubeConfig } from "@/features/_common/Cube";
+import { CubeView } from "@/features/_common/Cube";
 
 // Define dimensions based on your report data
 const dimensions: DimensionDescriptor<TimeEntry>[] = [
@@ -400,5 +400,5 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
   DimensionFilter,
-} from "@/services/front/CubeService";
+} from "@/features/_common/Cube";
 ```

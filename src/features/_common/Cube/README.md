@@ -5,7 +5,7 @@ A generic, type-safe widget for creating OLAP-style multidimensional cubes in Re
 ## Quick Start
 
 ```typescript
-import { cubeService, CubeView, type CubeConfig } from "@/widgets/_common/Cube";
+import { cubeService, CubeView, type CubeConfig } from "@/features/_common/Cube";
 
 // 1. Define your data type
 interface SalesData {
@@ -47,7 +47,7 @@ const config: CubeConfig<SalesData> = {
   data: salesData,
   dimensions,
   measures,
-  groupBy: ["region", "product"], // Create hierarchy
+  initialGrouping: ["region", "product"], // Create hierarchy
 };
 
 const cube = cubeService.calculateCube(config);
@@ -102,7 +102,7 @@ const cube = cubeService.calculateCube({
   data: salesData,
   dimensions: [regionDimension, productDimension],
   measures: [revenueMeasure],
-  groupBy: ["region"],
+  initialGrouping: ["region"],
 });
 ```
 
@@ -113,7 +113,7 @@ const cube = cubeService.calculateCube({
   data: salesData,
   dimensions: [regionDimension, productDimension, salespersonDimension],
   measures: [revenueMeasure, profitMeasure],
-  groupBy: ["region", "product"], // Region → Product hierarchy
+  initialGrouping: ["region", "product"], // Region → Product hierarchy
 });
 ```
 
@@ -124,7 +124,7 @@ const cube = cubeService.calculateCube({
   data: salesData,
   dimensions,
   measures,
-  groupBy: ["region"],
+  initialGrouping: ["region"],
   filters: [
     { dimensionId: "region", operator: "in", value: ["North", "South"] },
     { dimensionId: "revenue", operator: "greaterThan", value: 1000 },
@@ -284,7 +284,7 @@ import type {
   DimensionDescriptor,
   MeasureDescriptor,
   CubeResult,
-} from "@/widgets/_common/Cube";
+} from "@/features/_common/Cube";
 ```
 
 ## Contributing

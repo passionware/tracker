@@ -17,7 +17,7 @@ Your `GroupedViewWidget` currently uses:
 Replace your existing dimension logic with `DimensionDescriptor` instances:
 
 ```typescript
-import { DimensionDescriptor } from "@/services/front/CubeService";
+import { DimensionDescriptor } from "@/features/_common/Cube";
 import type { TimeEntry } from "@/api/generated-report-source/generated-report-source.api.ts";
 
 function createDimensions(
@@ -79,7 +79,7 @@ function createDimensions(
 Replace your summary calculations with `MeasureDescriptor` instances:
 
 ```typescript
-import { MeasureDescriptor } from "@/services/front/CubeService";
+import { MeasureDescriptor } from "@/features/_common/Cube";
 import { FrontServices } from "@/core/frontServices.ts";
 
 function createMeasures(
@@ -177,8 +177,7 @@ function createMeasures(
 ### Step 3: Replace GroupedViewWidget Implementation
 
 ```typescript
-import { cubeService, CubeConfig, DimensionFilter } from "@/services/front/CubeService";
-import { CubeView } from "@/components/ui/cube-view";
+import { cubeService, CubeConfig, DimensionFilter, CubeView } from "@/features/_common/Cube";
 
 export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   const [groupBy, setGroupBy] = useState<string[]>(["project"]);

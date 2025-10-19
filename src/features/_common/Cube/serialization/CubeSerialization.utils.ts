@@ -539,13 +539,7 @@ export function createTimeTrackingCubeConfig(
           }
         : {}),
     },
-    defaultDimensionSequence: [
-      ...(includeProjects ? ["project"] : []),
-      ...(includeCategories ? ["category"] : []),
-      ...(includeContractors ? ["contractor"] : []),
-      "date",
-    ],
-    defaultDimensionPriority: [
+    initialGrouping: [
       ...(includeProjects ? ["project"] : []),
       ...(includeCategories ? ["category"] : []),
       ...(includeContractors ? ["contractor"] : []),

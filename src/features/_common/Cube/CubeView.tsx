@@ -87,9 +87,6 @@ export function CubeView({
 
   return (
     <div className={className}>
-      {/* DEBUG: Temporary state dump */}
-      {/* <CubeDebugPanel state={state} displayGroups={displayGroups} /> */}
-
       {/* Navigation Bar - always visible when zoom or dimension picker enabled */}
       {(enableZoomIn || enableDimensionPicker) && (
         <CubeNavigation

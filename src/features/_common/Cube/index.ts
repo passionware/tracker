@@ -45,5 +45,8 @@ export { CubeHierarchicalBreakdown } from "./CubeHierarchicalBreakdown.tsx";
 export { CubeLayout } from "./CubeLayout.tsx";
 export { CubeDimensionExplorer } from "./CubeDimensionExplorer.tsx";
 
+// Debug components (development only)
+export * from "./debug/index.ts";
+
 // Serialization exports
 export * from "./serialization/index.ts";

@@ -135,18 +135,11 @@ export interface CubeConfig<TData extends CubeDataItem> {
   /** Per-node breakdown configuration - PRIMARY way to define hierarchies */
   breakdownMap?: BreakdownMap;
   /**
-   * Default dimension sequence for simple cases (legacy support)
-   * This is a convenience option that gets converted to breakdownMap internally
-   * For full flexibility, use breakdownMap directly
-   * @deprecated Use breakdownMap for better control
+   * Initial dimension grouping sequence (e.g., ["project", "contractor", "task"])
+   * This defines both the default breakdown hierarchy and the dimension priority order.
+   * When no explicit breakdown is set, the system will use the next dimension in this sequence.
    */
-  defaultDimensionSequence?: string[]; // dimension IDs
-  /**
-   * Priority list for default dimensions when expanding nodes
-   * When a node doesn't have an explicit childDimensionId, the system will
-   * use the first dimension from this list that isn't already used by any parent
-   */
-  defaultDimensionPriority?: string[]; // dimension IDs in priority order
+  initialGrouping?: string[];
   /** Measures to include in results */
   activeMeasures?: string[]; // measure IDs (defaults to all)
 }

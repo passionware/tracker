@@ -119,13 +119,9 @@ function calculateMeasures<TData extends CubeDataItem>(
 function resolveChildDimensionId(
   nodePath: string,
   breakdownMap: Record<string, string | null>,
-  defaultDimensionPriority?: string[],
+  initialGrouping?: string[],
 ): string | null | undefined {
-  return findBreakdownDimensionId(
-    nodePath,
-    breakdownMap,
-    defaultDimensionPriority,
-  );
+  return findBreakdownDimensionId(nodePath, breakdownMap, initialGrouping);
 }
 
 /**
@@ -142,7 +138,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   currentDepth: number,
   includeItems: boolean,
   skipEmptyGroups: boolean,
-  defaultDimensionPriority?: string[],
+  initialGrouping?: string[],
 ): CubeGroup[] {
   if (currentDepth >= maxDepth || data.length === 0) {
     return [];
@@ -185,7 +181,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
     const childDimensionId = resolveChildDimensionId(
       nodePath,
       breakdownMap,
-      defaultDimensionPriority,
+      initialGrouping,
     );
 
     const cells = calculateMeasures(
@@ -205,7 +201,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
           currentDepth + 1,
           includeItems,
           skipEmptyGroups,
-          defaultDimensionPriority,
+          initialGrouping,
         )
       : undefined;
 
@@ -310,10 +306,10 @@ export function calculateCube<TData extends CubeDataItem>(
   // Step 3: Determine the breakdown map
   let effectiveBreakdownMap: BreakdownMap | undefined = config.breakdownMap;
 
-  // If no breakdownMap but defaultDimensionSequence is provided, convert it
-  if (!effectiveBreakdownMap && config.defaultDimensionSequence) {
+  // If no breakdownMap but initialGrouping is provided, convert it
+  if (!effectiveBreakdownMap && config.initialGrouping) {
     effectiveBreakdownMap = dimensionSequenceToBreakdownMap(
-      config.defaultDimensionSequence,
+      config.initialGrouping,
     );
   }
 
@@ -336,7 +332,7 @@ export function calculateCube<TData extends CubeDataItem>(
           0,
           includeItems,
           skipEmptyGroups,
-          config.defaultDimensionPriority,
+          config.initialGrouping,
         );
       }
     } else {
@@ -357,7 +353,7 @@ export function calculateCube<TData extends CubeDataItem>(
       const childDimensionId = resolveChildDimensionId(
         zoomPathString,
         effectiveBreakdownMap,
-        config.defaultDimensionPriority,
+        config.initialGrouping,
       );
 
       // If we found a child dimension, build groups for it
@@ -374,17 +370,14 @@ export function calculateCube<TData extends CubeDataItem>(
           zoomPath.length,
           includeItems,
           skipEmptyGroups,
-          config.defaultDimensionPriority,
+          config.initialGrouping,
         );
       }
       // If childDimensionId is null, groups remains empty (raw data mode)
     }
-  } else if (
-    config.defaultDimensionPriority &&
-    config.defaultDimensionPriority.length > 0
-  ) {
+  } else if (config.initialGrouping && config.initialGrouping.length > 0) {
     // No breakdown map but we have a priority list - use the first dimension from priority
-    const rootDimensionId = config.defaultDimensionPriority[0];
+    const rootDimensionId = config.initialGrouping[0];
     if (rootDimensionId) {
       // Create a minimal breakdown map with just the root dimension
       const priorityBreakdownMap: BreakdownMap = {
@@ -402,7 +395,7 @@ export function calculateCube<TData extends CubeDataItem>(
         0,
         includeItems,
         skipEmptyGroups,
-        config.defaultDimensionPriority,
+        config.initialGrouping,
       );
     }
   }

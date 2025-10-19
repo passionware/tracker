@@ -112,7 +112,7 @@ export function useCurrentBreakdownDimensionId(): string | null | undefined {
   const breakdownId = findBreakdownDimensionId(
     pathKey,
     state.cube.config.breakdownMap || {},
-    state.cube.config.defaultDimensionPriority,
+    state.cube.config.initialGrouping,
   );
 
   // Debug logging

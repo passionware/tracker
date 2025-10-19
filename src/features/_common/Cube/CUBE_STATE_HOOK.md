@@ -23,14 +23,14 @@ This pattern provides:
 import { useCubeState, CubeView } from "@/features/_common/Cube";
 
 function MyCubeWidget() {
-  const cubeState = useCubeState({
-    data: salesData,
-    dimensions: salesDimensions,
-    measures: salesMeasures,
-    initialRootDimension: "region",
-    activeMeasures: ["revenue", "profit"],
-    includeItems: true,
-  });
+const cubeState = useCubeState({
+  data: salesData,
+  dimensions: salesDimensions,
+  measures: salesMeasures,
+  initialGrouping: ["region", "category", "product"],
+  activeMeasures: ["revenue", "profit"],
+  includeItems: true,
+});
 
   return (
     <CubeView
@@ -62,8 +62,8 @@ interface UseCubeStateProps<TData> {
   initialFilters?: DimensionFilter[];
   /** Initial root dimension (for per-node mode) */
   initialRootDimension?: string;
-  /** Initial groupBy (for simple hierarchical mode) */
-  initialGroupBy?: string[];
+  /** Initial grouping (for simple hierarchical mode) */
+  initialGrouping?: string[];
   /** Active measures (defaults to all) */
   activeMeasures?: string[];
   /** Include items in groups (for raw data viewing) */
@@ -132,7 +132,7 @@ const cubeState = useCubeState({
   data: salesData,
   dimensions: salesDimensions,
   measures: salesMeasures,
-  initialRootDimension: "region", // Start with regions
+  initialGrouping: ["region", "category", "product"], // Start with regions
   includeItems: true,
 });
 
@@ -194,7 +194,7 @@ function SalesAnalysis() {
         formatValue: (v) => `$${v.toLocaleString()}`,
       },
     ],
-    initialRootDimension: "region",
+    initialGrouping: ["region", "category", "product"],
     activeMeasures: ["revenue", "profit"],
     includeItems: true,
   });
@@ -340,7 +340,7 @@ const cubeState = useCubeState({
   data,
   dimensions,
   measures,
-  initialRootDimension: "region",
+  initialGrouping: ["region", "category", "product"],
 });
 
 <CubeView

@@ -309,7 +309,7 @@ export function serializeCubeConfig<TData extends CubeDataItem>(
     dimensions,
     measures,
     breakdownMap: config.breakdownMap,
-    defaultDimensionSequence: config.defaultDimensionSequence,
+    initialGrouping: config.initialGrouping,
     activeMeasures: config.activeMeasures,
     filters,
   };
@@ -428,7 +428,7 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
     measures,
     filters,
     breakdownMap: serialized.breakdownMap,
-    defaultDimensionSequence: serialized.defaultDimensionSequence,
+    initialGrouping: serialized.initialGrouping,
     activeMeasures: serialized.activeMeasures,
   };
 }
@@ -457,7 +457,7 @@ export function createSerializableCubeConfig(
   measures: SerializableMeasure[],
   options: {
     breakdownMap?: Record<string, string | null>;
-    defaultDimensionSequence?: string[];
+    initialGrouping?: string[];
     activeMeasures?: string[];
     filters?: SerializableFilter[];
     isPreAggregated?: boolean;
@@ -478,7 +478,7 @@ export function createSerializableCubeConfig(
     dimensions,
     measures,
     breakdownMap: options.breakdownMap,
-    defaultDimensionSequence: options.defaultDimensionSequence,
+    initialGrouping: options.initialGrouping,
     activeMeasures: options.activeMeasures,
     filters: options.filters,
   };
