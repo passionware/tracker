@@ -61,7 +61,7 @@ function convertToNivoFormat(
       dimensionId: group.dimensionId,
       dimensionValue: group.dimensionValue,
       path: group.path,
-      formattedValue: cell?.formattedValue || String(value),
+      formattedValue: `${value} ${cell?.formattedValue || String(value)}`,
       itemCount: group.itemCount,
       originalLabel: group.dimensionLabel, // Store the original readable label
     };
@@ -144,7 +144,7 @@ export function CubeSunburst({
         </div>
       </div>
 
-      <div className="h-[400px] w-full">
+      <div className="h-[300px] w-full">
         <ResponsiveSunburst
           data={nivoData}
           margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
@@ -259,17 +259,6 @@ export function CubeSunburst({
             }
           }}
           tooltip={({ value, color, data }) => {
-            const nivoNode = data as NivoSunburstNode;
-            // Use the original readable label
-            const displayName =
-              nivoNode.id === "sunburst-root"
-                ? "All Data"
-                : nivoNode.originalLabel ||
-                  nivoNode.id.split(":").pop() ||
-                  nivoNode.id;
-
-            // Return null to prevent inline tooltip rendering
-            // We'll handle tooltip via onMouseMove instead
             return null;
           }}
           onMouseMove={(node, event) => {
