@@ -63,21 +63,13 @@ export function useCubeDefinitions(
         getKey: (value) => String(value ?? "null"),
         formatValue: (value) => {
           const contractorId = value as string;
-          console.log(
-            "Formatting contractor value:",
-            value,
-            "Available contractors:",
-            contractors,
-          );
           const contractor = contractors.find(
             (c: any) => String(c.id) === String(contractorId),
           );
-          console.log("Found contractor:", contractor);
           const result =
             contractor?.fullName ||
             contractor?.name ||
             String(value ?? "Unknown");
-          console.log("Formatted result:", result);
           return result;
         },
       },
