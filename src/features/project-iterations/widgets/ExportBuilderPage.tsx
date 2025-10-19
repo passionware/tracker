@@ -28,13 +28,9 @@ import {
 } from "@/components/ui/select.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Download, Eye, ArrowLeft } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import type {
-  DimensionDescriptor,
-  MeasureDescriptor,
-  CubeDataItem,
-} from "@/features/_common/Cube/CubeService.types.ts";
 import { serializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
@@ -49,6 +45,18 @@ import type {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
+
+// Form schema for export builder
+interface ExportBuilderFormData {
+  flattening: {
+    enabled: boolean;
+    flattenDimensions: string[];
+    aggregationMethod: "sum" | "average" | "count";
+  };
+  selectedDimensions: string[];
+  selectedMeasures: string[];
+  rawDataDimension: string;
+}
 
 export interface ExportBuilderPageProps extends WithFrontServices {
   workspaceId: WorkspaceSpec;
@@ -68,41 +76,112 @@ function ExportBuilderContent({
   services: WithFrontServices["services"];
   onNavigateBack: () => void;
 }) {
-  const [selectedDimensions, setSelectedDimensions] = useState<
-    DimensionDescriptor<CubeDataItem, unknown>[]
-  >([]);
-  const [selectedMeasures, setSelectedMeasures] = useState<
-    MeasureDescriptor<CubeDataItem, unknown>[]
-  >([]);
-  const [rawDataDimension, setRawDataDimension] = useState<DimensionDescriptor<
-    CubeDataItem,
-    unknown
-  > | null>(null);
-  const [flatteningConfig, setFlatteningConfig] = useState<{
-    enabled: boolean;
-    flattenDimensions: string[];
-    aggregationMethod: "sum" | "average" | "count";
-  }>({
-    enabled: false,
-    flattenDimensions: [],
-    aggregationMethod: "sum",
-  });
-
   // Use the shared cube hook to get all cube data
   const { cubeState, dimensions, measures, data } = useReportCube({
     report,
     services,
   });
 
-  // Initialize selected dimensions and measures when cube data is available
-  useState(() => {
-    if (dimensions.length > 0 && selectedDimensions.length === 0) {
-      setSelectedDimensions(dimensions);
-    }
-    if (measures.length > 0 && selectedMeasures.length === 0) {
-      setSelectedMeasures(measures);
-    }
+  // Initialize form with default values
+  const form = useForm<ExportBuilderFormData>({
+    defaultValues: {
+      flattening: {
+        enabled: true,
+        flattenDimensions: [],
+        aggregationMethod: "sum",
+      },
+      selectedDimensions: [],
+      selectedMeasures: [],
+      rawDataDimension: "",
+    },
   });
+
+  const { control, watch, setValue } = form;
+
+  // Watch form values
+  const watchedValues = watch();
+  const selectedDimensions = dimensions.filter((dim) =>
+    watchedValues.selectedDimensions.includes(dim.id),
+  );
+  const selectedMeasures = measures.filter((measure) =>
+    watchedValues.selectedMeasures.includes(measure.id),
+  );
+  const rawDataDimension =
+    dimensions.find((dim) => dim.id === watchedValues.rawDataDimension) || null;
+
+  // Initialize form with default values when cube data is available
+  useEffect(() => {
+    if (
+      dimensions.length > 0 &&
+      watchedValues.selectedDimensions.length === 0
+    ) {
+      // Set default dimensions in order: project, task, contractor, activity
+      const defaultDimensionOrder = [
+        "project",
+        "task",
+        "contractor",
+        "activity",
+      ];
+      const orderedDimensionIds = defaultDimensionOrder.filter((id) =>
+        dimensions.some((dim) => dim.id === id),
+      );
+
+      // Add any remaining dimensions that weren't in the default order
+      const remainingDimensionIds = dimensions
+        .filter((dim) => !defaultDimensionOrder.includes(dim.id))
+        .map((dim) => dim.id);
+
+      setValue("selectedDimensions", [
+        ...orderedDimensionIds,
+        ...remainingDimensionIds,
+      ]);
+    }
+
+    if (measures.length > 0 && watchedValues.selectedMeasures.length === 0) {
+      // Set default measures: hours, billing
+      const defaultMeasureIds = ["hours", "billing"];
+      const orderedMeasureIds = defaultMeasureIds.filter((id) =>
+        measures.some((measure) => measure.id === id),
+      );
+
+      // Add any remaining measures that weren't in the default list
+      const remainingMeasureIds = measures
+        .filter((measure) => !defaultMeasureIds.includes(measure.id))
+        .map((measure) => measure.id);
+
+      setValue("selectedMeasures", [
+        ...orderedMeasureIds,
+        ...remainingMeasureIds,
+      ]);
+    }
+
+    // Set default raw data dimension to date
+    if (dimensions.length > 0 && !watchedValues.rawDataDimension) {
+      const dateDimension = dimensions.find((dim) => dim.id === "date");
+      if (dateDimension) {
+        setValue("rawDataDimension", dateDimension.id);
+      }
+    }
+
+    // Set default flattening dimensions to include date
+    if (
+      dimensions.length > 0 &&
+      watchedValues.flattening.flattenDimensions.length === 0
+    ) {
+      const dateDimension = dimensions.find((dim) => dim.id === "date");
+      if (dateDimension) {
+        setValue("flattening.flattenDimensions", [dateDimension.id]);
+      }
+    }
+  }, [
+    dimensions,
+    measures,
+    watchedValues.selectedDimensions.length,
+    watchedValues.selectedMeasures.length,
+    watchedValues.rawDataDimension,
+    watchedValues.flattening.flattenDimensions.length,
+    setValue,
+  ]);
 
   // Generate preview cube state
   const previewCubeState = useMemo(() => {
@@ -211,88 +290,79 @@ function ExportBuilderContent({
                 </p>
 
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="enable-flattening"
-                      checked={flatteningConfig.enabled}
-                      onCheckedChange={(checked) =>
-                        setFlatteningConfig((prev) => ({
-                          ...prev,
-                          enabled: checked as boolean,
-                        }))
-                      }
-                    />
-                    <Label htmlFor="enable-flattening">
-                      Enable data flattening
-                    </Label>
-                  </div>
+                  <Controller
+                    name="flattening.enabled"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="enable-flattening"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                        <Label htmlFor="enable-flattening">
+                          Enable data flattening
+                        </Label>
+                      </div>
+                    )}
+                  />
 
-                  {flatteningConfig.enabled && (
+                  {watchedValues.flattening.enabled && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">
                         Flatten by dimensions:
                       </Label>
                       {dimensions.map((dim) => (
-                        <div
+                        <Controller
                           key={dim.id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={`flatten-${dim.id}`}
-                            checked={flatteningConfig.flattenDimensions.includes(
-                              dim.id,
-                            )}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setFlatteningConfig((prev) => ({
-                                  ...prev,
-                                  flattenDimensions: [
-                                    ...prev.flattenDimensions,
-                                    dim.id,
-                                  ],
-                                }));
-                              } else {
-                                setFlatteningConfig((prev) => ({
-                                  ...prev,
-                                  flattenDimensions:
-                                    prev.flattenDimensions.filter(
-                                      (id) => id !== dim.id,
-                                    ),
-                                }));
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`flatten-${dim.id}`}>
-                            {dim.name}
-                          </Label>
-                        </div>
+                          name="flattening.flattenDimensions"
+                          control={control}
+                          render={({ field }) => (
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`flatten-${dim.id}`}
+                                checked={field.value.includes(dim.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...field.value, dim.id]);
+                                  } else {
+                                    field.onChange(
+                                      field.value.filter((id) => id !== dim.id),
+                                    );
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`flatten-${dim.id}`}>
+                                {dim.name}
+                              </Label>
+                            </div>
+                          )}
+                        />
                       ))}
 
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">
                           Aggregation Method
                         </Label>
-                        <Select
-                          value={flatteningConfig.aggregationMethod}
-                          onValueChange={(value) =>
-                            setFlatteningConfig((prev) => ({
-                              ...prev,
-                              aggregationMethod: value as
-                                | "sum"
-                                | "average"
-                                | "count",
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sum">Sum</SelectItem>
-                            <SelectItem value="average">Average</SelectItem>
-                            <SelectItem value="count">Count</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Controller
+                          name="flattening.aggregationMethod"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sum">Sum</SelectItem>
+                                <SelectItem value="average">Average</SelectItem>
+                                <SelectItem value="count">Count</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </div>
                     </div>
                   )}
@@ -311,30 +381,35 @@ function ExportBuilderContent({
 
                 <div className="space-y-2">
                   {dimensions.map((dim) => (
-                    <div
+                    <Controller
                       key={dim.id}
-                      className="flex items-center space-x-2 p-2 border rounded"
-                    >
-                      <Checkbox
-                        id={`dimension-${dim.id}`}
-                        checked={selectedDimensions.some(
-                          (d) => d.id === dim.id,
-                        )}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedDimensions((prev) => [...prev, dim]);
-                          } else {
-                            setSelectedDimensions((prev) =>
-                              prev.filter((d) => d.id !== dim.id),
-                            );
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`dimension-${dim.id}`} className="flex-1">
-                        {dim.name}
-                      </Label>
-                      <Badge variant="secondary">{dim.id}</Badge>
-                    </div>
+                      name="selectedDimensions"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2 p-2 border rounded">
+                          <Checkbox
+                            id={`dimension-${dim.id}`}
+                            checked={field.value.includes(dim.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                field.onChange([...field.value, dim.id]);
+                              } else {
+                                field.onChange(
+                                  field.value.filter((id) => id !== dim.id),
+                                );
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={`dimension-${dim.id}`}
+                            className="flex-1"
+                          >
+                            {dim.name}
+                          </Label>
+                          <Badge variant="secondary">{dim.id}</Badge>
+                        </div>
+                      )}
+                    />
                   ))}
                 </div>
               </div>
@@ -349,33 +424,35 @@ function ExportBuilderContent({
 
                 <div className="space-y-2">
                   {measures.map((measure) => (
-                    <div
+                    <Controller
                       key={measure.id}
-                      className="flex items-center space-x-2 p-2 border rounded"
-                    >
-                      <Checkbox
-                        id={`measure-${measure.id}`}
-                        checked={selectedMeasures.some(
-                          (m) => m.id === measure.id,
-                        )}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedMeasures((prev) => [...prev, measure]);
-                          } else {
-                            setSelectedMeasures((prev) =>
-                              prev.filter((m) => m.id !== measure.id),
-                            );
-                          }
-                        }}
-                      />
-                      <Label
-                        htmlFor={`measure-${measure.id}`}
-                        className="flex-1"
-                      >
-                        {measure.name}
-                      </Label>
-                      <Badge variant="secondary">{measure.id}</Badge>
-                    </div>
+                      name="selectedMeasures"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2 p-2 border rounded">
+                          <Checkbox
+                            id={`measure-${measure.id}`}
+                            checked={field.value.includes(measure.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                field.onChange([...field.value, measure.id]);
+                              } else {
+                                field.onChange(
+                                  field.value.filter((id) => id !== measure.id),
+                                );
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={`measure-${measure.id}`}
+                            className="flex-1"
+                          >
+                            {measure.name}
+                          </Label>
+                          <Badge variant="secondary">{measure.id}</Badge>
+                        </div>
+                      )}
+                    />
                   ))}
                 </div>
               </div>
@@ -391,28 +468,31 @@ function ExportBuilderContent({
                 </p>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">
-                      Raw Data Dimension
-                    </label>
-                    <select
-                      className="w-full mt-1 p-2 border rounded"
-                      value={rawDataDimension?.id || ""}
-                      onChange={(e) => {
-                        const selectedDim = dimensions.find(
-                          (d) => d.id === e.target.value,
-                        );
-                        setRawDataDimension(selectedDim || null);
-                      }}
-                    >
-                      <option value="">Select dimension for raw data</option>
-                      {dimensions.map((dim) => (
-                        <option key={dim.id} value={dim.id}>
-                          {dim.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Controller
+                    name="rawDataDimension"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <label className="text-sm font-medium">
+                          Raw Data Dimension
+                        </label>
+                        <select
+                          className="w-full mt-1 p-2 border rounded"
+                          value={field.value}
+                          onChange={field.onChange}
+                        >
+                          <option value="">
+                            Select dimension for raw data
+                          </option>
+                          {dimensions.map((dim) => (
+                            <option key={dim.id} value={dim.id}>
+                              {dim.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  />
                 </div>
               </div>
             </TabsContent>
