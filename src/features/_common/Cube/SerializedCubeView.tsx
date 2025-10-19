@@ -55,6 +55,14 @@ export function SerializedCubeView({
           );
         }
 
+        // Create a lookup map for dimension label mappings
+        const labelMappings: Record<string, Record<string, string>> = {};
+        serializedConfig.dimensions.forEach((dim) => {
+          if (dim.labelMapping) {
+            labelMappings[dim.fieldName] = dim.labelMapping;
+          }
+        });
+
         // Convert serialized columns to TanStack Table columns
         const columns = serializedConfig.listView.columns.map((col) => ({
           id: col.id,
@@ -62,10 +70,21 @@ export function SerializedCubeView({
           accessorKey: col.fieldName,
           cell: ({ getValue }: { getValue: () => any }) => {
             const value = getValue();
+
+            // Check if we have a label mapping for this field
+            const labelMapping = labelMappings[col.fieldName];
+            if (labelMapping && value !== undefined && value !== null) {
+              const mappedValue = labelMapping[String(value)];
+              if (mappedValue) {
+                return mappedValue;
+              }
+            }
+
+            // Apply format function if available
             if (col.formatFunction) {
-              // Apply format function if available
               return String(value);
             }
+
             return String(value);
           },
           meta: {
