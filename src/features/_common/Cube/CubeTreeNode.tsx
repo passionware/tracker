@@ -84,7 +84,6 @@ export function CubeTreeNode({
   // Only allow selection for groups at current zoom level
   const isCurrentZoomLevel = level === state.path.length;
 
-  const indent = level * 20;
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
 
   // Auto-show raw data if no sub-groups exist but raw data is available
@@ -122,10 +121,9 @@ export function CubeTreeNode({
       transition={{ duration: 0.2 }}
     >
       <div
-        className={`p-3 cursor-pointer transition-colors border-l-4 border-blue-200 ${
+        className={`pl-3 pr-3 py-3 cursor-pointer transition-colors border-l-4 border-blue-200 ${
           isSelected ? "bg-slate-100 hover:bg-slate-200" : "hover:bg-slate-50"
         }`}
-        style={{ paddingLeft: `${12 + indent}px` }}
         onClick={handleClick}
         data-group-key={`${group.dimensionId}:${group.dimensionKey}`}
         data-item-id={isCurrentZoomLevel ? group.dimensionKey : undefined}
