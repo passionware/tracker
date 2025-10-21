@@ -189,14 +189,14 @@ export function CubeViewer({
           </CubeProvider>
         ) : (
           <div className="h-full p-6">
-            <Card className="h-full">
+            <Card className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle>Raw JSON Configuration</CardTitle>
                 <CardDescription>
                   Complete serialized cube configuration
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-full">
+              <CardContent className="h-full min-h-0 ">
                 <JsonTreeViewer
                   data={serializedConfig}
                   title="Serialized Cube Configuration"
