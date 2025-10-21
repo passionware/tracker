@@ -10,7 +10,6 @@ import { GeneratedReportSource } from "@/api/generated-report-source/generated-r
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   type CubeDataItem,
-  type MeasureDescriptor,
   withDataType,
 } from "@/features/_common/Cube/CubeService.types.ts";
 import { SortOptions } from "@/features/_common/Cube/CubeSortOptions.ts";
@@ -46,7 +45,7 @@ export function useCubeDefinitions(
     const contractors = rd.mapOrElse(contractorsQuery, (data) => data, []);
 
     const dimensions = [
-      factory.createDimension({
+      factory.createDimension<any>({
         id: "project",
         name: "Project",
         icon: "🏗️",
@@ -59,7 +58,7 @@ export function useCubeDefinitions(
         },
         sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
-      factory.createDimension({
+      factory.createDimension<any>({
         id: "task",
         name: "Task",
         icon: "📋",
@@ -71,7 +70,7 @@ export function useCubeDefinitions(
         },
         sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
-      factory.createDimension({
+      factory.createDimension<any>({
         id: "contractor",
         name: "Contractor",
         icon: "👤",
@@ -90,7 +89,7 @@ export function useCubeDefinitions(
         },
         sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
-      factory.createDimension({
+      factory.createDimension<any>({
         id: "activity",
         name: "Activity",
         icon: "⚡",
@@ -103,7 +102,7 @@ export function useCubeDefinitions(
         },
         sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
-      factory.createDimension({
+      factory.createDimension<any>({
         id: "role",
         name: "Role",
         icon: "🎭",
@@ -134,10 +133,30 @@ export function useCubeDefinitions(
           },
         ]),
       }),
+      factory.createDimension<any>({
+        id: "date",
+        name: "Date",
+        icon: "📅",
+        getValue: (item) => {
+          // Handle anonymized time entries where startAt might be undefined
+          if (!item.startAt) {
+            return "Services";
+          }
+          const date = new Date(item.startAt);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            return "Invalid Date";
+          }
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        },
+        getKey: (value) => String(value ?? "null"),
+        formatValue: (value) => String(value ?? "Unknown"),
+        sortOptions: SortOptions.date(), // Chronological, Reverse Chronological
+      }),
     ];
 
-    const measures: MeasureDescriptor<CubeDataItem, unknown>[] = [
-      {
+    const measures = [
+      factory.createMeasure<any>({
         id: "hours",
         name: "Hours",
         icon: "⏱️",
@@ -150,8 +169,8 @@ export function useCubeDefinitions(
           mode: "percentage",
         },
         sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
-      },
-      {
+      }),
+      factory.createMeasure<any>({
         id: "cost",
         name: "Cost",
         icon: "💰",
@@ -164,8 +183,8 @@ export function useCubeDefinitions(
           mode: "absolute",
         },
         sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
-      },
-      {
+      }),
+      factory.createMeasure<any>({
         id: "billing",
         name: "Billing",
         icon: "💳",
@@ -178,8 +197,8 @@ export function useCubeDefinitions(
           mode: "absolute",
         },
         sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
-      },
-      {
+      }),
+      factory.createMeasure<any>({
         id: "profit",
         name: "Profit",
         icon: "📈",
@@ -194,8 +213,8 @@ export function useCubeDefinitions(
           negativeColorClassName: "bg-red-500",
         },
         sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
-      },
-      {
+      }),
+      factory.createMeasure<any>({
         id: "entries",
         name: "Entries",
         icon: "📊",
@@ -206,7 +225,7 @@ export function useCubeDefinitions(
           mode: "absolute",
         },
         sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
-      },
+      }),
     ];
 
     // Create raw data dimension - use date if available, otherwise use entry ID
