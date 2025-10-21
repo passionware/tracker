@@ -224,7 +224,7 @@ export function useCubeDefinitions(
         if (isNaN(date.getTime())) {
           return "Invalid Date";
         }
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDay()).padStart(2, "0")}`;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       },
       getKey: (value) => String(value ?? "null"),
       formatValue: (value) => String(value ?? "Unknown"),
