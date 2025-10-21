@@ -12,6 +12,25 @@
 export type CubeDataItem = Record<string, any>;
 
 /**
+ * Sort direction for dimension values
+ */
+export type SortDirection = "asc" | "desc";
+
+/**
+ * Sorting option for a dimension
+ */
+export interface DimensionSortOption {
+  /** Unique identifier for this sort option */
+  id: string;
+  /** Human-readable label for UI */
+  label: string;
+  /** Comparator function for sorting */
+  comparator: (a: unknown, b: unknown) => number;
+  /** Default direction for this sort option */
+  defaultDirection?: SortDirection;
+}
+
+/**
  * Defines how to extract a dimension value from a data item
  */
 export interface DimensionDescriptor<
@@ -32,6 +51,8 @@ export interface DimensionDescriptor<
   getKey?: (value: TValue) => string;
   /** Optional icon or emoji for UI */
   icon?: string;
+  /** Available sorting options for this dimension */
+  sortOptions?: DimensionSortOption[];
 }
 
 export function withDataType<TData extends CubeDataItem>() {
@@ -83,6 +104,8 @@ export interface MeasureDescriptor<TData extends CubeDataItem, TValue = any> {
   icon?: string;
   /** Sidebar visualization preferences */
   sidebarOptions?: MeasureSidebarOptions;
+  /** Available sorting options for this measure */
+  sortOptions?: DimensionSortOption[];
 }
 
 /**
@@ -111,6 +134,16 @@ export interface DimensionFilter<TValue = unknown> {
 }
 
 /**
+ * Sorting state for a node
+ */
+export interface NodeSortState {
+  /** Selected sort option ID */
+  sortOptionId?: string;
+  /** Sort direction */
+  direction?: SortDirection;
+}
+
+/**
  * Configuration for cube calculation
  */
 export interface CubeConfig<TData extends CubeDataItem> {
@@ -125,7 +158,11 @@ export interface CubeConfig<TData extends CubeDataItem> {
   /** Node states containing user overrides */
   nodeStates: Map<
     string,
-    { isExpanded: boolean; childDimensionId?: string | null }
+    {
+      isExpanded: boolean;
+      childDimensionId?: string | null;
+      sortState?: NodeSortState;
+    }
   >;
   /** Initial dimension grouping sequence (derived from dimensions array order) */
   initialGrouping?: string[];

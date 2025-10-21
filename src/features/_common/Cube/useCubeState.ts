@@ -35,6 +35,10 @@ export interface PathItem {
 export interface NodeState {
   isExpanded: boolean;
   childDimensionId?: string | null; // string = dimension, null = raw data, undefined = use default
+  sortState?: {
+    sortOptionId?: string;
+    direction?: "asc" | "desc";
+  };
 }
 
 /**
@@ -80,6 +84,11 @@ export interface CubeState {
   // ===== ACTIONS =====
   /** Set child dimension for a node (null = show raw data) */
   setNodeChildDimension: (path: PathItem[], dimensionId: string | null) => void;
+  /** Set sort state for a node */
+  setNodeSortState: (
+    path: PathItem[],
+    sortState: { sortOptionId?: string; direction?: "asc" | "desc" },
+  ) => void;
   /** Toggle node expansion */
   toggleNodeExpansion: (path: PathItem[]) => void;
   /** Zoom into a node (set as root) */
@@ -205,6 +214,23 @@ export function useCubeState<TData extends CubeDataItem>(
     [dimensions],
   );
 
+  // Set sort state for a node
+  const setNodeSortState = useCallback(
+    (
+      nodePath: PathItem[],
+      sortState: { sortOptionId?: string; direction?: "asc" | "desc" },
+    ) => {
+      const key = pathToKey(nodePath, dimensions);
+      setNodeStates((prev) => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(key) || { isExpanded: false };
+        newMap.set(key, { ...existing, sortState });
+        return newMap;
+      });
+    },
+    [dimensions],
+  );
+
   // Toggle node expansion
   const toggleNodeExpansion = useCallback(
     (nodePath: PathItem[]) => {
@@ -268,6 +294,7 @@ export function useCubeState<TData extends CubeDataItem>(
     nodeStates,
     filters,
     setNodeChildDimension,
+    setNodeSortState,
     toggleNodeExpansion,
     zoomIn,
     setZoomPath,

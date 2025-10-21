@@ -17,6 +17,7 @@ import type {
   MeasureDescriptor,
 } from "./CubeService.types.ts";
 import { findBreakdownDimensionId } from "./CubeUtils.ts";
+import { createSortFunction } from "./CubeSortOptions.ts";
 
 /**
  * Evaluate a single filter condition
@@ -119,7 +120,11 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   dimensionId: string,
   nodeStates: Map<
     string,
-    { isExpanded: boolean; childDimensionId?: string | null }
+    {
+      isExpanded: boolean;
+      childDimensionId?: string | null;
+      sortState?: { sortOptionId?: string; direction?: "asc" | "desc" };
+    }
   >,
   dimensions: DimensionDescriptor<TData, unknown>[],
   measures: MeasureDescriptor<TData, unknown>[],
@@ -209,6 +214,46 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
       childDimensionId,
     });
   });
+
+  // Sort groups based on sort state
+  const dimensionPath = parentPath
+    ? `${parentPath}|${dimensionId}:`
+    : `${dimensionId}:`;
+  const sortState = nodeStates.get(dimensionPath)?.sortState;
+
+  if (sortState?.sortOptionId) {
+    // Check if it's a measure-based sort
+    if (sortState.sortOptionId.startsWith("measure-")) {
+      const measureId = sortState.sortOptionId.replace("measure-", "");
+      const measure = measures.find((m) => m.id === measureId);
+
+      if (measure) {
+        // Sort by measure values
+        groups.sort((a, b) => {
+          const aValue =
+            a.cells.find((c) => c.measureId === measureId)?.value || 0;
+          const bValue =
+            b.cells.find((c) => c.measureId === measureId)?.value || 0;
+          const result = Number(aValue) - Number(bValue);
+          return sortState.direction === "desc" ? -result : result;
+        });
+      }
+    } else {
+      // Sort by dimension values using dimension sort options
+      const sortFunction = createSortFunction(dimension, sortState);
+      if (sortFunction) {
+        groups.sort((a, b) => sortFunction(a.dimensionValue, b.dimensionValue));
+      }
+    }
+  } else if (dimension.sortOptions && dimension.sortOptions.length > 0) {
+    // Use default sort option if no sort state specified
+    const defaultSortFunction = createSortFunction(dimension, undefined);
+    if (defaultSortFunction) {
+      groups.sort((a, b) =>
+        defaultSortFunction(a.dimensionValue, b.dimensionValue),
+      );
+    }
+  }
 
   return groups;
 }

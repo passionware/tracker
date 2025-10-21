@@ -13,6 +13,7 @@ import {
   type MeasureDescriptor,
   withDataType,
 } from "@/features/_common/Cube/CubeService.types.ts";
+import { SortOptions } from "@/features/_common/Cube/CubeSortOptions.ts";
 import { rd } from "@passionware/monads";
 import { useMemo } from "react";
 import { sum } from "lodash";
@@ -56,6 +57,7 @@ export function useCubeDefinitions(
             report.data.definitions.projectTypes[value as string];
           return projectType?.name || String(value ?? "Unknown");
         },
+        sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
       factory.createDimension({
         id: "task",
@@ -67,6 +69,7 @@ export function useCubeDefinitions(
           const taskType = report.data.definitions.taskTypes[value as string];
           return taskType?.name || String(value ?? "Unknown");
         },
+        sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
       factory.createDimension({
         id: "contractor",
@@ -85,6 +88,7 @@ export function useCubeDefinitions(
             String(value ?? "Unknown");
           return result;
         },
+        sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
       factory.createDimension({
         id: "activity",
@@ -97,6 +101,7 @@ export function useCubeDefinitions(
             report.data.definitions.activityTypes[value as string];
           return activityType?.name || String(value ?? "Unknown");
         },
+        sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
       }),
       factory.createDimension({
         id: "role",
@@ -108,6 +113,26 @@ export function useCubeDefinitions(
           const roleType = report.data.definitions.roleTypes[value as string];
           return roleType?.name || String(value ?? "Unknown");
         },
+        sortOptions: SortOptions.custom([
+          {
+            id: "alphabetical",
+            label: "Alphabetical",
+            comparator: (a, b) => String(a).localeCompare(String(b)),
+            defaultDirection: "asc",
+          },
+          {
+            id: "reverse-alphabetical",
+            label: "Reverse Alphabetical",
+            comparator: (a, b) => String(b).localeCompare(String(a)),
+            defaultDirection: "desc",
+          },
+          {
+            id: "by-length",
+            label: "By Length",
+            comparator: (a, b) => String(a).length - String(b).length,
+            defaultDirection: "asc",
+          },
+        ]),
       }),
     ];
 
@@ -124,6 +149,7 @@ export function useCubeDefinitions(
         sidebarOptions: {
           mode: "percentage",
         },
+        sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
       },
       {
         id: "cost",
@@ -137,6 +163,7 @@ export function useCubeDefinitions(
         sidebarOptions: {
           mode: "absolute",
         },
+        sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
       },
       {
         id: "billing",
@@ -150,6 +177,7 @@ export function useCubeDefinitions(
         sidebarOptions: {
           mode: "absolute",
         },
+        sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
       },
       {
         id: "profit",
@@ -165,6 +193,7 @@ export function useCubeDefinitions(
           positiveColorClassName: "bg-green-500",
           negativeColorClassName: "bg-red-500",
         },
+        sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
       },
       {
         id: "entries",
@@ -176,6 +205,7 @@ export function useCubeDefinitions(
         sidebarOptions: {
           mode: "absolute",
         },
+        sortOptions: SortOptions.number(), // Ascending, Descending, Absolute Value
       },
     ];
 
@@ -198,6 +228,7 @@ export function useCubeDefinitions(
       },
       getKey: (value) => String(value ?? "null"),
       formatValue: (value) => String(value ?? "Unknown"),
+      sortOptions: SortOptions.date(), // Chronological, Reverse Chronological
     });
 
     // Create alternative raw data dimension for anonymized data
@@ -210,6 +241,7 @@ export function useCubeDefinitions(
       },
       getKey: (value) => String(value ?? "null"),
       formatValue: (value) => String(value ?? "Unknown"),
+      sortOptions: SortOptions.string(), // Alphabetical, Reverse, By Length
     });
 
     return {
