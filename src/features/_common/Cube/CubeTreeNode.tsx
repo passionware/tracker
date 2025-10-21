@@ -77,6 +77,11 @@ export function CubeTreeNode({
     });
 
   const [isExpanded, setIsExpanded] = useState(level < maxInitialDepth);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const indent = level * 20;
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
@@ -92,6 +97,39 @@ export function CubeTreeNode({
   const toggleExpansion = () => {
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!dragStartPos) return;
+
+    const deltaX = Math.abs(e.clientX - dragStartPos.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.y);
+    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+    // Only toggle expansion if it wasn't a drag (movement < 5 pixels)
+    if (distance < 5 && !isDragging) {
+      toggleExpansion();
+    }
+
+    setDragStartPos(null);
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragStartPos) return;
+
+    const deltaX = Math.abs(e.clientX - dragStartPos.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.y);
+    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+    if (distance >= 5) {
+      setIsDragging(true);
+    }
   };
 
   const handleViewRawData = () => {
@@ -114,8 +152,11 @@ export function CubeTreeNode({
       <div
         className="p-3 cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
         style={{ paddingLeft: `${12 + indent}px` }}
-        onClick={toggleExpansion}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
         data-group-key={`${group.dimensionId}:${group.dimensionKey}`}
+        data-item-id={group.dimensionKey}
       >
         {/* Main content row */}
         <div className="flex items-center justify-between gap-4">

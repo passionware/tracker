@@ -240,15 +240,6 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   const currentPathKey = getCurrentPathKey(currentPath, dimensions);
   const sortState = nodeStates.get(currentPathKey)?.sortState;
 
-  console.log("🔍 Dimension path lookup:", {
-    currentPathKey,
-    currentPath,
-    dimensionId,
-    nodeStatesKeys: Array.from(nodeStates.keys()),
-    sortState,
-    hasSortOptionId: !!sortState?.sortOptionId,
-  });
-
   if (sortState?.sortOptionId) {
     console.log("🔍 Sorting debug:", {
       sortOptionId: sortState.sortOptionId,
@@ -262,12 +253,6 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
       const measureId = sortState.sortOptionId.replace("measure-", "");
       const measure = measures.find((m) => m.id === measureId);
 
-      console.log("📊 Measure-based sort:", {
-        measureId,
-        measureFound: !!measure,
-        measureName: measure?.name,
-      });
-
       if (measure) {
         // Sort by measure values
         groups.sort((a, b) => {
@@ -275,14 +260,6 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
             a.cells.find((c) => c.measureId === measureId)?.value || 0;
           const bValue =
             b.cells.find((c) => c.measureId === measureId)?.value || 0;
-
-          console.log("🔄 Comparing:", {
-            aLabel: a.dimensionLabel,
-            aValue,
-            bLabel: b.dimensionLabel,
-            bValue,
-            direction: sortState.direction,
-          });
 
           const result = Number(aValue) - Number(bValue);
           return sortState.direction === "desc" ? -result : result;
@@ -500,6 +477,53 @@ export function flattenGroups(groups: CubeGroup[]): CubeGroup[] {
 }
 
 /**
+ * Calculate measurements for selected groups
+ */
+export function calculateMeasurementsForSelection<TData extends CubeDataItem>(
+  groups: CubeGroup[],
+  selectedGroupIds: string[],
+  measures: MeasureDescriptor<TData, unknown>[],
+): CubeCell[] {
+  if (selectedGroupIds.length === 0) {
+    return [];
+  }
+
+  // Filter groups to only selected ones
+  const selectedGroups = groups.filter((group) =>
+    selectedGroupIds.includes(group.dimensionKey),
+  );
+
+  if (selectedGroups.length === 0) {
+    return [];
+  }
+
+  // Collect all items from selected groups
+  const allItems: TData[] = [];
+  selectedGroups.forEach((group) => {
+    if (group.items) {
+      allItems.push(...(group.items as TData[]));
+    }
+  });
+
+  if (allItems.length === 0) {
+    return [];
+  }
+
+  // Calculate measurements for all selected items
+  return measures.map((measure) => {
+    const values = allItems.map((item) => measure.getValue(item));
+    const aggregatedValue = measure.aggregate?.(values) ?? 0;
+
+    return {
+      measureId: measure.id,
+      value: aggregatedValue,
+      formattedValue:
+        measure.formatValue?.(aggregatedValue) ?? String(aggregatedValue),
+    };
+  });
+}
+
+/**
  * Cube service interface - collection of all cube-related functions
  */
 export interface CubeService {
@@ -508,6 +532,7 @@ export interface CubeService {
   getFormattedCellValue: typeof getFormattedCellValue;
   findGroups: typeof findGroups;
   flattenGroups: typeof flattenGroups;
+  calculateMeasurementsForSelection: typeof calculateMeasurementsForSelection;
 }
 
 /**
@@ -520,6 +545,7 @@ export function createCubeService(): CubeService {
     getFormattedCellValue,
     findGroups,
     flattenGroups,
+    calculateMeasurementsForSelection,
   };
 }
 

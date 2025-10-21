@@ -4,10 +4,8 @@ import {
 } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { timeEntryColumns } from "@/features/_common/columns/timeEntry.tsx";
-import {
-  CubeView,
-  type CubeViewProps,
-} from "@/features/_common/Cube/CubeView.tsx";
+import { type CubeViewProps } from "@/features/_common/Cube/CubeView.tsx";
+import { CubeViewWithSelection } from "@/features/_common/Cube/CubeViewWithSelection.tsx";
 import { useCubeContext } from "@/features/_common/Cube/CubeContext.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import type { GenericReport } from "@/services/io/_common/GenericReport.ts";
@@ -80,11 +78,15 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
   };
 
   return (
-    <CubeView
+    <CubeViewWithSelection
       className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col"
       state={cubeState}
       renderRawData={renderRawData}
       enableZoomIn={true}
+      onSelectionMeasurementsChange={(measurements) => {
+        // Optional: Handle selection measurements changes
+        // This could be used to show aggregated data for selected groups
+      }}
     />
   );
 }

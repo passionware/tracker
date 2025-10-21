@@ -80,6 +80,8 @@ export interface CubeState {
   nodeStates: Map<NodeKey, NodeState>;
   /** Current filters */
   filters: DimensionFilter[];
+  /** Selected group IDs at current level */
+  selectedGroupIds: string[];
 
   // ===== ACTIONS =====
   /** Set child dimension for a node (null = show raw data) */
@@ -89,6 +91,8 @@ export interface CubeState {
     path: PathItem[],
     sortState: { sortOptionId?: string; direction?: "asc" | "desc" },
   ) => void;
+  /** Set selected group IDs */
+  setSelectedGroupIds: (selectedIds: string[]) => void;
   /** Toggle node expansion */
   toggleNodeExpansion: (path: PathItem[]) => void;
   /** Zoom into a node (set as root) */
@@ -156,6 +160,9 @@ export function useCubeState<TData extends CubeDataItem>(
 
   // State: Filters
   const [filters, setFilters] = useState<DimensionFilter[]>(initialFilters);
+
+  // State: Selected group IDs
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   // ===== DERIVED DATA =====
 
@@ -293,8 +300,10 @@ export function useCubeState<TData extends CubeDataItem>(
     path,
     nodeStates,
     filters,
+    selectedGroupIds,
     setNodeChildDimension,
     setNodeSortState,
+    setSelectedGroupIds,
     toggleNodeExpansion,
     zoomIn,
     setZoomPath,

@@ -33,7 +33,7 @@ import {
   anonymizeByUsage,
 } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
-import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
+import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -898,7 +898,7 @@ function ExportBuilderContent({
                       description="Preview of your configured cube export"
                     >
                       {serializableConfig && (
-                        <SerializedCubeView
+                        <SerializedCubeViewWithSelection
                           className="m-4"
                           state={previewCubeState}
                           serializedConfig={serializableConfig.config}

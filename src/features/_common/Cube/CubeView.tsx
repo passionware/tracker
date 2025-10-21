@@ -48,7 +48,13 @@ export function CubeView({
   maxInitialDepth = 0,
   enableZoomIn = true,
   className,
+  ...rest
 }: CubeViewProps) {
+  console.log("🔍 CubeView renderGroupHeader:", {
+    hasRenderGroupHeader: !!renderGroupHeader,
+    renderGroupHeaderType: typeof renderGroupHeader,
+    statePathLength: state.path.length,
+  });
   const cube = state.cube;
   const config = cube.config;
   const measures = config.activeMeasures
@@ -80,7 +86,7 @@ export function CubeView({
   })();
 
   return (
-    <div className={className}>
+    <div className={className} {...rest}>
       {/* Navigation Bar - always visible */}
       <CubeNavigation
         state={state}

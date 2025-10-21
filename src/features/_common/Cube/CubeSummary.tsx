@@ -15,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ArrowUp } from "lucide-react";
+import { cubeService } from "./CubeService.ts";
+import { useMemo } from "react";
 
 interface CubeSummaryProps {
   showNavigation?: boolean;
@@ -29,12 +31,32 @@ export function CubeSummary({ showNavigation = true }: CubeSummaryProps) {
   const currentItems =
     state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
 
+  // Check if we have selection
+  const hasSelection =
+    state.selectedGroupIds && state.selectedGroupIds.length > 0;
+
+  // Calculate selection measurements if we have a selection
+  const selectionMeasurements = useMemo(() => {
+    if (!hasSelection) return null;
+
+    return cubeService.calculateMeasurementsForSelection(
+      state.cube.groups,
+      state.selectedGroupIds,
+      measures,
+    );
+  }, [hasSelection, state.cube.groups, state.selectedGroupIds, measures]);
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-slate-700">
-            Summary {state.path.length > 0 ? "(Current Level)" : "(All Data)"}
+            Summary{" "}
+            {hasSelection
+              ? `(Selection - ${state.selectedGroupIds.length} groups)`
+              : state.path.length > 0
+                ? "(Current Level)"
+                : "(All Data)"}
           </CardTitle>
           {showNavigation && state.path.length > 0 && (
             <Button
@@ -55,15 +77,32 @@ export function CubeSummary({ showNavigation = true }: CubeSummaryProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         {measures.map((measure) => {
-          // Calculate totals from current zoom level data
-          const totalValue = currentItems.reduce((sum, item) => {
-            const value = measure.getValue(item);
-            return sum + (typeof value === "number" ? value : 0);
-          }, 0);
+          let totalValue: number;
+          let formattedValue: string;
 
-          const formattedValue = measure.formatValue
-            ? measure.formatValue(totalValue)
-            : String(totalValue);
+          if (hasSelection && selectionMeasurements) {
+            // Use selection measurements
+            const selectionCell = selectionMeasurements.find(
+              (cell) => cell.measureId === measure.id,
+            );
+            if (selectionCell) {
+              totalValue = Number(selectionCell.value) || 0;
+              formattedValue = selectionCell.formattedValue || "0";
+            } else {
+              totalValue = 0;
+              formattedValue = "0";
+            }
+          } else {
+            // Calculate totals from current zoom level data
+            totalValue = currentItems.reduce((sum, item) => {
+              const value = measure.getValue(item);
+              return sum + (typeof value === "number" ? value : 0);
+            }, 0);
+
+            formattedValue = measure.formatValue
+              ? measure.formatValue(totalValue)
+              : String(totalValue);
+          }
 
           return (
             <div key={measure.id} className="flex items-center justify-between">
