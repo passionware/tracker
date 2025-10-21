@@ -83,6 +83,9 @@ export function CubeTreeNode({
     y: number;
   } | null>(null);
 
+  // Check if this group is selected
+  const isSelected = state.selectedGroupIds.includes(group.dimensionKey);
+
   const indent = level * 20;
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
 
@@ -150,7 +153,9 @@ export function CubeTreeNode({
       transition={{ duration: 0.2 }}
     >
       <div
-        className="p-3 cursor-pointer hover:bg-slate-50 transition-colors border-l-4 border-blue-200"
+        className={`p-3 cursor-pointer transition-colors border-l-4 border-blue-200 ${
+          isSelected ? "bg-slate-100 hover:bg-slate-200" : "hover:bg-slate-50"
+        }`}
         style={{ paddingLeft: `${12 + indent}px` }}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
