@@ -89,6 +89,9 @@ export function CubeViewWithSelection({
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => {
+              // Only allow selection of groups at current zoom level
+              if (!isCurrentZoomLevel) return;
+
               if (checked) {
                 state.setSelectedGroupIds([
                   ...state.selectedGroupIds,
