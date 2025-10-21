@@ -77,14 +77,12 @@ export function CubeTreeNode({
     });
 
   const [isExpanded, setIsExpanded] = useState(level < maxInitialDepth);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStartPos, setDragStartPos] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
 
   // Check if this group is selected
   const isSelected = state.selectedGroupIds.includes(group.dimensionKey);
+
+  // Only allow selection for groups at current zoom level
+  const isCurrentZoomLevel = level === state.path.length;
 
   const indent = level * 20;
   const dimension = dimensions.find((d) => d.id === group.dimensionId);
@@ -102,37 +100,8 @@ export function CubeTreeNode({
     setIsExpanded(newExpanded);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setDragStartPos({ x: e.clientX, y: e.clientY });
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!dragStartPos) return;
-
-    const deltaX = Math.abs(e.clientX - dragStartPos.x);
-    const deltaY = Math.abs(e.clientY - dragStartPos.y);
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-    // Only toggle expansion if it wasn't a drag (movement < 5 pixels)
-    if (distance < 5 && !isDragging) {
-      toggleExpansion();
-    }
-
-    setDragStartPos(null);
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragStartPos) return;
-
-    const deltaX = Math.abs(e.clientX - dragStartPos.x);
-    const deltaY = Math.abs(e.clientY - dragStartPos.y);
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-    if (distance >= 5) {
-      setIsDragging(true);
-    }
+  const handleClick = () => {
+    toggleExpansion();
   };
 
   const handleViewRawData = () => {
@@ -157,11 +126,9 @@ export function CubeTreeNode({
           isSelected ? "bg-slate-100 hover:bg-slate-200" : "hover:bg-slate-50"
         }`}
         style={{ paddingLeft: `${12 + indent}px` }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
+        onClick={handleClick}
         data-group-key={`${group.dimensionId}:${group.dimensionKey}`}
-        data-item-id={group.dimensionKey}
+        data-item-id={isCurrentZoomLevel ? group.dimensionKey : undefined}
       >
         {/* Main content row */}
         <div className="flex items-center justify-between gap-4">
