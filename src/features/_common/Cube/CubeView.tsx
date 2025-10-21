@@ -16,6 +16,7 @@ import type {
 } from "./CubeService.types.ts";
 import { CubeTreeNode } from "./CubeTreeNode.tsx";
 import type { CubeState } from "./useCubeState.ts";
+import { cn } from "@/lib/utils.ts";
 
 /**
  * Props for CubeView component
@@ -81,13 +82,16 @@ export function CubeView({
   })();
 
   return (
-    <div className={className} {...rest}>
+    <div className={cn("isolate", className)} {...rest}>
       {/* Navigation Bar - always visible */}
-      <CubeNavigation
-        state={state}
-        zoomPath={zoomPath}
-        dimensions={config.dimensions}
-      />
+      <div className="sticky top-0 bg-white z-10 -m-4 mb-0 p-4">
+        <CubeNavigation
+          state={state}
+          zoomPath={zoomPath}
+          dimensions={config.dimensions}
+          className="m-0"
+        />
+      </div>
 
       {/* Main Content Area - with optional sidebar */}
       <div className="flex gap-4 h-full w-full min-h-0">

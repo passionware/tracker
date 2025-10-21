@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { ChevronRight, Home } from "lucide-react";
 import type { DimensionDescriptor } from "./CubeService.types.ts";
 import type { CubeState } from "./useCubeState.ts";
+import { cn } from "@/lib/utils.ts";
 
 export interface BreadcrumbItem {
   dimensionId: string;
@@ -19,12 +20,14 @@ interface CubeNavigationProps {
   state: CubeState;
   zoomPath: BreadcrumbItem[];
   dimensions: DimensionDescriptor<any>[];
+  className?: string;
 }
 
 export function CubeNavigation({
   state,
   zoomPath,
   dimensions,
+  className,
 }: CubeNavigationProps) {
   const handleBreadcrumbClick = (index: number) => {
     state.navigateToLevel(index);
@@ -32,7 +35,7 @@ export function CubeNavigation({
 
   return (
     <motion.div
-      className="mb-4 p-3 bg-slate-50 rounded-lg border"
+      className={cn("mb-4 p-3 bg-slate-50 rounded-lg border", className)}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}

@@ -33,7 +33,7 @@ import {
   anonymizeByUsage,
 } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
-import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection.tsx";
+import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
@@ -43,6 +43,7 @@ import type {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
 
 // Form schema for export builder
 interface ExportBuilderFormData {
@@ -899,7 +900,7 @@ function ExportBuilderContent({
                     >
                       {serializableConfig && (
                         <SerializedCubeViewWithSelection
-                          className="m-4"
+                          className="p-4 flex-1 min-h-0"
                           state={previewCubeState}
                           serializedConfig={serializableConfig.config}
                           maxInitialDepth={0}
