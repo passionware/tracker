@@ -678,8 +678,6 @@ export const SalesByRegion: Story = {
       <StoryLayoutWrapper
         title="Sales by Region"
         description="Basic sales analysis grouped by region with revenue and profit metrics"
-        cubeState={state}
-        reportId="sales-by-region"
       >
         <CubeView state={state} />
       </StoryLayoutWrapper>
@@ -703,8 +701,6 @@ export const SalesByRegionAndCategory: Story = {
       <StoryLayoutWrapper
         title="Sales by Region and Category"
         description="Multi-level grouping with region → category → product hierarchy"
-        cubeState={state}
-        reportId="sales-by-region-category"
       >
         <CubeView state={state} />
       </StoryLayoutWrapper>
@@ -753,8 +749,6 @@ export const InteractiveSalesCube: Story = {
       <StoryLayoutWrapper
         title="Interactive Sales Cube"
         description="Interactive cube with dynamic grouping and filtering controls"
-        cubeState={state}
-        reportId="interactive-sales-cube"
       >
         <div className="space-y-4">
           <Card>
@@ -901,8 +895,6 @@ export const TimeTrackingCube: Story = {
       <StoryLayoutWrapper
         title="Time Tracking Cube"
         description="Time tracking analysis with project, contractor, and role breakdown"
-        cubeState={state}
-        reportId="time-tracking-cube"
       >
         <CubeView state={state} />
       </StoryLayoutWrapper>
@@ -925,8 +917,6 @@ export const CustomRendering: Story = {
       <StoryLayoutWrapper
         title="Custom Rendering"
         description="Custom group headers and cell rendering with color coding"
-        cubeState={state}
-        reportId="custom-rendering"
       >
         <CubeView
           state={state}
@@ -983,8 +973,6 @@ export const WithRawDataView: Story = {
       <StoryLayoutWrapper
         title="Raw Data Viewing"
         description="Click the '📊 Data' button on any group to view the raw data items"
-        cubeState={state}
-        reportId="raw-data-view"
       >
         <CubeView state={state} />
       </StoryLayoutWrapper>
@@ -1008,8 +996,6 @@ export const ProjectTrackingWithRawData: Story = {
       <StoryLayoutWrapper
         title="Project Tracking with Time Entries"
         description="Click '📊 Data' to view detailed time entries with start/end times"
-        cubeState={state}
-        reportId="project-tracking-raw-data"
       >
         <CubeView
           state={state}
@@ -1258,8 +1244,6 @@ export const InteractiveProjectDashboard: Story = {
         <StoryLayoutWrapper
           title="Interactive Project Tracking Dashboard"
           description="Customize grouping, metrics, and filters"
-          cubeState={state}
-          reportId="interactive-project-dashboard"
         >
           <CubeView state={state} maxInitialDepth={1} />
         </StoryLayoutWrapper>
@@ -1342,8 +1326,6 @@ export const ZoomInNavigation: Story = {
         <StoryLayoutWrapper
           title="Zoom-In Navigation + Dynamic Dimension Picker"
           description="This example shows nested subgroups (Region → Category → Product). Click 'Zoom In' to focus on a group, use breadcrumbs to navigate back, or change dimensions from the dropdown."
-          cubeState={state}
-          reportId="zoom-in-navigation"
         >
           <CubeView state={state} />
         </StoryLayoutWrapper>
@@ -1401,8 +1383,6 @@ export const DynamicDimensionPicker: Story = {
         <StoryLayoutWrapper
           title="Dynamic Dimension Picker"
           description="Choose which dimension to break down by at each level. Select from the dropdown to change the current breakdown."
-          cubeState={state}
-          reportId="dynamic-dimension-picker"
         >
           <CubeView state={state} />
         </StoryLayoutWrapper>

@@ -318,8 +318,6 @@ export const TimeTrackingPreAggregated: Story = {
         <StoryLayoutWrapper
           title="Time Tracking Pre-Aggregated"
           description="Demonstrates cube serialization with pre-aggregated time tracking data"
-          cubeState={cubeState}
-          reportId="serialization-story"
         >
           <SerializedCubeView
             state={cubeState}
@@ -626,8 +624,6 @@ export const SimpleDataSchema: Story = {
         <StoryLayoutWrapper
           title="Time Tracking Pre-Aggregated"
           description="Demonstrates cube serialization with pre-aggregated time tracking data"
-          cubeState={cubeState}
-          reportId="serialization-story"
         >
           <SerializedCubeView
             state={cubeState}
@@ -898,8 +894,6 @@ export const IdBasedDimensions: Story = {
         <StoryLayoutWrapper
           title="ID-Based Dimensions"
           description="Time tracking with ID-based dimensions and label mapping"
-          cubeState={cubeState}
-          reportId="id-based-story"
         >
           <SerializedCubeView
             state={cubeState}
