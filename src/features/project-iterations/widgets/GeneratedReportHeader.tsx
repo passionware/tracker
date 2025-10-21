@@ -66,7 +66,7 @@ export function GeneratedReportHeader(
           .map(() => (
             <>
               <Button
-                variant="outline"
+                variant="accent2"
                 size="sm"
                 onClick={() => {
                   navigate(
@@ -78,7 +78,7 @@ export function GeneratedReportHeader(
                 className="flex items-center gap-2"
               >
                 <Maximize className="h-4 w-4" />
-                Full Screen
+                Explore Cube
               </Button>
               <ActionMenu services={props.services}>
                 <ActionMenuDeleteItem
@@ -134,13 +134,6 @@ export function GeneratedReportTabs(
             .timeEntries(),
         );
         break;
-      case "grouped-view":
-        navigate(
-          forIteration
-            .forGeneratedReport(props.reportId.toString())
-            .groupedView(undefined), // No cube path - start at root
-        );
-        break;
     }
   };
 
@@ -150,10 +143,9 @@ export function GeneratedReportTabs(
       onValueChange={handleTabChange}
       className="w-full"
     >
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="basic">Basic Information</TabsTrigger>
         <TabsTrigger value="time-entries">Time Entries</TabsTrigger>
-        <TabsTrigger value="grouped-view">Grouped View</TabsTrigger>
       </TabsList>
     </Tabs>
   );

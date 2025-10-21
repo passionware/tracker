@@ -45,7 +45,6 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { GeneratedReportTabs } from "./GeneratedReportHeader";
-import { GroupedViewWidget } from "./GroupedViewWidget";
 import { TimeEntriesView } from "./TimeEntriesView";
 
 function BudgetPieChart(
@@ -1179,10 +1178,6 @@ export function GeneratedReportDetail(
             <Route
               path="time-entries"
               element={<TimeEntriesView report={report} {...props} />}
-            />
-            <Route
-              path="grouped-view/*"
-              element={<GroupedViewWidget report={report} {...props} />}
             />
           </Routes>
         ))}
