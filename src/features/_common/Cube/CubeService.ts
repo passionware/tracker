@@ -18,6 +18,25 @@ import type {
 } from "./CubeService.types.ts";
 import { findBreakdownDimensionId } from "./CubeUtils.ts";
 import { createSortFunction } from "./CubeSortOptions.ts";
+import type { PathItem } from "./useCubeState.ts";
+
+/**
+ * Helper: Convert current path to the same key format used by useCubeState
+ */
+function getCurrentPathKey(
+  currentPath: PathItem[],
+  dimensions: DimensionDescriptor<any, unknown>[],
+): string {
+  return currentPath
+    .map((p) => {
+      const dim = dimensions.find((d) => d.id === p.dimensionId);
+      const key = dim?.getKey
+        ? dim.getKey(p.dimensionValue)
+        : String(p.dimensionValue ?? "null");
+      return `${p.dimensionId}:${key}`;
+    })
+    .join("|");
+}
 
 /**
  * Evaluate a single filter condition
@@ -134,6 +153,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   includeItems: boolean,
   skipEmptyGroups: boolean,
   dimensionPriority: string[],
+  currentPath: PathItem[] = [],
 ): CubeGroup[] {
   if (currentDepth >= maxDepth || data.length === 0) {
     return [];
@@ -198,6 +218,7 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
           includeItems,
           skipEmptyGroups,
           dimensionPriority,
+          [...currentPath, { dimensionId, dimensionValue: firstValue }],
         )
       : undefined;
 
@@ -216,16 +237,36 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
   });
 
   // Sort groups based on sort state
-  const dimensionPath = parentPath
-    ? `${parentPath}|${dimensionId}:`
-    : `${dimensionId}:`;
-  const sortState = nodeStates.get(dimensionPath)?.sortState;
+  const currentPathKey = getCurrentPathKey(currentPath, dimensions);
+  const sortState = nodeStates.get(currentPathKey)?.sortState;
+
+  console.log("🔍 Dimension path lookup:", {
+    currentPathKey,
+    currentPath,
+    dimensionId,
+    nodeStatesKeys: Array.from(nodeStates.keys()),
+    sortState,
+    hasSortOptionId: !!sortState?.sortOptionId,
+  });
 
   if (sortState?.sortOptionId) {
+    console.log("🔍 Sorting debug:", {
+      sortOptionId: sortState.sortOptionId,
+      direction: sortState.direction,
+      dimensionId,
+      groupsCount: groups.length,
+    });
+
     // Check if it's a measure-based sort
     if (sortState.sortOptionId.startsWith("measure-")) {
       const measureId = sortState.sortOptionId.replace("measure-", "");
       const measure = measures.find((m) => m.id === measureId);
+
+      console.log("📊 Measure-based sort:", {
+        measureId,
+        measureFound: !!measure,
+        measureName: measure?.name,
+      });
 
       if (measure) {
         // Sort by measure values
@@ -234,6 +275,15 @@ function buildGroupsWithBreakdownMap<TData extends CubeDataItem>(
             a.cells.find((c) => c.measureId === measureId)?.value || 0;
           const bValue =
             b.cells.find((c) => c.measureId === measureId)?.value || 0;
+
+          console.log("🔄 Comparing:", {
+            aLabel: a.dimensionLabel,
+            aValue,
+            bLabel: b.dimensionLabel,
+            bValue,
+            direction: sortState.direction,
+          });
+
           const result = Number(aValue) - Number(bValue);
           return sortState.direction === "desc" ? -result : result;
         });
@@ -329,6 +379,7 @@ export function calculateCube<TData extends CubeDataItem>(
           includeItems,
           skipEmptyGroups,
           config.dimensions.map((d) => d.id),
+          [], // Empty current path for root level
         );
       }
     } else {
@@ -365,6 +416,7 @@ export function calculateCube<TData extends CubeDataItem>(
           includeItems,
           skipEmptyGroups,
           config.dimensions.map((d) => d.id),
+          zoomPath, // Use zoom path as current path
         );
       }
       // If childDimensionId is null, groups remains empty (raw data mode)
