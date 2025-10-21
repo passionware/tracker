@@ -15,7 +15,7 @@ import {
   CubeHierarchicalBreakdown,
   CubeDimensionExplorer,
 } from "@/features/_common/Cube";
-import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView";
+import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
 import { useCubeState } from "@/features/_common/Cube/useCubeState";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
@@ -178,7 +178,7 @@ export function CubeViewer({
               rightSidebar={<CubeDimensionExplorer />}
             >
               <div className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col">
-                <SerializedCubeView
+                <SerializedCubeViewWithSelection
                   state={cubeState}
                   serializedConfig={serializedConfig.config}
                   maxInitialDepth={0}
