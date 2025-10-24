@@ -76,7 +76,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
                 clientId: trackerReport.clientId,
                 contractorId: trackerReport.contractorId,
               },
-              `vars.hour_rate`,
+              `vars.hour_cost_rate`,
               {},
             );
           const { rate: costRate, currency: costCurrency } =
