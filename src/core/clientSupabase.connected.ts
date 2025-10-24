@@ -12,10 +12,8 @@ import { createClient } from "@supabase/supabase-js";
  * - Otherwise: uses same project as main app (VITE_SUPABASE_URL)
  */
 export const clientCockpitSupabase = createClient(
-  import.meta.env.VITE_CLIENT_COCKPIT_SUPABASE_URL ||
-    import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_CLIENT_COCKPIT_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_KEY,
+  import.meta.env.VITE_CLIENT_COCKPIT_SUPABASE_URL,
+  import.meta.env.VITE_CLIENT_COCKPIT_SUPABASE_ANON_KEY,
   {
     auth: {
       // Each client cockpit session is separate from main app session
@@ -31,6 +29,9 @@ export const clientCockpitSupabase = createClient(
         // Optional: Add header to identify cockpit requests
         "X-Client-Cockpit": "true",
       },
+    },
+    db: {
+      schema: import.meta.env.VITE_APP_COCKPIT_DB_SCHEMA,
     },
   },
 );
