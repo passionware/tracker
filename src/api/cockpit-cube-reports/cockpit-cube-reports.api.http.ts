@@ -2,7 +2,6 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { cockpitCubeReport$ } from "./cockpit-cube-reports.api.http.schema";
 import { CockpitCubeReportsApi } from "./cockpit-cube-reports.api";
-import { cockpitTable } from "@/api/_common/cockpit-schema";
 
 export function createCockpitCubeReportsApi(
   client: SupabaseClient,
@@ -10,7 +9,7 @@ export function createCockpitCubeReportsApi(
   return {
     listReports: async (tenantId) => {
       const { data, error } = await client
-        .from(cockpitTable("cube_reports"))
+        .from("cube_reports")
         .select(
           `
           *,
@@ -34,7 +33,7 @@ export function createCockpitCubeReportsApi(
 
     getReport: async (reportId) => {
       const { data, error } = await client
-        .from(cockpitTable("cube_reports"))
+        .from("cube_reports")
         .select(
           `
           *,
@@ -58,7 +57,7 @@ export function createCockpitCubeReportsApi(
 
     createReport: async (tenantId, userId, report) => {
       const { data, error } = await client
-        .from(cockpitTable("cube_reports"))
+        .from("cube_reports")
         .insert([
           {
             tenant_id: tenantId,
@@ -79,7 +78,7 @@ export function createCockpitCubeReportsApi(
 
     updateReport: async (reportId, updates) => {
       const { data, error } = await client
-        .from(cockpitTable("cube_reports"))
+        .from("cube_reports")
         .update(updates)
         .eq("id", reportId)
         .select()
@@ -95,7 +94,7 @@ export function createCockpitCubeReportsApi(
 
     deleteReport: async (reportId) => {
       const { error } = await client
-        .from(cockpitTable("cube_reports"))
+        .from("cube_reports")
         .delete()
         .eq("id", reportId);
 
@@ -106,15 +105,13 @@ export function createCockpitCubeReportsApi(
     },
 
     logAccess: async (tenantId, userId, reportId) => {
-      const { error } = await client
-        .from(cockpitTable("report_access_logs"))
-        .insert([
-          {
-            tenant_id: tenantId,
-            user_id: userId,
-            report_id: reportId,
-          },
-        ]);
+      const { error } = await client.from("report_access_logs").insert([
+        {
+          tenant_id: tenantId,
+          user_id: userId,
+          report_id: reportId,
+        },
+      ]);
 
       if (error) {
         console.warn("Failed to log report access:", error);
@@ -123,7 +120,7 @@ export function createCockpitCubeReportsApi(
 
     getAccessStats: async (reportId, tenantId) => {
       const { data, error } = await client
-        .from(cockpitTable("report_access_logs"))
+        .from("report_access_logs")
         .select("user_id, accessed_at")
         .eq("report_id", reportId)
         .eq("tenant_id", tenantId)
