@@ -42,7 +42,7 @@ export function createRoutingService(): RoutingService {
             closedProjects: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
             forProject: (projectId = ":projectId") => {
-              const base = `/w/${workspaceSlot}/clients/${clientSlot}/project/${projectId}`;
+              const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
               return {
                 root: () => base,
                 iterations: (status = ":projectIterationStatus") =>
@@ -94,6 +94,19 @@ export function createRoutingService(): RoutingService {
     },
     forGlobal: () => ({
       root: () => "/",
+    }),
+
+    forClientCockpit: () => ({
+      root: () => "/c",
+      login: () => "/c/login",
+      forClient: (clientId = ":clientId") => ({
+        root: () => `/c/${clientId}`,
+        reports: () => `/c/${clientId}/reports`,
+        forReport: (reportId = ":reportId") => ({
+          root: () => `/c/${clientId}/reports/${reportId}`,
+          preview: () => `/c/${clientId}/reports/${reportId}/preview`,
+        }),
+      }),
     }),
   };
 }

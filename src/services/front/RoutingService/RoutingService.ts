@@ -138,6 +138,19 @@ export interface RoutingService {
   forGlobal: () => {
     root: () => string;
   };
+
+  forClientCockpit: () => {
+    root: () => string;
+    login: () => string;
+    forClient: (clientId?: string | ":clientId") => {
+      root: () => string;
+      reports: () => string;
+      forReport: (reportId?: string | ":reportId") => {
+        root: () => string;
+        preview: () => string;
+      };
+    };
+  };
 }
 export interface WithRoutingService {
   routingService: RoutingService;
