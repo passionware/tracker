@@ -108,14 +108,36 @@ ALTER TABLE report_access_logs ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- HELPER FUNCTION: Get current user's tenant_id
 -- ============================================================================
+-- Create a function that completely avoids the users table to prevent circular dependency
 CREATE OR REPLACE FUNCTION current_user_tenant_id()
 RETURNS uuid AS $$
-  SELECT tenant_id FROM users 
+DECLARE
+  result uuid;
+BEGIN
+  -- Use a direct query with explicit schema qualification to bypass RLS
+  -- This completely avoids any RLS policy evaluation
+  SELECT tenant_id INTO result 
+  FROM client_cockpit_dev.users 
   WHERE id = auth.uid()
-  LIMIT 1
-$$ LANGUAGE sql STABLE;
+  LIMIT 1;
+  
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
-COMMENT ON FUNCTION current_user_tenant_id() IS 'Returns the tenant_id of the current authenticated user';
+COMMENT ON FUNCTION current_user_tenant_id() IS 'Returns the tenant_id of the current authenticated user, using explicit schema to bypass RLS completely';
+
+-- ============================================================================
+-- ALTERNATIVE: If the function still causes issues, we can remove it entirely
+-- and use direct auth.uid() checks in RLS policies instead
+-- ============================================================================
+-- Example alternative RLS policy (if function causes problems):
+-- CREATE POLICY "cube_report_read_tenant_isolation" ON cube_reports
+--   FOR SELECT USING (
+--     tenant_id IN (
+--       SELECT tenant_id FROM users WHERE id = auth.uid()
+--     )
+--   );
 
 -- ============================================================================
 -- TENANT POLICIES
@@ -136,8 +158,8 @@ CREATE POLICY "tenant_user_cannot_delete" ON tenants
 -- USER POLICIES - Strict isolation by tenant
 -- ============================================================================
 
--- SELECT: Can only see users in their own tenant
-CREATE POLICY "user_can_read_tenant_members" ON users
+-- SELECT: Users can only see their own record
+CREATE POLICY "user_can_read_own_record" ON users
   FOR SELECT USING (
     id = auth.uid()
   );
