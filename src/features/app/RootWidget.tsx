@@ -31,13 +31,8 @@ import { VariableEditModalWidget } from "@/features/variables/VariableEditModalW
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { Navigate, Route, Routes } from "react-router-dom";
-
-// ============================================================================
-// Client Cockpit Router Wrapper
-// ============================================================================
-function ClientCockpitRouterWrapper() {
-  return <CockpitMainRouter />;
-}
+import { PrimaryAuthCallback } from "@/features/auth-callbacks/PrimaryAuthCallback.tsx";
+import { CockpitAuthCallback } from "@/features/auth-callbacks/CockpitAuthCallback.tsx";
 
 export function RootWidget(props: WithFrontServices) {
   return (
@@ -56,6 +51,15 @@ export function RootWidget(props: WithFrontServices) {
         <Route
           path="/login"
           element={<LoginPage services={props.services} />}
+        />
+        {/* OAuth callback routes */}
+        <Route
+          path="/auth/callback/primary"
+          element={<PrimaryAuthCallback />}
+        />
+        <Route
+          path="/auth/callback/cockpit"
+          element={<CockpitAuthCallback />}
         />
         {/* Standalone Grouped View - With Sidebar but no breadcrumbs/tabs */}
         <Route
@@ -422,7 +426,7 @@ export function RootWidget(props: WithFrontServices) {
         <Route path="/p/*" element={<PublicApp />} />
         <Route
           path={`${props.services.routingService.forClientCockpit().root()}/*`}
-          element={<ClientCockpitRouterWrapper />}
+          element={<CockpitMainRouter services={props.services} />}
         />
       </Routes>
       <RenderIfAuthenticated services={props.services}>
