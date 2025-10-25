@@ -13,6 +13,7 @@ import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
+import { clientCockpitSupabase } from "@/core/clientSupabase.connected.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
@@ -27,6 +28,7 @@ import { createPreferenceService } from "@/services/internal/PreferenceService/P
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
+import { createCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
 import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
@@ -106,6 +108,7 @@ const expressionService = createExpressionService({
 });
 export const myServices = {
   authService: createAuthService(mySupabase),
+  cockpitAuthService: createCockpitAuthService(clientCockpitSupabase),
   clientService: createClientService(
     createClientsApi(mySupabase),
     myQueryClient,

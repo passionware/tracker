@@ -13,6 +13,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.ts";
@@ -31,6 +32,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 export type FrontServices = MergeServices<
   [
     WithAuthService,
+    WithCockpitAuthService,
     WithClientService,
     WithReportService,
     WithLocationService,
