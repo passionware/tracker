@@ -20,7 +20,7 @@ SET search_path = client_cockpit_dev;
 -- Represents a client's tenant within the client cockpit
 CREATE TABLE IF NOT EXISTS tenants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id uuid NOT NULL UNIQUE,  -- References your main client DB
+  client_id integer NOT NULL UNIQUE,  -- References your main client DB (integer ID)
   name text NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
@@ -139,7 +139,7 @@ CREATE POLICY "tenant_user_cannot_delete" ON tenants
 -- SELECT: Can only see users in their own tenant
 CREATE POLICY "user_can_read_tenant_members" ON users
   FOR SELECT USING (
-    tenant_id = current_user_tenant_id()
+    id = auth.uid()
   );
 
 -- INSERT: Blocked at application level (admin only)
@@ -150,11 +150,9 @@ CREATE POLICY "user_cannot_insert" ON users
 CREATE POLICY "user_can_update_own_profile" ON users
   FOR UPDATE USING (
     id = auth.uid()
-    AND tenant_id = current_user_tenant_id()
   )
   WITH CHECK (
     id = auth.uid()
-    AND tenant_id = current_user_tenant_id()
   );
 
 -- DELETE: Blocked at application level
