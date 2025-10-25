@@ -7,6 +7,9 @@ export const mySupabase = createClient(
     auth: {
       storageKey: "main-app-auth",
       storage: localStorage,
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
     },
     db: {
       schema: import.meta.env.VITE_APP_MAIN_DB_SCHEMA,

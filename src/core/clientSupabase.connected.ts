@@ -22,7 +22,6 @@ export const clientCockpitSupabase = createClient(
       storageKey: "client-cockpit-auth",
       storage: localStorage,
       autoRefreshToken: true,
-      flowType: "pkce",
     },
     global: {
       headers: {
