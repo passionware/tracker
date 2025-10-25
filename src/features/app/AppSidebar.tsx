@@ -162,7 +162,7 @@ function useData(
         },
         {
           name: "Client cockpit",
-          url: "#",
+          url: services.routingService.forClientCockpit().root(),
           icon: PieChart,
         },
         {

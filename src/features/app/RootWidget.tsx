@@ -14,22 +14,30 @@ import {
 import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
 import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
+import { CockpitMainRouter } from "@/features/client-cockpit/ClientCockpitRouter.tsx";
 import { CostEditModalWidget } from "@/features/costs/CostEditModalWidget.tsx";
 import { CostWidget } from "@/features/costs/CostWidget.tsx";
 import { PotentialCostWidget } from "@/features/costs/PotentialCostWidget.tsx";
 import { IterationWidget } from "@/features/project-iterations/IterationWidget.tsx";
 import { PositionEditModal } from "@/features/project-iterations/PositionEditModal.tsx";
-import { GroupedViewPage } from "@/features/project-iterations/widgets/GroupedViewPage.tsx";
 import { ExportBuilderPage } from "@/features/project-iterations/widgets/ExportBuilderPage.tsx";
+import { GroupedViewPage } from "@/features/project-iterations/widgets/GroupedViewPage.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
+import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
-import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { Navigate, Route, Routes } from "react-router-dom";
+
+// ============================================================================
+// Client Cockpit Router Wrapper
+// ============================================================================
+function ClientCockpitRouterWrapper() {
+  return <CockpitMainRouter />;
+}
 
 export function RootWidget(props: WithFrontServices) {
   return (
@@ -412,6 +420,10 @@ export function RootWidget(props: WithFrontServices) {
         />
         {/* Public routes - no authentication required */}
         <Route path="/p/*" element={<PublicApp />} />
+        <Route
+          path={`${props.services.routingService.forClientCockpit().root()}/*`}
+          element={<ClientCockpitRouterWrapper />}
+        />
       </Routes>
       <RenderIfAuthenticated services={props.services}>
         <VariableEditModalWidget services={props.services} />
