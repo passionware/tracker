@@ -11,17 +11,47 @@ import { WithFrontServices } from "@/core/frontServices";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { rd } from "@passionware/monads";
+import { useSearchParams } from "react-router-dom";
 
 interface LoginFormData {
   email: string;
   password: string;
 }
 
-// todo: remove this page
-export function ClientLoginPage(props: WithFrontServices) {
+export function CockpitLoginPage(props: WithFrontServices) {
   const navigate = useNavigate();
-  const cockpitAuthService = props.services.cockpitAuthService;
-  const routingService = props.services.routingService;
+  const [searchParams] = useSearchParams();
+  const authState = props.services.cockpitAuthService.useAuth();
+
+  // Check if this is an OAuth callback
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const error = searchParams.get("error");
+
+    if (code) {
+      console.log("CockpitLoginPage: OAuth callback detected with code:", code);
+    }
+    if (error) {
+      console.log("CockpitLoginPage: OAuth callback error:", error);
+    }
+  }, [searchParams]);
+
+  // Debug auth state
+  useEffect(() => {
+    console.log("CockpitLoginPage authState:", authState);
+  }, [authState]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (rd.isSuccess(authState)) {
+      console.log(
+        "CockpitLoginPage: User authenticated, redirecting to cockpit root",
+      );
+      navigate(props.services.routingService.forClientCockpit().root());
+    }
+  }, [authState, navigate, props.services.routingService]);
 
   const form = useForm<LoginFormData>({
     mode: "onBlur",
@@ -39,10 +69,8 @@ export function ClientLoginPage(props: WithFrontServices) {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await cockpitAuthService.loginWithEmail(data);
-
-      // After successful login, redirect to /c which will handle client selection
-      navigate(routingService.forClientCockpit().root());
+      await props.services.cockpitAuthService.loginWithEmail(data);
+      navigate(props.services.routingService.forClientCockpit().root());
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -50,14 +78,24 @@ export function ClientLoginPage(props: WithFrontServices) {
 
   const handleGoogleSignIn = async () => {
     try {
-      await cockpitAuthService.loginWithGoogle();
-
-      // After successful login, redirect to /c which will handle client selection
-      navigate(routingService.forClientCockpit().root());
+      await props.services.cockpitAuthService.loginWithGoogle();
+      // OAuth will redirect automatically, no manual navigation needed
     } catch (error) {
       console.error("Google sign in error:", error);
     }
   };
+
+  // Show loading state if auth is still initializing
+  if (rd.isIdle(authState)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto mb-4" />
+          <p className="text-gray-700">Initializing authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
