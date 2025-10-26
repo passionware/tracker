@@ -19,9 +19,10 @@ export const clientCockpitSupabase = createClient(
       // Each client cockpit session is separate from main app session
       persistSession: true,
       detectSessionInUrl: true,
-      storageKey: "client-cockpit-auth",
+      storageKey: "sb-cockpit-auth-token",
       storage: localStorage,
       autoRefreshToken: true,
+      flowType: "pkce", // Use PKCE flow for better security
     },
     db: {
       schema: import.meta.env.VITE_APP_COCKPIT_DB_SCHEMA,
