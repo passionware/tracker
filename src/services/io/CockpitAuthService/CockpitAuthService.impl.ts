@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { RemoteData, maybe, rd } from "@passionware/monads";
 import { CockpitAuthService, CockpitAuthInfo } from "./CockpitAuthService";
 import { SupabaseClient, User } from "@supabase/supabase-js";
+import { delay } from "@passionware/platform-js";
 
 export function createCockpitAuthService(
   client: SupabaseClient,
@@ -29,6 +30,11 @@ export function createCockpitAuthService(
   async function fetchUserTenantData(userId: string) {
     try {
       console.log("CockpitAuthService: Fetching user tenant data", { userId });
+      console.log("CockpitAuthService: Client object", client);
+      console.log(
+        "CockpitAuthService: Client URL",
+        (client as any).supabaseUrl,
+      );
 
       const { data: userData, error } = await client
         .from("users")
@@ -94,89 +100,97 @@ export function createCockpitAuthService(
       return;
     }
     useAuth.setState(rd.of(getUserData(session.user, result.tenantId)));
+
+    ////
+
+    client.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("CockpitAuthService: Auth state change", {
+        event,
+        hasSession: !!currentSession,
+      });
+
+      switch (event) {
+        case "SIGNED_IN":
+          console.log("CockpitAuthService: User signed in");
+          if (currentSession) {
+            console.log("CockpitAuthService: Setting authenticated state", {
+              userId: currentSession.user.id,
+            });
+            const result = await fetchUserTenantData(currentSession.user.id);
+            if (result.error) {
+              useAuth.setState(rd.ofError(result.error));
+              return;
+            }
+            useAuth.setState(
+              rd.of(getUserData(currentSession.user, result.tenantId)),
+            );
+          } else {
+            console.error("CockpitAuthService: SIGNED_IN without session");
+            useAuth.setState(
+              rd.ofError(new Error("SIGNED_IN without session")),
+            );
+          }
+          break;
+
+        case "SIGNED_OUT":
+          console.log("CockpitAuthService: User signed out");
+          useAuth.setState(rd.ofError(new Error("SIGNED_OUT")));
+          break;
+
+        case "TOKEN_REFRESHED":
+          console.log("CockpitAuthService: Token refreshed");
+          if (currentSession) {
+            console.log(
+              "CockpitAuthService: Updating state with refreshed token",
+              {
+                userId: currentSession.user.id,
+              },
+            );
+            const result = await fetchUserTenantData(currentSession.user.id);
+            if (result.error) {
+              useAuth.setState(rd.ofError(result.error));
+              return;
+            }
+            useAuth.setState(
+              rd.of(getUserData(currentSession.user, result.tenantId)),
+            );
+          } else {
+            console.error(
+              "CockpitAuthService: TOKEN_REFRESHED without session",
+            );
+            useAuth.setState(
+              rd.ofError(new Error("TOKEN_REFRESHED without session")),
+            );
+          }
+          break;
+
+        case "INITIAL_SESSION":
+          console.log("CockpitAuthService: Initial session detected");
+          if (currentSession) {
+            console.log(
+              "CockpitAuthService: Setting initial authenticated state",
+              {
+                userId: currentSession.user.id,
+              },
+            );
+            useAuth.setState(rd.of(getUserData(currentSession.user)));
+          } else {
+            console.error(
+              "CockpitAuthService: INITIAL_SESSION without session",
+            );
+            useAuth.setState(
+              rd.ofError(new Error("INITIAL_SESSION without session")),
+            );
+          }
+          break;
+
+        default:
+          console.log("CockpitAuthService: Unhandled auth event", { event });
+          break;
+      }
+    });
   }
   init();
-
-  client.auth.onAuthStateChange(async (event, currentSession) => {
-    console.log("CockpitAuthService: Auth state change", {
-      event,
-      hasSession: !!currentSession,
-    });
-
-    switch (event) {
-      case "SIGNED_IN":
-        console.log("CockpitAuthService: User signed in");
-        if (currentSession) {
-          console.log("CockpitAuthService: Setting authenticated state", {
-            userId: currentSession.user.id,
-          });
-          const result = await fetchUserTenantData(currentSession.user.id);
-          if (result.error) {
-            useAuth.setState(rd.ofError(result.error));
-            return;
-          }
-          useAuth.setState(
-            rd.of(getUserData(currentSession.user, result.tenantId)),
-          );
-        } else {
-          console.error("CockpitAuthService: SIGNED_IN without session");
-          useAuth.setState(rd.ofError(new Error("SIGNED_IN without session")));
-        }
-        break;
-
-      case "SIGNED_OUT":
-        console.log("CockpitAuthService: User signed out");
-        useAuth.setState(rd.ofError(new Error("SIGNED_OUT")));
-        break;
-
-      case "TOKEN_REFRESHED":
-        console.log("CockpitAuthService: Token refreshed");
-        if (currentSession) {
-          console.log(
-            "CockpitAuthService: Updating state with refreshed token",
-            {
-              userId: currentSession.user.id,
-            },
-          );
-          const result = await fetchUserTenantData(currentSession.user.id);
-          if (result.error) {
-            useAuth.setState(rd.ofError(result.error));
-            return;
-          }
-          useAuth.setState(
-            rd.of(getUserData(currentSession.user, result.tenantId)),
-          );
-        } else {
-          console.error("CockpitAuthService: TOKEN_REFRESHED without session");
-          useAuth.setState(
-            rd.ofError(new Error("TOKEN_REFRESHED without session")),
-          );
-        }
-        break;
-
-      case "INITIAL_SESSION":
-        console.log("CockpitAuthService: Initial session detected");
-        if (currentSession) {
-          console.log(
-            "CockpitAuthService: Setting initial authenticated state",
-            {
-              userId: currentSession.user.id,
-            },
-          );
-          useAuth.setState(rd.of(getUserData(currentSession.user)));
-        } else {
-          console.error("CockpitAuthService: INITIAL_SESSION without session");
-          useAuth.setState(
-            rd.ofError(new Error("INITIAL_SESSION without session")),
-          );
-        }
-        break;
-
-      default:
-        console.log("CockpitAuthService: Unhandled auth event", { event });
-        break;
-    }
-  });
 
   return {
     useAuth,

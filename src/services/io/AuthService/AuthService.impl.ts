@@ -57,68 +57,73 @@ export function createAuthService(client: SupabaseClient): AuthService {
 
     console.log("AuthService: User authenticated", { userId: session.user.id });
     useAuth.setState(rd.of(getUserData(session.user)));
+
+    //
+
+    client.auth.onAuthStateChange((event, currentSession) => {
+      console.log("AuthService: Auth state change", {
+        event,
+        hasSession: !!currentSession,
+      });
+
+      switch (event) {
+        case "SIGNED_IN":
+          console.log("AuthService: User signed in");
+          if (currentSession) {
+            console.log("AuthService: Setting authenticated state", {
+              userId: currentSession.user.id,
+            });
+            useAuth.setState(rd.of(getUserData(currentSession.user)));
+          } else {
+            console.error("AuthService: SIGNED_IN without session");
+            useAuth.setState(
+              rd.ofError(new Error("SIGNED_IN without session")),
+            );
+          }
+          break;
+
+        case "SIGNED_OUT":
+          console.log("AuthService: User signed out");
+          useAuth.setState(rd.ofError(new Error("SIGNED_OUT")));
+          break;
+
+        case "TOKEN_REFRESHED":
+          console.log("AuthService: Token refreshed");
+          if (currentSession) {
+            console.log("AuthService: Updating state with refreshed token", {
+              userId: currentSession.user.id,
+            });
+            useAuth.setState(rd.of(getUserData(currentSession.user)));
+          } else {
+            console.error("AuthService: TOKEN_REFRESHED without session");
+            useAuth.setState(
+              rd.ofError(new Error("TOKEN_REFRESHED without session")),
+            );
+          }
+          break;
+
+        case "INITIAL_SESSION":
+          console.log("AuthService: Initial session detected");
+          if (currentSession) {
+            console.log("AuthService: Setting initial authenticated state", {
+              userId: currentSession.user.id,
+            });
+            useAuth.setState(rd.of(getUserData(currentSession.user)));
+          } else {
+            console.error("AuthService: INITIAL_SESSION without session");
+            useAuth.setState(
+              rd.ofError(new Error("INITIAL_SESSION without session")),
+            );
+          }
+          break;
+
+        default:
+          console.log("AuthService: Unhandled auth event", { event });
+          break;
+      }
+    });
   }
   init();
-  client.auth.onAuthStateChange((event, currentSession) => {
-    console.log("AuthService: Auth state change", {
-      event,
-      hasSession: !!currentSession,
-    });
-
-    switch (event) {
-      case "SIGNED_IN":
-        console.log("AuthService: User signed in");
-        if (currentSession) {
-          console.log("AuthService: Setting authenticated state", {
-            userId: currentSession.user.id,
-          });
-          useAuth.setState(rd.of(getUserData(currentSession.user)));
-        } else {
-          console.error("AuthService: SIGNED_IN without session");
-          useAuth.setState(rd.ofError(new Error("SIGNED_IN without session")));
-        }
-        break;
-
-      case "SIGNED_OUT":
-        console.log("AuthService: User signed out");
-        useAuth.setState(rd.ofError(new Error("SIGNED_OUT")));
-        break;
-
-      case "TOKEN_REFRESHED":
-        console.log("AuthService: Token refreshed");
-        if (currentSession) {
-          console.log("AuthService: Updating state with refreshed token", {
-            userId: currentSession.user.id,
-          });
-          useAuth.setState(rd.of(getUserData(currentSession.user)));
-        } else {
-          console.error("AuthService: TOKEN_REFRESHED without session");
-          useAuth.setState(
-            rd.ofError(new Error("TOKEN_REFRESHED without session")),
-          );
-        }
-        break;
-
-      case "INITIAL_SESSION":
-        console.log("AuthService: Initial session detected");
-        if (currentSession) {
-          console.log("AuthService: Setting initial authenticated state", {
-            userId: currentSession.user.id,
-          });
-          useAuth.setState(rd.of(getUserData(currentSession.user)));
-        } else {
-          console.error("AuthService: INITIAL_SESSION without session");
-          useAuth.setState(
-            rd.ofError(new Error("INITIAL_SESSION without session")),
-          );
-        }
-        break;
-
-      default:
-        console.log("AuthService: Unhandled auth event", { event });
-        break;
-    }
-  });
 
   return {
     useAuth,
