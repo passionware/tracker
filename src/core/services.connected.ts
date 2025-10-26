@@ -1,5 +1,6 @@
 import { createBillingApi } from "@/api/billing/billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
+import { createCockpitCubeReportsApi } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
@@ -31,6 +32,7 @@ import { createClientService } from "@/services/io/ClientService/ClientService.i
 import { createCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
+import { createClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.impl.ts";
 import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
 import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
@@ -113,6 +115,10 @@ export const myServices = {
     createClientsApi(mySupabase),
     myQueryClient,
     messageService,
+  ),
+  clientCubeReportService: createClientCubeReportService(
+    createCockpitCubeReportsApi(clientCockpitSupabase),
+    myQueryClient,
   ),
   reportService: reportService,
   routingService,

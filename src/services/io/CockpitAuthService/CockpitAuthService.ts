@@ -5,7 +5,7 @@ export interface CockpitAuthInfo {
   displayName: string;
   avatarUrl: Maybe<string>;
   email: Maybe<string>;
-  tenantId: Maybe<string>;
+  tenantId: string;
 }
 
 export interface CockpitAuthService {

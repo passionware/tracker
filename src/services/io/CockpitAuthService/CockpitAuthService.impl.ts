@@ -17,13 +17,13 @@ export function createCockpitAuthService(
       .VITE_CLIENT_COCKPIT_SUPABASE_URL,
   });
 
-  function getUserData(user: User, tenantId?: string): CockpitAuthInfo {
+  function getUserData(user: User, tenantId: string): CockpitAuthInfo {
     return {
       id: user.id,
       displayName: user.user_metadata?.full_name || user.email || "",
       avatarUrl: maybe.of(user.user_metadata?.avatar_url),
       email: maybe.of(user.email),
-      tenantId: maybe.of(tenantId),
+      tenantId,
     };
   }
 
@@ -160,26 +160,6 @@ export function createCockpitAuthService(
             );
             useAuth.setState(
               rd.ofError(new Error("TOKEN_REFRESHED without session")),
-            );
-          }
-          break;
-
-        case "INITIAL_SESSION":
-          console.log("CockpitAuthService: Initial session detected");
-          if (currentSession) {
-            console.log(
-              "CockpitAuthService: Setting initial authenticated state",
-              {
-                userId: currentSession.user.id,
-              },
-            );
-            useAuth.setState(rd.of(getUserData(currentSession.user)));
-          } else {
-            console.error(
-              "CockpitAuthService: INITIAL_SESSION without session",
-            );
-            useAuth.setState(
-              rd.ofError(new Error("INITIAL_SESSION without session")),
             );
           }
           break;

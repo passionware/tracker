@@ -1,9 +1,9 @@
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api";
-import { RemoteData } from "@passionware/monads";
+import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ClientCubeReportService {
   useCubeReports: (
-    tenantId: string | null,
+    tenantId: Maybe<string>,
   ) => RemoteData<CockpitCubeReportWithCreator[]>;
   useCubeReport: (
     reportId: string | null,
