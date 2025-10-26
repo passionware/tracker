@@ -23,12 +23,6 @@ export const clientCockpitSupabase = createClient(
       storage: localStorage,
       autoRefreshToken: true,
     },
-    global: {
-      headers: {
-        // Optional: Add header to identify cockpit requests
-        "X-Client-Cockpit": "true",
-      },
-    },
     db: {
       schema: import.meta.env.VITE_APP_COCKPIT_DB_SCHEMA,
     },
