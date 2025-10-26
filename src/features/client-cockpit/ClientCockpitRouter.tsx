@@ -5,6 +5,8 @@ import { CubeReportsPage } from "./pages/CubeReportsPage";
 import { ProtectedCockpitRoute } from "./ProtectedCockpitRoute";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import { rd } from "@passionware/monads";
+import { Layout } from "@/layout/AppLayout.tsx";
+import { CockpitSidebar } from "./CockpitSidebar";
 
 /**
  * Main cockpit router - simple like main app
@@ -36,7 +38,9 @@ export function CockpitMainRouter(props: WithFrontServices) {
         )}
         element={
           <ProtectedCockpitRoute services={props.services}>
-            <CubeReportsPage services={props.services} />
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <CubeReportsPage services={props.services} />
+            </Layout>
           </ProtectedCockpitRoute>
         }
       />
@@ -44,7 +48,9 @@ export function CockpitMainRouter(props: WithFrontServices) {
         path=""
         element={
           <ProtectedCockpitRoute services={props.services}>
-            <RedirectFromRoot services={props.services} />
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <RedirectFromRoot services={props.services} />
+            </Layout>
           </ProtectedCockpitRoute>
         }
       />
