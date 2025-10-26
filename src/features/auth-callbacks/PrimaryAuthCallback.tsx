@@ -10,92 +10,41 @@ export function PrimaryAuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let isProcessing = false;
+    console.log("PrimaryAuthCallback: Starting callback handler");
 
-    const handleAuthCallback = async () => {
-      if (isProcessing) {
-        console.log("PrimaryAuthCallback: Already processing, skipping");
+    // With PKCE and detectSessionInUrl: true, Supabase automatically handles the code exchange
+    // We just need to wait for it to complete and then check the session
+
+    const checkSession = async () => {
+      // Give Supabase a moment to process the URL and exchange the code
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await mySupabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("PrimaryAuthCallback: Session error", sessionError);
+        navigate("/login?error=session_error");
         return;
       }
-      isProcessing = true;
 
-      try {
-        console.log("PrimaryAuthCallback: Processing OAuth callback");
-
-        // Check if there's a code in the URL that needs to be processed
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
-        const error = urlParams.get("error");
-
-        if (error) {
-          console.error("PrimaryAuthCallback: OAuth error in URL", error);
-          navigate("/login?error=oauth_error");
-          return;
-        }
-
-        if (code) {
-          console.log("PrimaryAuthCallback: Processing OAuth code", code);
-          // Exchange the code for a session
-          const { data, error: exchangeError } =
-            await mySupabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            console.error(
-              "PrimaryAuthCallback: Code exchange error",
-              exchangeError,
-            );
-            navigate("/login?error=exchange_error");
-            return;
-          }
-
-          console.log("PrimaryAuthCallback: Code exchange successful", data);
-
-          // Clean up URL
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname,
-          );
-
-          if (data.session) {
-            console.log(
-              "PrimaryAuthCallback: OAuth successful, redirecting to main app",
-            );
-            navigate("/");
-            return;
-          }
-        }
-
-        // Fallback: try to get existing session
-        const {
-          data: { session },
-          error: sessionError,
-        } = await mySupabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("PrimaryAuthCallback: Session error", sessionError);
-          navigate("/login?error=session_error");
-          return;
-        }
-
-        if (session) {
-          console.log(
-            "PrimaryAuthCallback: OAuth successful, redirecting to main app",
-          );
-          navigate("/");
-        } else {
-          console.log(
-            "PrimaryAuthCallback: No session found, redirecting to login",
-          );
-          navigate("/login");
-        }
-      } catch (err) {
-        console.error("PrimaryAuthCallback: Callback error", err);
-        navigate("/login?error=callback_error");
+      if (session) {
+        console.log(
+          "PrimaryAuthCallback: OAuth successful, redirecting to main app",
+          { userId: session.user.id },
+        );
+        navigate("/");
+      } else {
+        console.log(
+          "PrimaryAuthCallback: No session found, redirecting to login",
+        );
+        navigate("/login");
       }
     };
 
-    handleAuthCallback();
+    checkSession();
   }, [navigate]);
 
   return (
