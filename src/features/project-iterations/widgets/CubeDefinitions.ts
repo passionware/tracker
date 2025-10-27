@@ -28,30 +28,40 @@ function getSerializableCubeConfig(
   // Build label mappings for each dimension
   const projectLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.projectTypes).forEach(([id, type]) => {
-    projectLabelMapping[id] = type.name;
+    if (id !== type.name) {
+      projectLabelMapping[id] = type.name;
+    }
   });
 
   const taskLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.taskTypes).forEach(([id, type]) => {
-    taskLabelMapping[id] = type.name;
+    if (id !== type.name) {
+      taskLabelMapping[id] = type.name;
+    }
   });
 
   const activityLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.activityTypes).forEach(
     ([id, type]) => {
-      activityLabelMapping[id] = type.name;
+      if (id !== type.name) {
+        activityLabelMapping[id] = type.name;
+      }
     },
   );
 
   const roleLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.roleTypes).forEach(([id, type]) => {
-    roleLabelMapping[id] = type.name;
+    if (id !== type.name) {
+      roleLabelMapping[id] = type.name;
+    }
   });
 
   const contractorLabelMapping: Record<string, string> = {};
   contractors.forEach((contractor) => {
-    contractorLabelMapping[String(contractor.id)] =
-      contractor.fullName || contractor.name;
+    const displayName = contractor.fullName || contractor.name;
+    if (String(contractor.id) !== displayName) {
+      contractorLabelMapping[String(contractor.id)] = displayName;
+    }
   });
 
   const dimensions: SerializableDimension[] = [
@@ -60,35 +70,45 @@ function getSerializableCubeConfig(
       name: "Project",
       icon: "🏗️",
       fieldName: "projectId",
-      labelMapping: projectLabelMapping,
+      ...(Object.keys(projectLabelMapping).length > 0 && {
+        labelMapping: projectLabelMapping,
+      }),
     },
     {
       id: "task",
       name: "Task",
       icon: "📋",
       fieldName: "taskId",
-      labelMapping: taskLabelMapping,
+      ...(Object.keys(taskLabelMapping).length > 0 && {
+        labelMapping: taskLabelMapping,
+      }),
     },
     {
       id: "contractor",
       name: "Contractor",
       icon: "👤",
       fieldName: "contractorId",
-      labelMapping: contractorLabelMapping,
+      ...(Object.keys(contractorLabelMapping).length > 0 && {
+        labelMapping: contractorLabelMapping,
+      }),
     },
     {
       id: "activity",
       name: "Activity",
       icon: "⚡",
       fieldName: "activityId",
-      labelMapping: activityLabelMapping,
+      ...(Object.keys(activityLabelMapping).length > 0 && {
+        labelMapping: activityLabelMapping,
+      }),
     },
     {
       id: "role",
       name: "Role",
       icon: "🎭",
       fieldName: "roleId",
-      labelMapping: roleLabelMapping,
+      ...(Object.keys(roleLabelMapping).length > 0 && {
+        labelMapping: roleLabelMapping,
+      }),
     },
     {
       id: "date",

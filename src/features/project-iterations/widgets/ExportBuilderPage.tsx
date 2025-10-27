@@ -323,15 +323,21 @@ function ExportBuilderContent({
     // Create labelMapping for contractor names
     const contractorLabelMapping: Record<string, string> = {};
     contractors.forEach((contractor: any) => {
-      contractorLabelMapping[String(contractor.id)] =
+      const displayName =
         contractor.fullName || contractor.name || String(contractor.id);
+      if (String(contractor.id) !== displayName) {
+        contractorLabelMapping[String(contractor.id)] = displayName;
+      }
     });
 
     // Create labelMapping for project types
     const projectLabelMapping: Record<string, string> = {};
     Object.entries(report.data.definitions.projectTypes).forEach(
       ([id, type]: [string, any]) => {
-        projectLabelMapping[id] = type.name || id;
+        const displayName = type.name || id;
+        if (id !== displayName) {
+          projectLabelMapping[id] = displayName;
+        }
       },
     );
 
@@ -339,7 +345,10 @@ function ExportBuilderContent({
     const roleLabelMapping: Record<string, string> = {};
     Object.entries(report.data.definitions.roleTypes).forEach(
       ([id, type]: [string, any]) => {
-        roleLabelMapping[id] = type.name || id;
+        const displayName = type.name || id;
+        if (id !== displayName) {
+          roleLabelMapping[id] = displayName;
+        }
       },
     );
 
@@ -347,7 +356,10 @@ function ExportBuilderContent({
     const taskLabelMapping: Record<string, string> = {};
     Object.entries(report.data.definitions.taskTypes).forEach(
       ([id, type]: [string, any]) => {
-        taskLabelMapping[id] = type.name || id;
+        const displayName = type.name || id;
+        if (id !== displayName) {
+          taskLabelMapping[id] = displayName;
+        }
       },
     );
 
@@ -355,7 +367,10 @@ function ExportBuilderContent({
     const activityLabelMapping: Record<string, string> = {};
     Object.entries(report.data.definitions.activityTypes).forEach(
       ([id, type]: [string, any]) => {
-        activityLabelMapping[id] = type.name || id;
+        const displayName = type.name || id;
+        if (id !== displayName) {
+          activityLabelMapping[id] = displayName;
+        }
       },
     );
 
@@ -372,21 +387,36 @@ function ExportBuilderContent({
           // Add labelMapping based on dimension type
           let labelMapping: Record<string, string> | undefined;
 
-          if (dim.id === "contractor") {
+          if (
+            dim.id === "contractor" &&
+            Object.keys(contractorLabelMapping).length > 0
+          ) {
             labelMapping = contractorLabelMapping;
-          } else if (dim.id === "project") {
+          } else if (
+            dim.id === "project" &&
+            Object.keys(projectLabelMapping).length > 0
+          ) {
             labelMapping = projectLabelMapping;
-          } else if (dim.id === "role") {
+          } else if (
+            dim.id === "role" &&
+            Object.keys(roleLabelMapping).length > 0
+          ) {
             labelMapping = roleLabelMapping;
-          } else if (dim.id === "task") {
+          } else if (
+            dim.id === "task" &&
+            Object.keys(taskLabelMapping).length > 0
+          ) {
             labelMapping = taskLabelMapping;
-          } else if (dim.id === "activity") {
+          } else if (
+            dim.id === "activity" &&
+            Object.keys(activityLabelMapping).length > 0
+          ) {
             labelMapping = activityLabelMapping;
           }
 
           return {
             ...baseDim,
-            labelMapping: labelMapping || baseDim.labelMapping,
+            ...(labelMapping && { labelMapping }),
           };
         })
         .filter((d) => d !== undefined),
