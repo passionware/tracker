@@ -182,57 +182,22 @@ CREATE POLICY "user_cannot_delete" ON users
   FOR DELETE USING (false);
 
 -- ============================================================================
--- CUBE REPORT POLICIES - Multi-layer security
+-- CUBE REPORT POLICIES - Admin management, user read access
 -- ============================================================================
 
--- SELECT: Must be in the same tenant
+-- SELECT: Regular users can read reports in their tenant
 CREATE POLICY "cube_report_read_tenant_isolation" ON cube_reports
   FOR SELECT USING (
     tenant_id = current_user_tenant_id()
   );
 
--- INSERT: Must assign to own tenant and own user_id
-CREATE POLICY "cube_report_insert_own_tenant" ON cube_reports
-  FOR INSERT WITH CHECK (
-    tenant_id = current_user_tenant_id()
-    AND created_by = auth.uid()
-  );
-
--- UPDATE: Owner can update their own reports
-CREATE POLICY "cube_report_update_own" ON cube_reports
-  FOR UPDATE USING (
-    tenant_id = current_user_tenant_id()
-    AND created_by = auth.uid()
-  )
-  WITH CHECK (
-    -- SECURITY: tenant_id and created_by MUST NOT change
-    -- These are immutable once created
-    tenant_id = current_user_tenant_id()
-    AND created_by = auth.uid()
-  );
-
--- DELETE: Owner can delete their own reports
-CREATE POLICY "cube_report_delete_own" ON cube_reports
-  FOR DELETE USING (
-    tenant_id = current_user_tenant_id()
-    AND created_by = auth.uid()
-  );
+-- INSERT/UPDATE/DELETE: Admin only (handled by admin policies)
 
 -- ============================================================================
--- ACCESS LOG POLICIES - Automatic tenant assignment
+-- ACCESS LOG POLICIES - Admin only access  
 -- ============================================================================
-
-CREATE POLICY "access_log_read_own_tenant" ON report_access_logs
-  FOR SELECT USING (
-    tenant_id = current_user_tenant_id()
-  );
-
--- Only allow inserts (automatic logging, cannot modify)
-CREATE POLICY "access_log_insert_own_tenant" ON report_access_logs
-  FOR INSERT WITH CHECK (
-    tenant_id = current_user_tenant_id()
-    AND user_id = auth.uid()
-  );
+-- Access logs are restricted to admin users only
+-- Regular users have no access to access logs
 
 -- ============================================================================
 -- TRIGGERS - Automatically maintain updated_at timestamps

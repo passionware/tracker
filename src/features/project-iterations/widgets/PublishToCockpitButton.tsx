@@ -21,19 +21,12 @@ export function PublishToCockpitButton({
   projectId,
   disabled = false,
 }: PublishToCockpitButtonProps) {
-  // Get auth info at the top level (hooks must be called at component level)
-  const authState = services.authService.useAuth();
+  // Get cockpit auth info at the top level (hooks must be called at component level)
   const cockpitAuthState = services.cockpitAuthService.useAuth();
 
   const publishMutation = promiseState.useMutation(async () => {
     if (!serializableConfig) {
       throw new Error("No configuration available to publish");
-    }
-
-    // Get current user info from the state we read at component level
-    const authInfo = rd.tryGet(authState);
-    if (!authInfo) {
-      throw new Error("You must be logged in to publish reports");
     }
 
     // Get tenant ID from CockpitAuthService
@@ -46,14 +39,11 @@ export function PublishToCockpitButton({
 
     await services.clientCubeReportService.publishReport({
       tenantId,
-      userId: authInfo.id,
+      userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
       name: `Cube Export - Project ${projectId} - ${new Date().toLocaleDateString()}`,
       description: `Exported cube data from project iteration ${report.projectIterationId} on ${new Date().toLocaleDateString()}`,
-      cubeData: serializableConfig.data as unknown as Record<string, unknown>,
-      cubeConfig: serializableConfig.config as unknown as Record<
-        string,
-        unknown
-      >,
+      cubeData: { data: serializableConfig.data } as Record<string, unknown>,
+      cubeConfig: serializableConfig.config as Record<string, unknown>,
     });
 
     // Show success toast with link to cockpit

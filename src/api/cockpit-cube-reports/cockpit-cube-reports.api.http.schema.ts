@@ -8,8 +8,12 @@ export const cockpitCubeReport$ = z.object({
   cube_data: z.record(z.unknown()),
   cube_config: z.record(z.unknown()),
   created_by: z.string().uuid(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid datetime format",
+  }),
+  updated_at: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid datetime format",
+  }),
 });
 
 export type CockpitCubeReport$ = z.infer<typeof cockpitCubeReport$>;
