@@ -1,6 +1,5 @@
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
-import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { useParams, useNavigate } from "react-router-dom";

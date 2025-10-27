@@ -83,7 +83,7 @@ export function GroupedViewWidget(props: GroupedViewWidgetProps) {
       state={cubeState}
       renderRawData={renderRawData}
       enableZoomIn={true}
-      onSelectionMeasurementsChange={(measurements) => {
+      onSelectionMeasurementsChange={() => {
         // Optional: Handle selection measurements changes
         // This could be used to show aggregated data for selected groups
       }}

@@ -57,7 +57,7 @@ export function CubeBreakdownControl({
   const measureSortOptions = state.cube.config.measures.map((measure) => ({
     id: `measure-${measure.id}`,
     label: measure.name,
-    comparator: (a: unknown, b: unknown) => {
+    comparator: () => {
       // This will be handled by the cube service when sorting groups
       return 0;
     },

@@ -20,7 +20,6 @@ export function PublishToCockpitButton({
   services,
   serializableConfig,
   report,
-  projectId,
   clientId,
   disabled = false,
 }: PublishToCockpitButtonProps) {
