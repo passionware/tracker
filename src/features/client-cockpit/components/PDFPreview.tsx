@@ -17,7 +17,6 @@ interface PDFPreviewProps {
 export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
   const { metadata, pages, rootLevelMeasures } = pdfReportModel;
 
-
   return (
     <div className="space-y-6">
       {/* PDF Header */}

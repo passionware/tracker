@@ -148,7 +148,8 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
         props.services.routingService
           .forClientCockpit()
           .forClient(tenantId?.toString())
-          .reports(),
+          .forReport(reportId)
+          .cubeViewer(),
       );
     }
   };
@@ -288,7 +289,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
               <p className="text-gray-600 mb-4">
                 The requested report could not be found.
               </p>
-              <Button onClick={handleBack}>Back to Reports</Button>
+              <Button onClick={handleBack}>Back to Cube</Button>
             </div>
           </div>
         );
@@ -297,37 +298,39 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
       return (
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  PDF Export Builder
-                </h1>
-                <p className="text-gray-600">
-                  Configure pages for "{reportData.name}"
-                </p>
+          <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={handleBack}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold text-slate-900">
+                    PDF Export Builder
+                  </h1>
+                  <p className="text-sm text-slate-600">
+                    Configure pages for "{reportData.name}"
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handlePreviewPdf(reportData)}
-                disabled={pdfConfig.pages.length === 0}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Preview PDF
-              </Button>
-              <Button
-                onClick={() => handleGeneratePdf(reportData)}
-                disabled={pdfConfig.pages.length === 0}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Generate PDF
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePreviewPdf(reportData)}
+                  disabled={pdfConfig.pages.length === 0}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview PDF
+                </Button>
+                <Button
+                  onClick={() => handleGeneratePdf(reportData)}
+                  disabled={pdfConfig.pages.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate PDF
+                </Button>
+              </div>
             </div>
           </div>
 
