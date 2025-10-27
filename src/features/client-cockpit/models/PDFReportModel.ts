@@ -58,6 +58,17 @@ export interface PDFPageConfig {
   };
   /** Selected measure IDs to include in this page */
   selectedMeasureIds?: string[];
+  /** Sorting configuration */
+  sorting: {
+    /** Sort primary groups by this measure ID */
+    primarySortBy: string;
+    /** Sort order for primary groups */
+    primarySortOrder: "asc" | "desc";
+    /** Sort secondary groups by this measure ID */
+    secondarySortBy?: string;
+    /** Sort order for secondary groups */
+    secondarySortOrder?: "asc" | "desc";
+  };
 }
 
 /**
@@ -378,6 +389,10 @@ export class PDFReportModelUtils {
             name: secondaryDimension.name,
           }
         : undefined,
+      sorting: {
+        primarySortBy: "hours",
+        primarySortOrder: "desc",
+      },
     };
   }
 
@@ -460,6 +475,46 @@ export class PDFReportModelUtils {
 
         if (secondLevelGroups.length > 0) {
           group.subGroups = secondLevelGroups;
+        }
+      });
+    }
+
+    // Apply sorting (always required)
+    // Sort primary groups
+    firstLevelGroups.sort((a, b) => {
+      const aCell = a.cells.find(
+        (c) => c.measureId === pageConfig.sorting.primarySortBy,
+      );
+      const bCell = b.cells.find(
+        (c) => c.measureId === pageConfig.sorting.primarySortBy,
+      );
+
+      const aValue = aCell ? Number(aCell.value) || 0 : 0;
+      const bValue = bCell ? Number(bCell.value) || 0 : 0;
+
+      const order = pageConfig.sorting.primarySortOrder === "desc" ? -1 : 1;
+      return (aValue - bValue) * order;
+    });
+
+    // Sort secondary groups if configured
+    if (pageConfig.sorting.secondarySortBy) {
+      firstLevelGroups.forEach((group) => {
+        if (group.subGroups) {
+          group.subGroups.sort((a, b) => {
+            const aCell = a.cells.find(
+              (c) => c.measureId === pageConfig.sorting.secondarySortBy,
+            );
+            const bCell = b.cells.find(
+              (c) => c.measureId === pageConfig.sorting.secondarySortBy,
+            );
+
+            const aValue = aCell ? Number(aCell.value) || 0 : 0;
+            const bValue = bCell ? Number(bCell.value) || 0 : 0;
+
+            const order =
+              pageConfig.sorting.secondarySortOrder === "desc" ? -1 : 1;
+            return (aValue - bValue) * order;
+          });
         }
       });
     }

@@ -191,6 +191,57 @@ export async function generatePDFDocument(
       borderRight: "1px solid #F1F5F9",
       color: "#111827",
       fontWeight: 600,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    tableCellDimension: {
+      padding: 12,
+      fontSize: 11,
+      flex: 1,
+      borderRight: "1px solid #F1F5F9",
+      color: "#111827",
+      fontWeight: 600,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    tableCellMeasure: {
+      padding: 12,
+      fontSize: 11,
+      flex: 0,
+      minWidth: 80,
+      borderRight: "1px solid #F1F5F9",
+      color: "#374151",
+      textAlign: "right",
+    },
+    tableCellMeasureGroup: {
+      padding: 12,
+      fontSize: 11,
+      flex: 0,
+      minWidth: 80,
+      borderRight: "1px solid #F1F5F9",
+      color: "#111827",
+      fontWeight: 600,
+      textAlign: "right",
+    },
+    dimensionName: {
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#111827",
+    },
+    badge: {
+      backgroundColor: "#DBEAFE",
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      minWidth: 20,
+      alignItems: "center",
+    },
+    badgeText: {
+      fontSize: 9,
+      fontWeight: 600,
+      color: "#1E40AF",
     },
     tableCellSub: {
       padding: 8,
@@ -236,21 +287,24 @@ export async function generatePDFDocument(
       color: "#111827",
       marginBottom: 15,
     },
-    summaryRow: {
+    summaryGrid: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 8,
-      paddingVertical: 2,
+      justifyContent: "space-around",
+      alignItems: "center",
+    },
+    summaryCard: {
+      alignItems: "center",
+      flex: 1,
+    },
+    summaryNumber: {
+      fontSize: 24,
+      fontWeight: 700,
+      marginBottom: 4,
     },
     summaryLabel: {
       fontSize: 12,
       color: "#6B7280",
       fontWeight: 500,
-    },
-    summaryValue: {
-      fontSize: 12,
-      fontWeight: 600,
-      color: "#111827",
     },
   });
 
@@ -301,29 +355,31 @@ export async function generatePDFDocument(
           {/* Page Summary */}
           <View style={styles.summary}>
             <Text style={styles.summaryTitle}>Page Summary</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Groups:</Text>
-              <Text style={styles.summaryValue}>
-                {pageData.summary.totalGroups}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Sub-groups:</Text>
-              <Text style={styles.summaryValue}>
-                {pageData.summary.totalSubGroups}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Items:</Text>
-              <Text style={styles.summaryValue}>
-                {pageData.summary.totalItems}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Measures:</Text>
-              <Text style={styles.summaryValue}>
-                {pageData.summary.measures.length}
-              </Text>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryCard}>
+                <Text style={[styles.summaryNumber, { color: "#3B82F6" }]}>
+                  {pageData.summary.totalGroups}
+                </Text>
+                <Text style={styles.summaryLabel}>Groups</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={[styles.summaryNumber, { color: "#10B981" }]}>
+                  {pageData.summary.totalSubGroups}
+                </Text>
+                <Text style={styles.summaryLabel}>Sub-groups</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={[styles.summaryNumber, { color: "#8B5CF6" }]}>
+                  {pageData.summary.totalItems}
+                </Text>
+                <Text style={styles.summaryLabel}>Items</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={[styles.summaryNumber, { color: "#F59E0B" }]}>
+                  {pageData.summary.measures.length}
+                </Text>
+                <Text style={styles.summaryLabel}>Measures</Text>
+              </View>
             </View>
           </View>
 
@@ -331,18 +387,13 @@ export async function generatePDFDocument(
           <View style={styles.table}>
             {/* Table Header */}
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableCell, styles.tableHeaderCell]}>
+              <Text style={[styles.tableCellDimension, styles.tableHeaderCell]}>
                 {pageData.config.primaryDimension.name}
               </Text>
-              {pageData.config.secondaryDimension && (
-                <Text style={[styles.tableCell, styles.tableHeaderCell]}>
-                  {pageData.config.secondaryDimension.name}
-                </Text>
-              )}
               {pageData.summary.measures.map((measure) => (
                 <Text
                   key={measure.id}
-                  style={[styles.tableCell, styles.tableHeaderCell]}
+                  style={[styles.tableCellMeasure, styles.tableHeaderCell]}
                 >
                   {measure.name}
                 </Text>
@@ -354,20 +405,29 @@ export async function generatePDFDocument(
               <React.Fragment key={groupIndex}>
                 {/* Main group row */}
                 <View style={styles.tableRowGroup}>
-                  <Text style={styles.tableCellGroup}>
-                    {group.dimensionLabel || String(group.dimensionValue)}
-                  </Text>
-                  {pageData.config.secondaryDimension && (
-                    <Text style={styles.tableCellGroup}>
-                      {group.subGroups?.length || 0} sub-groups
+                  <View style={styles.tableCellDimension}>
+                    <Text style={styles.dimensionName}>
+                      {group.dimensionLabel || String(group.dimensionValue)}
                     </Text>
-                  )}
+                    {pageData.config.secondaryDimension &&
+                      group.subGroups &&
+                      group.subGroups.length > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>
+                            {group.subGroups.length}
+                          </Text>
+                        </View>
+                      )}
+                  </View>
                   {pageData.summary.measures.map((measure) => {
                     const cell = group.cells.find(
                       (c) => c.measureId === measure.id,
                     );
                     return (
-                      <Text key={measure.id} style={styles.tableCellNumeric}>
+                      <Text
+                        key={measure.id}
+                        style={styles.tableCellMeasureGroup}
+                      >
                         {cell?.formattedValue ||
                           (cell?.value ? String(cell.value) : "-")}
                       </Text>
@@ -392,7 +452,6 @@ export async function generatePDFDocument(
                         {subGroup.dimensionLabel ||
                           String(subGroup.dimensionValue)}
                       </Text>
-                      <Text style={styles.tableCellSub}>-</Text>
                       {pageData.summary.measures.map((measure) => {
                         const cell = subGroup.cells.find(
                           (c) => c.measureId === measure.id,

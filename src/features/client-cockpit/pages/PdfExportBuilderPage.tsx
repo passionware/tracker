@@ -102,6 +102,12 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                 name: secondaryDimension.name,
               }
             : undefined,
+          sorting: {
+            primarySortBy: "hours",
+            primarySortOrder: "desc",
+            secondarySortBy: "hours",
+            secondarySortOrder: "desc",
+          },
         };
 
         const defaultPage2: PdfPageConfig = {
@@ -117,6 +123,12 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                 name: primaryDimension.name,
               }
             : undefined,
+          sorting: {
+            primarySortBy: "hours",
+            primarySortOrder: "desc",
+            secondarySortBy: "hours",
+            secondarySortOrder: "desc",
+          },
         };
 
         setPdfConfig((prev) => ({
@@ -146,6 +158,10 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
       primaryDimension: {
         id: "contractor",
         name: "Contractor",
+      },
+      sorting: {
+        primarySortBy: "hours",
+        primarySortOrder: "desc",
       },
     };
 
@@ -435,8 +451,12 @@ function PageConfigCard({
   onUpdate: (updates: Partial<PdfPageConfig>) => void;
   onRemove: () => void;
 }) {
-  const { availableDimensions, getDimensionDescriptor } =
-    useCubeDescriptors(report);
+  const {
+    availableDimensions,
+    availableMeasures,
+    getDimensionDescriptor,
+    getMeasureDescriptor,
+  } = useCubeDescriptors(report);
 
   return (
     <Card className="border border-gray-200">
@@ -457,70 +477,29 @@ function PageConfigCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Primary Dimension</Label>
-          <Select
-            value={page.primaryDimension.id}
-            onValueChange={(value) => {
-              const dimension = getDimensionDescriptor(value);
-              if (dimension) {
-                onUpdate({
-                  primaryDimension: {
-                    id: value,
-                    name: dimension.name,
-                  },
-                });
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDimensions.map((dimensionId) => {
-                const dimension = getDimensionDescriptor(dimensionId);
-                return (
-                  <SelectItem key={dimensionId} value={dimensionId}>
-                    {dimension?.name || dimensionId}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">
-            Secondary Dimension (Optional)
-          </Label>
-          <Select
-            value={page.secondaryDimension?.id || "none"}
-            onValueChange={(value) => {
-              if (value && value !== "none") {
+        {/* Dimension 1: Primary Dimension */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Dimension 1 (Primary)</Label>
+            <Select
+              value={page.primaryDimension.id}
+              onValueChange={(value) => {
                 const dimension = getDimensionDescriptor(value);
                 if (dimension) {
                   onUpdate({
-                    secondaryDimension: {
+                    primaryDimension: {
                       id: value,
                       name: dimension.name,
                     },
                   });
                 }
-              } else {
-                onUpdate({ secondaryDimension: undefined });
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select secondary dimension" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              {availableDimensions
-                .filter(
-                  (dimensionId) => dimensionId !== page.primaryDimension.id,
-                )
-                .map((dimensionId) => {
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDimensions.map((dimensionId) => {
                   const dimension = getDimensionDescriptor(dimensionId);
                   return (
                     <SelectItem key={dimensionId} value={dimensionId}>
@@ -528,8 +507,163 @@ function PageConfigCard({
                     </SelectItem>
                   );
                 })}
-            </SelectContent>
-          </Select>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Primary Dimension Sorting */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-gray-600">
+              Sort by measure
+            </Label>
+            <div className="flex gap-2">
+              <Select
+                value={page.sorting?.primarySortBy || availableMeasures[0]}
+                onValueChange={(value) => {
+                  onUpdate({
+                    sorting: {
+                      ...page.sorting,
+                      primarySortBy: value,
+                    },
+                  });
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select measure" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMeasures.map((measureId) => {
+                    const measure = getMeasureDescriptor(measureId);
+                    return (
+                      <SelectItem key={measureId} value={measureId}>
+                        {measure?.name || measureId}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <Select
+                value={page.sorting?.primarySortOrder || "desc"}
+                onValueChange={(value) => {
+                  onUpdate({
+                    sorting: {
+                      ...page.sorting,
+                      primarySortOrder: value as "asc" | "desc",
+                    },
+                  });
+                }}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">↓</SelectItem>
+                  <SelectItem value="asc">↑</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Dimension 2: Secondary Dimension */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Dimension 2 (Secondary - Optional)
+            </Label>
+            <Select
+              value={page.secondaryDimension?.id || "none"}
+              onValueChange={(value) => {
+                if (value && value !== "none") {
+                  const dimension = getDimensionDescriptor(value);
+                  if (dimension) {
+                    onUpdate({
+                      secondaryDimension: {
+                        id: value,
+                        name: dimension.name,
+                      },
+                    });
+                  }
+                } else {
+                  onUpdate({ secondaryDimension: undefined });
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select secondary dimension" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {availableDimensions
+                  .filter(
+                    (dimensionId) => dimensionId !== page.primaryDimension.id,
+                  )
+                  .map((dimensionId) => {
+                    const dimension = getDimensionDescriptor(dimensionId);
+                    return (
+                      <SelectItem key={dimensionId} value={dimensionId}>
+                        {dimension?.name || dimensionId}
+                      </SelectItem>
+                    );
+                  })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Secondary Dimension Sorting - Only show if secondary dimension is selected */}
+          {page.secondaryDimension && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-gray-600">
+                Sort by measure
+              </Label>
+              <div className="flex gap-2">
+                <Select
+                  value={page.sorting?.secondarySortBy || availableMeasures[0]}
+                  onValueChange={(value) => {
+                    onUpdate({
+                      sorting: {
+                        ...page.sorting,
+                        secondarySortBy: value,
+                      },
+                    });
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select measure" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMeasures.map((measureId) => {
+                      const measure = getMeasureDescriptor(measureId);
+                      return (
+                        <SelectItem key={measureId} value={measureId}>
+                          {measure?.name || measureId}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={page.sorting?.secondarySortOrder || "desc"}
+                  onValueChange={(value) => {
+                    onUpdate({
+                      sorting: {
+                        ...page.sorting,
+                        secondarySortOrder: value as "asc" | "desc",
+                      },
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">↓</SelectItem>
+                    <SelectItem value="asc">↑</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -551,6 +685,10 @@ function useCubeDescriptors(reportData: CockpitCubeReportWithCreator) {
     return cubeConfig.dimensions.map((dimension) => dimension.id);
   }, [cubeConfig]);
 
+  const availableMeasures = React.useMemo(() => {
+    return cubeConfig.measures.map((measure) => measure.id);
+  }, [cubeConfig]);
+
   const getMeasureDescriptor = (
     measureId: string,
   ): MeasureDescriptor<CubeDataItem, unknown> | undefined => {
@@ -566,6 +704,7 @@ function useCubeDescriptors(reportData: CockpitCubeReportWithCreator) {
   return {
     cubeConfig,
     availableDimensions,
+    availableMeasures,
     getMeasureDescriptor,
     getDimensionDescriptor,
   };

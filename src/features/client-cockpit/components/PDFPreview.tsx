@@ -139,12 +139,10 @@ function PDFPagePreview({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-blue-100 text-blue-800">
-            📊 Primary: {config.primaryDimension.name}
-          </Badge>
+          <Badge>Primary: {config.primaryDimension.name}</Badge>
           {config.secondaryDimension && (
-            <Badge variant="secondary" className="text-gray-600">
-              📊 Secondary: {config.secondaryDimension.name}
+            <Badge variant="secondary">
+              Secondary: {config.secondaryDimension.name}
             </Badge>
           )}
         </div>
@@ -153,28 +151,28 @@ function PDFPagePreview({
       {/* Page Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="text-center">
-          <div className="text-lg font-semibold text-blue-600">
+          <div className="text-2xl font-bold text-blue-600">
             {summary.totalGroups}
           </div>
-          <div className="text-xs text-gray-600">Groups</div>
+          <div className="text-sm text-gray-600">Groups</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold text-green-600">
+          <div className="text-2xl font-bold text-green-600">
             {summary.totalSubGroups}
           </div>
-          <div className="text-xs text-gray-600">Sub-groups</div>
+          <div className="text-sm text-gray-600">Sub-groups</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold text-purple-600">
+          <div className="text-2xl font-bold text-purple-600">
             {summary.totalItems}
           </div>
-          <div className="text-xs text-gray-600">Items</div>
+          <div className="text-sm text-gray-600">Items</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold text-orange-600">
+          <div className="text-2xl font-bold text-orange-600">
             {summary.measures.length}
           </div>
-          <div className="text-xs text-gray-600">Measures</div>
+          <div className="text-sm text-gray-600">Measures</div>
         </div>
       </div>
 
@@ -190,15 +188,10 @@ function PDFPagePreview({
                 <th className="px-4 py-3 text-left font-medium text-gray-700">
                   {config.primaryDimension.name}
                 </th>
-                {config.secondaryDimension && (
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">
-                    {config.secondaryDimension.name}
-                  </th>
-                )}
                 {summary.measures.map((measure) => (
                   <th
                     key={measure.id}
-                    className="px-4 py-3 text-left font-medium text-gray-700"
+                    className="px-4 py-3 text-right font-medium text-gray-700"
                   >
                     {measure.name}
                   </th>
@@ -211,17 +204,21 @@ function PDFPagePreview({
                   {/* Main group row */}
                   <tr className="bg-blue-50 border-b-2 border-blue-200">
                     <td className="px-4 py-3 font-semibold text-gray-900">
-                      {group.dimensionLabel ||
-                        String(group.dimensionValue) ||
-                        "Total"}
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {group.dimensionLabel ||
+                            String(group.dimensionValue) ||
+                            "Total"}
+                        </span>
+                        {config.secondaryDimension &&
+                          group.subGroups &&
+                          group.subGroups.length > 0 && (
+                            <Badge variant="info" tone="secondary" size="sm">
+                              {group.subGroups.length}
+                            </Badge>
+                          )}
+                      </div>
                     </td>
-                    {config.secondaryDimension && (
-                      <td className="px-4 py-3 text-gray-700 font-medium">
-                        {group.subGroups && group.subGroups.length > 0
-                          ? `${group.subGroups.length} sub-groups`
-                          : "-"}
-                      </td>
-                    )}
                     {summary.measures.map((measure) => {
                       const cell = group.cells.find(
                         (c) => c.measureId === measure.id,
@@ -253,7 +250,6 @@ function PDFPagePreview({
                           {subGroup.dimensionLabel ||
                             String(subGroup.dimensionValue)}
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-500">-</td>
                         {summary.measures.map((measure) => {
                           const cell = subGroup.cells.find(
                             (c) => c.measureId === measure.id,
