@@ -28,6 +28,7 @@ interface CubeViewerProps {
   showBackButton?: boolean;
   showJsonView?: boolean;
   showPdfView?: boolean;
+  onPdfExport?: () => void;
 }
 
 export function CubeViewer({
@@ -37,8 +38,9 @@ export function CubeViewer({
   showBackButton = true,
   showJsonView = true,
   showPdfView = false,
+  onPdfExport,
 }: CubeViewerProps) {
-  const [viewMode, setViewMode] = useState<"cube" | "json" | "pdf">("cube");
+  const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
 
   // Check if this looks like a serialized cube configuration
   const isSerializedCube =
@@ -163,13 +165,13 @@ export function CubeViewer({
             )}
             {showPdfView && (
               <Button
-                variant={viewMode === "pdf" ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                onClick={() => setViewMode("pdf")}
+                onClick={onPdfExport}
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                PDF View
+                Export PDF
               </Button>
             )}
           </div>
