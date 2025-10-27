@@ -21,6 +21,7 @@ export interface CockpitCubeReportsApi {
   createReport: (
     tenantId: string,
     userId: string,
+    clientId: number,
     report: {
       name: string;
       description?: string;

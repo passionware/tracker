@@ -55,25 +55,36 @@ export function createCockpitCubeReportsApi(
       };
     },
 
-    createReport: async (tenantId, userId, report) => {
-      const { data, error } = await client
-        .from("cube_reports")
-        .insert([
-          {
-            tenant_id: tenantId,
-            created_by: userId,
-            ...report,
-          },
-        ])
-        .select()
-        .single();
+    createReport: async (tenantId, userId, clientId, report) => {
+      // Use the secure database function instead of direct table insertion
+      const { data, error } = await client.rpc("secure_insert_cube_report", {
+        p_tenant_id: tenantId,
+        p_user_id: userId,
+        p_client_id: clientId,
+        p_name: report.name,
+        p_description: report.description || null,
+        p_cube_data: report.cube_data,
+        p_cube_config: report.cube_config,
+      });
 
       if (error) {
         console.error("Error creating cube report:", error);
         throw error;
       }
 
-      return parseWithDataError(cockpitCubeReport$, data);
+      // Fetch the created report to return full data
+      const { data: reportData, error: fetchError } = await client
+        .from("cube_reports")
+        .select("*")
+        .eq("id", data)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching created report:", fetchError);
+        throw fetchError;
+      }
+
+      return parseWithDataError(cockpitCubeReport$, reportData);
     },
 
     updateReport: async (reportId, updates) => {
