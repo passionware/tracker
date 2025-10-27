@@ -231,7 +231,8 @@ function PDFPagePreview({
                           key={measure.id}
                           className="px-4 py-3 text-gray-600"
                         >
-                          {cell?.value ? String(cell.value) : "-"}
+                          {cell?.formattedValue ||
+                            (cell?.value ? String(cell.value) : "-")}
                         </td>
                       );
                     })}
@@ -261,7 +262,8 @@ function PDFPagePreview({
                               key={measure.id}
                               className="px-4 py-2 text-sm text-gray-600"
                             >
-                              {cell?.value ? String(cell.value) : "-"}
+                              {cell?.formattedValue ||
+                                (cell?.value ? String(cell.value) : "-")}
                             </td>
                           );
                         })}

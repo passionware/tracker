@@ -315,7 +315,8 @@ export async function generatePDFDocument(
                     );
                     return (
                       <Text key={measure.id} style={styles.tableCell}>
-                        {cell?.value ? String(cell.value) : "-"}
+                        {cell?.formattedValue ||
+                          (cell?.value ? String(cell.value) : "-")}
                       </Text>
                     );
                   })}
@@ -342,7 +343,8 @@ export async function generatePDFDocument(
                         );
                         return (
                           <Text key={measure.id} style={styles.tableCell}>
-                            {cell?.value ? String(cell.value) : "-"}
+                            {cell?.formattedValue ||
+                              (cell?.value ? String(cell.value) : "-")}
                           </Text>
                         );
                       })}
