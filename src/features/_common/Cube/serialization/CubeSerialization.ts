@@ -175,9 +175,12 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
       return value;
     },
     formatValue: (value: unknown) => {
-      // First check if we have label mapping for this value
-      if (dim.labelMapping && dim.labelMapping[String(value)]) {
-        return dim.labelMapping[String(value)];
+      // Check if we have label mapping for this value
+      if (dim.labelMapping) {
+        const mappedValue = dim.labelMapping[String(value)];
+        if (mappedValue !== undefined) {
+          return mappedValue;
+        }
       }
 
       // Then check for built-in format function

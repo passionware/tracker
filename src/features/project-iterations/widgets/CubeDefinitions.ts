@@ -22,45 +22,16 @@ import { useMemo } from "react";
  * This is the source of truth - no reverse engineering needed!
  */
 function getSerializableCubeConfig(
-  report: GeneratedReportSource,
   contractors: Array<{ id: number; name: string; fullName?: string }>,
 ): SerializableCubeConfig {
-  // Build label mappings for each dimension
-  const projectLabelMapping: Record<string, string> = {};
-  Object.entries(report.data.definitions.projectTypes).forEach(([id, type]) => {
-    if (id !== type.name) {
-      projectLabelMapping[id] = type.name;
-    }
-  });
-
-  const taskLabelMapping: Record<string, string> = {};
-  Object.entries(report.data.definitions.taskTypes).forEach(([id, type]) => {
-    if (id !== type.name) {
-      taskLabelMapping[id] = type.name;
-    }
-  });
-
-  const activityLabelMapping: Record<string, string> = {};
-  Object.entries(report.data.definitions.activityTypes).forEach(
-    ([id, type]) => {
-      if (id !== type.name) {
-        activityLabelMapping[id] = type.name;
-      }
-    },
-  );
-
-  const roleLabelMapping: Record<string, string> = {};
-  Object.entries(report.data.definitions.roleTypes).forEach(([id, type]) => {
-    if (id !== type.name) {
-      roleLabelMapping[id] = type.name;
-    }
-  });
-
+  // Create contractor label mapping (only include non-redundant mappings)
   const contractorLabelMapping: Record<string, string> = {};
   contractors.forEach((contractor) => {
-    const displayName = contractor.fullName || contractor.name;
-    if (String(contractor.id) !== displayName) {
-      contractorLabelMapping[String(contractor.id)] = displayName;
+    const contractorId = String(contractor.id);
+    const contractorName = contractor.fullName || contractor.name;
+    // Only include mapping if ID differs from name
+    if (contractorId !== contractorName) {
+      contractorLabelMapping[contractorId] = contractorName;
     }
   });
 
@@ -70,18 +41,12 @@ function getSerializableCubeConfig(
       name: "Project",
       icon: "🏗️",
       fieldName: "projectId",
-      ...(Object.keys(projectLabelMapping).length > 0 && {
-        labelMapping: projectLabelMapping,
-      }),
     },
     {
       id: "task",
       name: "Task",
       icon: "📋",
       fieldName: "taskId",
-      ...(Object.keys(taskLabelMapping).length > 0 && {
-        labelMapping: taskLabelMapping,
-      }),
     },
     {
       id: "contractor",
@@ -97,18 +62,12 @@ function getSerializableCubeConfig(
       name: "Activity",
       icon: "⚡",
       fieldName: "activityId",
-      ...(Object.keys(activityLabelMapping).length > 0 && {
-        labelMapping: activityLabelMapping,
-      }),
     },
     {
       id: "role",
       name: "Role",
       icon: "🎭",
       fieldName: "roleId",
-      ...(Object.keys(roleLabelMapping).length > 0 && {
-        labelMapping: roleLabelMapping,
-      }),
     },
     {
       id: "date",
@@ -249,7 +208,7 @@ export function useCubeDefinitions(
     const contractors = rd.mapOrElse(contractorsQuery, (data) => data, []);
 
     // Get the serializable config - this is our source of truth!
-    const serializableConfig = getSerializableCubeConfig(report, contractors);
+    const serializableConfig = getSerializableCubeConfig(contractors);
 
     return {
       serializableConfig,
