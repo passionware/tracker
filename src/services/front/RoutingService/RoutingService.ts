@@ -148,6 +148,7 @@ export interface RoutingService {
       forReport: (reportId?: string | ":reportId") => {
         root: () => string;
         preview: () => string;
+        cubeViewer: () => string;
       };
     };
   };

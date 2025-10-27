@@ -105,6 +105,7 @@ export function createRoutingService(): RoutingService {
         forReport: (reportId = ":reportId") => ({
           root: () => `/c/${clientId}/reports/${reportId}`,
           preview: () => `/c/${clientId}/reports/${reportId}/preview`,
+          cubeViewer: () => `/c/${clientId}/reports/${reportId}/cube-viewer`,
         }),
       }),
     }),

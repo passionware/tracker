@@ -34,7 +34,13 @@ export function CubeReportsPage(props: WithFrontServices) {
 
   const handleReportClick = (reportId: string) => {
     // Navigate to cube viewer with the report data
-    navigate(`/c/cube-viewer/${reportId}`);
+    navigate(
+      props.services.routingService
+        .forClientCockpit()
+        .forClient(rd.tryMap(authState, (auth) => auth.tenantId))
+        .forReport(reportId)
+        .cubeViewer(),
+    );
   };
 
   return (
@@ -109,12 +115,43 @@ export function CubeReportsPage(props: WithFrontServices) {
             );
           }
 
-          // Sort reports by creation date (newest first)
-          const sortedReports = [...reportsList].sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime(),
-          );
+          // Helper function to extract end date from cube data
+          const getEndDate = (report: CockpitCubeReportWithCreator): Date => {
+            try {
+              const cubeData = report.cube_data?.data;
+              if (!Array.isArray(cubeData) || cubeData.length === 0) {
+                return new Date(report.created_at); // Fallback to creation date
+              }
+
+              // Find all valid dates from startAt fields
+              const dates = cubeData
+                .map((item: any) => {
+                  if (item.startAt) {
+                    const date = new Date(item.startAt);
+                    return isNaN(date.getTime()) ? null : date;
+                  }
+                  return null;
+                })
+                .filter((date): date is Date => date !== null);
+
+              if (dates.length === 0) {
+                return new Date(report.created_at); // Fallback to creation date
+              }
+
+              // Return the maximum date (end date of the report period)
+              return new Date(Math.max(...dates.map((d) => d.getTime())));
+            } catch (error) {
+              console.warn("Failed to extract end date from cube data:", error);
+              return new Date(report.created_at); // Fallback to creation date
+            }
+          };
+
+          // Sort reports by end date (newest first)
+          const sortedReports = [...reportsList].sort((a, b) => {
+            const endDateA = getEndDate(a);
+            const endDateB = getEndDate(b);
+            return endDateB.getTime() - endDateA.getTime();
+          });
 
           const latestReport = sortedReports[0];
           const pastReports = sortedReports.slice(1);
@@ -201,7 +238,7 @@ function LatestReportHero({
   const dateRange = getDateRange();
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -225,7 +262,7 @@ function LatestReportHero({
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Creator Info */}
               {(report.creator_email || report.creator_name) && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -259,6 +296,22 @@ function LatestReportHero({
                   })}
                 </span>
               </div>
+
+              {/* Ended Date */}
+              {dateRange && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="w-4 h-4" />
+                  <span>
+                    Started{" "}
+                    {formatDistanceToNow(dateRange.start, { addSuffix: true })}
+                  </span>
+                  <span className="font-bold text-gray-400">·</span>
+                  <span>
+                    ended{" "}
+                    {formatDistanceToNow(dateRange.end, { addSuffix: true })}
+                  </span>
+                </div>
+              )}
             </div>
 
             <Button
@@ -363,8 +416,10 @@ function ReportCard({ report, onClick, services }: ReportCardProps) {
                   dateRange.start,
                   dateRange.end,
                 )}
-                (ended {formatDistanceToNow(dateRange.end, { addSuffix: true })}
-                )
+              </span>
+              <Clock className="w-3 h-3" />
+              <span>
+                ended {formatDistanceToNow(dateRange.end, { addSuffix: true })}
               </span>
             </div>
           )}

@@ -19,13 +19,15 @@ import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/Seriali
 import { useCubeState } from "@/features/_common/Cube/useCubeState";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
-import { Grid3X3, Code, ArrowLeft } from "lucide-react";
+import { Grid3X3, Code, ArrowLeft, FileText } from "lucide-react";
 
 interface CubeViewerProps {
   serializedConfig: any;
   title?: string;
   onBack?: () => void;
   showBackButton?: boolean;
+  showJsonView?: boolean;
+  showPdfView?: boolean;
 }
 
 export function CubeViewer({
@@ -33,8 +35,10 @@ export function CubeViewer({
   title = "Cube Viewer",
   onBack,
   showBackButton = true,
+  showJsonView = true,
+  showPdfView = false,
 }: CubeViewerProps) {
-  const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
+  const [viewMode, setViewMode] = useState<"cube" | "json" | "pdf">("cube");
 
   // Check if this looks like a serialized cube configuration
   const isSerializedCube =
@@ -146,15 +150,28 @@ export function CubeViewer({
               <Grid3X3 className="h-4 w-4" />
               Cube View
             </Button>
-            <Button
-              variant={viewMode === "json" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("json")}
-              className="flex items-center gap-2"
-            >
-              <Code className="h-4 w-4" />
-              JSON View
-            </Button>
+            {showJsonView && (
+              <Button
+                variant={viewMode === "json" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("json")}
+                className="flex items-center gap-2"
+              >
+                <Code className="h-4 w-4" />
+                JSON View
+              </Button>
+            )}
+            {showPdfView && (
+              <Button
+                variant={viewMode === "pdf" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("pdf")}
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                PDF View
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -187,7 +204,7 @@ export function CubeViewer({
               </div>
             </CubeLayout>
           </CubeProvider>
-        ) : (
+        ) : viewMode === "json" ? (
           <div className="h-full p-6">
             <Card className="h-full flex flex-col">
               <CardHeader>
@@ -203,6 +220,37 @@ export function CubeViewer({
                   className="h-full"
                   initiallyExpanded={true}
                 />
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="h-full p-6">
+            <Card className="h-full flex flex-col">
+              <CardHeader>
+                <CardTitle>PDF Export</CardTitle>
+                <CardDescription>
+                  Generate and download PDF report
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-full min-h-0 flex items-center justify-center">
+                <div className="text-center">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    PDF Export Coming Soon
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    PDF export functionality will be implemented in a future
+                    update.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewMode("cube")}
+                    className="flex items-center gap-2"
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    Back to Cube View
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

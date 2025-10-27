@@ -27,6 +27,13 @@ export function PublishToCockpitButton({
   // Get cockpit auth info at the top level (hooks must be called at component level)
   const cockpitAuthState = services.cockpitAuthService.useAuth();
 
+  // Get client and project iteration details for better naming
+  const clientData = services.clientService.useClient(clientId);
+  const projectIterationData =
+    services.projectIterationService.useProjectIterationDetail(
+      report.projectIterationId,
+    );
+
   const publishMutation = promiseState.useMutation(async () => {
     if (!serializableConfig) {
       throw new Error("No configuration available to publish");
@@ -40,11 +47,24 @@ export function PublishToCockpitButton({
 
     const tenantId = cockpitAuthInfo.tenantId;
 
+    // Generate better report name using client and project iteration data
+    const generateReportName = () => {
+      const clientName =
+        rd.tryMap(clientData, (client) => client.name) || `Client ${clientId}`;
+      const iterationName =
+        rd.tryMap(
+          projectIterationData,
+          (iteration) => iteration.ordinalNumber,
+        ) || `Iteration ${report.projectIterationId}`;
+
+      return `${clientName} - Project - ${iterationName}`;
+    };
+
     await services.clientCubeReportService.publishReport({
       tenantId,
       userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
       clientId, // Pass the client ID for validation
-      name: `Cube Export - Project ${projectId} - ${new Date().toLocaleDateString()}`,
+      name: generateReportName(),
       description: `Exported cube data from project iteration ${report.projectIterationId} on ${new Date().toLocaleDateString()}`,
       cubeData: { data: serializableConfig.data } as Record<string, unknown>,
       cubeConfig: serializableConfig.config as Record<string, unknown>,

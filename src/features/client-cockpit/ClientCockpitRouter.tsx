@@ -2,6 +2,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { CockpitLoginPage } from "./CockpitLoginPage";
 import { CubeReportsPage } from "./pages/CubeReportsPage";
+import { CubeViewerPage } from "./pages/CubeViewerPage";
 import { ProtectedCockpitRoute } from "./ProtectedCockpitRoute";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import { rd } from "@passionware/monads";
@@ -40,6 +41,25 @@ export function CockpitMainRouter(props: WithFrontServices) {
           <ProtectedCockpitRoute services={props.services}>
             <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
               <CubeReportsPage services={props.services} />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
+      />
+
+      {/* Cube Viewer Route */}
+      <Route
+        path={makeRelativePath(
+          basePath,
+          props.services.routingService
+            .forClientCockpit()
+            .forClient()
+            .forReport()
+            .cubeViewer(),
+        )}
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <CubeViewerPage services={props.services} />
             </Layout>
           </ProtectedCockpitRoute>
         }
