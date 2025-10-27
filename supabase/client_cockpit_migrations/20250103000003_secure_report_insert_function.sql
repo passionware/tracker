@@ -62,7 +62,7 @@ BEGIN
   
   RETURN v_report_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 COMMENT ON FUNCTION secure_insert_cube_report IS 'Securely inserts cube reports with client_id validation at database level';
 

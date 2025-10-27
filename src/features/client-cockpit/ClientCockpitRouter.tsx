@@ -63,6 +63,7 @@ function RedirectFromRoot(props: WithFrontServices) {
   return rd.tryMap(authState, (authInfo) => {
     return (
       <Navigate
+        replace
         to={props.services.routingService
           .forClientCockpit()
           .forClient(authInfo.tenantId!)
