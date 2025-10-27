@@ -26,6 +26,7 @@ import { WithReportService } from "@/services/io/ReportService/ReportService.ts"
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { WithClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.ts";
+import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
 
 /**
  * Ideally this should contain all the services that are safe to use by the front-end widgets.
@@ -59,6 +60,7 @@ export type FrontServices = MergeServices<
     WithGeneratedReportSourceService,
     WithGeneratedReportViewService,
     WithClientCubeReportService,
+    WithCockpitTenantService,
   ]
 >;
 

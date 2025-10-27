@@ -10,10 +10,12 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
+import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Building2, FileText, Home } from "lucide-react";
 import { ComponentProps } from "react";
@@ -23,19 +25,54 @@ import { CockpitNavUser } from "./CockpitNavUser";
 export function CockpitSidebar({
   services,
   ...props
-}: WithServices<[WithCockpitAuthService, WithAuthService, WithRoutingService]> &
+}: WithServices<
+  [
+    WithCockpitAuthService,
+    WithAuthService,
+    WithRoutingService,
+    WithCockpitTenantService,
+  ]
+> &
   ComponentProps<typeof Sidebar>) {
   const cockpitAuth = services.cockpitAuthService.useAuth();
   const mainAppAuth = services.authService.useAuth();
   const location = useLocation();
 
+  // Get tenant information
+  const tenantId = rd.tryMap(cockpitAuth, (auth) => auth.tenantId);
+  const tenant = services.cockpitTenantService.useTenant(tenantId);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <Building2 className="h-6 w-6" />
-          <span className="font-semibold">Client Portal</span>
-        </div>
+        {rd
+          .journey(tenant)
+          .wait(
+            <div className="flex items-center gap-2 px-2 py-2">
+              <Skeleton className="h-6 w-6 rounded-sm" />
+              <Skeleton className="h-4 w-24" />
+            </div>,
+          )
+          .catch(() => (
+            <div className="flex items-center gap-2 px-4 py-2">
+              <Building2 className="h-6 w-6" />
+              <span className="font-semibold">Client Portal</span>
+            </div>
+          ))
+          .map((tenantInfo) => (
+            <div className="flex items-center gap-2 px-2 py-2">
+              {tenantInfo.logo_url ? (
+                <img
+                  src={tenantInfo.logo_url}
+                  alt={`${tenantInfo.name} logo`}
+                  className="h-6 w-6 rounded-sm object-cover"
+                />
+              ) : (
+                <Building2 className="h-6 w-6" />
+              )}
+              <span className="font-semibold">{tenantInfo.name}</span>
+            </div>
+          ))}
       </SidebarHeader>
       <SidebarContent>
         {rd.tryMap(cockpitAuth, (authInfo) => (
@@ -90,9 +127,13 @@ export function CockpitSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
-        {rd.tryMap(cockpitAuth, (authInfo) => (
-          <CockpitNavUser info={authInfo} services={services} />
-        ))}
+        {rd
+          .journey(cockpitAuth)
+          .wait(<Skeleton className="w-20 h-4" />)
+          .catch(() => null)
+          .map((authInfo) => (
+            <CockpitNavUser info={authInfo} services={services} />
+          ))}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

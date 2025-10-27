@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id integer NOT NULL UNIQUE,  -- References your main client DB (integer ID)
   name text NOT NULL,
+  logo_url text,  -- URL for the tenant's logo, displayed in the client cockpit
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
 );
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 COMMENT ON TABLE tenants IS 'Client cockpit tenants - each represents a distinct client';
 COMMENT ON COLUMN tenants.client_id IS 'Reference to the main application client';
 COMMENT ON COLUMN tenants.id IS 'UUID - non-guessable identifier for URL routing';
+COMMENT ON COLUMN tenants.logo_url IS 'URL for the tenant''s logo, displayed in the client cockpit';
 
 -- 2. USERS TABLE
 -- Companion table to Supabase's auth.users with tenant-specific metadata

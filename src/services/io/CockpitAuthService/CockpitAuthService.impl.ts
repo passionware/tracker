@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { RemoteData, maybe, rd } from "@passionware/monads";
 import { CockpitAuthService, CockpitAuthInfo } from "./CockpitAuthService";
 import { SupabaseClient, User } from "@supabase/supabase-js";
-import { delay } from "@passionware/platform-js";
 
 export function createCockpitAuthService(
   client: SupabaseClient,
@@ -17,11 +16,21 @@ export function createCockpitAuthService(
       .VITE_CLIENT_COCKPIT_SUPABASE_URL,
   });
 
-  function getUserData(user: User, tenantId: string): CockpitAuthInfo {
+  function getUserData(
+    user: User,
+    tenantId: string,
+    userProfile?: { full_name?: string; avatar_url?: string },
+  ): CockpitAuthInfo {
     return {
       id: user.id,
-      displayName: user.user_metadata?.full_name || user.email || "",
-      avatarUrl: maybe.of(user.user_metadata?.avatar_url),
+      displayName:
+        userProfile?.full_name ||
+        user.user_metadata?.full_name ||
+        user.email ||
+        "",
+      avatarUrl: maybe.of(
+        userProfile?.avatar_url || user.user_metadata?.avatar_url,
+      ),
       email: maybe.of(user.email),
       tenantId,
     };
@@ -38,7 +47,7 @@ export function createCockpitAuthService(
 
       const { data: userData, error } = await client
         .from("users")
-        .select("tenant_id")
+        .select("tenant_id, full_name, avatar_url")
         .eq("id", userId)
         .single();
 
@@ -57,8 +66,16 @@ export function createCockpitAuthService(
 
       console.log("CockpitAuthService: User tenant data retrieved", {
         tenantId: userData.tenant_id,
+        fullName: userData.full_name,
+        avatarUrl: userData.avatar_url,
       });
-      return { tenantId: userData.tenant_id };
+      return {
+        tenantId: userData.tenant_id,
+        userProfile: {
+          full_name: userData.full_name,
+          avatar_url: userData.avatar_url,
+        },
+      };
     } catch (err) {
       console.error("CockpitAuthService: Failed to fetch user tenant", err);
       return { error: new Error("Failed to fetch user tenant") };
@@ -99,7 +116,9 @@ export function createCockpitAuthService(
       useAuth.setState(rd.ofError(result.error));
       return;
     }
-    useAuth.setState(rd.of(getUserData(session.user, result.tenantId)));
+    useAuth.setState(
+      rd.of(getUserData(session.user, result.tenantId, result.userProfile)),
+    );
 
     ////
 
@@ -122,7 +141,13 @@ export function createCockpitAuthService(
               return;
             }
             useAuth.setState(
-              rd.of(getUserData(currentSession.user, result.tenantId)),
+              rd.of(
+                getUserData(
+                  currentSession.user,
+                  result.tenantId,
+                  result.userProfile,
+                ),
+              ),
             );
           } else {
             console.error("CockpitAuthService: SIGNED_IN without session");
@@ -152,7 +177,13 @@ export function createCockpitAuthService(
               return;
             }
             useAuth.setState(
-              rd.of(getUserData(currentSession.user, result.tenantId)),
+              rd.of(
+                getUserData(
+                  currentSession.user,
+                  result.tenantId,
+                  result.userProfile,
+                ),
+              ),
             );
           } else {
             console.error(
