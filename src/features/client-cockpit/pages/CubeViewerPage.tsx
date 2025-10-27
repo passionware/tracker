@@ -26,6 +26,18 @@ export function CubeViewerPage(props: WithFrontServices) {
     }
   };
 
+  const handlePdfExport = () => {
+    if (tenantId && reportId) {
+      navigate(
+        props.services.routingService
+          .forClientCockpit()
+          .forClient(tenantId)
+          .forReport(reportId)
+          .pdfExportBuilder(),
+      );
+    }
+  };
+
   return rd
     .journey(reports)
     .wait(
@@ -73,6 +85,7 @@ export function CubeViewerPage(props: WithFrontServices) {
           showBackButton
           showJsonView={false}
           showPdfView
+          onPdfExport={handlePdfExport}
         />
       );
     });
