@@ -36,6 +36,14 @@ function getSerializableCubeConfig(
     }
   });
 
+  // Create activity label mapping from report definitions
+  const activityLabelMapping: Record<string, string> = {};
+  Object.entries(report.data.definitions.activityTypes).forEach(
+    ([activityId, activityType]) => {
+      activityLabelMapping[activityId] = activityType.name;
+    },
+  );
+
   // Extract currency from report data (ensure all billing rates use the same currency)
   const getCurrencyFromReport = (): string => {
     const currencies = new Set<string>();
@@ -95,6 +103,9 @@ function getSerializableCubeConfig(
       name: "Activity",
       icon: "⚡",
       fieldName: "activityId",
+      ...(Object.keys(activityLabelMapping).length > 0 && {
+        labelMapping: activityLabelMapping,
+      }),
     },
     {
       id: "role",
