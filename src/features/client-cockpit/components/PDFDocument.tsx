@@ -173,8 +173,8 @@ export async function generatePDFDocument(
     },
     tableRowGroup: {
       flexDirection: "row",
-      borderBottom: "1px solid #E5E7EB",
-      backgroundColor: "#F8FAFC",
+      borderBottom: "2px solid #3B82F6",
+      backgroundColor: "#EFF6FF",
       fontWeight: 600,
     },
     tableCell: {
