@@ -41,6 +41,8 @@ import type { PDFReportModel, PDFPageConfig } from "../models/PDFReportModel";
 import { PDFPreview, PDFPreviewEmpty } from "../components/PDFPreview";
 import { generatePDFDocument } from "../components/PDFDocument";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
+import { CockpitTenant } from "@/api/cockpit-tenants/cockpit-tenants.api";
+import { FormatService } from "@/services/FormatService/FormatService";
 
 // Use the domain model types
 type PdfPageConfig = PDFPageConfig;
@@ -202,7 +204,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
         reportData,
         pdfConfig,
         props.services.formatService,
-        rd.tryMap(tenantData, (tenant) => tenant),
+        rd.getOrThrow(tenantData, "Tenant data is required"),
       );
 
       const pdfDoc = await generatePDFDocument(
@@ -240,7 +242,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
         reportData,
         pdfConfig,
         props.services.formatService,
-        rd.tryMap(tenantData, (tenant) => tenant),
+        rd.getOrThrow(tenantData, "Tenant data is required"),
       );
 
       const pdfDoc = await generatePDFDocument(
@@ -333,50 +335,6 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
             {/* Left Panel - Configuration */}
             <div className="w-1/3 border-r bg-white p-6 overflow-y-auto">
               <div className="space-y-6">
-                {/* Report Info */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      Report Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Client Name
-                      </Label>
-                      <div className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md">
-                        {reportData.name}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Provider
-                      </Label>
-                      <div className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md">
-                        Passionware Consulting sp. z.o.o.
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Date Range
-                      </Label>
-                      <div className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md">
-                        {reportData.start_date.toLocaleDateString()} -{" "}
-                        {reportData.end_date.toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Total Budget Billed
-                      </Label>
-                      <div className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md">
-                        $0.00
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Pages Configuration */}
                 <Card>
                   <CardHeader>
@@ -421,12 +379,14 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                   {pdfConfig.pages.length === 0 ? (
                     <PDFPreviewEmpty />
                   ) : (
-                    <PDFPreviewWrapper
-                      pdfConfig={pdfConfig}
-                      report={reportData}
-                      tenantData={tenantData}
-                      formatService={props.services.formatService}
-                    />
+                    rd.tryMap(tenantData, (tenantData) => (
+                      <PDFPreviewWrapper
+                        pdfConfig={pdfConfig}
+                        report={reportData}
+                        tenantData={tenantData}
+                        formatService={props.services.formatService}
+                      />
+                    ))
                   )}
                 </div>
               </div>
@@ -719,8 +679,8 @@ function PDFPreviewWrapper({
 }: {
   pdfConfig: PdfExportConfig;
   report: CockpitCubeReportWithCreator;
-  tenantData: any;
-  formatService: any; // FormatService
+  tenantData: CockpitTenant;
+  formatService: FormatService;
 }) {
   const [pdfReportModel, setPdfReportModel] =
     React.useState<PDFReportModel | null>(null);

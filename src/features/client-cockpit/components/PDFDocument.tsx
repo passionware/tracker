@@ -44,12 +44,20 @@ export async function generatePDFDocument(
 
   // Convert logo to base64 if available
   let logoBase64: string | null = null;
+  console.log("PDF Document - Logo URL:", metadata.logoUrl);
   if (metadata.logoUrl) {
     try {
       logoBase64 = await convertImageToBase64(metadata.logoUrl);
+      console.log(
+        "PDF Document - Logo converted to base64:",
+        logoBase64 ? "Success" : "Failed",
+      );
     } catch (error) {
       console.warn("Failed to embed logo:", error);
+      logoBase64 = null;
     }
+  } else {
+    console.log("PDF Document - No logo URL provided");
   }
 
   // Register fonts

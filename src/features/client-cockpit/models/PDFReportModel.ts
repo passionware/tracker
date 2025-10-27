@@ -7,10 +7,11 @@ import type {
   CubeResult,
   MeasureDescriptor,
   CubeDataItem,
-} from "@/features/_common/Cube/CubeService.types";
-import type { FormatService } from "@/services/FormatService/FormatService";
-import type { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api";
-import type { CockpitTenant } from "@/api/cockpit-tenants/cockpit-tenants.api";
+} from "../../_common/Cube/CubeService.types";
+import type { FormatService } from "../../../services/FormatService/FormatService";
+import type { CockpitCubeReportWithCreator } from "../../../api/cockpit-cube-reports/cockpit-cube-reports.api";
+import type { CockpitTenant } from "../../../api/cockpit-tenants/cockpit-tenants.api";
+import { Maybe } from "@passionware/monads";
 
 /**
  * Metadata for the PDF report
@@ -30,12 +31,12 @@ export interface PDFReportMetadata {
   /** Generation timestamp */
   generatedAt: Date;
   /** Tenant logo URL (optional) */
-  logoUrl?: string;
+  logoUrl: Maybe<string>;
   /** Report creator information */
-  creator?: {
+  creator: Maybe<{
     name: string;
     email: string;
-  };
+  }>;
 }
 
 /**
@@ -304,8 +305,9 @@ export class PDFReportModelUtils {
    */
   static createMetadata(
     report: CockpitCubeReportWithCreator,
-    tenantData?: CockpitTenant,
+    tenantData: CockpitTenant,
   ): PDFReportMetadata {
+
     return {
       title: report.name || "Report",
       description: report.description || undefined,
@@ -315,7 +317,7 @@ export class PDFReportModelUtils {
         end: new Date(report.end_date),
       },
       generatedAt: new Date(),
-      logoUrl: tenantData?.logo_url || undefined,
+      logoUrl: tenantData.logo_url,
       creator: {
         name: report.creator_name || "Unknown",
         email: report.creator_email || "unknown@example.com",
@@ -330,7 +332,7 @@ export class PDFReportModelUtils {
     report: CockpitCubeReportWithCreator,
     pdfConfig: { pages: PDFPageConfig[] },
     formatService: FormatService,
-    tenantData?: CockpitTenant,
+    tenantData: CockpitTenant,
     options: {
       includeItems?: boolean;
       maxDepth?: number;
@@ -345,7 +347,7 @@ export class PDFReportModelUtils {
 
     // Import cube service dynamically to avoid circular dependencies
     const { deserializeCubeConfig } = await import(
-      "@/features/_common/Cube/serialization/CubeSerialization"
+      "../../_common/Cube/serialization/CubeSerialization"
     );
 
     // Deserialize the cube configuration
@@ -484,7 +486,7 @@ export class PDFReportModelUtils {
   ): Promise<PDFPageData> {
     // Import stateless calculation functions
     const { calculateCubeGroups } = await import(
-      "@/features/_common/Cube/CubeCalculation"
+      "../../_common/Cube/CubeCalculation"
     );
 
     // Calculate first level groups (primary dimension)
