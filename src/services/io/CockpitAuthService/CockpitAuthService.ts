@@ -6,6 +6,7 @@ export interface CockpitAuthInfo {
   avatarUrl: Maybe<string>;
   email: Maybe<string>;
   tenantId: string;
+  role: "admin" | "viewer";
 }
 
 export interface CockpitAuthService {

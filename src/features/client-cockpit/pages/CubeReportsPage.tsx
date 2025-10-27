@@ -11,6 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import {
   BarChart3,
@@ -20,10 +25,15 @@ import {
   TrendingUp,
   ArrowRight,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
 import { useNavigate } from "react-router-dom";
+import { promiseState } from "@passionware/platform-react";
+import { toast } from "sonner";
+import { useCallback } from "react";
+import { mt } from "@passionware/monads";
 
 export function CubeReportsPage(props: WithFrontServices) {
   const navigate = useNavigate();
@@ -42,6 +52,22 @@ export function CubeReportsPage(props: WithFrontServices) {
         .cubeViewer(),
     );
   };
+
+  // Delete report mutation
+  const deleteMutation = promiseState.useMutation(async (reportId: string) => {
+    await props.services.clientCubeReportService.deleteReport(reportId);
+    toast.success("Report deleted successfully");
+  });
+
+  const handleDeleteReport = useCallback(
+    (reportId: string) => {
+      deleteMutation.track(reportId).catch((error) => {
+        console.error("Error deleting report:", error);
+        toast.error("Failed to delete report");
+      });
+    },
+    [deleteMutation],
+  );
 
   return (
     <div className="flex flex-col gap-8 p-6">
@@ -131,6 +157,9 @@ export function CubeReportsPage(props: WithFrontServices) {
               <LatestReportHero
                 report={latestReport}
                 onViewReport={() => handleReportClick(latestReport.id)}
+                onDeleteReport={handleDeleteReport}
+                isAdmin={rd.tryMap(authState, (auth) => auth.role) === "admin"}
+                isDeleting={mt.isInProgress(deleteMutation.state)}
                 services={props.services}
               />
 
@@ -148,6 +177,11 @@ export function CubeReportsPage(props: WithFrontServices) {
                         key={report.id}
                         report={report}
                         onClick={() => handleReportClick(report.id)}
+                        onDeleteReport={handleDeleteReport}
+                        isAdmin={
+                          rd.tryMap(authState, (auth) => auth.role) === "admin"
+                        }
+                        isDeleting={mt.isInProgress(deleteMutation.state)}
                         services={props.services}
                       />
                     ))}
@@ -161,14 +195,76 @@ export function CubeReportsPage(props: WithFrontServices) {
   );
 }
 
+// Confirmation Popover Component
+function DeleteConfirmationPopover({
+  reportName,
+  onConfirm,
+  isDeleting,
+  children,
+}: {
+  reportName: string;
+  onConfirm: () => void;
+  isDeleting: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-80 p-4" align="start">
+        <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Delete Report</h3>
+              <p className="text-sm text-gray-600">
+                This action cannot be undone
+              </p>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-700">
+            Are you sure you want to delete{" "}
+            <span className="font-medium">"{reportName}"</span>?
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" size="sm" disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline-destructive"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onConfirm();
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface LatestReportHeroProps extends WithFrontServices {
   report: CockpitCubeReportWithCreator;
   onViewReport: () => void;
+  onDeleteReport?: (reportId: string) => void;
+  isAdmin?: boolean;
+  isDeleting?: boolean;
 }
 
 function LatestReportHero({
   report,
   onViewReport,
+  onDeleteReport,
+  isAdmin = false,
+  isDeleting = false,
   services,
 }: LatestReportHeroProps) {
   // Use API-provided date range
@@ -249,14 +345,33 @@ function LatestReportHero({
               )}
             </div>
 
-            <Button
-              onClick={onViewReport}
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
-            >
-              View Report
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={onViewReport}
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
+              >
+                View Report
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+
+              {isAdmin && onDeleteReport && (
+                <DeleteConfirmationPopover
+                  reportName={report.name}
+                  onConfirm={() => onDeleteReport(report.id)}
+                  isDeleting={isDeleting}
+                >
+                  <Button
+                    variant="outline-destructive"
+                    size="lg"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                </DeleteConfirmationPopover>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -267,9 +382,19 @@ function LatestReportHero({
 interface ReportCardProps extends WithFrontServices {
   report: CockpitCubeReportWithCreator;
   onClick: () => void;
+  onDeleteReport?: (reportId: string) => void;
+  isAdmin?: boolean;
+  isDeleting?: boolean;
 }
 
-function ReportCard({ report, onClick, services }: ReportCardProps) {
+function ReportCard({
+  report,
+  onClick,
+  onDeleteReport,
+  isAdmin = false,
+  isDeleting = false,
+  services,
+}: ReportCardProps) {
   // Use API-provided date range
   const dateRange = { start: report.start_date, end: report.end_date };
   return (
@@ -342,12 +467,31 @@ function ReportCard({ report, onClick, services }: ReportCardProps) {
           <TrendingUp className="w-3 h-3 mr-1" />
           Cube Data
         </Badge>
-        <span className="text-xs text-muted-foreground truncate">
-          Updated{" "}
-          {formatDistanceToNow(new Date(report.updated_at), {
-            addSuffix: true,
-          })}
-        </span>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground truncate">
+            Updated{" "}
+            {formatDistanceToNow(new Date(report.updated_at), {
+              addSuffix: true,
+            })}
+          </span>
+
+          {isAdmin && onDeleteReport && (
+            <DeleteConfirmationPopover
+              reportName={report.name}
+              onConfirm={() => onDeleteReport(report.id)}
+              isDeleting={isDeleting}
+            >
+              <Button
+                onClick={(e) => e.stopPropagation()}
+                variant="outline-destructive"
+                size="icon-xs"
+              >
+                <Trash2 />
+              </Button>
+            </DeleteConfirmationPopover>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

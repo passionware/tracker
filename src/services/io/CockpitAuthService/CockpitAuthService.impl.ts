@@ -19,7 +19,11 @@ export function createCockpitAuthService(
   function getUserData(
     user: User,
     tenantId: string,
-    userProfile?: { full_name?: string; avatar_url?: string },
+    userProfile?: {
+      full_name?: string;
+      avatar_url?: string;
+      role?: "admin" | "viewer";
+    },
   ): CockpitAuthInfo {
     return {
       id: user.id,
@@ -33,6 +37,7 @@ export function createCockpitAuthService(
       ),
       email: maybe.of(user.email),
       tenantId,
+      role: userProfile?.role || "viewer",
     };
   }
 
@@ -47,7 +52,7 @@ export function createCockpitAuthService(
 
       const { data: userData, error } = await client
         .from("users")
-        .select("tenant_id, full_name, avatar_url")
+        .select("tenant_id, full_name, avatar_url, role")
         .eq("id", userId)
         .single();
 
@@ -74,6 +79,7 @@ export function createCockpitAuthService(
         userProfile: {
           full_name: userData.full_name,
           avatar_url: userData.avatar_url,
+          role: userData.role,
         },
       };
     } catch (err) {

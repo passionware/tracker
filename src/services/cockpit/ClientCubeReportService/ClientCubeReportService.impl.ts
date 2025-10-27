@@ -55,5 +55,14 @@ export function createClientCubeReportService(
 
       return result;
     },
+
+    deleteReport: async (reportId) => {
+      await api.deleteReport(reportId);
+
+      // Invalidate all reports queries to refresh the list
+      await client.invalidateQueries({
+        queryKey: ["cockpit_cube_reports"],
+      });
+    },
   };
 }
