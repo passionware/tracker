@@ -106,6 +106,8 @@ export function createRoutingService(): RoutingService {
           root: () => `/c/${clientId}/reports/${reportId}`,
           preview: () => `/c/${clientId}/reports/${reportId}/preview`,
           cubeViewer: () => `/c/${clientId}/reports/${reportId}/cube-viewer`,
+          pdfExportBuilder: () =>
+            `/c/${clientId}/reports/${reportId}/pdf-export-builder`,
         }),
       }),
     }),

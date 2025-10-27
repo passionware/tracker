@@ -149,6 +149,7 @@ export interface RoutingService {
         root: () => string;
         preview: () => string;
         cubeViewer: () => string;
+        pdfExportBuilder: () => string;
       };
     };
   };
