@@ -15,7 +15,7 @@ export async function generatePDFDocument(
     "@react-pdf/renderer"
   );
 
-  const { metadata, pages } = pdfReportModel;
+  const { metadata, pages, rootLevelMeasures } = pdfReportModel;
 
   // Helper function to convert image URL to base64 for embedding
   // If the image URL is already a data URL, just return it, otherwise fetch and convert
@@ -114,21 +114,6 @@ export async function generatePDFDocument(
       color: "#9CA3AF",
       marginTop: 8,
       textAlign: "center",
-    },
-    toc: {
-      marginTop: 20,
-    },
-    tocTitle: {
-      fontSize: 18,
-      fontWeight: 600,
-      color: "#111827",
-      marginBottom: 15,
-    },
-    tocItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 8,
-      paddingVertical: 4,
     },
     pageHeader: {
       flexDirection: "row",
@@ -306,6 +291,42 @@ export async function generatePDFDocument(
       color: "#6B7280",
       fontWeight: 500,
     },
+    rootMeasures: {
+      marginTop: 30,
+      marginBottom: 20,
+    },
+    rootMeasuresTitle: {
+      fontSize: 18,
+      fontWeight: 600,
+      color: "#111827",
+      marginBottom: 15,
+      textAlign: "center",
+    },
+    rootMeasuresGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-around",
+      gap: 20,
+    },
+    rootMeasureCard: {
+      alignItems: "center",
+      backgroundColor: "#F8FAFC",
+      padding: 20,
+      borderRadius: 8,
+      border: "1px solid #E2E8F0",
+      minWidth: 120,
+    },
+    rootMeasureValue: {
+      fontSize: 24,
+      fontWeight: 700,
+      color: "#1E40AF",
+      marginBottom: 5,
+    },
+    rootMeasureLabel: {
+      fontSize: 12,
+      color: "#64748B",
+      textAlign: "center",
+    },
   });
 
   return (
@@ -329,18 +350,22 @@ export async function generatePDFDocument(
           </Text>
         </View>
 
-        {/* Table of Contents */}
-        <View style={styles.toc}>
-          <Text style={styles.tocTitle}>Table of Contents</Text>
-          {pages.map((pageData, index) => (
-            <View key={pageData.config.id} style={styles.tocItem}>
-              <Text>
-                {index + 1}. {pageData.title}
-              </Text>
-              <Text>Page {index + 2}</Text>
+        {/* Root Level Measurements */}
+        {rootLevelMeasures.length > 0 && (
+          <View style={styles.rootMeasures}>
+            <Text style={styles.rootMeasuresTitle}>Overall Summary</Text>
+            <View style={styles.rootMeasuresGrid}>
+              {rootLevelMeasures.map((measure) => (
+                <View key={measure.id} style={styles.rootMeasureCard}>
+                  <Text style={styles.rootMeasureValue}>
+                    {measure.formattedValue}
+                  </Text>
+                  <Text style={styles.rootMeasureLabel}>{measure.name}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </View>
+        )}
       </Page>
 
       {/* Individual Pages */}

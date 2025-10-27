@@ -15,7 +15,7 @@ interface PDFPreviewProps {
 }
 
 export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
-  const { metadata, pages } = pdfReportModel;
+  const { metadata, pages, rootLevelMeasures } = pdfReportModel;
 
   return (
     <div className="space-y-6">
@@ -75,27 +75,27 @@ export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
           </div>
         </div>
 
-        {/* Table of Contents */}
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
-            Table of Contents
-          </h2>
-          <div className="space-y-1">
-            {pages.map((pageData, index) => (
-              <div
-                key={pageData.config.id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-gray-700">
-                  {index + 1}. {pageData.title}
-                </span>
-                <Badge variant="secondary" className="text-xs">
-                  Page {index + 2}
-                </Badge>
-              </div>
-            ))}
+        {/* Root Level Measurements */}
+        {rootLevelMeasures.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+              Overall Summary
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {rootLevelMeasures.map((measure) => (
+                <div
+                  key={measure.id}
+                  className="bg-slate-50 rounded-lg p-4 text-center border border-slate-200"
+                >
+                  <div className="text-2xl font-bold text-blue-600 mb-1">
+                    {measure.formattedValue}
+                  </div>
+                  <div className="text-sm text-slate-600">{measure.name}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Individual Pages Preview */}

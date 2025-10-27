@@ -112,6 +112,13 @@ export interface PDFReportModel {
     totalItems: number;
     dateRange: string;
   };
+  /** Root level measurements (totals across all data) */
+  rootLevelMeasures: Array<{
+    id: string;
+    name: string;
+    value: number;
+    formattedValue: string;
+  }>;
 }
 
 /**
@@ -136,6 +143,21 @@ export class PDFReportModelBuilder {
       this.model.pages = [];
     }
     this.model.pages.push(pageData);
+    return this;
+  }
+
+  /**
+   * Set root level measurements
+   */
+  setRootLevelMeasures(
+    rootLevelMeasures: Array<{
+      id: string;
+      name: string;
+      value: number;
+      formattedValue: string;
+    }>,
+  ): this {
+    this.model.rootLevelMeasures = rootLevelMeasures;
     return this;
   }
 
@@ -174,6 +196,7 @@ export class PDFReportModelBuilder {
       metadata: this.model.metadata,
       pages: sortedPages,
       overallSummary,
+      rootLevelMeasures: this.model.rootLevelMeasures || [],
     };
   }
 }
@@ -334,8 +357,26 @@ export class PDFReportModelUtils {
     // Create metadata
     const metadata = this.createMetadata(report, tenantData);
 
+    // Calculate root level measurements using measure definitions directly
+    const rootLevelMeasures = cubeConfig.measures.map((measure) => {
+      // Calculate the total value using the measure's getValue and aggregate functions
+      const values = cubeConfig.data.map((item) => measure.getValue(item));
+      const aggregatedValue = measure.aggregate(values);
+      const formattedValue = measure.formatValue
+        ? measure.formatValue(aggregatedValue)
+        : String(aggregatedValue);
+      return {
+        id: measure.id,
+        name: measure.name,
+        value: aggregatedValue,
+        formattedValue,
+      };
+    });
+
     // Build the report model
-    const builder = new PDFReportModelBuilder().setMetadata(metadata);
+    const builder = new PDFReportModelBuilder()
+      .setMetadata(metadata)
+      .setRootLevelMeasures(rootLevelMeasures);
 
     // Process each page configuration
     for (const pageConfig of pdfConfig.pages) {
