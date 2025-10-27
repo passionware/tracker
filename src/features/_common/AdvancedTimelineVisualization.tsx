@@ -34,7 +34,7 @@ interface TimelineEntry {
   roleName: string;
   contractorId: number;
   contractorName?: string;
-  note: string;
+  note: string | null;
   duration: number;
   costRate: number;
   costCurrency: string;

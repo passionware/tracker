@@ -213,7 +213,7 @@ export interface FilteredEntrySummary {
   endAt: Date;
   duration: number; // in hours
   budget: CurrencyValue;
-  description?: string;
+  description?: string | null;
 }
 
 export interface FilteredEntriesView {

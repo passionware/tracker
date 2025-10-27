@@ -127,7 +127,6 @@ function ExportBuilderContent({
           : [],
       selectedColumns: [
         "id",
-        "note",
         "taskId",
         "activityId",
         "projectId",
@@ -136,9 +135,7 @@ function ExportBuilderContent({
         "startAt",
         "endAt",
         "numHours",
-        "costValue",
         "billingValue",
-        "profitValue",
       ],
     },
   });

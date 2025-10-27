@@ -216,7 +216,7 @@ export function adaptTMetricToGeneric(
 
     return {
       id: String(e.id || `entry_${Date.now()}_${Math.random()}`),
-      note: e.note || "",
+      note: null, // Note field is redundant for TMetric reports
       taskId,
       activityId,
       projectId: e.project?.name || "default", // Use TMetric project name as projectId

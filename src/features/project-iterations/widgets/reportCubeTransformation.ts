@@ -15,7 +15,7 @@ import { groupBy, sum } from "lodash";
 export interface TransformedEntry {
   // Core fields (always present)
   id: string;
-  note: string;
+  note: string | null;
   taskId: string;
   activityId: string;
   projectId: string;

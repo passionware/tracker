@@ -14,7 +14,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
       };
       timeEntries: Array<{
         id: string;
-        note: string;
+        note: string | null;
         taskId: string;
         activityId: string;
         projectId: string;
@@ -89,7 +89,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         timeEntries: [
           {
             id: "entry-1",
-            note: "Implemented user authentication",
+            note: null,
             taskId: "development",
             activityId: "coding",
             projectId: "webapp",
@@ -102,7 +102,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
           },
           {
             id: "entry-2",
-            note: "Code review for auth module",
+            note: null,
             taskId: "testing",
             activityId: "review",
             projectId: "webapp",
@@ -183,7 +183,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         timeEntries: [
           {
             id: "entry-3",
-            note: "Built dashboard components",
+            note: null,
             taskId: "frontend",
             activityId: "implementation",
             projectId: "dashboard",
@@ -196,7 +196,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
           },
           {
             id: "entry-4",
-            note: "Fixed API integration bugs",
+            note: null,
             taskId: "backend",
             activityId: "debugging",
             projectId: "dashboard",
@@ -268,7 +268,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         timeEntries: [
           {
             id: "entry-5",
-            note: "Refactored authentication service",
+            note: null,
             taskId: "maintenance",
             activityId: "refactoring",
             projectId: "maintenance",
@@ -338,7 +338,7 @@ export function createGeneratedReportSourceMock(): GeneratedReportSourceApi {
         filteredData = filteredData.filter((item) => {
           // Search in time entry notes
           const timeEntryMatches = item.data.timeEntries.some((entry) =>
-            entry.note.toLowerCase().includes(searchLower),
+            entry.note?.toLowerCase().includes(searchLower),
           );
 
           // Search in task type names and descriptions

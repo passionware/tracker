@@ -51,7 +51,7 @@ export interface GenericReport {
   };
   timeEntries: Array<{
     id: string;
-    note: string;
+    note: string | null;
     taskId: string;
     activityId: string;
     projectId: string; // Required project assignment

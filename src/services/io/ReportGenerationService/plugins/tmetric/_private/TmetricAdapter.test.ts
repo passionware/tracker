@@ -103,7 +103,7 @@ describe("TmetricAdapter", () => {
       const originalEntry = mockTmetricResponse[0];
 
       expect(firstEntry.id).toBe(String(originalEntry.id));
-      expect(firstEntry.note).toBe(originalEntry.note);
+      expect(firstEntry.note).toBe(null);
       expect(firstEntry.taskId).toBe(
         originalEntry.note?.trim() || "Unnamed task",
       );
@@ -126,7 +126,7 @@ describe("TmetricAdapter", () => {
       const result = adaptTMetricToGeneric(input);
 
       const timeEntry = result.timeEntries[0];
-      expect(timeEntry.note).toBe("");
+      expect(timeEntry.note).toBe(null);
       expect(timeEntry.taskId).toBe("Unnamed task");
     });
 
@@ -142,7 +142,7 @@ describe("TmetricAdapter", () => {
       const result = adaptTMetricToGeneric(input);
 
       const timeEntry = result.timeEntries[0];
-      expect(timeEntry.note).toBe("");
+      expect(timeEntry.note).toBe(null);
       expect(timeEntry.taskId).toBe("Unnamed task");
     });
 

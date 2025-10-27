@@ -96,18 +96,17 @@ Support for multiple data types with automatic conversion:
 
 ```typescript
 import {
-  serializeCubeConfig,
   deserializeCubeConfig,
   createSerializableCubeConfig,
 } from "./CubeSerialization";
 
-// Serialize existing cube configuration
-const serialized = serializeCubeConfig(cubeConfig);
+// Get serializable configuration (source of truth)
+const serializableConfig = createSerializableCubeConfig(data);
 
 // Store in database
-await database.store("cube_config", serialized);
+await database.store("cube_config", serializableConfig);
 
-// Restore from database
+// Restore from database and convert to runtime config
 const restored = await database.retrieve("cube_config");
 const cubeConfig = deserializeCubeConfig(restored, data);
 ```
@@ -272,9 +271,13 @@ async function retrieveCubeConfiguration(id: string) {
 ### Usage in Application
 
 ```typescript
-// Save user's cube configuration
-const serialized = serializeCubeConfig(userCubeConfig);
-await storeCubeConfiguration(`user_${userId}_cube`, serialized, rawData);
+// Save user's cube configuration (serializable config is source of truth)
+const serializableConfig = getSerializableCubeConfig(data);
+await storeCubeConfiguration(
+  `user_${userId}_cube`,
+  serializableConfig,
+  rawData,
+);
 
 // Load user's cube configuration
 const retrieved = await retrieveCubeConfiguration(`user_${userId}_cube`);
@@ -313,10 +316,7 @@ All stories use Storybook args to make the serialized configuration editable thr
 
 ### Core Functions
 
-- `serializeCubeConfig(config)` - Serialize cube configuration to JSON
-- `deserializeCubeConfig(serialized, data)` - Restore cube configuration from JSON
-- `serializeCubeState(config, data)` - Serialize complete cube state
-- `deserializeCubeState(serialized)` - Restore complete cube state
+- `deserializeCubeConfig(serialized, data)` - Convert serializable config to runtime config
 - `createSerializableCubeConfig(...)` - Create configuration from scratch
 - `validateSerializableCubeConfig(config)` - Validate configuration
 

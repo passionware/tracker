@@ -53,7 +53,7 @@ const genericReport$ = z.object({
   timeEntries: z.array(
     z.object({
       id: z.string(),
-      note: z.string(),
+      note: z.string().nullable(),
       taskId: z.string(),
       activityId: z.string(),
       projectId: z.string(),
