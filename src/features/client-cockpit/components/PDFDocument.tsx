@@ -92,36 +92,40 @@ export async function generatePDFDocument(
     },
     header: {
       alignItems: "center",
-      marginBottom: 30,
-      borderBottom: "1px solid #E5E7EB",
-      paddingBottom: 20,
+      marginBottom: 40,
+      paddingBottom: 30,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 16,
+      padding: 30,
     },
     logoContainer: {
-      marginBottom: 15,
+      marginBottom: 20,
     },
     logo: {
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 100,
       objectFit: "contain",
     },
     title: {
-      fontSize: 24,
+      fontSize: 32,
       fontWeight: 700,
-      color: "#111827",
-      marginBottom: 8,
+      color: "#1E293B",
+      marginBottom: 12,
       textAlign: "center",
     },
     subtitle: {
-      fontSize: 14,
-      color: "#6B7280",
-      marginBottom: 4,
+      fontSize: 16,
+      color: "#475569",
+      marginBottom: 8,
       textAlign: "center",
+      fontWeight: 500,
     },
     date: {
-      fontSize: 12,
-      color: "#9CA3AF",
-      marginTop: 8,
+      fontSize: 14,
+      color: "#64748B",
+      marginTop: 12,
       textAlign: "center",
+      fontWeight: 400,
     },
     pageHeader: {
       flexDirection: "row",
@@ -298,40 +302,41 @@ export async function generatePDFDocument(
       fontWeight: 500,
     },
     rootMeasures: {
-      marginTop: 30,
-      marginBottom: 20,
+      marginTop: 40,
+      marginBottom: 30,
     },
     rootMeasuresTitle: {
-      fontSize: 18,
-      fontWeight: 600,
-      color: "#111827",
-      marginBottom: 15,
+      fontSize: 24,
+      fontWeight: 700,
+      color: "#1E293B",
+      marginBottom: 25,
       textAlign: "center",
     },
     rootMeasuresGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      justifyContent: "space-around",
-      gap: 20,
+      justifyContent: "center",
+      gap: 30,
     },
     rootMeasureCard: {
       alignItems: "center",
-      backgroundColor: "#F8FAFC",
-      padding: 20,
-      borderRadius: 8,
+      backgroundColor: "#FFFFFF",
+      padding: 30,
+      borderRadius: 20,
       border: "1px solid #E2E8F0",
-      minWidth: 120,
+      minWidth: 160,
     },
     rootMeasureValue: {
-      fontSize: 24,
-      fontWeight: 700,
-      color: "#1E40AF",
-      marginBottom: 5,
+      fontSize: 36,
+      fontWeight: 800,
+      color: "#3B82F6",
+      marginBottom: 8,
     },
     rootMeasureLabel: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#64748B",
       textAlign: "center",
+      fontWeight: 600,
     },
     footer: {
       position: "absolute",
@@ -382,7 +387,9 @@ export async function generatePDFDocument(
               {rootLevelMeasures.map((measure) => (
                 <View key={measure.id} style={styles.rootMeasureCard}>
                   <Text style={styles.rootMeasureValue}>
-                    {measure.formattedValue}
+                    {isNaN(Number(measure.value))
+                      ? "0"
+                      : measure.formattedValue}
                   </Text>
                   <Text style={styles.rootMeasureLabel}>{measure.name}</Text>
                 </View>
@@ -416,25 +423,33 @@ export async function generatePDFDocument(
             <View style={styles.summaryGrid}>
               <View style={styles.summaryCard}>
                 <Text style={[styles.summaryNumber, { color: "#3B82F6" }]}>
-                  {pageData.summary.totalGroups}
+                  {isNaN(Number(pageData.summary.totalGroups))
+                    ? 0
+                    : pageData.summary.totalGroups}
                 </Text>
                 <Text style={styles.summaryLabel}>Groups</Text>
               </View>
               <View style={styles.summaryCard}>
                 <Text style={[styles.summaryNumber, { color: "#10B981" }]}>
-                  {pageData.summary.totalSubGroups}
+                  {isNaN(Number(pageData.summary.totalSubGroups))
+                    ? 0
+                    : pageData.summary.totalSubGroups}
                 </Text>
                 <Text style={styles.summaryLabel}>Sub-groups</Text>
               </View>
               <View style={styles.summaryCard}>
                 <Text style={[styles.summaryNumber, { color: "#8B5CF6" }]}>
-                  {pageData.summary.totalItems}
+                  {isNaN(Number(pageData.summary.totalItems))
+                    ? 0
+                    : pageData.summary.totalItems}
                 </Text>
                 <Text style={styles.summaryLabel}>Items</Text>
               </View>
               <View style={styles.summaryCard}>
                 <Text style={[styles.summaryNumber, { color: "#F59E0B" }]}>
-                  {pageData.summary.measures.length}
+                  {isNaN(Number(pageData.summary.measures.length))
+                    ? 0
+                    : pageData.summary.measures.length}
                 </Text>
                 <Text style={styles.summaryLabel}>Measures</Text>
               </View>
@@ -481,13 +496,16 @@ export async function generatePDFDocument(
                     const cell = group.cells.find(
                       (c) => c.measureId === measure.id,
                     );
+
                     return (
                       <Text
                         key={measure.id}
                         style={styles.tableCellMeasureGroup}
                       >
                         {cell?.formattedValue ||
-                          (cell?.value ? String(cell.value) : "-")}
+                          (cell?.value && !isNaN(Number(cell.value))
+                            ? String(cell.value)
+                            : "-")}
                       </Text>
                     );
                   })}
@@ -514,13 +532,16 @@ export async function generatePDFDocument(
                         const cell = subGroup.cells.find(
                           (c) => c.measureId === measure.id,
                         );
+
                         return (
                           <Text
                             key={measure.id}
                             style={styles.tableCellNumericSub}
                           >
                             {cell?.formattedValue ||
-                              (cell?.value ? String(cell.value) : "-")}
+                              (cell?.value && !isNaN(Number(cell.value))
+                                ? String(cell.value)
+                                : "-")}
                           </Text>
                         );
                       })}
