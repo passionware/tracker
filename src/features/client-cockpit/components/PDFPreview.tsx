@@ -206,7 +206,7 @@ function PDFPagePreview({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {cubeData.groups.slice(0, 5).map((group, groupIndex) => (
+              {cubeData.groups.map((group, groupIndex) => (
                 <React.Fragment key={groupIndex}>
                   {/* Main group row */}
                   <tr>
@@ -238,11 +238,11 @@ function PDFPagePreview({
                     })}
                   </tr>
 
-                  {/* Sub-groups rows (show first 2) */}
+                  {/* Sub-groups rows */}
                   {config.secondaryDimension &&
                     group.subGroups &&
                     group.subGroups.length > 0 &&
-                    group.subGroups.slice(0, 2).map((subGroup, subIndex) => (
+                    group.subGroups.map((subGroup, subIndex) => (
                       <tr
                         key={`${groupIndex}-${subIndex}`}
                         className="bg-gray-50"
@@ -271,19 +271,6 @@ function PDFPagePreview({
                     ))}
                 </React.Fragment>
               ))}
-              {cubeData.groups.length > 5 && (
-                <tr>
-                  <td
-                    colSpan={
-                      (config.secondaryDimension ? 2 : 1) +
-                      summary.measures.length
-                    }
-                    className="px-4 py-3 text-center text-gray-500 text-sm"
-                  >
-                    ... and {cubeData.groups.length - 5} more groups
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

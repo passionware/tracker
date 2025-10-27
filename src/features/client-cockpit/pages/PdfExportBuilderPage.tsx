@@ -537,32 +537,6 @@ function useCubeDescriptors(reportData: CockpitCubeReportWithCreator) {
       reportData.cube_data.data as CubeDataItem[],
     );
 
-    // Debug: Log the measures to see what's happening
-    console.log(
-      "Cube measures:",
-      config.measures.map((m) => ({
-        id: m.id,
-        name: m.name,
-        getValue: m.getValue.toString(),
-      })),
-    );
-
-    // Debug: Log the dimensions
-    console.log(
-      "Cube dimensions:",
-      config.dimensions.map((d) => ({
-        id: d.id,
-        name: d.name,
-        getValue: d.getValue.toString(),
-      })),
-    );
-
-    // Debug: Log sample data
-    if (config.data.length > 0) {
-      console.log("Sample data item:", config.data[0]);
-      console.log("Sample data fields:", Object.keys(config.data[0]));
-    }
-
     return config;
   }, [reportData.cube_config, reportData.cube_data.data]);
 

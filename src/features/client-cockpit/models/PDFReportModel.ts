@@ -426,53 +426,54 @@ export class PDFReportModelUtils {
       skipEmptyGroups?: boolean;
     },
   ): Promise<PDFPageData> {
-    // Import cube service dynamically
-    const { cubeService } = await import("@/features/_common/Cube/CubeService");
-
-    // Create cube configuration for this page
-    const pageCubeConfig = {
-      data: cubeConfig.data,
-      dimensions: cubeConfig.dimensions,
-      measures: cubeConfig.measures,
-      filters: cubeConfig.filters || [],
-      nodeStates: new Map(),
-      initialGrouping: pageConfig.secondaryDimension
-        ? [pageConfig.primaryDimension.id, pageConfig.secondaryDimension.id]
-        : [pageConfig.primaryDimension.id],
-      activeMeasures: cubeConfig.measures.map((m: any) => m.id).filter(Boolean),
-    };
-
-    // Debug: Log the page configuration and cube setup
-    console.log("Page config:", {
-      primaryDimension: pageConfig.primaryDimension,
-      secondaryDimension: pageConfig.secondaryDimension,
-      initialGrouping: pageCubeConfig.initialGrouping,
-    });
-
-    console.log(
-      "Available dimensions:",
-      cubeConfig.dimensions.map((d: any) => ({ id: d.id, name: d.name })),
+    // Import stateless calculation functions
+    const { calculateCubeGroups } = await import(
+      "@/features/_common/Cube/CubeCalculation"
     );
 
-    // Calculate cube data
-    const cubeData = cubeService.calculateCube(pageCubeConfig, {
-      includeItems: options.includeItems,
-      maxDepth: options.maxDepth,
-      skipEmptyGroups: options.skipEmptyGroups,
-    });
+    // Calculate first level groups (primary dimension)
+    const firstLevelGroups = calculateCubeGroups(
+      cubeConfig.data,
+      [], // Empty path for root level
+      pageConfig.primaryDimension.id,
+      cubeConfig.dimensions,
+      cubeConfig.measures,
+      options,
+    );
 
-    // Debug: Log the cube result
-    console.log("Cube result:", {
-      totalGroups: cubeData.groups.length,
-      firstGroup: cubeData.groups[0]
-        ? {
-            dimensionId: cubeData.groups[0].dimensionId,
-            dimensionLabel: cubeData.groups[0].dimensionLabel,
-            dimensionValue: cubeData.groups[0].dimensionValue,
-            subGroupsCount: cubeData.groups[0].subGroups?.length || 0,
-          }
-        : null,
-    });
+    // Calculate second level groups (secondary dimension) if specified
+    if (pageConfig.secondaryDimension) {
+      firstLevelGroups.forEach((group) => {
+        const secondLevelGroups = calculateCubeGroups(
+          cubeConfig.data,
+          [
+            {
+              dimensionId: group.dimensionId,
+              dimensionValue: group.dimensionValue,
+            },
+          ],
+          pageConfig.secondaryDimension!.id,
+          cubeConfig.dimensions,
+          cubeConfig.measures,
+          options,
+        );
+
+        if (secondLevelGroups.length > 0) {
+          group.subGroups = secondLevelGroups;
+        }
+      });
+    }
+
+    const groups = firstLevelGroups;
+
+    // Create cube result structure
+    const cubeData = {
+      groups,
+      totalItems: cubeConfig.data.length,
+      grandTotals: [], // Not needed for PDF
+      filteredData: options.includeItems ? cubeConfig.data : undefined,
+      config: cubeConfig,
+    };
 
     // Create page data with formatting
     return this.createPageData(
