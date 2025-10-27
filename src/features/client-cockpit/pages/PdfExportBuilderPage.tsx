@@ -334,7 +334,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
             </div>
           </div>
 
-          <div className="flex-1 flex">
+          <div className="flex-1 flex h-full">
             {/* Left Panel - Configuration */}
             <div className="w-1/3 border-r bg-white p-6 overflow-y-auto">
               <div className="space-y-6">
