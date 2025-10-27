@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CockpitLoginPage } from "./CockpitLoginPage";
 import { CubeReportsPage } from "./pages/CubeReportsPage";
 import { CubeViewerPage } from "./pages/CubeViewerPage";
+import { PdfExportBuilderPage } from "./pages/PdfExportBuilderPage";
 import { ProtectedCockpitRoute } from "./ProtectedCockpitRoute";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import { rd } from "@passionware/monads";
@@ -64,6 +65,26 @@ export function CockpitMainRouter(props: WithFrontServices) {
           </ProtectedCockpitRoute>
         }
       />
+
+      {/* PDF Export Builder Route */}
+      <Route
+        path={makeRelativePath(
+          basePath,
+          props.services.routingService
+            .forClientCockpit()
+            .forClient()
+            .forReport()
+            .pdfExportBuilder(),
+        )}
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <PdfExportBuilderPage services={props.services} />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
+      />
+
       <Route
         path=""
         element={
