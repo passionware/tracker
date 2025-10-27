@@ -76,23 +76,52 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
       if (report && pdfConfig.pages.length === 0) {
         const config = report.data
           .cube_config as unknown as SerializableCubeConfig;
-        const firstDimension = config.dimensions[0]?.id || "contractor";
 
-        const defaultPage: PdfPageConfig = {
-          id: `page-${Date.now()}`,
-          title: `Analysis by ${firstDimension}`,
-          description: `This page shows data grouped by ${firstDimension}.`,
+        // Set contractor as primary and task as secondary by default
+        const primaryDimensionId = "contractor";
+        const secondaryDimensionId = "task";
+
+        // Find dimension names from config
+        const primaryDimension = config.dimensions.find(
+          (d) => d.id === primaryDimensionId,
+        );
+        const secondaryDimension = config.dimensions.find(
+          (d) => d.id === secondaryDimensionId,
+        );
+
+        const defaultPage1: PdfPageConfig = {
+          id: `page-${Date.now()}-1`,
           order: 0,
           primaryDimension: {
-            id: firstDimension,
-            name:
-              firstDimension.charAt(0).toUpperCase() + firstDimension.slice(1),
+            id: primaryDimensionId,
+            name: primaryDimension?.name || "Contractor",
           },
+          secondaryDimension: secondaryDimension
+            ? {
+                id: secondaryDimensionId,
+                name: secondaryDimension.name,
+              }
+            : undefined,
+        };
+
+        const defaultPage2: PdfPageConfig = {
+          id: `page-${Date.now()}-2`,
+          order: 1,
+          primaryDimension: {
+            id: secondaryDimensionId,
+            name: secondaryDimension?.name || "Task",
+          },
+          secondaryDimension: primaryDimension
+            ? {
+                id: primaryDimensionId,
+                name: primaryDimension.name,
+              }
+            : undefined,
         };
 
         setPdfConfig((prev) => ({
           ...prev,
-          pages: [defaultPage],
+          pages: [defaultPage1, defaultPage2],
         }));
         setHasInitialized(true);
       }
@@ -113,8 +142,6 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   const addPage = () => {
     const newPage: PdfPageConfig = {
       id: `page-${Date.now()}`,
-      title: "New Page",
-      description: "Configure this page",
       order: pdfConfig.pages.length,
       primaryDimension: {
         id: "contractor",
@@ -430,26 +457,6 @@ function PageConfigCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Page Title</Label>
-          <input
-            type="text"
-            value={page.title}
-            onChange={(e) => onUpdate({ title: e.target.value })}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Description</Label>
-          <textarea
-            value={page.description}
-            onChange={(e) => onUpdate({ description: e.target.value })}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={2}
-          />
-        </div>
-
         <div className="space-y-2">
           <Label className="text-sm font-medium">Primary Dimension</Label>
           <Select

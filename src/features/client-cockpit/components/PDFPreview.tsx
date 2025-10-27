@@ -87,7 +87,7 @@ export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
                 className="flex items-center justify-between text-sm"
               >
                 <span className="text-gray-700">
-                  {index + 1}. {pageData.config.title}
+                  {index + 1}. {pageData.title}
                 </span>
                 <Badge variant="secondary" className="text-xs">
                   Page {index + 2}
@@ -125,17 +125,17 @@ function PDFPagePreview({
   pageNumber,
   formatService,
 }: PDFPagePreviewProps) {
-  const { config, cubeData, summary } = pageData;
+  const { config, title, description, cubeData, summary } = pageData;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       {/* Page Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{config.title}</h2>
+          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
           <p className="text-sm text-gray-600">Page {pageNumber}</p>
-          {config.description && (
-            <p className="text-sm text-gray-500 mt-1">{config.description}</p>
+          {description && (
+            <p className="text-sm text-gray-500 mt-1">{description}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -209,14 +209,14 @@ function PDFPagePreview({
               {cubeData.groups.map((group, groupIndex) => (
                 <React.Fragment key={groupIndex}>
                   {/* Main group row */}
-                  <tr>
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                  <tr className="bg-blue-50 border-b-2 border-blue-200">
+                    <td className="px-4 py-3 font-semibold text-gray-900">
                       {group.dimensionLabel ||
                         String(group.dimensionValue) ||
                         "Total"}
                     </td>
                     {config.secondaryDimension && (
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-700 font-medium">
                         {group.subGroups && group.subGroups.length > 0
                           ? `${group.subGroups.length} sub-groups`
                           : "-"}
@@ -229,7 +229,7 @@ function PDFPagePreview({
                       return (
                         <td
                           key={measure.id}
-                          className="px-4 py-3 text-gray-600"
+                          className="px-4 py-3 text-gray-700 font-medium text-right"
                         >
                           {cell?.formattedValue ||
                             (cell?.value ? String(cell.value) : "-")}
@@ -245,14 +245,15 @@ function PDFPagePreview({
                     group.subGroups.map((subGroup, subIndex) => (
                       <tr
                         key={`${groupIndex}-${subIndex}`}
-                        className="bg-gray-50"
+                        className={
+                          subIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        }
                       >
                         <td className="px-4 py-2 text-sm text-gray-600 pl-8">
-                          ↳{" "}
                           {subGroup.dimensionLabel ||
                             String(subGroup.dimensionValue)}
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-600">-</td>
+                        <td className="px-4 py-2 text-sm text-gray-500">-</td>
                         {summary.measures.map((measure) => {
                           const cell = subGroup.cells.find(
                             (c) => c.measureId === measure.id,
@@ -260,7 +261,7 @@ function PDFPagePreview({
                           return (
                             <td
                               key={measure.id}
-                              className="px-4 py-2 text-sm text-gray-600"
+                              className="px-4 py-2 text-sm text-gray-600 text-right"
                             >
                               {cell?.formattedValue ||
                                 (cell?.value ? String(cell.value) : "-")}
@@ -278,8 +279,8 @@ function PDFPagePreview({
 
       {/* Page Footer */}
       <div className="border-t pt-4 text-xs text-gray-500 text-center">
-        Report: {config.title} • Generated on{" "}
-        {formatService.temporal.date(new Date())} • Page {pageNumber}
+        Report: {title} • Generated on {formatService.temporal.date(new Date())}{" "}
+        • Page {pageNumber}
       </div>
     </div>
   );

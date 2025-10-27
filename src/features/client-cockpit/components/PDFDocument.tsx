@@ -152,51 +152,104 @@ export async function generatePDFDocument(
     },
     table: {
       marginTop: 20,
+      border: "1px solid #E5E7EB",
+      borderRadius: 8,
+      overflow: "hidden",
     },
     tableHeader: {
       flexDirection: "row",
-      backgroundColor: "#F9FAFB",
-      borderBottom: "1px solid #E5E7EB",
+      backgroundColor: "#F8FAFC",
+      borderBottom: "2px solid #E5E7EB",
     },
     tableRow: {
       flexDirection: "row",
-      borderBottom: "1px solid #F3F4F6",
+      borderBottom: "1px solid #F1F5F9",
+      backgroundColor: "#FFFFFF",
+    },
+    tableRowAlt: {
+      flexDirection: "row",
+      borderBottom: "1px solid #F1F5F9",
+      backgroundColor: "#FAFBFC",
+    },
+    tableRowGroup: {
+      flexDirection: "row",
+      borderBottom: "1px solid #E5E7EB",
+      backgroundColor: "#F8FAFC",
+      fontWeight: 600,
     },
     tableCell: {
+      padding: 12,
+      fontSize: 11,
+      flex: 1,
+      borderRight: "1px solid #F1F5F9",
+      color: "#374151",
+    },
+    tableCellGroup: {
+      padding: 12,
+      fontSize: 11,
+      flex: 1,
+      borderRight: "1px solid #F1F5F9",
+      color: "#111827",
+      fontWeight: 600,
+    },
+    tableCellSub: {
       padding: 8,
+      paddingLeft: 24,
       fontSize: 10,
       flex: 1,
-      borderRight: "1px solid #F3F4F6",
+      borderRight: "1px solid #F1F5F9",
+      color: "#6B7280",
+    },
+    tableCellNumeric: {
+      padding: 12,
+      fontSize: 11,
+      flex: 1,
+      borderRight: "1px solid #F1F5F9",
+      color: "#374151",
+      textAlign: "right",
+    },
+    tableCellNumericSub: {
+      padding: 8,
+      paddingLeft: 24,
+      fontSize: 10,
+      flex: 1,
+      borderRight: "1px solid #F1F5F9",
+      color: "#6B7280",
+      textAlign: "right",
     },
     tableHeaderCell: {
-      fontWeight: 600,
-      color: "#374151",
-      backgroundColor: "#F9FAFB",
+      fontWeight: 700,
+      color: "#111827",
+      backgroundColor: "#F8FAFC",
+      textAlign: "center",
     },
     summary: {
       marginTop: 20,
-      padding: 15,
-      backgroundColor: "#F9FAFB",
+      padding: 20,
+      backgroundColor: "#F8FAFC",
       borderRadius: 8,
+      border: "1px solid #E5E7EB",
     },
     summaryTitle: {
-      fontSize: 14,
-      fontWeight: 600,
+      fontSize: 16,
+      fontWeight: 700,
       color: "#111827",
-      marginBottom: 10,
+      marginBottom: 15,
     },
     summaryRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginBottom: 5,
+      marginBottom: 8,
+      paddingVertical: 2,
     },
     summaryLabel: {
-      fontSize: 10,
+      fontSize: 12,
       color: "#6B7280",
+      fontWeight: 500,
     },
     summaryValue: {
-      fontSize: 10,
-      fontWeight: 500,
+      fontSize: 12,
+      fontWeight: 600,
       color: "#111827",
     },
   });
@@ -228,7 +281,7 @@ export async function generatePDFDocument(
           {pages.map((pageData, index) => (
             <View key={pageData.config.id} style={styles.tocItem}>
               <Text>
-                {index + 1}. {pageData.config.title}
+                {index + 1}. {pageData.title}
               </Text>
               <Text>Page {index + 2}</Text>
             </View>
@@ -241,7 +294,7 @@ export async function generatePDFDocument(
         <Page key={pageData.config.id} size="A4" style={styles.page}>
           {/* Page Header */}
           <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>{pageData.config.title}</Text>
+            <Text style={styles.pageTitle}>{pageData.title}</Text>
             <Text style={styles.pageNumber}>Page {index + 2}</Text>
           </View>
 
@@ -300,12 +353,12 @@ export async function generatePDFDocument(
             {pageData.cubeData.groups.map((group, groupIndex) => (
               <React.Fragment key={groupIndex}>
                 {/* Main group row */}
-                <View style={styles.tableRow}>
-                  <Text style={styles.tableCell}>
+                <View style={styles.tableRowGroup}>
+                  <Text style={styles.tableCellGroup}>
                     {group.dimensionLabel || String(group.dimensionValue)}
                   </Text>
                   {pageData.config.secondaryDimension && (
-                    <Text style={styles.tableCell}>
+                    <Text style={styles.tableCellGroup}>
                       {group.subGroups?.length || 0} sub-groups
                     </Text>
                   )}
@@ -314,7 +367,7 @@ export async function generatePDFDocument(
                       (c) => c.measureId === measure.id,
                     );
                     return (
-                      <Text key={measure.id} style={styles.tableCell}>
+                      <Text key={measure.id} style={styles.tableCellNumeric}>
                         {cell?.formattedValue ||
                           (cell?.value ? String(cell.value) : "-")}
                       </Text>
@@ -329,20 +382,26 @@ export async function generatePDFDocument(
                   group.subGroups.map((subGroup, subIndex) => (
                     <View
                       key={`${groupIndex}-${subIndex}`}
-                      style={styles.tableRow}
+                      style={
+                        subIndex % 2 === 0
+                          ? styles.tableRow
+                          : styles.tableRowAlt
+                      }
                     >
-                      <Text style={[styles.tableCell, { paddingLeft: 16 }]}>
-                        ↳{" "}
+                      <Text style={styles.tableCellSub}>
                         {subGroup.dimensionLabel ||
                           String(subGroup.dimensionValue)}
                       </Text>
-                      <Text style={styles.tableCell}>-</Text>
+                      <Text style={styles.tableCellSub}>-</Text>
                       {pageData.summary.measures.map((measure) => {
                         const cell = subGroup.cells.find(
                           (c) => c.measureId === measure.id,
                         );
                         return (
-                          <Text key={measure.id} style={styles.tableCell}>
+                          <Text
+                            key={measure.id}
+                            style={styles.tableCellNumericSub}
+                          >
                             {cell?.formattedValue ||
                               (cell?.value ? String(cell.value) : "-")}
                           </Text>

@@ -44,10 +44,6 @@ export interface PDFReportMetadata {
 export interface PDFPageConfig {
   /** Unique page identifier */
   id: string;
-  /** Page title */
-  title: string;
-  /** Page description */
-  description?: string;
   /** Page order in the PDF */
   order: number;
   /** Primary dimension for grouping */
@@ -70,6 +66,10 @@ export interface PDFPageConfig {
 export interface PDFPageData {
   /** Page configuration */
   config: PDFPageConfig;
+  /** Generated page title */
+  title: string;
+  /** Generated page description */
+  description: string;
   /** Pre-calculated cube result */
   cubeData: CubeResult;
   /** Summary statistics */
@@ -247,6 +247,14 @@ export class PDFReportModelUtils {
 
     return {
       config,
+      title: this.generatePageTitle(
+        config.primaryDimension.name,
+        config.secondaryDimension?.name,
+      ),
+      description: this.generatePageDescription(
+        config.primaryDimension.name,
+        config.secondaryDimension?.name,
+      ),
       cubeData,
       summary: {
         totalGroups,
@@ -359,14 +367,6 @@ export class PDFReportModelUtils {
 
     return {
       id: `page-${Date.now()}-${order}`,
-      title: this.generatePageTitle(
-        primaryDimension.name,
-        secondaryDimension?.name,
-      ),
-      description: this.generatePageDescription(
-        primaryDimension.name,
-        secondaryDimension?.name,
-      ),
       order,
       primaryDimension: {
         id: primaryDimension.id,
@@ -393,10 +393,10 @@ export class PDFReportModelUtils {
     if (secondaryName) {
       const secondary =
         secondaryName.charAt(0).toUpperCase() + secondaryName.slice(1);
-      return `Analysis by ${primary}, then by ${secondary}`;
+      return `${secondary}s by ${primary}s`;
     }
 
-    return `Analysis by ${primary}`;
+    return `${primary}s`;
   }
 
   /**
@@ -407,10 +407,10 @@ export class PDFReportModelUtils {
     secondaryName?: string,
   ): string {
     if (secondaryName) {
-      return `This page shows data grouped by ${primaryName} with sub-grouping by ${secondaryName}.`;
+      return `Data grouped by ${primaryName} with breakdown by ${secondaryName}.`;
     }
 
-    return `This page shows data grouped by ${primaryName}.`;
+    return `Data grouped by ${primaryName}.`;
   }
 
   /**
