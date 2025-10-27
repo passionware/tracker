@@ -1,5 +1,5 @@
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
@@ -12,8 +12,9 @@ export function CubeViewerPage(props: WithFrontServices) {
   const authState = props.services.cockpitAuthService.useAuth();
   const tenantId = rd.tryMap(authState, (auth) => auth.tenantId);
 
-  const reports =
-    props.services.clientCubeReportService.useCubeReports(tenantId);
+  const report = props.services.clientCubeReportService.useCubeReport(
+    maybe.getOrNull(reportId),
+  );
 
   const handleBack = () => {
     if (tenantId) {
@@ -39,7 +40,7 @@ export function CubeViewerPage(props: WithFrontServices) {
   };
 
   return rd
-    .journey(reports)
+    .journey(report)
     .wait(
       <div className="h-full p-6">
         <div className="space-y-4">
@@ -53,24 +54,7 @@ export function CubeViewerPage(props: WithFrontServices) {
         <ErrorMessageRenderer error={error} />
       </div>
     ))
-    .map((reportsList) => {
-      const report = reportsList.find((r) => r.id === reportId);
-      if (!report) {
-        return (
-          <div className="flex items-center justify-center min-h-[400px] p-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Report Not Found
-              </h3>
-              <p className="text-gray-600 mb-4">
-                The requested report could not be found.
-              </p>
-              <Button onClick={handleBack}>Back to Reports</Button>
-            </div>
-          </div>
-        );
-      }
-
+    .map((report) => {
       // Create serialized cube configuration
       const serializedConfig = {
         config: report.cube_config,
@@ -83,7 +67,7 @@ export function CubeViewerPage(props: WithFrontServices) {
           title={report.name}
           onBack={handleBack}
           showBackButton
-          showJsonView={false}
+          showJsonView={rd.tryGet(authState)?.role === "admin"}
           showPdfView
           onPdfExport={handlePdfExport}
         />
