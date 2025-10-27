@@ -7,12 +7,14 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { FileText } from "lucide-react";
 import type { PDFReportModel } from "../models/PDFReportModel";
+import type { FormatService } from "@/services/FormatService/FormatService";
 
 interface PDFPreviewProps {
   pdfReportModel: PDFReportModel;
+  formatService: FormatService;
 }
 
-export function PDFPreview({ pdfReportModel }: PDFPreviewProps) {
+export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
   const { metadata, pages } = pdfReportModel;
 
   return (
@@ -34,11 +36,11 @@ export function PDFPreview({ pdfReportModel }: PDFPreviewProps) {
           </h1>
           <p className="text-gray-600 mb-2">{metadata.companyName}</p>
           <p className="text-sm text-gray-500">
-            {metadata.dateRange.start.toLocaleDateString()} -{" "}
-            {metadata.dateRange.end.toLocaleDateString()}
+            {formatService.temporal.date(metadata.dateRange.start)} -{" "}
+            {formatService.temporal.date(metadata.dateRange.end)}
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            Generated on {metadata.generatedAt.toLocaleDateString()}
+            Generated on {formatService.temporal.date(metadata.generatedAt)}
           </p>
         </div>
 
@@ -102,6 +104,7 @@ export function PDFPreview({ pdfReportModel }: PDFPreviewProps) {
           key={pageData.config.id}
           pageData={pageData}
           pageNumber={index + 1}
+          formatService={formatService}
         />
       ))}
     </div>
@@ -114,9 +117,14 @@ export function PDFPreview({ pdfReportModel }: PDFPreviewProps) {
 interface PDFPagePreviewProps {
   pageData: PDFReportModel["pages"][0];
   pageNumber: number;
+  formatService: FormatService;
 }
 
-function PDFPagePreview({ pageData, pageNumber }: PDFPagePreviewProps) {
+function PDFPagePreview({
+  pageData,
+  pageNumber,
+  formatService,
+}: PDFPagePreviewProps) {
   const { config, cubeData, summary } = pageData;
 
   return (
@@ -281,8 +289,8 @@ function PDFPagePreview({ pageData, pageNumber }: PDFPagePreviewProps) {
 
       {/* Page Footer */}
       <div className="border-t pt-4 text-xs text-gray-500 text-center">
-        Report: {config.title} • Generated on {new Date().toLocaleDateString()}{" "}
-        • Page {pageNumber}
+        Report: {config.title} • Generated on{" "}
+        {formatService.temporal.date(new Date())} • Page {pageNumber}
       </div>
     </div>
   );

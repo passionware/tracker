@@ -5,8 +5,12 @@
 
 import React from "react";
 import type { PDFReportModel } from "../models/PDFReportModel";
+import type { FormatService } from "@/services/FormatService/FormatService";
 
-export async function generatePDFDocument(pdfReportModel: PDFReportModel) {
+export async function generatePDFDocument(
+  pdfReportModel: PDFReportModel,
+  formatService: FormatService,
+) {
   const { Document, Page, Text, View, StyleSheet, Font, Image } = await import(
     "@react-pdf/renderer"
   );
@@ -210,11 +214,11 @@ export async function generatePDFDocument(pdfReportModel: PDFReportModel) {
           <Text style={styles.title}>{metadata.title}</Text>
           <Text style={styles.subtitle}>{metadata.companyName}</Text>
           <Text style={styles.subtitle}>
-            {metadata.dateRange.start.toLocaleDateString()} -{" "}
-            {metadata.dateRange.end.toLocaleDateString()}
+            {formatService.temporal.date(metadata.dateRange.start)} -{" "}
+            {formatService.temporal.date(metadata.dateRange.end)}
           </Text>
           <Text style={styles.date}>
-            Generated on {metadata.generatedAt.toLocaleDateString()}
+            Generated on {formatService.temporal.date(metadata.generatedAt)}
           </Text>
         </View>
 
