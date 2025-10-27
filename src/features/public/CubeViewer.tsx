@@ -49,6 +49,50 @@ export function CubeViewer({
     "config" in serializedConfig &&
     "data" in serializedConfig;
 
+  // Deserialize the cube configuration properly - always call hooks
+  const cubeConfig = useMemo(() => {
+    if (!isSerializedCube) {
+      return {
+        data: [],
+        dimensions: [],
+        measures: [],
+      };
+    }
+    try {
+      return deserializeCubeConfig(
+        serializedConfig.config,
+        serializedConfig.data,
+      );
+    } catch (error) {
+      console.error("Error deserializing cube config:", error);
+      return {
+        data: [],
+        dimensions: [],
+        measures: [],
+      };
+    }
+  }, [serializedConfig.config, serializedConfig.data, isSerializedCube]);
+
+  // Create stable rawDataDimension object to prevent hook dependency issues
+  const rawDataDimension = useMemo(
+    () => ({
+      id: "raw-data",
+      name: "Raw Data",
+      icon: "Database",
+      description: "View raw data entries",
+      getValue: (item: any) => item.id || item,
+    }),
+    [],
+  );
+
+  const cubeState = useCubeState({
+    data: cubeConfig.data,
+    dimensions: cubeConfig.dimensions,
+    measures: cubeConfig.measures,
+    includeItems: true,
+    rawDataDimension,
+  });
+
   if (!isSerializedCube) {
     return (
       <div className="h-full flex flex-col bg-slate-50">
@@ -95,28 +139,6 @@ export function CubeViewer({
       </div>
     );
   }
-
-  // Deserialize the cube configuration properly
-  const cubeConfig = useMemo(() => {
-    return deserializeCubeConfig(
-      serializedConfig.config,
-      serializedConfig.data,
-    );
-  }, [serializedConfig.config, serializedConfig.data]);
-
-  const cubeState = useCubeState({
-    data: cubeConfig.data,
-    dimensions: cubeConfig.dimensions,
-    measures: cubeConfig.measures,
-    includeItems: true,
-    rawDataDimension: {
-      id: "raw-data",
-      name: "Raw Data",
-      icon: "Database",
-      description: "View raw data entries",
-      getValue: (item: any) => item.id || item,
-    },
-  });
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
@@ -179,7 +201,7 @@ export function CubeViewer({
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {viewMode === "cube" ? (
+        {viewMode === "cube" && isSerializedCube ? (
           <CubeProvider value={{ state: cubeState, reportId: "cube-viewer" }}>
             <CubeLayout
               className="w-full h-full"

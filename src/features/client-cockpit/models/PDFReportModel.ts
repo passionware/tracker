@@ -442,11 +442,36 @@ export class PDFReportModelUtils {
       activeMeasures: cubeConfig.measures.map((m: any) => m.id).filter(Boolean),
     };
 
+    // Debug: Log the page configuration and cube setup
+    console.log("Page config:", {
+      primaryDimension: pageConfig.primaryDimension,
+      secondaryDimension: pageConfig.secondaryDimension,
+      initialGrouping: pageCubeConfig.initialGrouping,
+    });
+
+    console.log(
+      "Available dimensions:",
+      cubeConfig.dimensions.map((d: any) => ({ id: d.id, name: d.name })),
+    );
+
     // Calculate cube data
     const cubeData = cubeService.calculateCube(pageCubeConfig, {
       includeItems: options.includeItems,
       maxDepth: options.maxDepth,
       skipEmptyGroups: options.skipEmptyGroups,
+    });
+
+    // Debug: Log the cube result
+    console.log("Cube result:", {
+      totalGroups: cubeData.groups.length,
+      firstGroup: cubeData.groups[0]
+        ? {
+            dimensionId: cubeData.groups[0].dimensionId,
+            dimensionLabel: cubeData.groups[0].dimensionLabel,
+            dimensionValue: cubeData.groups[0].dimensionValue,
+            subGroupsCount: cubeData.groups[0].subGroups?.length || 0,
+          }
+        : null,
     });
 
     // Create page data with formatting

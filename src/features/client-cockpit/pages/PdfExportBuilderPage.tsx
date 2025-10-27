@@ -1,6 +1,6 @@
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
@@ -110,7 +110,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
     }
   };
 
-  const addPage = useCallback(() => {
+  const addPage = () => {
     const newPage: PdfPageConfig = {
       id: `page-${Date.now()}`,
       title: "New Page",
@@ -126,26 +126,96 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
       ...prev,
       pages: [...prev.pages, newPage],
     }));
-  }, [pdfConfig.pages.length]);
+  };
 
-  const updatePage = useCallback(
-    (pageId: string, updates: Partial<PdfPageConfig>) => {
-      setPdfConfig((prev) => ({
-        ...prev,
-        pages: prev.pages.map((page) =>
-          page.id === pageId ? { ...page, ...updates } : page,
-        ),
-      }));
-    },
-    [],
-  );
+  const updatePage = (pageId: string, updates: Partial<PdfPageConfig>) => {
+    setPdfConfig((prev) => ({
+      ...prev,
+      pages: prev.pages.map((page) =>
+        page.id === pageId ? { ...page, ...updates } : page,
+      ),
+    }));
+  };
 
-  const removePage = useCallback((pageId: string) => {
+  const removePage = (pageId: string) => {
     setPdfConfig((prev) => ({
       ...prev,
       pages: prev.pages.filter((page) => page.id !== pageId),
     }));
-  }, []);
+  };
+
+  // PDF generation functions - simple functions without useCallback optimization
+  const handleGeneratePdf = async (
+    reportData: CockpitCubeReportWithCreator,
+  ) => {
+    if (pdfConfig.pages.length === 0) {
+      toast.error("Please add at least one page before generating PDF");
+      return;
+    }
+
+    try {
+      // Build the PDF report model
+      const pdfReportModel = await PDFReportModelUtils.fromCubeReport(
+        reportData,
+        pdfConfig,
+        props.services.formatService,
+        rd.tryMap(tenantData, (tenant) => tenant),
+      );
+
+      const pdfDoc = await generatePDFDocument(
+        pdfReportModel,
+        props.services.formatService,
+      );
+      const blob = await pdf(pdfDoc).toBlob();
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${reportData.name || "Report"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("PDF generated and downloaded successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  const handlePreviewPdf = async (reportData: CockpitCubeReportWithCreator) => {
+    if (pdfConfig.pages.length === 0) {
+      toast.error("Please add at least one page before previewing PDF");
+      return;
+    }
+
+    try {
+      // Build the PDF report model
+      const pdfReportModel = await PDFReportModelUtils.fromCubeReport(
+        reportData,
+        pdfConfig,
+        props.services.formatService,
+        rd.tryMap(tenantData, (tenant) => tenant),
+      );
+
+      const pdfDoc = await generatePDFDocument(
+        pdfReportModel,
+        props.services.formatService,
+      );
+      const blob = await pdf(pdfDoc).toBlob();
+
+      // Open PDF in new tab for preview
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+
+      toast.success("PDF preview opened in new tab");
+    } catch (error) {
+      console.error("Error previewing PDF:", error);
+      toast.error("Failed to preview PDF");
+    }
+  };
 
   return rd
     .journey(report)
@@ -179,77 +249,6 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
         );
       }
 
-      // PDF generation functions (defined inside component scope where report is available)
-      const handleGeneratePdf = useCallback(async () => {
-        if (pdfConfig.pages.length === 0) {
-          toast.error("Please add at least one page before generating PDF");
-          return;
-        }
-
-        try {
-          // Build the PDF report model
-          const pdfReportModel = await PDFReportModelUtils.fromCubeReport(
-            reportData,
-            pdfConfig,
-            props.services.formatService,
-            rd.tryMap(tenantData, (tenant) => tenant),
-          );
-
-          const pdfDoc = await generatePDFDocument(
-            pdfReportModel,
-            props.services.formatService,
-          );
-          const blob = await pdf(pdfDoc).toBlob();
-
-          // Create download link
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `${reportData.name || "Report"}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-
-          toast.success("PDF generated and downloaded successfully");
-        } catch (error) {
-          console.error("Error generating PDF:", error);
-          toast.error("Failed to generate PDF");
-        }
-      }, [pdfConfig, reportData, props.services.formatService]);
-
-      const handlePreviewPdf = useCallback(async () => {
-        if (pdfConfig.pages.length === 0) {
-          toast.error("Please add at least one page before previewing PDF");
-          return;
-        }
-
-        try {
-          // Build the PDF report model
-          const pdfReportModel = await PDFReportModelUtils.fromCubeReport(
-            reportData,
-            pdfConfig,
-            props.services.formatService,
-            rd.tryMap(tenantData, (tenant) => tenant),
-          );
-
-          const pdfDoc = await generatePDFDocument(
-            pdfReportModel,
-            props.services.formatService,
-          );
-          const blob = await pdf(pdfDoc).toBlob();
-
-          // Open PDF in new tab for preview
-          const url = URL.createObjectURL(blob);
-          window.open(url, "_blank");
-
-          toast.success("PDF preview opened in new tab");
-        } catch (error) {
-          console.error("Error previewing PDF:", error);
-          toast.error("Failed to preview PDF");
-        }
-      }, [pdfConfig, reportData, props.services.formatService]);
-
       return (
         <div className="h-full flex flex-col">
           {/* Header */}
@@ -271,14 +270,14 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={handlePreviewPdf}
+                onClick={() => handlePreviewPdf(reportData)}
                 disabled={pdfConfig.pages.length === 0}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview PDF
               </Button>
               <Button
-                onClick={handleGeneratePdf}
+                onClick={() => handleGeneratePdf(reportData)}
                 disabled={pdfConfig.pages.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -571,23 +570,17 @@ function useCubeDescriptors(reportData: CockpitCubeReportWithCreator) {
     return cubeConfig.dimensions.map((dimension) => dimension.id);
   }, [cubeConfig]);
 
-  const getMeasureDescriptor = React.useCallback(
-    (
-      measureId: string,
-    ): MeasureDescriptor<CubeDataItem, unknown> | undefined => {
-      return cubeConfig.measures.find((m) => m.id === measureId);
-    },
-    [cubeConfig],
-  );
+  const getMeasureDescriptor = (
+    measureId: string,
+  ): MeasureDescriptor<CubeDataItem, unknown> | undefined => {
+    return cubeConfig.measures.find((m) => m.id === measureId);
+  };
 
-  const getDimensionDescriptor = React.useCallback(
-    (
-      dimensionId: string,
-    ): DimensionDescriptor<CubeDataItem, unknown> | undefined => {
-      return cubeConfig.dimensions.find((d) => d.id === dimensionId);
-    },
-    [cubeConfig],
-  );
+  const getDimensionDescriptor = (
+    dimensionId: string,
+  ): DimensionDescriptor<CubeDataItem, unknown> | undefined => {
+    return cubeConfig.dimensions.find((d) => d.id === dimensionId);
+  };
 
   return {
     cubeConfig,
