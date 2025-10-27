@@ -1,6 +1,6 @@
 import { Client, ClientsApi } from "@/api/clients/clients.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
-import { ensureIdleQuery } from "@/services/io/_commont/ensureIdleQuery.ts";
+import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
 import { ClientService } from "@/services/io/ClientService/ClientService.ts";
 import { maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";

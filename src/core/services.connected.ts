@@ -1,8 +1,11 @@
 import { createBillingApi } from "@/api/billing/billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
+import { createCockpitCubeReportsApi } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.http.ts";
+import { createCockpitTenantsApi } from "@/api/cockpit-tenants/cockpit-tenants.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
+import { createGeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.http";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
@@ -12,9 +15,11 @@ import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
+import { clientCockpitSupabase } from "@/core/clientSupabase.connected.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
+import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
@@ -25,11 +30,18 @@ import { createPreferenceService } from "@/services/internal/PreferenceService/P
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
+import { createCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
+import { createClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.impl.ts";
+import { createCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.impl.ts";
+import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
+import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
+import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
+import { createReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService.impl";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
 import { createVariableService } from "@/services/io/VariableService/Variable.service.impl.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.impl.ts";
@@ -43,6 +55,17 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
+const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);
+const generatedReportSourceWriteService =
+  createGeneratedReportSourceWriteService({
+    services: { messageService },
+    api: generatedReportSourceApi,
+  });
+const generatedReportSourceService = createGeneratedReportSourceService({
+  services: { messageService },
+  client: myQueryClient,
+  api: generatedReportSourceApi,
+});
 const reportService = createReportService(
   createReportsApi(mySupabase),
   myQueryClient,
@@ -71,6 +94,10 @@ const variableService = createVariableService({
   client: myQueryClient,
   api: createVariableApi(mySupabase),
 });
+
+const exchangeService = createExchangeService(myExchangeApi, myQueryClient);
+const formatService = createFormatService(() => new Date());
+
 const projectIterationService = createProjectIterationService({
   services: {
     messageService,
@@ -78,12 +105,26 @@ const projectIterationService = createProjectIterationService({
   api: myProjectIterationApi,
   client: myQueryClient,
 });
+const expressionService = createExpressionService({
+  services: {
+    variableService,
+  },
+});
 export const myServices = {
   authService: createAuthService(mySupabase),
+  cockpitAuthService: createCockpitAuthService(clientCockpitSupabase),
   clientService: createClientService(
     createClientsApi(mySupabase),
     myQueryClient,
     messageService,
+  ),
+  clientCubeReportService: createClientCubeReportService(
+    createCockpitCubeReportsApi(clientCockpitSupabase),
+    myQueryClient,
+  ),
+  cockpitTenantService: createCockpitTenantService(
+    createCockpitTenantsApi(clientCockpitSupabase),
+    myQueryClient,
   ),
   reportService: reportService,
   routingService,
@@ -94,14 +135,13 @@ export const myServices = {
       routingService,
     },
   }),
-  formatService: createFormatService(() => new Date()),
   reportDisplayService: createReportDisplayService({
     services: {
       reportService: reportService,
       billingService: billingService,
       workspaceService,
       costService,
-      exchangeService: createExchangeService(myExchangeApi, myQueryClient),
+      exchangeService,
     },
   }),
   messageService,
@@ -124,11 +164,7 @@ export const myServices = {
   preferenceService,
   variableService,
   billingService,
-  expressionService: createExpressionService({
-    services: {
-      variableService,
-    },
-  }),
+  expressionService,
   projectService: createProjectService({
     api: myProjectApi,
     client: myQueryClient,
@@ -138,6 +174,22 @@ export const myServices = {
   }),
   projectIterationService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
+  reportGenerationService: createReportGenerationService({
+    services: {
+      reportService,
+      generatedReportSourceWriteService,
+    },
+    plugins: {
+      tmetric: createTmetricPlugin({
+        services: { expressionService, reportService },
+      }),
+    },
+  }),
+  generatedReportSourceWriteService,
+  generatedReportSourceService,
+  formatService,
+  exchangeService,
+  generatedReportViewService: createGeneratedReportViewService(),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

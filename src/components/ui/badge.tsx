@@ -1,9 +1,9 @@
 import { RollingText } from "@/features/_common/RollingText.tsx";
-import { ComponentPropsWithRef } from "react";
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
+import { ComponentPropsWithRef } from "react";
 
 const badgeVariants = cva(
   "inline-flex whitespace-pre items-center rounded-full border transition-colors focus:outline-hidden focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 dark:focus:ring-slate-300",
@@ -22,6 +22,11 @@ const badgeVariants = cva(
         warning: "",
         accent1: "", // violet-red gradient tl-br
         accent2: "", // orange-blue tl-br
+        info: "", // blue variant for informational content
+        success: "", // emerald green variant for success states
+        neutral: "", // gray variant for neutral information
+        purple: "", // purple variant
+        indigo: "", // indigo variant
       },
       size: {
         md: "px-2.5 py-0.5 text-xs font-semibold",
@@ -154,6 +159,99 @@ const badgeVariants = cva(
         variant: "accent2",
         class:
           "border-slate-950/20 bg-linear-to-br from-orange-300 to-rose-300 text-white hover:bg-linear-to-br hover:from-orange-300 hover:to-rose-200 dark:bg-linear-to-br dark:from-orange-900 dark:to-rose-900 dark:text-slate-50 dark:hover:bg-linear-to-br dark:hover:from-orange-800 dark:hover:to-rose-800",
+      },
+      // New variants - solid tone
+      {
+        tone: "solid",
+        variant: "info",
+        class:
+          "border-blue-700 bg-blue-600 text-white/95 hover:bg-blue-500/80 dark:bg-blue-900 dark:text-slate-50 dark:hover:bg-blue-900/80",
+      },
+      {
+        tone: "solid",
+        variant: "success",
+        class:
+          "border-emerald-700 bg-emerald-600 text-white/95 hover:bg-emerald-500/80 dark:bg-emerald-900 dark:text-slate-50 dark:hover:bg-emerald-900/80",
+      },
+      {
+        tone: "solid",
+        variant: "neutral",
+        class:
+          "border-gray-700 bg-gray-600 text-white/95 hover:bg-gray-500/80 dark:bg-gray-900 dark:text-slate-50 dark:hover:bg-gray-900/80",
+      },
+      {
+        tone: "solid",
+        variant: "purple",
+        class:
+          "border-purple-700 bg-purple-600 text-white/95 hover:bg-purple-500/80 dark:bg-purple-900 dark:text-slate-50 dark:hover:bg-purple-900/80",
+      },
+      {
+        tone: "solid",
+        variant: "indigo",
+        class:
+          "border-indigo-700 bg-indigo-600 text-white/95 hover:bg-indigo-500/80 dark:bg-indigo-900 dark:text-slate-50 dark:hover:bg-indigo-900/80",
+      },
+      // New variants - outline tone
+      {
+        tone: "outline",
+        variant: "info",
+        class:
+          "border-blue-800 bg-white text-blue-800 dark:border-blue-400 dark:bg-slate-900 dark:text-blue-400",
+      },
+      {
+        tone: "outline",
+        variant: "success",
+        class:
+          "border-emerald-800 bg-white text-emerald-800 dark:border-emerald-400 dark:bg-slate-900 dark:text-emerald-400",
+      },
+      {
+        tone: "outline",
+        variant: "neutral",
+        class:
+          "border-gray-800 bg-white text-gray-800 dark:border-gray-400 dark:bg-slate-900 dark:text-gray-400",
+      },
+      {
+        tone: "outline",
+        variant: "purple",
+        class:
+          "border-purple-800 bg-white text-purple-800 dark:border-purple-400 dark:bg-slate-900 dark:text-purple-400",
+      },
+      {
+        tone: "outline",
+        variant: "indigo",
+        class:
+          "border-indigo-800 bg-white text-indigo-800 dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-400",
+      },
+      // New variants - secondary tone
+      {
+        tone: "secondary",
+        variant: "info",
+        class:
+          "border-slate-950/20 bg-blue-100 text-blue-700 hover:bg-blue-100/80 dark:bg-blue-800 dark:text-blue-300 dark:hover:bg-blue-800/80",
+      },
+      {
+        tone: "secondary",
+        variant: "success",
+        class:
+          "border-slate-950/20 bg-emerald-100 text-emerald-700 hover:bg-emerald-100/80 dark:bg-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-800/80",
+      },
+      {
+        tone: "secondary",
+        variant: "neutral",
+        class:
+          "border-slate-950/20 bg-gray-100 text-gray-700 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/80",
+      },
+      {
+        tone: "secondary",
+        variant: "purple",
+        class:
+          "border-slate-950/20 bg-purple-100 text-purple-700 hover:bg-purple-100/80 dark:bg-purple-800 dark:text-purple-300 dark:hover:bg-purple-800/80",
+      },
+      {
+        tone: "secondary",
+        variant: "indigo",
+        class:
+          "border-slate-950/20 bg-indigo-100 text-indigo-700 hover:bg-indigo-100/80 dark:bg-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-800/80",
       },
     ],
     defaultVariants: {

@@ -16,6 +16,10 @@ export type ContractorSpec = IdSpec<Contractor["id"]>;
 export type ContractorPathSegment = string | ":contractorId";
 type ContractorParam = Maybe<ContractorSpec>;
 
+export type CubePathSegment = string | ":cubePath*";
+export type CubePath = string[]; // Array of path segments like ["project:abc", "task:xyz"]
+type CubePathParam = Maybe<CubePath>;
+
 export const routingUtils = {
   workspace: {
     fromString: (value: WorkspacePathSegment): WorkspaceSpec => {
@@ -68,6 +72,22 @@ export const routingUtils = {
       return value.toString();
     },
   },
+  cubePath: {
+    fromString: (value: string): CubePath => {
+      // Parse URL path segments like "project:abc/task:xyz" into ["project:abc", "task:xyz"]
+      if (!value || value === ":cubePath*") {
+        return [];
+      }
+      return value.split("/").filter(Boolean);
+    },
+    toString: (value: CubePathParam): CubePathSegment => {
+      if (maybe.isAbsent(value) || value.length === 0) {
+        return "";
+      }
+      // Join path segments with "/"
+      return value.join("/");
+    },
+  },
 };
 
 export interface RoutingService {
@@ -100,6 +120,15 @@ export interface RoutingService {
           root: () => string;
           events: () => string;
           reports: () => string;
+          generatedReports: () => string;
+          forGeneratedReport: (reportId?: string | ":generatedReportId") => {
+            root: () => string;
+            basic: () => string;
+            timeEntries: () => string;
+            groupedView: (cubePath?: CubePathParam) => string;
+            standaloneGroupedView: (cubePath?: CubePathParam) => string;
+            export: () => string;
+          };
           billings: () => string;
         };
       };
@@ -108,6 +137,21 @@ export interface RoutingService {
 
   forGlobal: () => {
     root: () => string;
+  };
+
+  forClientCockpit: () => {
+    root: () => string;
+    login: () => string;
+    forClient: (clientId?: string | ":clientId") => {
+      root: () => string;
+      reports: () => string;
+      forReport: (reportId?: string | ":reportId") => {
+        root: () => string;
+        preview: () => string;
+        cubeViewer: () => string;
+        pdfExportBuilder: () => string;
+      };
+    };
   };
 }
 export interface WithRoutingService {

@@ -26,7 +26,7 @@ export const variable = {
             </div>
           }
         >
-          <div className={cn(className, "max-w-[10rem] w-min truncate")}>
+          <div className={cn(className, "max-w-40 w-min truncate")}>
             {info.getValue()}
           </div>
         </OverflowTooltip>

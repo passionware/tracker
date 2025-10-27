@@ -5,6 +5,7 @@ import {
 import { RootWidget } from "@/features/app/RootWidget.tsx";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "./components/ui/tooltip";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <TooltipProvider delayDuration={0}>
         <NavigationServiceInject />
         <RootWidget services={myServices} />
+        <Toaster />
       </TooltipProvider>
     </BrowserRouter>
   );

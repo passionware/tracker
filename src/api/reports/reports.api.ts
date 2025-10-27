@@ -80,6 +80,7 @@ export type ReportQuery = WithFilters<{
   period: Nullable<DateFilter>;
   immediatePaymentDue: Nullable<NumberFilter>;
   projectIterationId: Nullable<EnumFilter<Nullable<ProjectIteration["id"]>>>;
+  id: Nullable<EnumFilter<Report["id"]>>;
 }> &
   WithPagination &
   WithSorter<
@@ -115,6 +116,7 @@ export const reportQueryUtils = withBuilderUtils({
           period: null,
           immediatePaymentDue: null,
           projectIterationId: null,
+          id: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "period", order: "asc" },

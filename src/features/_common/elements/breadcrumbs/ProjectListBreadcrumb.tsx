@@ -13,7 +13,7 @@ export function ProjectListBreadcrumb(
   },
 ) {
   return (
-    <BreadcrumbLink>
+    <BreadcrumbLink asChild>
       <Link
         to={props.services.routingService
           .forWorkspace(props.workspaceId)

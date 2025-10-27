@@ -1,3 +1,4 @@
+import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -8,7 +9,9 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { GeneratedReportIdResolver } from "@/features/app/RootWidget.idResolvers";
 import { NewPositionPopover } from "@/features/project-iterations/NewPositionPopover.tsx";
+import { GeneratedReportHeader } from "@/features/project-iterations/widgets/GeneratedReportHeader.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
@@ -43,16 +46,51 @@ export function IterationTabs(
       props.projectIterationId,
     );
 
+  // Query for linked reports (same as in LinkedReportList)
+  const linkedReportsQuery = reportQueryUtils
+    .getBuilder(props.workspaceId, props.clientId)
+    .build((q) => [
+      q.withFilter("projectIterationId", {
+        operator: "oneOf",
+        value: [props.projectIterationId],
+      }),
+    ]);
+
+  const linkedReports =
+    props.services.reportDisplayService.useReportView(linkedReportsQuery);
+
+  // Query for generated reports
+  const generatedReportsQuery = generatedReportSourceQueryUtils
+    .getBuilder()
+    .build((q) => [
+      q.withFilter("projectIterationId", {
+        operator: "oneOf",
+        value: [props.projectIterationId],
+      }),
+    ]);
+
+  const generatedReports =
+    props.services.generatedReportSourceService.useGeneratedReportSources(
+      maybe.of(generatedReportsQuery),
+    );
+
   const reportsQuery = rd.map(
     rd.combine({ project, iteration }),
     ({ project, iteration }) =>
       reportQueryUtils
-        .getBuilder(project.workspaceId, project.clientId)
+        // we don't scope reports to routing workspace
+        .getBuilder(idSpecUtils.ofAll(), project.clientId)
         .build((q) => [
           q.withFilter("projectIterationId", {
             operator: "oneOf",
             value: [null],
           }),
+          // instead we scope reports to project workspaces
+          idSpecUtils.mapSpecificOrElse(
+            project.workspaceIds,
+            (x) => q.withFilter("workspaceId", { operator: "oneOf", value: x }),
+            q.unchanged(),
+          ),
           q.withFilter("period", {
             operator: "between",
             value: {
@@ -64,7 +102,7 @@ export function IterationTabs(
   );
 
   return (
-    <Tabs value={currentTab} className="w-full bg-white sticky top-0">
+    <Tabs value={currentTab} className="w-full bg-white sticky top-0 z-1">
       <TabsList>
         <TabsTrigger
           value="positions"
@@ -94,9 +132,22 @@ export function IterationTabs(
             props.services.navigationService.navigate(forIteration.reports())
           }
         >
-          Reports
-          <Badge variant="warning" size="sm">
-            12
+          Linked reports
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(linkedReports, (reports) => reports.entries.length)}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger
+          value="generated-reports"
+          onClick={() =>
+            props.services.navigationService.navigate(
+              forIteration.generatedReports(),
+            )
+          }
+        >
+          Generated reports
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(generatedReports, (reports) => reports.length)}
           </Badge>
         </TabsTrigger>
         <TabsTrigger
@@ -122,11 +173,6 @@ export function IterationTabs(
                   className="ml-auto"
                   iterationId={projectIteration.id}
                   services={props.services}
-                  workspaceId={rd.mapOrElse(
-                    project,
-                    (p) => p.workspaceId,
-                    idSpecUtils.ofAll(),
-                  )}
                   clientId={rd.mapOrElse(
                     project,
                     (p) => p.clientId,
@@ -159,10 +205,7 @@ export function IterationTabs(
                           showBillingColumns
                           showCostColumns={false}
                           context={{
-                            workspaceId: maybe.getOrElse(
-                              project.workspaceId,
-                              idSpecUtils.ofAll(),
-                            ),
+                            workspaceId: idSpecUtils.ofAll(),
                             clientId: maybe.getOrElse(
                               project.clientId,
                               idSpecUtils.ofAll(),
@@ -191,7 +234,6 @@ export function IterationTabs(
                             );
                           }}
                           initialNewReportValues={{
-                            workspaceId: project.workspaceId,
                             clientId: project.clientId,
                             currency: projectIteration.currency,
                             periodStart: projectIteration.periodStart,
@@ -203,6 +245,26 @@ export function IterationTabs(
                   }
                 />
               ))}
+          />
+          <Route
+            path={makeRelativePath(
+              forIteration.root(),
+              `${forIteration.forGeneratedReport().root()}/*`,
+            )}
+            element={
+              <GeneratedReportIdResolver services={props.services}>
+                {(reportId) => (
+                  <GeneratedReportHeader
+                    projectIterationId={props.projectIterationId}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    projectId={props.projectId}
+                    reportId={reportId}
+                    services={props.services}
+                  />
+                )}
+              </GeneratedReportIdResolver>
+            }
           />
         </Routes>
       </TabsList>

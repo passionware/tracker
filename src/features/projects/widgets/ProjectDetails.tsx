@@ -14,6 +14,7 @@ import {
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
+import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
@@ -22,6 +23,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { rd } from "@passionware/monads";
+import { ChevronRight } from "lucide-react";
 
 export function ProjectDetails(
   props: WithFrontServices & {
@@ -39,14 +41,32 @@ export function ProjectDetails(
           <div>
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((x) => x.name)}
           </div>
-          <div>
+
+          <div className="flex flex-row gap-2">
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
+              .catch(renderError)
+              .map((x) => (
+                <>
+                  {x.workspaceIds.map((workspaceId) => (
+                    <WorkspaceWidget
+                      workspaceId={workspaceId}
+                      services={props.services}
+                      layout="avatar"
+                      size="sm"
+                    />
+                  ))}
+                </>
+              ))}
+            <ChevronRight className="text-slate-400" />
+            {rd
+              .journey(project)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((x) => (
                 <ClientWidget
@@ -60,7 +80,7 @@ export function ProjectDetails(
           <ActionMenu services={props.services} className="ml-auto">
             {rd
               .journey(project)
-              .wait(<Skeleton className="h-[1lh] w-30" />)
+              .wait(<Skeleton className="h-lh w-30" />)
               .catch(renderError)
               .map((project) => (
                 <>
@@ -112,7 +132,7 @@ export function ProjectDetails(
         <CardDescription>
           {rd
             .journey(project)
-            .wait(<Skeleton className="h-[1lh] w-30" />)
+            .wait(<Skeleton className="h-lh w-30" />)
             .catch(renderError)
             .map((x) => x.description)}
         </CardDescription>

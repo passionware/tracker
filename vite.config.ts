@@ -1,9 +1,9 @@
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {
@@ -13,12 +13,12 @@ export default defineConfig({
   server: {
     port: 3002,
   },
-  // @ts-expect-error vite does not expose this type
   test: {
     server: {
       deps: {
         inline: [/@passionware\/.*/],
       },
     },
+    env: loadEnv(mode, process.cwd(), ""),
   },
-});
+}));

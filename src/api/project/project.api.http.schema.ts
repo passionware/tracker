@@ -8,12 +8,28 @@ export const project$ = z.object({
   status: z.enum(["draft", "active", "closed"]),
   created_at: z.coerce.date(),
   description: z.string().nullable(),
-  workspace_id: z.number(),
   client_id: z.number(),
+  link_project_workspace: z.array(
+    z.object({
+      workspace_id: z.number(),
+      is_primary: z.boolean(),
+    }),
+  ),
 });
 
 export type Project$ = z.infer<typeof project$>;
 
-export function projectFromHttp(data: Project$): Project {
-  return camelcaseKeys(data);
+export function projectFromHttp({
+  link_project_workspace,
+  ...data
+}: Project$): Project {
+  const camelData = camelcaseKeys(data);
+
+  // Extract workspace_ids from the link_project_workspace array
+  const workspaceIds = link_project_workspace.map((link) => link.workspace_id);
+
+  return {
+    ...camelData,
+    workspaceIds,
+  };
 }

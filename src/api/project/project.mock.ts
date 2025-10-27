@@ -12,7 +12,9 @@ export const projectMock = createMockFactory<ProjectBase>(
     createdAt: faker.date.recent(),
     description: faker.lorem.sentence(),
     clientId: faker.helpers.arrayElement(clientsMock.static.list).id,
-    workspaceId: faker.helpers.arrayElement(workspaceMock.static.list).id,
+    workspaceIds: faker.helpers
+      .arrayElements(workspaceMock.static.list)
+      .map((x) => x.id),
   }),
   [
     {
@@ -22,7 +24,7 @@ export const projectMock = createMockFactory<ProjectBase>(
       createdAt: new Date("2021-01-01"),
       description: "This is a project",
       clientId: clientsMock.static.list[0].id,
-      workspaceId: workspaceMock.static.list[0].id,
+      workspaceIds: [workspaceMock.static.list[0].id],
     },
     {
       id: 2,
@@ -31,7 +33,7 @@ export const projectMock = createMockFactory<ProjectBase>(
       createdAt: new Date("2021-02-01"),
       description: "This is another project",
       clientId: clientsMock.static.list[1].id,
-      workspaceId: workspaceMock.static.list[1].id,
+      workspaceIds: [workspaceMock.static.list[1].id],
     },
     {
       id: 3,
@@ -40,7 +42,7 @@ export const projectMock = createMockFactory<ProjectBase>(
       createdAt: new Date("2021-03-01"),
       description: "This is yet another project",
       clientId: clientsMock.static.list[1].id,
-      workspaceId: workspaceMock.static.list[1].id,
+      workspaceIds: [workspaceMock.static.list[1].id],
     },
   ],
 );

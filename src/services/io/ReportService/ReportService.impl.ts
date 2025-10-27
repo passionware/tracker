@@ -34,5 +34,17 @@ export function createReportService(
         client,
       );
     },
+    ensureReport: (id) => {
+      return client.ensureQueryData({
+        queryKey: ["contractor_report", "item", id],
+        queryFn: () => api.getReport(id),
+      });
+    },
+    ensureReports: (query) => {
+      return client.ensureQueryData({
+        queryKey: ["contractor_report", "list", query],
+        queryFn: () => api.getReports(query),
+      });
+    },
   };
 }

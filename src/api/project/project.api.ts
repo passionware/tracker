@@ -25,7 +25,7 @@ export interface ProjectPayload {
   name: string;
   status: "draft" | "active" | "closed";
   description: Nullable<string>;
-  workspaceId: Workspace["id"];
+  workspaceIds: Workspace["id"][];
   clientId: Client["id"];
 }
 

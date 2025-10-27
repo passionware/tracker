@@ -1,6 +1,8 @@
 import { MergeServices } from "@/platform/typescript/services.ts";
+import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { WithGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.ts";
 import { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
@@ -11,14 +13,20 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
+import { WithGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.ts";
+import { WithGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
+import { WithReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService";
 import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { WithClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.ts";
+import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
 
 /**
  * Ideally this should contain all the services that are safe to use by the front-end widgets.
@@ -26,6 +34,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 export type FrontServices = MergeServices<
   [
     WithAuthService,
+    WithCockpitAuthService,
     WithClientService,
     WithReportService,
     WithLocationService,
@@ -38,6 +47,7 @@ export type FrontServices = MergeServices<
     WithContractorService,
     WithWorkspaceService,
     WithCostService,
+    WithExchangeService,
     WithPreferenceService,
     WithVariableService,
     WithBillingService,
@@ -45,6 +55,12 @@ export type FrontServices = MergeServices<
     WithProjectService,
     WithProjectIterationService,
     WithProjectIterationDisplayService,
+    WithReportGenerationService,
+    WithGeneratedReportSourceWriteService,
+    WithGeneratedReportSourceService,
+    WithGeneratedReportViewService,
+    WithClientCubeReportService,
+    WithCockpitTenantService,
   ]
 >;
 

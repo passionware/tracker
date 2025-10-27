@@ -94,9 +94,10 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
                   mode="create"
                   onCancel={bag.close}
                   defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(
+                    workspaceIds: idSpecUtils.mapSpecificOrElse(
                       props.workspaceId,
-                      undefined,
+                      (id) => [id],
+                      [],
                     ),
                     clientId: idSpecUtils.switchAll(props.clientId, undefined),
                     status: "draft",
@@ -176,7 +177,11 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
                         bag.close();
                         props.services.navigationService.navigate(
                           props.services.routingService
-                            .forWorkspace(data.workspaceId)
+                            .forWorkspace(
+                              data.workspaceIds.length > 1
+                                ? null
+                                : data.workspaceIds[0],
+                            )
                             .forClient(data.clientId)
                             .forProject(id.toString())
                             .root(),

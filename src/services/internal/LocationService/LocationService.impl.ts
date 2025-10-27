@@ -181,6 +181,9 @@ export function createLocationService(
       const eventsMatch = config.services.navigationService.useMatch(
         forIteration.events() + "/*",
       );
+      const generatedReportsMatch = config.services.navigationService.useMatch(
+        forIteration.generatedReports() + "/*",
+      );
 
       switch (true) {
         case !!eventsMatch:
@@ -189,6 +192,9 @@ export function createLocationService(
           return "reports";
         case !!billingsMatch:
           return "billings";
+
+        case !!generatedReportsMatch:
+          return "generated-reports";
         case !!rootMatch:
           return "positions";
         default:
@@ -205,6 +211,45 @@ export function createLocationService(
           .root() + "/*",
       );
       return maybe.map(match?.params.iterationId, parseInt);
+    },
+    getCurrentGeneratedReportId: () => {
+      const match = config.services.navigationService.match(
+        config.services.routingService
+          .forWorkspace()
+          .forClient()
+          .forProject()
+          .forIteration()
+          .forGeneratedReport()
+          .root() + "/*",
+      );
+      return maybe.map(match?.params.generatedReportId, parseInt);
+    },
+    useCurrentGeneratedReportTab: () => {
+      const forGeneratedReport = config.services.routingService
+        .forWorkspace()
+        .forClient()
+        .forProject()
+        .forIteration()
+        .forGeneratedReport();
+
+      const basicMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.basic() + "/*",
+      );
+      const timeEntriesMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.timeEntries() + "/*",
+      );
+      const groupedViewMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.groupedView() + "/*",
+      );
+      const rootMatch = config.services.navigationService.useMatch(
+        forGeneratedReport.root() + "/*",
+      );
+
+      if (timeEntriesMatch) return "time-entries";
+      if (groupedViewMatch) return "grouped-view";
+      if (basicMatch) return "basic";
+      if (rootMatch) return "basic"; // Default to basic for root path
+      return maybe.ofAbsent();
     },
     Resolver: (props) => {
       const workspaceId = api.useCurrentWorkspaceId();

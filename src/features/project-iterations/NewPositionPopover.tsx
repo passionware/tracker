@@ -6,10 +6,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { ProjectIterationPositionForm } from "@/features/project-iterations/PositionForm.tsx";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
 import { mt } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -19,7 +16,6 @@ export function NewPositionPopover(
     className?: string;
     projectId: Project["id"];
     iterationId: ProjectIteration["id"];
-    workspaceId: WorkspaceSpec;
     clientId: ClientSpec;
     currency: string;
   },

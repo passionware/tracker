@@ -8,6 +8,8 @@ import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/P
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
 import { EventsWidget } from "@/features/project-iterations/widgets/EventsWidget.tsx";
+import { GeneratedReportDetail } from "@/features/project-iterations/widgets/GeneratedReportDetail.tsx";
+import { GeneratedReportList } from "@/features/project-iterations/widgets/GeneratedReportList.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
 import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
 import { PositionList } from "@/features/project-iterations/widgets/PositionList.tsx";
@@ -17,6 +19,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Route, Routes } from "react-router-dom";
+import { GeneratedReportIdResolver } from "../app/RootWidget.idResolvers";
 
 export function IterationWidget(
   props: WithFrontServices & {
@@ -44,7 +47,7 @@ export function IterationWidget(
         <ProjectIterationBreadcrumb {...props} />,
       ]}
     >
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         <Details {...props} />
         <IterationTabs {...props} />
         <Routes>
@@ -63,6 +66,41 @@ export function IterationWidget(
           <Route
             path={makeRelativePath(basePath, forIteration.billings())}
             element={<div>Billings</div>}
+          />
+          <Route
+            path={makeRelativePath(
+              forIteration.root(),
+              forIteration.generatedReports(),
+            )}
+            element={
+              <GeneratedReportList
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                projectId={props.projectId}
+                services={props.services}
+              />
+            }
+          />
+          <Route
+            path={makeRelativePath(
+              basePath,
+              forIteration.forGeneratedReport().root() + "/*",
+            )}
+            element={
+              <GeneratedReportIdResolver services={props.services}>
+                {(reportId) => (
+                  <GeneratedReportDetail
+                    projectIterationId={props.projectIterationId}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    projectId={props.projectId}
+                    reportId={reportId}
+                    services={props.services}
+                  />
+                )}
+              </GeneratedReportIdResolver>
+            }
           />
         </Routes>
       </div>

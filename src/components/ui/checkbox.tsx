@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Check } from "lucide-react";
 import * as React from "react";
+import { Label } from "./label";
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
@@ -10,7 +11,7 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border border-slate-200 border-slate-900 ring-offset-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-slate-900 data-[state=checked]:text-slate-50 dark:border-slate-800 dark:border-slate-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 dark:data-[state=checked]:bg-slate-50 dark:data-[state=checked]:text-slate-900",
+      "cursor-pointer transition-all peer h-4 w-4 shrink-0 rounded-sm border border-slate-200 border-slate-900 ring-offset-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-slate-900 data-[state=checked]:text-slate-50 dark:border-slate-800 dark:border-slate-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 dark:data-[state=checked]:bg-slate-50 dark:data-[state=checked]:text-slate-900",
       className,
     )}
     {...props}
@@ -24,4 +25,55 @@ const Checkbox = React.forwardRef<
 ));
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
-export { Checkbox };
+// CheckboxWithLabel component
+interface CheckboxWithLabelProps {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  title: string;
+  description?: React.ReactNode;
+  className?: string;
+  disabled?: boolean;
+}
+
+const CheckboxWithLabel = React.forwardRef<
+  HTMLLabelElement,
+  CheckboxWithLabelProps
+>(
+  (
+    { id, checked, onCheckedChange, title, description, className, disabled },
+    ref,
+  ) => (
+    <Label
+      ref={ref}
+      htmlFor={id}
+      className={cn(
+        "hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+        "has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50",
+        "dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950",
+        disabled && "opacity-50 cursor-not-allowed",
+        className,
+      )}
+    >
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+        className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+      />
+      <div className="grid gap-1.5 font-normal w-full">
+        <div className="text-sm leading-none font-medium">{title}</div>
+        {description && (
+          <div className="text-muted-foreground text-sm w-full flex items-center gap-2 justify-between">
+            {description}
+          </div>
+        )}
+      </div>
+    </Label>
+  ),
+);
+
+CheckboxWithLabel.displayName = "CheckboxWithLabel";
+
+export { Checkbox, CheckboxWithLabel };

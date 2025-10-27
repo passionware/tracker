@@ -158,8 +158,8 @@ export function AbstractMultiPicker<Id, Data>(
             {config.placeholder ?? "Select item"}
           </div>,
         )
-        .wait(<Skeleton className="w-full h-[1lh]" />)
-        .catch(renderSmallError("w-full h-[1lh]", "Not found"))
+        .wait(<Skeleton className="w-full h-lh" />)
+        .catch(renderSmallError("w-full h-lh", "Not found"))
         .map((optionItems) => {
           const unassigned = optionItems.filter(unassignedUtils.isUnassigned);
           const rest = optionItems.filter(unassignedUtils.isAssigned);

@@ -28,15 +28,17 @@ export function createFormatService(clock: () => Date): FormatService {
     currency: "EUR" | "USD" | string,
     fullPrecision = false,
   ) => {
+    // Fallback to EUR if currency is undefined or empty
+    const safeCurrency = currency || "EUR";
+
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "currency",
-      currency,
+      currency: safeCurrency,
       currencyDisplay: "symbol",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
 
-    // eslint-disable-next-line no-compare-neg-zero
     const clearedValue = Math.abs(value);
 
     let formattedValue = formatter.format(clearedValue);
@@ -154,6 +156,32 @@ export function createFormatService(clock: () => Date): FormatService {
             </SingleWrapper>
           );
         },
+        compactWithTime: (date) => {
+          const fixedDate = tmpFixDate(date);
+          if (!isValid(fixedDate)) {
+            return (
+              <span className="text-red-700 whitespace-nowrap font-mono bg-red-100 border border-red-700 rounded-sm px-1 py-0.5">
+                Invalid Date
+              </span>
+            );
+          }
+          return (
+            <SingleWrapper date={fixedDate}>
+              <div className="flex flex-row text-center gap-1">
+                <div>
+                  <DayBadge value={format(fixedDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(fixedDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(fixedDate, "yyyy")} />
+                </div>
+                <div>
+                  <TimeBadge value={format(fixedDate, "HH:mm")} />
+                </div>
+              </div>
+            </SingleWrapper>
+          );
+        },
       },
       range: {
         compact: (startDate, endDate) => {
@@ -241,6 +269,60 @@ export function createFormatService(clock: () => Date): FormatService {
             </RangeWrapper>
           );
         },
+        compactWithTime: (startDate, endDate) => {
+          const fixedStartDate = tmpFixDate(startDate);
+          const fixedEndDate = tmpFixDate(endDate);
+
+          // 1. Ten sam dzień
+          if (isSameDay(fixedStartDate, fixedEndDate)) {
+            return (
+              <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
+                <div className="flex flex-row text-center gap-3">
+                  <div>
+                    <DayBadge value={format(fixedStartDate, "dd")} />
+                    <DotSeparator />
+                    <MonthBadge value={format(fixedStartDate, "MM")} />
+                    <DotSeparator />
+                    <YearBadge value={format(fixedStartDate, "yyyy")} />
+                  </div>
+                  <div>
+                    <TimeBadge value={format(fixedStartDate, "HH:mm")} />
+                    <span className="text-gray-600 mx-1">-</span>
+                    <TimeBadge value={format(fixedEndDate, "HH:mm")} />
+                  </div>
+                </div>
+              </RangeWrapper>
+            );
+          }
+
+          return (
+            <RangeWrapper from={fixedStartDate} to={fixedEndDate}>
+              <div className="flex flex-row text-center gap-3">
+                <div>
+                  <DayBadge value={format(fixedStartDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(fixedStartDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(fixedStartDate, "yyyy")} />
+                </div>
+                <div>
+                  <TimeBadge value={format(fixedStartDate, "HH:mm")} />
+                </div>
+                <div className="text-gray-600">-</div>
+                <div>
+                  <DayBadge value={format(fixedEndDate, "dd")} />
+                  <DotSeparator />
+                  <MonthBadge value={format(fixedEndDate, "MM")} />
+                  <DotSeparator />
+                  <YearBadge value={format(fixedEndDate, "yyyy")} />
+                </div>
+                <div>
+                  <TimeBadge value={format(fixedEndDate, "HH:mm")} />
+                </div>
+              </div>
+            </RangeWrapper>
+          );
+        },
       },
     },
     financial: {
@@ -268,13 +350,16 @@ export function createFormatService(clock: () => Date): FormatService {
         );
       },
       currencySymbol: (currency: string) => {
+        // Fallback to EUR if currency is undefined or empty
+        const safeCurrency = currency || "EUR";
+
         const formatter = new Intl.NumberFormat("de-DE", {
           style: "currency",
-          currency,
+          currency: safeCurrency,
           currencyDisplay: "symbol",
           minimumFractionDigits: 2,
         });
-        return formatter.format(0).split(" ")[1];
+        return formatter.format(0).split(" ")[1];
       },
     },
   };
@@ -282,7 +367,7 @@ export function createFormatService(clock: () => Date): FormatService {
 
 function DayBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-1 bg-emerald-100 text-emerald-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-1 bg-emerald-100 text-emerald-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );
@@ -290,7 +375,7 @@ function DayBadge({ value }: { value: ReactNode }) {
 
 function MonthBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-1 bg-sky-100 text-sky-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-1 bg-sky-100 text-sky-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );
@@ -298,7 +383,15 @@ function MonthBadge({ value }: { value: ReactNode }) {
 
 function YearBadge({ value }: { value: ReactNode }) {
   return (
-    <span className="pr-2 last:pr-0.5 bg-purple-100 text-purple-700 border border-black/[0.16] px-0.5 rounded-sm">
+    <span className="pr-2 last:pr-0.5 bg-purple-100 text-purple-700 border border-black/16 px-0.5 rounded-sm">
+      {value}
+    </span>
+  );
+}
+
+function TimeBadge({ value }: { value: ReactNode }) {
+  return (
+    <span className="pr-2 last:pr-0.5 bg-orange-100 text-orange-700 border border-black/16 px-0.5 rounded-sm">
       {value}
     </span>
   );

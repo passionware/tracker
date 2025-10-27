@@ -1,3 +1,4 @@
+import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import {
@@ -21,7 +22,10 @@ export interface LocationService {
   useCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   useCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
   useCurrentProjectIterationTab: () => Maybe<
-    "positions" | "reports" | "billings" | "events"
+    "positions" | "reports" | "billings" | "events" | "generated-reports"
+  >;
+  useCurrentGeneratedReportTab: () => Maybe<
+    "basic" | "time-entries" | "grouped-view"
   >;
   // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;
@@ -31,6 +35,7 @@ export interface LocationService {
   getCurrentProjectId: () => Maybe<Project["id"]>;
   getCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   getCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
+  getCurrentGeneratedReportId: () => Maybe<GeneratedReportSource["id"]>;
   changeCurrentClientId: (id: ClientSpec) => void;
   changeCurrentWorkspaceId: (id: WorkspaceSpec) => void;
 
@@ -42,7 +47,7 @@ export interface LocationService {
       projectIterationStatus: Maybe<"all" | "active" | "closed">;
       projectIterationId: Maybe<ProjectIteration["id"]>;
       projectIterationTab: Maybe<
-        "positions" | "reports" | "billings" | "events"
+        "positions" | "reports" | "billings" | "events" | "generated-reports"
       >;
     }) => ReactNode;
   }) => ReactNode;

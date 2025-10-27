@@ -23,11 +23,16 @@ export const Variants = {
       "warning",
       "accent1",
       "accent2",
+      "info",
+      "success",
+      "neutral",
+      "purple",
+      "indigo",
     ] as const;
     const sizes = ["md", "sm"] as const;
 
     return (
-      <div className="grid grid-cols-[repeat(8,minmax(0,1fr))]  gap-4 p-4 place-items-center">
+      <div className="grid grid-cols-13 gap-4 p-4 place-items-center">
         {/* Pusta komórka w lewym górnym rogu */}
         <div />
         {/* Nagłówki kolumn: warianty */}
@@ -60,6 +65,42 @@ export const Variants = {
             </Fragment>
           )),
         )}
+      </div>
+    );
+  },
+} satisfies StoryObj<typeof meta>;
+
+export const NewVariants = {
+  render: (props) => {
+    const newVariants = [
+      "info",
+      "success",
+      "neutral",
+      "purple",
+      "indigo",
+    ] as const;
+    const tones = ["solid", "outline", "secondary"] as const;
+
+    return (
+      <div className="space-y-6 p-4">
+        <h3 className="text-lg font-semibold">New Badge Variants</h3>
+        {newVariants.map((variant) => (
+          <div key={variant} className="space-y-2">
+            <h4 className="font-medium capitalize">{variant}</h4>
+            <div className="flex gap-2 items-center">
+              {tones.map((tone) => (
+                <Badge
+                  key={`${variant}-${tone}`}
+                  {...props}
+                  tone={tone}
+                  variant={variant}
+                >
+                  {`${tone} ${variant}`}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   },

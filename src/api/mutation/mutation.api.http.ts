@@ -256,23 +256,19 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     editProject: async (projectId, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
-      const response = await client
-        .from("project")
-        .update(
-          pickBy(
-            {
-              name: takeIfPresent("name"),
-              description: takeIfPresent("description"),
-              client_id: takeIfPresent("clientId"),
-              workspace_id: takeIfPresent("workspaceId"),
-              status: takeIfPresent("status"),
-            },
-            (_, key) => key !== undefined,
-          ),
-        )
-        .eq("id", projectId);
-      if (response.error) {
-        throw response.error;
+
+      // Use Supabase function for atomic transaction
+      const { error } = await client.rpc("edit_project_with_workspaces", {
+        p_project_id: projectId,
+        p_name: takeIfPresent("name"),
+        p_description: takeIfPresent("description"),
+        p_client_id: takeIfPresent("clientId"),
+        p_status: takeIfPresent("status"),
+        p_workspace_ids: takeIfPresent("workspaceIds"),
+      });
+
+      if (error) {
+        throw error;
       }
     },
     updateBillingReportLink: async (linkId, payload) => {
@@ -320,23 +316,27 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     createProject: async (project) => {
-      const response = await client
-        .from("project")
-        .insert({
-          name: project.name,
-          description: project.description,
-          client_id: project.clientId,
-          workspace_id: project.workspaceId,
-          status: project.status,
-        })
-        .select("id");
-      if (response.error) {
-        throw response.error;
+      // Use Supabase function for atomic transaction
+      const { data, error } = await client.rpc(
+        "create_project_with_workspaces",
+        {
+          p_name: project.name,
+          p_description: project.description,
+          p_client_id: project.clientId,
+          p_status: project.status,
+          p_workspace_ids: project.workspaceIds,
+        },
+      );
+
+      if (error) {
+        throw error;
       }
-      if (response.data[0]?.id === undefined) {
-        throw new Error("No id returned");
+
+      if (data === null || data === undefined) {
+        throw new Error("No project ID returned");
       }
-      return { id: response.data[0].id };
+
+      return { id: data };
     },
     deleteProject: async (projectId) => {
       const response = await client

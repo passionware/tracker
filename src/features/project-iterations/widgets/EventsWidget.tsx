@@ -32,14 +32,13 @@ export function EventsWidget(props: EventsWidgetProps) {
       <StatefulEventsWidget
         iteration={iteration}
         clientId={project.clientId}
-        workspaceId={project.workspaceId}
         services={props.services}
       />
     ));
 }
 
 function StatefulEventsWidget(
-  props: Omit<EventsViewProps, "onAction" | "data"> & {
+  props: Omit<EventsViewProps, "onAction" | "data" | "workspaceId"> & {
     iteration: ProjectIterationDetail;
   },
 ) {

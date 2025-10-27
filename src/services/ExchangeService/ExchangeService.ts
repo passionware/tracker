@@ -21,14 +21,3 @@ export interface CurrencyValueGroup {
   values: CurrencyValue[];
   approximatedJointValue: CurrencyValue;
 }
-
-export interface CurrencyService {
-  useConvertedCurrencyValue: (
-    value: CurrencyValue,
-    targetCurrency: string,
-  ) => CurrencyValue;
-  convertCurrencyValue: (
-    value: CurrencyValue,
-    targetCurrency: string,
-  ) => CurrencyValue;
-}

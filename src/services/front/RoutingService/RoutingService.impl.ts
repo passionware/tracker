@@ -42,7 +42,7 @@ export function createRoutingService(): RoutingService {
             closedProjects: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
             forProject: (projectId = ":projectId") => {
-              const base = `/w/${workspaceSlot}/clients/${clientSlot}/project/${projectId}`;
+              const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
               return {
                 root: () => base,
                 iterations: (status = ":projectIterationStatus") =>
@@ -55,6 +55,34 @@ export function createRoutingService(): RoutingService {
                     root: () => base2,
                     events: () => `${base2}/events`,
                     reports: () => `${base2}/reports`,
+                    generatedReports: () => `${base2}/generated-reports`,
+                    forGeneratedReport: (reportId = ":generatedReportId") => {
+                      return {
+                        root: () => `${base2}/generated-reports/${reportId}`,
+                        basic: () =>
+                          `${base2}/generated-reports/${reportId}/basic`,
+                        timeEntries: () =>
+                          `${base2}/generated-reports/${reportId}/time-entries`,
+                        groupedView: (cubePath) => {
+                          const cubePathSegment =
+                            routingUtils.cubePath.toString(cubePath);
+                          const baseUrl = `${base2}/generated-reports/${reportId}/grouped-view`;
+                          return cubePathSegment
+                            ? `${baseUrl}/${cubePathSegment}`
+                            : baseUrl;
+                        },
+                        standaloneGroupedView: (cubePath) => {
+                          const cubePathSegment =
+                            routingUtils.cubePath.toString(cubePath);
+                          const baseUrl = `${base2}/generated-reports/${reportId}/standalone-grouped-view`;
+                          return cubePathSegment
+                            ? `${baseUrl}/${cubePathSegment}`
+                            : baseUrl;
+                        },
+                        export: () =>
+                          `${base2}/generated-reports/${reportId}/export`,
+                      };
+                    },
                     billings: () => `${base2}/billings`,
                   };
                 },
@@ -66,6 +94,22 @@ export function createRoutingService(): RoutingService {
     },
     forGlobal: () => ({
       root: () => "/",
+    }),
+
+    forClientCockpit: () => ({
+      root: () => "/c",
+      login: () => "/c/login",
+      forClient: (clientId = ":clientId") => ({
+        root: () => `/c/${clientId}`,
+        reports: () => `/c/${clientId}/reports`,
+        forReport: (reportId = ":reportId") => ({
+          root: () => `/c/${clientId}/reports/${reportId}`,
+          preview: () => `/c/${clientId}/reports/${reportId}/preview`,
+          cubeViewer: () => `/c/${clientId}/reports/${reportId}/cube-viewer`,
+          pdfExportBuilder: () =>
+            `/c/${clientId}/reports/${reportId}/pdf-export-builder`,
+        }),
+      }),
     }),
   };
 }

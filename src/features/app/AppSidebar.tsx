@@ -23,6 +23,7 @@ import { WithLocationService } from "@/services/internal/LocationService/Locatio
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -162,7 +163,7 @@ function useData(
         },
         {
           name: "Client cockpit",
-          url: "#",
+          url: services.routingService.forClientCockpit().root(),
           icon: PieChart,
         },
         {
@@ -181,6 +182,7 @@ export function AppSidebar({
 }: WithServices<
   [
     WithAuthService,
+    WithCockpitAuthService,
     WithClientService,
     WithLocationService,
     WithRoutingService,

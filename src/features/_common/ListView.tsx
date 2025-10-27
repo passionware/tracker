@@ -15,6 +15,7 @@ import {
   SorterWidget,
 } from "@/features/_common/filters/SorterWidget.tsx";
 import { cn } from "@/lib/utils.ts";
+import { selectionState, SelectionState } from "@/platform/lang/SelectionState";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { maybe, rd, RemoteData } from "@passionware/monads";
 import {
@@ -32,9 +33,11 @@ import { get } from "lodash";
 import { Info } from "lucide-react";
 import * as React from "react";
 import { ReactNode } from "react";
+import { sharedColumns } from "./columns/_common/sharedColumns";
+import { SelectionLayout } from "./SelectionLayout";
 
-// Typ wejściowy komponentu (co będzie wierszem w tabeli)
-export interface ListViewProps<TData, Query extends SortableQueryBase> {
+// Simple approach: make selection props optional and handle at runtime
+export type ListViewProps<TData, Query extends SortableQueryBase> = {
   data: RemoteData<TData[]>;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   columns: ColumnDef<any, any>[];
@@ -46,20 +49,37 @@ export interface ListViewProps<TData, Query extends SortableQueryBase> {
   query: Query;
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
   renderAdditionalData?: (row: TData) => React.ReactNode;
-}
+  // Optional selection props - only works when data has id property
+  selection?: TData extends { id: infer TId }
+    ? SelectionState<TId>
+    : SelectionState<never>;
+  onSelectionChange?: (
+    selection: TData extends { id: infer TId }
+      ? SelectionState<TId>
+      : SelectionState<never>,
+  ) => void;
+  toolbar?: React.ReactNode;
+};
 
-export function ListView<TData, Query extends SortableQueryBase>({
-  data,
-  columns,
-  skeletonRows = 6,
-  caption,
-  onRowDoubleClick,
-  onRowClick,
-  className,
-  query,
-  onQueryChange,
-  renderAdditionalData,
-}: ListViewProps<TData, Query>) {
+export function ListView<TData, Query extends SortableQueryBase>(
+  props: ListViewProps<TData, Query>,
+): React.ReactElement {
+  const {
+    data,
+    columns,
+    skeletonRows = 6,
+    caption,
+    onRowDoubleClick,
+    onRowClick,
+    className,
+    query,
+    onQueryChange,
+    renderAdditionalData,
+    selection,
+    onSelectionChange,
+    toolbar,
+  } = props;
+
   // Stan lokalny do sortowania, filtrowania itp.
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -71,13 +91,23 @@ export function ListView<TData, Query extends SortableQueryBase>({
   // W zależności od tego, czy mamy dane, w tablicy przekazujemy albo puste [],
   // albo wartość z data (jeżeli jest w stanie success).
   const dataWithPlaceholder = rd.useLastWithPlaceholder(data);
-  const tableData = rd.getOrElse(dataWithPlaceholder, []);
+  const tableData = rd.getOrElse(dataWithPlaceholder, [] as TData[]);
 
   // Inicjalizacja tabeli z tanstack react table
-  const table = useReactTable({
-    data: tableData,
+  const table = useReactTable<any>({
+    data: tableData as any,
     manualPagination: true,
-    columns,
+    columns:
+      selection && onSelectionChange
+        ? [
+            sharedColumns.selection(
+              selection as any,
+              data as any,
+              onSelectionChange as any,
+            ),
+            ...columns,
+          ]
+        : columns,
     manualSorting: true,
     enableSorting: true,
     state: {
@@ -119,6 +149,9 @@ export function ListView<TData, Query extends SortableQueryBase>({
                 "whitespace-pre",
                 get(header.column.columnDef.meta, "headerClassName"),
               )}
+              {...(get(header.column.columnDef.meta, "headerProps") as any)?.(
+                header.getContext(),
+              )}
             >
               <div className="inline-flex flex-row items-center gap-0.5">
                 {tooltip ? (
@@ -156,7 +189,7 @@ export function ListView<TData, Query extends SortableQueryBase>({
   // Tu zarządzamy stanem:
   // rd.journey(data) – czekanie, błąd, sukces.
   // Możesz też użyć rd.match lub rd.fold – wedle preferencji.
-  return rd
+  const listViewContent = rd
     .journey(dataWithPlaceholder)
     .wait(() => (
       // Wyświetlamy skeletony
@@ -192,9 +225,97 @@ export function ListView<TData, Query extends SortableQueryBase>({
     ))
     .map(() => {
       // Mamy faktyczne dane – tworzymy UI tabeli
+      const tbody = (
+        <TableBody
+          className={cn(
+            "border-b bg-white",
+            getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
+          )}
+        >
+          {/* Sprawdź, czy mamy wiersze w modelu */}
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <>
+                <TableRow
+                  key={row.id}
+                  data-item-id={row.original.id}
+                  aria-selected={maybe.mapOrElse(
+                    selection,
+                    (selection) =>
+                      !!selectionState.isSelected(selection, row.original.id),
+                    false,
+                  )}
+                  onClick={(e) => {
+                    if (e.target instanceof Element) {
+                      if (e.target.closest("a, button")) {
+                        return;
+                      }
+                      // check if the click was physically inside, not via react portal:
+                      if (!e.currentTarget.contains(e.target)) {
+                        return;
+                      }
+                    }
+
+                    onRowClick?.(row.original as TData);
+                  }}
+                  onDoubleClick={(e) => {
+                    if (e.target instanceof Element) {
+                      if (e.target.closest("a, button")) {
+                        return;
+                      }
+                      // check if the click was physically inside, not via react portal:
+                      if (!e.currentTarget.contains(e.target)) {
+                        return;
+                      }
+                    }
+
+                    onRowDoubleClick?.(row.original as TData);
+                    if (onRowDoubleClick && !e.defaultPrevented) {
+                      window.getSelection?.()?.removeAllRanges();
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        get(cell.column.columnDef.meta, "cellClassName"),
+                      )}
+                      {...(
+                        get(cell.column.columnDef.meta, "cellProps") as any
+                      )?.(cell.getContext())}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {maybe.map(
+                  renderAdditionalData?.(row.original as TData),
+                  (additionalData) => (
+                    <TableRow>
+                      <TableCell colSpan={table.getVisibleLeafColumns().length}>
+                        {additionalData}
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )}
+              </>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No data available.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      );
 
       return (
-        <div className={cn("rounded-md border overflow-auto", className)}>
+        <div className={cn("rounded-md border overflow-auto isolate", className)}>
           <Table>
             {/* NAGŁÓWEK */}
             <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
@@ -202,87 +323,34 @@ export function ListView<TData, Query extends SortableQueryBase>({
             </TableHeader>
 
             {/* CIAŁO */}
-            <TableBody
-              className={cn(
-                "border-b bg-white",
-                getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
-              )}
-            >
-              {/* Sprawdź, czy mamy wiersze w modelu */}
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <>
-                    <TableRow
-                      key={row.id}
-                      onClick={(e) => {
-                        if (e.target instanceof Element) {
-                          if (e.target.closest("a, button")) {
-                            return;
-                          }
-                          // check if the click was physically inside, not via react portal:
-                          if (!e.currentTarget.contains(e.target)) {
-                            return;
-                          }
-                        }
-
-                        onRowClick?.(row.original);
-                      }}
-                      onDoubleClick={(e) => {
-                        if (e.target instanceof Element) {
-                          if (e.target.closest("a, button")) {
-                            return;
-                          }
-                          // check if the click was physically inside, not via react portal:
-                          if (!e.currentTarget.contains(e.target)) {
-                            return;
-                          }
-                        }
-
-                        onRowDoubleClick?.(row.original);
-                        if (onRowDoubleClick && !e.defaultPrevented) {
-                          window.getSelection?.()?.removeAllRanges();
-                        }
-                      }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={cn(
-                            get(cell.column.columnDef.meta, "cellClassName"),
-                          )}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {maybe.map(
-                      renderAdditionalData?.(row.original),
-                      (additionalData) => (
-                        <TableRow>
-                          <TableCell
-                            colSpan={table.getVisibleLeafColumns().length}
-                          >
-                            {additionalData}
-                          </TableCell>
-                        </TableRow>
-                      ),
-                    )}
-                  </>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No data available.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            {selection && onSelectionChange ? (
+              <SelectionLayout
+                selectedIds={selectionState
+                  .getSelectedIds(
+                    selection,
+                    rd.tryGet(data)?.map((item) => (item as any).id) ?? [],
+                  )
+                  .map(String)}
+                onSelectedIdsChange={(ids) => {
+                  // We need to reverse engineer the selection state from the list of selected ids.
+                  // The ids we get are strings, but the data's ids may be string or number.
+                  // We want to filter the data to only those whose id (as string) is in the ids array.
+                  // Then, pass those items' actual ids (not stringified) to selectionState.selectSome.
+                  const allData = rd.tryGet(data) ?? [];
+                  const selectedIds = new Set(ids);
+                  const matchingIds = allData
+                    .filter((item) => selectedIds.has(String((item as any).id)))
+                    .map((item) => (item as any).id);
+                  return onSelectionChange(
+                    selectionState.selectSome(matchingIds) as any,
+                  );
+                }}
+              >
+                {tbody}
+              </SelectionLayout>
+            ) : (
+              tbody
+            )}
 
             {/* CAPTION */}
             {caption && (
@@ -291,9 +359,12 @@ export function ListView<TData, Query extends SortableQueryBase>({
               </TableCaption>
             )}
           </Table>
+          {toolbar}
         </div>
       );
     });
+
+  return listViewContent;
 }
 
 function renderHeaderCell<TData>(
