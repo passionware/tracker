@@ -296,7 +296,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
       }
 
       return (
-        <div className="h-full flex flex-col">
+        <div className="h-screen flex flex-col overflow-hidden">
           {/* Header */}
           <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -334,7 +334,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
             </div>
           </div>
 
-          <div className="flex-1 flex h-full">
+          <div className="flex-1 flex min-h-0 overflow-hidden">
             {/* Left Panel - Configuration */}
             <div className="w-1/3 border-r bg-white p-6 overflow-y-auto">
               <div className="space-y-6">
@@ -368,8 +368,8 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
             </div>
 
             {/* Right Panel - Preview */}
-            <div className="flex-1 flex flex-col">
-              <div className="p-6 border-b">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="p-6 border-b flex-shrink-0">
                 <h2 className="text-lg font-semibold text-gray-900">
                   PDF Preview
                 </h2>
@@ -377,7 +377,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                   Preview how your PDF will look
                 </p>
               </div>
-              <div className="flex-1 bg-gray-100 p-6 overflow-y-auto">
+              <div className="flex-1 bg-gray-100 p-6 overflow-y-auto min-h-0">
                 <div className="max-w-4xl mx-auto">
                   {pdfConfig.pages.length === 0 ? (
                     <PDFPreviewEmpty />
