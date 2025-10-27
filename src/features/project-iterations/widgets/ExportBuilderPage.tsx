@@ -33,9 +33,9 @@ import {
   anonymizeByUsage,
 } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
-import { SerializedCubeView } from "@/features/_common/Cube/SerializedCubeView.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
+import { PublishToCockpitButton } from "./PublishToCockpitButton";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import type {
@@ -68,10 +68,12 @@ function ExportBuilderContent({
   report,
   services,
   onNavigateBack,
+  projectId,
 }: {
   report: GeneratedReportSource;
   services: WithFrontServices["services"];
   onNavigateBack: () => void;
+  projectId: number;
 }) {
   // Use the shared cube hook to get all cube data
   const {
@@ -616,6 +618,12 @@ function ExportBuilderContent({
               <ExternalLink className="h-4 w-4" />
               Open Public Explorer
             </Button>
+            <PublishToCockpitButton
+              services={services}
+              serializableConfig={serializableConfig}
+              report={report}
+              projectId={projectId}
+            />
             <Button
               onClick={handleExport}
               disabled={!serializableConfig}
@@ -1010,6 +1018,7 @@ export function ExportBuilderPage(props: ExportBuilderPageProps) {
         report={report}
         services={props.services}
         onNavigateBack={handleNavigateBack}
+        projectId={props.projectId}
       />
     ));
 }
