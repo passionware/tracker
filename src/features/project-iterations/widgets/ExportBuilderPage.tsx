@@ -97,6 +97,36 @@ function ExportBuilderContent({
     };
   }, [serializableConfig, data]);
 
+  // Extract currency from report data (ensure all billing rates use the same currency)
+  const currency = useMemo(() => {
+    const currencies = new Set<string>();
+
+    // Collect all billing currencies from all role types
+    for (const roleType of Object.values(report.data.definitions.roleTypes)) {
+      for (const rate of roleType.rates) {
+        if (rate.billingCurrency) currencies.add(rate.billingCurrency);
+      }
+    }
+
+    // If no currencies found, default to EUR
+    if (currencies.size === 0) {
+      return "EUR";
+    }
+
+    // If multiple currencies found, throw an error
+    if (currencies.size > 1) {
+      const currencyList = Array.from(currencies).join(", ");
+      throw new Error(
+        `Mixed billing currencies detected in report: ${currencyList}. ` +
+          `All billing rates must use the same currency for proper formatting. ` +
+          `Please ensure all billing rates in environment variables use the same currency (e.g., "75 EUR", "100 EUR").`,
+      );
+    }
+
+    // Return the single currency
+    return Array.from(currencies)[0];
+  }, [report.data.definitions.roleTypes]);
+
   // Create raw data dimensions manually
   const rawDataDimension = {
     id: "date",
@@ -438,7 +468,7 @@ function ExportBuilderContent({
                   width: "100px",
                   formatFunction: {
                     type: "currency" as const,
-                    parameters: { currency: "USD", decimals: 2 },
+                    parameters: { currency, decimals: 2 },
                   },
                 },
               ]
@@ -456,7 +486,7 @@ function ExportBuilderContent({
                   width: "100px",
                   formatFunction: {
                     type: "currency" as const,
-                    parameters: { currency: "USD", decimals: 2 },
+                    parameters: { currency, decimals: 2 },
                   },
                 },
               ]
@@ -474,7 +504,7 @@ function ExportBuilderContent({
                   width: "100px",
                   formatFunction: {
                     type: "currency" as const,
-                    parameters: { currency: "USD", decimals: 2 },
+                    parameters: { currency, decimals: 2 },
                   },
                 },
               ]

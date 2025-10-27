@@ -22,6 +22,7 @@ import { useMemo } from "react";
  * This is the source of truth - no reverse engineering needed!
  */
 function getSerializableCubeConfig(
+  report: GeneratedReportSource,
   contractors: Array<{ id: number; name: string; fullName?: string }>,
 ): SerializableCubeConfig {
   // Create contractor label mapping (only include non-redundant mappings)
@@ -34,6 +35,38 @@ function getSerializableCubeConfig(
       contractorLabelMapping[contractorId] = contractorName;
     }
   });
+
+  // Extract currency from report data (ensure all billing rates use the same currency)
+  const getCurrencyFromReport = (): string => {
+    const currencies = new Set<string>();
+
+    // Collect all billing currencies from all role types
+    for (const roleType of Object.values(report.data.definitions.roleTypes)) {
+      for (const rate of roleType.rates) {
+        if (rate.billingCurrency) currencies.add(rate.billingCurrency);
+      }
+    }
+
+    // If no currencies found, default to EUR
+    if (currencies.size === 0) {
+      return "EUR";
+    }
+
+    // If multiple currencies found, throw an error
+    if (currencies.size > 1) {
+      const currencyList = Array.from(currencies).join(", ");
+      throw new Error(
+        `Mixed billing currencies detected in report: ${currencyList}. ` +
+          `All billing rates must use the same currency for proper formatting. ` +
+          `Please ensure all billing rates in environment variables use the same currency (e.g., "75 EUR", "100 EUR").`,
+      );
+    }
+
+    // Return the single currency
+    return Array.from(currencies)[0];
+  };
+
+  const currency = getCurrencyFromReport();
 
   const dimensions: SerializableDimension[] = [
     {
@@ -104,7 +137,7 @@ function getSerializableCubeConfig(
       aggregationFunction: "sum",
       formatFunction: {
         type: "currency",
-        parameters: { currency: "USD", decimals: 2 },
+        parameters: { currency, decimals: 2 },
       },
       sidebarOptions: {
         mode: "absolute",
@@ -118,7 +151,7 @@ function getSerializableCubeConfig(
       aggregationFunction: "sum",
       formatFunction: {
         type: "currency",
-        parameters: { currency: "USD", decimals: 2 },
+        parameters: { currency, decimals: 2 },
       },
       sidebarOptions: {
         mode: "absolute",
@@ -132,7 +165,7 @@ function getSerializableCubeConfig(
       aggregationFunction: "sum",
       formatFunction: {
         type: "currency",
-        parameters: { currency: "USD", decimals: 2 },
+        parameters: { currency, decimals: 2 },
       },
       sidebarOptions: {
         mode: "divergent",
@@ -208,7 +241,7 @@ export function useCubeDefinitions(
     const contractors = rd.mapOrElse(contractorsQuery, (data) => data, []);
 
     // Get the serializable config - this is our source of truth!
-    const serializableConfig = getSerializableCubeConfig(contractors);
+    const serializableConfig = getSerializableCubeConfig(report, contractors);
 
     return {
       serializableConfig,
