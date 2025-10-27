@@ -115,41 +115,10 @@ export function CubeReportsPage(props: WithFrontServices) {
             );
           }
 
-          // Helper function to extract end date from cube data
-          const getEndDate = (report: CockpitCubeReportWithCreator): Date => {
-            try {
-              const cubeData = report.cube_data?.data;
-              if (!Array.isArray(cubeData) || cubeData.length === 0) {
-                return new Date(report.created_at); // Fallback to creation date
-              }
-
-              // Find all valid dates from startAt fields
-              const dates = cubeData
-                .map((item: any) => {
-                  if (item.startAt) {
-                    const date = new Date(item.startAt);
-                    return isNaN(date.getTime()) ? null : date;
-                  }
-                  return null;
-                })
-                .filter((date): date is Date => date !== null);
-
-              if (dates.length === 0) {
-                return new Date(report.created_at); // Fallback to creation date
-              }
-
-              // Return the maximum date (end date of the report period)
-              return new Date(Math.max(...dates.map((d) => d.getTime())));
-            } catch (error) {
-              console.warn("Failed to extract end date from cube data:", error);
-              return new Date(report.created_at); // Fallback to creation date
-            }
-          };
-
           // Sort reports by end date (newest first)
           const sortedReports = [...reportsList].sort((a, b) => {
-            const endDateA = getEndDate(a);
-            const endDateB = getEndDate(b);
+            const endDateA = a.end_date;
+            const endDateB = b.end_date;
             return endDateB.getTime() - endDateA.getTime();
           });
 
@@ -202,40 +171,8 @@ function LatestReportHero({
   onViewReport,
   services,
 }: LatestReportHeroProps) {
-  // Extract date range from cube data
-  const getDateRange = () => {
-    try {
-      const cubeData = report.cube_data?.data;
-      if (!Array.isArray(cubeData) || cubeData.length === 0) {
-        return null;
-      }
-
-      // Find all valid dates from startAt fields
-      const dates = cubeData
-        .map((item: any) => {
-          if (item.startAt) {
-            const date = new Date(item.startAt);
-            return isNaN(date.getTime()) ? null : date;
-          }
-          return null;
-        })
-        .filter((date): date is Date => date !== null);
-
-      if (dates.length === 0) {
-        return null;
-      }
-
-      const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-      const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-      return { start: minDate, end: maxDate };
-    } catch (error) {
-      console.warn("Failed to extract date range from cube data:", error);
-      return null;
-    }
-  };
-
-  const dateRange = getDateRange();
+  // Use API-provided date range
+  const dateRange = { start: report.start_date, end: report.end_date };
 
   return (
     <div className="max-w-5xl">
@@ -274,17 +211,15 @@ function LatestReportHero({
               )}
 
               {/* Date Range */}
-              {dateRange && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    {services.formatService.temporal.range.long(
-                      dateRange.start,
-                      dateRange.end,
-                    )}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {services.formatService.temporal.range.long(
+                    dateRange.start,
+                    dateRange.end,
+                  )}
+                </span>
+              </div>
 
               {/* Created Date */}
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -335,41 +270,8 @@ interface ReportCardProps extends WithFrontServices {
 }
 
 function ReportCard({ report, onClick, services }: ReportCardProps) {
-  // Extract date range from cube data
-  const getDateRange = () => {
-    // todo - maybe include in the database?
-    try {
-      const cubeData = report.cube_data?.data;
-      if (!Array.isArray(cubeData) || cubeData.length === 0) {
-        return null;
-      }
-
-      // Find all valid dates from startAt fields
-      const dates = cubeData
-        .map((item: any) => {
-          if (item.startAt) {
-            const date = new Date(item.startAt);
-            return isNaN(date.getTime()) ? null : date;
-          }
-          return null;
-        })
-        .filter((date): date is Date => date !== null);
-
-      if (dates.length === 0) {
-        return null;
-      }
-
-      const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-      const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-      return { start: minDate, end: maxDate };
-    } catch (error) {
-      console.warn("Failed to extract date range from cube data:", error);
-      return null;
-    }
-  };
-
-  const dateRange = getDateRange();
+  // Use API-provided date range
+  const dateRange = { start: report.start_date, end: report.end_date };
   return (
     <Card
       className="hover:shadow-lg transition-all cursor-pointer hover:border-blue-300 group hover:scale-[1.02]"
@@ -408,21 +310,19 @@ function ReportCard({ report, onClick, services }: ReportCardProps) {
           )}
 
           {/* Date Range */}
-          {dateRange && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="w-3 h-3" />
-              <span className="truncate">
-                {services.formatService.temporal.range.long(
-                  dateRange.start,
-                  dateRange.end,
-                )}
-              </span>
-              <Clock className="w-3 h-3" />
-              <span>
-                ended {formatDistanceToNow(dateRange.end, { addSuffix: true })}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="w-3 h-3" />
+            <span className="truncate">
+              {services.formatService.temporal.range.long(
+                dateRange.start,
+                dateRange.end,
+              )}
+            </span>
+            <Clock className="w-3 h-3" />
+            <span>
+              ended {formatDistanceToNow(dateRange.end, { addSuffix: true })}
+            </span>
+          </div>
 
           {/* Created Date */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

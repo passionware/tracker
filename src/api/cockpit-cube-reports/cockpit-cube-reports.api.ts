@@ -13,6 +13,8 @@ export interface CockpitCubeReport {
 export interface CockpitCubeReportWithCreator extends CockpitCubeReport {
   creator_email?: string;
   creator_name?: string;
+  start_date: Date;
+  end_date: Date;
 }
 
 export interface CockpitCubeReportsApi {

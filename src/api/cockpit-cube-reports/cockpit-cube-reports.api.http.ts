@@ -3,6 +3,48 @@ import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { cockpitCubeReport$ } from "./cockpit-cube-reports.api.http.schema";
 import { CockpitCubeReportsApi } from "./cockpit-cube-reports.api";
 
+// Helper function to calculate date range from cube data
+function calculateDateRange(cubeData: any): {
+  start_date: Date;
+  end_date: Date;
+} {
+  try {
+    const data = cubeData?.data;
+    if (!Array.isArray(data) || data.length === 0) {
+      // Fallback to current date if no data
+      const now = new Date();
+      return { start_date: now, end_date: now };
+    }
+
+    // Find all valid dates from startAt fields
+    const dates = data
+      .map((item: any) => {
+        if (item.startAt) {
+          const date = new Date(item.startAt);
+          return isNaN(date.getTime()) ? null : date;
+        }
+        return null;
+      })
+      .filter((date): date is Date => date !== null);
+
+    if (dates.length === 0) {
+      // Fallback to current date if no valid dates
+      const now = new Date();
+      return { start_date: now, end_date: now };
+    }
+
+    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+
+    return { start_date: minDate, end_date: maxDate };
+  } catch (error) {
+    console.warn("Failed to calculate date range from cube data:", error);
+    // Fallback to current date on error
+    const now = new Date();
+    return { start_date: now, end_date: now };
+  }
+}
+
 export function createCockpitCubeReportsApi(
   client: SupabaseClient,
 ): CockpitCubeReportsApi {
@@ -24,11 +66,16 @@ export function createCockpitCubeReportsApi(
         throw error;
       }
 
-      return (data || []).map((report: any) => ({
-        ...report,
-        creator_email: report.creator?.email,
-        creator_name: report.creator?.full_name,
-      }));
+      return (data || []).map((report: any) => {
+        const dateRange = calculateDateRange(report.cube_data);
+        return {
+          ...report,
+          creator_email: report.creator?.email,
+          creator_name: report.creator?.full_name,
+          start_date: dateRange.start_date,
+          end_date: dateRange.end_date,
+        };
+      });
     },
 
     getReport: async (reportId) => {
@@ -48,10 +95,13 @@ export function createCockpitCubeReportsApi(
         throw error;
       }
 
+      const dateRange = calculateDateRange(data.cube_data);
       return {
         ...data,
         creator_email: data.creator?.email,
         creator_name: data.creator?.full_name,
+        start_date: dateRange.start_date,
+        end_date: dateRange.end_date,
       };
     },
 
