@@ -58,8 +58,6 @@ export async function generatePDFDocument(
       console.warn("Failed to embed logo:", error);
       logoBase64 = null;
     }
-  } else {
-    console.log("PDF Document - No logo URL provided");
   }
 
   // Register fonts
@@ -193,7 +191,7 @@ export async function generatePDFDocument(
     tableCellDimension: {
       padding: 12,
       fontSize: 11,
-      flex: 1,
+      width: "60%",
       borderRight: "1px solid #F1F5F9",
       color: "#111827",
       fontWeight: 600,
@@ -204,8 +202,7 @@ export async function generatePDFDocument(
     tableCellMeasure: {
       padding: 12,
       fontSize: 11,
-      flex: 0,
-      minWidth: 80,
+      width: "20%",
       borderRight: "1px solid #F1F5F9",
       color: "#374151",
       textAlign: "right",
@@ -213,8 +210,7 @@ export async function generatePDFDocument(
     tableCellMeasureGroup: {
       padding: 12,
       fontSize: 11,
-      flex: 0,
-      minWidth: 80,
+      width: "20%",
       borderRight: "1px solid #F1F5F9",
       color: "#111827",
       fontWeight: 600,
@@ -242,23 +238,22 @@ export async function generatePDFDocument(
       padding: 8,
       paddingLeft: 24,
       fontSize: 10,
-      flex: 1,
+      width: "60%",
       borderRight: "1px solid #F1F5F9",
       color: "#6B7280",
     },
     tableCellNumeric: {
       padding: 12,
       fontSize: 11,
-      flex: 1,
+      width: "20%",
       borderRight: "1px solid #F1F5F9",
       color: "#374151",
       textAlign: "right",
     },
     tableCellNumericSub: {
       padding: 8,
-      paddingLeft: 24,
       fontSize: 10,
-      flex: 1,
+      width: "20%",
       borderRight: "1px solid #F1F5F9",
       color: "#6B7280",
       textAlign: "right",
