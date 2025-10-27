@@ -75,6 +75,8 @@ function ExportBuilderContent({
   onNavigateBack: () => void;
   projectId: number;
 }) {
+  // Fetch the actual project to get its real client_id
+  const projectState = services.projectService.useProject(projectId);
   // Use the shared cube hook to get all cube data
   const {
     cubeState: _cubeState,
@@ -618,12 +620,23 @@ function ExportBuilderContent({
               <ExternalLink className="h-4 w-4" />
               Open Public Explorer
             </Button>
-            <PublishToCockpitButton
-              services={services}
-              serializableConfig={serializableConfig}
-              report={report}
-              projectId={projectId}
-            />
+            {rd
+              .journey(projectState)
+              .wait(<Skeleton className="h-10 w-32" />)
+              .catch(() => (
+                <Button variant="outline" disabled>
+                  Project Error
+                </Button>
+              ))
+              .map((project) => (
+                <PublishToCockpitButton
+                  services={services}
+                  serializableConfig={serializableConfig}
+                  report={report}
+                  projectId={projectId}
+                  clientId={project.clientId}
+                />
+              ))}
             <Button
               onClick={handleExport}
               disabled={!serializableConfig}

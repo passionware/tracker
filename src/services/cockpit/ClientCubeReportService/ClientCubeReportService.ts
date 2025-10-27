@@ -7,6 +7,7 @@ import { Maybe, RemoteData } from "@passionware/monads";
 export interface PublishCubeReportParams {
   tenantId: string;
   userId: string;
+  clientId: number;
   name: string;
   description?: string;
   cubeData: Record<string, unknown>;

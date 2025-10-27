@@ -36,12 +36,17 @@ export function createClientCubeReportService(
       ),
 
     publishReport: async (params) => {
-      const result = await api.createReport(params.tenantId, params.userId, {
-        name: params.name,
-        description: params.description,
-        cube_data: params.cubeData,
-        cube_config: params.cubeConfig,
-      });
+      const result = await api.createReport(
+        params.tenantId,
+        params.userId,
+        params.clientId,
+        {
+          name: params.name,
+          description: params.description,
+          cube_data: params.cubeData,
+          cube_config: params.cubeConfig,
+        },
+      );
 
       // Invalidate the reports list to refresh it
       await client.invalidateQueries({

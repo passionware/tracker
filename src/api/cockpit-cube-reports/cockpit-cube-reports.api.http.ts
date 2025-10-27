@@ -69,7 +69,36 @@ export function createCockpitCubeReportsApi(
 
       if (error) {
         console.error("Error creating cube report:", error);
-        throw error;
+
+        // Enhance error with context
+        const enhancedError = new Error(
+          `Failed to create cube report: ${error.message || "Unknown error"}`,
+        ) as Error & {
+          code?: string;
+          details?: string;
+          hint?: string;
+          context?: {
+            tenantId: string;
+            userId: string;
+            clientId: number;
+            reportName: string;
+          };
+        };
+
+        // Preserve original error properties
+        if (error.code) enhancedError.code = error.code;
+        if (error.details) enhancedError.details = error.details;
+        if (error.hint) enhancedError.hint = error.hint;
+
+        // Add context information
+        enhancedError.context = {
+          tenantId,
+          userId,
+          clientId,
+          reportName: report.name,
+        };
+
+        throw enhancedError;
       }
 
       // Fetch the created report to return full data

@@ -1,16 +1,18 @@
+import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
 import { Button } from "@/components/ui/button.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { rd, mt } from "@passionware/monads";
+import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { Share2, LogIn } from "lucide-react";
-import { toast } from "sonner";
+import { LogIn, Share2 } from "lucide-react";
 import { useCallback } from "react";
+import { toast } from "sonner";
 
 interface PublishToCockpitButtonProps {
   services: WithFrontServices["services"];
   serializableConfig: any;
-  report: any;
+  report: GeneratedReportSource;
   projectId: number;
+  clientId: number;
   disabled?: boolean;
 }
 
@@ -19,6 +21,7 @@ export function PublishToCockpitButton({
   serializableConfig,
   report,
   projectId,
+  clientId,
   disabled = false,
 }: PublishToCockpitButtonProps) {
   // Get cockpit auth info at the top level (hooks must be called at component level)
@@ -40,6 +43,7 @@ export function PublishToCockpitButton({
     await services.clientCubeReportService.publishReport({
       tenantId,
       userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
+      clientId, // Pass the client ID for validation
       name: `Cube Export - Project ${projectId} - ${new Date().toLocaleDateString()}`,
       description: `Exported cube data from project iteration ${report.projectIterationId} on ${new Date().toLocaleDateString()}`,
       cubeData: { data: serializableConfig.data } as Record<string, unknown>,
@@ -74,12 +78,55 @@ export function PublishToCockpitButton({
   });
 
   const handlePublishToCockpit = useCallback(() => {
-    publishMutation.track(void 0).catch((error: Error) => {
+    publishMutation.track(void 0).catch((error: any) => {
       console.error("Error publishing report:", error);
+
+      // Extract detailed error information
+      let errorMessage = "Failed to publish report to cockpit";
+      let errorDetails = "";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      // Check for Supabase/PostgreSQL specific errors
+      if (error?.code) {
+        errorDetails = `Error Code: ${error.code}`;
+      }
+
+      if (error?.details) {
+        errorDetails += errorDetails
+          ? ` | Details: ${error.details}`
+          : `Details: ${error.details}`;
+      }
+
+      if (error?.hint) {
+        errorDetails += errorDetails
+          ? ` | Hint: ${error.hint}`
+          : `Hint: ${error.hint}`;
+      }
+
+      // Add context information if available
+      if (error?.context) {
+        const context = error.context;
+        errorDetails += errorDetails
+          ? ` | Context: Tenant=${context.tenantId}, Client=${context.clientId}`
+          : `Context: Tenant=${context.tenantId}, Client=${context.clientId}`;
+      }
+
+      // Show detailed error toast
       toast.error(
-        error instanceof Error
-          ? `Failed to publish: ${error.message}`
-          : "Failed to publish report to cockpit",
+        <div className="flex flex-col gap-1">
+          <div className="font-semibold">{errorMessage}</div>
+          {errorDetails && (
+            <div className="text-sm text-gray-600">{errorDetails}</div>
+          )}
+        </div>,
+        {
+          duration: 8000, // Show longer for detailed errors
+        },
       );
     });
   }, [publishMutation]);
@@ -94,11 +141,11 @@ export function PublishToCockpitButton({
     .wait(
       <Button
         variant="outline"
-        disabled={disabled || !serializableConfig}
+        onClick={handleLoginToExport}
         className="flex items-center gap-2"
       >
-        <Share2 className="h-4 w-4" />
-        Publish to Client
+        <LogIn className="h-4 w-4" />
+        Login to Publish
       </Button>,
     )
     .catch(() => (
@@ -108,7 +155,7 @@ export function PublishToCockpitButton({
         className="flex items-center gap-2"
       >
         <LogIn className="h-4 w-4" />
-        Login to Export
+        Login to Publish
       </Button>
     ))
     .map(() => (

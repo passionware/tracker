@@ -155,10 +155,6 @@ export function CockpitLoginPage(props: WithFrontServices) {
                   className="w-full pl-10"
                   {...register("password", {
                     required: "Password is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
                   })}
                 />
               </div>
