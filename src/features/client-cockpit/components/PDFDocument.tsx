@@ -198,6 +198,7 @@ export async function generatePDFDocument(
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
+      flexWrap: "wrap",
     },
     tableCellMeasure: {
       padding: 12,
