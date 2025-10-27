@@ -320,60 +320,6 @@ function ExportBuilderContent({
     if (!previewCubeState) return null;
     if (!serializableConfig) return null;
 
-    // Create labelMapping for contractor names
-    const contractorLabelMapping: Record<string, string> = {};
-    contractors.forEach((contractor: any) => {
-      const displayName =
-        contractor.fullName || contractor.name || String(contractor.id);
-      if (String(contractor.id) !== displayName) {
-        contractorLabelMapping[String(contractor.id)] = displayName;
-      }
-    });
-
-    // Create labelMapping for project types
-    const projectLabelMapping: Record<string, string> = {};
-    Object.entries(report.data.definitions.projectTypes).forEach(
-      ([id, type]: [string, any]) => {
-        const displayName = type.name || id;
-        if (id !== displayName) {
-          projectLabelMapping[id] = displayName;
-        }
-      },
-    );
-
-    // Create labelMapping for role types
-    const roleLabelMapping: Record<string, string> = {};
-    Object.entries(report.data.definitions.roleTypes).forEach(
-      ([id, type]: [string, any]) => {
-        const displayName = type.name || id;
-        if (id !== displayName) {
-          roleLabelMapping[id] = displayName;
-        }
-      },
-    );
-
-    // Create labelMapping for task types
-    const taskLabelMapping: Record<string, string> = {};
-    Object.entries(report.data.definitions.taskTypes).forEach(
-      ([id, type]: [string, any]) => {
-        const displayName = type.name || id;
-        if (id !== displayName) {
-          taskLabelMapping[id] = displayName;
-        }
-      },
-    );
-
-    // Create labelMapping for activity types
-    const activityLabelMapping: Record<string, string> = {};
-    Object.entries(report.data.definitions.activityTypes).forEach(
-      ([id, type]: [string, any]) => {
-        const displayName = type.name || id;
-        if (id !== displayName) {
-          activityLabelMapping[id] = displayName;
-        }
-      },
-    );
-
     // Start with the base serializable config
     const config = {
       ...serializableConfig,
@@ -382,42 +328,7 @@ function ExportBuilderContent({
           const baseDim = serializableConfig.dimensions.find(
             (d) => d.id === dim.id,
           );
-          if (!baseDim) return undefined;
-
-          // Add labelMapping based on dimension type
-          let labelMapping: Record<string, string> | undefined;
-
-          if (
-            dim.id === "contractor" &&
-            Object.keys(contractorLabelMapping).length > 0
-          ) {
-            labelMapping = contractorLabelMapping;
-          } else if (
-            dim.id === "project" &&
-            Object.keys(projectLabelMapping).length > 0
-          ) {
-            labelMapping = projectLabelMapping;
-          } else if (
-            dim.id === "role" &&
-            Object.keys(roleLabelMapping).length > 0
-          ) {
-            labelMapping = roleLabelMapping;
-          } else if (
-            dim.id === "task" &&
-            Object.keys(taskLabelMapping).length > 0
-          ) {
-            labelMapping = taskLabelMapping;
-          } else if (
-            dim.id === "activity" &&
-            Object.keys(activityLabelMapping).length > 0
-          ) {
-            labelMapping = activityLabelMapping;
-          }
-
-          return {
-            ...baseDim,
-            ...(labelMapping && { labelMapping }),
-          };
+          return baseDim;
         })
         .filter((d) => d !== undefined),
       measures: selectedMeasures
