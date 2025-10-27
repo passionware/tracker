@@ -14,20 +14,21 @@ import type {
 } from "../CubeService.types.ts";
 import type {
   SerializableCubeConfig,
-  SerializableCubeState,
-  SerializableDataItem,
   SerializableDimension,
   SerializableMeasure,
   SerializableFilter,
   SerializableDataField,
-  SerializableDataType,
-  SerializableFormatFunction,
-  AggregationFunction,
   FormatFunctionRegistry,
   AggregationFunctionRegistry,
   DeserializationOptions,
 } from "./CubeSerialization.types.ts";
 import { sum } from "lodash";
+
+// Constants
+const CUBE_SERIALIZATION_VERSION = "1.0.0";
+const DEFAULT_CURRENCY = "EUR";
+const DEFAULT_DECIMALS = 2;
+const DEFAULT_PERCENTAGE_DECIMALS = 1;
 
 /**
  * Default format function registry with common formatters
@@ -37,8 +38,8 @@ export const defaultFormatFunctions: FormatFunctionRegistry = {
     format: (value: unknown, params?: Record<string, unknown>) => {
       const num = typeof value === "number" ? value : parseFloat(String(value));
       if (isNaN(num)) return String(value);
-      const currency = (params?.currency as string) || "USD";
-      const decimals = (params?.decimals as number) || 2;
+      const currency = (params?.currency as string) || DEFAULT_CURRENCY;
+      const decimals = (params?.decimals as number) || DEFAULT_DECIMALS;
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency,
@@ -57,7 +58,7 @@ export const defaultFormatFunctions: FormatFunctionRegistry = {
     format: (value: unknown, params?: Record<string, unknown>) => {
       const num = typeof value === "number" ? value : parseFloat(String(value));
       if (isNaN(num)) return String(value);
-      const decimals = (params?.decimals as number) || 2;
+      const decimals = (params?.decimals as number) || DEFAULT_DECIMALS;
       return num.toFixed(decimals);
     },
     validate: (params?: Record<string, unknown>) => {
@@ -68,7 +69,8 @@ export const defaultFormatFunctions: FormatFunctionRegistry = {
     format: (value: unknown, params?: Record<string, unknown>) => {
       const num = typeof value === "number" ? value : parseFloat(String(value));
       if (isNaN(num)) return String(value);
-      const decimals = (params?.decimals as number) || 1;
+      const decimals =
+        (params?.decimals as number) || DEFAULT_PERCENTAGE_DECIMALS;
       return `${(num * 100).toFixed(decimals)}%`;
     },
     validate: (params?: Record<string, unknown>) => {
@@ -146,205 +148,6 @@ export const defaultAggregationFunctions: AggregationFunctionRegistry = {
     aggregate: (values: unknown[]) => new Set(values).size,
   },
 };
-
-/**
- * Infer data type from a value
- */
-function inferDataType(value: unknown): SerializableDataType {
-  if (value === null || value === undefined) return "string";
-
-  if (typeof value === "boolean") return "boolean";
-  if (typeof value === "number") return "number";
-  if (typeof value === "string") {
-    // Try to detect date/datetime
-    const date = new Date(value);
-    if (!isNaN(date.getTime())) {
-      // Check if it's just a date or includes time
-      return value.includes("T") || value.includes(" ") ? "dateTime" : "date";
-    }
-    return "string";
-  }
-
-  if (value instanceof Date) return "dateTime";
-
-  return "string";
-}
-
-/**
- * Analyze data to infer schema
- */
-function inferDataSchema(data: CubeDataItem[]): SerializableDataField[] {
-  if (data.length === 0) return [];
-
-  const fieldTypes = new Map<string, Set<SerializableDataType>>();
-
-  // Analyze all data items
-  data.forEach((item) => {
-    Object.entries(item).forEach(([key, value]) => {
-      if (!fieldTypes.has(key)) {
-        fieldTypes.set(key, new Set());
-      }
-      fieldTypes.get(key)!.add(inferDataType(value));
-    });
-  });
-
-  // Convert to field definitions
-  return Array.from(fieldTypes.entries()).map(([name, types]) => {
-    // Choose the most specific type
-    let type: SerializableDataType = "string";
-    if (types.has("number")) type = "number";
-    else if (types.has("boolean")) type = "boolean";
-    else if (types.has("dateTime")) type = "dateTime";
-    else if (types.has("date")) type = "date";
-    else if (types.has("time")) type = "time";
-
-    return {
-      name,
-      type,
-      nullable: types.has("string") && types.size > 1, // Consider nullable if mixed with string
-    };
-  });
-}
-
-/**
- * Serialize a cube configuration to JSON-safe format
- */
-export function serializeCubeConfig<TData extends CubeDataItem>(
-  config: CubeConfig<TData>,
-): SerializableCubeConfig {
-  // Infer data schema from the data
-  const dataSchema = {
-    fields: inferDataSchema(config.data),
-  };
-
-  // Convert dimensions
-  const dimensions: SerializableDimension[] = config.dimensions.map((dim) => {
-    // Try to find the field name by analyzing the getValue function
-    // This is a heuristic approach - in practice, you might want to store field names explicitly
-    let fieldName = "unknown";
-
-    // Simple heuristic: if getValue is a simple property access, extract the property name
-    const getValueStr = dim.getValue.toString();
-    const match = getValueStr.match(/item\.(\w+)/);
-    if (match) {
-      fieldName = match[1];
-    }
-
-    // Check if this dimension has labelMapping (from our custom serialization)
-    const dimensionWithLabelMapping = dim as any;
-
-    return {
-      id: dim.id,
-      name: dim.name,
-      description: dim.description,
-      icon: dim.icon,
-      fieldName,
-      keyFieldName: dim.getKey ? "custom" : undefined,
-      // Use labelMapping if available, otherwise no formatFunction
-      // Custom formatValue functions are not serializable
-      labelMapping: dimensionWithLabelMapping.labelMapping,
-      formatFunction: undefined, // Custom functions are not allowed in serialization
-    };
-  });
-
-  // Convert measures
-  const measures: SerializableMeasure[] = config.measures.map((measure) => {
-    let fieldName = "unknown";
-    let aggregationFunction: AggregationFunction = "sum";
-
-    // Try to extract field name from getValue function
-    const getValueStr = measure.getValue.toString();
-    const match = getValueStr.match(/item\.(\w+)/);
-    if (match) {
-      fieldName = match[1];
-    }
-
-    // Try to determine aggregation function from the aggregate function
-    const aggregateStr = measure.aggregate.toString();
-    if (aggregateStr.includes("reduce") && aggregateStr.includes("+")) {
-      aggregationFunction = "sum";
-    } else if (aggregateStr.includes("length")) {
-      aggregationFunction = "count";
-    } else if (aggregateStr.includes("/")) {
-      aggregationFunction = "average";
-    } else if (aggregateStr.includes("Math.min")) {
-      aggregationFunction = "min";
-    } else if (aggregateStr.includes("Math.max")) {
-      aggregationFunction = "max";
-    }
-
-    // For measures, we'll use built-in format functions instead of custom ones
-    let formatFunction: SerializableFormatFunction | undefined;
-    if (measure.formatValue) {
-      const formatStr = measure.formatValue.toString();
-      if (formatStr.includes("toFixed") && formatStr.includes("h")) {
-        // Hours formatting
-        formatFunction = {
-          type: "number",
-          parameters: { decimals: 2 },
-        };
-      } else if (formatStr.includes("$") && formatStr.includes("toFixed")) {
-        // Currency formatting
-        formatFunction = {
-          type: "currency",
-          parameters: { currency: "USD", decimals: 2 },
-        };
-      }
-    }
-
-    return {
-      id: measure.id,
-      name: measure.name,
-      description: measure.description,
-      icon: measure.icon,
-      fieldName,
-      aggregationFunction,
-      formatFunction,
-      sidebarOptions: measure.sidebarOptions,
-    };
-  });
-
-  // Convert filters
-  const filters: SerializableFilter[] = (config.filters || []).map(
-    (filter) => ({
-      dimensionId: filter.dimensionId,
-      operator: filter.operator,
-      value: filter.value,
-    }),
-  );
-
-  // Check if config has listView (from our custom serialization)
-  const configWithListView = config as any;
-
-  return {
-    metadata: {
-      version: "1.0.0",
-      createdAt: new Date().toISOString(),
-      modifiedAt: new Date().toISOString(),
-      name: "Cube Configuration",
-    },
-    dataSchema,
-    dimensions,
-    measures,
-    activeMeasures: config.activeMeasures,
-    filters,
-    listView: configWithListView.listView,
-  };
-}
-
-/**
- * Serialize a complete cube state (config + data)
- */
-export function serializeCubeState<TData extends CubeDataItem>(
-  config: CubeConfig<TData>,
-): SerializableCubeState {
-  const serializedConfig = serializeCubeConfig(config);
-
-  return {
-    config: serializedConfig,
-    data: config.data as SerializableDataItem[],
-  };
-}
 
 /**
  * Deserialize a cube configuration from JSON
@@ -451,20 +254,6 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
 }
 
 /**
- * Deserialize a complete cube state
- */
-export function deserializeCubeState<TData extends CubeDataItem>(
-  serialized: SerializableCubeState,
-  options: DeserializationOptions = {},
-): CubeConfig<TData> {
-  return deserializeCubeConfig(
-    serialized.config,
-    serialized.data as TData[],
-    options,
-  );
-}
-
-/**
  * Create a serializable cube configuration from scratch
  */
 export function createSerializableCubeConfig(
@@ -482,7 +271,7 @@ export function createSerializableCubeConfig(
 ): SerializableCubeConfig {
   return {
     metadata: {
-      version: "1.0.0",
+      version: CUBE_SERIALIZATION_VERSION,
       createdAt: new Date().toISOString(),
       modifiedAt: new Date().toISOString(),
       name,

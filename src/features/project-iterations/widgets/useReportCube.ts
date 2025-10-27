@@ -4,7 +4,6 @@
  * Encapsulates cube logic for a report, providing:
  * - Cube state
  * - Dimensions and measures
- * - Raw data dimension
  * - All cube-related functionality
  *
  * Can be reused in both main view and export dialog
@@ -19,6 +18,7 @@ import {
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { useMemo } from "react";
+import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
 
 export interface UseReportCubeProps {
   report: GeneratedReportSource;
@@ -27,12 +27,9 @@ export interface UseReportCubeProps {
 
 export interface UseReportCubeReturn {
   cubeState: ReturnType<typeof useCubeState>;
-  dimensions: ReturnType<typeof useCubeDefinitions>["dimensions"];
-  measures: ReturnType<typeof useCubeDefinitions>["measures"];
-  rawDataDimension: ReturnType<typeof useCubeDefinitions>["rawDataDimension"];
-  anonymizedRawDataDimension: ReturnType<
+  serializableConfig: ReturnType<
     typeof useCubeDefinitions
-  >["anonymizedRawDataDimension"];
+  >["serializableConfig"];
   data: TransformedEntry[];
 }
 
@@ -46,25 +43,33 @@ export function useReportCube({
   // Transform report data with all calculated values
   const transformedData = useMemo(() => transformReportData(report), [report]);
 
-  // Get cube definitions (dimensions, measures, raw data dimension)
-  const { dimensions, measures, rawDataDimension, anonymizedRawDataDimension } =
-    useCubeDefinitions(report, services);
+  // Get cube definitions (serializable config only - no deserialization!)
+  const { serializableConfig } = useCubeDefinitions(report, services);
+
+  // For now, we still need to deserialize to get runtime descriptors for useCubeState
+  // TODO: Create a new hook that works directly with SerializableCubeConfig
+  const cubeConfig = useMemo(() => {
+    return deserializeCubeConfig(serializableConfig, transformedData as any[]);
+  }, [serializableConfig, transformedData]);
 
   // Create cube state with transformed data
   const cubeState = useCubeState({
     data: transformedData,
-    dimensions,
-    measures,
+    dimensions: cubeConfig.dimensions,
+    measures: cubeConfig.measures,
     includeItems: true,
-    rawDataDimension,
+    rawDataDimension: {
+      id: "raw-data",
+      name: "Raw Data",
+      icon: "Database",
+      description: "View raw data entries",
+      getValue: (item: any) => item.id || item,
+    },
   });
 
   return {
     cubeState,
-    dimensions,
-    measures,
-    rawDataDimension,
-    anonymizedRawDataDimension,
+    serializableConfig,
     data: transformedData,
   };
 }

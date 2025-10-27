@@ -22,7 +22,7 @@ import { Download, Eye, ArrowLeft, Code, ExternalLink } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { serializeCubeState } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
+import type { SerializableMeasure } from "@/features/_common/Cube/serialization/CubeSerialization.types.ts";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
@@ -44,6 +44,7 @@ import type {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
+import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
 
 // Form schema for export builder
 interface ExportBuilderFormData {
@@ -77,24 +78,34 @@ function ExportBuilderContent({
 }) {
   // Fetch the actual project to get its real client_id
   const projectState = services.projectService.useProject(projectId);
+
   // Use the shared cube hook to get all cube data
-  const {
-    cubeState: _cubeState,
-    dimensions: _dimensions,
-    rawDataDimension,
-    anonymizedRawDataDimension,
-    measures,
-    data,
-  } = useReportCube({
+  const { serializableConfig, data } = useReportCube({
     report,
     services,
   });
 
-  const dimensions = [
-    ..._dimensions,
-    rawDataDimension,
-    anonymizedRawDataDimension,
-  ];
+  // Get dimensions and measures from the serializable config
+  const { dimensions, measures } = serializableConfig;
+
+  // Create runtime descriptors when needed for cube state
+  const runtimeDescriptors = useMemo(() => {
+    const cubeConfig = deserializeCubeConfig(serializableConfig, data as any[]);
+    return {
+      dimensions: cubeConfig.dimensions,
+      measures: cubeConfig.measures,
+    };
+  }, [serializableConfig, data]);
+
+  // Create raw data dimensions manually
+  const rawDataDimension = {
+    id: "date",
+    name: "Date",
+    icon: "📅",
+    getValue: (item: any) => item.startAt || "Services",
+    getKey: (value: any) => String(value ?? "null"),
+    formatValue: (value: any) => String(value ?? "Unknown"),
+  };
 
   // Initialize form with default values
   const form = useForm<ExportBuilderFormData>({
@@ -157,12 +168,16 @@ function ExportBuilderContent({
 
   // Maintain order from form state for dimensions and measures
   const selectedDimensions = watchedValues.selectedDimensions
-    .map((dimId) => availableDimensions.find((dim) => dim.id === dimId))
-    .filter(Boolean) as typeof availableDimensions;
+    .map((dimId) =>
+      runtimeDescriptors.dimensions.find((dim) => dim.id === dimId),
+    )
+    .filter(Boolean) as typeof runtimeDescriptors.dimensions;
 
   const selectedMeasures = watchedValues.selectedMeasures
-    .map((measureId) => measures.find((measure) => measure.id === measureId))
-    .filter(Boolean) as typeof measures;
+    .map((measureId) =>
+      runtimeDescriptors.measures.find((measure) => measure.id === measureId),
+    )
+    .filter(Boolean) as typeof runtimeDescriptors.measures;
 
   // Auto-update selected dimensions if they become unavailable due to anonymization
   const currentSelectedDimensions = watchedValues.selectedDimensions;
@@ -214,8 +229,8 @@ function ExportBuilderContent({
   // Generate preview cube state with all data first
   const previewCubeState = useCubeState({
     data: data,
-    dimensions: selectedDimensions,
-    measures: selectedMeasures,
+    dimensions: runtimeDescriptors.dimensions,
+    measures: runtimeDescriptors.measures,
     includeItems: true,
     rawDataDimension,
   });
@@ -284,8 +299,8 @@ function ExportBuilderContent({
     ].filter((column) => watchedValues.selectedColumns.includes(column.id));
 
     transformedData = anonymizeByUsage(transformedData, {
-      dimensions: selectedDimensions,
-      measures: selectedMeasures,
+      dimensions: runtimeDescriptors.dimensions,
+      measures: runtimeDescriptors.measures,
       listViewColumns,
     });
 
@@ -295,14 +310,15 @@ function ExportBuilderContent({
     anonymizeTimeEntries,
     report,
     watchedValues.selectedMeasures,
-    selectedDimensions,
-    selectedMeasures,
+    runtimeDescriptors.dimensions,
+    runtimeDescriptors.measures,
     watchedValues.selectedColumns,
   ]);
 
-  // Generate serializable config with labelMapping
-  const serializableConfig = useMemo(() => {
+  // Generate serializable config with labelMapping for export
+  const exportSerializableConfig = useMemo(() => {
     if (!previewCubeState) return null;
+    if (!serializableConfig) return null;
 
     // Create labelMapping for contractor names
     const contractorLabelMapping: Record<string, string> = {};
@@ -343,31 +359,42 @@ function ExportBuilderContent({
       },
     );
 
+    // Start with the base serializable config
     const config = {
-      data: processedData,
-      nodeStates: previewCubeState.nodeStates,
-      dimensions: selectedDimensions.map((dim) => {
-        // Add labelMapping based on dimension type
-        let labelMapping: Record<string, string> | undefined;
+      ...serializableConfig,
+      dimensions: selectedDimensions
+        .map((dim) => {
+          const baseDim = serializableConfig.dimensions.find(
+            (d) => d.id === dim.id,
+          );
+          if (!baseDim) return undefined;
 
-        if (dim.id === "contractor") {
-          labelMapping = contractorLabelMapping;
-        } else if (dim.id === "project") {
-          labelMapping = projectLabelMapping;
-        } else if (dim.id === "role") {
-          labelMapping = roleLabelMapping;
-        } else if (dim.id === "task") {
-          labelMapping = taskLabelMapping;
-        } else if (dim.id === "activity") {
-          labelMapping = activityLabelMapping;
-        }
+          // Add labelMapping based on dimension type
+          let labelMapping: Record<string, string> | undefined;
 
-        return {
-          ...dim,
-          labelMapping,
-        };
-      }),
-      measures: selectedMeasures,
+          if (dim.id === "contractor") {
+            labelMapping = contractorLabelMapping;
+          } else if (dim.id === "project") {
+            labelMapping = projectLabelMapping;
+          } else if (dim.id === "role") {
+            labelMapping = roleLabelMapping;
+          } else if (dim.id === "task") {
+            labelMapping = taskLabelMapping;
+          } else if (dim.id === "activity") {
+            labelMapping = activityLabelMapping;
+          }
+
+          return {
+            ...baseDim,
+            labelMapping: labelMapping || baseDim.labelMapping,
+          };
+        })
+        .filter((d) => d !== undefined),
+      measures: selectedMeasures
+        .map((measure) => {
+          return serializableConfig.measures.find((m) => m.id === measure.id);
+        })
+        .filter((m): m is SerializableMeasure => m !== undefined),
       activeMeasures: watchedValues.selectedMeasures,
       listView: {
         columns: [
@@ -454,7 +481,7 @@ function ExportBuilderContent({
                   visible: true,
                   width: "80px",
                   formatFunction: {
-                    type: "number",
+                    type: "number" as const,
                     parameters: { decimals: 2 },
                   },
                 },
@@ -472,7 +499,7 @@ function ExportBuilderContent({
                   visible: true,
                   width: "100px",
                   formatFunction: {
-                    type: "currency",
+                    type: "currency" as const,
                     parameters: { currency: "USD", decimals: 2 },
                   },
                 },
@@ -490,7 +517,7 @@ function ExportBuilderContent({
                   visible: true,
                   width: "100px",
                   formatFunction: {
-                    type: "currency",
+                    type: "currency" as const,
                     parameters: { currency: "USD", decimals: 2 },
                   },
                 },
@@ -508,7 +535,7 @@ function ExportBuilderContent({
                   visible: true,
                   width: "100px",
                   formatFunction: {
-                    type: "currency",
+                    type: "currency" as const,
                     parameters: { currency: "USD", decimals: 2 },
                   },
                 },
@@ -548,22 +575,26 @@ function ExportBuilderContent({
       },
     };
 
-    // Serialize the complete cube state (config + data)
-    return serializeCubeState(config);
+    // Return the SerializableCubeState directly (no need to serialize again!)
+    return {
+      config,
+      data: processedData,
+    };
   }, [
-    previewCubeState,
-    data,
+    serializableConfig,
     selectedDimensions,
     selectedMeasures,
     report.data.definitions,
     contractors,
+    watchedValues.selectedMeasures,
     watchedValues.selectedColumns,
+    processedData,
   ]);
 
   const handleExport = useCallback(() => {
-    if (!serializableConfig) return;
+    if (!exportSerializableConfig) return;
 
-    const jsonString = JSON.stringify(serializableConfig, null, 2);
+    const jsonString = JSON.stringify(exportSerializableConfig, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
 
@@ -574,7 +605,7 @@ function ExportBuilderContent({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [serializableConfig]);
+  }, [exportSerializableConfig]);
 
   const handleOpenInPublic = useCallback(() => {
     window.open("/p/explorer", "_blank");
@@ -614,7 +645,7 @@ function ExportBuilderContent({
             <Button
               variant="outline"
               onClick={handleOpenInPublic}
-              disabled={!serializableConfig}
+              disabled={!exportSerializableConfig}
               className="flex items-center gap-2"
             >
               <ExternalLink className="h-4 w-4" />
@@ -631,7 +662,7 @@ function ExportBuilderContent({
               .map((project) => (
                 <PublishToCockpitButton
                   services={services}
-                  serializableConfig={serializableConfig}
+                  serializableConfig={exportSerializableConfig}
                   report={report}
                   projectId={projectId}
                   clientId={project.clientId}
@@ -639,7 +670,7 @@ function ExportBuilderContent({
               ))}
             <Button
               onClick={handleExport}
-              disabled={!serializableConfig}
+              disabled={!exportSerializableConfig}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
@@ -919,11 +950,11 @@ function ExportBuilderContent({
                       title="Export Preview"
                       description="Preview of your configured cube export"
                     >
-                      {serializableConfig && (
+                      {exportSerializableConfig && (
                         <SerializedCubeViewWithSelection
                           className="p-4 flex-1 min-h-0"
                           state={previewCubeState}
-                          serializedConfig={serializableConfig.config}
+                          serializedConfig={exportSerializableConfig.config}
                           maxInitialDepth={0}
                           enableZoomIn={true}
                         />
@@ -933,7 +964,7 @@ function ExportBuilderContent({
                 ) : (
                   <div className="h-full p-4">
                     <JsonTreeViewer
-                      data={serializableConfig || {}}
+                      data={exportSerializableConfig || {}}
                       title="Cube Configuration"
                       className="h-full"
                       initiallyExpanded={true}

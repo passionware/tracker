@@ -7,10 +7,7 @@
 
 // Main serialization functions
 export {
-  serializeCubeConfig,
   deserializeCubeConfig,
-  serializeCubeState,
-  deserializeCubeState,
   createSerializableCubeConfig,
   validateSerializableCubeConfig,
   defaultFormatFunctions,
