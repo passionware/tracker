@@ -368,7 +368,7 @@ export class PDFReportModelUtils {
       return {
         id: measure.id,
         name: measure.name,
-        value: aggregatedValue,
+        value: Number(aggregatedValue),
         formattedValue,
       };
     });
