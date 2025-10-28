@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
+import { EmailTemplateDialog } from "@/features/_common/Cube/EmailTemplateDialog";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import {
@@ -25,6 +26,7 @@ import {
   Download,
   ArrowLeft,
   Trash2,
+  Mail,
 } from "lucide-react";
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
 import { useParams, useNavigate } from "react-router-dom";
@@ -56,6 +58,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   const { reportId } = useParams<{ reportId: string }>();
   const authState = props.services.cockpitAuthService.useAuth();
   const tenantId = rd.mapOrElse(authState, (auth) => auth.tenantId, null);
+  const isAdmin = rd.tryGet(authState)?.role === "admin";
 
   const report = props.services.clientCubeReportService.useCubeReport(
     maybe.getOrNull(reportId),
@@ -330,6 +333,25 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                   <Download className="h-4 w-4 mr-2" />
                   Generate PDF
                 </Button>
+                {isAdmin && (
+                  <EmailTemplateDialog
+                    reportData={reportData}
+                    reportLink={
+                      window.location.origin +
+                      props.services.routingService
+                        .forClientCockpit()
+                        .forClient(tenantId?.toString())
+                        .forReport(reportId)
+                        .cubeViewer()
+                    }
+                    formatService={props.services.formatService}
+                  >
+                    <Button variant="outline">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email template
+                    </Button>
+                  </EmailTemplateDialog>
+                )}
               </div>
             </div>
           </div>
