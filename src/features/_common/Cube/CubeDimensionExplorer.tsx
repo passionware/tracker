@@ -65,14 +65,20 @@ function DimensionChart({
 
       if (dimension.getKey) {
         key = dimension.getKey(value);
-      } else if (typeof value === "string" || typeof value === "number") {
-        // Try to parse as date if it's a string/number
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          key = date.toISOString().split("T")[0];
+      } else if (typeof value === "string") {
+        // Only treat as date for ISO-like strings (avoid numeric IDs like 197049993)
+        const looksLikeIsoDate = /\d{4}-\d{2}-\d{2}/.test(value);
+        if (looksLikeIsoDate) {
+          const date = new Date(value);
+          key = !isNaN(date.getTime())
+            ? date.toISOString().split("T")[0]
+            : String(value);
         } else {
           key = String(value);
         }
+      } else if (typeof value === "number") {
+        // Never interpret plain numbers as dates to avoid 1970-* artifacts
+        key = String(value);
       } else {
         key = String(value ?? "null");
       }
