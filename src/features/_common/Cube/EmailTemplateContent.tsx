@@ -38,6 +38,17 @@ export function EmailTemplateContent({
   const to = toDate ? formatService.temporal.date(toDate) : "";
 
   // Totals per measure
+  const currencyFormatter = new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const numberFormatter = new Intl.NumberFormat("de-DE", {
+    style: "decimal",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   const totals = measures.map((m) => {
     const total = currentItems.reduce((sum: number, item: any) => {
       const v = m.getValue(item);
@@ -45,9 +56,9 @@ export function EmailTemplateContent({
     }, 0);
     let formatted: any = m.formatValue ? m.formatValue(total) : String(total);
     if (m.id === "billing") {
-      formatted = formatService.financial.amount(total, "EUR");
+      formatted = currencyFormatter.format(total);
     } else if (m.id === "hours") {
-      formatted = <>{formatService.financial.amountWithoutCurrency(total)} h</>;
+      formatted = `${numberFormatter.format(total)} h`;
     }
     return { name: m.name, value: formatted as any, icon: m.icon };
   });
@@ -91,8 +102,7 @@ export function EmailTemplateContent({
       });
     });
 
-    const billingFormat = (val: number) =>
-      formatService.financial.amount(val, "EUR");
+    const billingFormat = (val: number) => currencyFormatter.format(val);
 
     contractorBreakdown = Array.from(groups.entries())
       .sort((a, b) => b[1].billing - a[1].billing)
@@ -217,10 +227,7 @@ export function EmailTemplateContent({
                       </span>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">
-                          {formatService.financial.amountWithoutCurrency(
-                            contractor.hours,
-                          )}{" "}
-                          h
+                          {numberFormatter.format(contractor.hours)} h
                         </div>
                         <div className="font-semibold text-green-600">
                           {contractor.billing}
