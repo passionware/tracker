@@ -46,6 +46,8 @@ export function EmailTemplateContent({
     let formatted: any = m.formatValue ? m.formatValue(total) : String(total);
     if (m.id === "billing") {
       formatted = formatService.financial.amount(total, "EUR");
+    } else if (m.id === "hours") {
+      formatted = <>{formatService.financial.amountWithoutCurrency(total)} h</>;
     }
     return { name: m.name, value: formatted as any, icon: m.icon };
   });
@@ -215,7 +217,10 @@ export function EmailTemplateContent({
                       </span>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">
-                          {contractor.hours} h
+                          {formatService.financial.amountWithoutCurrency(
+                            contractor.hours,
+                          )}{" "}
+                          h
                         </div>
                         <div className="font-semibold text-green-600">
                           {contractor.billing}
