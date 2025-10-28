@@ -23,7 +23,7 @@ DECLARE
 BEGIN
   -- SECURITY: Validate that the provided client_id matches the tenant's client_id
   SELECT client_id INTO v_tenant_client_id
-  FROM client_cockpit_dev.tenants
+  FROM tenants
   WHERE id = p_tenant_id;
   
   IF NOT FOUND THEN
@@ -37,14 +37,14 @@ BEGIN
   
   -- SECURITY: Validate that the user belongs to this tenant
   IF NOT EXISTS (
-    SELECT 1 FROM client_cockpit_dev.users 
+    SELECT 1 FROM users 
     WHERE id = p_user_id AND tenant_id = p_tenant_id
   ) THEN
     RAISE EXCEPTION 'User % does not belong to tenant %', p_user_id, p_tenant_id;
   END IF;
   
   -- Insert the report
-  INSERT INTO client_cockpit_dev.cube_reports (
+  INSERT INTO cube_reports (
     tenant_id,
     created_by,
     name,

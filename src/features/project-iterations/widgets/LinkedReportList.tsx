@@ -14,6 +14,12 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   selectionState,
   SelectionState,
@@ -23,8 +29,9 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { rd } from "@passionware/monads";
+import { mt, rd } from "@passionware/monads";
 import { useState } from "react";
+import { promiseState } from "@passionware/platform-react";
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -50,6 +57,28 @@ export function LinkedReportList(
     rd.tryMap(reports, (r) => r.entries.map((e) => e.id)),
     setSelection,
   );
+
+  const unlinkMutation = promiseState.useMutation(async () => {
+    const ids = selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+    );
+    for (const reportId of ids) {
+      await props.services.mutationService.editReport(reportId, {
+        projectIterationId: null,
+      });
+    }
+    setSelection(selectionState.selectNone());
+  });
+  const selectedReportIds = selectionState.getSelectedIds(
+    selection,
+    rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+  );
+
+  async function handleBatchUnlink() {
+    if (selectedReportIds.length === 0) return;
+    await unlinkMutation.track(void 0);
+  }
 
   return (
     <ListView
@@ -101,9 +130,38 @@ export function LinkedReportList(
             </div>
 
             <div className="flex items-center gap-2">
-              <ListToolbarButton variant="destructive">
-                Delete
-              </ListToolbarButton>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div>
+                    <ListToolbarButton variant="destructive">
+                      Delete
+                    </ListToolbarButton>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <div className="space-y-3">
+                    <div className="text-sm text-slate-700">
+                      Are you sure you want to unlink {selectedReportIds.length}{" "}
+                      selected report(s) from this iteration?
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchUnlink}
+                        disabled={mt.isInProgress(unlinkMutation.state)}
+                      >
+                        {mt.isInProgress(unlinkMutation.state)
+                          ? "Deleting..."
+                          : "Confirm"}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

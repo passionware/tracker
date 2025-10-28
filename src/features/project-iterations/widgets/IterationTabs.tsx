@@ -226,7 +226,14 @@ export function IterationTabs(
                                       },
                                     ),
                                   );
-                                  bag.close();
+                                  // close only if list is empty
+                                  const newLinkedReports =
+                                    await props.services.reportService.ensureReports(
+                                      reportsQuery,
+                                    );
+                                  if (newLinkedReports.length === 0) {
+                                    bag.close();
+                                  }
                                 }}
                               >
                                 {button}
