@@ -13,7 +13,7 @@ RETURNS boolean AS $$
 DECLARE
   user_role text;
 BEGIN
-  SELECT role INTO user_role FROM client_cockpit_dev.users WHERE id = auth.uid() LIMIT 1;
+  SELECT role INTO user_role FROM users WHERE id = auth.uid() LIMIT 1;
   RETURN COALESCE(user_role = 'admin', false);
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;

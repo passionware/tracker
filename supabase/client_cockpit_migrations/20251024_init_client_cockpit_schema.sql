@@ -119,7 +119,7 @@ BEGIN
   -- Use a direct query with explicit schema qualification to bypass RLS
   -- This completely avoids any RLS policy evaluation
   SELECT tenant_id INTO result 
-  FROM client_cockpit_dev.users 
+  FROM users 
   WHERE id = auth.uid()
   LIMIT 1;
   
