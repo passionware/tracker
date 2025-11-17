@@ -1,6 +1,5 @@
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 
-const MS_IN_DAY = 24 * 60 * 60 * 1000;
 const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "long" });
 
 export interface ReportDateRange {
