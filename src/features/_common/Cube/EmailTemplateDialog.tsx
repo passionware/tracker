@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link, Copy } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmailTemplateContent } from "./EmailTemplateContent";
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
@@ -38,6 +38,64 @@ export function EmailTemplateDialog({
   clientAvatarDataUrl,
 }: EmailTemplateDialogProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const [sanitizedWorkspaceLogo, setSanitizedWorkspaceLogo] =
+    useState(workspaceLogoDataUrl);
+  const [sanitizedClientAvatar, setSanitizedClientAvatar] = useState<
+    string | null | undefined
+  >(clientAvatarDataUrl);
+
+  const convertSvgDataUrlToPng = (dataUrl: string) =>
+    new Promise<string>((resolve) => {
+      try {
+        const image = new Image();
+        image.onload = () => {
+          const width = image.naturalWidth || image.width || 100;
+          const height = image.naturalHeight || image.height || 100;
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+          ctx.drawImage(image, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        image.onerror = () => resolve(dataUrl);
+        image.src = dataUrl;
+      } catch {
+        resolve(dataUrl);
+      }
+    });
+
+  const ensurePngDataUrl = async (value?: string | null) => {
+    if (!value) return value ?? null;
+    if (!value.trim().startsWith("data:image/svg")) return value;
+    return convertSvgDataUrlToPng(value);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const [workspaceResult, clientResult] = await Promise.all([
+        ensurePngDataUrl(workspaceLogoDataUrl),
+        ensurePngDataUrl(clientAvatarDataUrl),
+      ]);
+
+      if (cancelled) return;
+      setSanitizedWorkspaceLogo(workspaceResult || workspaceLogoDataUrl);
+      setSanitizedClientAvatar(
+        typeof clientResult === "string" ? clientResult : clientAvatarDataUrl,
+      );
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceLogoDataUrl, clientAvatarDataUrl]);
 
   const selectContent = () => {
     try {
@@ -125,6 +183,54 @@ export function EmailTemplateDialog({
     }
   };
 
+  const copyHtmlContent = async () => {
+    if (!contentRef.current) {
+      return;
+    }
+
+    const html = contentRef.current.innerHTML;
+    const selectAndExec = () => {
+      selectContent();
+      try {
+        document.execCommand?.("copy");
+      } catch {
+        // ignore
+      }
+    };
+
+    try {
+      const clipboard = navigator.clipboard;
+      const clipboardItemCtor =
+        typeof window !== "undefined" && "ClipboardItem" in window
+          ? (
+              window as typeof window & {
+                ClipboardItem: typeof ClipboardItem;
+              }
+            ).ClipboardItem
+          : undefined;
+
+      if (
+        clipboard &&
+        typeof clipboard.write === "function" &&
+        clipboardItemCtor
+      ) {
+        const blob = new Blob([html], { type: "text/html" });
+        const item = new clipboardItemCtor({ "text/html": blob });
+        await clipboard.write([item]);
+        return;
+      }
+
+      if (clipboard && typeof clipboard.writeText === "function") {
+        await clipboard.writeText(html);
+        return;
+      }
+    } catch {
+      // ignore and fall back
+    }
+
+    selectAndExec();
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -143,13 +249,21 @@ export function EmailTemplateDialog({
             reportData={reportData}
             reportLink={reportLink}
             formatService={formatService}
-            workspaceLogoDataUrl={workspaceLogoDataUrl}
+            workspaceLogoDataUrl={sanitizedWorkspaceLogo}
             workspaceName={workspaceName}
             clientDisplayName={clientDisplayName}
-            clientAvatarDataUrl={clientAvatarDataUrl}
+            clientAvatarDataUrl={sanitizedClientAvatar}
           />
         </div>
         <DialogFooter className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={copyHtmlContent}
+            className="flex items-center gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            Copy email HTML
+          </Button>
           <Button
             variant="outline"
             onClick={copySubject}
