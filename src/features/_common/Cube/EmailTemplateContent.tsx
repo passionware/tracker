@@ -251,12 +251,23 @@ export function EmailTemplateContent({
     justifyContent: "center",
   };
 
-  const avatarImageStyle: CSSProperties = {
-    height: "48px",
+  const avatarWrapperStyle: CSSProperties = {
     width: "150px",
+    height: "48px",
     borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  };
+
+  const avatarImageStyle: CSSProperties = {
+    maxWidth: "100%",
+    maxHeight: "100%",
+    width: "auto",
+    height: "auto",
     objectFit: "contain",
-    objectPosition: "center-top",
+    objectPosition: "center",
     display: "block",
   };
 
@@ -380,18 +391,21 @@ export function EmailTemplateContent({
                                   verticalAlign: "middle",
                                 }}
                               >
-                                {clientAvatarSource ? (
-                                  <img
-                                    src={clientAvatarSource}
-                                    alt={`${clientName} avatar`}
-                                    style={avatarImageStyle}
-                                    height={48}
-                                  />
-                                ) : (
-                                  <div style={avatarFallbackStyle}>
-                                    {clientInitials}
-                                  </div>
-                                )}
+                                <div style={avatarWrapperStyle}>
+                                  {clientAvatarSource ? (
+                                    <img
+                                      src={clientAvatarSource}
+                                      alt={`${clientName} avatar`}
+                                      style={avatarImageStyle}
+                                      width={150}
+                                      height={48}
+                                    />
+                                  ) : (
+                                    <div style={avatarFallbackStyle}>
+                                      {clientInitials}
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                               <td
                                 style={{
