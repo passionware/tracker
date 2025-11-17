@@ -13,7 +13,10 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import { generateSmartReportName } from "@/features/project-iterations/widgets/reportNameUtils.ts";
+import {
+  generateSmartReportName,
+  getReportDateRange,
+} from "@/features/project-iterations/widgets/reportNameUtils.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { LogIn, Share2 } from "lucide-react";
@@ -48,6 +51,19 @@ export function PublishToCockpitButton({
     );
   const clientName =
     rd.tryMap(clientData, (client) => client.name) || `Client ${clientId}`;
+
+  const reportDateRange = useMemo(() => getReportDateRange(report), [report]);
+
+  const serializedDateRange = useMemo(
+    () =>
+      reportDateRange
+        ? {
+            start: reportDateRange.start.toISOString(),
+            end: reportDateRange.end.toISOString(),
+          }
+        : undefined,
+    [reportDateRange],
+  );
 
   const defaultPublishValues = useMemo(() => {
     return {
@@ -84,16 +100,21 @@ export function PublishToCockpitButton({
 
       const tenantId = cockpitAuthInfo.tenantId;
 
+      const cubeDataPayload: Record<string, unknown> = {
+        data: serializableConfig.data,
+      };
+
+      if (serializedDateRange) {
+        cubeDataPayload.dateRange = serializedDateRange;
+      }
+
       await services.clientCubeReportService.publishReport({
         tenantId,
         userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
         clientId, // Pass the client ID for validation
         name,
         description,
-        cubeData: { data: serializableConfig.data } as Record<
-          string,
-          unknown
-        >,
+        cubeData: cubeDataPayload,
         cubeConfig: serializableConfig.config as Record<string, unknown>,
       });
 

@@ -14,6 +14,26 @@ export const cockpitCubeReport$ = z.object({
   updated_at: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Invalid datetime format",
   }),
+  start_date: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      (val) => val === null || val === undefined || !isNaN(Date.parse(val)),
+      {
+        message: "Invalid start_date format",
+      },
+    ),
+  end_date: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      (val) => val === null || val === undefined || !isNaN(Date.parse(val)),
+      {
+        message: "Invalid end_date format",
+      },
+    ),
 });
 
 export type CockpitCubeReport$ = z.infer<typeof cockpitCubeReport$>;
