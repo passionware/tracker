@@ -45,6 +45,7 @@ import { generatePDFDocument } from "../components/PDFDocument";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { CockpitTenant } from "@/api/cockpit-tenants/cockpit-tenants.api";
 import { FormatService } from "@/services/FormatService/FormatService";
+import passionwareLogoRaw from "./passionware.png?inline";
 
 // Use the domain model types
 type PdfPageConfig = PDFPageConfig;
@@ -66,6 +67,9 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
 
   // Get tenant information for logo
   const tenantData = props.services.cockpitTenantService.useTenant(tenantId);
+  const tenantInfo = rd.tryGet(tenantData);
+  const clientDisplayName = tenantInfo?.name;
+  const clientAvatarDataUrl = tenantInfo?.logo_url;
 
   // PDF configuration state
   const [pdfConfig, setPdfConfig] = useState<PdfExportConfig>({
@@ -79,8 +83,8 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   React.useEffect(() => {
     if (!hasInitialized && report && rd.isSuccess(report)) {
       if (pdfConfig.pages.length === 0) {
-        const config =
-          report.data.cube_config as unknown as SerializableCubeConfig;
+        const config = report.data
+          .cube_config as unknown as SerializableCubeConfig;
 
         const contractorDimension = config.dimensions.find(
           (d) => d.id === "contractor",
@@ -348,6 +352,10 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                         .cubeViewer()
                     }
                     formatService={props.services.formatService}
+                    workspaceLogoDataUrl={passionwareLogoRaw}
+                    workspaceName="Passionware"
+                    clientDisplayName={clientDisplayName}
+                    clientAvatarDataUrl={clientAvatarDataUrl}
                   >
                     <Button variant="outline">
                       <Mail className="h-4 w-4 mr-2" />
