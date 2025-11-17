@@ -3,6 +3,7 @@ import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/Cub
 import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { FormatService } from "@/services/FormatService/FormatService";
+import type { CSSProperties } from "react";
 
 interface EmailTemplateContentProps {
   reportData: CockpitCubeReportWithCreator;
@@ -163,142 +164,251 @@ export function EmailTemplateContent({
       }));
   }
 
+  const containerStyle: CSSProperties = {
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    color: "#0f172a",
+    maxWidth: "640px",
+    margin: "0 auto",
+    fontSize: "14px",
+    lineHeight: "20px",
+  };
+
+  const cardStyle: CSSProperties = {
+    width: "100%",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    marginBottom: "16px",
+    borderCollapse: "separate",
+  };
+  const headerInnerStyle: CSSProperties = {
+    padding: "16px",
+  };
+  const primaryInnerStyle: CSSProperties = {
+    padding: "20px",
+  };
+  const summaryInnerStyle: CSSProperties = {
+    padding: "20px",
+  };
+
+  const headingStyle: CSSProperties = {
+    fontSize: "18px",
+    fontWeight: 600,
+    margin: "0 0 8px 0",
+  };
+
+  const labelStyle: CSSProperties = {
+    textTransform: "uppercase",
+    fontSize: "11px",
+    letterSpacing: "0.05em",
+    color: "#64748b",
+    marginBottom: "4px",
+  };
+
+  const linkStyle: CSSProperties = {
+    color: "#2563eb",
+    textDecoration: "none",
+    fontWeight: 600,
+  };
+
+  const tableStyle: CSSProperties = {
+    width: "100%",
+    borderCollapse: "collapse",
+  };
+
+  const rowStyle: CSSProperties = {
+    borderBottom: "1px solid #e2e8f0",
+  };
+
+  const footerStyle: CSSProperties = {
+    textAlign: "center",
+    marginTop: "24px",
+    color: "#475569",
+  };
+
   return (
-    <div className="text-gray-900 font-sans max-w-xl mx-auto">
-      {/* Header */}
-      <div className="border-b-2 border-blue-600 pb-4 mb-6 max-w-xl">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">📊</span>
-          <div>
-            <h1 className="text-xl font-bold text-blue-600">
-              Passionware Consulting
-            </h1>
-            <p className="text-gray-600 text-sm">Time & Budget Report</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-6">
-        {/* Period Card */}
-        <div className="border border-gray-300 rounded-lg p-4 max-w-xl">
-          <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">
-            Period
-          </div>
-          <div className="flex items-center gap-2 text-base">
-            <span className="font-semibold text-blue-600">{from}</span>
-            <span className="text-gray-400">→</span>
-            <span className="font-semibold text-blue-600">{to}</span>
-          </div>
-        </div>
-
-        {/* Greeting */}
-        <div>
-          <p className="text-lg font-medium text-gray-900 mb-3">Hello,</p>
-          <p className="text-gray-700 leading-relaxed">
-            Please find below a summary of time & billing for the period{" "}
-            <span className="font-semibold text-blue-600">{from}</span> to{" "}
-            <span className="font-semibold text-blue-600">{to}</span>.
-          </p>
-          <p className="text-gray-700 leading-relaxed mt-2">
-            If anything needs clarification, reply to this email. Otherwise,
-            please confirm so we can issue the invoice(s).
-          </p>
-        </div>
-
-        {/* Report Link */}
-        {reportLink && (
-          <div className="border border-blue-300 rounded-lg p-4 max-w-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-blue-600">🔗</span>
-              <span className="font-medium text-blue-900">
-                Click to view online
-              </span>
-            </div>
-            <a
-              href={reportLink}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              View interactive report
-            </a>
-          </div>
-        )}
-
-        {/* Summary Section */}
-        <div className="border border-gray-300 rounded-lg p-5 max-w-xl">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl">📊</span>
-            <h2 className="text-lg font-bold text-gray-900">Summary</h2>
-          </div>
-
-          {/* Total Metrics */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">📈</span>
-              <h3 className="font-semibold text-gray-800">Total Metrics</h3>
-            </div>
-            <div className="space-y-2">
-              {totals.map((total, index) => (
+    <div style={containerStyle}>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+        <tbody>
+          <tr>
+            <td>
+              <div style={headerInnerStyle}>
                 <div
-                  key={index}
-                  className="flex items-center justify-between border-b border-gray-200 pb-2"
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    color: "#2563eb",
+                  }}
                 >
-                  <div className="flex items-center gap-2">
-                    {total.icon && (
-                      <span className="text-sm">{total.icon}</span>
-                    )}
-                    <span className="font-medium text-gray-700">
-                      {total.name}
-                    </span>
-                  </div>
-                  <span className="font-bold text-blue-600">{total.value}</span>
+                  Passionware Consulting
                 </div>
-              ))}
-            </div>
-          </div>
+                <div
+                  style={{
+                    color: "#475569",
+                    fontWeight: 500,
+                    marginTop: "4px",
+                  }}
+                >
+                  Time &amp; Budget Report
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-          {/* Contractor Breakdown */}
-          {contractorBreakdown.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">👥</span>
-                <h3 className="font-semibold text-gray-800">
-                  Breakdown by Contractor
-                </h3>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+        <tbody>
+          <tr>
+            <td>
+              <div style={primaryInnerStyle}>
+                <div style={labelStyle}>Period</div>
+                <div style={{ fontWeight: 600 }}>
+                  {from} &nbsp;—&nbsp; {to}
+                </div>
               </div>
-              <div className="space-y-2">
-                {contractorBreakdown.map((contractor, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-800">
-                        {contractor.name}
-                      </span>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-600">
-                          {numberFormatter.format(contractor.hours)} h
-                        </div>
-                        <div className="font-semibold text-green-600">
-                          {contractor.billing}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style={primaryInnerStyle}>
+                <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Hello,</p>
+                <p style={{ margin: "0 0 8px 0" }}>
+                  Please find below a summary of time &amp; billing for the
+                  period{" "}
+                  <strong>
+                    {from} to {to}
+                  </strong>
+                  .
+                </p>
+                <p style={{ margin: 0 }}>
+                  If anything needs clarification, reply to this email.
+                  Otherwise, please confirm so we can issue the invoice(s).
+                </p>
               </div>
-            </div>
+            </td>
+          </tr>
+          {reportLink && (
+            <tr>
+              <td>
+                <div style={primaryInnerStyle}>
+                  <a
+                    href={reportLink}
+                    style={linkStyle}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View interactive report online
+                  </a>
+                </div>
+              </td>
+            </tr>
           )}
-        </div>
+        </tbody>
+      </table>
 
-        {/* Footer */}
-        <div className="text-center pt-4 border-t border-gray-300">
-          <p className="text-gray-700 mb-1">Best regards,</p>
-          <p className="font-semibold text-gray-900">Passionware Consulting</p>
-          <p className="text-sm text-gray-600">Time & Budget Report</p>
-          <p className="text-sm text-blue-600">https://passionware.dev</p>
-        </div>
-      </div>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+        <tbody>
+          <tr>
+            <td>
+              <div style={summaryInnerStyle}>
+                <div style={headingStyle}>Summary</div>
+                <table style={tableStyle}>
+                  <tbody>
+                    {totals.map((total, index) => (
+                      <tr key={index} style={rowStyle}>
+                        <td
+                          style={{
+                            padding: "8px 0",
+                            fontWeight: 500,
+                            color: "#1e293b",
+                          }}
+                        >
+                          {total.icon ? (
+                            <span style={{ marginRight: "6px" }}>
+                              {total.icon}
+                            </span>
+                          ) : null}
+                          {total.name}
+                        </td>
+                        <td
+                          style={{
+                            padding: "8px 0",
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#2563eb",
+                          }}
+                        >
+                          {total.value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+          {contractorBreakdown.length > 0 && (
+            <tr>
+              <td>
+                <div style={summaryInnerStyle}>
+                  <div style={headingStyle}>Breakdown by Contractor</div>
+                  <table style={tableStyle}>
+                    <tbody>
+                      {contractorBreakdown.map((contractor, index) => (
+                        <tr key={index} style={rowStyle}>
+                          <td style={{ padding: "8px 0", fontWeight: 500 }}>
+                            {contractor.name}
+                          </td>
+                          <td style={{ padding: "8px 0", textAlign: "right" }}>
+                            <div style={{ color: "#475569" }}>
+                              {numberFormatter.format(contractor.hours)} h
+                            </div>
+                            <div style={{ fontWeight: 600, color: "#16a34a" }}>
+                              {contractor.billing}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <table
+        width="100%"
+        cellPadding={0}
+        cellSpacing={0}
+        style={{ ...cardStyle, border: 0 }}
+      >
+        <tbody>
+          <tr>
+            <td>
+              <div
+                style={{
+                  ...footerStyle,
+                  maxWidth: "300px",
+                  margin: "0 auto",
+                }}
+              >
+                <p style={{ margin: "0 0 4px 0" }}>Best regards,</p>
+                <p style={{ margin: "0 0 4px 0", fontWeight: 600 }}>
+                  Passionware Consulting
+                </p>
+                <p style={{ margin: "0 0 4px 0", color: "#2563eb" }}>
+                  Time &amp; Budget Report
+                </p>
+                <a href="https://passionware.dev" style={linkStyle}>
+                  https://passionware.dev
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
