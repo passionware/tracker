@@ -10,6 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
+import { Input } from "@/components/ui/input.tsx";
 import {
   Select,
   SelectContent,
@@ -65,7 +66,7 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
 
   function handleSubmit(data: FormModel) {
     const allData: ProjectIterationPayload = {
-      ordinalNumber: 1,
+      ordinalNumber: data.ordinalNumber || 1,
       periodStart: maybe.getOrThrow(
         data.periodStart,
         "Period start is required",
@@ -141,6 +142,37 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
                   </SelectContent>
                 </Select>
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="ordinalNumber"
+          rules={{
+            required: "Iteration number is required",
+            min: {
+              value: 1,
+              message: "Iteration must be at least 1",
+            },
+          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Iteration</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  min={1}
+                  step={1}
+                  onChange={(event) =>
+                    field.onChange(Number(event.currentTarget.value))
+                  }
+                />
+              </FormControl>
+              <FormDescription>
+                Set the ordinal number for this iteration
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

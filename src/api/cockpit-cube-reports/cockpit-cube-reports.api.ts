@@ -8,9 +8,12 @@ export interface CockpitCubeReport {
   created_by: string;
   created_at: string;
   updated_at: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
-export interface CockpitCubeReportWithCreator extends CockpitCubeReport {
+export interface CockpitCubeReportWithCreator
+  extends Omit<CockpitCubeReport, "start_date" | "end_date"> {
   creator_email?: string;
   creator_name?: string;
   start_date: Date;

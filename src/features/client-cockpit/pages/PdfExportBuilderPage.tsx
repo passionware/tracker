@@ -78,68 +78,71 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   // Initialize default page when report is available
   React.useEffect(() => {
     if (!hasInitialized && report && rd.isSuccess(report)) {
-      if (report && pdfConfig.pages.length === 0) {
-        const config = report.data
-          .cube_config as unknown as SerializableCubeConfig;
+      if (pdfConfig.pages.length === 0) {
+        const config =
+          report.data.cube_config as unknown as SerializableCubeConfig;
 
-        // Set contractor as primary and task as secondary by default
-        const primaryDimensionId = "contractor";
-        const secondaryDimensionId = "task";
-
-        // Find dimension names from config
-        const primaryDimension = config.dimensions.find(
-          (d) => d.id === primaryDimensionId,
+        const contractorDimension = config.dimensions.find(
+          (d) => d.id === "contractor",
         );
-        const secondaryDimension = config.dimensions.find(
-          (d) => d.id === secondaryDimensionId,
-        );
+        const taskDimension = config.dimensions.find((d) => d.id === "task");
 
-        const defaultPage1: PdfPageConfig = {
-          id: `page-${Date.now()}-1`,
-          order: 0,
-          primaryDimension: {
-            id: primaryDimensionId,
-            name: primaryDimension?.name || "Contractor",
-          },
-          secondaryDimension: secondaryDimension
-            ? {
-                id: secondaryDimensionId,
-                name: secondaryDimension.name,
-              }
-            : undefined,
-          sorting: {
-            primarySortBy: "hours",
-            primarySortOrder: "desc",
-            secondarySortBy: "hours",
-            secondarySortOrder: "desc",
-          },
-        };
+        const pages: PdfPageConfig[] = [];
+        const timestamp = Date.now();
 
-        const defaultPage2: PdfPageConfig = {
-          id: `page-${Date.now()}-2`,
-          order: 1,
-          primaryDimension: {
-            id: secondaryDimensionId,
-            name: secondaryDimension?.name || "Task",
-          },
-          secondaryDimension: primaryDimension
-            ? {
-                id: primaryDimensionId,
-                name: primaryDimension.name,
-              }
-            : undefined,
-          sorting: {
-            primarySortBy: "hours",
-            primarySortOrder: "desc",
-            secondarySortBy: "hours",
-            secondarySortOrder: "desc",
-          },
-        };
+        if (contractorDimension) {
+          pages.push({
+            id: `page-${timestamp}-1`,
+            order: 0,
+            primaryDimension: {
+              id: contractorDimension.id,
+              name: contractorDimension.name,
+            },
+            secondaryDimension: taskDimension
+              ? {
+                  id: taskDimension.id,
+                  name: taskDimension.name,
+                }
+              : undefined,
+            sorting: {
+              primarySortBy: "hours",
+              primarySortOrder: "desc",
+              secondarySortBy: "hours",
+              secondarySortOrder: "desc",
+            },
+          });
+        }
 
-        setPdfConfig((prev) => ({
-          ...prev,
-          pages: [defaultPage1, defaultPage2],
-        }));
+        if (taskDimension) {
+          pages.push({
+            id: `page-${timestamp}-2`,
+            order: pages.length,
+            primaryDimension: {
+              id: taskDimension.id,
+              name: taskDimension.name,
+            },
+            secondaryDimension: contractorDimension
+              ? {
+                  id: contractorDimension.id,
+                  name: contractorDimension.name,
+                }
+              : undefined,
+            sorting: {
+              primarySortBy: "hours",
+              primarySortOrder: "desc",
+              secondarySortBy: "hours",
+              secondarySortOrder: "desc",
+            },
+          });
+        }
+
+        if (pages.length > 0) {
+          setPdfConfig((prev) => ({
+            ...prev,
+            pages,
+          }));
+        }
+
         setHasInitialized(true);
       }
     }

@@ -407,6 +407,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               ),
               status: takeIfPresent("status"),
               description: takeIfPresent("description"),
+              ordinal_number: takeIfPresent("ordinalNumber"),
             },
             (_, key) => key !== undefined,
           ),

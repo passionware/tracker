@@ -3,12 +3,60 @@ import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { cockpitCubeReport$ } from "./cockpit-cube-reports.api.http.schema";
 import { CockpitCubeReportsApi } from "./cockpit-cube-reports.api";
 
+function parseDateValue(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value;
+  }
+  const date = new Date(value as string);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function extractExplicitRange(
+  cubeData: any,
+): { start_date: Date; end_date: Date } | null {
+  if (!cubeData) {
+    return null;
+  }
+
+  const candidates = [
+    cubeData?.dateRange,
+    cubeData?.meta?.dateRange,
+    cubeData?.metadata?.dateRange,
+    cubeData?.range,
+    {
+      start: cubeData?.start_date,
+      end: cubeData?.end_date,
+    },
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const startValue = candidate.start ?? candidate.from ?? candidate.begin;
+    const endValue = candidate.end ?? candidate.to ?? candidate.finish;
+
+    const start = parseDateValue(startValue);
+    const end = parseDateValue(endValue);
+
+    if (start && end) {
+      return { start_date: start, end_date: end };
+    }
+  }
+
+  return null;
+}
+
 // Helper function to calculate date range from cube data
 function calculateDateRange(cubeData: any): {
   start_date: Date;
   end_date: Date;
 } {
   try {
+    const explicitRange = extractExplicitRange(cubeData);
+    if (explicitRange) {
+      return explicitRange;
+    }
+
     const data = cubeData?.data;
     if (!Array.isArray(data) || data.length === 0) {
       // Fallback to current date if no data
