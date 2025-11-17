@@ -21,6 +21,10 @@ interface EmailTemplateDialogProps {
   reportLink?: string;
   children: React.ReactNode;
   formatService: FormatService;
+  workspaceLogoDataUrl: string;
+  workspaceName: string;
+  clientDisplayName?: string;
+  clientAvatarDataUrl?: string | null;
 }
 
 export function EmailTemplateDialog({
@@ -28,6 +32,10 @@ export function EmailTemplateDialog({
   reportLink,
   children,
   formatService,
+  workspaceLogoDataUrl,
+  workspaceName,
+  clientDisplayName,
+  clientAvatarDataUrl,
 }: EmailTemplateDialogProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -135,6 +143,10 @@ export function EmailTemplateDialog({
             reportData={reportData}
             reportLink={reportLink}
             formatService={formatService}
+            workspaceLogoDataUrl={workspaceLogoDataUrl}
+            workspaceName={workspaceName}
+            clientDisplayName={clientDisplayName}
+            clientAvatarDataUrl={clientAvatarDataUrl}
           />
         </div>
         <DialogFooter className="flex gap-2">

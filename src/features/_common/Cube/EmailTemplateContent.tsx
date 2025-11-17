@@ -9,6 +9,21 @@ interface EmailTemplateContentProps {
   reportData: CockpitCubeReportWithCreator;
   reportLink?: string;
   formatService: FormatService;
+  workspaceLogoDataUrl: string;
+  workspaceName: string;
+  clientDisplayName?: string;
+  clientAvatarDataUrl?: string | null;
+}
+
+function getInitials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("") || "PW"
+  );
 }
 
 // no-op legacy helper removed (we use FormatService instead)
@@ -17,6 +32,10 @@ export function EmailTemplateContent({
   reportData,
   reportLink,
   formatService,
+  workspaceLogoDataUrl,
+  workspaceName,
+  clientDisplayName,
+  clientAvatarDataUrl,
 }: EmailTemplateContentProps) {
   const cubeConfig = deserializeCubeConfig(
     reportData.cube_config as unknown as SerializableCubeConfig,
@@ -164,6 +183,13 @@ export function EmailTemplateContent({
       }));
   }
 
+  const workspaceDisplayName = workspaceName;
+  const resolvedWorkspaceLogo = workspaceLogoDataUrl;
+  const clientName = clientDisplayName || "Client Team";
+  const clientAvatarSource = clientAvatarDataUrl || undefined;
+  const workspaceInitials = getInitials(workspaceDisplayName);
+  const clientInitials = getInitials(clientName);
+
   const containerStyle: CSSProperties = {
     fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
     color: "#0f172a",
@@ -204,6 +230,50 @@ export function EmailTemplateContent({
     marginBottom: "4px",
   };
 
+  const logoImageStyle: CSSProperties = {
+    width: "48px",
+    height: "48px",
+    borderRadius: "8px",
+    objectFit: "contain",
+    display: "block",
+  };
+
+  const brandFallbackStyle: CSSProperties = {
+    width: "48px",
+    height: "48px",
+    borderRadius: "8px",
+    backgroundColor: "#dbeafe",
+    color: "#1d4ed8",
+    fontWeight: 700,
+    fontSize: "18px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
+  const avatarImageStyle: CSSProperties = {
+    height: "48px",
+    width: "150px",
+    borderRadius: "8px",
+    objectFit: "contain",
+    objectPosition: "center-top",
+    display: "block",
+  };
+
+  const avatarFallbackStyle: CSSProperties = {
+    width: "72px",
+    height: "48px",
+    borderRadius: "8px",
+    backgroundColor: "#e2e8f0",
+    color: "#0f172a",
+    fontWeight: 600,
+    fontSize: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textTransform: "uppercase",
+  };
+
   const linkStyle: CSSProperties = {
     color: "#2563eb",
     textDecoration: "none",
@@ -232,24 +302,117 @@ export function EmailTemplateContent({
           <tr>
             <td>
               <div style={headerInnerStyle}>
-                <div
-                  style={{
-                    fontSize: "22px",
-                    fontWeight: 700,
-                    color: "#2563eb",
-                  }}
-                >
-                  Passionware Consulting
-                </div>
-                <div
-                  style={{
-                    color: "#475569",
-                    fontWeight: 500,
-                    marginTop: "4px",
-                  }}
-                >
-                  Time &amp; Budget Report
-                </div>
+                <table width="100%" cellPadding={0} cellSpacing={0}>
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          width: "50%",
+                          paddingRight: "12px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        <table width="100%" cellPadding={0} cellSpacing={0}>
+                          <tbody>
+                            <tr>
+                              <td
+                                style={{
+                                  width: "56px",
+                                  paddingRight: "12px",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {resolvedWorkspaceLogo ? (
+                                  <img
+                                    src={resolvedWorkspaceLogo}
+                                    alt={`${workspaceDisplayName} logo`}
+                                    style={logoImageStyle}
+                                    width={48}
+                                    height={48}
+                                  />
+                                ) : (
+                                  <div style={brandFallbackStyle}>
+                                    {workspaceInitials}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ verticalAlign: "middle" }}>
+                                <div
+                                  style={{
+                                    fontSize: "22px",
+                                    fontWeight: 700,
+                                    color: "#2563eb",
+                                  }}
+                                >
+                                  {workspaceDisplayName}
+                                </div>
+                                <div
+                                  style={{
+                                    color: "#475569",
+                                    fontWeight: 500,
+                                    marginTop: "4px",
+                                  }}
+                                >
+                                  Time &amp; Budget Report
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                      <td
+                        style={{
+                          width: "50%",
+                          verticalAlign: "middle",
+                          textAlign: "right",
+                        }}
+                      >
+                        <table
+                          cellPadding={0}
+                          cellSpacing={0}
+                          style={{ marginLeft: "auto" }}
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style={{
+                                  paddingRight: "12px",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {clientAvatarSource ? (
+                                  <img
+                                    src={clientAvatarSource}
+                                    alt={`${clientName} avatar`}
+                                    style={avatarImageStyle}
+                                    height={48}
+                                  />
+                                ) : (
+                                  <div style={avatarFallbackStyle}>
+                                    {clientInitials}
+                                  </div>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  verticalAlign: "middle",
+                                  textAlign: "left",
+                                }}
+                              >
+                                <div style={labelStyle}>Client</div>
+                                <div
+                                  style={{ fontWeight: 600, color: "#0f172a" }}
+                                >
+                                  {clientName}
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </td>
           </tr>
