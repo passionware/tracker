@@ -68,11 +68,15 @@ export function EmailTemplateDialog({
     const endFromReport = parseDateValue(reportData.end_date);
 
     if (startFromReport && endFromReport) {
-      return { from: formatDate(startFromReport), to: formatDate(endFromReport) };
+      return {
+        from: formatDate(startFromReport),
+        to: formatDate(endFromReport),
+      };
     }
 
-    const cubeDateRange = (reportData.cube_data as CubeDataWithDateRange | undefined)
-      ?.dateRange;
+    const cubeDateRange = (
+      reportData.cube_data as CubeDataWithDateRange | undefined
+    )?.dateRange;
     if (cubeDateRange) {
       const start = parseDateValue(cubeDateRange.start);
       const end = parseDateValue(cubeDateRange.end);

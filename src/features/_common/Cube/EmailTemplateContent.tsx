@@ -40,8 +40,9 @@ export function EmailTemplateContent({
   };
 
   const getRangeFromCubeData = () => {
-    const dateRange = (reportData.cube_data as CubeDataWithDateRange | undefined)
-      ?.dateRange;
+    const dateRange = (
+      reportData.cube_data as CubeDataWithDateRange | undefined
+    )?.dateRange;
     if (!dateRange) return null;
 
     const start = parseDateValue(dateRange.start);
@@ -70,7 +71,9 @@ export function EmailTemplateContent({
   const explicitStart = parseDateValue(reportData.start_date);
   const explicitEnd = parseDateValue(reportData.end_date);
   const explicitRangeFromReport =
-    explicitStart && explicitEnd ? { start: explicitStart, end: explicitEnd } : null;
+    explicitStart && explicitEnd
+      ? { start: explicitStart, end: explicitEnd }
+      : null;
 
   const resolvedRange =
     explicitRangeFromReport ||
