@@ -25,17 +25,64 @@ export function EmailTemplateContent({
   const dimensions = cubeConfig.dimensions;
   const currentItems = cubeConfig.data;
 
-  // Date range from data
-  const dates = currentItems
-    .map((i: any) => i.startAt)
-    .filter(Boolean)
-    .map((v: any) => new Date(v))
-    .filter((d: Date) => !isNaN(d.getTime()))
-    .sort((a: Date, b: Date) => a.getTime() - b.getTime());
-  const fromDate = dates[0];
-  const toDate = dates[dates.length - 1];
-  const from = fromDate ? formatService.temporal.date(fromDate) : "";
-  const to = toDate ? formatService.temporal.date(toDate) : "";
+  type CubeDataWithDateRange = {
+    dateRange?: {
+      start?: string | Date;
+      end?: string | Date;
+    };
+  };
+
+  const parseDateValue = (value: unknown) => {
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    const date = new Date(value as string);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const getRangeFromCubeData = () => {
+    const dateRange = (reportData.cube_data as CubeDataWithDateRange | undefined)
+      ?.dateRange;
+    if (!dateRange) return null;
+
+    const start = parseDateValue(dateRange.start);
+    const end = parseDateValue(dateRange.end);
+    if (start && end) {
+      return { start, end };
+    }
+    return null;
+  };
+
+  const fallbackRangeFromItems = () => {
+    const dates = currentItems
+      .map((i: any) => i.startAt)
+      .filter(Boolean)
+      .map((v: any) => new Date(v))
+      .filter((d: Date) => !isNaN(d.getTime()))
+      .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+    if (!dates.length) {
+      return null;
+    }
+
+    return { start: dates[0], end: dates[dates.length - 1] };
+  };
+
+  const explicitStart = parseDateValue(reportData.start_date);
+  const explicitEnd = parseDateValue(reportData.end_date);
+  const explicitRangeFromReport =
+    explicitStart && explicitEnd ? { start: explicitStart, end: explicitEnd } : null;
+
+  const resolvedRange =
+    explicitRangeFromReport ||
+    getRangeFromCubeData() ||
+    fallbackRangeFromItems();
+
+  const from = resolvedRange
+    ? formatService.temporal.date(resolvedRange.start)
+    : "";
+  const to = resolvedRange
+    ? formatService.temporal.date(resolvedRange.end)
+    : "";
 
   // Totals per measure
   const currencyFormatter = new Intl.NumberFormat("de-DE", {

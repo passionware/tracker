@@ -44,7 +44,43 @@ export function EmailTemplateDialog({
     }
   };
 
+  type CubeDataWithDateRange = {
+    dateRange?: {
+      start?: string | Date;
+      end?: string | Date;
+    };
+  };
+
+  const parseDateValue = (value: unknown) => {
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return value;
+    }
+    const date = new Date(value as string);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
   const getDateRange = (): { from: string; to: string } => {
+    const formatDate = (date: Date | null) =>
+      date ? formatService.temporal.date(date) : "";
+
+    const startFromReport = parseDateValue(reportData.start_date);
+    const endFromReport = parseDateValue(reportData.end_date);
+
+    if (startFromReport && endFromReport) {
+      return { from: formatDate(startFromReport), to: formatDate(endFromReport) };
+    }
+
+    const cubeDateRange = (reportData.cube_data as CubeDataWithDateRange | undefined)
+      ?.dateRange;
+    if (cubeDateRange) {
+      const start = parseDateValue(cubeDateRange.start);
+      const end = parseDateValue(cubeDateRange.end);
+      if (start && end) {
+        return { from: formatDate(start), to: formatDate(end) };
+      }
+    }
+
     try {
       const cubeConfig = deserializeCubeConfig(
         reportData.cube_config as unknown as SerializableCubeConfig,
@@ -57,9 +93,11 @@ export function EmailTemplateDialog({
         .map((v) => new Date(v))
         .filter((d) => !isNaN(d.getTime()))
         .sort((a, b) => a.getTime() - b.getTime());
-      const fmt = (d: Date | undefined) =>
-        d ? formatService.temporal.date(d) : "";
-      return { from: fmt(dates[0]), to: fmt(dates[dates.length - 1]) };
+
+      return {
+        from: formatDate(dates[0] || null),
+        to: formatDate(dates[dates.length - 1] || null),
+      };
     } catch {
       return { from: "", to: "" };
     }
