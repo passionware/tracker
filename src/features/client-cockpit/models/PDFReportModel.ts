@@ -375,13 +375,35 @@ export class PDFReportModelUtils {
       };
     });
 
+    const availableDimensionIds = new Set(
+      cubeConfig.dimensions.map((dim: { id: string }) => dim.id),
+    );
+
     // Build the report model
     const builder = new PDFReportModelBuilder()
       .setMetadata(metadata)
       .setRootLevelMeasures(rootLevelMeasures);
 
     // Process each page configuration
+    let addedPages = 0;
     for (const pageConfig of pdfConfig.pages) {
+      if (!availableDimensionIds.has(pageConfig.primaryDimension.id)) {
+        console.warn(
+          `[PDFReportModel] Skipping page "${pageConfig.id}" because primary dimension "${pageConfig.primaryDimension.id}" is not available in cube config.`,
+        );
+        continue;
+      }
+
+      if (
+        pageConfig.secondaryDimension &&
+        !availableDimensionIds.has(pageConfig.secondaryDimension.id)
+      ) {
+        console.warn(
+          `[PDFReportModel] Skipping page "${pageConfig.id}" because secondary dimension "${pageConfig.secondaryDimension.id}" is not available in cube config.`,
+        );
+        continue;
+      }
+
       const pageData = await this.buildPageData(
         pageConfig,
         cubeConfig,
@@ -394,6 +416,13 @@ export class PDFReportModelUtils {
       );
 
       builder.addPage(pageData);
+      addedPages += 1;
+    }
+
+    if (addedPages === 0) {
+      throw new Error(
+        "No PDF pages could be generated because none of the configured dimensions are present in the cube export. Please review your PDF configuration.",
+      );
     }
 
     return builder.build();
