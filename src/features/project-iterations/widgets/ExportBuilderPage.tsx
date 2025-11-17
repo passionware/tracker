@@ -253,15 +253,6 @@ function ExportBuilderContent({
     [],
   );
 
-  // Generate preview cube state with all data first
-  const previewCubeState = useCubeState({
-    data: data,
-    dimensions: runtimeDescriptors.dimensions,
-    measures: runtimeDescriptors.measures,
-    includeItems: true,
-    rawDataDimension,
-  });
-
   // Apply mandatory preparation and optional anonymization to data with active measures
   const processedData = useMemo(() => {
     let transformedData = transformAndAnonymize(report, {
@@ -325,9 +316,18 @@ function ExportBuilderContent({
       },
     ].filter((column) => watchedValues.selectedColumns.includes(column.id));
 
+    const anonymizationDimensions =
+      selectedDimensions.length > 0
+        ? selectedDimensions
+        : runtimeDescriptors.dimensions;
+    const anonymizationMeasures =
+      selectedMeasures.length > 0
+        ? selectedMeasures
+        : runtimeDescriptors.measures;
+
     transformedData = anonymizeByUsage(transformedData, {
-      dimensions: runtimeDescriptors.dimensions,
-      measures: runtimeDescriptors.measures,
+      dimensions: anonymizationDimensions,
+      measures: anonymizationMeasures,
       listViewColumns,
     });
 
@@ -339,8 +339,26 @@ function ExportBuilderContent({
     watchedValues.selectedMeasures,
     runtimeDescriptors.dimensions,
     runtimeDescriptors.measures,
+    selectedDimensions,
+    selectedMeasures,
     watchedValues.selectedColumns,
   ]);
+
+  // Generate preview cube state based on processed and filtered configuration
+  const previewCubeState = useCubeState({
+    data: processedData,
+    dimensions:
+      selectedDimensions.length > 0
+        ? selectedDimensions
+        : runtimeDescriptors.dimensions,
+    measures:
+      selectedMeasures.length > 0
+        ? selectedMeasures
+        : runtimeDescriptors.measures,
+    activeMeasures: watchedValues.selectedMeasures,
+    includeItems: true,
+    rawDataDimension,
+  });
 
   // Generate serializable config with labelMapping for export
   const exportSerializableConfig = useMemo(() => {
