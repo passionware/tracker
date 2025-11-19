@@ -19,6 +19,28 @@ function normalize(s: string): string {
   return s.toLowerCase();
 }
 
+function resolveTaskName(entry: TMetricTimeEntry): string {
+  const tagNames =
+    entry.tags
+      ?.filter((tag) => tag?.name?.trim())
+      .map((tag) => tag.name.trim()) ?? [];
+
+  const candidates = [
+    entry.task?.name,
+    entry.note,
+    entry.project?.name ? `Task in ${entry.project.name}` : null,
+    tagNames.length > 0 ? `Tagged: ${tagNames.join(", ")}` : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate?.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return "Unnamed task";
+}
+
 export function inferActivity(
   description: string | null | undefined,
   projectName: string | null | undefined,
@@ -59,25 +81,7 @@ export function adaptTMetricToGeneric(
   const uniqueProjects = new Map<string, string>();
 
   for (const e of input.entries) {
-    let taskName = "Unnamed task";
-
-    // Try to get task name from note
-    if (e.note?.trim()) {
-      taskName = e.note.trim();
-    }
-    // Fallback to project name if note is empty and project exists
-    else if (e.project?.name?.trim()) {
-      taskName = `Task in ${e.project.name}`;
-    }
-    // Use tags if available
-    else if (e.tags?.length > 0) {
-      const tagNames = e.tags
-        .filter((tag) => tag?.name?.trim())
-        .map((tag) => tag.name.trim());
-      if (tagNames.length > 0) {
-        taskName = `Tagged: ${tagNames.join(", ")}`;
-      }
-    }
+    const taskName = resolveTaskName(e);
 
     if (!uniqueDescriptions.has(taskName)) {
       uniqueDescriptions.set(taskName, taskName);
@@ -171,19 +175,7 @@ export function adaptTMetricToGeneric(
     const activityId = inferActivity(e.note, projectName, e.tags || []);
 
     // Determine task ID with multiple fallbacks
-    let taskId = "Unnamed task";
-    if (e.note?.trim()) {
-      taskId = e.note.trim();
-    } else if (projectName) {
-      taskId = `Task in ${projectName}`;
-    } else if (e.tags?.length > 0) {
-      const tagNames = e.tags
-        .filter((tag) => tag?.name?.trim())
-        .map((tag) => tag.name.trim());
-      if (tagNames.length > 0) {
-        taskId = `Tagged: ${tagNames.join(", ")}`;
-      }
-    }
+    const taskId = resolveTaskName(e);
 
     // Handle date parsing with validation
     let startAt: Date;
