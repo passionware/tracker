@@ -21,6 +21,13 @@ export const zTMetricProject = z.object({
 
 export type TMetricProject = z.infer<typeof zTMetricProject>;
 
+export const zTMetricTask = z.object({
+  id: z.number().optional(),
+  name: z.string(),
+});
+
+export type TMetricTask = z.infer<typeof zTMetricTask>;
+
 export const zTMetricUser = z.object({
   id: z.number(),
   displayName: z.string().optional(),
@@ -39,6 +46,7 @@ export type TMetricTag = z.infer<typeof zTMetricTag>;
 export const zTMetricTimeEntry = z.object({
   id: z.number(),
   project: zTMetricProject.optional(),
+  task: zTMetricTask.optional(),
   note: z.string().optional(),
   tags: z.array(zTMetricTag).default([]),
   isBillable: z.boolean(),
