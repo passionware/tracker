@@ -112,8 +112,20 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
             </Button>
             <div className="h-6 w-px bg-slate-200" />
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">
+              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                 Cube Analysis
+                {rd
+                  .journey(iteration)
+                  .wait(<Skeleton className="h-4 w-32 rounded" />)
+                  .catch(() => null)
+                  .map((iter) => (
+                    <span className="text-xs font-normal text-slate-500">
+                      {props.services.formatService.temporal.range.long(
+                        iter.periodStart,
+                        iter.periodEnd,
+                      )}
+                    </span>
+                  ))}
               </h1>
               <p className="text-sm text-slate-600">
                 Interactive data exploration and visualization
@@ -142,22 +154,6 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
               <Download className="h-4 w-4" />
               Export
             </Button>
-
-            {rd.tryMap(generatedReport, (report) => (
-              <div className="text-right text-sm text-slate-600">
-                <div className="font-medium">Report #{report.id}</div>
-                <div>
-                  {rd.tryMap(iteration, (iter) => (
-                    <span className="*:*:flex-row">
-                      {props.services.formatService.temporal.range.compact(
-                        iter.periodStart,
-                        iter.periodEnd,
-                      )}
-                    </span>
-                  )) || <span>Loading...</span>}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

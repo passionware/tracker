@@ -305,6 +305,11 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
         );
       }
 
+      const cubeRangeLabel = props.services.formatService.temporal.range.long(
+        reportData.start_date,
+        reportData.end_date,
+      );
+
       return (
         <div className="h-screen flex flex-col overflow-hidden">
           {/* Header */}
@@ -316,8 +321,9 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                   Back
                 </Button>
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900">
+                  <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                     PDF Export Builder
+                    <div className="text-xs font-normal">{cubeRangeLabel}</div>
                   </h1>
                   <p className="text-sm text-slate-600">
                     Configure pages for "{reportData.name}"

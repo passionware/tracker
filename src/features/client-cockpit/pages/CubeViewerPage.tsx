@@ -60,6 +60,11 @@ export function CubeViewerPage(props: WithFrontServices) {
         data: report.cube_data.data,
       };
 
+      const dateRangeLabel = props.services.formatService.temporal.range.long(
+        report.start_date,
+        report.end_date,
+      );
+
       return (
         <CubeViewer
           serializedConfig={serializedConfig}
@@ -69,6 +74,7 @@ export function CubeViewerPage(props: WithFrontServices) {
           showJsonView={rd.tryGet(authState)?.role === "admin"}
           showPdfView
           onPdfExport={handlePdfExport}
+          dateRangeLabel={dateRangeLabel}
         />
       );
     });

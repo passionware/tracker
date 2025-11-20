@@ -70,14 +70,20 @@ function ExportBuilderContent({
   services,
   onNavigateBack,
   projectId,
+  projectIterationId,
 }: {
   report: GeneratedReportSource;
   services: WithFrontServices["services"];
   onNavigateBack: () => void;
   projectId: number;
+  projectIterationId: ProjectIteration["id"];
 }) {
   // Fetch the actual project to get its real client_id
   const projectState = services.projectService.useProject(projectId);
+  const iterationState =
+    services.projectIterationService.useProjectIterationDetail(
+      projectIterationId,
+    );
 
   // Use the shared cube hook to get all cube data
   const { serializableConfig, data } = useReportCube({
@@ -618,8 +624,20 @@ function ExportBuilderContent({
             </Button>
             <div className="h-6 w-px bg-slate-200" />
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">
+              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                 Export Builder
+                {rd
+                  .journey(iterationState)
+                  .wait(<Skeleton className="h-4 w-32 rounded" />)
+                  .catch(() => null)
+                  .map((iteration) => (
+                    <span className="text-xs font-normal text-slate-500">
+                      {services.formatService.temporal.range.long(
+                        iteration.periodStart,
+                        iteration.periodEnd,
+                      )}
+                    </span>
+                  ))}
               </h1>
               <p className="text-sm text-slate-600">
                 Configure and export your cube data
@@ -1049,6 +1067,7 @@ export function ExportBuilderPage(props: ExportBuilderPageProps) {
         services={props.services}
         onNavigateBack={handleNavigateBack}
         projectId={props.projectId}
+        projectIterationId={props.projectIterationId}
       />
     ));
 }

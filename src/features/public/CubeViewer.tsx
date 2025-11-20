@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +20,10 @@ import { useCubeState } from "@/features/_common/Cube/useCubeState";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import { Grid3X3, Code, ArrowLeft, FileText } from "lucide-react";
+import {
+  CubeDateRange,
+  getCubeDateRange,
+} from "@/features/_common/Cube/getCubeDateRange";
 
 interface CubeViewerProps {
   serializedConfig: any;
@@ -29,6 +33,7 @@ interface CubeViewerProps {
   showJsonView?: boolean;
   showPdfView?: boolean;
   onPdfExport?: () => void;
+  dateRangeLabel?: ReactNode;
 }
 
 export function CubeViewer({
@@ -39,6 +44,7 @@ export function CubeViewer({
   showJsonView = true,
   showPdfView = false,
   onPdfExport,
+  dateRangeLabel,
 }: CubeViewerProps) {
   const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
 
@@ -93,6 +99,27 @@ export function CubeViewer({
     rawDataDimension,
   });
 
+  const computedRange = useMemo<CubeDateRange | null>(() => {
+    if (!isSerializedCube) {
+      return null;
+    }
+    return getCubeDateRange(serializedConfig);
+  }, [isSerializedCube, serializedConfig]);
+
+  const fallbackRangeLabel = useMemo<ReactNode>(() => {
+    if (!computedRange) {
+      return null;
+    }
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    return `${formatter.format(computedRange.start)} – ${formatter.format(computedRange.end)}`;
+  }, [computedRange]);
+
+  const rangeLabel = dateRangeLabel ?? fallbackRangeLabel;
+
   if (!isSerializedCube) {
     return (
       <div className="h-full flex flex-col bg-slate-50">
@@ -110,7 +137,14 @@ export function CubeViewer({
               </Button>
             )}
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
+              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                {title}
+                {rangeLabel && (
+                  <span className="text-xs font-normal text-slate-500">
+                    {rangeLabel}
+                  </span>
+                )}
+              </h1>
               <p className="text-sm text-slate-600">
                 This doesn't appear to be a serialized cube configuration
               </p>
@@ -156,11 +190,20 @@ export function CubeViewer({
                 Back
               </Button>
             )}
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-              <p className="text-sm text-slate-600">
-                Interactive cube visualization
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                  {title}
+                  {rangeLabel && (
+                    <span className="text-xs font-normal text-slate-500">
+                      {rangeLabel}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Interactive cube visualization
+                </p>
+              </div>
             </div>
           </div>
 
