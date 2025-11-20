@@ -45,6 +45,8 @@ import type {
 import { Skeleton } from "@/components/ui/skeleton";
 import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
+import { SimpleTooltip } from "@/components/ui/tooltip";
+import { ensureError } from "@passionware/platform-js";
 
 // Form schema for export builder
 interface ExportBuilderFormData {
@@ -70,14 +72,24 @@ function ExportBuilderContent({
   services,
   onNavigateBack,
   projectId,
+  projectIterationId,
+  workspaceId,
+  clientId,
 }: {
   report: GeneratedReportSource;
   services: WithFrontServices["services"];
   onNavigateBack: () => void;
   projectId: number;
+  projectIterationId: ProjectIteration["id"];
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
 }) {
   // Fetch the actual project to get its real client_id
   const projectState = services.projectService.useProject(projectId);
+  const iterationState =
+    services.projectIterationService.useProjectIterationDetail(
+      projectIterationId,
+    );
 
   // Use the shared cube hook to get all cube data
   const { serializableConfig, data } = useReportCube({
@@ -145,7 +157,7 @@ function ExportBuilderContent({
       },
       selectedDimensions:
         dimensions.length > 0
-          ? ["project", "task", "contractor", "activity"].filter((id) =>
+          ? ["contractor", "task", "activity", "role"].filter((id) =>
               dimensions.some((dim) => dim.id === id),
             )
           : [],
@@ -159,8 +171,6 @@ function ExportBuilderContent({
         "id",
         "taskId",
         "activityId",
-        "projectId",
-        "roleId",
         "contractorId",
         "startAt",
         "endAt",
@@ -618,8 +628,20 @@ function ExportBuilderContent({
             </Button>
             <div className="h-6 w-px bg-slate-200" />
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">
+              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                 Export Builder
+                {rd
+                  .journey(iterationState)
+                  .wait(<Skeleton className="h-4 w-32 rounded" />)
+                  .catch(() => null)
+                  .map((iteration) => (
+                    <span className="text-xs font-normal text-slate-500">
+                      {services.formatService.temporal.range.long(
+                        iteration.periodStart,
+                        iteration.periodEnd,
+                      )}
+                    </span>
+                  ))}
               </h1>
               <p className="text-sm text-slate-600">
                 Configure and export your cube data
@@ -640,10 +662,12 @@ function ExportBuilderContent({
             {rd
               .journey(projectState)
               .wait(<Skeleton className="h-10 w-32" />)
-              .catch(() => (
-                <Button variant="outline" disabled>
-                  Project Error
-                </Button>
+              .catch((e) => (
+                <SimpleTooltip title={ensureError(e).message}>
+                  <Button variant="outline" visuallyDisabled>
+                    Project Error
+                  </Button>
+                </SimpleTooltip>
               ))
               .map((project) => (
                 <PublishToCockpitButton
@@ -652,6 +676,10 @@ function ExportBuilderContent({
                   report={report}
                   projectId={projectId}
                   clientId={project.clientId}
+                  workspaceSpec={workspaceId}
+                  clientSpec={clientId}
+                  sourceWorkspaceId={project.workspaceIds?.[0] ?? null}
+                  sourceClientId={project.clientId}
                 />
               ))}
             <Button
@@ -1049,6 +1077,9 @@ export function ExportBuilderPage(props: ExportBuilderPageProps) {
         services={props.services}
         onNavigateBack={handleNavigateBack}
         projectId={props.projectId}
+        projectIterationId={props.projectIterationId}
+        workspaceId={props.workspaceId}
+        clientId={props.clientId}
       />
     ));
 }
