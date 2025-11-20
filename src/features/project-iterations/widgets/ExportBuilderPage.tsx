@@ -45,6 +45,8 @@ import type {
 import { Skeleton } from "@/components/ui/skeleton";
 import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
+import { SimpleTooltip } from "@/components/ui/tooltip";
+import { ensureError } from "@passionware/platform-js";
 
 // Form schema for export builder
 interface ExportBuilderFormData {
@@ -71,12 +73,16 @@ function ExportBuilderContent({
   onNavigateBack,
   projectId,
   projectIterationId,
+  workspaceId,
+  clientId,
 }: {
   report: GeneratedReportSource;
   services: WithFrontServices["services"];
   onNavigateBack: () => void;
   projectId: number;
   projectIterationId: ProjectIteration["id"];
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
 }) {
   // Fetch the actual project to get its real client_id
   const projectState = services.projectService.useProject(projectId);
@@ -151,7 +157,7 @@ function ExportBuilderContent({
       },
       selectedDimensions:
         dimensions.length > 0
-          ? ["project", "task", "contractor", "activity"].filter((id) =>
+          ? ["contractor", "task", "activity", "role"].filter((id) =>
               dimensions.some((dim) => dim.id === id),
             )
           : [],
@@ -165,8 +171,6 @@ function ExportBuilderContent({
         "id",
         "taskId",
         "activityId",
-        "projectId",
-        "roleId",
         "contractorId",
         "startAt",
         "endAt",
@@ -658,10 +662,12 @@ function ExportBuilderContent({
             {rd
               .journey(projectState)
               .wait(<Skeleton className="h-10 w-32" />)
-              .catch(() => (
-                <Button variant="outline" disabled>
-                  Project Error
-                </Button>
+              .catch((e) => (
+                <SimpleTooltip title={ensureError(e).message}>
+                  <Button variant="outline" visuallyDisabled>
+                    Project Error
+                  </Button>
+                </SimpleTooltip>
               ))
               .map((project) => (
                 <PublishToCockpitButton
@@ -670,6 +676,10 @@ function ExportBuilderContent({
                   report={report}
                   projectId={projectId}
                   clientId={project.clientId}
+                  workspaceSpec={workspaceId}
+                  clientSpec={clientId}
+                  sourceWorkspaceId={project.workspaceIds?.[0] ?? null}
+                  sourceClientId={project.clientId}
                 />
               ))}
             <Button
@@ -1068,6 +1078,8 @@ export function ExportBuilderPage(props: ExportBuilderPageProps) {
         onNavigateBack={handleNavigateBack}
         projectId={props.projectId}
         projectIterationId={props.projectIterationId}
+        workspaceId={props.workspaceId}
+        clientId={props.clientId}
       />
     ));
 }

@@ -34,6 +34,7 @@ interface CubeViewerProps {
   showPdfView?: boolean;
   onPdfExport?: () => void;
   dateRangeLabel?: ReactNode;
+  extraActions?: ReactNode;
 }
 
 export function CubeViewer({
@@ -45,6 +46,7 @@ export function CubeViewer({
   showPdfView = false,
   onPdfExport,
   dateRangeLabel,
+  extraActions,
 }: CubeViewerProps) {
   const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
 
@@ -124,31 +126,36 @@ export function CubeViewer({
     return (
       <div className="h-full flex flex-col bg-slate-50">
         <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            {showBackButton && onBack && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-            )}
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-                {title}
-                {rangeLabel && (
-                  <span className="text-xs font-normal text-slate-500">
-                    {rangeLabel}
-                  </span>
-                )}
-              </h1>
-              <p className="text-sm text-slate-600">
-                This doesn't appear to be a serialized cube configuration
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {showBackButton && onBack && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBack}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                  {title}
+                  {rangeLabel && (
+                    <span className="text-xs font-normal text-slate-500">
+                      {rangeLabel}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-sm text-slate-600">
+                  This doesn't appear to be a serialized cube configuration
+                </p>
+              </div>
             </div>
+            {extraActions && (
+              <div className="flex items-center gap-2">{extraActions}</div>
+            )}
           </div>
         </div>
 
@@ -190,24 +197,23 @@ export function CubeViewer({
                 Back
               </Button>
             )}
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-                  {title}
-                  {rangeLabel && (
-                    <span className="text-xs font-normal text-slate-500">
-                      {rangeLabel}
-                    </span>
-                  )}
-                </h1>
-                <p className="text-sm text-slate-600">
-                  Interactive cube visualization
-                </p>
-              </div>
+            <div>
+              <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                {title}
+                {rangeLabel && (
+                  <span className="text-xs font-normal text-slate-500">
+                    {rangeLabel}
+                  </span>
+                )}
+              </h1>
+              <p className="text-sm text-slate-600">
+                Interactive cube visualization
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {extraActions}
             <Button
               variant={viewMode === "cube" ? "default" : "outline"}
               size="sm"

@@ -12,6 +12,10 @@ import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import {
   generateSmartReportName,
@@ -30,6 +34,10 @@ interface PublishToCockpitButtonProps {
   report: GeneratedReportSource;
   projectId: number;
   clientId: number;
+  workspaceSpec: WorkspaceSpec;
+  clientSpec: ClientSpec;
+  sourceWorkspaceId?: number | null;
+  sourceClientId?: number | null;
   disabled?: boolean;
 }
 
@@ -37,7 +45,12 @@ export function PublishToCockpitButton({
   services,
   serializableConfig,
   report,
+  projectId,
   clientId,
+  workspaceSpec,
+  clientSpec,
+  sourceWorkspaceId,
+  sourceClientId,
   disabled = false,
 }: PublishToCockpitButtonProps) {
   // Get cockpit auth info at the top level (hooks must be called at component level)
@@ -79,12 +92,7 @@ export function PublishToCockpitButton({
       }),
       description: `Exported cube data from project iteration ${report.projectIterationId} on ${new Date().toLocaleDateString()}`,
     };
-  }, [
-    clientName,
-    projectIterationData,
-    report,
-    report.projectIterationId,
-  ]);
+  }, [clientName, projectIterationData, report, report.projectIterationId]);
 
   const publishMutation = promiseState.useMutation(
     async ({ name, description }: PublishFormValues) => {
@@ -100,8 +108,39 @@ export function PublishToCockpitButton({
 
       const tenantId = cockpitAuthInfo.tenantId;
 
+      const fallbackRoute = services.routingService
+        .forWorkspace(workspaceSpec)
+        .forClient(clientSpec)
+        .forProject(projectId.toString())
+        .forIteration(report.projectIterationId.toString())
+        .forGeneratedReport(report.id.toString())
+        .basic();
+
+      const sourceRoute =
+        sourceWorkspaceId != null && sourceClientId != null
+          ? `/w/${sourceWorkspaceId}/clients/${sourceClientId}/projects/${projectId}/iteration/${report.projectIterationId}/generated-reports/${report.id}/basic`
+          : fallbackRoute;
+
+      const existingMeta =
+        serializableConfig &&
+        typeof serializableConfig.meta === "object" &&
+        serializableConfig.meta !== null
+          ? (serializableConfig.meta as Record<string, unknown>)
+          : undefined;
+
       const cubeDataPayload: Record<string, unknown> = {
         data: serializableConfig.data,
+        meta: {
+          ...(existingMeta ?? {}),
+          source: {
+            route: sourceRoute,
+            workspaceId: sourceWorkspaceId ?? null,
+            clientId: sourceClientId ?? null,
+            projectId,
+            projectIterationId: report.projectIterationId,
+            generatedReportId: report.id,
+          },
+        },
       };
 
       if (serializedDateRange) {
