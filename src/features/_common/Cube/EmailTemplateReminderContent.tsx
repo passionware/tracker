@@ -1,10 +1,10 @@
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
-import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
 import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
+import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { FormatService } from "@/services/FormatService/FormatService";
+import { differenceInDays, startOfDay } from "date-fns";
 import type { CSSProperties } from "react";
-import { differenceInDays, isSameDay, startOfDay } from "date-fns";
 
 interface EmailTemplateReminderContentProps {
   reportData: CockpitCubeReportWithCreator;
