@@ -191,9 +191,7 @@ export function EmailTemplateReminderContent({
   const workspaceInitials = getInitials(workspaceDisplayName);
   const clientInitials = getInitials(clientName);
 
-  const dueDateFormatted = dueDate
-    ? formatService.temporal.date(dueDate)
-    : "";
+  const dueDateFormatted = dueDate ? formatService.temporal.date(dueDate) : "";
 
   // Calculate relative date text (e.g., "tomorrow", "in 2 days")
   const getRelativeDateText = (targetDate: Date | null): string => {
@@ -486,7 +484,8 @@ export function EmailTemplateReminderContent({
                       color: "#475569",
                     }}
                   >
-                    🚚💰 Reminder about incoming payment: <strong>{dueDateFormatted}</strong>
+                    🚚💰 Reminder about incoming payment:{" "}
+                    <strong>{dueDateFormatted}</strong>
                   </div>
                 ) : (
                   <div
@@ -533,13 +532,14 @@ export function EmailTemplateReminderContent({
                   <p style={{ margin: "0 0 8px 0" }}>
                     {relativeDateText === "overdue" ? (
                       <>
-                        We would appreciate receiving the payment that was due on{" "}
-                        <strong>{dueDateFormatted}</strong>.
+                        We would appreciate receiving the payment that was due
+                        on <strong>{dueDateFormatted}</strong>.
                       </>
                     ) : relativeDateText ? (
                       <>
                         We would be happy to receive the payment{" "}
-                        <strong>{relativeDateText}</strong> ({dueDateFormatted}).
+                        <strong>{relativeDateText}</strong> ({dueDateFormatted}
+                        ).
                       </>
                     ) : (
                       <>
@@ -684,4 +684,3 @@ export function EmailTemplateReminderContent({
     </div>
   );
 }
-
