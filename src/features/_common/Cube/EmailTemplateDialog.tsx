@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link, Copy, Calendar } from "lucide-react";
+import { Link, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { EmailTemplateContent } from "./EmailTemplateContent";
 import { EmailTemplateReminderContent } from "./EmailTemplateReminderContent";
@@ -16,14 +16,11 @@ import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/Cub
 import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { FormatService } from "@/services/FormatService/FormatService";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { DatePicker } from "@/components/ui/date-picker";
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 interface EmailTemplateDialogProps {
   reportData: CockpitCubeReportWithCreator;
@@ -48,6 +45,7 @@ export function EmailTemplateDialog({
 }: EmailTemplateDialogProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const reminderContentRef = useRef<HTMLDivElement | null>(null);
+  const [activeTab, setActiveTab] = useState<"invoice" | "reminder">("invoice");
   const [sanitizedWorkspaceLogo, setSanitizedWorkspaceLogo] =
     useState(workspaceLogoDataUrl);
   const [sanitizedClientAvatar, setSanitizedClientAvatar] = useState<
@@ -112,9 +110,13 @@ export function EmailTemplateDialog({
 
   const selectContent = () => {
     try {
-      if (!contentRef.current) return;
+      const ref =
+        activeTab === "invoice"
+          ? contentRef.current
+          : reminderContentRef.current;
+      if (!ref) return;
       const range = document.createRange();
-      range.selectNodeContents(contentRef.current);
+      range.selectNodeContents(ref);
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(range);
@@ -197,11 +199,13 @@ export function EmailTemplateDialog({
   };
 
   const copyHtmlContent = async () => {
-    if (!contentRef.current) {
+    const ref =
+      activeTab === "invoice" ? contentRef.current : reminderContentRef.current;
+    if (!ref) {
       return;
     }
 
-    const html = contentRef.current.innerHTML;
+    const html = ref.innerHTML;
     const selectAndExec = () => {
       selectContent();
       try {
@@ -244,6 +248,14 @@ export function EmailTemplateDialog({
     selectAndExec();
   };
 
+  const copySubjectContent = async () => {
+    if (activeTab === "invoice") {
+      await copySubject();
+    } else {
+      await copyReminderSubject();
+    }
+  };
+
   const copyReminderSubject = async () => {
     const { from, to } = getDateRange();
     const dueDateFormatted = maybe.mapOrElse(
@@ -266,58 +278,6 @@ export function EmailTemplateDialog({
     }
   };
 
-  const copyReminderHtmlContent = async () => {
-    if (!reminderContentRef.current) {
-      return;
-    }
-
-    const html = reminderContentRef.current.innerHTML;
-    const selectAndExec = () => {
-      try {
-        const range = document.createRange();
-        range.selectNodeContents(reminderContentRef.current!);
-        const selection = window.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        document.execCommand?.("copy");
-      } catch {
-        // ignore
-      }
-    };
-
-    try {
-      const clipboard = navigator.clipboard;
-      const clipboardItemCtor =
-        typeof window !== "undefined" && "ClipboardItem" in window
-          ? (
-              window as typeof window & {
-                ClipboardItem: typeof ClipboardItem;
-              }
-            ).ClipboardItem
-          : undefined;
-
-      if (
-        clipboard &&
-        typeof clipboard.write === "function" &&
-        clipboardItemCtor
-      ) {
-        const blob = new Blob([html], { type: "text/html" });
-        const item = new clipboardItemCtor({ "text/html": blob });
-        await clipboard.write([item]);
-        return;
-      }
-
-      if (clipboard && typeof clipboard.writeText === "function") {
-        await clipboard.writeText(html);
-        return;
-      }
-    } catch {
-      // ignore and fall back
-    }
-
-    selectAndExec();
-  };
-
   const dueDateAsJsDate = maybe.mapOrElse(
     invoiceDueDate,
     (date: CalendarDate) => new Date(date.year, date.month - 1, date.day),
@@ -327,41 +287,88 @@ export function EmailTemplateDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex gap-0 flex-col">
+        <DialogHeader className="flex flex-row items-center justify-between gap-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">📧</span>
             Email Template
           </DialogTitle>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as "invoice" | "reminder")
+            }
+          >
+            <TabsList size="sm" className="mr-6">
+              <TabsTrigger value="invoice" size="sm">
+                Invoice Email
+              </TabsTrigger>
+              <TabsTrigger value="reminder" size="sm">
+                Reminder Email
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </DialogHeader>
-        <div
-          className="space-y-4 flex-1 overflow-y-auto min-h-0"
-          ref={contentRef}
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value as "invoice" | "reminder")
+          }
+          className="flex flex-col flex-1 min-h-0"
         >
-          <EmailTemplateContent
-            reportData={reportData}
-            reportLink={reportLink}
-            formatService={formatService}
-            workspaceLogoDataUrl={sanitizedWorkspaceLogo}
-            workspaceName={workspaceName}
-            clientDisplayName={clientDisplayName}
-            clientAvatarDataUrl={sanitizedClientAvatar}
-          />
-        </div>
-        {/* Hidden reminder content for copying */}
-        <div className="hidden" ref={reminderContentRef}>
-          <EmailTemplateReminderContent
-            reportData={reportData}
-            reportLink={reportLink}
-            formatService={formatService}
-            workspaceLogoDataUrl={sanitizedWorkspaceLogo}
-            workspaceName={workspaceName}
-            clientDisplayName={clientDisplayName}
-            clientAvatarDataUrl={sanitizedClientAvatar}
-            dueDate={dueDateAsJsDate}
-          />
-        </div>
-        <DialogFooter className="flex gap-2">
+          <TabsContent
+            value="invoice"
+            className="flex-1 min-h-0 bg-slate-100 p-4 flex items-start justify-center -mx-6 focus:outline-none"
+          >
+            <div
+              className="bg-white rounded-lg shadow-sm p-6 max-w-4xl w-full overflow-y-auto max-h-full"
+              ref={contentRef}
+            >
+              <EmailTemplateContent
+                reportData={reportData}
+                reportLink={reportLink}
+                formatService={formatService}
+                workspaceLogoDataUrl={sanitizedWorkspaceLogo}
+                workspaceName={workspaceName}
+                clientDisplayName={clientDisplayName}
+                clientAvatarDataUrl={sanitizedClientAvatar}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent
+            value="reminder"
+            className="flex-1 min-h-0 bg-slate-100 p-4 flex flex-col -mx-6 focus:outline-none"
+          >
+            <div className="space-y-4 flex-shrink-0">
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-2 block">
+                  Invoice Due Date
+                </label>
+                <DatePicker
+                  value={invoiceDueDate}
+                  onChange={setInvoiceDueDate}
+                />
+              </div>
+              <Separator orientation="horizontal" />
+            </div>
+            <div
+              className="bg-white rounded-lg shadow-sm p-6 max-w-4xl w-full mx-auto overflow-y-auto flex-1 min-h-0"
+              ref={reminderContentRef}
+            >
+              <EmailTemplateReminderContent
+                reportData={reportData}
+                reportLink={reportLink}
+                formatService={formatService}
+                workspaceLogoDataUrl={sanitizedWorkspaceLogo}
+                workspaceName={workspaceName}
+                clientDisplayName={clientDisplayName}
+                clientAvatarDataUrl={sanitizedClientAvatar}
+                dueDate={dueDateAsJsDate}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+        <DialogFooter className="flex gap-2 flex-shrink-0 pt-6">
           <Button
             variant="outline"
             onClick={copyHtmlContent}
@@ -372,7 +379,7 @@ export function EmailTemplateDialog({
           </Button>
           <Button
             variant="outline"
-            onClick={copySubject}
+            onClick={copySubjectContent}
             className="flex items-center gap-2"
           >
             <Copy className="h-4 w-4" />
@@ -386,47 +393,6 @@ export function EmailTemplateDialog({
             <Copy className="h-4 w-4" />
             Select content
           </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Invoice reminder
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Invoice Due Date
-                  </label>
-                  <DatePicker
-                    value={invoiceDueDate}
-                    onChange={setInvoiceDueDate}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={copyReminderSubject}
-                    className="flex items-center gap-2 w-full"
-                    disabled={maybe.isAbsent(invoiceDueDate)}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy email title
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={copyReminderHtmlContent}
-                    className="flex items-center gap-2 w-full"
-                    disabled={maybe.isAbsent(invoiceDueDate)}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy email HTML
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
           {reportLink && (
             <Button variant="outline" asChild>
               <a href={reportLink} target="_blank" rel="noreferrer">

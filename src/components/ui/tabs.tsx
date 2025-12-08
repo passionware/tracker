@@ -1,36 +1,64 @@
 import { cn } from "@/lib/utils";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
 const Tabs = TabsPrimitive.Root;
 
+const tabsListVariants = cva("border-b border-slate-200 flex items-center", {
+  variants: {
+    size: {
+      sm: "gap-4",
+      md: "gap-8",
+    },
+  },
+  defaultVariants: {
+    size: "md",
+  },
+});
+
+const tabsTriggerVariants = cva(
+  "flex gap-2 items-center whitespace-nowrap border-b-2 border-transparent font-medium text-gray-500 hover:border-gray-200 hover:text-gray-700 focus-visible:bg-slate-50 outline-none rounded-t-sm data-[state=active]:border-sky-700 data-[state=active]:text-sky-900",
+  {
+    variants: {
+      size: {
+        sm: "px-1 py-2 text-xs",
+        md: "px-1 py-4 text-sm",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+    },
+  },
+);
+
+export interface TabsListProps
+  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>,
+    VariantProps<typeof tabsListVariants> {}
+
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
+  TabsListProps
+>(({ className, size, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn(
-      "border-b border-slate-200 flex gap-8 items-center", // nadaje styl nawigacji z dolną linią i odstępami między triggerami
-      className,
-    )}
+    className={cn(tabsListVariants({ size }), className)}
     {...props}
   />
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
+export interface TabsTriggerProps
+  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>,
+    VariantProps<typeof tabsTriggerVariants> {}
+
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+  TabsTriggerProps
+>(({ className, size, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
-    className={cn(
-      "flex gap-2 items-center whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-200 hover:text-gray-700",
-      "focus-visible:bg-slate-50 outline-none rounded-t-sm",
-      "data-[state=active]:border-sky-700 data-[state=active]:text-sky-900", // aktywny tab wyróżniony kolorem
-      className,
-    )}
+    className={cn(tabsTriggerVariants({ size }), className)}
     {...props}
   />
 ));
