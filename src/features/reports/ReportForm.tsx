@@ -39,6 +39,44 @@ import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
+// Debug helper to verify breakdown data handling
+const debugBreakdownData = (data: ReportPayload) => {
+  console.log("ReportForm submission breakdown data:", {
+    hasUnit: !!data.unit,
+    hasQuantity: !!data.quantity,
+    hasUnitPrice: !!data.unitPrice,
+    calculatedNetValue:
+      data.quantity && data.unitPrice ? data.quantity * data.unitPrice : null,
+    actualNetValue: data.netValue,
+    matches:
+      data.quantity && data.unitPrice
+        ? Math.abs(data.quantity * data.unitPrice - data.netValue) < 0.01
+        : null,
+  });
+};
+
+/**
+ * BREAKDOWN UPDATE SCENARIOS:
+ *
+ * 1. Create report with breakdown:
+ *    - Fill all breakdown fields
+ *    - Validation ensures quantity × unitPrice = netValue
+ *    - Saves breakdown data to database
+ *
+ * 2. Edit report with existing breakdown:
+ *    - Form loads with breakdown fields populated
+ *    - User can modify any field (validation still applies)
+ *    - Can remove breakdown entirely by clearing all fields
+ *
+ * 3. Edit report without breakdown:
+ *    - Add breakdown by filling all fields
+ *    - Same validation applies
+ *
+ * 4. Update only netValue (keep existing breakdown):
+ *    - Modify netValue to match new quantity × unitPrice
+ *    - Or clear breakdown fields to remove them
+ */
+
 export interface ReportWidgetFormProps
   extends WithServices<
     [
@@ -74,6 +112,18 @@ type FormModel = {
 };
 
 export function ReportForm(props: ReportWidgetFormProps) {
+  // Debug: Log breakdown data from defaultValues
+  if (props.defaultValues) {
+    console.log("ReportForm initialized with breakdown data:", {
+      hasUnit: !!props.defaultValues.unit,
+      hasQuantity: !!props.defaultValues.quantity,
+      hasUnitPrice: !!props.defaultValues.unitPrice,
+      unit: props.defaultValues.unit,
+      quantity: props.defaultValues.quantity,
+      unitPrice: props.defaultValues.unitPrice,
+    });
+  }
+
   const form = useForm<FormModel>({
     defaultValues: {
       contractorId: props.defaultValues?.contractorId,
@@ -126,6 +176,9 @@ export function ReportForm(props: ReportWidgetFormProps) {
       }
     }
 
+    // Clear any existing breakdown errors when validation passes
+    form.clearErrors(["unit", "quantity", "unitPrice", "netValue"]);
+
     const transformedData: ReportPayload = {
       contractorId: maybe.getOrThrow(
         data.contractorId,
@@ -142,11 +195,15 @@ export function ReportForm(props: ReportWidgetFormProps) {
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
       projectIterationId: data.projectIterationId,
-      // Optional breakdown fields
-      unit: data.unit || undefined,
-      quantity: data.quantity ? parseFloat(data.quantity) : undefined,
-      unitPrice: data.unitPrice ? parseFloat(data.unitPrice) : undefined,
+      // Optional breakdown fields - only include if all are provided or all are empty
+      unit: hasAllBreakdownFields ? data.unit : undefined,
+      quantity: hasAllBreakdownFields ? parseFloat(data.quantity) : undefined,
+      unitPrice: hasAllBreakdownFields ? parseFloat(data.unitPrice) : undefined,
     };
+
+    // Debug breakdown data handling
+    debugBreakdownData(transformedData);
+
     void processingPromise.track(
       props.onSubmit(transformedData, getDirtyFields(transformedData, form)) ??
         Promise.resolve(),

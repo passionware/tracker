@@ -32,6 +32,23 @@ import { maybe, rd, truthy } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
 
+// IMPORTANT: Backend must map database d_ prefixed columns to TypeScript interface fields:
+// d_unit → unit, d_quantity → quantity, d_unit_price → unitPrice
+
+// Helper to format unit abbreviations to readable form
+function formatUnit(unit: string): string {
+  switch (unit) {
+    case "h":
+      return "hours";
+    case "d":
+      return "days";
+    case "pc":
+      return "pieces";
+    default:
+      return unit;
+  }
+}
+
 export type ReportSearchBaseModel = Pick<
   ReportViewEntry,
   | "id"
@@ -58,6 +75,45 @@ export const reportColumns = {
         headerClassName: "bg-sky-50 border-x border-slate-800/10",
         cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
         sortKey: "netValue",
+      },
+    }),
+  quantity: (services: WithFormatService) =>
+    baseColumnHelper.accessor("originalReport", {
+      header: "Quantity",
+      cell: (info) => {
+        const report = info.getValue();
+        if (!report.quantity || !report.unit) {
+          return <div className="text-muted-foreground">-</div>;
+        }
+        return (
+          <div className="font-mono text-sm">
+            {report.quantity} {formatUnit(report.unit)}
+          </div>
+        );
+      },
+      meta: {
+        headerClassName: "bg-sky-50 border-x border-slate-800/10",
+        cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
+      },
+    }),
+  unitPrice: (services: WithFormatService) =>
+    baseColumnHelper.accessor("originalReport", {
+      header: "Rate",
+      cell: (info) => {
+        const report = info.getValue();
+        if (!report.unitPrice || !report.unit) {
+          return <div className="text-muted-foreground">-</div>;
+        }
+        return (
+          <div className="font-mono text-sm">
+            {services.formatService.financial.currency(report.unitPrice)}/
+            {formatUnit(report.unit)}
+          </div>
+        );
+      },
+      meta: {
+        headerClassName: "bg-sky-50 border-x border-slate-800/10",
+        cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
       },
     }),
   contractor: {
