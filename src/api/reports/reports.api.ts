@@ -32,9 +32,6 @@ import { chain } from "lodash";
 // Unit types for reports (simplified abbreviations)
 export type ReportUnit = "h" | "d" | "pc" | string; // h=hours, d=days, pc=pieces
 
-// Margin types for links
-export type MarginType = "percentage" | "fixed" | "none";
-
 // Link validation helpers
 export const LinkValidation = {
   // Check if billing link has detailed breakdown available
@@ -207,13 +204,8 @@ export const ReportValidation = {
     unitPrice?: Nullable<number>;
   }): { unit?: string; quantity?: number; unitPrice?: number } => {
     if (ReportValidation.hasDetailedBreakdown(report)) {
-      // If breakdown exists, ensure net_value matches calculation
-      // const calculatedNetValue =
-      //   ReportValidation.calculateNetValueFromBreakdown(
-      //     report.quantity!,
-      //     report.unitPrice!,
-      //   );
-      // Note: This would typically be handled by database triggers or application logic
+      // Return the current breakdown values
+      // Note: Validation that quantity × unitPrice = netValue is handled in form submission
       return {
         unit: maybe.getOrUndefined(report.unit),
         quantity: maybe.getOrUndefined(report.quantity),
@@ -221,28 +213,6 @@ export const ReportValidation = {
       };
     }
     return {};
-  },
-
-  calculateLinkAmount: (
-    quantity: number,
-    unitPrice: number,
-    exchangeRate: number = 1,
-    margin: number = 0,
-    marginType: MarginType = "none",
-  ): number => {
-    let baseAmount = quantity * unitPrice;
-
-    // Apply exchange rate
-    baseAmount *= exchangeRate;
-
-    // Apply margin
-    if (marginType === "percentage") {
-      baseAmount *= 1 + margin;
-    } else if (marginType === "fixed") {
-      baseAmount += margin;
-    }
-
-    return Math.round(baseAmount * 100) / 100;
   },
 };
 

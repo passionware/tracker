@@ -15,25 +15,43 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
   };
 
   function getInsertPayload(payload: LinkBillingReportPayload) {
-    switch (payload.linkType) {
-      case "clarify":
-        return {
-          description: payload.description,
-          report_id: "reportId" in payload ? payload.reportId : null,
-          billing_id: "billingId" in payload ? payload.billingId : null,
-          report_amount:
-            "reportAmount" in payload ? payload.reportAmount : null,
-          billing_amount:
-            "billingAmount" in payload ? payload.billingAmount : null,
-        };
-      case "reconcile":
-        return {
-          billing_id: payload.billingId,
-          report_id: payload.reportId,
-          report_amount: payload.reportAmount,
-          billing_amount: payload.billingAmount,
-        };
+    const basePayload = (() => {
+      switch (payload.linkType) {
+        case "clarify":
+          return {
+            description: payload.description,
+            report_id: "reportId" in payload ? payload.reportId : null,
+            billing_id: "billingId" in payload ? payload.billingId : null,
+            report_amount:
+              "reportAmount" in payload ? payload.reportAmount : null,
+            billing_amount:
+              "billingAmount" in payload ? payload.billingAmount : null,
+          };
+        case "reconcile":
+          return {
+            billing_id: payload.billingId,
+            report_id: payload.reportId,
+            report_amount: payload.reportAmount,
+            billing_amount: payload.billingAmount,
+          };
+      }
+    })();
+
+    // Add breakdown fields if present
+    if (payload.breakdown) {
+      return {
+        ...basePayload,
+        d_quantity: payload.breakdown.quantity,
+        d_unit: payload.breakdown.unit,
+        d_report_unit_price: payload.breakdown.reportUnitPrice,
+        d_billing_unit_price: payload.breakdown.billingUnitPrice,
+        d_report_currency: payload.breakdown.reportCurrency,
+        d_billing_currency: payload.breakdown.billingCurrency,
+        d_exchange_rate: payload.breakdown.exchangeRate,
+      };
     }
+
+    return basePayload;
   }
 
   return {
@@ -46,13 +64,28 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       }
     },
     linkCostAndReport: async (payload) => {
-      const response = await client.from("link_cost_report").insert({
+      const insertPayload: any = {
         report_id: payload.reportId,
         report_amount: payload.reportAmount,
         cost_id: payload.costId,
         cost_amount: payload.costAmount,
         description: payload.description,
-      });
+      };
+
+      // Add breakdown fields if present
+      if (payload.breakdown) {
+        insertPayload.d_quantity = payload.breakdown.quantity;
+        insertPayload.d_unit = payload.breakdown.unit;
+        insertPayload.d_report_unit_price = payload.breakdown.reportUnitPrice;
+        insertPayload.d_cost_unit_price = payload.breakdown.costUnitPrice;
+        insertPayload.d_exchange_rate = payload.breakdown.exchangeRate;
+        insertPayload.d_report_currency = payload.breakdown.reportCurrency;
+        insertPayload.d_cost_currency = payload.breakdown.costCurrency;
+      }
+
+      const response = await client
+        .from("link_cost_report")
+        .insert(insertPayload);
       if (response.error) {
         throw response.error;
       }
@@ -69,6 +102,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           currency: report.currency,
           client_id: report.clientId,
           workspace_id: report.workspaceId,
+          // Optional breakdown fields
+          d_unit: report.unit,
+          d_quantity: report.quantity,
+          d_unit_price: report.unitPrice,
         })
         .select("id");
       if (response.error) {
@@ -244,6 +281,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               client_id: takeIfPresent("clientId"),
               workspace_id: takeIfPresent("workspaceId"),
               project_iteration_id: takeIfPresent("projectIterationId"),
+              // New breakdown fields (database columns: d_unit, d_quantity, d_unit_price)
+              d_unit: takeIfPresent("unit"),
+              d_quantity: takeIfPresent("quantity"),
+              d_unit_price: takeIfPresent("unitPrice"),
             },
             (_, key) => key !== undefined,
           ),
@@ -284,6 +325,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               billing_id: takeIfPresent("billingId"),
               report_amount: takeIfPresent("reportAmount"),
               billing_amount: takeIfPresent("billingAmount"),
+              // Breakdown fields
+              d_quantity: payload.breakdown?.quantity,
+              d_unit: payload.breakdown?.unit,
+              d_report_unit_price: payload.breakdown?.reportUnitPrice,
+              d_billing_unit_price: payload.breakdown?.billingUnitPrice,
+              d_report_currency: payload.breakdown?.reportCurrency,
+              d_billing_currency: payload.breakdown?.billingCurrency,
+              d_exchange_rate: payload.breakdown?.exchangeRate,
             },
             (_, key) => key !== undefined,
           ),
@@ -306,6 +355,14 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               cost_id: takeIfPresent("costId"),
               cost_amount: takeIfPresent("costAmount"),
               description: takeIfPresent("description"),
+              // Breakdown fields
+              d_quantity: payload.breakdown?.quantity,
+              d_unit: payload.breakdown?.unit,
+              d_report_unit_price: payload.breakdown?.reportUnitPrice,
+              d_cost_unit_price: payload.breakdown?.costUnitPrice,
+              d_exchange_rate: payload.breakdown?.exchangeRate,
+              d_report_currency: payload.breakdown?.reportCurrency,
+              d_cost_currency: payload.breakdown?.costCurrency,
             },
             (_, key) => key !== undefined,
           ),
