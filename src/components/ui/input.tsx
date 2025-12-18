@@ -86,6 +86,7 @@ export interface NumberInputAsStringProps
   className?: string;
   inputClassName?: string;
   buttonClassName?: string;
+  placeholder?: string;
 }
 
 const NumberInputAsString = React.forwardRef<
