@@ -39,11 +39,11 @@ import { TriangleAlert } from "lucide-react";
 function formatUnit(unit: string): string {
   switch (unit) {
     case "h":
-      return "hours";
+      return "h";
     case "d":
-      return "days";
+      return "d";
     case "pc":
-      return "pieces";
+      return "pc";
     default:
       return unit;
   }
@@ -87,8 +87,11 @@ export const reportColumns = {
           return <div className="text-muted-foreground">-</div>;
         }
         return (
-          <div className="font-mono text-sm">
-            {report.quantity} {formatUnit(report.unit)}
+          <div className="font-mono whitespace-nowrap">
+            {report.quantity}
+            <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+              {formatUnit(report.unit)}
+            </span>
           </div>
         );
       },
@@ -106,7 +109,7 @@ export const reportColumns = {
           return <div className="text-muted-foreground">-</div>;
         }
         return (
-          <div className="font-mono text-sm">
+          <div className="font-mono whitespace-nowrap">
             {services.formatService.financial.currency({
               amount: report.unitPrice,
               currency: report.currency,
