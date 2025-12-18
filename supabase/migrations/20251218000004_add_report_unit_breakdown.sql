@@ -62,3 +62,45 @@ COMMENT ON COLUMN link_cost_report.d_cost_unit_price IS 'Actual cost per unit pa
 COMMENT ON COLUMN link_cost_report.d_exchange_rate IS 'Exchange rate used for currency conversion between reported and actual costs (default 1.0). Optional - when present enables currency conversion tracking.';
 COMMENT ON COLUMN link_cost_report.d_report_currency IS 'Report currency snapshot for audit trail. Optional - protects against future report currency changes.';
 COMMENT ON COLUMN link_cost_report.d_cost_currency IS 'Cost currency snapshot for audit trail. Optional - protects against future cost currency changes.';
+
+-- Update report_with_details view to include breakdown fields
+DROP VIEW IF EXISTS report_with_details;
+CREATE VIEW report_with_details AS
+SELECT
+    report.id,
+    report.created_at,
+    report.contractor_id,
+    report.description,
+    report.net_value,
+    report.period_start,
+    report.period_end,
+    report.currency,
+    report.client_id,
+    report.workspace_id,
+    report.project_iteration_id,
+    report.d_unit,
+    report.d_quantity,
+    report.d_unit_price,
+    COALESCE(jsonb_agg(DISTINCT jsonb_build_object('link', row_to_json(link_billing_report.*), 'billing', row_to_json(billing.*))) FILTER (WHERE link_billing_report.id IS NOT NULL), '[]'::jsonb) AS link_billing_reports,
+    COALESCE(jsonb_agg(DISTINCT jsonb_build_object('link', row_to_json(link_cost_report.*), 'cost', row_to_json(cost.*))) FILTER (WHERE link_cost_report.id IS NOT NULL), '[]'::jsonb) AS link_cost_reports,
+    round(COALESCE(sum(DISTINCT link_billing_report.billing_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric), 2) AS total_billing_billing_value,
+    round(COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric), 2) AS total_cost_cost_value,
+    round((report.net_value::numeric - COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric)), 2) AS report_billing_balance,
+    round((report.net_value::numeric - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS report_cost_balance,
+    round((COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric) - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS billing_cost_balance,
+    round((LEAST(COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id AND link_billing_report.billing_id IS NOT NULL)::numeric, 0::numeric), report.net_value::numeric) - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS immediate_payment_due,
+    (SELECT row_to_json(previous_report.*)
+     FROM report previous_report
+     WHERE previous_report.contractor_id = report.contractor_id
+       AND previous_report.client_id = report.client_id
+       AND previous_report.workspace_id = report.workspace_id
+       AND previous_report.period_end <= report.period_end
+       AND previous_report.id <> report.id
+     ORDER BY previous_report.period_end DESC
+     LIMIT 1) AS previous_report
+FROM report
+LEFT JOIN link_billing_report ON report.id = link_billing_report.report_id
+LEFT JOIN billing ON link_billing_report.billing_id = billing.id
+LEFT JOIN link_cost_report ON report.id = link_cost_report.report_id
+LEFT JOIN cost ON link_cost_report.cost_id = cost.id
+GROUP BY report.id;
