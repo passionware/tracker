@@ -391,6 +391,7 @@ export type Report = ReportBase & {
   // Whether the report has immediate payment due (it is billingCostBalance but clamped to the reported value, if reported value is less than billed value)
   immediatePaymentDue: number; // immediate_payment_due
   previousReport: Nullable<ReportBase>;
+  // Note: Enhanced breakdown fields (unit?, quantity?, unitPrice?) are inherited from ReportPayload
 };
 
 export type ReportQuery = WithFilters<{
