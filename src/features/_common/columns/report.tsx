@@ -60,6 +60,7 @@ export type ReportSearchBaseModel = Pick<
   | "remainingAmount"
   | "billedAmount"
   | "status"
+  | "originalReport"
 >;
 
 export const columnHelper = createColumnHelper<ReportViewEntry>();
@@ -77,11 +78,11 @@ export const reportColumns = {
         sortKey: "netValue",
       },
     }),
-  quantity: (services: WithFormatService) =>
-    baseColumnHelper.accessor("originalReport", {
+  quantity: () =>
+    baseColumnHelper.display({
       header: "Quantity",
       cell: (info) => {
-        const report = info.getValue();
+        const report = info.row.original.originalReport;
         if (!report.quantity || !report.unit) {
           return <div className="text-muted-foreground">-</div>;
         }
@@ -97,17 +98,20 @@ export const reportColumns = {
       },
     }),
   unitPrice: (services: WithFormatService) =>
-    baseColumnHelper.accessor("originalReport", {
+    baseColumnHelper.display({
       header: "Rate",
       cell: (info) => {
-        const report = info.getValue();
+        const report = info.row.original.originalReport;
         if (!report.unitPrice || !report.unit) {
           return <div className="text-muted-foreground">-</div>;
         }
         return (
           <div className="font-mono text-sm">
-            {services.formatService.financial.currency(report.unitPrice)}/
-            {formatUnit(report.unit)}
+            {services.formatService.financial.currency({
+              amount: report.unitPrice,
+              currency: report.currency,
+            })}
+            /{formatUnit(report.unit)}
           </div>
         );
       },
