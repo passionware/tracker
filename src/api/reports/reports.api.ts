@@ -26,7 +26,353 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { CalendarDate } from "@internationalized/date";
+import { maybe } from "@passionware/monads";
 import { chain } from "lodash";
+
+// Unit types for reports (simplified abbreviations)
+export type ReportUnit = "h" | "d" | "pc" | string; // h=hours, d=days, pc=pieces
+
+// Margin types for links
+export type MarginType = "percentage" | "fixed" | "none";
+
+// Link validation helpers
+export const LinkValidation = {
+  // Check if billing link has detailed breakdown available
+  hasDetailedBillingBreakdown: (link: {
+    breakdown?: {
+      quantity: number;
+      unit: string;
+      reportUnitPrice: number;
+      billingUnitPrice: number;
+    };
+  }): boolean => {
+    return !!(
+      link.breakdown &&
+      link.breakdown.quantity > 0 &&
+      link.breakdown.unit &&
+      link.breakdown.reportUnitPrice >= 0 &&
+      link.breakdown.billingUnitPrice >= 0
+    );
+  },
+
+  // Check if cost link has detailed breakdown available
+  hasDetailedCostBreakdown: (link: {
+    breakdown?: {
+      quantity: number;
+      unit: string;
+      reportUnitPrice: number;
+      costUnitPrice: number;
+    };
+  }): boolean => {
+    return !!(
+      link.breakdown &&
+      link.breakdown.quantity > 0 &&
+      link.breakdown.unit &&
+      link.breakdown.reportUnitPrice >= 0 &&
+      link.breakdown.costUnitPrice >= 0
+    );
+  },
+
+  // Check if link has exchange rate information (for cost links)
+  hasExchangeRateInfo: (link: {
+    breakdown?: { exchangeRate: number };
+  }): boolean => {
+    return !!(
+      link.breakdown &&
+      link.breakdown.exchangeRate &&
+      link.breakdown.exchangeRate > 0
+    );
+  },
+
+  // Calculate profit margin from billing breakdown
+  calculateMarginFromBillingBreakdown: (breakdown: {
+    quantity: number;
+    reportUnitPrice: number;
+    billingUnitPrice: number;
+    reportCurrency: string;
+    billingCurrency: string;
+  }): { marginAmount: number; marginPercentage: number } | null => {
+    // Can only calculate margin if currencies are the same
+    // Different currencies have fixed rates that don't use exchange rates for margin calculation
+    if (breakdown.reportCurrency !== breakdown.billingCurrency) {
+      return null; // Cannot calculate margin between different currencies with fixed pricing
+    }
+
+    const reportAmount = breakdown.quantity * breakdown.reportUnitPrice;
+    const billingAmount = breakdown.quantity * breakdown.billingUnitPrice;
+
+    const marginAmount = billingAmount - reportAmount;
+    const marginPercentage =
+      reportAmount > 0 ? (marginAmount / reportAmount) * 100 : 0;
+
+    return {
+      marginAmount: Math.round(marginAmount * 100) / 100,
+      marginPercentage: Math.round(marginPercentage * 100) / 100, // 2 decimal places
+    };
+  },
+
+  // Calculate actual cost vs reported cost (no margin applied)
+  calculateCostVarianceFromBreakdown: (breakdown: {
+    quantity: number;
+    reportUnitPrice: number;
+    costUnitPrice: number;
+    exchangeRate: number;
+    reportCurrency: string;
+    costCurrency: string;
+  }): { varianceAmount: number; variancePercentage: number } => {
+    // Convert both amounts to a common currency for comparison
+    const reportAmount = breakdown.quantity * breakdown.reportUnitPrice;
+
+    let costAmount: number;
+    if (breakdown.reportCurrency === breakdown.costCurrency) {
+      costAmount = breakdown.quantity * breakdown.costUnitPrice;
+    } else {
+      // Convert cost to report currency
+      costAmount =
+        (breakdown.quantity * breakdown.costUnitPrice) / breakdown.exchangeRate;
+    }
+
+    const varianceAmount = costAmount - reportAmount;
+    const variancePercentage =
+      reportAmount > 0 ? (varianceAmount / reportAmount) * 100 : 0;
+
+    return {
+      varianceAmount: Math.round(varianceAmount * 100) / 100,
+      variancePercentage: Math.round(variancePercentage * 100) / 100, // 2 decimal places
+    };
+  },
+};
+
+// Exchange rate information
+export interface ExchangeRateInfo {
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  date?: string; // ISO date string
+}
+
+// Validation and calculation helpers
+export const ReportValidation = {
+  isValidUnit: (unit: string): unit is ReportUnit => {
+    return typeof unit === "string" && unit.length > 0;
+  },
+
+  isValidQuantity: (quantity: number): boolean => {
+    return typeof quantity === "number" && quantity >= 0;
+  },
+
+  isValidUnitPrice: (unitPrice: number): boolean => {
+    return typeof unitPrice === "number" && unitPrice >= 0;
+  },
+
+  // Check if report has detailed breakdown available
+  hasDetailedBreakdown: (report: {
+    unit?: Nullable<string>;
+    quantity?: Nullable<number>;
+    unitPrice?: Nullable<number>;
+  }): boolean => {
+    return !!(
+      report.unit &&
+      report.quantity !== null &&
+      report.quantity !== undefined &&
+      report.unitPrice !== null &&
+      report.unitPrice !== undefined
+    );
+  },
+
+  // Calculate net value from breakdown (for syncing)
+  calculateNetValueFromBreakdown: (
+    quantity: number,
+    unitPrice: number,
+  ): number => {
+    return Math.round(quantity * unitPrice * 100) / 100; // Round to 2 decimal places
+  },
+
+  // Calculate breakdown from net value (reverse calculation)
+  calculateBreakdownFromNetValue: (
+    netValue: number,
+    unit: string,
+    quantity: number,
+  ): { unitPrice: number } => {
+    const unitPrice =
+      quantity > 0 ? Math.round((netValue / quantity) * 100) / 100 : 0;
+    return { unitPrice };
+  },
+
+  // Sync breakdown fields with net value
+  syncBreakdownWithNetValue: (report: {
+    netValue: number;
+    unit?: Nullable<string>;
+    quantity?: Nullable<number>;
+    unitPrice?: Nullable<number>;
+  }): { unit?: string; quantity?: number; unitPrice?: number } => {
+    if (ReportValidation.hasDetailedBreakdown(report)) {
+      // If breakdown exists, ensure net_value matches calculation
+      // const calculatedNetValue =
+      //   ReportValidation.calculateNetValueFromBreakdown(
+      //     report.quantity!,
+      //     report.unitPrice!,
+      //   );
+      // Note: This would typically be handled by database triggers or application logic
+      return {
+        unit: maybe.getOrUndefined(report.unit),
+        quantity: maybe.getOrUndefined(report.quantity),
+        unitPrice: maybe.getOrUndefined(report.unitPrice),
+      };
+    }
+    return {};
+  },
+
+  calculateLinkAmount: (
+    quantity: number,
+    unitPrice: number,
+    exchangeRate: number = 1,
+    margin: number = 0,
+    marginType: MarginType = "none",
+  ): number => {
+    let baseAmount = quantity * unitPrice;
+
+    // Apply exchange rate
+    baseAmount *= exchangeRate;
+
+    // Apply margin
+    if (marginType === "percentage") {
+      baseAmount *= 1 + margin;
+    } else if (marginType === "fixed") {
+      baseAmount += margin;
+    }
+
+    return Math.round(baseAmount * 100) / 100;
+  },
+};
+
+// Display helpers for UI components
+export const ReportDisplay = {
+  // Format unit for display
+  formatUnit: (unit: string): string => {
+    switch (unit) {
+      case "h":
+        return "hours";
+      case "d":
+        return "days";
+      case "pc":
+        return "pieces";
+      default:
+        return unit;
+    }
+  },
+
+  // Format breakdown for display (e.g., "50 hours × 100 PLN/h = 5000 PLN")
+  formatDetailedBreakdown: (
+    quantity: number,
+    unit: string,
+    unitPrice: number,
+    currency: string,
+  ): string => {
+    const unitName = ReportDisplay.formatUnit(unit);
+    return `${quantity} ${unitName} × ${unitPrice} ${currency.toUpperCase()}/${unit} = ${ReportValidation.calculateNetValueFromBreakdown(quantity, unitPrice)} ${currency.toUpperCase()}`;
+  },
+
+  // Get display text for report (detailed if available, simple otherwise)
+  getReportDisplayText: (report: {
+    netValue: number;
+    currency: string;
+    unit?: Nullable<string>;
+    quantity?: Nullable<number>;
+    unitPrice?: Nullable<number>;
+  }): string => {
+    if (ReportValidation.hasDetailedBreakdown(report)) {
+      return ReportDisplay.formatDetailedBreakdown(
+        report.quantity!,
+        report.unit!,
+        report.unitPrice!,
+        report.currency,
+      );
+    }
+    return `${report.netValue} ${report.currency.toUpperCase()}`;
+  },
+
+  // Get display text for billing link
+  getBillingLinkDisplayText: (
+    link: {
+      reportAmount: number;
+      billingAmount: number;
+      breakdown?: {
+        quantity: number;
+        unit: string;
+        reportUnitPrice: number;
+        billingUnitPrice: number;
+        reportCurrency: string;
+        billingCurrency: string;
+      };
+    },
+    reportCurrency: string,
+    billingCurrency: string,
+  ): string => {
+    if (LinkValidation.hasDetailedBillingBreakdown(link) && link.breakdown) {
+      let text = `${link.breakdown.quantity} ${ReportDisplay.formatUnit(link.breakdown.unit)}`;
+      text += ` (${link.breakdown.reportUnitPrice} ${link.breakdown.reportCurrency.toUpperCase()}/h → `;
+      text += `${link.breakdown.billingUnitPrice} ${link.breakdown.billingCurrency.toUpperCase()}/h)`;
+
+      // Calculate and show margin (only possible for same currency)
+      const margin = LinkValidation.calculateMarginFromBillingBreakdown(
+        link.breakdown,
+      );
+
+      if (margin && margin.marginAmount !== 0) {
+        const sign = margin.marginAmount > 0 ? "+" : "";
+        text += ` (${sign}${margin.marginAmount} ${link.breakdown.reportCurrency.toUpperCase()} / ${margin.marginPercentage}% margin)`;
+      }
+
+      return text;
+    }
+
+    return `${link.reportAmount} ${reportCurrency.toUpperCase()} → ${link.billingAmount} ${billingCurrency.toUpperCase()}`;
+  },
+
+  // Get display text for cost link
+  getCostLinkDisplayText: (
+    link: {
+      reportAmount: number;
+      costAmount: number;
+      breakdown?: {
+        quantity: number;
+        unit: string;
+        reportUnitPrice: number;
+        costUnitPrice: number;
+        exchangeRate: number;
+        reportCurrency: string;
+        costCurrency: string;
+      };
+    },
+    reportCurrency: string,
+    costCurrency: string,
+  ): string => {
+    if (LinkValidation.hasDetailedCostBreakdown(link) && link.breakdown) {
+      let text = `${link.breakdown.quantity} ${ReportDisplay.formatUnit(link.breakdown.unit)}`;
+      text += ` (${link.breakdown.reportUnitPrice} ${link.breakdown.reportCurrency.toUpperCase()}/h → `;
+      text += `${link.breakdown.costUnitPrice} ${link.breakdown.costCurrency.toUpperCase()}/h)`;
+
+      if (link.breakdown.exchangeRate !== 1) {
+        text += ` (${link.breakdown.exchangeRate}x rate)`;
+      }
+
+      // Show variance between reported and actual costs (not margin)
+      const variance = LinkValidation.calculateCostVarianceFromBreakdown(
+        link.breakdown,
+      );
+
+      if (variance.varianceAmount !== 0) {
+        const sign = variance.varianceAmount > 0 ? "+" : "";
+        text += ` (${sign}${variance.varianceAmount} ${link.breakdown.reportCurrency.toUpperCase()} / ${variance.variancePercentage}% variance)`;
+      }
+
+      return text;
+    }
+
+    return `${link.reportAmount} ${reportCurrency.toUpperCase()} → ${link.costAmount} ${costCurrency.toUpperCase()}`;
+  },
+};
 
 export interface ReportPayload {
   contractorId: number;
@@ -36,7 +382,12 @@ export interface ReportPayload {
   workspaceId: number;
 
   description: string;
-  netValue: number;
+  netValue: number; // Primary field - total amount (backward compatible)
+
+  // Enhanced breakdown fields (optional, for better UI when available)
+  unit?: Nullable<string>; // e.g., "h", "d", "pc" (hours/days/pieces)
+  quantity?: Nullable<number>; // e.g., 100
+  unitPrice?: Nullable<number>; // e.g., 35 (currency per unit)
 
   currency: string;
 
