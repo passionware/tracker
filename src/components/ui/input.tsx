@@ -37,6 +37,7 @@ export interface NumberInputProps
   className?: string;
   inputClassName?: string;
   buttonClassName?: string;
+  placeholder?: string;
 }
 
 const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(

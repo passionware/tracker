@@ -152,6 +152,7 @@ export function ReportInfo({
                           title="Link contractor report"
                           sourceLabel="Report value"
                           targetLabel="Billing value"
+                          showBreakdown={true}
                           initialValues={{
                             // billing
                             source: isSameCurrency
@@ -185,6 +186,7 @@ export function ReportInfo({
                                 reportId: report.id,
                                 reportAmount: value.source,
                                 description: value.description,
+                                breakdown: value.breakdown,
                               }),
                             )
                           }
@@ -274,18 +276,23 @@ export function ReportInfo({
                   sourceCurrency={report.netAmount.currency}
                   targetCurrency={link.billing.currency}
                   title="Update linked billing"
+                  showBreakdown={true}
                   initialValues={{
                     source: link.link.reportAmount,
                     target: link.link.billingAmount,
                     description: link.link.description,
+                    breakdown: link.link.breakdown,
                   }}
-                  onValueChange={(_all, updates) =>
+                  onValueChange={(value, updates) =>
                     services.mutationService.updateBillingReportLink(
                       link.link.id,
-                      mapKeys(updates, {
-                        source: "reportAmount",
-                        target: "billingAmount",
-                      }),
+                      {
+                        ...mapKeys(updates, {
+                          source: "reportAmount",
+                          target: "billingAmount",
+                        }),
+                        breakdown: value.breakdown,
+                      },
                     )
                   }
                 >
