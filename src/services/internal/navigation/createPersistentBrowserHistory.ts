@@ -547,8 +547,8 @@ export function createPersistentBrowserHistory(
   }) as typeof history.replace;
 
   // Helper to store current location params (used for all navigation types)
-  const storeCurrentLocationParams = async (update: Update) => {
-    const { pathname, search } = update.location;
+  const storeCurrentLocationParams = async (location: Location) => {
+    const { pathname, search } = location;
 
     if (hasQueryParams(search)) {
       try {
@@ -652,7 +652,7 @@ export function createPersistentBrowserHistory(
       search: location.location.search,
     });
     // Store params whenever location changes (including back/forward)
-    void storeCurrentLocationParams(location);
+    void storeCurrentLocationParams(location.location);
   });
 
   // Store the unlisten function on history for cleanup if needed
