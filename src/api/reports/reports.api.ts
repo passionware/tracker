@@ -1,6 +1,16 @@
-import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
-import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import {
+  DateFilter,
+  dateFilterSchema,
+} from "@/api/_common/query/filters/DateFilter.ts";
+import {
+  EnumFilter,
+  enumFilterSchema,
+} from "@/api/_common/query/filters/EnumFilter.ts";
+import {
+  NumberFilter,
+  numberFilterSchema,
+} from "@/api/_common/query/filters/NumberFilter.ts";
+import { paginationSchema } from "@/api/_common/query/pagination.ts";
 import {
   withBuilderUtils,
   WithFilters,
@@ -28,6 +38,7 @@ import {
 import { CalendarDate } from "@internationalized/date";
 import { maybe } from "@passionware/monads";
 import { chain } from "lodash";
+import { z } from "zod";
 
 // Unit types for reports (simplified abbreviations)
 export type ReportUnit = "h" | "d" | "pc" | string; // h=hours, d=days, pc=pieces
@@ -417,6 +428,71 @@ export type ReportQuery = WithFilters<{
     | "reportCostBalance"
     | "description"
   >;
+
+const strToNull = (str: unknown) => (str === "" ? null : str);
+
+export const reportQuerySchema = z
+  .object({
+    filters: z.object({
+      clientId: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+      workspaceId: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+      remainingAmount: z
+        .preprocess(strToNull, numberFilterSchema.nullable())
+        .default(null),
+      contractorId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      period: z
+        .preprocess(strToNull, dateFilterSchema.nullable())
+        .default(null),
+      immediatePaymentDue: z
+        .preprocess(strToNull, numberFilterSchema.nullable())
+        .default(null),
+      projectIterationId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      id: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+    }),
+    page: paginationSchema,
+    sort: z
+      .preprocess(
+        strToNull,
+        z
+          .object({
+            field: z.enum([
+              "period",
+              "netValue",
+              "contractor",
+              "workspace",
+              "client",
+              "reportBillingValue",
+              "remainingAmount",
+              "immediatePaymentDue",
+              "reportCostBalance",
+              "description",
+            ]),
+            order: z.enum(["asc", "desc"]),
+          })
+          .nullable(),
+      )
+      .default(null),
+  })
+  .catch((e) => {
+    console.error(e);
+    return reportQueryUtils.ofDefault(idSpecUtils.ofAll(), idSpecUtils.ofAll());
+  });
 
 export interface ReportApi {
   getReports: (query: ReportQuery) => Promise<Report[]>;

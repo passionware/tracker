@@ -30,7 +30,6 @@ import {
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
 
 export interface ProjectListWidgetProps extends WithFrontServices {
   filter: Nullable<QueryFilter<ProjectQuery, "status">>;
@@ -39,13 +38,17 @@ export interface ProjectListWidgetProps extends WithFrontServices {
 }
 
 export function ProjectListWidget(props: ProjectListWidgetProps) {
-  const [_query, setQuery] = useState(projectQueryUtils.ofDefault());
+  const queryParamsService =
+    props.services.queryParamsService.forEntity("projects");
+  const queryParams = queryParamsService.useQueryParams();
+
   const query = projectQueryUtils
-    .transform(_query)
+    .transform(queryParams)
     .build((q) => [
       q.withEnsureDefault(props),
       q.withFilter("status", props.filter),
     ]);
+
   const projects = props.services.projectService.useProjects(query);
 
   const addProjectState = promiseState.useRemoteData<void>();
@@ -61,7 +64,9 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
         <>
           <ProjectQueryBar
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={(newQuery) =>
+              queryParamsService.setQueryParams(newQuery)
+            }
             services={props.services}
             spec={{
               workspace: idSpecUtils.takeOrElse(
@@ -119,7 +124,9 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
     >
       <ListView
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(newQuery) =>
+          queryParamsService.setQueryParams(newQuery)
+        }
         data={projects}
         onRowDoubleClick={(project) => {
           props.services.navigationService.navigate(

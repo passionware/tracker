@@ -10,6 +10,7 @@ import { WithLocationService } from "@/services/internal/LocationService/Locatio
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithQueryParamsService } from "@/services/internal/QueryParamsService/QueryParamsService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
@@ -27,6 +28,9 @@ import { WithVariableService } from "@/services/io/VariableService/VariableServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { WithClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.ts";
 import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
+import { ProjectQuery } from "@/api/project/project.api";
+import { ReportQuery } from "@/api/reports/reports.api";
+import { UserQuery } from "@/api/user/user.api";
 
 /**
  * Ideally this should contain all the services that are safe to use by the front-end widgets.
@@ -39,6 +43,11 @@ export type FrontServices = MergeServices<
     WithReportService,
     WithLocationService,
     WithNavigationService,
+    WithQueryParamsService<{
+      projects: ProjectQuery;
+      users: UserQuery;
+      reports: ReportQuery;
+    }>,
     WithRoutingService,
     WithFormatService,
     WithReportDisplayService,

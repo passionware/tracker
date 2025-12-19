@@ -12,6 +12,9 @@ import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
+import { projectQuerySchema } from "@/api/project/project.api";
+import { reportQuerySchema } from "@/api/reports/reports.api.ts";
+import { userQuerySchema } from "@/api/user/user.api";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
@@ -27,6 +30,7 @@ import { createLocationService } from "@/services/internal/LocationService/Locat
 import { createMessageService } from "@/services/internal/MessageService/MessageService.impl.ts";
 import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.impl.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.impl.ts";
+import { createQueryParamsService } from "@/services/internal/QueryParamsService/QueryParamsService.impl.ts";
 import { createAuthService } from "@/services/io/AuthService/AuthService.impl.ts";
 import { createBillingService } from "@/services/io/BillingService/BillingService.impl.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.impl.ts";
@@ -55,6 +59,14 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
+const queryParamsService = createQueryParamsService({
+  navigationService,
+  parseQueryParams: {
+    projects: projectQuerySchema.parse,
+    users: userQuerySchema.parse,
+    reports: reportQuerySchema.parse,
+  },
+});
 const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);
 const generatedReportSourceWriteService =
   createGeneratedReportSourceWriteService({
@@ -129,6 +141,7 @@ export const myServices = {
   reportService: reportService,
   routingService,
   navigationService,
+  queryParamsService,
   locationService: createLocationService({
     services: {
       navigationService,
