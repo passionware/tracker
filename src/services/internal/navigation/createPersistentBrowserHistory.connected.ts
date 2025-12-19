@@ -1,7 +1,10 @@
 import qs from "qs";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl";
+import { billingQuerySchema } from "@/api/billing/billing.api";
+import { costQuerySchema } from "@/api/cost/cost.api";
 import { projectQuerySchema } from "@/api/project/project.api";
 import { reportQuerySchema } from "@/api/reports/reports.api.ts";
+import { variableQuerySchema } from "@/api/variable/variable.api";
 import {
   createPersistentBrowserHistory,
   PatternConfig,
@@ -105,6 +108,33 @@ const reportsPatternConfig = createWorkspaceClientPatternConfig(
 );
 
 /**
+ * Configuration for billing route persistent navigation
+ */
+const billingPatternConfig = createWorkspaceClientPatternConfig(
+  `${routingService.forWorkspace().forClient().charges()}`,
+  "billing",
+  billingQuerySchema,
+);
+
+/**
+ * Configuration for costs route persistent navigation
+ */
+const costsPatternConfig = createWorkspaceClientPatternConfig(
+  `${routingService.forWorkspace().forClient().costs()}`,
+  "costs",
+  costQuerySchema,
+);
+
+/**
+ * Configuration for variables route persistent navigation
+ */
+const variablesPatternConfig = createWorkspaceClientPatternConfig(
+  `${routingService.forWorkspace().forClient().variables()}`,
+  "variables",
+  variableQuerySchema,
+);
+
+/**
  * Tracker persistent navigation configuration
  */
 export const trackerPersistentNavigationConfig: PersistentNavigationConfig = {
@@ -113,6 +143,9 @@ export const trackerPersistentNavigationConfig: PersistentNavigationConfig = {
     activeProjectsPatternConfig,
     closedProjectsPatternConfig,
     reportsPatternConfig,
+    billingPatternConfig,
+    costsPatternConfig,
+    variablesPatternConfig,
   ],
 };
 

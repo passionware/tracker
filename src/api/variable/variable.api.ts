@@ -1,5 +1,11 @@
-import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { paginationUtils } from "@/api/_common/query/pagination.ts";
+import {
+  EnumFilter,
+  enumFilterSchema,
+} from "@/api/_common/query/filters/EnumFilter.ts";
+import {
+  paginationSchema,
+  paginationUtils,
+} from "@/api/_common/query/pagination.ts";
 import {
   withBuilderUtils,
   WithFilters,
@@ -18,6 +24,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { chain } from "lodash";
+import { z } from "zod";
 
 export interface VariablePayload {
   name: string;
@@ -106,3 +113,54 @@ export const variableQueryUtils = withBuilderUtils({
       )
       .value(),
 }).setInitialQueryFactory((api) => api.ofDefault);
+
+const strToNull = (str: unknown) => (str === "" ? null : str);
+
+export const variableQuerySchema = z
+  .object({
+    filters: z.object({
+      type: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.enum(["const", "expression"])).nullable(),
+        )
+        .default(null),
+      workspaceId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      clientId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      contractorId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+    }),
+    page: paginationSchema,
+    sort: z
+      .preprocess(
+        strToNull,
+        z
+          .object({
+            field: z.enum(["name", "type", "value", "updatedAt", "createdAt"]),
+            order: z.enum(["asc", "desc"]),
+          })
+          .nullable(),
+      )
+      .default(null),
+  })
+  .catch((e) => {
+    console.error(e);
+    return variableQueryUtils.ofDefault(
+      idSpecUtils.ofAll(),
+      idSpecUtils.ofAll(),
+    );
+  });

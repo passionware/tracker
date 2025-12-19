@@ -1,6 +1,16 @@
-import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
-import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
+import {
+  DateFilter,
+  dateFilterSchema,
+} from "@/api/_common/query/filters/DateFilter.ts";
+import {
+  EnumFilter,
+  enumFilterSchema,
+} from "@/api/_common/query/filters/EnumFilter.ts";
+import {
+  NumberFilter,
+  numberFilterSchema,
+} from "@/api/_common/query/filters/NumberFilter.ts";
+import { paginationSchema } from "@/api/_common/query/pagination.ts";
 import {
   withBuilderUtils,
   WithFilters,
@@ -25,6 +35,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { CalendarDate } from "@internationalized/date";
 import { chain } from "lodash";
+import { z } from "zod";
 
 export interface BillingPayload {
   currency: string;
@@ -156,6 +167,63 @@ export const billingQueryUtils = withBuilderUtils({
       )
       .value(),
 }).setInitialQueryFactory((api) => api.ofDefault);
+
+const strToNull = (str: unknown) => (str === "" ? null : str);
+
+export const billingQuerySchema = z
+  .object({
+    filters: z.object({
+      clientId: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+      workspaceId: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+      remainingAmount: z
+        .preprocess(strToNull, numberFilterSchema.nullable())
+        .default(null),
+      contractorId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      invoiceDate: z
+        .preprocess(strToNull, dateFilterSchema.nullable())
+        .default(null),
+    }),
+    page: paginationSchema,
+    sort: z
+      .preprocess(
+        strToNull,
+        z
+          .object({
+            field: z.enum([
+              "invoiceDate",
+              "invoiceNumber",
+              "workspace",
+              "client",
+              "totalNet",
+              "totalGross",
+              "billingReportValue",
+              "totalBillingValue",
+              "billingBalance",
+              "remainingBalance",
+              "description",
+            ]),
+            order: z.enum(["asc", "desc"]),
+          })
+          .nullable(),
+      )
+      .default(null),
+  })
+  .catch((e) => {
+    console.error(e);
+    return billingQueryUtils.ofDefault(
+      idSpecUtils.ofAll(),
+      idSpecUtils.ofAll(),
+    );
+  });
 
 export interface BillingApi {
   getBillings: (query: BillingQuery) => Promise<Billing[]>;

@@ -28,9 +28,12 @@ import { WithVariableService } from "@/services/io/VariableService/VariableServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { WithClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.ts";
 import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
+import { BillingQuery } from "@/api/billing/billing.api";
+import { CostQuery } from "@/api/cost/cost.api";
 import { ProjectQuery } from "@/api/project/project.api";
 import { ReportQuery } from "@/api/reports/reports.api";
 import { UserQuery } from "@/api/user/user.api";
+import { VariableQuery } from "@/api/variable/variable.api";
 
 /**
  * Ideally this should contain all the services that are safe to use by the front-end widgets.
@@ -47,6 +50,9 @@ export type FrontServices = MergeServices<
       projects: ProjectQuery;
       users: UserQuery;
       reports: ReportQuery;
+      billing: BillingQuery;
+      costs: CostQuery;
+      variables: VariableQuery;
     }>,
     WithRoutingService,
     WithFormatService,

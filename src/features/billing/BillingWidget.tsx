@@ -18,15 +18,15 @@ import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
 import { useColumns } from "./BillingWidget.columns";
 
 export function BillingWidget(props: BillingWidgetProps) {
-  const [_query, setQuery] = useState(
-    billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
+  const queryParamsService =
+    props.services.queryParamsService.forEntity("billing");
+  const queryParams = queryParamsService.useQueryParams();
+
   const query = billingQueryUtils.ensureDefault(
-    _query,
+    queryParams,
     props.workspaceId,
     props.clientId,
   );
@@ -42,7 +42,7 @@ export function BillingWidget(props: BillingWidgetProps) {
           <BillingQueryBar
             {...props}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={queryParamsService.setQueryParams}
             spec={{
               client: idSpecUtils.takeOrElse(props.clientId, "disable", "show"),
               workspace: idSpecUtils.takeOrElse(
@@ -108,7 +108,7 @@ export function BillingWidget(props: BillingWidgetProps) {
     >
       <ListView
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={queryParamsService.setQueryParams}
         data={rd.map(billings, (x) => x.entries)}
         columns={columns}
         onRowDoubleClick={async (x) => {

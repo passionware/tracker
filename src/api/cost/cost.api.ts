@@ -1,7 +1,19 @@
-import { DateFilter } from "@/api/_common/query/filters/DateFilter.ts";
-import { EnumFilter } from "@/api/_common/query/filters/EnumFilter.ts";
-import { NumberFilter } from "@/api/_common/query/filters/NumberFilter.ts";
-import { paginationUtils } from "@/api/_common/query/pagination.ts";
+import {
+  DateFilter,
+  dateFilterSchema,
+} from "@/api/_common/query/filters/DateFilter.ts";
+import {
+  EnumFilter,
+  enumFilterSchema,
+} from "@/api/_common/query/filters/EnumFilter.ts";
+import {
+  NumberFilter,
+  numberFilterSchema,
+} from "@/api/_common/query/filters/NumberFilter.ts";
+import {
+  paginationSchema,
+  paginationUtils,
+} from "@/api/_common/query/pagination.ts";
 import {
   withBuilderUtils,
   WithFilters,
@@ -26,6 +38,7 @@ import {
 import { CalendarDate } from "@internationalized/date";
 import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
+import { z } from "zod";
 
 export interface CostPayload {
   invoiceNumber: Maybe<string>;
@@ -134,6 +147,71 @@ export const costQueryUtils = withBuilderUtils({
       )
       .value(),
 }).setInitialQueryFactory((api) => api.ofDefault);
+
+const strToNull = (str: unknown) => (str === "" ? null : str);
+
+export const costQuerySchema = z
+  .object({
+    search: z.preprocess((value) => value || "", z.string()).default(""),
+    filters: z.object({
+      workspaceId: z
+        .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
+        .default(null),
+      clientId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      potentialClientId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      contractorId: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+        )
+        .default(null),
+      linkedRemainder: z
+        .preprocess(strToNull, numberFilterSchema.nullable())
+        .default(null),
+      linkedAmount: z
+        .preprocess(strToNull, numberFilterSchema.nullable())
+        .default(null),
+      invoiceDate: z
+        .preprocess(strToNull, dateFilterSchema.nullable())
+        .default(null),
+    }),
+    page: paginationSchema,
+    sort: z
+      .preprocess(
+        strToNull,
+        z
+          .object({
+            field: z.enum([
+              "workspace",
+              "contractor",
+              "counterparty",
+              "invoiceNumber",
+              "invoiceDate",
+              "createdAt",
+              "netValue",
+              "grossValue",
+              "description",
+            ]),
+            order: z.enum(["asc", "desc"]),
+          })
+          .nullable(),
+      )
+      .default(null),
+  })
+  .catch((e) => {
+    console.error(e);
+    return costQueryUtils.ofDefault(idSpecUtils.ofAll(), idSpecUtils.ofAll());
+  });
 
 export interface CostApi {
   getCosts: (query: CostQuery) => Promise<Cost[]>;

@@ -1,8 +1,4 @@
-import {
-  Variable,
-  VariableQuery,
-  variableQueryUtils,
-} from "@/api/variable/variable.api.ts";
+import { Variable, variableQueryUtils } from "@/api/variable/variable.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
@@ -35,6 +31,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithQueryParamsService } from "@/services/internal/QueryParamsService/QueryParamsService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
@@ -43,7 +40,6 @@ import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
 
 export interface VariableWidgetProps
   extends WithServices<
@@ -55,6 +51,9 @@ export interface VariableWidgetProps
       WithFormatService,
       WithPreferenceService,
       WithMessageService,
+      WithQueryParamsService<{
+        variables: import("@/api/variable/variable.api").VariableQuery;
+      }>,
     ]
   > {
   clientId: ClientSpec;
@@ -64,11 +63,12 @@ export interface VariableWidgetProps
 const columnHelper = createColumnHelper<Variable>();
 
 export function VariableWidget(props: VariableWidgetProps) {
-  const [_query, setQuery] = useState<VariableQuery>(
-    variableQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
+  const queryParamsService =
+    props.services.queryParamsService.forEntity("variables");
+  const queryParams = queryParamsService.useQueryParams();
+
   const query = variableQueryUtils.ensureDefault(
-    _query,
+    queryParams,
     props.workspaceId,
     props.clientId,
   );
@@ -83,7 +83,7 @@ export function VariableWidget(props: VariableWidgetProps) {
           <VariableQueryBar
             services={props.services}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={queryParamsService.setQueryParams}
             spec={{
               workspace: idSpecUtils.takeOrElse(
                 props.workspaceId,
@@ -146,7 +146,7 @@ export function VariableWidget(props: VariableWidgetProps) {
     >
       <ListView
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={queryParamsService.setQueryParams}
         data={variables}
         onRowDoubleClick={async (row) => {
           const result =

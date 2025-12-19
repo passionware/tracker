@@ -12,9 +12,12 @@ import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
+import { billingQuerySchema } from "@/api/billing/billing.api";
+import { costQuerySchema } from "@/api/cost/cost.api";
 import { projectQuerySchema } from "@/api/project/project.api";
 import { reportQuerySchema } from "@/api/reports/reports.api.ts";
 import { userQuerySchema } from "@/api/user/user.api";
+import { variableQuerySchema } from "@/api/variable/variable.api";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
@@ -65,6 +68,9 @@ const queryParamsService = createQueryParamsService({
     projects: projectQuerySchema.parse,
     users: userQuerySchema.parse,
     reports: reportQuerySchema.parse,
+    billing: billingQuerySchema.parse,
+    costs: costQuerySchema.parse,
+    variables: variableQuerySchema.parse,
   },
 });
 const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);

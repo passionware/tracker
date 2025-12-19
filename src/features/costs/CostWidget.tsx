@@ -20,17 +20,14 @@ import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
 
 export function CostWidget(props: PotentialCostWidgetProps) {
-  const [_query, setQuery] = useState(
-    costQueryUtils
-      .getBuilder(props.workspaceId, props.clientId)
-      .build((x) => [x.withSort({ field: "invoiceDate", order: "asc" })]),
-  );
+  const queryParamsService =
+    props.services.queryParamsService.forEntity("costs");
+  const queryParams = queryParamsService.useQueryParams();
 
   const query = costQueryUtils.ensureDefault(
-    _query,
+    queryParams,
     props.workspaceId,
     props.clientId,
   );
@@ -52,7 +49,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
           <CostQueryBar
             services={props.services}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={queryParamsService.setQueryParams}
             spec={{
               workspace: idSpecUtils.takeOrElse(
                 props.workspaceId,
@@ -113,7 +110,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
     >
       <ListView
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={queryParamsService.setQueryParams}
         data={rd.map(costs, (x) => x.entries)}
         columns={columns}
         onRowDoubleClick={async (x) => {
