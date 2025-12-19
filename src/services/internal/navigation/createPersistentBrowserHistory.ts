@@ -1,4 +1,4 @@
-import { createBrowserHistory, History, Location } from "history";
+import { createBrowserHistory, History, Location, Update } from "history";
 import { matchPath } from "react-router-dom";
 import { Maybe } from "@passionware/monads";
 
@@ -547,8 +547,8 @@ export function createPersistentBrowserHistory(
   }) as typeof history.replace;
 
   // Helper to store current location params (used for all navigation types)
-  const storeCurrentLocationParams = async (location: Location) => {
-    const { pathname, search } = location;
+  const storeCurrentLocationParams = async (update: Update) => {
+    const { pathname, search } = update.location;
 
     if (hasQueryParams(search)) {
       try {
@@ -646,10 +646,10 @@ export function createPersistentBrowserHistory(
   }
 
   // Listen to all history changes (including back/forward)
-  const unlisten = history.listen((location) => {
+  const unlisten = history.listen((location: Update) => {
     console.log("[PersistentNavigation] history.listen: location changed", {
-      pathname: location.pathname,
-      search: location.search,
+      pathname: location.location.pathname,
+      search: location.location.search,
     });
     // Store params whenever location changes (including back/forward)
     void storeCurrentLocationParams(location);
