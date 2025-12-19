@@ -36,6 +36,7 @@ function createWorkspaceClientPatternConfig<T extends object>(
         plainObjects: true,
         ignoreQueryPrefix: true,
         allowEmptyArrays: true,
+        strictNullHandling: true,
       });
       return querySchema.parse(params);
     },
@@ -44,6 +45,7 @@ function createWorkspaceClientPatternConfig<T extends object>(
         allowDots: true,
         encode: true,
         allowEmptyArrays: true,
+        strictNullHandling: true,
       });
     },
     getStorageKey: (scopeIds: Record<string, string>) => {

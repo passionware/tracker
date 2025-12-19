@@ -18,6 +18,7 @@ export function createQueryParamsService<T extends Record<string, object>>(
         plainObjects: true,
         ignoreQueryPrefix: true,
         allowEmptyArrays: true,
+        strictNullHandling: true,
       });
       return config.parseQueryParams[entity](fromString);
     }
@@ -37,6 +38,7 @@ export function createQueryParamsService<T extends Record<string, object>>(
           allowDots: true,
           encode: true,
           allowEmptyArrays: true,
+          strictNullHandling: true,
         });
 
         const newSearch = serialized ? `?${serialized}` : "";
@@ -57,6 +59,7 @@ export function createQueryParamsService<T extends Record<string, object>>(
           allowDots: true,
           encode: true,
           allowEmptyArrays: true,
+          strictNullHandling: true,
         });
 
         const newSearch = serialized ? `?${serialized}` : "";
