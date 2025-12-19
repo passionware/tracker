@@ -160,19 +160,25 @@ export const costQuerySchema = z
       clientId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       potentialClientId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       contractorId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       linkedRemainder: z

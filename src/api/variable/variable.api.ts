@@ -128,19 +128,25 @@ export const variableQuerySchema = z
       workspaceId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       clientId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       contractorId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
     }),

@@ -446,7 +446,9 @@ export const reportQuerySchema = z
       contractorId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       period: z
@@ -458,7 +460,9 @@ export const reportQuerySchema = z
       projectIterationId: z
         .preprocess(
           strToNull,
-          enumFilterSchema(z.coerce.number().nullable()).nullable(),
+          enumFilterSchema(
+            z.preprocess(strToNull, z.coerce.number().nullable()),
+          ).nullable(),
         )
         .default(null),
       id: z
