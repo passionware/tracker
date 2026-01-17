@@ -49,6 +49,7 @@ import { maybe } from "@passionware/monads";
 import { createSimpleEvent } from "@passionware/simple-event";
 import { useRef } from "react";
 import { NavigateFunction, useNavigate } from "react-router-dom";
+import { myDialogService } from "@/services/front/DialogService/DialogService.impl.connected";
 
 const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
@@ -190,6 +191,7 @@ export const myServices = {
   formatService,
   exchangeService,
   generatedReportViewService: createGeneratedReportViewService(),
+  dialogService: myDialogService,
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {
