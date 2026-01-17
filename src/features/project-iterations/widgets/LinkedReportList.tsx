@@ -32,6 +32,7 @@ import {
 import { mt, rd } from "@passionware/monads";
 import { useState } from "react";
 import { promiseState } from "@passionware/platform-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -180,14 +181,27 @@ export function LinkedReportList(
                     */}
                   <DropdownMenuItem
                     onSelect={() => {
-                      props.services.reportGenerationService.generateReport({
-                        reportIds: selectionState.getSelectedIds(
-                          selection,
-                          rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
-                        ),
-                        sourceType: "tmetric",
-                        projectIterationId: props.projectIterationId,
-                      });
+                      // props.services.reportGenerationService.generateReport({
+                      //   reportIds: selectionState.getSelectedIds(
+                      //     selection,
+                      //     rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+                      //   ),
+                      //   sourceType: "tmetric",
+                      //   projectIterationId: props.projectIterationId,
+                      // });
+                      props.services.dialogService.show((api) => {
+                        return <Dialog {...api}>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Generate Detailed Report</DialogTitle>
+                              <DialogDescription>
+                                Generate a detailed report for the selected reports. using {}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div>Hello</div>
+                          </DialogContent>
+                        </Dialog>
+                      })
                     }}
                   >
                     Generate Detailed Report
