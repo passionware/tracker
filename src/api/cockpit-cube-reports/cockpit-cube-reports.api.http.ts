@@ -242,6 +242,38 @@ export function createCockpitCubeReportsApi(
       }
     },
 
+    publishReport: async (reportId) => {
+      const { data, error } = await client
+        .from("cube_reports")
+        .update({ is_published: true })
+        .eq("id", reportId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error publishing cube report:", error);
+        throw error;
+      }
+
+      return parseWithDataError(cockpitCubeReport$, data);
+    },
+
+    unpublishReport: async (reportId) => {
+      const { data, error } = await client
+        .from("cube_reports")
+        .update({ is_published: false })
+        .eq("id", reportId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error unpublishing cube report:", error);
+        throw error;
+      }
+
+      return parseWithDataError(cockpitCubeReport$, data);
+    },
+
     logAccess: async (tenantId, userId, reportId) => {
       const { error } = await client.from("report_access_logs").insert([
         {
