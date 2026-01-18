@@ -9,6 +9,7 @@ import { zip } from "lodash";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
+import { SharedIdMap } from "./_private/SharedIdMap.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
 
 type TmetricConfig = WithServices<[WithExpressionService, WithReportService]>;
@@ -31,6 +32,14 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
           ]),
       );
       const configs = zip(configs_, trackerReports);
+
+      // Create shared ID maps for all contractors (one per field)
+      const sharedIdMaps: Record<string, SharedIdMap> = {
+        activity: new SharedIdMap("a"),
+        task: new SharedIdMap("t"),
+        project: new SharedIdMap("p"),
+      };
+
       const reports = await Promise.all(
         configs.map(async ([reportConfig_, trackerReport_]) => {
           const reportConfig = maybe.getOrThrow(reportConfig_);
@@ -47,6 +56,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             defaultRoleId: contractorRoleId,
             currency: trackerReport.currency,
             contractorId: trackerReport.contractorId,
+            idMaps: sharedIdMaps, // Share the ID maps across contractors
           });
           // Helper function to parse rate with currency from environment variable
           const parseRateWithCurrency = (
@@ -124,10 +134,12 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 /**
  * Merges multiple GenericReport objects into a single report.
  * - Task types are merged by their IDs (original tmetric entry descriptions)
- * - Activity types are deduplicated by display name (multiple contractors may have same activities with different IDs)
+ * - Activity types are merged (IDs are already shared via SharedIdMap)
+ * - Task types are merged (IDs are already shared via SharedIdMap)
+ * - Project types are merged (IDs are already shared via SharedIdMap)
  * - Project types are merged
  * - Role types are kept separate (each contractor has their own role with rates)
- * - Time entries are combined from all reports with remapped activity IDs
+ * - Time entries are combined from all reports
  */
 function mergeGenericReports(reports: GenericReport[]): GenericReport {
   if (reports.length === 0) {
@@ -149,41 +161,20 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     timeEntries: [...reports[0].timeEntries],
   };
 
-  // Track activity display names to deduplicate (display name -> activity ID in merged report)
-  const activityDisplayNameToId = new Map<string, string>();
-  for (const [activityId, activityType] of Object.entries(
-    merged.definitions.activityTypes,
-  )) {
-    activityDisplayNameToId.set(activityType.name, activityId);
-  }
-
   // Merge remaining reports
   for (let i = 1; i < reports.length; i++) {
     const report = reports[i];
 
-    // Merge task types by ID (original tmetric entry descriptions)
+    // Merge task types (IDs are already shared via SharedIdMap, so no remapping needed)
     Object.assign(merged.definitions.taskTypes, report.definitions.taskTypes);
 
-    // Merge activity types with deduplication by display name
-    // Build mapping from old activity ID to new (deduplicated) activity ID
-    const activityIdRemapping = new Map<string, string>();
-    for (const [activityId, activityType] of Object.entries(
+    // Merge activity types (IDs are already shared via SharedIdMap, so no remapping needed)
+    Object.assign(
+      merged.definitions.activityTypes,
       report.definitions.activityTypes,
-    )) {
-      const displayName = activityType.name;
-      if (activityDisplayNameToId.has(displayName)) {
-        // This display name already exists - reuse the existing ID
-        const existingId = activityDisplayNameToId.get(displayName)!;
-        activityIdRemapping.set(activityId, existingId);
-      } else {
-        // New display name - add it to merged report
-        merged.definitions.activityTypes[activityId] = activityType;
-        activityDisplayNameToId.set(displayName, activityId);
-        activityIdRemapping.set(activityId, activityId); // Map to itself
-      }
-    }
+    );
 
-    // Merge project types
+    // Merge project types (IDs are already shared via SharedIdMap, so no remapping needed)
     Object.assign(
       merged.definitions.projectTypes,
       report.definitions.projectTypes,
@@ -192,12 +183,8 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     // Keep role types separate - each contractor has their own role
     Object.assign(merged.definitions.roleTypes, report.definitions.roleTypes);
 
-    // Combine time entries with remapped activity IDs
-    const remappedTimeEntries = report.timeEntries.map((entry) => ({
-      ...entry,
-      activityId: activityIdRemapping.get(entry.activityId) || entry.activityId,
-    }));
-    merged.timeEntries.push(...remappedTimeEntries);
+    // Combine time entries (IDs are already consistent across reports via SharedIdMap)
+    merged.timeEntries.push(...report.timeEntries);
   }
 
   return merged;

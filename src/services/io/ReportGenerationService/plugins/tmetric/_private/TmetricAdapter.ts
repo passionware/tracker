@@ -1,6 +1,7 @@
 import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { GenericReport, RoleType } from "../../../../_common/GenericReport.ts";
 import { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
+import { SharedIdMap } from "./SharedIdMap.ts";
 
 export type ActivityId =
   | "development"
@@ -15,6 +16,7 @@ export interface TMetricAdapterInput {
   contractorId: Contractor["id"];
   defaultRoleId: string; // simple single role mapping for now
   currency: string;
+  idMaps?: Record<string, SharedIdMap>; // Optional shared ID maps per field (e.g., "activity", "task", "project")
 }
 
 function normalize(s: string): string {
@@ -106,56 +108,53 @@ export function inferActivity(
 export function adaptTMetricToGeneric(
   input: TMetricAdapterInput,
 ): GenericReport {
-  // Build unique task names (original labels) and assign short sequential IDs
-  const uniqueTaskNames = new Set<string>();
+  // Get or create SharedIdMap instances for each field
+  const activityIdMap = input.idMaps?.activity || new SharedIdMap("a");
+  const taskIdMap = input.idMaps?.task || new SharedIdMap("t");
+  const projectIdMap = input.idMaps?.project || new SharedIdMap("p");
+
+  // Activity display name mapping (activity name -> display name)
+  const activityNameToDisplayName: Record<string, string> = {
+    development: "Development",
+    code_review: "Code Review",
+    review: "Review",
+    meeting: "Meeting",
+    operations: "Operations",
+    polishment: "Polishment",
+  };
+
+  // Maps to track name -> short ID mappings for this adapter call
   const taskNameToShortId = new Map<string, string>();
-  let taskCounter = 1;
-
-  // Build unique activity names (original labels) and assign short sequential IDs
-  const uniqueActivityNames = new Set<string>();
   const activityNameToShortId = new Map<string, string>();
-  let activityCounter = 1;
+  const projectDisplayNameToShortId = new Map<string, string>();
+  // Map to store original TMetric project IDs by display name (for rate matching)
+  const projectDisplayNameToOriginalId = new Map<string, string>();
 
-  // Build unique project types from project IDs (use TMetric project ID)
-  const uniqueProjects = new Map<string, { id: string; name: string }>();
-
-  // First pass: collect all unique task and activity names
+  // First pass: collect all unique task, activity, and project names
   for (const e of input.entries) {
+    // Process task
     const taskName = resolveTaskName(e);
-    if (!uniqueTaskNames.has(taskName)) {
-      uniqueTaskNames.add(taskName);
-      const shortTaskId = `t${taskCounter++}`;
+    if (!taskNameToShortId.has(taskName)) {
+      const shortTaskId = taskIdMap.getOrCreateKey(taskName);
       taskNameToShortId.set(taskName, shortTaskId);
     }
 
-    // Activity is now determined from tags with "activity:" prefix
+    // Process activity
     const activityName = inferActivity(e.note, e.tags || []);
-    if (!uniqueActivityNames.has(activityName)) {
-      uniqueActivityNames.add(activityName);
-      const shortActivityId = `a${activityCounter++}`;
+    const displayName = activityNameToDisplayName[activityName] || activityName;
+    if (!activityNameToShortId.has(activityName)) {
+      const shortActivityId = activityIdMap.getOrCreateKey(displayName);
       activityNameToShortId.set(activityName, shortActivityId);
     }
 
-    // Extract project ID and name from TMetric entry
-    if (e.project) {
-      const projectId = String(e.project.id);
-      const projectDisplayName = e.project.name?.trim() || "default";
-      if (!uniqueProjects.has(projectId)) {
-        uniqueProjects.set(projectId, {
-          id: projectId,
-          name: projectDisplayName,
-        });
-      }
-    } else {
-      // Fallback for entries without project
-      const projectId = "default";
-      const projectDisplayName = "default";
-      if (!uniqueProjects.has(projectId)) {
-        uniqueProjects.set(projectId, {
-          id: projectId,
-          name: projectDisplayName,
-        });
-      }
+    // Process project
+    const projectDisplayName = e.project?.name?.trim() || "default";
+    if (!projectDisplayNameToShortId.has(projectDisplayName)) {
+      const shortProjectId = projectIdMap.getOrCreateKey(projectDisplayName);
+      projectDisplayNameToShortId.set(projectDisplayName, shortProjectId);
+      // Store original TMetric project ID for rate matching
+      const originalProjectId = e.project ? String(e.project.id) : "default";
+      projectDisplayNameToOriginalId.set(projectDisplayName, originalProjectId);
     }
   }
 
@@ -176,27 +175,23 @@ export function adaptTMetricToGeneric(
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
-  for (const [projectId, project] of uniqueProjects.entries()) {
-    projectTypes[projectId] = {
-      name: project.name,
-      description: project.name,
-      parameters: {},
+  for (const [projectDisplayName, shortProjectId] of projectDisplayNameToShortId.entries()) {
+    const originalProjectId = projectDisplayNameToOriginalId.get(projectDisplayName) || "default";
+    projectTypes[shortProjectId] = {
+      name: projectDisplayName,
+      description: projectDisplayName,
+      parameters: {
+        // Store original TMetric project ID for rate matching
+        originalProjectId: originalProjectId,
+      },
     };
   }
 
-  // Build activityTypes with short IDs as keys, original names as values
+  // Build activityTypes with short IDs as keys, display names as values
   const activityTypes: Record<
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
-  const activityNameToDisplayName: Record<string, string> = {
-    development: "Development",
-    code_review: "Code Review",
-    review: "Review",
-    meeting: "Meeting",
-    operations: "Operations",
-    polishment: "Polishment",
-  };
   const activityNameToDescription: Record<string, string> = {
     development: "Hands-on implementation work",
     code_review: "PR/MR reviews and related",
@@ -205,12 +200,26 @@ export function adaptTMetricToGeneric(
     operations: "Planning, triage, coordination",
     polishment: "Code polish and refinement",
   };
+
+  // Build activityTypes from the map entries (grouped by short ID)
+  const shortIdToDisplayName = new Map<string, string>();
   for (const [
     activityName,
     shortActivityId,
   ] of activityNameToShortId.entries()) {
+    const displayName = activityNameToDisplayName[activityName] || activityName;
+    shortIdToDisplayName.set(shortActivityId, displayName);
+  }
+
+  for (const [shortActivityId, displayName] of shortIdToDisplayName.entries()) {
+    // Find the first activity name that maps to this display name for description
+    const activityName =
+      Array.from(activityNameToShortId.entries()).find(
+        ([_, id]) => id === shortActivityId,
+      )?.[0] || "development";
+
     activityTypes[shortActivityId] = {
-      name: activityNameToDisplayName[activityName] || activityName, // Store display name for label mapping
+      name: displayName, // Store display name for label mapping
       description:
         activityNameToDescription[activityName] ||
         "Activity type not specified",
@@ -231,10 +240,12 @@ export function adaptTMetricToGeneric(
     // Activity is now determined from tags with "activity:" prefix
     const activityName = inferActivity(e.note, e.tags || []);
     const taskName = resolveTaskName(e);
+    const projectDisplayName = e.project?.name?.trim() || "default";
 
     // Map to short IDs
     const activityId = activityNameToShortId.get(activityName) || activityName;
     const taskId = taskNameToShortId.get(taskName) || taskName;
+    const projectId = projectDisplayNameToShortId.get(projectDisplayName) || projectDisplayName;
 
     // Handle date parsing with validation
     let startAt: Date;
@@ -270,7 +281,7 @@ export function adaptTMetricToGeneric(
       note: null, // Note field is redundant for TMetric reports
       taskId,
       activityId,
-      projectId: e.project ? String(e.project.id) : "default", // Use TMetric project ID
+      projectId,
       roleId: input.defaultRoleId,
       contractorId: input.contractorId,
       createdAt: startAt,
