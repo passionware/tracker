@@ -14,6 +14,7 @@ export const cockpitCubeReport$ = z.object({
   updated_at: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Invalid datetime format",
   }),
+  is_published: z.boolean(),
   start_date: z
     .string()
     .nullable()

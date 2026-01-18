@@ -10,6 +10,7 @@ export interface CockpitCubeReport {
   updated_at: string;
   start_date?: string | null;
   end_date?: string | null;
+  is_published: boolean;
 }
 
 export interface CockpitCubeReportWithCreator
@@ -44,6 +45,8 @@ export interface CockpitCubeReportsApi {
     }>,
   ) => Promise<CockpitCubeReport>;
   deleteReport: (reportId: string) => Promise<void>;
+  publishReport: (reportId: string) => Promise<CockpitCubeReport>;
+  unpublishReport: (reportId: string) => Promise<CockpitCubeReport>;
   logAccess: (
     tenantId: string,
     userId: string,
