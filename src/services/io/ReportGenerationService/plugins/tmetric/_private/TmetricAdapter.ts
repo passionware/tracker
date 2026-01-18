@@ -175,8 +175,12 @@ export function adaptTMetricToGeneric(
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
-  for (const [projectDisplayName, shortProjectId] of projectDisplayNameToShortId.entries()) {
-    const originalProjectId = projectDisplayNameToOriginalId.get(projectDisplayName) || "default";
+  for (const [
+    projectDisplayName,
+    shortProjectId,
+  ] of projectDisplayNameToShortId.entries()) {
+    const originalProjectId =
+      projectDisplayNameToOriginalId.get(projectDisplayName) || "default";
     projectTypes[shortProjectId] = {
       name: projectDisplayName,
       description: projectDisplayName,
@@ -245,7 +249,8 @@ export function adaptTMetricToGeneric(
     // Map to short IDs
     const activityId = activityNameToShortId.get(activityName) || activityName;
     const taskId = taskNameToShortId.get(taskName) || taskName;
-    const projectId = projectDisplayNameToShortId.get(projectDisplayName) || projectDisplayName;
+    const projectId =
+      projectDisplayNameToShortId.get(projectDisplayName) || projectDisplayName;
 
     // Handle date parsing with validation
     let startAt: Date;
