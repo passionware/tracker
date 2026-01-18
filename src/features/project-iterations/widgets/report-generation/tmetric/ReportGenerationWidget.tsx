@@ -31,6 +31,69 @@ import {
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { uniqBy } from "lodash";
 import { ContractorBase } from "@/api/contractor/contractor.api";
+import { RoleRate } from "@/services/io/_common/GenericReport";
+
+/**
+ * Applies configured rates to a GenericReport by updating the roleTypes rates.
+ * The roleId for each contractor is `contractor_${contractorId}`.
+ */
+function applyConfiguredRatesToReport(
+  report: GenericReport,
+  configuredRates: Array<{
+    contractorId: number;
+    rates: Array<{
+      id: string;
+      costRate: number;
+      costCurrency: string;
+      billingRate: number;
+      billingCurrency: string;
+      projectId?: string;
+      rateSource?: "expression" | "manual";
+    }>;
+  }>,
+): GenericReport {
+  // Create a deep copy of the report to avoid mutating the original
+  const updatedReport: GenericReport = {
+    ...report,
+    definitions: {
+      ...report.definitions,
+      roleTypes: { ...report.definitions.roleTypes },
+    },
+  };
+
+  // Apply configured rates for each contractor
+  for (const contractorRate of configuredRates) {
+    const roleId = `contractor_${contractorRate.contractorId}`;
+    const roleType = updatedReport.definitions.roleTypes[roleId];
+
+    if (!roleType) {
+      console.warn(
+        `Role type '${roleId}' not found in report definitions. Skipping rates for contractor ${contractorRate.contractorId}.`,
+      );
+      continue;
+    }
+
+    // Convert configured rates to RoleRate format
+    const roleRates: RoleRate[] = contractorRate.rates.map((rate) => ({
+      billing: "hourly",
+      activityTypes: [],
+      taskTypes: [],
+      projectIds: rate.projectId ? [rate.projectId] : [],
+      costRate: rate.costRate,
+      costCurrency: rate.costCurrency,
+      billingRate: rate.billingRate,
+      billingCurrency: rate.billingCurrency,
+    }));
+
+    // Update the role type with the configured rates
+    updatedReport.definitions.roleTypes[roleId] = {
+      ...roleType,
+      rates: roleRates,
+    };
+  }
+
+  return updatedReport;
+}
 
 export interface ReportGenerationWidgetProps
   extends WithFrontServices,
@@ -136,12 +199,18 @@ export function ReportGenerationWidget({
 
       const reportData = rd.getOrThrow(initialData.state, "Report not found");
 
+      // Apply configured rates to the report data
+      const reportWithConfiguredRates = applyConfiguredRatesToReport(
+        reportData.reportData,
+        configuredRates,
+      );
+
       // Save to GeneratedReportSourceService
       const generatedReportSource =
         await services.generatedReportSourceWriteService.createGeneratedReportSource(
           {
             projectIterationId,
-            data: reportData.reportData,
+            data: reportWithConfiguredRates,
             originalData: reportData.originalData,
           },
         );
