@@ -75,7 +75,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
                 clientId: trackerReport.clientId,
                 contractorId: trackerReport.contractorId,
               },
-              `vars.hour_cost_rate`,
+              `vars.new_hour_cost_rate`,
               {},
             );
           const { rate: costRate, currency: costCurrency } =
@@ -89,7 +89,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
                 clientId: trackerReport.clientId,
                 contractorId: trackerReport.contractorId,
               },
-              `vars.hour_billing_rate`,
+              `vars.new_hour_billing_rate`,
               { fallback: `${costRate} ${costCurrency}` }, // fallback to cost rate if billing rate not set
             );
           const { rate: billingRate, currency: billingCurrency } =

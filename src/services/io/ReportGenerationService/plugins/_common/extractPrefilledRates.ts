@@ -97,13 +97,13 @@ export async function extractPrefilledRatesFromGenericReport(
 
       const costRateString = await expressionService.ensureExpressionValue(
         expressionContext,
-        `vars.hour_cost_rate`,
+        `vars.new_hour_cost_rate`,
         {},
       );
 
       const billingRateString = await expressionService.ensureExpressionValue(
         expressionContext,
-        `vars.hour_billing_rate`,
+        `vars.new_hour_billing_rate`,
         { fallback: costRateString }, // fallback to cost rate
       );
 
