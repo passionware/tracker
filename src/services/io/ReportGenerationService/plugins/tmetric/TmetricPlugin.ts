@@ -11,8 +11,7 @@ import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
 
-interface TmetricConfig
-  extends WithServices<[WithExpressionService, WithReportService]> {}
+type TmetricConfig = WithServices<[WithExpressionService, WithReportService]>;
 
 export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
   return {
@@ -98,8 +97,9 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 
           adapted.definitions.roleTypes[contractorRoleId].rates.push({
             billing: "hourly",
-            activityType: "development",
-            taskType: "development",
+            activityTypes: [],
+            taskTypes: [],
+            projectIds: [],
             costRate,
             costCurrency,
             billingRate,

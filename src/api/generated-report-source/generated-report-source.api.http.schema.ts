@@ -30,16 +30,51 @@ const roleType$ = z.object({
   name: z.string(),
   description: z.string(),
   rates: z.array(
-    z.object({
-      billing: z.literal("hourly"),
-      activityType: z.string(),
-      taskType: z.string(),
-      projectId: z.string().optional(),
-      costRate: z.number(),
-      costCurrency: z.string(),
-      billingRate: z.number(),
-      billingCurrency: z.string(),
-    }),
+    z.preprocess(
+      (data) => {
+        // Normalize singular/plural keys for compatibility with GenericReport schema
+        if (typeof data === "object" && data !== null) {
+          const fixed = { ...data } as Record<string, unknown>;
+
+          // If 'taskType' exists and 'taskTypes' does not, map to an array
+          if ("taskType" in fixed && !("taskTypes" in fixed)) {
+            fixed.taskTypes = Array.isArray(fixed.taskType)
+              ? fixed.taskType
+              : [fixed.taskType];
+            delete fixed.taskType;
+          }
+
+          // If 'activityType' exists and 'activityTypes' does not, map to an array
+          if ("activityType" in fixed && !("activityTypes" in fixed)) {
+            fixed.activityTypes = Array.isArray(fixed.activityType)
+              ? fixed.activityType
+              : [fixed.activityType];
+            delete fixed.activityType;
+          }
+
+          // If 'projectId' exists and 'projectIds' does not, map to an array
+          if ("projectId" in fixed && !("projectIds" in fixed)) {
+            fixed.projectIds = Array.isArray(fixed.projectId)
+              ? fixed.projectId
+              : [fixed.projectId];
+            delete fixed.projectId;
+          }
+
+          return fixed;
+        }
+        return data;
+      },
+      z.object({
+        billing: z.literal("hourly"),
+        activityTypes: z.array(z.string()).default([]),
+        taskTypes: z.array(z.string()).default([]),
+        projectIds: z.array(z.string()).default([]),
+        costRate: z.number(),
+        costCurrency: z.string(),
+        billingRate: z.number(),
+        billingCurrency: z.string(),
+      }),
+    ),
   ),
 });
 

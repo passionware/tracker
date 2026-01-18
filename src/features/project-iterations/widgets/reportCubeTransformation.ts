@@ -6,6 +6,7 @@
  */
 
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
+import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { groupBy, sum } from "lodash";
 
 /**
@@ -45,18 +46,11 @@ export function transformReportData(
     const numHours = calculateHours(entry.startAt, entry.endAt);
 
     // Find matching rate for cost/billing calculations
-    const roleType = report.data.definitions.roleTypes[entry.roleId];
-    const matchingRate =
-      roleType?.rates.find(
-        (rate) =>
-          rate.activityType === entry.activityId &&
-          rate.taskType === entry.taskId &&
-          (rate.projectId === entry.projectId || !rate.projectId),
-      ) || roleType?.rates[0]; // Fallback to first rate
+    const matchingRate = getMatchingRate(report.data, entry);
 
     // Calculate financial values
-    const costValue = matchingRate ? numHours * matchingRate.costRate : 0;
-    const billingValue = matchingRate ? numHours * matchingRate.billingRate : 0;
+    const costValue = numHours * matchingRate.costRate;
+    const billingValue = numHours * matchingRate.billingRate;
     const profitValue = billingValue - costValue;
 
     return {

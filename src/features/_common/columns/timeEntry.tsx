@@ -4,6 +4,7 @@ import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { GenericReport } from "@/services/io/_common/GenericReport";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService";
 import { ContractorWidget } from "../elements/pickers/ContractorView";
+import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 
 export type TimeEntry = GenericReport["timeEntries"][0];
 
@@ -123,15 +124,7 @@ export const timeEntryColumns = {
       header: "Cost Rate",
       cell: (info) => {
         const entry = info.row.original;
-        const roleType = report.definitions.roleTypes[entry.roleId];
-        const matchingRate = roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        );
-        if (!matchingRate) {
-          return <span className="text-slate-400">No rate</span>;
-        }
+        const matchingRate = getMatchingRate(report, entry);
 
         return (
           <span className="font-mono text-sm">
@@ -153,15 +146,7 @@ export const timeEntryColumns = {
       header: "Billing Rate",
       cell: (info) => {
         const entry = info.row.original;
-        const roleType = report.definitions.roleTypes[entry.roleId];
-        const matchingRate = roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        );
-        if (!matchingRate) {
-          return <span className="text-slate-400">No rate</span>;
-        }
+        const matchingRate = getMatchingRate(report, entry);
 
         return (
           <span className="font-mono text-sm">
@@ -183,15 +168,7 @@ export const timeEntryColumns = {
       header: "Cost Amount",
       cell: (info) => {
         const entry = info.row.original;
-        const roleType = report.definitions.roleTypes[entry.roleId];
-        const matchingRate = roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        );
-        if (!matchingRate) {
-          return <span className="text-slate-400">No rate</span>;
-        }
+        const matchingRate = getMatchingRate(report, entry);
 
         const hours =
           (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -216,16 +193,7 @@ export const timeEntryColumns = {
       header: "Billing Amount",
       cell: (info) => {
         const entry = info.row.original;
-        const roleType = report.definitions.roleTypes[entry.roleId];
-        const matchingRate = roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        );
-
-        if (!matchingRate) {
-          return <span className="text-slate-400">No rate</span>;
-        }
+        const matchingRate = getMatchingRate(report, entry);
 
         const hours =
           (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -250,15 +218,7 @@ export const timeEntryColumns = {
       header: "Profit",
       cell: (info) => {
         const entry = info.row.original;
-        const roleType = report.definitions.roleTypes[entry.roleId];
-        const matchingRate = roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        );
-        if (!matchingRate) {
-          return <span className="text-slate-400">No rate</span>;
-        }
+        const matchingRate = getMatchingRate(report, entry);
 
         const hours =
           (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
