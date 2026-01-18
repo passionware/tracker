@@ -1,41 +1,17 @@
 import { ContractorBase } from "@/api/contractor/contractor.api";
-import { RoleRate } from "@/services/io/_common/GenericReport";
 import {
   RoleEditor,
   RoleRateWithContractor,
 } from "@/features/_common/elements/role-editor/RoleEditor";
 import { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
 import { useMemo, useState, useEffect } from "react";
+import { PrefilledRateResult } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 
 export interface ContractorProjectRateConfigurationProps {
   contractors: ContractorBase[];
   projects: Array<{ id: string; name: string }>;
-  prefilledRates: Array<{
-    contractorId: number;
-    rates: Array<{
-      id: string;
-      costRate: number;
-      costCurrency: string;
-      billingRate: number;
-      billingCurrency: string;
-      projectId?: string;
-      rateSource?: "expression" | "manual";
-    }>;
-  }>;
-  onRatesConfigured: (
-    rates: Array<{
-      contractorId: number;
-      rates: Array<{
-        id: string;
-        costRate: number;
-        costCurrency: string;
-        billingRate: number;
-        billingCurrency: string;
-        projectId?: string;
-        rateSource?: "expression" | "manual";
-      }>;
-    }>,
-  ) => void;
+  prefilledRates: PrefilledRateResult;
+  onRatesConfigured: (rates: PrefilledRateResult) => void;
 }
 
 export function ContractorProjectRateConfiguration({
@@ -69,16 +45,7 @@ export function ContractorProjectRateConfiguration({
     return prefilledRates.flatMap((prefilled) =>
       prefilled.rates.map((rate) => ({
         contractorId: prefilled.contractorId.toString(),
-        rate: {
-          billing: "hourly",
-          activityTypes: [],
-          taskTypes: [],
-          projectIds: rate.projectId ? [rate.projectId] : [],
-          costRate: rate.costRate,
-          costCurrency: rate.costCurrency,
-          billingRate: rate.billingRate,
-          billingCurrency: rate.billingCurrency,
-        } as RoleRate,
+        rate,
       })),
     );
   });
@@ -94,35 +61,10 @@ export function ContractorProjectRateConfiguration({
             rates: [],
           };
         }
-        acc[contractorId].rates.push({
-          id: `${contractorId}_${roleRate.rate.projectIds.join("_")}`,
-          costRate: roleRate.rate.costRate,
-          costCurrency: roleRate.rate.costCurrency,
-          billingRate: roleRate.rate.billingRate,
-          billingCurrency: roleRate.rate.billingCurrency,
-          projectId:
-            roleRate.rate.projectIds.length === 1
-              ? roleRate.rate.projectIds[0]
-              : undefined,
-          rateSource: "manual" as const,
-        });
+        acc[contractorId].rates.push(roleRate.rate);
         return acc;
       },
-      {} as Record<
-        number,
-        {
-          contractorId: number;
-          rates: Array<{
-            id: string;
-            costRate: number;
-            costCurrency: string;
-            billingRate: number;
-            billingCurrency: string;
-            projectId?: string;
-            rateSource?: "expression" | "manual";
-          }>;
-        }
-      >,
+      {} as Record<number, PrefilledRateResult[number]>,
     );
 
     onRatesConfigured(Object.values(groupedRates));

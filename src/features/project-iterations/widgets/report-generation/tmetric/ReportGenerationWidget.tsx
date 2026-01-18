@@ -31,7 +31,6 @@ import {
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { uniqBy } from "lodash";
 import { ContractorBase } from "@/api/contractor/contractor.api";
-import { RoleRate } from "@/services/io/_common/GenericReport";
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
@@ -39,18 +38,7 @@ import { RoleRate } from "@/services/io/_common/GenericReport";
  */
 function applyConfiguredRatesToReport(
   report: GenericReport,
-  configuredRates: Array<{
-    contractorId: number;
-    rates: Array<{
-      id: string;
-      costRate: number;
-      costCurrency: string;
-      billingRate: number;
-      billingCurrency: string;
-      projectId?: string;
-      rateSource?: "expression" | "manual";
-    }>;
-  }>,
+  configuredRates: PrefilledRateResult,
 ): GenericReport {
   // Create a deep copy of the report to avoid mutating the original
   const updatedReport: GenericReport = {
@@ -73,22 +61,10 @@ function applyConfiguredRatesToReport(
       continue;
     }
 
-    // Convert configured rates to RoleRate format
-    const roleRates: RoleRate[] = contractorRate.rates.map((rate) => ({
-      billing: "hourly",
-      activityTypes: [],
-      taskTypes: [],
-      projectIds: rate.projectId ? [rate.projectId] : [],
-      costRate: rate.costRate,
-      costCurrency: rate.costCurrency,
-      billingRate: rate.billingRate,
-      billingCurrency: rate.billingCurrency,
-    }));
-
-    // Update the role type with the configured rates
+    // Rates are already in RoleRate format, use them directly
     updatedReport.definitions.roleTypes[roleId] = {
       ...roleType,
-      rates: roleRates,
+      rates: contractorRate.rates,
     };
   }
 
@@ -108,20 +84,9 @@ export function ReportGenerationWidget({
   projectIterationId,
   ...props
 }: ReportGenerationWidgetProps) {
-  const [configuredRates, setConfiguredRates] = useState<
-    Array<{
-      contractorId: number;
-      rates: Array<{
-        id: string;
-        costRate: number;
-        costCurrency: string;
-        billingRate: number;
-        billingCurrency: string;
-        projectId?: string;
-        rateSource?: "expression" | "manual";
-      }>;
-    }>
-  >([]);
+  const [configuredRates, setConfiguredRates] = useState<PrefilledRateResult>(
+    [],
+  );
   const [activeTab, setActiveTab] = useState("rates");
 
   const initialData = promiseState.useRemoteData<{
