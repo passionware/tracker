@@ -44,6 +44,14 @@ function getSerializableCubeConfig(
     },
   );
 
+  // Create project label mapping from report definitions
+  const projectLabelMapping: Record<string, string> = {};
+  Object.entries(report.data.definitions.projectTypes).forEach(
+    ([projectId, projectType]) => {
+      projectLabelMapping[projectId] = projectType.name;
+    },
+  );
+
   // Extract currency from report data (ensure all billing rates use the same currency)
   const getCurrencyFromReport = (): string => {
     const currencies = new Set<string>();
@@ -82,6 +90,9 @@ function getSerializableCubeConfig(
       name: "Project",
       icon: "🏗️",
       fieldName: "projectId",
+      ...(Object.keys(projectLabelMapping).length > 0 && {
+        labelMapping: projectLabelMapping,
+      }),
     },
     {
       id: "task",
