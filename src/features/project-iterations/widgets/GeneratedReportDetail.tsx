@@ -908,12 +908,13 @@ function BasicInformationView(
                                       <div className="flex justify-between items-start mb-2">
                                         <div>
                                           <div className="font-medium text-sm">
-                                            {rate.activityType} -{" "}
-                                            {rate.taskType}
+                                            {rate.activityTypes.join(", ")} -{" "}
+                                            {rate.taskTypes.join(", ")}
                                           </div>
-                                          {rate.projectId && (
+                                          {rate.projectIds.length > 0 && (
                                             <div className="text-xs text-slate-500 mt-1">
-                                              Project: {rate.projectId}
+                                              Projects:{" "}
+                                              {rate.projectIds.join(", ")}
                                             </div>
                                           )}
                                         </div>
@@ -976,8 +977,9 @@ function BasicInformationView(
                             className="flex justify-between text-xs text-slate-600"
                           >
                             <span>
-                              {rate.activityType} - {rate.taskType}
-                              {rate.projectId && ` (${rate.projectId})`}
+                              {rate.activityTypes.join(", ")} -{" "}
+                              {rate.taskTypes.join(", ")}
+                              {rate.projectIds.join(", ")}
                             </span>
                             <span>
                               {props.services.formatService.financial.amount(

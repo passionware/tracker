@@ -15,6 +15,7 @@ import {
   RolesSummaryView,
   TaskTypesSummaryView,
 } from "./GeneratedReportViewService.ts";
+import { getMatchingRate } from "@/services/io/_common/getMatchingRate.ts";
 
 export function createGeneratedReportViewService(): GeneratedReportViewService {
   return {
@@ -40,12 +41,7 @@ function getBasicInformationView(
       const roleType = report.data.definitions.roleTypes[entry.roleId];
       if (!roleType || roleType.rates.length === 0) return acc;
 
-      const matchingRate =
-        roleType.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        ) || roleType.rates[0];
+      const matchingRate = getMatchingRate(report.data, entry);
 
       const hours =
         (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -65,12 +61,7 @@ function getBasicInformationView(
       const roleType = report.data.definitions.roleTypes[entry.roleId];
       if (!roleType || roleType.rates.length === 0) return acc;
 
-      const matchingRate =
-        roleType.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        ) || roleType.rates[0];
+      const matchingRate = getMatchingRate(report.data, entry);
 
       const hours =
         (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -152,7 +143,7 @@ function getRolesSummaryView(report: GeneratedReportSource): RolesSummaryView {
       costBudget: roleGroup.costBudget,
       billingBudget: roleGroup.billingBudget,
       earningsBudget: roleGroup.earningsBudget,
-      rates: roleType?.rates || [],
+      rates: roleType.rates,
     };
   });
 
@@ -559,31 +550,12 @@ function getFilteredEntriesView(
   }
 
   const entries: FilteredEntrySummary[] = filteredEntries.map((entry) => {
-    const roleType = report.data.definitions.roleTypes[entry.roleId];
-    const matchingRate =
-      roleType?.rates.find(
-        (rate) =>
-          rate.activityType === entry.activityId &&
-          rate.taskType === entry.taskId &&
-          rate.projectId === entry.projectId,
-      ) ||
-      roleType?.rates.find(
-        (rate) =>
-          rate.activityType === entry.activityId &&
-          rate.taskType === entry.taskId &&
-          rate.projectId === undefined,
-      ) ||
-      roleType?.rates.find(
-        (rate) =>
-          rate.activityType === entry.activityId &&
-          rate.taskType === entry.taskId,
-      ) ||
-      roleType?.rates[0];
+    const matchingRate = getMatchingRate(report.data, entry);
 
     const hours =
       (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
-    const cost = matchingRate ? hours * matchingRate.costRate : 0;
-    const currency = matchingRate?.costCurrency || "EUR";
+    const cost = hours * matchingRate.costRate;
+    const currency = matchingRate.costCurrency;
 
     return {
       entryId: `${entry.startAt.getTime()}-${entry.contractorId}`,
@@ -852,12 +824,7 @@ function getGroupedView(
       const roleType = report.data.definitions.roleTypes[entry.roleId];
       if (!roleType || roleType.rates.length === 0) return acc;
 
-      const matchingRate =
-        roleType.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        ) || roleType.rates[0];
+      const matchingRate = getMatchingRate(report.data, entry);
 
       const hours =
         (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -876,12 +843,7 @@ function getGroupedView(
       const roleType = report.data.definitions.roleTypes[entry.roleId];
       if (!roleType || roleType.rates.length === 0) return acc;
 
-      const matchingRate =
-        roleType.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        ) || roleType.rates[0];
+      const matchingRate = getMatchingRate(report.data, entry);
 
       const hours =
         (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
@@ -978,33 +940,38 @@ function groupEntriesBySpecifier(
       let groupDescription: string | undefined;
 
       switch (specifier.type) {
-        case "contractor":
+        case "contractor": {
           const contractorId = Number(groupKey);
           groupName =
             contractorNameLookup?.(contractorId) ||
             `Contractor #${contractorId}`;
           groupDescription = undefined;
           break;
-        case "role":
+        }
+        case "role": {
           const roleType = report.data.definitions.roleTypes[groupKey];
           groupName = roleType?.name || "Unknown Role";
           groupDescription = roleType?.description;
           break;
-        case "task":
+        }
+        case "task": {
           const taskType = report.data.definitions.taskTypes[groupKey];
           groupName = taskType?.name || "Unknown Task";
           groupDescription = taskType?.description;
           break;
-        case "activity":
+        }
+        case "activity": {
           const activityType = report.data.definitions.activityTypes[groupKey];
           groupName = activityType?.name || "Unknown Activity";
           groupDescription = activityType?.description;
           break;
-        case "project":
+        }
+        case "project": {
           const projectType = report.data.definitions.projectTypes[groupKey];
           groupName = projectType?.name || "Unknown Project";
           groupDescription = projectType?.description;
           break;
+        }
         default:
           groupName = "Unknown";
       }
@@ -1015,12 +982,7 @@ function groupEntriesBySpecifier(
           const roleType = report.data.definitions.roleTypes[entry.roleId];
           if (!roleType || roleType.rates.length === 0) return acc;
 
-          const matchingRate =
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId,
-            ) || roleType.rates[0];
+          const matchingRate = getMatchingRate(report.data, entry);
 
           const hours =
             (entry.endAt.getTime() - entry.startAt.getTime()) /
@@ -1040,13 +1002,7 @@ function groupEntriesBySpecifier(
           const roleType = report.data.definitions.roleTypes[entry.roleId];
           if (!roleType || roleType.rates.length === 0) return acc;
 
-          const matchingRate =
-            roleType.rates.find(
-              (rate) =>
-                rate.activityType === entry.activityId &&
-                rate.taskType === entry.taskId,
-            ) || roleType.rates[0];
-
+          const matchingRate = getMatchingRate(report.data, entry);
           const hours =
             (entry.endAt.getTime() - entry.startAt.getTime()) /
             (1000 * 60 * 60);

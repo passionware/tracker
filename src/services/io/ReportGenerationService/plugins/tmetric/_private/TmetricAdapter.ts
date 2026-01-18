@@ -1,5 +1,5 @@
 import { Contractor } from "@/api/contractor/contractor.api.ts";
-import { GenericReport } from "../../../../_common/GenericReport.ts";
+import { GenericReport, RoleType } from "../../../../_common/GenericReport.ts";
 import { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
 
 export type ActivityId =
@@ -144,22 +144,7 @@ export function adaptTMetricToGeneric(
     },
   };
 
-  const roleTypes: Record<
-    string,
-    {
-      name: string;
-      description: string;
-      rates: Array<{
-        billing: "hourly";
-        activityType: string;
-        taskType: string;
-        costRate: number; // What we pay the contractor
-        costCurrency: string; // Currency for cost rate
-        billingRate: number; // What we charge the client
-        billingCurrency: string; // Currency for billing rate
-      }>;
-    }
-  > = {
+  const roleTypes: Record<string, RoleType> = {
     [input.defaultRoleId]: {
       name: input.defaultRoleId,
       description: "Default role",

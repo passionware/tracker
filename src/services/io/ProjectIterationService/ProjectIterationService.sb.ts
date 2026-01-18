@@ -17,5 +17,7 @@ export function createProjectIterationService(config: {
     useProjectIterations: () => testQuery.useData(config.listAccessor.use()),
     useProjectIterationDetail: () =>
       testQuery.useData(config.itemAccessor.use()),
+    ensureProjectIterations: () =>
+      testQuery.asPromise(config.listAccessor.get()),
   };
 }

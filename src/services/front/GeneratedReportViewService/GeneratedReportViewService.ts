@@ -1,5 +1,6 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
+import { RoleRate } from "@/services/io/_common/GenericReport";
 
 export interface GeneratedReportViewService {
   getBasicInformationView: (
@@ -116,15 +117,7 @@ export interface RoleSummary {
   costBudget: CurrencyValue[]; // What we pay contractors
   billingBudget: CurrencyValue[]; // What we charge clients
   earningsBudget: CurrencyValue[]; // Billing - Cost (profit/margin)
-  rates: {
-    activityType: string;
-    taskType: string;
-    projectId?: string;
-    costRate: number;
-    costCurrency: string;
-    billingRate: number;
-    billingCurrency: string;
-  }[];
+  rates: RoleRate[];
 }
 
 export interface ProjectsSummaryView {
