@@ -164,7 +164,10 @@ export function adaptTMetricToGeneric(
     meeting: "Meeting",
     operations: "Operations",
   };
-  for (const [activityName, shortActivityId] of activityNameToShortId.entries()) {
+  for (const [
+    activityName,
+    shortActivityId,
+  ] of activityNameToShortId.entries()) {
     activityTypes[shortActivityId] = {
       name: activityNameToDisplayName[activityName] || activityName, // Store display name for label mapping
       description:

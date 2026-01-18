@@ -40,7 +40,26 @@ export interface TransformedEntry {
  */
 export function transformReportData(
   report: GeneratedReportSource,
+  options?: {
+    anonymizationRules?: Array<{
+      id: string;
+      projectIds: string[];
+      anonymizedContractorName: string;
+    }>; // Array of anonymization rules
+  },
 ): TransformedEntry[] {
+  // Build a map from project ID to anonymized contractor ID
+  const projectToAnonymizedContractorId = new Map<string, number>();
+  if (options?.anonymizationRules) {
+    options.anonymizationRules.forEach((rule, index) => {
+      // Use negative IDs starting from -999, -998, etc. for each rule
+      const anonymizedContractorId = -999 - index;
+      rule.projectIds.forEach((projectId) => {
+        projectToAnonymizedContractorId.set(projectId, anonymizedContractorId);
+      });
+    });
+  }
+
   return report.data.timeEntries.map((entry): TransformedEntry => {
     // Calculate hours
     const numHours = calculateHours(entry.startAt, entry.endAt);
@@ -53,6 +72,13 @@ export function transformReportData(
     const billingValue = numHours * matchingRate.billingRate;
     const profitValue = billingValue - costValue;
 
+    // Anonymize contractorId if project matches a rule
+    let contractorId = entry.contractorId;
+    const anonymizedId = projectToAnonymizedContractorId.get(entry.projectId);
+    if (anonymizedId !== undefined) {
+      contractorId = anonymizedId;
+    }
+
     return {
       // Core fields (always present)
       id: entry.id,
@@ -64,7 +90,7 @@ export function transformReportData(
       // Optional fields (can be removed during anonymization)
       startAt: entry.startAt,
       endAt: entry.endAt,
-      contractorId: entry.contractorId,
+      contractorId,
       roleId: entry.roleId,
 
       // Calculated fields (always present)
@@ -240,11 +266,18 @@ export function transformAndAnonymize(
   report: GeneratedReportSource,
   options: {
     anonymizeTimeEntries?: boolean;
+    anonymizationRules?: Array<{
+      id: string;
+      projectIds: string[];
+      anonymizedContractorName: string;
+    }>;
     activeMeasures?: string[];
   },
 ): TransformedEntry[] {
   // Transform data with all calculated values
-  let transformedEntries = transformReportData(report);
+  let transformedEntries = transformReportData(report, {
+    anonymizationRules: options.anonymizationRules,
+  });
 
   if (options.anonymizeTimeEntries) {
     transformedEntries = anonymizeTimeEntries(transformedEntries);
