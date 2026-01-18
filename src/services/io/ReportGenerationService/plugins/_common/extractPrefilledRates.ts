@@ -1,18 +1,10 @@
 import { Report } from "@/api/reports/reports.api";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
-import { GenericReport } from "@/services/io/_common/GenericReport";
+import { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
 
 export type PrefilledRateResult = Array<{
   contractorId: number;
-  rates: Array<{
-    id: string;
-    costRate: number;
-    costCurrency: string;
-    billingRate: number;
-    billingCurrency: string;
-    projectId?: string;
-    rateSource?: "expression" | "manual";
-  }>;
+  rates: RoleRate[];
 }>;
 
 /**
@@ -128,30 +120,22 @@ export async function extractPrefilledRatesFromGenericReport(
       const existingContractorConfig = prefilled.find(
         (c) => c.contractorId === contractorId,
       );
+      const roleRate: RoleRate = {
+        billing: "hourly",
+        activityTypes: [],
+        taskTypes: [],
+        projectIds: [project.id], // Single project-specific rate
+        costRate: costRate.rate,
+        costCurrency: costRate.currency,
+        billingRate: billingRate.rate,
+        billingCurrency: billingRate.currency,
+      };
       if (existingContractorConfig) {
-        existingContractorConfig.rates.push({
-          id: `prefill_${contractorId}_${project.id}`,
-          costRate: costRate.rate,
-          costCurrency: costRate.currency,
-          billingRate: billingRate.rate,
-          billingCurrency: billingRate.currency,
-          projectId: project.id, // Keep as string to match GenericReport structure
-          rateSource: "expression",
-        });
+        existingContractorConfig.rates.push(roleRate);
       } else {
         prefilled.push({
           contractorId: contractorId,
-          rates: [
-            {
-              id: `prefill_${contractorId}_${project.id}`,
-              costRate: costRate.rate,
-              costCurrency: costRate.currency,
-              billingRate: billingRate.rate,
-              billingCurrency: billingRate.currency,
-              projectId: project.id, // Keep as string to match GenericReport structure
-              rateSource: "expression",
-            },
-          ],
+          rates: [roleRate],
         });
       }
     }
