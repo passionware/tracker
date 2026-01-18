@@ -220,8 +220,8 @@ function getSerializableCubeConfig(
       id: "hourlyRate",
       name: "Hourly Rate",
       icon: "💵",
-      fieldName: "hourlyRate",
-      aggregationFunction: "average",
+      fieldName: "billingValue/numHours",
+      aggregationFunction: "weightedAverage",
       formatFunction: {
         type: "currency",
         parameters: { currency, decimals: 2 },

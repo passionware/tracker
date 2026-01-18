@@ -298,7 +298,6 @@ function ExportBuilderContent({
     form.setValue("selectedColumns", updatedColumns);
   }
 
-
   // Apply mandatory preparation and optional anonymization to data with active measures
   const processedData = useMemo(() => {
     let transformedData = transformAndAnonymize(report, {
