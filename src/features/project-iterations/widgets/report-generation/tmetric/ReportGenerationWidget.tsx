@@ -13,7 +13,7 @@ import { DialogClose, DialogProps } from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import { promiseState } from "@passionware/platform-react";
-import { rd } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import {
   Table,
@@ -31,6 +31,7 @@ import {
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { uniqBy } from "lodash";
 import { ContractorBase } from "@/api/contractor/contractor.api";
+import { toast } from "sonner";
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
@@ -88,6 +89,16 @@ export function ReportGenerationWidget({
     [],
   );
   const [activeTab, setActiveTab] = useState("rates");
+
+  // Get current location for routing
+  const workspaceId = services.locationService.useCurrentWorkspaceId();
+  const clientId = services.locationService.useCurrentClientId();
+
+  // Get project iteration to access projectId
+  const iteration =
+    services.projectIterationService.useProjectIterationDetail(
+      projectIterationId,
+    );
 
   const initialData = promiseState.useRemoteData<{
     reportData: GenericReport;
@@ -181,10 +192,42 @@ export function ReportGenerationWidget({
         );
 
       console.log("Report generated:", generatedReportSource);
+
+      // Get routing information for the toast link
+      const projectId = rd.tryMap(iteration, (iter) => iter.projectId);
+      const wsId = maybe.getOrElse(workspaceId, undefined);
+      const clId = maybe.getOrElse(clientId, undefined);
+
+      if (wsId && clId && projectId) {
+        // Generate link to view the report
+        const reportUrl = services.routingService
+          .forWorkspace(wsId)
+          .forClient(clId)
+          .forProject(projectId.toString())
+          .forIteration(projectIterationId.toString())
+          .forGeneratedReport(generatedReportSource.id.toString())
+          .root();
+
+        // Show success toast with navigation button
+        toast.success("Report generated successfully!", {
+          duration: 5000,
+          action: {
+            label: "View Report",
+            onClick: () => {
+              services.navigationService.navigate(reportUrl);
+            },
+          },
+        });
+      } else {
+        // Fallback toast without link if routing info is unavailable
+        toast.success("Report generated successfully!");
+      }
+
       // Close the dialog on success
       props.onOpenChange?.(false);
     } catch (error) {
       console.error("Failed to generate report:", error);
+      toast.error("Failed to generate report");
     }
   };
 
