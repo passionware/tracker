@@ -63,16 +63,18 @@ function extractActivityFromTag(tagName: string): string | null {
  */
 function mapTagActivityToActivityId(tagActivity: string): ActivityId {
   const normalized = normalize(tagActivity);
-  
+
   // Direct mappings
   if (normalized === "meeting") return "meeting";
   if (normalized === "operations") return "operations";
   if (normalized === "polishment") return "polishment";
-  if (normalized === "development" || normalized === "dev") return "development";
-  
+  if (normalized === "development" || normalized === "dev")
+    return "development";
+
   // Review variations
-  if (normalized === "review" || normalized === "code_review") return "code_review";
-  
+  if (normalized === "review" || normalized === "code_review")
+    return "code_review";
+
   // Default fallback
   return "development";
 }
@@ -96,7 +98,7 @@ export function inferActivity(
   if (d.includes("meeting")) return "meeting";
   if (d.includes("review")) return "code_review";
   if (d.includes("ops") || d.includes("operation")) return "operations";
-  
+
   // Default to development
   return "development";
 }
