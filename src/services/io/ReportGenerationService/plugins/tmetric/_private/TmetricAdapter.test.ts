@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mockTmetricResponse } from "./__test__/mock-tmetric-response.ts";
 import type { TMetricAdapterInput } from "./TmetricAdapter.ts";
 import { adaptTMetricToGeneric, inferActivity } from "./TmetricAdapter.ts";
+import type { TMetricTag } from "./TmetricSchemas.ts";
 
 describe("TmetricAdapter", () => {
   const createMockInput = (
@@ -248,108 +249,123 @@ describe("TmetricAdapter", () => {
   });
 
   describe("inferActivity", () => {
-    it("should infer 'meeting' activity from note containing 'meeting'", () => {
-      expect(inferActivity("daily standup meeting", "Project A")).toBe(
-        "meeting",
-      );
-      expect(inferActivity("meeting with client", "Project B")).toBe("meeting");
-      expect(inferActivity("team meeting", "Project C")).toBe("meeting");
+    const createTag = (name: string): TMetricTag => ({
+      id: 1,
+      name,
+      isWorkType: false,
     });
 
-    it("should infer 'meeting' activity from project name containing 'meeting'", () => {
-      expect(inferActivity("discussion", "Project - meetings")).toBe("meeting");
-      expect(inferActivity("chat", "Meeting Room")).toBe("meeting");
-    });
-
-    it("should infer 'code_review' activity from note containing 'review'", () => {
-      expect(inferActivity("code review", "Project A")).toBe("code_review");
-      expect(inferActivity("PR review", "Project B")).toBe("code_review");
-      expect(inferActivity("reviewing changes", "Project C")).toBe(
-        "code_review",
-      );
-    });
-
-    it("should infer 'code_review' activity from project name containing 'review'", () => {
-      expect(inferActivity("checking code", "Review Project")).toBe(
-        "code_review",
-      );
-    });
-
-    it("should infer 'operations' activity from note containing 'ops'", () => {
-      expect(inferActivity("dev ops work", "Project A")).toBe("operations");
-      expect(inferActivity("operations planning", "Project B")).toBe(
-        "operations",
-      );
-    });
-
-    it("should infer 'operations' activity from note containing 'operation'", () => {
-      expect(inferActivity("system operation", "Project A")).toBe("operations");
-    });
-
-    it("should infer 'operations' activity from project name containing 'ops'", () => {
-      expect(inferActivity("maintenance", "Dev Ops")).toBe("operations");
-    });
-
-    it("should default to 'development' for other activities", () => {
-      expect(inferActivity("implementing feature", "Project A")).toBe(
-        "development",
-      );
-      expect(inferActivity("bug fix", "Project B")).toBe("development");
-      expect(inferActivity("refactoring code", "Project C")).toBe(
-        "development",
-      );
-    });
-
-    it("should handle case-insensitive matching", () => {
-      expect(inferActivity("MEETING with team", "Project A")).toBe("meeting");
-      expect(inferActivity("Code REVIEW", "Project B")).toBe("code_review");
-      expect(inferActivity("OPS work", "Project C")).toBe("operations");
-    });
-
-    it("should handle empty strings", () => {
-      expect(inferActivity("", "")).toBe("development");
-      expect(inferActivity("", "Project A")).toBe("development");
-      expect(inferActivity("some work", "")).toBe("development");
-    });
-
-    it("should prioritize 'meeting' over other matches", () => {
-      expect(inferActivity("meeting about ops review", "Project A")).toBe(
-        "meeting",
-      );
-    });
-
-    it("should prioritize 'code_review' over 'operations'", () => {
-      expect(inferActivity("review of ops changes", "Project A")).toBe(
-        "code_review",
-      );
-    });
-
-    it("should work with actual mock data examples", () => {
-      // Test with actual entries from mock data
+    it("should infer 'meeting' activity from 'activity:meeting' tag", () => {
       expect(
-        inferActivity(
-          "planning work / task analysis / code review",
-          "Atellio - Operations",
-        ),
+        inferActivity("daily standup", [createTag("activity:meeting")]),
+      ).toBe("meeting");
+      expect(
+        inferActivity("discussion", [createTag("activity:meeting")]),
+      ).toBe("meeting");
+      expect(
+        inferActivity("chat", [createTag("activity:meeting")]),
+      ).toBe("meeting");
+    });
+
+    it("should infer 'code_review' activity from 'activity:review' tag", () => {
+      expect(
+        inferActivity("code review", [createTag("activity:review")]),
       ).toBe("code_review");
-      expect(inferActivity("Operations", "Countful - Development")).toBe(
-        "operations",
-      );
-      expect(inferActivity("chat with Scott", "Atellio - meetings")).toBe(
-        "meeting",
-      );
       expect(
-        inferActivity(
-          "v1-1081-custom-nike-integration-plan",
-          "Atellio - development",
-        ),
+        inferActivity("PR review", [createTag("activity:review")]),
+      ).toBe("code_review");
+      expect(
+        inferActivity("checking code", [createTag("activity:review")]),
+      ).toBe("code_review");
+    });
+
+    it("should infer 'operations' activity from 'activity:operations' tag", () => {
+      expect(
+        inferActivity("dev ops work", [createTag("activity:operations")]),
+      ).toBe("operations");
+      expect(
+        inferActivity("planning", [createTag("activity:operations")]),
+      ).toBe("operations");
+      expect(
+        inferActivity("maintenance", [createTag("activity:operations")]),
+      ).toBe("operations");
+    });
+
+    it("should infer 'polishment' activity from 'activity:polishment' tag", () => {
+      expect(
+        inferActivity("code polish", [createTag("activity:polishment")]),
+      ).toBe("polishment");
+      expect(
+        inferActivity("refactoring", [createTag("activity:polishment")]),
+      ).toBe("polishment");
+    });
+
+    it("should infer 'development' activity from 'activity:development' tag", () => {
+      expect(
+        inferActivity("implementing feature", [
+          createTag("activity:development"),
+        ]),
       ).toBe("development");
       expect(
-        inferActivity(
-          "tmetric reports generation",
-          "Passionware Internal Development",
-        ),
+        inferActivity("bug fix", [createTag("activity:development")]),
       ).toBe("development");
+    });
+
+    it("should handle case-insensitive tag matching", () => {
+      expect(
+        inferActivity("work", [createTag("activity:MEETING")]),
+      ).toBe("meeting");
+      expect(
+        inferActivity("work", [createTag("ACTIVITY:review")]),
+      ).toBe("code_review");
+      expect(
+        inferActivity("work", [createTag("Activity:Operations")]),
+      ).toBe("operations");
+    });
+
+    it("should fallback to description when no activity tag is present", () => {
+      expect(inferActivity("daily standup meeting", [])).toBe("meeting");
+      expect(inferActivity("code review", [])).toBe("code_review");
+      expect(inferActivity("dev ops work", [])).toBe("operations");
+      expect(inferActivity("implementing feature", [])).toBe("development");
+    });
+
+    it("should default to 'development' when no activity tag and no matching description", () => {
+      expect(inferActivity("some work", [])).toBe("development");
+      expect(inferActivity("", [])).toBe("development");
+      expect(inferActivity(null, [])).toBe("development");
+    });
+
+    it("should prioritize activity tag over description", () => {
+      expect(
+        inferActivity("meeting about ops", [createTag("activity:operations")]),
+      ).toBe("operations");
+      expect(
+        inferActivity("review of ops changes", [
+          createTag("activity:operations"),
+        ]),
+      ).toBe("operations");
+    });
+
+    it("should handle multiple tags and use first activity tag found", () => {
+      expect(
+        inferActivity("work", [
+          createTag("other-tag"),
+          createTag("activity:meeting"),
+          createTag("activity:operations"),
+        ]),
+      ).toBe("meeting");
+    });
+
+    it("should handle tag name variations", () => {
+      // "review" tag should map to "code_review"
+      expect(
+        inferActivity("work", [createTag("activity:review")]),
+      ).toBe("code_review");
+      // "dev" tag should map to "development"
+      expect(inferActivity("work", [createTag("activity:dev")])).toBe(
+        "development",
+      );
     });
   });
 
