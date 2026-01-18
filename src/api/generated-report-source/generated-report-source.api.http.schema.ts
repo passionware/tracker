@@ -1,6 +1,8 @@
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
 import { GeneratedReportSource } from "./generated-report-source.api";
+import { GenericReport } from "@/services/io/_common/GenericReport";
+import { mapValues } from "lodash";
 
 const taskType$ = z.object({
   name: z.string(),
@@ -117,6 +119,35 @@ export function generatedReportSourceFromHttp(
 ): GeneratedReportSource {
   return {
     ...camelcaseKeys(generatedReportSource),
+    data: fixLegacyRates(
+      generatedReportSource.data,
+      generatedReportSource.created_at,
+    ),
     originalData: generatedReportSource.original_data,
   }; // camelCaseKeys for some reason makes the original_data optional
+}
+
+function fixLegacyRates(data: GenericReport, dateCreated: Date): GenericReport {
+  if (dateCreated < new Date("2026-01-18")) {
+    return {
+      ...data,
+      definitions: {
+        ...data.definitions,
+        roleTypes: mapValues(data.definitions.roleTypes, (role) => {
+          return {
+            ...role,
+            rates: role.rates.map((rate) => {
+              return {
+                ...rate,
+                activityTypes: [],
+                taskTypes: [],
+                projectIds: [],
+              };
+            }),
+          };
+        }),
+      },
+    };
+  }
+  return data;
 }
