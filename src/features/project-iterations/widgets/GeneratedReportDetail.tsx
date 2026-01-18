@@ -917,8 +917,10 @@ function BasicInformationView(
                                               {rate.projectIds
                                                 .map((projectId) => {
                                                   const projectType =
-                                                    props.report.data.definitions
-                                                      .projectTypes[projectId];
+                                                    props.report.data
+                                                      .definitions.projectTypes[
+                                                      projectId
+                                                    ];
                                                   return (
                                                     projectType?.name ||
                                                     projectId

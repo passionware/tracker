@@ -75,42 +75,67 @@ export function inferActivity(
 export function adaptTMetricToGeneric(
   input: TMetricAdapterInput,
 ): GenericReport {
-  // Build unique task types from notes, with fallbacks for missing data
-  const uniqueDescriptions = new Map<string, string>();
+  // Build unique task names (original labels) and assign short sequential IDs
+  const uniqueTaskNames = new Set<string>();
+  const taskNameToShortId = new Map<string, string>();
+  let taskCounter = 1;
+
+  // Build unique activity names (original labels) and assign short sequential IDs
+  const uniqueActivityNames = new Set<string>();
+  const activityNameToShortId = new Map<string, string>();
+  let activityCounter = 1;
+
   // Build unique project types from project IDs (use TMetric project ID)
   const uniqueProjects = new Map<string, { id: string; name: string }>();
 
+  // First pass: collect all unique task and activity names
   for (const e of input.entries) {
     const taskName = resolveTaskName(e);
+    if (!uniqueTaskNames.has(taskName)) {
+      uniqueTaskNames.add(taskName);
+      const shortTaskId = `t${taskCounter++}`;
+      taskNameToShortId.set(taskName, shortTaskId);
+    }
 
-    if (!uniqueDescriptions.has(taskName)) {
-      uniqueDescriptions.set(taskName, taskName);
+    const projectName = e.project?.name || null;
+    const activityName = inferActivity(e.note, projectName, e.tags || []);
+    if (!uniqueActivityNames.has(activityName)) {
+      uniqueActivityNames.add(activityName);
+      const shortActivityId = `a${activityCounter++}`;
+      activityNameToShortId.set(activityName, shortActivityId);
     }
 
     // Extract project ID and name from TMetric entry
     if (e.project) {
       const projectId = String(e.project.id);
-      const projectName = e.project.name?.trim() || "default";
+      const projectDisplayName = e.project.name?.trim() || "default";
       if (!uniqueProjects.has(projectId)) {
-        uniqueProjects.set(projectId, { id: projectId, name: projectName });
+        uniqueProjects.set(projectId, {
+          id: projectId,
+          name: projectDisplayName,
+        });
       }
     } else {
       // Fallback for entries without project
       const projectId = "default";
-      const projectName = "default";
+      const projectDisplayName = "default";
       if (!uniqueProjects.has(projectId)) {
-        uniqueProjects.set(projectId, { id: projectId, name: projectName });
+        uniqueProjects.set(projectId, {
+          id: projectId,
+          name: projectDisplayName,
+        });
       }
     }
   }
 
+  // Build taskTypes with short IDs as keys, original names as values
   const taskTypes: Record<
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
-  for (const [taskId, taskName] of uniqueDescriptions.entries()) {
-    taskTypes[taskId] = {
-      name: taskName,
+  for (const [taskName, shortTaskId] of taskNameToShortId.entries()) {
+    taskTypes[shortTaskId] = {
+      name: taskName, // Store original name for label mapping
       description: taskName,
       parameters: {},
     };
@@ -128,31 +153,31 @@ export function adaptTMetricToGeneric(
     };
   }
 
+  // Build activityTypes with short IDs as keys, original names as values
   const activityTypes: Record<
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
-  > = {
-    development: {
-      name: "Development",
-      description: "Hands-on implementation work",
-      parameters: {},
-    },
-    code_review: {
-      name: "Code Review",
-      description: "PR/MR reviews and related",
-      parameters: {},
-    },
-    meeting: {
-      name: "Meeting",
-      description: "Calls, standups, ceremonies",
-      parameters: {},
-    },
-    operations: {
-      name: "Operations",
-      description: "Planning, triage, coordination",
-      parameters: {},
-    },
+  > = {};
+  const activityNameToDisplayName: Record<string, string> = {
+    development: "Development",
+    code_review: "Code Review",
+    meeting: "Meeting",
+    operations: "Operations",
   };
+  for (const [activityName, shortActivityId] of activityNameToShortId.entries()) {
+    activityTypes[shortActivityId] = {
+      name: activityNameToDisplayName[activityName] || activityName, // Store display name for label mapping
+      description:
+        activityName === "development"
+          ? "Hands-on implementation work"
+          : activityName === "code_review"
+            ? "PR/MR reviews and related"
+            : activityName === "meeting"
+              ? "Calls, standups, ceremonies"
+              : "Planning, triage, coordination",
+      parameters: {},
+    };
+  }
 
   const roleTypes: Record<string, RoleType> = {
     [input.defaultRoleId]: {
@@ -166,11 +191,13 @@ export function adaptTMetricToGeneric(
     // Handle missing project data
     const projectName = e.project?.name || null;
 
-    // Determine activity and task with fallbacks
-    const activityId = inferActivity(e.note, projectName, e.tags || []);
+    // Determine activity and task names (original labels)
+    const activityName = inferActivity(e.note, projectName, e.tags || []);
+    const taskName = resolveTaskName(e);
 
-    // Determine task ID with multiple fallbacks
-    const taskId = resolveTaskName(e);
+    // Map to short IDs
+    const activityId = activityNameToShortId.get(activityName) || activityName;
+    const taskId = taskNameToShortId.get(taskName) || taskName;
 
     // Handle date parsing with validation
     let startAt: Date;

@@ -36,6 +36,14 @@ function getSerializableCubeConfig(
     }
   });
 
+  // Create task label mapping from report definitions
+  const taskLabelMapping: Record<string, string> = {};
+  Object.entries(report.data.definitions.taskTypes).forEach(
+    ([taskId, taskType]) => {
+      taskLabelMapping[taskId] = taskType.name;
+    },
+  );
+
   // Create activity label mapping from report definitions
   const activityLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.activityTypes).forEach(
@@ -99,6 +107,9 @@ function getSerializableCubeConfig(
       name: "Task",
       icon: "📋",
       fieldName: "taskId",
+      ...(Object.keys(taskLabelMapping).length > 0 && {
+        labelMapping: taskLabelMapping,
+      }),
     },
     {
       id: "contractor",
