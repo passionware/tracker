@@ -28,9 +28,17 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
-import { maybe, rd } from "@passionware/monads";
+import { maybe, mt, rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useState } from "react";
+import { promiseState } from "@passionware/platform-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 
 const columnHelper = createColumnHelper<any>();
 
@@ -63,6 +71,47 @@ export function GeneratedReportList(
     rd.tryMap(generatedReports, (r) => r.map((e) => e.id)),
     setSelection,
   );
+
+  // Delete mutation for selected reports
+  const deleteMutation = promiseState.useMutation(async () => {
+    const selectedIds = selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(generatedReports)?.map((e) => e.id) ?? [],
+    );
+
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    // Delete each selected report
+    for (const reportId of selectedIds) {
+      await props.services.generatedReportSourceWriteService.deleteGeneratedReportSource(
+        reportId,
+      );
+    }
+
+    // Clear selection after successful deletion
+    setSelection(selectionState.selectNone());
+  });
+
+  const selectedReportIds = selectionState.getSelectedIds(
+    selection,
+    rd.tryGet(generatedReports)?.map((e) => e.id) ?? [],
+  );
+
+  async function handleBatchDelete() {
+    if (selectedReportIds.length === 0) return;
+
+    try {
+      await deleteMutation.track(void 0);
+      toast.success(
+        `Successfully deleted ${selectedReportIds.length} report(s)`,
+      );
+    } catch (error) {
+      console.error("Error deleting reports:", error);
+      toast.error("Failed to delete reports");
+    }
+  }
 
   return (
     <ListView
@@ -194,9 +243,41 @@ export function GeneratedReportList(
             </div>
 
             <div className="flex items-center gap-2">
-              <ListToolbarButton variant="destructive">
-                Delete
-              </ListToolbarButton>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div>
+                    <ListToolbarButton
+                      variant="destructive"
+                      disabled={mt.isInProgress(deleteMutation.state)}
+                    >
+                      Delete
+                    </ListToolbarButton>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <div className="space-y-3">
+                    <div className="text-sm text-slate-700">
+                      Are you sure you want to delete {selectedReportIds.length}{" "}
+                      selected report(s)? This action cannot be undone.
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchDelete}
+                        disabled={mt.isInProgress(deleteMutation.state)}
+                      >
+                        {mt.isInProgress(deleteMutation.state)
+                          ? "Deleting..."
+                          : "Confirm"}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
