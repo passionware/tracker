@@ -77,8 +77,8 @@ export function adaptTMetricToGeneric(
 ): GenericReport {
   // Build unique task types from notes, with fallbacks for missing data
   const uniqueDescriptions = new Map<string, string>();
-  // Build unique project types from project names
-  const uniqueProjects = new Map<string, string>();
+  // Build unique project types from project IDs (use TMetric project ID)
+  const uniqueProjects = new Map<string, { id: string; name: string }>();
 
   for (const e of input.entries) {
     const taskName = resolveTaskName(e);
@@ -87,16 +87,26 @@ export function adaptTMetricToGeneric(
       uniqueDescriptions.set(taskName, taskName);
     }
 
-    // Extract project names
-    const projectName = e.project?.name?.trim() || "default";
-    if (!uniqueProjects.has(projectName)) {
-      uniqueProjects.set(projectName, projectName);
+    // Extract project ID and name from TMetric entry
+    if (e.project) {
+      const projectId = String(e.project.id);
+      const projectName = e.project.name?.trim() || "default";
+      if (!uniqueProjects.has(projectId)) {
+        uniqueProjects.set(projectId, { id: projectId, name: projectName });
+      }
+    } else {
+      // Fallback for entries without project
+      const projectId = "default";
+      const projectName = "default";
+      if (!uniqueProjects.has(projectId)) {
+        uniqueProjects.set(projectId, { id: projectId, name: projectName });
+      }
     }
   }
 
   const taskTypes: Record<
     string,
-    { name: string; description: string; parameters: Record<string, any> }
+    { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
   for (const [taskId, taskName] of uniqueDescriptions.entries()) {
     taskTypes[taskId] = {
@@ -108,19 +118,19 @@ export function adaptTMetricToGeneric(
 
   const projectTypes: Record<
     string,
-    { name: string; description: string; parameters: Record<string, any> }
+    { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
-  for (const [projectId, projectName] of uniqueProjects.entries()) {
+  for (const [projectId, project] of uniqueProjects.entries()) {
     projectTypes[projectId] = {
-      name: projectName,
-      description: projectName,
+      name: project.name,
+      description: project.name,
       parameters: {},
     };
   }
 
   const activityTypes: Record<
     string,
-    { name: string; description: string; parameters: Record<string, any> }
+    { name: string; description: string; parameters: Record<string, unknown> }
   > = {
     development: {
       name: "Development",
@@ -196,7 +206,7 @@ export function adaptTMetricToGeneric(
       note: null, // Note field is redundant for TMetric reports
       taskId,
       activityId,
-      projectId: e.project?.name || "default", // Use TMetric project name as projectId
+      projectId: e.project ? String(e.project.id) : "default", // Use TMetric project ID
       roleId: input.defaultRoleId,
       contractorId: input.contractorId,
       createdAt: startAt,

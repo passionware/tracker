@@ -2,6 +2,19 @@ import { Report } from "@/api/reports/reports.api";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport } from "@/services/io/_common/GenericReport";
 
+export type PrefilledRateResult = Array<{
+  contractorId: number;
+  rates: Array<{
+    id: string;
+    costRate: number;
+    costCurrency: string;
+    billingRate: number;
+    billingCurrency: string;
+    projectId?: string;
+    rateSource?: "expression" | "manual";
+  }>;
+}>;
+
 /**
  * Extracts prefilled rates from a GenericReport by resolving expression variables.
  * This function is agnostic to the source of the GenericReport (TMetric, etc.)
@@ -15,37 +28,19 @@ export async function extractPrefilledRatesFromGenericReport(
   report: GenericReport,
   expressionService: WithExpressionService["expressionService"],
   contractorReports: Map<number, Report>,
-): Promise<
-  Array<{
-    contractorId: number;
-    rates: Array<{
-      id: string;
-      costRate: number;
-      costCurrency: string;
-      billingRate: number;
-      billingCurrency: string;
-      projectId?: number;
-      rateSource?: "expression" | "manual";
-    }>;
-  }>
-> {
+): Promise<PrefilledRateResult> {
   // Parse rate configuration (supports both simple strings and JSON arrays)
-  const parseRateConfiguration = (
-    rateConfig: string,
-    projectId: number,
-  ) => {
+  const parseRateConfiguration = (rateConfig: string, projectId: string) => {
     try {
       // Try to parse as JSON first
       const parsed = JSON.parse(rateConfig);
       if (Array.isArray(parsed)) {
         // JSON format: [{ projectIds: ['id1'], rate: '123 eur' }]
         const matchingConfig = parsed.find(
-          (config: {
-            projectIds?: Array<string | number>;
-            rate?: string;
-          }) =>
-            config.projectIds?.includes(projectId.toString()) ||
-            config.projectIds?.includes(projectId),
+          (config: { projectIds?: Array<string | number>; rate?: string }) =>
+            config.projectIds?.includes(projectId) ||
+            config.projectIds?.includes(Number(projectId)) ||
+            config.projectIds?.some((id) => String(id) === projectId),
         );
         if (matchingConfig && matchingConfig.rate) {
           return parseSimpleRate(matchingConfig.rate);
@@ -61,7 +56,15 @@ export async function extractPrefilledRatesFromGenericReport(
   };
 
   const parseSimpleRate = (rateString: string) => {
-    const parts = String(rateString).trim().split(/\s+/);
+    const match = String(rateString)
+      .trim()
+      .match(/^([\d.,]+)\s*([A-Za-z]{3})$/);
+    if (!match) {
+      throw new Error(`Invalid rate string: ${rateString}`);
+    }
+    const parts = match
+      ? [match[1], match[2]]
+      : String(rateString).trim().split(/\s+/);
     return {
       rate: parseFloat(parts[0]) || 0,
       currency: parts[1] || "EUR",
@@ -69,9 +72,10 @@ export async function extractPrefilledRatesFromGenericReport(
   };
 
   // Extract unique projects from GenericReport
+  // Project IDs are strings (from TMetric project.id converted to string)
   const projects = Object.entries(report.definitions.projectTypes).map(
     ([projectId, projectType]) => ({
-      id: parseInt(projectId) || 0,
+      id: projectId, // Keep as string to match TMetric project IDs
       name: projectType.name,
     }),
   );
@@ -83,18 +87,7 @@ export async function extractPrefilledRatesFromGenericReport(
   }
 
   // Pre-fill rates for each contractor-project combination found in data
-  const prefilled: Array<{
-    contractorId: number;
-    rates: Array<{
-      id: string;
-      costRate: number;
-      costCurrency: string;
-      billingRate: number;
-      billingCurrency: string;
-      projectId?: number;
-      rateSource?: "expression" | "manual";
-    }>;
-  }> = [];
+  const prefilled: PrefilledRateResult = [];
 
   for (const contractorId of contractorIds) {
     // Find the report for this contractor to get the correct workspace/client context
@@ -110,19 +103,17 @@ export async function extractPrefilledRatesFromGenericReport(
         contractorId: contractorId,
       };
 
-      const costRateString =
-        await expressionService.ensureExpressionValue(
-          expressionContext,
-          `vars.hour_cost_rate`,
-          {},
-        );
+      const costRateString = await expressionService.ensureExpressionValue(
+        expressionContext,
+        `vars.hour_cost_rate`,
+        {},
+      );
 
-      const billingRateString =
-        await expressionService.ensureExpressionValue(
-          expressionContext,
-          `vars.hour_billing_rate`,
-          { fallback: costRateString }, // fallback to cost rate
-        );
+      const billingRateString = await expressionService.ensureExpressionValue(
+        expressionContext,
+        `vars.hour_billing_rate`,
+        { fallback: costRateString }, // fallback to cost rate
+      );
 
       const costRate = parseRateConfiguration(
         String(costRateString),
@@ -144,7 +135,7 @@ export async function extractPrefilledRatesFromGenericReport(
           costCurrency: costRate.currency,
           billingRate: billingRate.rate,
           billingCurrency: billingRate.currency,
-          projectId: project.id, // Make it project-specific
+          projectId: project.id, // Keep as string to match GenericReport structure
           rateSource: "expression",
         });
       } else {
@@ -157,7 +148,7 @@ export async function extractPrefilledRatesFromGenericReport(
               costCurrency: costRate.currency,
               billingRate: billingRate.rate,
               billingCurrency: billingRate.currency,
-              projectId: project.id, // Make it project-specific
+              projectId: project.id, // Keep as string to match GenericReport structure
               rateSource: "expression",
             },
           ],
