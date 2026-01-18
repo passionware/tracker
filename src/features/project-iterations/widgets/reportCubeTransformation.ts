@@ -73,7 +73,7 @@ export function transformReportData(
     const billingValue = numHours * matchingRate.billingRate;
     const profitValue = billingValue - costValue;
     // Calculate hourly rate (cost per hour)
-    const hourlyRate = numHours > 0 ? costValue / numHours : 0;
+    const hourlyRate = numHours > 0 ? billingValue / numHours : 0;
 
     // Anonymize contractorId if project matches a rule
     let contractorId = entry.contractorId;
@@ -312,6 +312,7 @@ function filterUnselectedMeasurements(
     billing: "billingValue",
     profit: "profitValue",
     entries: "entries",
+    hourlyRate: "hourlyRate",
   };
 
   return entries.map((entry) => {
@@ -377,6 +378,8 @@ export function filterInactiveDimensionFields(
       filteredEntry.billingValue = entry.billingValue;
     if (entry.profitValue !== undefined)
       filteredEntry.profitValue = entry.profitValue;
+    if (entry.hourlyRate !== undefined)
+      filteredEntry.hourlyRate = entry.hourlyRate;
 
     return filteredEntry;
   });
@@ -425,6 +428,7 @@ export function anonymizeByUsage(
       cost: "costValue",
       billing: "billingValue",
       profit: "profitValue",
+      hourlyRate: "hourlyRate",
     };
 
     const fieldName = measureFieldMap[measure.id];
