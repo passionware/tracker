@@ -202,6 +202,7 @@ export function LinkedReportList(
                             reports={selectedReports.map(
                               (e) => e.originalReport,
                             )}
+                            projectIterationId={props.projectIterationId}
                             services={props.services}
                           />
                         );
