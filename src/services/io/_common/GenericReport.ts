@@ -20,19 +20,21 @@ export interface ProjectType {
     currency: string;
   };
 }
+
+export interface RoleRate {
+  billing: "hourly";
+  activityTypes: string[];
+  taskTypes: string[];
+  projectIds: string[]; // Project-specific rate (empty array means all projects)
+  costRate: number; // What we pay the contractor
+  costCurrency: string; // Currency for cost rate
+  billingRate: number; // What we charge the client
+  billingCurrency: string; // Currency for billing rate
+}
 export interface RoleType {
   name: string;
   description: string;
-  rates: Array<{
-    billing: "hourly";
-    activityType: string;
-    taskType: string;
-    projectId?: string; // Optional project-specific rate
-    costRate: number; // What we pay the contractor
-    costCurrency: string; // Currency for cost rate
-    billingRate: number; // What we charge the client
-    billingCurrency: string; // Currency for billing rate
-  }>;
+  rates: Array<RoleRate>;
 }
 export interface GenericReport {
   definitions: {
