@@ -124,9 +124,10 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 /**
  * Merges multiple GenericReport objects into a single report.
  * - Task types are merged by their IDs (original tmetric entry descriptions)
- * - Activity types are merged (should be the same across contractors)
+ * - Activity types are deduplicated by display name (multiple contractors may have same activities with different IDs)
+ * - Project types are merged
  * - Role types are kept separate (each contractor has their own role with rates)
- * - Time entries are combined from all reports
+ * - Time entries are combined from all reports with remapped activity IDs
  */
 function mergeGenericReports(reports: GenericReport[]): GenericReport {
   if (reports.length === 0) {
@@ -148,6 +149,14 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     timeEntries: [...reports[0].timeEntries],
   };
 
+  // Track activity display names to deduplicate (display name -> activity ID in merged report)
+  const activityDisplayNameToId = new Map<string, string>();
+  for (const [activityId, activityType] of Object.entries(
+    merged.definitions.activityTypes,
+  )) {
+    activityDisplayNameToId.set(activityType.name, activityId);
+  }
+
   // Merge remaining reports
   for (let i = 1; i < reports.length; i++) {
     const report = reports[i];
@@ -155,11 +164,24 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     // Merge task types by ID (original tmetric entry descriptions)
     Object.assign(merged.definitions.taskTypes, report.definitions.taskTypes);
 
-    // Merge activity types (should be the same, but merge to be safe)
-    Object.assign(
-      merged.definitions.activityTypes,
+    // Merge activity types with deduplication by display name
+    // Build mapping from old activity ID to new (deduplicated) activity ID
+    const activityIdRemapping = new Map<string, string>();
+    for (const [activityId, activityType] of Object.entries(
       report.definitions.activityTypes,
-    );
+    )) {
+      const displayName = activityType.name;
+      if (activityDisplayNameToId.has(displayName)) {
+        // This display name already exists - reuse the existing ID
+        const existingId = activityDisplayNameToId.get(displayName)!;
+        activityIdRemapping.set(activityId, existingId);
+      } else {
+        // New display name - add it to merged report
+        merged.definitions.activityTypes[activityId] = activityType;
+        activityDisplayNameToId.set(displayName, activityId);
+        activityIdRemapping.set(activityId, activityId); // Map to itself
+      }
+    }
 
     // Merge project types
     Object.assign(
@@ -170,8 +192,12 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     // Keep role types separate - each contractor has their own role
     Object.assign(merged.definitions.roleTypes, report.definitions.roleTypes);
 
-    // Combine time entries
-    merged.timeEntries.push(...report.timeEntries);
+    // Combine time entries with remapped activity IDs
+    const remappedTimeEntries = report.timeEntries.map((entry) => ({
+      ...entry,
+      activityId: activityIdRemapping.get(entry.activityId) || entry.activityId,
+    }));
+    merged.timeEntries.push(...remappedTimeEntries);
   }
 
   return merged;
