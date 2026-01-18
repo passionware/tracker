@@ -914,7 +914,17 @@ function BasicInformationView(
                                           {rate.projectIds.length > 0 && (
                                             <div className="text-xs text-slate-500 mt-1">
                                               Projects:{" "}
-                                              {rate.projectIds.join(", ")}
+                                              {rate.projectIds
+                                                .map((projectId) => {
+                                                  const projectType =
+                                                    props.report.data.definitions
+                                                      .projectTypes[projectId];
+                                                  return (
+                                                    projectType?.name ||
+                                                    projectId
+                                                  );
+                                                })
+                                                .join(", ")}
                                             </div>
                                           )}
                                         </div>
@@ -977,9 +987,43 @@ function BasicInformationView(
                             className="flex justify-between text-xs text-slate-600"
                           >
                             <span>
-                              {rate.activityTypes.join(", ")} -{" "}
-                              {rate.taskTypes.join(", ")}
-                              {rate.projectIds.join(", ")}
+                              {rate.activityTypes.length > 0 &&
+                                rate.activityTypes
+                                  .map((activityId) => {
+                                    const activityType =
+                                      props.report.data.definitions
+                                        .activityTypes[activityId];
+                                    return activityType?.name || activityId;
+                                  })
+                                  .join(", ")}
+                              {rate.activityTypes.length > 0 &&
+                                rate.taskTypes.length > 0 &&
+                                " - "}
+                              {rate.taskTypes.length > 0 &&
+                                rate.taskTypes
+                                  .map((taskId) => {
+                                    const taskType =
+                                      props.report.data.definitions.taskTypes[
+                                        taskId
+                                      ];
+                                    return taskType?.name || taskId;
+                                  })
+                                  .join(", ")}
+                              {rate.projectIds.length > 0 && (
+                                <>
+                                  {(rate.activityTypes.length > 0 ||
+                                    rate.taskTypes.length > 0) &&
+                                    " - "}
+                                  {rate.projectIds
+                                    .map((projectId) => {
+                                      const projectType =
+                                        props.report.data.definitions
+                                          .projectTypes[projectId];
+                                      return projectType?.name || projectId;
+                                    })
+                                    .join(", ")}
+                                </>
+                              )}
                             </span>
                             <span>
                               {props.services.formatService.financial.amount(
