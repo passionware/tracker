@@ -9,6 +9,9 @@ export interface ProjectIterationService {
   useProjectIterations: (
     query: Maybe<ProjectIterationQuery>,
   ) => RemoteData<ProjectIteration[]>;
+  ensureProjectIterations: (
+    query: ProjectIterationQuery,
+  ) => Promise<ProjectIteration[]>;
   useProjectIterationDetail: (
     id: Maybe<ProjectIterationDetail["id"]>,
   ) => RemoteData<ProjectIterationDetail>;

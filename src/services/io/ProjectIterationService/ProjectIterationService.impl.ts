@@ -34,6 +34,11 @@ export function createProjectIterationService({
           client,
         ),
       ),
+    ensureProjectIterations: (query) =>
+      client.ensureQueryData({
+        queryKey: ["project-iteration", "list", query],
+        queryFn: () => api.getProjectIterations(query),
+      }),
     useProjectIterationDetail: (id) =>
       ensureIdleQuery(
         id,
