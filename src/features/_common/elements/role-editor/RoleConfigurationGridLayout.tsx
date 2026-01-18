@@ -14,7 +14,7 @@ const Root = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        "grid gap-5 md:grid-cols-[1fr_repeat(5,min-content)]",
+        "grid gap-5 md:grid-cols-[1fr_repeat(8,min-content)]",
         className,
       )}
       {...props}

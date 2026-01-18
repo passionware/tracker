@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
 import { RoleConfigurationGridLayout } from "./RoleConfigurationGridLayout";
+import { RoleRate } from "@/services/io/_common/GenericReport";
 import { X } from "lucide-react";
 
 export interface ProjectDefinition {
@@ -30,76 +31,110 @@ export interface ContractorDefinition {
   label: string;
 }
 
-export interface Role {
+export interface TaskTypeDefinition {
+  id: string;
+  label: string;
+}
+
+export interface ActivityTypeDefinition {
+  id: string;
+  label: string;
+}
+
+export interface RoleRateWithContractor {
   contractorId: string;
-  projectIds: string[];
-  internalRate: number;
-  internalCurrency: string;
-  externalRate: number;
-  externalCurrency: string;
+  rate: RoleRate;
 }
 
 export interface RoleEditorProps {
-  projects: ProjectDefinition[];
+  projects?: ProjectDefinition[];
+  taskTypes?: TaskTypeDefinition[];
+  activityTypes?: ActivityTypeDefinition[];
   contractors: ContractorDefinition[];
-  roles: Role[];
-  onChange: (roles: Role[]) => void;
+  roleRates: RoleRateWithContractor[];
+  onChange: (roleRates: RoleRateWithContractor[]) => void;
+  showProjects?: boolean;
+  showTaskTypes?: boolean;
+  showActivityTypes?: boolean;
 }
 
 const COMMON_CURRENCIES = ["EUR", "USD", "PLN", "GBP"];
 
 export function RoleEditor({
-  projects,
+  projects = [],
+  taskTypes = [],
+  activityTypes = [],
   contractors,
-  roles,
+  roleRates,
   onChange,
+  showProjects = true,
+  showTaskTypes = false,
+  showActivityTypes = false,
 }: RoleEditorProps) {
-  // Group roles by contractor for easier management
+  // Group role rates by contractor for easier management
   const contractorRoles = contractors.map((contractor) => ({
     contractor,
-    roles: roles.filter((role) => role.contractorId === contractor.id),
+    rates: roleRates
+      .filter((rr) => rr.contractorId === contractor.id)
+      .map((rr) => rr.rate),
   }));
 
-  const handleAddRole = (contractorId: string) => {
-    const newRole: Role = {
-      contractorId,
-      projectIds: projects.length > 0 ? [projects[0].id] : [],
-      internalRate: 0,
-      internalCurrency: "EUR",
-      externalRate: 0,
-      externalCurrency: "EUR",
+  const handleAddRate = (contractorId: string) => {
+    const newRate: RoleRate = {
+      billing: "hourly",
+      activityTypes:
+        showActivityTypes && activityTypes.length > 0
+          ? [activityTypes[0].id]
+          : [],
+      taskTypes: showTaskTypes && taskTypes.length > 0 ? [taskTypes[0].id] : [],
+      projectIds: showProjects && projects.length > 0 ? [projects[0].id] : [],
+      costRate: 0,
+      costCurrency: "EUR",
+      billingRate: 0,
+      billingCurrency: "EUR",
     };
 
-    onChange([...roles, newRole]);
+    onChange([...roleRates, { contractorId, rate: newRate }]);
   };
 
-  const handleRemoveRole = (contractorId: string, roleIndex: number) => {
-    onChange(
-      roles.filter(
-        (role, index) =>
-          !(role.contractorId === contractorId && index === roleIndex),
-      ),
+  const handleRemoveRate = (contractorId: string, rateIndex: number) => {
+    const contractorRates = roleRates.filter(
+      (rr) => rr.contractorId === contractorId,
     );
+    const rateToRemove = contractorRates[rateIndex];
+    onChange(roleRates.filter((rr) => rr !== rateToRemove));
   };
 
-  const handleRoleChange = (
+  const handleRateChange = (
     contractorId: string,
-    roleIndex: number,
-    field: keyof Role,
-    value: string | number | string[],
+    rateIndex: number,
+    field: keyof RoleRate,
+    value: string | number | string[] | undefined,
   ) => {
+    // For required array fields (activityTypes, taskTypes, projectIds), ensure we always have an array
+    if (
+      (field === "activityTypes" ||
+        field === "taskTypes" ||
+        field === "projectIds") &&
+      value === undefined
+    ) {
+      value = [];
+    }
+    const contractorRates = roleRates.filter(
+      (rr) => rr.contractorId === contractorId,
+    );
+    const rateToUpdate = contractorRates[rateIndex];
+    const updatedRate = { ...rateToUpdate.rate, [field]: value };
+    const updatedRoleRate = { ...rateToUpdate, rate: updatedRate };
+
     onChange(
-      roles.map((role, index) =>
-        role.contractorId === contractorId && index === roleIndex
-          ? { ...role, [field]: value }
-          : role,
-      ),
+      roleRates.map((rr) => (rr === rateToUpdate ? updatedRoleRate : rr)),
     );
   };
 
-  const totalRoles = roles.length;
+  const totalRates = roleRates.length;
   const activeContractors = contractorRoles.filter(
-    ({ roles }) => roles.length > 0,
+    ({ rates }) => rates.length > 0,
   ).length;
   const getInitials = (label: string) =>
     label
@@ -117,10 +152,10 @@ export function RoleEditor({
         <CardHeader className="relative gap-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl">Role Configuration</CardTitle>
+              <CardTitle className="text-xl">Role Rate Configuration</CardTitle>
               <CardDescription>
-                Configure internal and external rates for each
-                contractor-project combination.
+                Configure cost and billing rates for each contractor with
+                optional filters for projects, task types, and activity types.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -129,7 +164,7 @@ export function RoleEditor({
                 {activeContractors === 1 ? "" : "s"}
               </Badge>
               <Badge tone="secondary" variant="neutral">
-                {totalRoles} total role{totalRoles === 1 ? "" : "s"}
+                {totalRates} total rate{totalRates === 1 ? "" : "s"}
               </Badge>
             </div>
           </div>
@@ -137,11 +172,11 @@ export function RoleEditor({
       </Card>
 
       <RoleConfigurationGridLayout.Root>
-        {contractorRoles.map(({ contractor, roles: contractorRoles }) => (
+        {contractorRoles.map(({ contractor, rates }) => (
           <RoleConfigurationGridLayout.Contractor
             key={contractor.id}
             title={contractor.label}
-            subtitle={`${contractorRoles.length} rate${contractorRoles.length === 1 ? "" : "s"} configured`}
+            subtitle={`${rates.length} rate${rates.length === 1 ? "" : "s"} configured`}
             avatar={
               <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm dark:ring-slate-950">
                 <AvatarFallback className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -149,13 +184,13 @@ export function RoleEditor({
                 </AvatarFallback>
               </Avatar>
             }
-            onAddRole={() => handleAddRole(contractor.id)}
+            onAddRole={() => handleAddRate(contractor.id)}
           >
-            {contractorRoles.length === 0 ? (
+            {rates.length === 0 ? (
               <div className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-200/80 bg-slate-50/50 p-5 text-sm text-muted-foreground dark:border-slate-800/80 dark:bg-slate-950/40 col-span-full">
                 <span>No rates configured yet for this contractor.</span>
                 <Button
-                  onClick={() => handleAddRole(contractor.id)}
+                  onClick={() => handleAddRate(contractor.id)}
                   size="sm"
                   variant="secondary"
                   className="w-fit"
@@ -164,62 +199,111 @@ export function RoleEditor({
                 </Button>
               </div>
             ) : (
-              contractorRoles.map((role, roleIndex) => {
-                // Find the actual index in the global roles array
-                const globalRoleIndex = roles.findIndex((r) => r === role);
-
+              rates.map((rate, rateIndex) => {
                 return (
                   <RoleConfigurationGridLayout.Project
-                    key={`${role.contractorId}-${roleIndex}`}
+                    key={`${contractor.id}-${rateIndex}`}
                   >
-                    <div className="space-y-2 whitespace-nowrap">
-                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Projects
-                      </Label>
-                      <SimpleArrayPicker
-                        align="end"
-                        side="bottom"
-                        items={projects}
-                        value={role.projectIds}
-                        size="lg"
-                        itemSize="sm"
-                        className="w-full"
-                        onSelect={(projectIds) =>
-                          handleRoleChange(
-                            role.contractorId,
-                            globalRoleIndex,
-                            "projectIds",
-                            projectIds,
-                          )
-                        }
-                      />
-                    </div>
+                    {showProjects && (
+                      <div className="space-y-2 whitespace-nowrap">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Projects
+                        </Label>
+                        <SimpleArrayPicker
+                          align="end"
+                          side="bottom"
+                          items={projects}
+                          value={rate.projectIds}
+                          size="lg"
+                          itemSize="sm"
+                          className="w-full"
+                          onSelect={(projectIds) =>
+                            handleRateChange(
+                              contractor.id,
+                              rateIndex,
+                              "projectIds",
+                              projectIds,
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {showTaskTypes && (
+                      <div className="space-y-2 whitespace-nowrap">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Task Types
+                        </Label>
+                        <SimpleArrayPicker
+                          align="end"
+                          side="bottom"
+                          items={taskTypes}
+                          value={rate.taskTypes}
+                          size="lg"
+                          itemSize="sm"
+                          className="w-full"
+                          onSelect={(taskTypeIds) =>
+                            handleRateChange(
+                              contractor.id,
+                              rateIndex,
+                              "taskTypes",
+                              taskTypeIds,
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {showActivityTypes && (
+                      <div className="space-y-2 whitespace-nowrap">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Activity Types
+                        </Label>
+                        <SimpleArrayPicker
+                          align="end"
+                          side="bottom"
+                          items={activityTypes}
+                          value={rate.activityTypes}
+                          size="lg"
+                          itemSize="sm"
+                          className="w-full"
+                          onSelect={(activityTypeIds) =>
+                            handleRateChange(
+                              contractor.id,
+                              rateIndex,
+                              "activityTypes",
+                              activityTypeIds,
+                            )
+                          }
+                        />
+                      </div>
+                    )}
 
                     <div className="space-y-2 whitespace-nowrap">
                       <Label
-                        htmlFor={`internal-rate-${role.contractorId}-${roleIndex}`}
+                        htmlFor={`cost-rate-${contractor.id}-${rateIndex}`}
                         className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       >
-                        Internal Rate
+                        Cost Rate
                       </Label>
                       <div className="relative">
                         <NumberInput
                           className="min-w-40"
-                          id={`internal-rate-${role.contractorId}-${roleIndex}`}
+                          id={`cost-rate-${contractor.id}-${rateIndex}`}
                           step={0.01}
-                          value={role.internalRate || 0}
+                          value={rate.costRate || 0}
                           onChange={(value) =>
-                            handleRoleChange(
-                              role.contractorId,
-                              globalRoleIndex,
-                              "internalRate",
+                            handleRateChange(
+                              contractor.id,
+                              rateIndex,
+                              "costRate",
                               value,
                             )
                           }
                           placeholder="e.g. 50.00"
                           formatOptions={{
                             style: "currency",
-                            currency: role.internalCurrency,
+                            currency: rate.costCurrency,
                           }}
                         />
                       </div>
@@ -227,18 +311,18 @@ export function RoleEditor({
 
                     <div className="space-y-2 whitespace-nowrap">
                       <Label
-                        htmlFor={`internal-currency-${role.contractorId}-${roleIndex}`}
+                        htmlFor={`cost-currency-${contractor.id}-${rateIndex}`}
                         className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       >
                         &nbsp;
                       </Label>
                       <Select
-                        value={role.internalCurrency || "EUR"}
+                        value={rate.costCurrency || "EUR"}
                         onValueChange={(value) =>
-                          handleRoleChange(
-                            role.contractorId,
-                            globalRoleIndex,
-                            "internalCurrency",
+                          handleRateChange(
+                            contractor.id,
+                            rateIndex,
+                            "costCurrency",
                             value,
                           )
                         }
@@ -258,29 +342,29 @@ export function RoleEditor({
 
                     <div className="space-y-2 whitespace-nowrap">
                       <Label
-                        htmlFor={`external-rate-${role.contractorId}-${roleIndex}`}
+                        htmlFor={`billing-rate-${contractor.id}-${rateIndex}`}
                         className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       >
-                        External Rate
+                        Billing Rate
                       </Label>
                       <div className="relative">
                         <NumberInput
                           className="min-w-40"
-                          id={`external-rate-${role.contractorId}-${roleIndex}`}
+                          id={`billing-rate-${contractor.id}-${rateIndex}`}
                           step={0.01}
-                          value={role.externalRate || 0}
+                          value={rate.billingRate || 0}
                           onChange={(value) =>
-                            handleRoleChange(
-                              role.contractorId,
-                              globalRoleIndex,
-                              "externalRate",
+                            handleRateChange(
+                              contractor.id,
+                              rateIndex,
+                              "billingRate",
                               value,
                             )
                           }
                           placeholder="e.g. 75.00"
                           formatOptions={{
                             style: "currency",
-                            currency: role.externalCurrency,
+                            currency: rate.billingCurrency,
                           }}
                         />
                       </div>
@@ -288,18 +372,18 @@ export function RoleEditor({
 
                     <div className="space-y-2 whitespace-nowrap">
                       <Label
-                        htmlFor={`external-currency-${role.contractorId}-${roleIndex}`}
+                        htmlFor={`billing-currency-${contractor.id}-${rateIndex}`}
                         className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       >
                         &nbsp;
                       </Label>
                       <Select
-                        value={role.externalCurrency || "EUR"}
+                        value={rate.billingCurrency || "EUR"}
                         onValueChange={(value) =>
-                          handleRoleChange(
-                            role.contractorId,
-                            globalRoleIndex,
-                            "externalCurrency",
+                          handleRateChange(
+                            contractor.id,
+                            rateIndex,
+                            "billingCurrency",
                             value,
                           )
                         }
@@ -319,14 +403,14 @@ export function RoleEditor({
 
                     <div className="space-y-2 whitespace-nowrap">
                       <Label
-                        htmlFor={`external-currency-${role.contractorId}-${roleIndex}`}
+                        htmlFor={`remove-${contractor.id}-${rateIndex}`}
                         className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       >
                         &nbsp;
                       </Label>
                       <Button
                         onClick={() =>
-                          handleRemoveRole(role.contractorId, globalRoleIndex)
+                          handleRemoveRate(contractor.id, rateIndex)
                         }
                         size="icon-sm"
                         className="size-10.5"
@@ -345,7 +429,7 @@ export function RoleEditor({
 
       <div className="flex justify-end">
         <div className="text-xs font-medium text-muted-foreground">
-          Showing {totalRoles} role{totalRoles === 1 ? "" : "s"} across{" "}
+          Showing {totalRates} rate{totalRates === 1 ? "" : "s"} across{" "}
           {contractors.length} contractor
           {contractors.length === 1 ? "" : "s"}
         </div>
