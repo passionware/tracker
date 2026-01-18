@@ -161,13 +161,13 @@ function ExportBuilderContent({
       },
       selectedDimensions:
         dimensions.length > 0
-          ? ["contractor", "task", "activity", "role"].filter((id) =>
+          ? ["project", "contractor", "task", "activity"].filter((id) =>
               dimensions.some((dim) => dim.id === id),
             )
           : [],
       selectedMeasures:
         measures.length > 0
-          ? ["hours", "billing"].filter((id) =>
+          ? ["hours", "hourlyRate", "billing"].filter((id) =>
               measures.some((measure) => measure.id === id),
             )
           : [],
