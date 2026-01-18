@@ -216,6 +216,20 @@ function getSerializableCubeConfig(
         mode: "absolute",
       },
     },
+    {
+      id: "hourlyRate",
+      name: "Hourly Rate",
+      icon: "💵",
+      fieldName: "hourlyRate",
+      aggregationFunction: "average",
+      formatFunction: {
+        type: "currency",
+        parameters: { currency, decimals: 2 },
+      },
+      sidebarOptions: {
+        mode: "absolute",
+      },
+    },
   ];
 
   // Define the data schema
@@ -231,6 +245,7 @@ function getSerializableCubeConfig(
     { name: "costValue", type: "number", nullable: false, defaultValue: 0 },
     { name: "billingValue", type: "number", nullable: false, defaultValue: 0 },
     { name: "profitValue", type: "number", nullable: false, defaultValue: 0 },
+    { name: "hourlyRate", type: "number", nullable: true, defaultValue: 0 },
   ];
 
   return {
@@ -243,7 +258,14 @@ function getSerializableCubeConfig(
     dataSchema: { fields: dataSchema },
     dimensions,
     measures,
-    activeMeasures: ["hours", "cost", "billing", "profit", "entries"],
+    activeMeasures: [
+      "hours",
+      "cost",
+      "billing",
+      "profit",
+      "entries",
+      "hourlyRate",
+    ],
   };
 }
 
