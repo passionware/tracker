@@ -1,12 +1,15 @@
 import { ContractorBase } from "@/api/contractor/contractor.api";
 import { RoleRate } from "@/services/io/_common/GenericReport";
-import { RoleEditor, RoleRateWithContractor } from "@/features/_common/elements/role-editor/RoleEditor";
+import {
+  RoleEditor,
+  RoleRateWithContractor,
+} from "@/features/_common/elements/role-editor/RoleEditor";
 import { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
 import { useMemo, useState, useEffect } from "react";
 
 export interface ContractorProjectRateConfigurationProps {
   contractors: ContractorBase[];
-  projects: Array<{ id: number; name: string }>;
+  projects: Array<{ id: string; name: string }>;
   prefilledRates: Array<{
     contractorId: number;
     rates: Array<{
@@ -15,7 +18,7 @@ export interface ContractorProjectRateConfigurationProps {
       costCurrency: string;
       billingRate: number;
       billingCurrency: string;
-      projectId?: number;
+      projectId?: string;
       rateSource?: "expression" | "manual";
     }>;
   }>;
@@ -28,7 +31,7 @@ export interface ContractorProjectRateConfigurationProps {
         costCurrency: string;
         billingRate: number;
         billingCurrency: string;
-        projectId?: number;
+        projectId?: string;
         rateSource?: "expression" | "manual";
       }>;
     }>,
@@ -70,7 +73,7 @@ export function ContractorProjectRateConfiguration({
           billing: "hourly",
           activityTypes: [],
           taskTypes: [],
-          projectIds: rate.projectId ? [rate.projectId.toString()] : [],
+          projectIds: rate.projectId ? [rate.projectId] : [],
           costRate: rate.costRate,
           costCurrency: rate.costCurrency,
           billingRate: rate.billingRate,
@@ -99,7 +102,7 @@ export function ContractorProjectRateConfiguration({
           billingCurrency: roleRate.rate.billingCurrency,
           projectId:
             roleRate.rate.projectIds.length === 1
-              ? parseInt(roleRate.rate.projectIds[0])
+              ? roleRate.rate.projectIds[0]
               : undefined,
           rateSource: "manual" as const,
         });
@@ -115,7 +118,7 @@ export function ContractorProjectRateConfiguration({
             costCurrency: string;
             billingRate: number;
             billingCurrency: string;
-            projectId?: number;
+            projectId?: string;
             rateSource?: "expression" | "manual";
           }>;
         }

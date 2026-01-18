@@ -25,7 +25,10 @@ import {
 } from "@/components/ui/table";
 import { GenericReport } from "@/services/io/_common/GenericReport";
 import { ContractorProjectRateConfiguration } from "../ContractorProjectRateConfiguration";
-import { extractPrefilledRatesFromGenericReport } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
+import {
+  extractPrefilledRatesFromGenericReport,
+  PrefilledRateResult,
+} from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { uniqBy } from "lodash";
 import { ContractorBase } from "@/api/contractor/contractor.api";
 
@@ -51,7 +54,7 @@ export function ReportGenerationWidget({
         costCurrency: string;
         billingRate: number;
         billingCurrency: string;
-        projectId?: number;
+        projectId?: string;
         rateSource?: "expression" | "manual";
       }>;
     }>
@@ -61,19 +64,8 @@ export function ReportGenerationWidget({
   const initialData = promiseState.useRemoteData<{
     reportData: GenericReport;
     originalData: unknown;
-    projects: Array<{ id: number; name: string }>;
-    prefilledRates: Array<{
-      contractorId: number;
-      rates: Array<{
-        id: string;
-        costRate: number;
-        costCurrency: string;
-        billingRate: number;
-        billingCurrency: string;
-        projectId?: number;
-        rateSource?: "expression" | "manual";
-      }>;
-    }>;
+    projects: Array<{ id: string; name: string }>;
+    prefilledRates: PrefilledRateResult;
   }>();
 
   // Extract unique contractors from reports
@@ -113,7 +105,7 @@ export function ReportGenerationWidget({
       const projects = Object.entries(
         result.reportData.definitions.projectTypes,
       ).map(([projectId, projectType]) => ({
-        id: parseInt(projectId) || 0,
+        id: projectId,
         name: projectType.name,
       }));
 
