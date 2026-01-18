@@ -22,24 +22,51 @@ export async function extractPrefilledRatesFromGenericReport(
   contractorReports: Map<number, Report>,
 ): Promise<PrefilledRateResult> {
   // Parse rate configuration (supports both simple strings and JSON arrays)
-  const parseRateConfiguration = (rateConfig: string, projectId: string) => {
+  const parseRateConfiguration = (rateConfig: string, projectId: string, originalProjectId?: string) => {
     try {
       // Try to parse as JSON first
       const parsed = JSON.parse(rateConfig);
       if (Array.isArray(parsed)) {
         // JSON format: [{ projectIds: ['id1'], rate: '123 eur' }]
+        // Try matching against both the short ID and original TMetric ID
+        const idsToMatch = originalProjectId 
+          ? [projectId, originalProjectId]
+          : [projectId];
+        
         const matchingConfig = parsed.find(
-          (config: { projectIds?: Array<string | number>; rate?: string }) =>
-            config.projectIds?.includes(projectId) ||
-            config.projectIds?.includes(Number(projectId)) ||
-            config.projectIds?.some((id) => String(id) === projectId),
+          (config: { projectIds?: Array<string | number>; rate?: string }) => {
+            if (!config.projectIds || config.projectIds.length === 0) {
+              // Config with no projectIds is a fallback/default rate
+              return false;
+            }
+            return idsToMatch.some(id => 
+              config.projectIds?.includes(id) ||
+              config.projectIds?.includes(Number(id)) ||
+              config.projectIds?.some((configId) => String(configId) === id)
+            );
+          },
         );
         if (matchingConfig && matchingConfig.rate) {
           return parseSimpleRate(matchingConfig.rate);
         }
-        // No matching project in JSON array, fall through to simple parsing
+        // Check for fallback config (empty projectIds array means default rate)
+        const fallbackConfig = parsed.find(
+          (config: { projectIds?: Array<string | number>; rate?: string }) =>
+            !config.projectIds || config.projectIds.length === 0,
+        );
+        if (fallbackConfig && fallbackConfig.rate) {
+          return parseSimpleRate(fallbackConfig.rate);
+        }
+        // No matching project in JSON array and no fallback, throw helpful error
+        throw new Error(
+          `No matching rate found for project ID "${projectId}"${originalProjectId ? ` (original: "${originalProjectId}")` : ""} in rate configuration: ${rateConfig}`,
+        );
       }
-    } catch {
+    } catch (error) {
+      // If it's our custom error, re-throw it
+      if (error instanceof Error && error.message.includes("No matching rate found")) {
+        throw error;
+      }
       // Not JSON, treat as simple string
     }
 
@@ -64,11 +91,13 @@ export async function extractPrefilledRatesFromGenericReport(
   };
 
   // Extract unique projects from GenericReport
-  // Project IDs are strings (from TMetric project.id converted to string)
+  // Project IDs are strings (short IDs from SharedIdMap)
+  // Original TMetric project IDs are stored in parameters.originalProjectId
   const projects = Object.entries(report.definitions.projectTypes).map(
     ([projectId, projectType]) => ({
-      id: projectId, // Keep as string to match TMetric project IDs
+      id: projectId, // Short ID (e.g., "p1", "p2")
       name: projectType.name,
+      originalProjectId: projectType.parameters?.originalProjectId as string | undefined,
     }),
   );
 
@@ -110,10 +139,12 @@ export async function extractPrefilledRatesFromGenericReport(
       const costRate = parseRateConfiguration(
         String(costRateString),
         project.id,
+        project.originalProjectId,
       );
       const billingRate = parseRateConfiguration(
         String(billingRateString),
         project.id,
+        project.originalProjectId,
       );
 
       // For each contractor, create a rate entry for this project
