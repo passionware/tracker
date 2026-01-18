@@ -5,8 +5,10 @@ import { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
 export type ActivityId =
   | "development"
   | "code_review"
+  | "review"
   | "meeting"
-  | "operations";
+  | "operations"
+  | "polishment";
 
 export interface TMetricAdapterInput {
   entries: TMetricTimeEntry[];
@@ -41,34 +43,61 @@ function resolveTaskName(entry: TMetricTimeEntry): string {
   return "Unnamed task";
 }
 
+/**
+ * Extracts activity type from tags with format "activity:meeting", "activity:operations", etc.
+ * Returns the activity type (e.g., "meeting", "operations") or null if not found.
+ */
+function extractActivityFromTag(tagName: string): string | null {
+  const normalized = normalize(tagName);
+  // Check if tag starts with "activity:" prefix
+  if (normalized.startsWith("activity:")) {
+    const activityType = normalized.substring("activity:".length).trim();
+    return activityType || null;
+  }
+  return null;
+}
+
+/**
+ * Maps tag activity value to ActivityId type.
+ * Handles variations like "review" -> "code_review", etc.
+ */
+function mapTagActivityToActivityId(tagActivity: string): ActivityId {
+  const normalized = normalize(tagActivity);
+  
+  // Direct mappings
+  if (normalized === "meeting") return "meeting";
+  if (normalized === "operations") return "operations";
+  if (normalized === "polishment") return "polishment";
+  if (normalized === "development" || normalized === "dev") return "development";
+  
+  // Review variations
+  if (normalized === "review" || normalized === "code_review") return "code_review";
+  
+  // Default fallback
+  return "development";
+}
+
 export function inferActivity(
   description: string | null | undefined,
-  projectName: string | null | undefined,
   tags: TMetricTag[] = [],
 ): ActivityId {
-  // Handle missing or empty fields
-  const d = normalize(description || "");
-  const p = normalize(projectName || "");
-
-  // Check tags first for explicit activity type
+  // Check tags first for explicit activity type using "activity:" prefix
   for (const tag of tags) {
     if (tag?.name) {
-      const tagName = normalize(tag.name);
-      if (tagName.includes("meeting")) return "meeting";
-      if (tagName.includes("review")) return "code_review";
-      if (tagName.includes("ops") || tagName.includes("operation"))
-        return "operations";
-      if (tagName.includes("development") || tagName.includes("dev"))
-        return "development";
+      const activityFromTag = extractActivityFromTag(tag.name);
+      if (activityFromTag) {
+        return mapTagActivityToActivityId(activityFromTag);
+      }
     }
   }
 
-  // Fallback to description and project name
-  if (d.includes("meeting") || p.includes("meeting")) return "meeting";
-  if (d.includes("review") || p.includes("review")) return "code_review";
-  // fallback heuristics: treat entries with words like "ops" as operations
-  if (d.includes("ops") || p.includes("ops") || d.includes("operation"))
-    return "operations";
+  // Fallback to description (no longer using project name)
+  const d = normalize(description || "");
+  if (d.includes("meeting")) return "meeting";
+  if (d.includes("review")) return "code_review";
+  if (d.includes("ops") || d.includes("operation")) return "operations";
+  
+  // Default to development
   return "development";
 }
 
@@ -97,8 +126,8 @@ export function adaptTMetricToGeneric(
       taskNameToShortId.set(taskName, shortTaskId);
     }
 
-    const projectName = e.project?.name || null;
-    const activityName = inferActivity(e.note, projectName, e.tags || []);
+    // Activity is now determined from tags with "activity:" prefix
+    const activityName = inferActivity(e.note, e.tags || []);
     if (!uniqueActivityNames.has(activityName)) {
       uniqueActivityNames.add(activityName);
       const shortActivityId = `a${activityCounter++}`;
@@ -161,8 +190,18 @@ export function adaptTMetricToGeneric(
   const activityNameToDisplayName: Record<string, string> = {
     development: "Development",
     code_review: "Code Review",
+    review: "Review",
     meeting: "Meeting",
     operations: "Operations",
+    polishment: "Polishment",
+  };
+  const activityNameToDescription: Record<string, string> = {
+    development: "Hands-on implementation work",
+    code_review: "PR/MR reviews and related",
+    review: "Code reviews and related",
+    meeting: "Calls, standups, ceremonies",
+    operations: "Planning, triage, coordination",
+    polishment: "Code polish and refinement",
   };
   for (const [
     activityName,
@@ -171,13 +210,8 @@ export function adaptTMetricToGeneric(
     activityTypes[shortActivityId] = {
       name: activityNameToDisplayName[activityName] || activityName, // Store display name for label mapping
       description:
-        activityName === "development"
-          ? "Hands-on implementation work"
-          : activityName === "code_review"
-            ? "PR/MR reviews and related"
-            : activityName === "meeting"
-              ? "Calls, standups, ceremonies"
-              : "Planning, triage, coordination",
+        activityNameToDescription[activityName] ||
+        "Activity type not specified",
       parameters: {},
     };
   }
@@ -191,11 +225,9 @@ export function adaptTMetricToGeneric(
   };
 
   const timeEntries = input.entries.map((e) => {
-    // Handle missing project data
-    const projectName = e.project?.name || null;
-
     // Determine activity and task names (original labels)
-    const activityName = inferActivity(e.note, projectName, e.tags || []);
+    // Activity is now determined from tags with "activity:" prefix
+    const activityName = inferActivity(e.note, e.tags || []);
     const taskName = resolveTaskName(e);
 
     // Map to short IDs
