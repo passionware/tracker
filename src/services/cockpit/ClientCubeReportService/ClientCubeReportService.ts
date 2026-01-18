@@ -24,15 +24,9 @@ export interface ClientCubeReportService {
   publishReport: (
     params: PublishCubeReportParams,
   ) => Promise<CockpitCubeReport>;
-  deleteReport: (
-    reportId: string,
-  ) => Promise<void>;
-  setReportPublished: (
-    reportId: string,
-  ) => Promise<CockpitCubeReport>;
-  setReportUnpublished: (
-    reportId: string,
-  ) => Promise<CockpitCubeReport>;
+  deleteReport: (reportId: string) => Promise<void>;
+  setReportPublished: (reportId: string) => Promise<CockpitCubeReport>;
+  setReportUnpublished: (reportId: string) => Promise<CockpitCubeReport>;
 }
 
 export interface WithClientCubeReportService {
