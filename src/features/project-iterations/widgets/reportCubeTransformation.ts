@@ -32,6 +32,7 @@ export interface TransformedEntry {
   costValue?: number;
   billingValue?: number;
   profitValue?: number;
+  hourlyRate?: number; // costValue / numHours (average rate per hour)
 }
 
 /**
@@ -71,6 +72,8 @@ export function transformReportData(
     const costValue = numHours * matchingRate.costRate;
     const billingValue = numHours * matchingRate.billingRate;
     const profitValue = billingValue - costValue;
+    // Calculate hourly rate (cost per hour)
+    const hourlyRate = numHours > 0 ? costValue / numHours : 0;
 
     // Anonymize contractorId if project matches a rule
     let contractorId = entry.contractorId;
@@ -98,6 +101,7 @@ export function transformReportData(
       costValue,
       billingValue,
       profitValue,
+      hourlyRate,
     };
   });
 }
