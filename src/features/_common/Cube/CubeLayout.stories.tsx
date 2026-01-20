@@ -7,10 +7,12 @@ import {
   CubeDimensionExplorer,
   CubeSummary,
   CubeBreakdownControl,
+  CubeTimeSubrangeControl,
   CubeHierarchicalBreakdown,
   CubeProvider,
   useCubeState,
 } from "@/features/_common/Cube/index.ts";
+import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import type { Meta, StoryObj } from "@storybook/react";
 
 // Mock report data for stories
@@ -244,31 +246,35 @@ export const CustomStyling: Story = {
 
 // Full Cube Layout with All Components
 export const FullCubeLayout: Story = {
-  render: () => (
-    <div className="h-screen">
-      <CubeStoryWrapper>
-        <CubeLayout
-          leftSidebar={
-            <>
-              <div className="p-4 space-y-4 flex-1">
-                <CubeSummary />
-                <CubeBreakdownControl />
-              </div>
-              <div className="p-4 pt-0">
-                <CubeHierarchicalBreakdown />
-              </div>
-            </>
-          }
-          rightSidebar={<CubeDimensionExplorer />}
-        >
-          <div className="p-8 text-center">
-            <h2 className="text-xl font-semibold mb-4">Main Content Area</h2>
-            <p className="text-gray-600">
-              This is where your main cube view or analysis content would go.
-            </p>
-          </div>
-        </CubeLayout>
-      </CubeStoryWrapper>
-    </div>
-  ),
+  render: () => {
+    const formatService = createFormatService(() => new Date());
+    return (
+      <div className="h-screen">
+        <CubeStoryWrapper>
+          <CubeLayout
+            leftSidebar={
+              <>
+                <div className="p-4 space-y-4 flex-1">
+                  <CubeSummary />
+                  <CubeTimeSubrangeControl services={{ formatService }} />
+                  <CubeBreakdownControl />
+                </div>
+                <div className="p-4 pt-0">
+                  <CubeHierarchicalBreakdown />
+                </div>
+              </>
+            }
+            rightSidebar={<CubeDimensionExplorer />}
+          >
+            <div className="p-8 text-center">
+              <h2 className="text-xl font-semibold mb-4">Main Content Area</h2>
+              <p className="text-gray-600">
+                This is where your main cube view or analysis content would go.
+              </p>
+            </div>
+          </CubeLayout>
+        </CubeStoryWrapper>
+      </div>
+    );
+  },
 };

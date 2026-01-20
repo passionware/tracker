@@ -144,6 +144,14 @@ export interface NodeSortState {
 }
 
 /**
+ * Time subrange for filtering cube data
+ */
+export interface TimeSubrange {
+  start: string; // ISO date string
+  end: string; // ISO date string
+}
+
+/**
  * Configuration for cube calculation
  */
 export interface CubeConfig<TData extends CubeDataItem> {
@@ -168,6 +176,8 @@ export interface CubeConfig<TData extends CubeDataItem> {
   initialGrouping?: string[];
   /** Measures to include in results */
   activeMeasures?: string[]; // measure IDs (defaults to all)
+  /** Time subrange for filtering data by date range */
+  timeSubrange?: TimeSubrange | null;
 }
 
 /**
@@ -215,8 +225,8 @@ export interface CubeResult {
   totalItems: number;
   /** Grand total cells (aggregated across all groups) */
   grandTotals: CubeCell[];
-  /** Filtered data items (for dimensional breakdowns in sidebar) */
-  filteredData?: CubeDataItem[];
+  /** Filtered data items (for dimensional breakdowns in sidebar) - always present, contains all data if no filters applied */
+  filteredData: CubeDataItem[];
   /** Applied configuration */
   config: CubeConfig<CubeDataItem>;
 }

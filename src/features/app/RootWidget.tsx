@@ -423,7 +423,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         {/* Public routes - no authentication required */}
-        <Route path="/p/*" element={<PublicApp />} />
+        <Route path="/p/*" element={<PublicApp services={props.services} />} />
         <Route
           path={`${props.services.routingService.forClientCockpit().root()}/*`}
           element={<CockpitMainRouter services={props.services} />}

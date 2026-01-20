@@ -1133,6 +1133,7 @@ function ExportBuilderContent({
                     <StoryLayoutWrapper
                       title="Export Preview"
                       description="Preview of your configured cube export"
+                      services={services}
                     >
                       {exportSerializableConfig && (
                         <SerializedCubeViewWithSelection

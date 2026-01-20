@@ -306,6 +306,57 @@ export function calculateCube<TData extends CubeDataItem>(
     config.dimensions,
   );
 
+  // Step 1.25: Apply time subrange filter if set
+  if (config.timeSubrange) {
+    const { start, end } = config.timeSubrange;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    filteredData = filteredData.filter((item) => {
+      // Check startAt or start_at field
+      const itemStartAt = item.startAt || item.start_at;
+      if (!itemStartAt) {
+        // If no startAt, check endAt or end_at
+        const itemEndAt = item.endAt || item.end_at;
+        if (!itemEndAt) {
+          return false; // Skip items without any time information
+        }
+        const itemEndDate = new Date(itemEndAt);
+        if (isNaN(itemEndDate.getTime())) {
+          return false;
+        }
+        // Include if end date is within range
+        return itemEndDate >= startDate && itemEndDate <= endDate;
+      }
+
+      const itemStartDate = new Date(itemStartAt);
+      if (isNaN(itemStartDate.getTime())) {
+        return false;
+      }
+
+      // Check if item overlaps with the time range
+      // An item overlaps if:
+      // - Its start is within the range, OR
+      // - Its end is within the range, OR
+      // - It completely contains the range
+      const itemEndAt = item.endAt || item.end_at;
+      if (itemEndAt) {
+        const itemEndDate = new Date(itemEndAt);
+        if (!isNaN(itemEndDate.getTime())) {
+          // Item has both start and end - check for overlap
+          return (
+            (itemStartDate >= startDate && itemStartDate <= endDate) ||
+            (itemEndDate >= startDate && itemEndDate <= endDate) ||
+            (itemStartDate <= startDate && itemEndDate >= endDate)
+          );
+        }
+      }
+
+      // Item only has start date - include if start is within range
+      return itemStartDate >= startDate && itemStartDate <= endDate;
+    });
+  }
+
   // Step 1.5: If there's a zoom path, filter data to match the path
   if (zoomPath.length > 0) {
     filteredData = filteredData.filter((item) => {
@@ -410,7 +461,7 @@ export function calculateCube<TData extends CubeDataItem>(
     groups,
     totalItems: filteredData.length,
     grandTotals,
-    filteredData: includeItems ? filteredData : undefined,
+    filteredData,
     config: {
       ...config,
     } as CubeConfig<CubeDataItem>,
