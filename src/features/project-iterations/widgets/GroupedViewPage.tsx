@@ -20,6 +20,7 @@ import {
   CubeProvider,
 } from "@/features/_common/Cube/index.ts";
 import { useReportCube } from "./useReportCube";
+import { CubeTimelineView } from "@/features/_common/Cube/CubeTimelineView";
 
 // Separate component to handle cube logic and avoid hooks order issues
 function GroupedViewWithCube({
@@ -54,6 +55,7 @@ function GroupedViewWithCube({
           </>
         }
         rightSidebar={<CubeDimensionExplorer />}
+        bottomSlot={<CubeTimelineView />}
       >
         <GroupedViewWidget report={report} services={services} />
       </CubeLayout>
