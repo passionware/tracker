@@ -23,6 +23,16 @@ export interface DateFilterWidgetProps
   onUpdate: (value: Maybe<DateFilter>) => void;
   fieldLabel: string;
   disabled?: boolean;
+  /** If true, only allows range selection (between operator) and hides operator tabs */
+  rangeOnly?: boolean;
+  /** Optional disabled dates matcher for the calendar */
+  disabledDates?:
+    | import("react-day-picker").Matcher
+    | import("react-day-picker").Matcher[];
+  /** Optional modifiers for highlighting dates */
+  modifiers?: import("react-day-picker").Modifiers;
+  /** Optional modifier class names */
+  modifiersClassNames?: import("react-day-picker").ModifiersClassNames;
 }
 
 export function DateFilterWidget({
@@ -31,6 +41,10 @@ export function DateFilterWidget({
   fieldLabel,
   services,
   disabled,
+  rangeOnly = false,
+  disabledDates,
+  modifiers: customModifiers,
+  modifiersClassNames: customModifiersClassNames,
 }: DateFilterWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<Maybe<DateFilter>>(value);
@@ -81,8 +95,17 @@ export function DateFilterWidget({
   }
 
   const { defaultMonth, ...displayOptions } = getDisplayOptions(
-    filter,
+    // If rangeOnly is true, convert non-range filters to range or absent
+    rangeOnly && filter && filter.operator !== "between"
+      ? maybe.ofAbsent()
+      : filter,
     (value) => {
+      // If rangeOnly is true, only allow "between" operator
+      if (rangeOnly && value && value.operator !== "between") {
+        // Convert to absent or keep as is if it's already absent
+        setFilter(maybe.ofAbsent());
+        return;
+      }
       setFilter(value);
       if (!maybe.isPresent(value)) {
         setFilter(value);
@@ -102,6 +125,7 @@ export function DateFilterWidget({
           break;
       }
     },
+    rangeOnly, // Pass rangeOnly flag
   );
 
   const getMainDate = (value: Date | DateRange | undefined) => {
@@ -118,7 +142,7 @@ export function DateFilterWidget({
     return value?.to ?? new Date();
   };
 
-  const operator = filter?.operator ?? "between";
+  const operator = rangeOnly ? "between" : (filter?.operator ?? "between");
 
   return (
     <Popover onOpenChange={handleOpenChange} open={isOpen} modal>
@@ -136,57 +160,59 @@ export function DateFilterWidget({
         </ToolbarButton>
       </PopoverTrigger>
       <PopoverContent className="p-1 w-auto flex flex-col " align="start">
-        <Tabs value={operator} className="w-full">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger
-              onClick={() => {
-                setFilter({
-                  operator: "equal",
-                  value: getMainDate(displayOptions.selected),
-                });
-              }}
-              value="equal"
-            >
-              On
-            </TabsTrigger>
-            <TabsTrigger
-              onClick={() => {
-                setFilter({
-                  operator: "lessThan",
-                  value: getMainDate(displayOptions.selected),
-                });
-              }}
-              value="lessThan"
-            >
-              By
-            </TabsTrigger>
-            <TabsTrigger
-              onClick={() => {
-                setFilter({
-                  operator: "greaterThan",
-                  value: getMainDate(displayOptions.selected),
-                });
-              }}
-              value="greaterThan"
-            >
-              From
-            </TabsTrigger>
-            <TabsTrigger
-              onClick={() => {
-                setFilter({
-                  operator: "between",
-                  value: {
-                    from: getMainDate(displayOptions.selected),
-                    to: getSecondaryDate(displayOptions.selected),
-                  },
-                });
-              }}
-              value="between"
-            >
-              Between
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {!rangeOnly && (
+          <Tabs value={operator} className="w-full">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger
+                onClick={() => {
+                  setFilter({
+                    operator: "equal",
+                    value: getMainDate(displayOptions.selected),
+                  });
+                }}
+                value="equal"
+              >
+                On
+              </TabsTrigger>
+              <TabsTrigger
+                onClick={() => {
+                  setFilter({
+                    operator: "lessThan",
+                    value: getMainDate(displayOptions.selected),
+                  });
+                }}
+                value="lessThan"
+              >
+                By
+              </TabsTrigger>
+              <TabsTrigger
+                onClick={() => {
+                  setFilter({
+                    operator: "greaterThan",
+                    value: getMainDate(displayOptions.selected),
+                  });
+                }}
+                value="greaterThan"
+              >
+                From
+              </TabsTrigger>
+              <TabsTrigger
+                onClick={() => {
+                  setFilter({
+                    operator: "between",
+                    value: {
+                      from: getMainDate(displayOptions.selected),
+                      to: getSecondaryDate(displayOptions.selected),
+                    },
+                  });
+                }}
+                value="between"
+              >
+                Between
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
         <div className="flex flex-col gap-2 items-stretch">
           {/*{bookingDateSpecialFilters.map((filterOption) => (*/}
           {/*  <Button*/}
@@ -210,6 +236,14 @@ export function DateFilterWidget({
           numberOfMonths={2}
           defaultMonth={defaultMonth}
           {...displayOptions}
+          disabled={disabledDates}
+          modifiers={{
+            ...(displayOptions.modifiers || {}),
+            ...(customModifiers || {}),
+          }}
+          modifiersClassNames={{
+            ...(customModifiersClassNames || {}),
+          }}
         />
       </PopoverContent>
     </Popover>

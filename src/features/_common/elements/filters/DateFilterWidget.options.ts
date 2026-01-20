@@ -14,10 +14,12 @@ import {
  * Based on current filter value, get all relevant DayPicker props.
  * @param filter
  * @param onFilterChange
+ * @param rangeOnly If true, forces range mode and only allows "between" operator
  */
 export function getDisplayOptions(
   filter: Maybe<DateFilter>,
   onFilterChange: (val: Maybe<DateFilter>) => void,
+  rangeOnly: boolean = false,
 ) /* "selected" | "mode" | "defaultMonth" | "onSelect" */ {
   const handleRangeSelect: DayPickerRangeProps["onSelect"] = (date) => {
     if (!date || !date.from || !date.to) {
@@ -54,6 +56,16 @@ export function getDisplayOptions(
       onSelect: handleRangeSelect,
     } satisfies Partial<PropsBase & PropsRange>;
   }
+
+  // If rangeOnly is true, force "between" operator
+  if (rangeOnly && filter.operator !== "between") {
+    return {
+      mode: "range",
+      selected: undefined,
+      onSelect: handleRangeSelect,
+    } satisfies Partial<PropsBase & PropsRange>;
+  }
+
   switch (filter.operator) {
     case "equal":
       return {
