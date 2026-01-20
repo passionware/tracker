@@ -39,9 +39,8 @@ export function CubeHierarchicalBreakdown({
   // State for sunburst view mode
   const [showAllLevels, setShowAllLevels] = useState(false);
 
-  // Get current zoom level data - this is what's shown in breadcrumbs
-  const currentItems =
-    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
+  // Get current zoom level data - use filteredData which respects time subrange
+  const currentItems = cube.filteredData;
 
   return (
     <Card>
@@ -71,7 +70,7 @@ export function CubeHierarchicalBreakdown({
           measure={selectedMeasure}
           dimensions={dimensions}
           maxLevels={maxLevels}
-          rootData={showAllLevels ? state.cube.config.data : currentItems}
+          rootData={showAllLevels ? cube.filteredData : currentItems}
         />
       </CardContent>
     </Card>

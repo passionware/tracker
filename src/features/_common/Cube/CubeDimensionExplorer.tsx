@@ -94,27 +94,39 @@ function DimensionChart({
 
   if (dimensionGroups.size === 0) return null;
 
-  const totalValue = Array.from(dimensionGroups.values()).reduce(
-    (sum, items) => {
-      const groupTotal = items.reduce((groupSum, item) => {
-        const value = selectedMeasure.getValue(item);
-        return groupSum + (typeof value === "number" ? Math.abs(value) : 0);
-      }, 0);
-      return sum + groupTotal;
-    },
-    0,
-  );
-
+  // Calculate group totals using aggregate function to properly handle weightedAverage and other complex aggregations
   const sortedGroups = Array.from(dimensionGroups.entries())
     .map(([key, items]) => {
-      const groupTotal = items.reduce((sum, item) => {
-        const value = selectedMeasure.getValue(item);
-        return sum + (typeof value === "number" ? Math.abs(value) : 0);
-      }, 0);
+      // Use aggregate function to properly handle weightedAverage and other complex aggregations
+      const values = items.map((item) => selectedMeasure.getValue(item));
+      const groupTotal = Math.abs(
+        Number(selectedMeasure.aggregate(values)) || 0,
+      );
       return { key, items, total: groupTotal };
     })
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
+
+  // Detect if measure is non-additive (like weightedAverage)
+  // For weightedAverage, getValue returns the item itself (an object), not a primitive value
+  const isNonAdditive =
+    items.length > 0 &&
+    typeof selectedMeasure.getValue(items[0]) === "object" &&
+    selectedMeasure.getValue(items[0]) !== null;
+
+  // Calculate total value for additive measures
+  const allItems = Array.from(dimensionGroups.values()).flat();
+  const allValues = allItems.map((item) => selectedMeasure.getValue(item));
+  const totalValue = Math.abs(
+    Number(selectedMeasure.aggregate(allValues)) || 0,
+  );
+
+  // Calculate max value for non-additive measures
+  const maxValue =
+    sortedGroups.length > 0 ? Math.max(...sortedGroups.map((g) => g.total)) : 0;
+
+  // Use totalValue for additive measures, maxValue for non-additive measures
+  const scaleValue = isNonAdditive ? maxValue : totalValue;
 
   return (
     <Card
@@ -145,7 +157,7 @@ function DimensionChart({
         </div>
         <div className="space-y-1">
           {sortedGroups.map(({ key, items, total }) => {
-            const percentage = totalValue > 0 ? (total / totalValue) * 100 : 0;
+            const percentage = scaleValue > 0 ? (total / scaleValue) * 100 : 0;
             const formattedValue = selectedMeasure.formatValue
               ? selectedMeasure.formatValue(total)
               : String(total);
@@ -250,9 +262,8 @@ export function CubeDimensionExplorer({
     useSelectedMeasure();
   const cube = state.cube;
 
-  // Get current zoom level data - this is what's shown in breadcrumbs
-  const currentItems =
-    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
+  // Get current zoom level data - use filteredData which respects time subrange
+  const currentItems = cube.filteredData;
 
   // Filter out dimensions that are already used in the current path (they would only have 1 group)
   const sidebarDimensions = dimensions.filter((dim) => {
