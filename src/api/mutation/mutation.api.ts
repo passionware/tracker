@@ -58,6 +58,10 @@ export interface MutationApi {
     iterationId: number,
     payload: Partial<ProjectIterationPayload>,
   ) => Promise<void>;
+  bulkEditProjectIteration: (
+    iterationIds: number[],
+    payload: Partial<ProjectIterationPayload>,
+  ) => Promise<void>;
   editProjectIterationPosition: (
     positionId: number,
     payload: Partial<ProjectIterationPositionPayload>,
