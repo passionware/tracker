@@ -121,10 +121,9 @@ export function EmailTemplateReminderContent({
     maximumFractionDigits: 2,
   });
   const totals = measures.map((m) => {
-    const total = currentItems.reduce((sum: number, item: any) => {
-      const v = m.getValue(item);
-      return sum + (typeof v === "number" ? v : 0);
-    }, 0);
+    // Use aggregate function to properly handle weightedAverage and other complex aggregations
+    const values = currentItems.map((item: any) => m.getValue(item));
+    const total = Number(m.aggregate(values)) || 0;
     let formatted: any = m.formatValue ? m.formatValue(total) : String(total);
     if (m.id === "billing") {
       formatted = currencyFormatter.format(total);
@@ -148,7 +147,8 @@ export function EmailTemplateReminderContent({
     const hours = measures.find((m) => m.id === "hours");
     const billing = measures.find((m) => m.id === "billing");
 
-    const groups = new Map<string, { hours: number; billing: number }>();
+    const groups = new Map<string, any[]>();
+    // Group items by contractor
     currentItems.forEach((item: any) => {
       const raw = contractorDim.getValue(item);
       const key = String(raw ?? "");
@@ -156,31 +156,37 @@ export function EmailTemplateReminderContent({
         ? contractorDim.formatValue(raw)
         : key;
       const id = disp || key;
-      const hVal = hours
-        ? typeof hours.getValue(item) === "number"
-          ? (hours.getValue(item) as number)
-          : 0
-        : 0;
-      const bVal = billing
-        ? typeof billing.getValue(item) === "number"
-          ? (billing.getValue(item) as number)
-          : 0
-        : 0;
-      const prev = groups.get(id) || { hours: 0, billing: 0 };
-      groups.set(id, {
-        hours: prev.hours + hVal,
-        billing: prev.billing + bVal,
-      });
+      if (!groups.has(id)) {
+        groups.set(id, []);
+      }
+      groups.get(id)!.push(item);
     });
+
+    // Calculate aggregated values for each contractor group using aggregate functions
+    const contractorBreakdownData = Array.from(groups.entries()).map(
+      ([id, items]) => {
+        const hoursValue = hours
+          ? Number(
+              hours.aggregate(items.map((item) => hours.getValue(item))),
+            ) || 0
+          : 0;
+        const billingValue = billing
+          ? Number(
+              billing.aggregate(items.map((item) => billing.getValue(item))),
+            ) || 0
+          : 0;
+        return { id, items, hours: hoursValue, billing: billingValue };
+      },
+    );
 
     const billingFormat = (val: number) => currencyFormatter.format(val);
 
-    contractorBreakdown = Array.from(groups.entries())
-      .sort((a, b) => b[1].billing - a[1].billing)
-      .map(([name, v]) => ({
-        name,
-        hours: Math.round(v.hours * 100) / 100,
-        billing: billingFormat(v.billing),
+    contractorBreakdown = contractorBreakdownData
+      .sort((a, b) => b.billing - a.billing)
+      .map(({ id, hours, billing }) => ({
+        name: id,
+        hours: Math.round(hours * 100) / 100,
+        billing: billingFormat(billing),
       }));
   }
 
