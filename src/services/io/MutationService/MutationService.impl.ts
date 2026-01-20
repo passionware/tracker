@@ -172,6 +172,12 @@ export function createMutationService(
         scope: "Editing project iteration",
       });
     },
+    bulkEditProjectIteration: async (iterationIds, payload) => {
+      await api.bulkEditProjectIteration(iterationIds, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Bulk editing project iterations",
+      });
+    },
     deleteProjectIterationPosition: async (positionId) => {
       await api.deleteProjectIterationPosition(positionId);
       await config.services.messageService.reportSystemEffect.sendRequest({
