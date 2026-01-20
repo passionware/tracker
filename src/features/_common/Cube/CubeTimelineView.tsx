@@ -89,9 +89,8 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
   // Timeline header height - accounts for the time scale header at the top
   const TIMELINE_HEADER_HEIGHT = 40;
 
-  // Get current zoom level data - this is what's shown in breadcrumbs
-  const currentItems =
-    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
+  // Get current zoom level data - use filteredData which respects time subrange
+  const currentItems = cube.filteredData;
 
   // Find the breakdown dimension descriptor
   const breakdownDimension = breakdownDimensionId
