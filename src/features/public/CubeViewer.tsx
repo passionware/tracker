@@ -24,6 +24,7 @@ import {
   CubeDateRange,
   getCubeDateRange,
 } from "@/features/_common/Cube/getCubeDateRange";
+import { CubeTimelineView } from "../_common/Cube/CubeTimelineView";
 
 interface CubeViewerProps {
   serializedConfig: any;
@@ -266,6 +267,7 @@ export function CubeViewer({
                 </>
               }
               rightSidebar={<CubeDimensionExplorer />}
+              bottomSlot={<CubeTimelineView />}
             >
               <div className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col">
                 <SerializedCubeViewWithSelection
