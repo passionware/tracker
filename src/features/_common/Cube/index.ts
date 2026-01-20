@@ -31,6 +31,7 @@ export type {
 } from "./CubeService.types.ts";
 export { useCubeState } from "./useCubeState.ts";
 export type { UseCubeStateProps, CubeState, PathItem } from "./useCubeState.ts";
+export type { TimeSubrange } from "./CubeService.types.ts";
 export {
   CubeProvider,
   useCubeContext,
@@ -40,6 +41,7 @@ export { findBreakdownDimensionId } from "./CubeUtils.ts";
 export { CubeSunburst } from "./CubeSunburst.tsx";
 export { CubeSummary } from "./CubeSummary.tsx";
 export { CubeBreakdownControl } from "./CubeBreakdownControl.tsx";
+export { CubeTimeSubrangeControl } from "./CubeTimeSubrangeControl.tsx";
 export { CubeHierarchicalBreakdown } from "./CubeHierarchicalBreakdown.tsx";
 export { CubeLayout } from "./CubeLayout.tsx";
 export { CubeDimensionExplorer } from "./CubeDimensionExplorer.tsx";

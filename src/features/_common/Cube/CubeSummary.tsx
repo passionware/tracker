@@ -27,9 +27,9 @@ export function CubeSummary({ showNavigation = true }: CubeSummaryProps) {
   const measures = state.cube.config.measures;
   const cube = state.cube;
 
-  // Get current zoom level data - this is what's shown in breadcrumbs
-  const currentItems =
-    state.path.length === 0 ? state.cube.config.data : cube.filteredData || [];
+  // Get current zoom level data - use filteredData which respects time subrange
+  // When at root level (no path), use filteredData instead of config.data to respect time subrange
+  const currentItems = cube.filteredData;
 
   // Check if we have selection
   const hasSelection =
@@ -93,15 +93,29 @@ export function CubeSummary({ showNavigation = true }: CubeSummaryProps) {
               formattedValue = "0";
             }
           } else {
-            // Calculate totals from current zoom level data
-            totalValue = currentItems.reduce((sum, item) => {
-              const value = measure.getValue(item);
-              return sum + (typeof value === "number" ? value : 0);
-            }, 0);
+            // When at root level with no selection, use grandTotals which are already
+            // calculated from filtered data (respects time subrange)
+            if (state.path.length === 0) {
+              const grandTotalCell = cube.grandTotals.find(
+                (cell) => cell.measureId === measure.id,
+              );
+              if (grandTotalCell) {
+                totalValue = Number(grandTotalCell.value) || 0;
+                formattedValue = grandTotalCell.formattedValue || "0";
+              } else {
+                totalValue = 0;
+                formattedValue = "0";
+              }
+            } else {
+              // Calculate totals from current zoom level filtered data
+              // Use the measure's aggregate function to properly handle weightedAverage and other complex aggregations
+              const values = currentItems.map((item) => measure.getValue(item));
+              totalValue = Number(measure.aggregate(values)) || 0;
 
-            formattedValue = measure.formatValue
-              ? measure.formatValue(totalValue)
-              : String(totalValue);
+              formattedValue = measure.formatValue
+                ? measure.formatValue(totalValue)
+                : String(totalValue);
+            }
           }
 
           return (

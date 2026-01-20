@@ -18,6 +18,7 @@ import type {
   MeasureDescriptor,
   CubeResult,
   DimensionFilter,
+  TimeSubrange,
 } from "./CubeService.types.ts";
 import { calculateCube } from "./CubeService.ts";
 
@@ -82,6 +83,8 @@ export interface CubeState {
   filters: DimensionFilter[];
   /** Selected group IDs at current level */
   selectedGroupIds: string[];
+  /** Time subrange for filtering data */
+  timeSubrange: TimeSubrange | null;
 
   // ===== ACTIONS =====
   /** Set child dimension for a node (null = show raw data) */
@@ -109,6 +112,8 @@ export interface CubeState {
   removeFilter: (dimensionId: string) => void;
   /** Clear all filters */
   clearFilters: () => void;
+  /** Set time subrange (null to clear) */
+  setTimeSubrange: (subrange: TimeSubrange | null) => void;
   /** Dimension to use for raw data breakdown */
   rawDataDimension: DimensionDescriptor<any, unknown>;
 }
@@ -164,6 +169,9 @@ export function useCubeState<TData extends CubeDataItem>(
   // State: Selected group IDs
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
+  // State: Time subrange
+  const [timeSubrange, setTimeSubrange] = useState<TimeSubrange | null>(null);
+
   // ===== DERIVED DATA =====
 
   // Dimension priority order is derived from the dimensions array
@@ -181,6 +189,7 @@ export function useCubeState<TData extends CubeDataItem>(
       nodeStates,
       initialGrouping: dimensionPriority,
       activeMeasures,
+      timeSubrange,
     }),
     [
       data,
@@ -190,6 +199,7 @@ export function useCubeState<TData extends CubeDataItem>(
       nodeStates,
       dimensionPriority,
       activeMeasures,
+      timeSubrange,
     ],
   );
 
@@ -295,12 +305,21 @@ export function useCubeState<TData extends CubeDataItem>(
     setFilters([]);
   }, []);
 
+  // Set time subrange
+  const handleSetTimeSubrange = useCallback(
+    (subrange: TimeSubrange | null) => {
+      setTimeSubrange(subrange);
+    },
+    [],
+  );
+
   return {
     cube,
     path,
     nodeStates,
     filters,
     selectedGroupIds,
+    timeSubrange,
     setNodeChildDimension,
     setNodeSortState,
     setSelectedGroupIds,
@@ -312,6 +331,7 @@ export function useCubeState<TData extends CubeDataItem>(
     addFilter,
     removeFilter,
     clearFilters,
+    setTimeSubrange: handleSetTimeSubrange,
     rawDataDimension: props.rawDataDimension,
   };
 }

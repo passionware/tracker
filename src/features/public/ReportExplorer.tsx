@@ -10,6 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WithFormatService } from "@/services/FormatService/FormatService";
+import { WithServices } from "@/platform/typescript/services";
 
 export interface ReportData {
   id: string;
@@ -18,7 +20,7 @@ export interface ReportData {
   uploadedAt: Date;
 }
 
-export function ReportExplorer() {
+export function ReportExplorer(props: WithServices<[WithFormatService]>) {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [viewingCube, setViewingCube] = useState<ReportData | null>(null);
 
@@ -52,6 +54,7 @@ export function ReportExplorer() {
         title={viewingCube.name}
         onBack={handleBackFromCube}
         showBackButton={true}
+        services={props.services}
       />
     );
   }

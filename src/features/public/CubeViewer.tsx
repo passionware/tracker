@@ -12,6 +12,7 @@ import {
   CubeLayout,
   CubeSummary,
   CubeBreakdownControl,
+  CubeTimeSubrangeControl,
   CubeHierarchicalBreakdown,
   CubeDimensionExplorer,
 } from "@/features/_common/Cube";
@@ -25,8 +26,10 @@ import {
   getCubeDateRange,
 } from "@/features/_common/Cube/getCubeDateRange";
 import { CubeTimelineView } from "../_common/Cube/CubeTimelineView";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithServices } from "@/platform/typescript/services";
 
-interface CubeViewerProps {
+interface CubeViewerProps extends WithServices<[WithFormatService]> {
   serializedConfig: any;
   title?: string;
   onBack?: () => void;
@@ -48,7 +51,9 @@ export function CubeViewer({
   onPdfExport,
   dateRangeLabel,
   extraActions,
+  services,
 }: CubeViewerProps) {
+  // Create default format service if not provided
   const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
 
   // Check if this looks like a serialized cube configuration
@@ -259,6 +264,7 @@ export function CubeViewer({
                 <>
                   <div className="p-4 space-y-4 flex-1">
                     <CubeSummary />
+                    <CubeTimeSubrangeControl services={services} />
                     <CubeBreakdownControl />
                   </div>
                   <div className="p-4 pt-0">
