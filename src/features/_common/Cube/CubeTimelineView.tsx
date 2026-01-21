@@ -491,7 +491,7 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
   useEffect(() => {
     // Reset the started flag when timeline changes
     timelineStartedRef.current = false;
-    
+
     if (containerRef.current && timeline) {
       const canvas = containerRef.current.querySelector("canvas");
       if (canvas instanceof HTMLCanvasElement) {
