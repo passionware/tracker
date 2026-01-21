@@ -430,6 +430,7 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
+  const timelineStartedRef = useRef(false);
 
   // Sync vertical scrolling between labels and timeline
   useEffect(() => {
@@ -488,15 +489,33 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
   }, []);
 
   useEffect(() => {
+    // Reset the started flag when timeline changes
+    timelineStartedRef.current = false;
+    
     if (containerRef.current && timeline) {
       const canvas = containerRef.current.querySelector("canvas");
       if (canvas instanceof HTMLCanvasElement) {
-        start(canvas);
+        try {
+          start(canvas);
+          timelineStartedRef.current = true;
+        } catch (error) {
+          console.warn("Failed to start timeline:", error);
+          timelineStartedRef.current = false;
+        }
       }
     }
 
     return () => {
-      stop();
+      if (timelineStartedRef.current) {
+        try {
+          stop();
+        } catch (error) {
+          // Ignore errors during cleanup - timeline may already be destroyed
+          console.warn("Error stopping timeline during cleanup:", error);
+        } finally {
+          timelineStartedRef.current = false;
+        }
+      }
     };
   }, [timeline, start, stop]);
 
