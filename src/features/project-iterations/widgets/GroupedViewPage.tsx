@@ -16,10 +16,12 @@ import {
   CubeDimensionExplorer,
   CubeSummary,
   CubeBreakdownControl,
+  CubeTimeSubrangeControl,
   CubeHierarchicalBreakdown,
   CubeProvider,
 } from "@/features/_common/Cube/index.ts";
 import { useReportCube } from "./useReportCube";
+import { CubeTimelineView } from "@/features/_common/Cube/CubeTimelineView";
 
 // Separate component to handle cube logic and avoid hooks order issues
 function GroupedViewWithCube({
@@ -46,6 +48,7 @@ function GroupedViewWithCube({
           <>
             <div className="p-4 space-y-4 flex-1">
               <CubeSummary />
+              <CubeTimeSubrangeControl services={services} />
               <CubeBreakdownControl />
             </div>
             <div className="p-4 pt-0">
@@ -54,6 +57,7 @@ function GroupedViewWithCube({
           </>
         }
         rightSidebar={<CubeDimensionExplorer />}
+        bottomSlot={<CubeTimelineView />}
       >
         <GroupedViewWidget report={report} services={services} />
       </CubeLayout>

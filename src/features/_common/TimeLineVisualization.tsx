@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ContractorMultiPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
+import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { Calendar, Clock, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -58,12 +59,7 @@ export function TimelineVisualization({
       const activityType =
         report.data.definitions.activityTypes[entry.activityId];
 
-      const matchingRate =
-        roleType?.rates.find(
-          (rate) =>
-            rate.activityType === entry.activityId &&
-            rate.taskType === entry.taskId,
-        ) || roleType?.rates[0];
+      const matchingRate = getMatchingRate(report.data, entry);
 
       const duration =
         (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);

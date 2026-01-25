@@ -203,6 +203,69 @@ export function deserializeCubeConfig<TData extends CubeDataItem>(
   // Convert measures
   const measures: MeasureDescriptor<TData, unknown>[] = serialized.measures.map(
     (measure) => {
+      // Handle weightedAverage aggregation: fieldName should be "numeratorField/denominatorField"
+      if (measure.aggregationFunction === "weightedAverage") {
+        const fieldParts = measure.fieldName.split("/");
+        if (fieldParts.length !== 2) {
+          throw new Error(
+            `weightedAverage requires fieldName in format "numeratorField/denominatorField", got: ${measure.fieldName}`,
+          );
+        }
+
+        const [numeratorField, denominatorField] = fieldParts;
+
+        const weightedAverageMeasure: MeasureDescriptor<TData, unknown> = {
+          id: measure.id,
+          name: measure.name,
+          description: measure.description,
+          icon: measure.icon,
+          getValue: (item: TData): unknown => {
+            // Return the item itself so we can access both numerator and denominator fields
+            return item;
+          },
+          aggregate: (values: unknown[]): unknown => {
+            // Calculate weighted average: sum(numerator) / sum(denominator)
+            let totalNumerator = 0;
+            let totalDenominator = 0;
+
+            for (const item of values) {
+              const dataItem = item as TData;
+              const numeratorValue = dataItem[
+                numeratorField as keyof TData
+              ] as number | undefined;
+              const denominatorValue = dataItem[
+                denominatorField as keyof TData
+              ] as number | undefined;
+
+              if (
+                typeof numeratorValue === "number" &&
+                typeof denominatorValue === "number"
+              ) {
+                totalNumerator += numeratorValue;
+                totalDenominator += denominatorValue;
+              }
+            }
+
+            return totalDenominator > 0 ? totalNumerator / totalDenominator : 0;
+          },
+          formatValue: measure.formatFunction
+            ? (value: unknown) => {
+                const formatter = formatFunctions[measure.formatFunction!.type];
+                if (formatter) {
+                  return formatter.format(
+                    value,
+                    measure.formatFunction!.parameters,
+                  );
+                }
+                return String(value);
+              }
+            : undefined,
+          sidebarOptions: measure.sidebarOptions,
+        };
+        return weightedAverageMeasure;
+      }
+
+      // Standard measure aggregation
       const aggregator = aggregationFunctions[measure.aggregationFunction];
       if (!aggregator) {
         throw new Error(

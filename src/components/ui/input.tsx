@@ -41,7 +41,10 @@ export interface NumberInputProps
 }
 
 const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
-  ({ className, inputClassName, buttonClassName, ...props }, ref) => {
+  (
+    { className, inputClassName, buttonClassName, placeholder, ...props },
+    ref,
+  ) => {
     return (
       <NumberField className={cn("flex w-full", className)} {...props}>
         <Group className="flex w-full rounded-md border border-slate-200 bg-white ring-offset-white focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-within:ring-slate-300">
@@ -51,6 +54,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
               "flex h-10 w-full border-0 bg-transparent px-3 py-2 text-base text-slate-900 placeholder:text-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:text-slate-50 dark:placeholder:text-slate-400",
               inputClassName,
             )}
+            placeholder={placeholder}
           />
           <div className="flex shrink-0 flex-col rounded-r-md overflow-hidden border-l border-slate-200 dark:border-slate-700">
             <Button

@@ -27,7 +27,8 @@ export type AggregationFunction =
   | "max"
   | "first"
   | "last"
-  | "distinctCount";
+  | "distinctCount"
+  | "weightedAverage";
 
 /**
  * ListView column types for raw data display

@@ -5,6 +5,7 @@ import {
 import { RootWidget } from "@/features/app/RootWidget.tsx";
 import { unstable_HistoryRouter as HistoryRouter } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
+import { DialogServiceHandler } from "./services/front/DialogService/DialogService.impl.connected";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { createTrackerPersistentBrowserHistory } from "./services/internal/navigation/createPersistentBrowserHistory.connected";
 
@@ -15,6 +16,7 @@ function App() {
     <HistoryRouter history={history}>
       <TooltipProvider delayDuration={0}>
         <NavigationServiceInject />
+        <DialogServiceHandler />
         <RootWidget services={myServices} />
         <Toaster />
       </TooltipProvider>

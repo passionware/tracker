@@ -9,10 +9,10 @@ import { zip } from "lodash";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
+import { SharedIdMap } from "./_private/SharedIdMap.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
 
-interface TmetricConfig
-  extends WithServices<[WithExpressionService, WithReportService]> {}
+type TmetricConfig = WithServices<[WithExpressionService, WithReportService]>;
 
 export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
   return {
@@ -32,6 +32,14 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
           ]),
       );
       const configs = zip(configs_, trackerReports);
+
+      // Create shared ID maps for all contractors (one per field)
+      const sharedIdMaps: Record<string, SharedIdMap> = {
+        activity: new SharedIdMap("a"),
+        task: new SharedIdMap("t"),
+        project: new SharedIdMap("p"),
+      };
+
       const reports = await Promise.all(
         configs.map(async ([reportConfig_, trackerReport_]) => {
           const reportConfig = maybe.getOrThrow(reportConfig_);
@@ -48,6 +56,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             defaultRoleId: contractorRoleId,
             currency: trackerReport.currency,
             contractorId: trackerReport.contractorId,
+            idMaps: sharedIdMaps, // Share the ID maps across contractors
           });
           // Helper function to parse rate with currency from environment variable
           const parseRateWithCurrency = (
@@ -76,7 +85,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
                 clientId: trackerReport.clientId,
                 contractorId: trackerReport.contractorId,
               },
-              `vars.hour_cost_rate`,
+              `vars.new_hour_cost_rate`,
               {},
             );
           const { rate: costRate, currency: costCurrency } =
@@ -90,7 +99,7 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
                 clientId: trackerReport.clientId,
                 contractorId: trackerReport.contractorId,
               },
-              `vars.hour_billing_rate`,
+              `vars.new_hour_billing_rate`,
               { fallback: `${costRate} ${costCurrency}` }, // fallback to cost rate if billing rate not set
             );
           const { rate: billingRate, currency: billingCurrency } =
@@ -98,8 +107,9 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 
           adapted.definitions.roleTypes[contractorRoleId].rates.push({
             billing: "hourly",
-            activityType: "development",
-            taskType: "development",
+            activityTypes: [],
+            taskTypes: [],
+            projectIds: [],
             costRate,
             costCurrency,
             billingRate,
@@ -124,7 +134,10 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
 /**
  * Merges multiple GenericReport objects into a single report.
  * - Task types are merged by their IDs (original tmetric entry descriptions)
- * - Activity types are merged (should be the same across contractors)
+ * - Activity types are merged (IDs are already shared via SharedIdMap)
+ * - Task types are merged (IDs are already shared via SharedIdMap)
+ * - Project types are merged (IDs are already shared via SharedIdMap)
+ * - Project types are merged
  * - Role types are kept separate (each contractor has their own role with rates)
  * - Time entries are combined from all reports
  */
@@ -152,16 +165,16 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
   for (let i = 1; i < reports.length; i++) {
     const report = reports[i];
 
-    // Merge task types by ID (original tmetric entry descriptions)
+    // Merge task types (IDs are already shared via SharedIdMap, so no remapping needed)
     Object.assign(merged.definitions.taskTypes, report.definitions.taskTypes);
 
-    // Merge activity types (should be the same, but merge to be safe)
+    // Merge activity types (IDs are already shared via SharedIdMap, so no remapping needed)
     Object.assign(
       merged.definitions.activityTypes,
       report.definitions.activityTypes,
     );
 
-    // Merge project types
+    // Merge project types (IDs are already shared via SharedIdMap, so no remapping needed)
     Object.assign(
       merged.definitions.projectTypes,
       report.definitions.projectTypes,
@@ -170,7 +183,7 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
     // Keep role types separate - each contractor has their own role
     Object.assign(merged.definitions.roleTypes, report.definitions.roleTypes);
 
-    // Combine time entries
+    // Combine time entries (IDs are already consistent across reports via SharedIdMap)
     merged.timeEntries.push(...report.timeEntries);
   }
 

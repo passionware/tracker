@@ -6,6 +6,7 @@
  */
 
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
+import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { groupBy, sum } from "lodash";
 
 /**
@@ -31,6 +32,7 @@ export interface TransformedEntry {
   costValue?: number;
   billingValue?: number;
   profitValue?: number;
+  hourlyRate?: number; // costValue / numHours (average rate per hour)
 }
 
 /**
@@ -39,25 +41,46 @@ export interface TransformedEntry {
  */
 export function transformReportData(
   report: GeneratedReportSource,
+  options?: {
+    anonymizationRules?: Array<{
+      id: string;
+      projectIds: string[];
+      anonymizedContractorName: string;
+    }>; // Array of anonymization rules
+  },
 ): TransformedEntry[] {
+  // Build a map from project ID to anonymized contractor ID
+  const projectToAnonymizedContractorId = new Map<string, number>();
+  if (options?.anonymizationRules) {
+    options.anonymizationRules.forEach((rule, index) => {
+      // Use negative IDs starting from -999, -998, etc. for each rule
+      const anonymizedContractorId = -999 - index;
+      rule.projectIds.forEach((projectId) => {
+        projectToAnonymizedContractorId.set(projectId, anonymizedContractorId);
+      });
+    });
+  }
+
   return report.data.timeEntries.map((entry): TransformedEntry => {
     // Calculate hours
     const numHours = calculateHours(entry.startAt, entry.endAt);
 
     // Find matching rate for cost/billing calculations
-    const roleType = report.data.definitions.roleTypes[entry.roleId];
-    const matchingRate =
-      roleType?.rates.find(
-        (rate) =>
-          rate.activityType === entry.activityId &&
-          rate.taskType === entry.taskId &&
-          (rate.projectId === entry.projectId || !rate.projectId),
-      ) || roleType?.rates[0]; // Fallback to first rate
+    const matchingRate = getMatchingRate(report.data, entry);
 
     // Calculate financial values
-    const costValue = matchingRate ? numHours * matchingRate.costRate : 0;
-    const billingValue = matchingRate ? numHours * matchingRate.billingRate : 0;
+    const costValue = numHours * matchingRate.costRate;
+    const billingValue = numHours * matchingRate.billingRate;
     const profitValue = billingValue - costValue;
+    // Calculate hourly rate (cost per hour)
+    const hourlyRate = numHours > 0 ? billingValue / numHours : 0;
+
+    // Anonymize contractorId if project matches a rule
+    let contractorId = entry.contractorId;
+    const anonymizedId = projectToAnonymizedContractorId.get(entry.projectId);
+    if (anonymizedId !== undefined) {
+      contractorId = anonymizedId;
+    }
 
     return {
       // Core fields (always present)
@@ -70,7 +93,7 @@ export function transformReportData(
       // Optional fields (can be removed during anonymization)
       startAt: entry.startAt,
       endAt: entry.endAt,
-      contractorId: entry.contractorId,
+      contractorId,
       roleId: entry.roleId,
 
       // Calculated fields (always present)
@@ -78,6 +101,7 @@ export function transformReportData(
       costValue,
       billingValue,
       profitValue,
+      hourlyRate,
     };
   });
 }
@@ -246,11 +270,18 @@ export function transformAndAnonymize(
   report: GeneratedReportSource,
   options: {
     anonymizeTimeEntries?: boolean;
+    anonymizationRules?: Array<{
+      id: string;
+      projectIds: string[];
+      anonymizedContractorName: string;
+    }>;
     activeMeasures?: string[];
   },
 ): TransformedEntry[] {
   // Transform data with all calculated values
-  let transformedEntries = transformReportData(report);
+  let transformedEntries = transformReportData(report, {
+    anonymizationRules: options.anonymizationRules,
+  });
 
   if (options.anonymizeTimeEntries) {
     transformedEntries = anonymizeTimeEntries(transformedEntries);
@@ -281,6 +312,7 @@ function filterUnselectedMeasurements(
     billing: "billingValue",
     profit: "profitValue",
     entries: "entries",
+    hourlyRate: "hourlyRate",
   };
 
   return entries.map((entry) => {
@@ -346,6 +378,8 @@ export function filterInactiveDimensionFields(
       filteredEntry.billingValue = entry.billingValue;
     if (entry.profitValue !== undefined)
       filteredEntry.profitValue = entry.profitValue;
+    if (entry.hourlyRate !== undefined)
+      filteredEntry.hourlyRate = entry.hourlyRate;
 
     return filteredEntry;
   });
@@ -394,6 +428,7 @@ export function anonymizeByUsage(
       cost: "costValue",
       billing: "billingValue",
       profit: "profitValue",
+      hourlyRate: "hourlyRate",
     };
 
     const fieldName = measureFieldMap[measure.id];

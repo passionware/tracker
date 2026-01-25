@@ -1,11 +1,17 @@
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
@@ -14,12 +20,6 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   selectionState,
   SelectionState,
@@ -30,8 +30,9 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { mt, rd } from "@passionware/monads";
-import { useState } from "react";
 import { promiseState } from "@passionware/platform-react";
+import { useState } from "react";
+import { ReportGenerationWidget } from "./report-generation/tmetric/ReportGenerationWidget";
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -180,13 +181,31 @@ export function LinkedReportList(
                     */}
                   <DropdownMenuItem
                     onSelect={() => {
-                      props.services.reportGenerationService.generateReport({
-                        reportIds: selectionState.getSelectedIds(
-                          selection,
-                          rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
-                        ),
-                        sourceType: "tmetric",
-                        projectIterationId: props.projectIterationId,
+                      // props.services.reportGenerationService.generateReport({
+                      //   reportIds: selectionState.getSelectedIds(
+                      //     selection,
+                      //     rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+                      //   ),
+                      //   sourceType: "tmetric",
+                      //   projectIterationId: props.projectIterationId,
+                      // });
+                      if (!rd.isSuccess(reports)) return;
+
+                      const selectedReports = reports.data.entries.filter((e) =>
+                        selectionState.isSelected(selection, e.id),
+                      );
+
+                      props.services.dialogService.show((api) => {
+                        return (
+                          <ReportGenerationWidget
+                            {...api}
+                            reports={selectedReports.map(
+                              (e) => e.originalReport,
+                            )}
+                            projectIterationId={props.projectIterationId}
+                            services={props.services}
+                          />
+                        );
                       });
                     }}
                   >

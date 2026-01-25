@@ -36,11 +36,27 @@ function getSerializableCubeConfig(
     }
   });
 
+  // Create task label mapping from report definitions
+  const taskLabelMapping: Record<string, string> = {};
+  Object.entries(report.data.definitions.taskTypes).forEach(
+    ([taskId, taskType]) => {
+      taskLabelMapping[taskId] = taskType.name;
+    },
+  );
+
   // Create activity label mapping from report definitions
   const activityLabelMapping: Record<string, string> = {};
   Object.entries(report.data.definitions.activityTypes).forEach(
     ([activityId, activityType]) => {
       activityLabelMapping[activityId] = activityType.name;
+    },
+  );
+
+  // Create project label mapping from report definitions
+  const projectLabelMapping: Record<string, string> = {};
+  Object.entries(report.data.definitions.projectTypes).forEach(
+    ([projectId, projectType]) => {
+      projectLabelMapping[projectId] = projectType.name;
     },
   );
 
@@ -82,12 +98,18 @@ function getSerializableCubeConfig(
       name: "Project",
       icon: "🏗️",
       fieldName: "projectId",
+      ...(Object.keys(projectLabelMapping).length > 0 && {
+        labelMapping: projectLabelMapping,
+      }),
     },
     {
       id: "task",
       name: "Task",
       icon: "📋",
       fieldName: "taskId",
+      ...(Object.keys(taskLabelMapping).length > 0 && {
+        labelMapping: taskLabelMapping,
+      }),
     },
     {
       id: "contractor",
@@ -194,6 +216,20 @@ function getSerializableCubeConfig(
         mode: "absolute",
       },
     },
+    {
+      id: "hourlyRate",
+      name: "Hourly Rate",
+      icon: "💵",
+      fieldName: "billingValue/numHours",
+      aggregationFunction: "weightedAverage",
+      formatFunction: {
+        type: "currency",
+        parameters: { currency, decimals: 2 },
+      },
+      sidebarOptions: {
+        mode: "absolute",
+      },
+    },
   ];
 
   // Define the data schema
@@ -209,6 +245,7 @@ function getSerializableCubeConfig(
     { name: "costValue", type: "number", nullable: false, defaultValue: 0 },
     { name: "billingValue", type: "number", nullable: false, defaultValue: 0 },
     { name: "profitValue", type: "number", nullable: false, defaultValue: 0 },
+    { name: "hourlyRate", type: "number", nullable: true, defaultValue: 0 },
   ];
 
   return {
@@ -221,7 +258,14 @@ function getSerializableCubeConfig(
     dataSchema: { fields: dataSchema },
     dimensions,
     measures,
-    activeMeasures: ["hours", "cost", "billing", "profit", "entries"],
+    activeMeasures: [
+      "hours",
+      "cost",
+      "billing",
+      "profit",
+      "entries",
+      "hourlyRate",
+    ],
   };
 }
 

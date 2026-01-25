@@ -26,6 +26,8 @@ import {
   ArrowRight,
   Clock,
   Trash2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
@@ -59,6 +61,20 @@ export function CubeReportsPage(props: WithFrontServices) {
     toast.success("Report deleted successfully");
   });
 
+  // Publish report mutation
+  const publishMutation = promiseState.useMutation(async (reportId: string) => {
+    await props.services.clientCubeReportService.setReportPublished(reportId);
+    toast.success("Report published successfully");
+  });
+
+  // Unpublish report mutation
+  const unpublishMutation = promiseState.useMutation(
+    async (reportId: string) => {
+      await props.services.clientCubeReportService.setReportUnpublished(reportId);
+      toast.success("Report unpublished successfully");
+    },
+  );
+
   const handleDeleteReport = useCallback(
     (reportId: string) => {
       deleteMutation.track(reportId).catch((error) => {
@@ -67,6 +83,26 @@ export function CubeReportsPage(props: WithFrontServices) {
       });
     },
     [deleteMutation],
+  );
+
+  const handlePublishReport = useCallback(
+    (reportId: string) => {
+      publishMutation.track(reportId).catch((error) => {
+        console.error("Error publishing report:", error);
+        toast.error("Failed to publish report");
+      });
+    },
+    [publishMutation],
+  );
+
+  const handleUnpublishReport = useCallback(
+    (reportId: string) => {
+      unpublishMutation.track(reportId).catch((error) => {
+        console.error("Error unpublishing report:", error);
+        toast.error("Failed to unpublish report");
+      });
+    },
+    [unpublishMutation],
   );
 
   return (
@@ -158,8 +194,12 @@ export function CubeReportsPage(props: WithFrontServices) {
                 report={latestReport}
                 onViewReport={() => handleReportClick(latestReport.id)}
                 onDeleteReport={handleDeleteReport}
+                onPublishReport={handlePublishReport}
+                onUnpublishReport={handleUnpublishReport}
                 isAdmin={rd.tryMap(authState, (auth) => auth.role) === "admin"}
                 isDeleting={mt.isInProgress(deleteMutation.state)}
+                isPublishing={mt.isInProgress(publishMutation.state)}
+                isUnpublishing={mt.isInProgress(unpublishMutation.state)}
                 services={props.services}
               />
 
@@ -178,10 +218,14 @@ export function CubeReportsPage(props: WithFrontServices) {
                         report={report}
                         onClick={() => handleReportClick(report.id)}
                         onDeleteReport={handleDeleteReport}
+                        onPublishReport={handlePublishReport}
+                        onUnpublishReport={handleUnpublishReport}
                         isAdmin={
                           rd.tryMap(authState, (auth) => auth.role) === "admin"
                         }
                         isDeleting={mt.isInProgress(deleteMutation.state)}
+                        isPublishing={mt.isInProgress(publishMutation.state)}
+                        isUnpublishing={mt.isInProgress(unpublishMutation.state)}
                         services={props.services}
                       />
                     ))}
@@ -255,16 +299,24 @@ interface LatestReportHeroProps extends WithFrontServices {
   report: CockpitCubeReportWithCreator;
   onViewReport: () => void;
   onDeleteReport?: (reportId: string) => void;
+  onPublishReport?: (reportId: string) => void;
+  onUnpublishReport?: (reportId: string) => void;
   isAdmin?: boolean;
   isDeleting?: boolean;
+  isPublishing?: boolean;
+  isUnpublishing?: boolean;
 }
 
 function LatestReportHero({
   report,
   onViewReport,
   onDeleteReport,
+  onPublishReport,
+  onUnpublishReport,
   isAdmin = false,
   isDeleting = false,
+  isPublishing = false,
+  isUnpublishing = false,
   services,
 }: LatestReportHeroProps) {
   // Use API-provided date range
@@ -287,6 +339,24 @@ function LatestReportHero({
                 <TrendingUp className="w-3 h-3 mr-1" />
                 Latest Report
               </Badge>
+              {isAdmin && (
+                <Badge
+                  variant={report.is_published ? "success" : "secondary"}
+                  className="ml-2"
+                >
+                  {report.is_published ? (
+                    <>
+                      <Eye className="w-3 h-3 mr-1" />
+                      Published
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3 h-3 mr-1" />
+                      Not Published
+                    </>
+                  )}
+                </Badge>
+              )}
             </div>
 
             {report.description && (
@@ -355,21 +425,53 @@ function LatestReportHero({
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
-              {isAdmin && onDeleteReport && (
-                <DeleteConfirmationPopover
-                  reportName={report.name}
-                  onConfirm={() => onDeleteReport(report.id)}
-                  isDeleting={isDeleting}
-                >
-                  <Button
-                    variant="outline-destructive"
-                    size="lg"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </DeleteConfirmationPopover>
+              {isAdmin && (
+                <>
+                  {report.is_published && onUnpublishReport && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUnpublishReport(report.id);
+                      }}
+                      disabled={isUnpublishing || isPublishing}
+                    >
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      {isUnpublishing ? "Unpublishing..." : "Unpublish"}
+                    </Button>
+                  )}
+                  {!report.is_published && onPublishReport && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPublishReport(report.id);
+                      }}
+                      disabled={isUnpublishing || isPublishing}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      {isPublishing ? "Publishing..." : "Publish"}
+                    </Button>
+                  )}
+                  {onDeleteReport && (
+                    <DeleteConfirmationPopover
+                      reportName={report.name}
+                      onConfirm={() => onDeleteReport(report.id)}
+                      isDeleting={isDeleting}
+                    >
+                      <Button
+                        variant="outline-destructive"
+                        size="lg"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    </DeleteConfirmationPopover>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -383,16 +485,24 @@ interface ReportCardProps extends WithFrontServices {
   report: CockpitCubeReportWithCreator;
   onClick: () => void;
   onDeleteReport?: (reportId: string) => void;
+  onPublishReport?: (reportId: string) => void;
+  onUnpublishReport?: (reportId: string) => void;
   isAdmin?: boolean;
   isDeleting?: boolean;
+  isPublishing?: boolean;
+  isUnpublishing?: boolean;
 }
 
 function ReportCard({
   report,
   onClick,
   onDeleteReport,
+  onPublishReport,
+  onUnpublishReport,
   isAdmin = false,
   isDeleting = false,
+  isPublishing = false,
+  isUnpublishing = false,
   services,
 }: ReportCardProps) {
   // Use API-provided date range
@@ -414,6 +524,24 @@ function ReportCard({
               </CardTitle>
             </div>
           </div>
+          {isAdmin && (
+            <Badge
+              variant={report.is_published ? "success" : "secondary"}
+              className="ml-2"
+            >
+              {report.is_published ? (
+                <>
+                  <Eye className="w-3 h-3 mr-1" />
+                  Published
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-3 h-3 mr-1" />
+                  Not Published
+                </>
+              )}
+            </Badge>
+          )}
         </div>
         {report.description && (
           <CardDescription className="line-clamp-2 mt-3 text-xs">
@@ -476,20 +604,52 @@ function ReportCard({
             })}
           </span>
 
-          {isAdmin && onDeleteReport && (
-            <DeleteConfirmationPopover
-              reportName={report.name}
-              onConfirm={() => onDeleteReport(report.id)}
-              isDeleting={isDeleting}
-            >
-              <Button
-                onClick={(e) => e.stopPropagation()}
-                variant="outline-destructive"
-                size="icon-xs"
-              >
-                <Trash2 />
-              </Button>
-            </DeleteConfirmationPopover>
+          {isAdmin && (
+            <>
+              {report.is_published && onUnpublishReport && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnpublishReport(report.id);
+                  }}
+                  variant="outline"
+                  size="icon-xs"
+                  disabled={isUnpublishing || isPublishing}
+                  title="Unpublish report"
+                >
+                  <EyeOff className="w-3 h-3" />
+                </Button>
+              )}
+              {!report.is_published && onPublishReport && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPublishReport(report.id);
+                  }}
+                  variant="outline"
+                  size="icon-xs"
+                  disabled={isUnpublishing || isPublishing}
+                  title="Publish report"
+                >
+                  <Eye className="w-3 h-3" />
+                </Button>
+              )}
+              {onDeleteReport && (
+                <DeleteConfirmationPopover
+                  reportName={report.name}
+                  onConfirm={() => onDeleteReport(report.id)}
+                  isDeleting={isDeleting}
+                >
+                  <Button
+                    onClick={(e) => e.stopPropagation()}
+                    variant="outline-destructive"
+                    size="icon-xs"
+                  >
+                    <Trash2 />
+                  </Button>
+                </DeleteConfirmationPopover>
+              )}
+            </>
           )}
         </div>
       </CardFooter>

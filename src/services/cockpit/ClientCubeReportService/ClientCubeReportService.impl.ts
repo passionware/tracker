@@ -64,5 +64,27 @@ export function createClientCubeReportService(
         queryKey: ["cockpit_cube_reports"],
       });
     },
+
+    setReportPublished: async (reportId) => {
+      const result = await api.publishReport(reportId);
+
+      // Invalidate all reports queries to refresh the list
+      await client.invalidateQueries({
+        queryKey: ["cockpit_cube_reports"],
+      });
+
+      return result;
+    },
+
+    setReportUnpublished: async (reportId) => {
+      const result = await api.unpublishReport(reportId);
+
+      // Invalidate all reports queries to refresh the list
+      await client.invalidateQueries({
+        queryKey: ["cockpit_cube_reports"],
+      });
+
+      return result;
+    },
   };
 }

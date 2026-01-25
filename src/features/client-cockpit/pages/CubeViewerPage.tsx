@@ -114,6 +114,7 @@ export function CubeViewerPage(props: WithFrontServices) {
           onPdfExport={handlePdfExport}
           dateRangeLabel={dateRangeLabel}
           extraActions={extraActions}
+          services={props.services}
         />
       );
     });

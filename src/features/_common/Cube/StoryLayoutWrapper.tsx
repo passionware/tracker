@@ -8,23 +8,33 @@
 import React from "react";
 import {
   CubeBreakdownControl,
+  CubeTimeSubrangeControl,
   CubeDimensionExplorer,
   CubeHierarchicalBreakdown,
   CubeLayout,
   CubeSummary,
 } from "./index.ts";
+import { CubeTimelineView } from "./CubeTimelineView.tsx";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 
 interface StoryLayoutWrapperProps {
   title: string;
   description: string;
   children: React.ReactNode;
+  services?: WithFormatService;
 }
 
 export function StoryLayoutWrapper({
   title,
   description,
   children,
+  services,
 }: StoryLayoutWrapperProps) {
+  // Create default format service if not provided
+  const formatService =
+    services?.formatService || createFormatService(() => new Date());
+  const servicesWithFormat = { formatService };
   const content = (
     <div className="h-full flex flex-col bg-white">
       {/* Header with title */}
@@ -45,6 +55,7 @@ export function StoryLayoutWrapper({
             <>
               <div className="p-4 space-y-4 flex-1">
                 <CubeSummary />
+                <CubeTimeSubrangeControl services={servicesWithFormat} />
                 <CubeBreakdownControl />
               </div>
               <div className="p-4 pt-0">
@@ -53,6 +64,7 @@ export function StoryLayoutWrapper({
             </>
           }
           rightSidebar={<CubeDimensionExplorer />}
+          bottomSlot={<CubeTimelineView />}
         >
           {children}
         </CubeLayout>

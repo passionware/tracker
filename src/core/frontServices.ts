@@ -28,6 +28,7 @@ import { WithVariableService } from "@/services/io/VariableService/VariableServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { WithClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.ts";
 import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
+import { WithDialogService } from "@/services/front/DialogService/DialogService";
 import { BillingQuery } from "@/api/billing/billing.api";
 import { CostQuery } from "@/api/cost/cost.api";
 import { ProjectQuery } from "@/api/project/project.api";
@@ -76,6 +77,7 @@ export type FrontServices = MergeServices<
     WithGeneratedReportViewService,
     WithClientCubeReportService,
     WithCockpitTenantService,
+    WithDialogService,
   ]
 >;
 

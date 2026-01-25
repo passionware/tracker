@@ -474,6 +474,35 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    bulkEditProjectIteration: async (iterationIds, payload) => {
+      const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
+        key in payload ? payload[key] : undefined;
+      const response = await client
+        .from("project_iteration")
+        .update(
+          pickBy(
+            {
+              project_id: takeIfPresent("projectId"),
+              period_start: maybe.map(
+                takeIfPresent("periodStart"),
+                formatDateForSupabase,
+              ),
+              period_end: maybe.map(
+                takeIfPresent("periodEnd"),
+                formatDateForSupabase,
+              ),
+              status: takeIfPresent("status"),
+              description: takeIfPresent("description"),
+              ordinal_number: takeIfPresent("ordinalNumber"),
+            },
+            (_, key) => key !== undefined,
+          ),
+        )
+        .in("id", iterationIds);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     editProjectIterationPosition: async (positionId, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;

@@ -23,7 +23,6 @@ import { useState, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import type { SerializableMeasure } from "@/features/_common/Cube/serialization/CubeSerialization.types.ts";
-import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { CubeProvider } from "@/features/_common/Cube/CubeContext.tsx";
 import { useCubeState } from "@/features/_common/Cube/useCubeState.ts";
 import { StoryLayoutWrapper } from "@/features/_common/Cube/StoryLayoutWrapper.tsx";
@@ -47,11 +46,24 @@ import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/Seriali
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";
 import { SimpleTooltip } from "@/components/ui/tooltip";
 import { ensureError } from "@passionware/platform-js";
+import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useFieldArray } from "react-hook-form";
+import { Trash2, Plus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Form schema for export builder
+interface AnonymizationRule {
+  id: string; // Unique ID for this rule
+  projectIds: string[]; // Project IDs to anonymize
+  anonymizedContractorName: string; // Name to use for anonymized contractors
+}
+
 interface ExportBuilderFormData {
   anonymization: {
     anonymizeTimeEntries: boolean;
+    projectRules: AnonymizationRule[]; // Array of anonymization rules
   };
   selectedDimensions: string[];
   selectedMeasures: string[];
@@ -100,15 +112,6 @@ function ExportBuilderContent({
   // Get dimensions and measures from the serializable config
   const { dimensions, measures } = serializableConfig;
 
-  // Create runtime descriptors when needed for cube state
-  const runtimeDescriptors = useMemo(() => {
-    const cubeConfig = deserializeCubeConfig(serializableConfig, data as any[]);
-    return {
-      dimensions: cubeConfig.dimensions,
-      measures: cubeConfig.measures,
-    };
-  }, [serializableConfig, data]);
-
   // Extract currency from report data (ensure all billing rates use the same currency)
   const currency = useMemo(() => {
     const currencies = new Set<string>();
@@ -154,16 +157,17 @@ function ExportBuilderContent({
     defaultValues: {
       anonymization: {
         anonymizeTimeEntries: false,
+        projectRules: [],
       },
       selectedDimensions:
         dimensions.length > 0
-          ? ["contractor", "task", "activity", "role"].filter((id) =>
+          ? ["project", "contractor", "task", "activity"].filter((id) =>
               dimensions.some((dim) => dim.id === id),
             )
           : [],
       selectedMeasures:
         measures.length > 0
-          ? ["hours", "billing"].filter((id) =>
+          ? ["hours", "hourlyRate", "billing"].filter((id) =>
               measures.some((measure) => measure.id === id),
             )
           : [],
@@ -187,7 +191,58 @@ function ExportBuilderContent({
 
   // Watch form values
   const watchedValues = watch();
-  const { anonymizeTimeEntries } = watchedValues.anonymization;
+  const { anonymizeTimeEntries, projectRules } = watchedValues.anonymization;
+
+  // Manage anonymization rules array
+  const {
+    fields: anonymizationRules,
+    append: addAnonymizationRule,
+    remove: removeAnonymizationRule,
+  } = useFieldArray({
+    control,
+    name: "anonymization.projectRules",
+  });
+
+  // Create updated serializable config with anonymized contractor label mapping for preview
+  const previewSerializableConfig = useMemo(() => {
+    if (!projectRules || projectRules.length === 0) return serializableConfig;
+
+    // Build label mapping from all anonymization rules
+    const anonymizedLabelMapping: Record<string, string> = {};
+    projectRules.forEach((rule, index) => {
+      // Use negative IDs starting from -999, -998, etc. for each rule
+      const contractorId = String(-999 - index);
+      anonymizedLabelMapping[contractorId] = rule.anonymizedContractorName;
+    });
+
+    // Update contractor dimension with anonymized label mapping
+    const updatedDimensions = serializableConfig.dimensions.map((dim) => {
+      if (dim.id === "contractor") {
+        return {
+          ...dim,
+          labelMapping: {
+            ...(dim.labelMapping || {}),
+            ...anonymizedLabelMapping,
+          },
+        };
+      }
+      return dim;
+    });
+
+    return {
+      ...serializableConfig,
+      dimensions: updatedDimensions,
+    };
+  }, [serializableConfig, projectRules]);
+
+  // Create runtime descriptors when needed for cube state (using updated config for preview)
+  const runtimeDescriptors = useMemo(() => {
+    const cubeConfig = deserializeCubeConfig(previewSerializableConfig, data);
+    return {
+      dimensions: cubeConfig.dimensions,
+      measures: cubeConfig.measures,
+    };
+  }, [previewSerializableConfig, data]);
 
   // Determine which dimensions should be disabled based on anonymization settings
   const isDimensionDisabled = (dimId: string) => {
@@ -243,30 +298,11 @@ function ExportBuilderContent({
     form.setValue("selectedColumns", updatedColumns);
   }
 
-  // Fetch contractor data for labelMapping
-  const contractors = rd.mapOrElse(
-    services.contractorService.useContractors(
-      contractorQueryUtils.getBuilder().build((q) => [
-        q.withFilter("id", {
-          operator: "oneOf",
-          value: Array.from(
-            new Set(
-              data
-                .map((entry) => entry.contractorId)
-                .filter((id): id is number => id !== undefined),
-            ),
-          ),
-        }),
-      ]),
-    ),
-    (data) => data,
-    [],
-  );
-
   // Apply mandatory preparation and optional anonymization to data with active measures
   const processedData = useMemo(() => {
     let transformedData = transformAndAnonymize(report, {
       anonymizeTimeEntries,
+      anonymizationRules: projectRules,
       activeMeasures: watchedValues.selectedMeasures,
     });
 
@@ -345,6 +381,7 @@ function ExportBuilderContent({
   }, [
     data,
     anonymizeTimeEntries,
+    projectRules,
     report,
     watchedValues.selectedMeasures,
     runtimeDescriptors.dimensions,
@@ -375,17 +412,42 @@ function ExportBuilderContent({
     if (!previewCubeState) return null;
     if (!serializableConfig) return null;
 
+    // Build label mapping from all anonymization rules
+    const anonymizedLabelMapping: Record<string, string> = {};
+    if (projectRules && projectRules.length > 0) {
+      projectRules.forEach((rule, index) => {
+        // Use negative IDs starting from -999, -998, etc. for each rule
+        const contractorId = String(-999 - index);
+        anonymizedLabelMapping[contractorId] = rule.anonymizedContractorName;
+      });
+    }
+
+    // Update contractor label mapping if anonymization is configured
+    const updatedDimensions = serializableConfig.dimensions.map((dim) => {
+      if (
+        dim.id === "contractor" &&
+        Object.keys(anonymizedLabelMapping).length > 0
+      ) {
+        return {
+          ...dim,
+          labelMapping: {
+            ...(dim.labelMapping || {}),
+            ...anonymizedLabelMapping,
+          },
+        };
+      }
+      return dim;
+    });
+
     // Start with the base serializable config
-    const config = {
+    const config: typeof serializableConfig = {
       ...serializableConfig,
       dimensions: selectedDimensions
         .map((dim) => {
-          const baseDim = serializableConfig.dimensions.find(
-            (d) => d.id === dim.id,
-          );
+          const baseDim = updatedDimensions.find((d) => d.id === dim.id);
           return baseDim;
         })
-        .filter((d) => d !== undefined),
+        .filter((d) => d !== undefined) as typeof serializableConfig.dimensions,
       measures: selectedMeasures
         .map((measure) => {
           return serializableConfig.measures.find((m) => m.id === measure.id);
@@ -577,11 +639,11 @@ function ExportBuilderContent({
       data: processedData,
     };
   }, [
+    previewCubeState,
     serializableConfig,
+    projectRules,
     selectedDimensions,
     selectedMeasures,
-    report.data.definitions,
-    contractors,
     watchedValues.selectedMeasures,
     watchedValues.selectedColumns,
     processedData,
@@ -710,11 +772,13 @@ function ExportBuilderContent({
               value="anonymization"
               className="flex-1 overflow-y-auto"
             >
-              <div className="space-y-4 p-4">
-                <h3 className="text-lg font-semibold">Data Anonymization</h3>
-                <p className="text-sm text-slate-600">
-                  Anonymize sensitive data before export
-                </p>
+              <div className="space-y-6 p-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Data Anonymization</h3>
+                  <p className="text-sm text-slate-600">
+                    Anonymize sensitive data before export
+                  </p>
+                </div>
 
                 <div className="space-y-4">
                   <Controller
@@ -730,6 +794,112 @@ function ExportBuilderContent({
                       />
                     )}
                   />
+                </div>
+
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-base font-semibold mb-2">
+                        Project Contractor Anonymization
+                      </h4>
+                      <p className="text-sm text-slate-600">
+                        Anonymize contractors for specific projects by replacing
+                        their names with custom labels
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        addAnonymizationRule({
+                          id: `rule_${Date.now()}`,
+                          projectIds: [],
+                          anonymizedContractorName: "",
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Rule
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {anonymizationRules.length === 0 ? (
+                      <div className="text-sm text-slate-500 text-center py-4 border border-dashed rounded-lg">
+                        No anonymization rules configured. Click "Add Rule" to
+                        create one.
+                      </div>
+                    ) : (
+                      anonymizationRules.map((rule, index) => {
+                        // Get available projects from report
+                        const projectItems = Object.entries(
+                          report.data.definitions.projectTypes,
+                        ).map(([projectId, projectType]) => ({
+                          id: projectId,
+                          label: projectType.name,
+                        }));
+
+                        return (
+                          <Card key={rule.id} className="p-4">
+                            <CardContent className="p-0 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-semibold">
+                                  Rule {index + 1}
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeAnonymizationRule(index)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Projects to anonymize</Label>
+                                  <Controller
+                                    name={`anonymization.projectRules.${index}.projectIds`}
+                                    control={control}
+                                    render={({ field }) => (
+                                      <SimpleArrayPicker
+                                        items={projectItems}
+                                        value={field.value}
+                                        onSelect={field.onChange}
+                                        placeholder="Select projects to anonymize"
+                                        searchPlaceholder="Search projects..."
+                                      />
+                                    )}
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Anonymized contractor name</Label>
+                                  <Controller
+                                    name={`anonymization.projectRules.${index}.anonymizedContractorName`}
+                                    control={control}
+                                    render={({ field }) => (
+                                      <Input
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        placeholder="Enter a name for the anonymized contractor"
+                                      />
+                                    )}
+                                  />
+                                  <p className="text-xs text-slate-500">
+                                    This name will replace contractor names for
+                                    the selected projects above
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -963,6 +1133,7 @@ function ExportBuilderContent({
                     <StoryLayoutWrapper
                       title="Export Preview"
                       description="Preview of your configured cube export"
+                      services={services}
                     >
                       {exportSerializableConfig && (
                         <SerializedCubeViewWithSelection

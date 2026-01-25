@@ -104,8 +104,8 @@ export function CubeView({
           transition={{ duration: 0.3, delay: 0.1 }}
         >
           {displayGroups.length === 0 ? (
-            // No groups to display - check if we should show raw data
-            cube.totalItems > 0 && cube.filteredData ? (
+            // No groups to display - show raw data
+            cube.totalItems > 0 ? (
               // Show raw data
               <motion.div
                 className="space-y-4"

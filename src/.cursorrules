@@ -1,0 +1,5 @@
+# Commit messages
+
+Use conventional commits. make subject concise and explain the purpose (why's). If the topic requires clarifiaction provide short body, ideally max one sentence.
+Do not include the body if the topic is clear
+
