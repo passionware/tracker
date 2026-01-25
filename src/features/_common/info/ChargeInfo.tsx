@@ -42,10 +42,9 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { addDays, startOfDay } from "date-fns";
-import { chain, sortBy } from "lodash";
+import { chain, isUndefined, omitBy, sortBy } from "lodash";
 import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
 
@@ -290,13 +289,17 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                         target: link.link.reportAmount ?? undefined,
                         description: link.link.description,
                       }}
-                      onValueChange={(_all, updates) =>
+                      onValueChange={(_all, { source, target, ...values }) =>
                         services.mutationService.updateBillingReportLink(
                           link.link.id,
-                          mapKeys(updates, {
-                            source: "billingAmount",
-                            target: "reportAmount",
-                          }),
+                          omitBy(
+                            {
+                              billingAmount: source,
+                              reportAmount: target,
+                              ...values,
+                            },
+                            isUndefined,
+                          ),
                         )
                       }
                     >
