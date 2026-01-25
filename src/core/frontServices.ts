@@ -78,6 +78,14 @@ export type FrontServices = MergeServices<
     WithClientCubeReportService,
     WithCockpitTenantService,
     WithDialogService,
+    WithQueryParamsService<{
+      projects: ProjectQuery;
+      users: UserQuery;
+      reports: ReportQuery;
+      billing: BillingQuery;
+      costs: CostQuery;
+      variables: VariableQuery;
+    }>,
   ]
 >;
 

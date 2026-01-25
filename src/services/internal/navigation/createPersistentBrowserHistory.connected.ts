@@ -1,18 +1,18 @@
-import qs from "qs";
-import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl";
-import { billingQuerySchema } from "@/api/billing/billing.api";
-import { costQuerySchema } from "@/api/cost/cost.api";
-import { projectQuerySchema } from "@/api/project/project.api";
 import { reportQuerySchema } from "@/api/reports/reports.api.ts";
-import { variableQuerySchema } from "@/api/variable/variable.api";
+import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl";
+import qs from "qs";
 import {
   createPersistentBrowserHistory,
-  PatternConfig,
-  PersistentNavigationConfig,
-  localStorageAdapter,
   createReadPersisted,
   createStorePersisted,
+  localStorageAdapter,
+  PatternConfig,
+  PersistentNavigationConfig,
 } from "./createPersistentBrowserHistory";
+import { costQuerySchema } from "@/api/cost/cost.api";
+import { variableQuerySchema } from "@/api/variable/variable.api";
+import { billingQuerySchema } from "@/api/billing/billing.api";
+import { projectQuerySchema } from "@/api/project/project.api";
 
 const routingService = createRoutingService();
 

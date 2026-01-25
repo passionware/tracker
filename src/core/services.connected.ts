@@ -12,12 +12,15 @@ import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
-import { billingQuerySchema } from "@/api/billing/billing.api";
-import { costQuerySchema } from "@/api/cost/cost.api";
-import { projectQuerySchema } from "@/api/project/project.api";
-import { reportQuerySchema } from "@/api/reports/reports.api.ts";
-import { userQuerySchema } from "@/api/user/user.api";
-import { variableQuerySchema } from "@/api/variable/variable.api";
+import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
+import { CostQuery, costQuerySchema } from "@/api/cost/cost.api";
+import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
+import { ReportQuery, reportQuerySchema } from "@/api/reports/reports.api.ts";
+import { UserQuery, userQuerySchema } from "@/api/user/user.api";
+import {
+  VariableQuery,
+  variableQuerySchema,
+} from "@/api/variable/variable.api";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
@@ -63,15 +66,30 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
 const routingService = createRoutingService();
-const queryParamsService = createQueryParamsService({
+const queryParamsService = createQueryParamsService<{
+  projects: ProjectQuery;
+  users: UserQuery;
+  reports: ReportQuery;
+  billing: BillingQuery;
+  costs: CostQuery;
+  variables: VariableQuery;
+}>({
   navigationService,
   parseQueryParams: {
     projects: projectQuerySchema.parse,
     users: userQuerySchema.parse,
-    reports: reportQuerySchema.parse,
-    billing: billingQuerySchema.parse,
-    costs: costQuerySchema.parse,
-    variables: variableQuerySchema.parse,
+    reports: reportQuerySchema.parse as (
+      params: Record<string, unknown>, // todo: we have some issues that enum filter<unknown> is inferred but should be more concrete
+    ) => ReportQuery,
+    billing: billingQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => BillingQuery,
+    costs: costQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => CostQuery,
+    variables: variableQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => VariableQuery,
   },
 });
 const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);

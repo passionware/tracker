@@ -199,7 +199,7 @@ export const ReportValidation = {
   // Calculate breakdown from net value (reverse calculation)
   calculateBreakdownFromNetValue: (
     netValue: number,
-    unit: string,
+    _unit: string,
     quantity: number,
   ): { unitPrice: number } => {
     const unitPrice =

@@ -151,11 +151,67 @@ export function LinkPopover(props: LinkPopoverProps) {
                 description: data.description,
                 breakdown: createBreakdown(),
               };
+              const formValuesForDirtyCheck = {
+                source: data.source,
+                target: data.target,
+                description: data.description,
+                quantity: data.quantity,
+                unit: data.unit,
+                sourceUnitPrice: data.sourceUnitPrice,
+                targetUnitPrice: data.targetUnitPrice,
+                exchangeRate: data.exchangeRate,
+              };
+              const dirtyFields = getDirtyFields(
+                formValuesForDirtyCheck,
+                form,
+              );
+              const transformedDirtyFields: Partial<LinkValue> = {};
+              if (dirtyFields.source !== undefined) {
+                transformedDirtyFields.source = Number(dirtyFields.source);
+              }
+              if (dirtyFields.target !== undefined) {
+                transformedDirtyFields.target = Number(dirtyFields.target);
+              }
+              if (dirtyFields.description !== undefined) {
+                transformedDirtyFields.description = String(
+                  dirtyFields.description,
+                );
+              }
+              if (
+                dirtyFields.quantity !== undefined ||
+                dirtyFields.unit !== undefined ||
+                dirtyFields.sourceUnitPrice !== undefined ||
+                dirtyFields.targetUnitPrice !== undefined ||
+                dirtyFields.exchangeRate !== undefined
+              ) {
+                transformedDirtyFields.breakdown = {
+                  quantity:
+                    dirtyFields.quantity !== undefined
+                      ? Number(dirtyFields.quantity) || undefined
+                      : undefined,
+                  unit:
+                    dirtyFields.unit !== undefined
+                      ? String(dirtyFields.unit) || undefined
+                      : undefined,
+                  sourceUnitPrice:
+                    dirtyFields.sourceUnitPrice !== undefined
+                      ? Number(dirtyFields.sourceUnitPrice) || undefined
+                      : undefined,
+                  targetUnitPrice:
+                    dirtyFields.targetUnitPrice !== undefined
+                      ? Number(dirtyFields.targetUnitPrice) || undefined
+                      : undefined,
+                  exchangeRate:
+                    dirtyFields.exchangeRate !== undefined
+                      ? Number(dirtyFields.exchangeRate) || undefined
+                      : undefined,
+                  sourceCurrency: props.sourceCurrency,
+                  targetCurrency: props.targetCurrency,
+                };
+              }
               await promise.track(
-                props.onValueChange(
-                  allFields,
-                  getDirtyFields(allFields, form),
-                ) || Promise.resolve(),
+                props.onValueChange(allFields, transformedDirtyFields) ||
+                  Promise.resolve(),
               );
               setOpen(false);
             })}
@@ -291,6 +347,7 @@ export function LinkPopover(props: LinkPopoverProps) {
                         <FormControl>
                           <NumberInput
                             {...field}
+                            value={field.value === "" ? undefined : Number(field.value) || undefined}
                             step={0.01}
                             placeholder="e.g., 50"
                           />
@@ -313,6 +370,7 @@ export function LinkPopover(props: LinkPopoverProps) {
                         <FormControl>
                           <NumberInput
                             {...field}
+                            value={field.value === "" ? undefined : Number(field.value) || undefined}
                             step={0.01}
                             placeholder="e.g., 100"
                           />
@@ -333,6 +391,7 @@ export function LinkPopover(props: LinkPopoverProps) {
                         <FormControl>
                           <NumberInput
                             {...field}
+                            value={field.value === "" ? undefined : Number(field.value) || undefined}
                             step={0.01}
                             placeholder="e.g., 35"
                           />
@@ -355,6 +414,7 @@ export function LinkPopover(props: LinkPopoverProps) {
                         <FormControl>
                           <NumberInput
                             {...field}
+                            value={field.value === "" ? undefined : Number(field.value) || undefined}
                             step={0.01}
                             placeholder="e.g., 4.20"
                           />

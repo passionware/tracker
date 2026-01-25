@@ -47,7 +47,6 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         d_billing_unit_price: payload.breakdown.billingUnitPrice,
         d_report_currency: payload.breakdown.reportCurrency,
         d_billing_currency: payload.breakdown.billingCurrency,
-        d_exchange_rate: payload.breakdown.exchangeRate,
       };
     }
 
@@ -332,7 +331,6 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               d_billing_unit_price: payload.breakdown?.billingUnitPrice,
               d_report_currency: payload.breakdown?.reportCurrency,
               d_billing_currency: payload.breakdown?.billingCurrency,
-              d_exchange_rate: payload.breakdown?.exchangeRate,
             },
             (_, key) => key !== undefined,
           ),

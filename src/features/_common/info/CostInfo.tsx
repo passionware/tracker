@@ -165,7 +165,22 @@ export function CostInfo({
                               reportId: report.id,
                               reportAmount: value.target,
                               description: value.description,
-                              breakdown: value.breakdown,
+                              breakdown: value.breakdown
+                                ? {
+                                    quantity: value.breakdown.quantity ?? 0,
+                                    unit: value.breakdown.unit ?? "",
+                                    reportUnitPrice:
+                                      value.breakdown.targetUnitPrice ?? 0,
+                                    costUnitPrice:
+                                      value.breakdown.sourceUnitPrice ?? 0,
+                                    exchangeRate:
+                                      value.breakdown.exchangeRate ?? 1,
+                                    reportCurrency:
+                                      value.breakdown.targetCurrency ?? "",
+                                    costCurrency:
+                                      value.breakdown.sourceCurrency ?? "",
+                                  }
+                                : undefined,
                             }),
                           )
                         }
@@ -225,7 +240,22 @@ export function CostInfo({
                             source: "costAmount",
                             target: "reportAmount",
                           }),
-                          breakdown: value.breakdown,
+                          breakdown: value.breakdown
+                            ? {
+                                quantity: value.breakdown.quantity ?? 0,
+                                unit: value.breakdown.unit ?? "",
+                                reportUnitPrice:
+                                  value.breakdown.targetUnitPrice ?? 0,
+                                costUnitPrice:
+                                  value.breakdown.sourceUnitPrice ?? 0,
+                                exchangeRate:
+                                  value.breakdown.exchangeRate ?? 1,
+                                reportCurrency:
+                                  value.breakdown.targetCurrency ?? "",
+                                costCurrency:
+                                  value.breakdown.sourceCurrency ?? "",
+                              }
+                            : undefined,
                         },
                       )
                     }

@@ -71,7 +71,7 @@ export function createMockQueryParamsService<
         // Mock implementation - in real storybook, this would update args
         console.log("setQueryParams called with:", params);
       },
-      updateQueryParams: (updater) => {
+      updateQueryParams: () => {
         // Mock implementation - in real storybook, this would update args
         console.log("updateQueryParams called");
       },

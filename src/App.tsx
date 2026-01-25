@@ -13,7 +13,7 @@ const history = createTrackerPersistentBrowserHistory();
 
 function App() {
   return (
-    <HistoryRouter history={history}>
+    <HistoryRouter history={history as any}>
       <TooltipProvider delayDuration={0}>
         <NavigationServiceInject />
         <DialogServiceHandler />
