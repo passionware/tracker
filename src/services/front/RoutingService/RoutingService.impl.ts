@@ -81,6 +81,8 @@ export function createRoutingService(): RoutingService {
                         },
                         export: () =>
                           `${base2}/generated-reports/${reportId}/export`,
+                        reconciliation: () =>
+                          `${base2}/generated-reports/${reportId}/reconciliation`,
                       };
                     },
                     billings: () => `${base2}/billings`,

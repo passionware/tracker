@@ -30,6 +30,7 @@ import { createFormatService } from "@/services/FormatService/FormatService.impl
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
+import { createReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.impl.tsx";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
@@ -147,6 +148,16 @@ const expressionService = createExpressionService({
     variableService,
   },
 });
+const mutationService = createMutationService(
+  {
+    services: {
+      messageService,
+      preferenceService,
+    },
+  },
+  createMutationApi(mySupabase),
+);
+
 export const myServices = {
   authService: createAuthService(mySupabase),
   cockpitAuthService: createCockpitAuthService(clientCockpitSupabase),
@@ -183,15 +194,12 @@ export const myServices = {
     },
   }),
   messageService,
-  mutationService: createMutationService(
-    {
-      services: {
-        messageService,
-        preferenceService,
-      },
+  mutationService,
+  reconciliationService: createReconciliationService({
+    services: {
+      mutationService,
     },
-    createMutationApi(mySupabase),
-  ),
+  }),
   contractorService: createContractorService(
     createContractorApi(mySupabase),
     myQueryClient,

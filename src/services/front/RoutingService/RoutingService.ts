@@ -128,6 +128,7 @@ export interface RoutingService {
             groupedView: (cubePath?: CubePathParam) => string;
             standaloneGroupedView: (cubePath?: CubePathParam) => string;
             export: () => string;
+            reconciliation: () => string;
           };
           billings: () => string;
         };
