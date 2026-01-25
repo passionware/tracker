@@ -1,6 +1,6 @@
 import { clientsMock } from "@/api/clients/clients.mock.ts";
 import { contractorMock } from "@/api/contractor/contractor.mock.ts";
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { reportQueryUtils, Report } from "@/api/reports/reports.api.ts";
 import { workspaceMock } from "@/api/workspace/workspace.mock.ts";
 import {
   ReportList,
@@ -12,6 +12,7 @@ import {
   createSbServices,
 } from "@/services/_common/createSbServices.ts";
 import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { rd } from "@passionware/monads";
 import type { StoryObj } from "@storybook/react-vite";
 
@@ -49,6 +50,30 @@ const meta = {
         remainingAmount: { amount: 50, currency: "USD" },
         status: "partially-billed",
         billedAmount: { amount: 50, currency: "USD" },
+        originalReport: {
+          id: 1,
+          createdAt: "2024-01-01",
+          contractorId: contractorMock.static.list[0].id,
+          clientId: clientsMock.static.list[0].id,
+          workspaceId: workspaceMock.static.list[0].id,
+          periodStart: new CalendarDate(2024, 1, 1),
+          periodEnd: new CalendarDate(2024, 1, 31),
+          description: "Description",
+          netValue: 100,
+          currency: "USD",
+          projectIterationId: null,
+          contractor: contractorMock.static.list[0],
+          client: clientsMock.static.list[0],
+          linkBillingReport: [],
+          linkCostReport: [],
+          reportBillingValue: 50,
+          reportBillingBalance: 50,
+          reportCostValue: 0,
+          reportCostBalance: 100,
+          billingCostBalance: 50,
+          immediatePaymentDue: 50,
+          previousReport: null,
+        } as Report,
       },
       {
         id: 2,
@@ -60,6 +85,30 @@ const meta = {
         remainingAmount: { amount: 100, currency: "USD" },
         status: "partially-billed",
         billedAmount: { amount: 50, currency: "USD" },
+        originalReport: {
+          id: 2,
+          createdAt: "2024-01-01",
+          contractorId: contractorMock.static.list[0].id,
+          clientId: clientsMock.static.list[0].id,
+          workspaceId: workspaceMock.static.list[0].id,
+          periodStart: new CalendarDate(2024, 1, 1),
+          periodEnd: new CalendarDate(2024, 1, 31),
+          description: "Description",
+          netValue: 200,
+          currency: "USD",
+          projectIterationId: null,
+          contractor: contractorMock.static.list[0],
+          client: clientsMock.static.list[0],
+          linkBillingReport: [],
+          linkCostReport: [],
+          reportBillingValue: 50,
+          reportBillingBalance: 150,
+          reportCostValue: 0,
+          reportCostBalance: 200,
+          billingCostBalance: 50,
+          immediatePaymentDue: 50,
+          previousReport: null,
+        } as Report,
       },
       {
         id: 3,
@@ -71,6 +120,30 @@ const meta = {
         remainingAmount: { amount: 150, currency: "USD" },
         status: "partially-billed",
         billedAmount: { amount: 50, currency: "USD" },
+        originalReport: {
+          id: 3,
+          createdAt: "2024-01-01",
+          contractorId: contractorMock.static.list[0].id,
+          clientId: clientsMock.static.list[1].id,
+          workspaceId: workspaceMock.static.list[1].id,
+          periodStart: new CalendarDate(2024, 1, 1),
+          periodEnd: new CalendarDate(2024, 1, 31),
+          description: "Description",
+          netValue: 300,
+          currency: "USD",
+          projectIterationId: null,
+          contractor: contractorMock.static.list[0],
+          client: clientsMock.static.list[1],
+          linkBillingReport: [],
+          linkCostReport: [],
+          reportBillingValue: 50,
+          reportBillingBalance: 250,
+          reportCostValue: 0,
+          reportCostBalance: 300,
+          billingCostBalance: 50,
+          immediatePaymentDue: 50,
+          previousReport: null,
+        } as Report,
       },
     ]),
     context: expressionContextUtils.ofGlobal().build(),
