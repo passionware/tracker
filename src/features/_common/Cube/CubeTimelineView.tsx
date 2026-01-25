@@ -20,7 +20,7 @@ interface CubeTimelineViewProps {
 
 // Custom event renderer that displays labels
 class LabeledEventRenderer extends AbstractEventRenderer {
-  hitboxResult = { left: 0, right: 0 };
+  hitboxResult = { left: 0, right: 0, top: 0, bottom: 0 };
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -78,6 +78,8 @@ class LabeledEventRenderer extends AbstractEventRenderer {
   getHitbox(_event: any, x0: number, x1: number) {
     this.hitboxResult.left = x0;
     this.hitboxResult.right = x1;
+    // top and bottom are set by the base class or timeline library
+    // We keep them at 0 as defaults since getHitbox doesn't receive y/h parameters
     return this.hitboxResult;
   }
 }
