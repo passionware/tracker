@@ -195,11 +195,33 @@ export const myServices = {
   }),
   messageService,
   mutationService,
-  reconciliationService: createReconciliationService({
-    services: {
-      mutationService,
-    },
-  }),
+  reconciliationService: (() => {
+    const reportDisplayService = createReportDisplayService({
+      services: {
+        reportService: reportService,
+        billingService: billingService,
+        workspaceService,
+        costService,
+        exchangeService,
+      },
+    });
+    const projectService = createProjectService({
+      api: myProjectApi,
+      client: myQueryClient,
+      services: {
+        messageService,
+      },
+    });
+    return createReconciliationService({
+      services: {
+        mutationService,
+        reportDisplayService,
+        billingService,
+        costService,
+        projectService,
+      },
+    });
+  })(),
   contractorService: createContractorService(
     createContractorApi(mySupabase),
     myQueryClient,

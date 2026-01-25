@@ -140,17 +140,17 @@ export interface ReportDisplayService {
   /**
    * Returns a list of reports, with all links and billing information.
    */
-  useReportView: (query: ReportQuery) => RemoteData<ReportView>;
+  useReportView: (query: Maybe<ReportQuery>) => RemoteData<ReportView>;
   /**
    * Returns a list of billing information, with all links and contractor report information.
    * @param query
    */
-  useBillingView: (query: BillingQuery) => RemoteData<BillingView>;
+  useBillingView: (query: Maybe<BillingQuery>) => RemoteData<BillingView>;
   /**
    * Returns a list of costs, with all links and contractor report information.
    * @param query
    */
-  useCostView: (query: CostQuery) => RemoteData<CostView>;
+  useCostView: (query: Maybe<CostQuery>) => RemoteData<CostView>;
 }
 
 export interface WithReportDisplayService {

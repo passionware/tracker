@@ -12,7 +12,12 @@ import {
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
 import { ReportView } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import {
+  ClientSpec,
+  WorkspaceSpec,
+} from "@/services/front/RoutingService/RoutingService.ts";
 import { CalendarDate } from "@internationalized/date";
+import { RemoteData } from "@passionware/monads";
 
 /**
  * Generic type for items that will be created during reconciliation
@@ -362,9 +367,28 @@ export interface ExecuteReconciliationParams {
 }
 
 /**
+ * Parameters for useReconciliationView hook
+ */
+export interface UseReconciliationViewParams {
+  report: GeneratedReportSource;
+  iteration: RemoteData<ProjectIteration>;
+  projectId: number;
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
+}
+
+/**
  * Service for managing reconciliation operations
  */
 export interface ReconciliationService {
+  /**
+   * Hook to get reconciliation view data
+   * Handles query building, data fetching, and reconciliation calculation
+   */
+  useReconciliationView: (
+    params: UseReconciliationViewParams,
+  ) => RemoteData<ReconciliationPreview>;
+
   /**
    * Calculate and return reconciliation preview based on generated report and existing data
    * Combines all data sources and applies reconciliation rules:
