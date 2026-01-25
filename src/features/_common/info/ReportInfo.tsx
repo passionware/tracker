@@ -186,7 +186,20 @@ export function ReportInfo({
                                 reportId: report.id,
                                 reportAmount: value.source,
                                 description: value.description,
-                                breakdown: value.breakdown,
+                                breakdown: value.breakdown
+                                  ? {
+                                      quantity: value.breakdown.quantity ?? 0,
+                                      unit: value.breakdown.unit ?? "",
+                                      reportUnitPrice:
+                                        value.breakdown.sourceUnitPrice ?? 0,
+                                      billingUnitPrice:
+                                        value.breakdown.targetUnitPrice ?? 0,
+                                      reportCurrency:
+                                        value.breakdown.sourceCurrency ?? "",
+                                      billingCurrency:
+                                        value.breakdown.targetCurrency ?? "",
+                                    }
+                                  : undefined,
                               }),
                             )
                           }
@@ -291,7 +304,20 @@ export function ReportInfo({
                           source: "reportAmount",
                           target: "billingAmount",
                         }),
-                        breakdown: value.breakdown,
+                        breakdown: value.breakdown
+                          ? {
+                              quantity: value.breakdown.quantity ?? 0,
+                              unit: value.breakdown.unit ?? "",
+                              reportUnitPrice:
+                                value.breakdown.sourceUnitPrice ?? 0,
+                              billingUnitPrice:
+                                value.breakdown.targetUnitPrice ?? 0,
+                              reportCurrency:
+                                value.breakdown.sourceCurrency ?? "",
+                              billingCurrency:
+                                value.breakdown.targetCurrency ?? "",
+                            }
+                          : undefined,
                       },
                     )
                   }
