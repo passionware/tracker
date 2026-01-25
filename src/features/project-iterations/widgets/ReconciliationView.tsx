@@ -27,7 +27,8 @@ import {
   ReportCostLinkPreview,
   ReportReconciliationPreview,
 } from "@/services/front/ReconciliationService/ReconciliationService.ts";
-import { rd, RemoteData } from "@passionware/monads";
+import { mt, rd, RemoteData } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -53,13 +54,12 @@ export function ReconciliationView(
   // Get project to access clientId and workspaceIds (needed for executeReconciliation)
   const project = props.services.projectService.useProject(props.projectId);
 
-  const [isReconciling, setIsReconciling] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<{
     rowIndex: number;
     column: "cost" | "costLink" | "report" | "billingLink" | "billing";
   } | null>(null);
 
-  const handleReconciliation = async () => {
+  const reconciliationMutation = promiseState.useMutation(async () => {
     const preview = rd.tryGet(reconciliation);
     if (!preview) {
       toast.error("Reconciliation data not available");
@@ -78,34 +78,35 @@ export function ReconciliationView(
       return;
     }
 
-    setIsReconciling(true);
-    try {
-      await props.services.reconciliationService.executeReconciliation({
-        preview,
-        report: props.report,
-        iteration: iterationData,
-        project: {
-          clientId: projectData.clientId,
-          workspaceIds: projectData.workspaceIds,
-        },
-        projectIterationId: props.projectIterationId,
-      });
+    await props.services.reconciliationService.executeReconciliation({
+      preview,
+      report: props.report,
+      iteration: iterationData,
+      project: {
+        clientId: projectData.clientId,
+        workspaceIds: projectData.workspaceIds,
+      },
+      projectIterationId: props.projectIterationId,
+    });
 
-      const totalItems =
-        preview.reports.length +
-        preview.billings.length +
-        preview.costs.length +
-        preview.reportBillingLinks.length +
-        preview.reportCostLinks.length;
+    const totalItems =
+      preview.reports.length +
+      preview.billings.length +
+      preview.costs.length +
+      preview.reportBillingLinks.length +
+      preview.reportCostLinks.length;
 
-      toast.success(`Successfully reconciled ${totalItems} item(s)`);
-    } catch (error) {
+    toast.success(`Successfully reconciled ${totalItems} item(s)`);
+  });
+
+  const handleReconciliation = () => {
+    reconciliationMutation.track(undefined).catch((error) => {
       console.error("Failed to reconcile:", error);
       toast.error("Failed to reconcile");
-    } finally {
-      setIsReconciling(false);
-    }
+    });
   };
+
+  const isReconciling = mt.isInProgress(reconciliationMutation.state);
 
   return (
     <div className="space-y-6">
