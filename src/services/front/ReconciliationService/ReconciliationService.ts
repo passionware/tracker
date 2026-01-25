@@ -34,6 +34,11 @@ export type ToUpdate<Base, Payload, Id> = Base & {
   type: "update";
   id: Id;
   payload: Partial<Payload>;
+  /**
+   * Old values for fields that will be updated.
+   * Contains the current values from the existing entity for fields present in payload.
+   */
+  oldValues: Partial<Payload>;
 };
 
 /**

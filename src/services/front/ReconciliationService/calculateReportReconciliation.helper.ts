@@ -3,9 +3,7 @@ import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.
 import { Report } from "@/api/reports/reports.api.ts";
 import { RoleRate } from "@/services/io/_common/GenericReport.ts";
 import { getMatchingRate } from "@/services/io/_common/getMatchingRate.ts";
-import {
-  ReportReconciliationPreview,
-} from "./ReconciliationService.ts";
+import { ReportReconciliationPreview } from "./ReconciliationService.ts";
 
 /**
  * Creates a unique signature for a rate to identify it uniquely
@@ -170,6 +168,13 @@ export function calculateReportReconciliation(
           quantity,
           unitPrice,
           currency: group.rate.costCurrency,
+        },
+        oldValues: {
+          netValue: existingReport.netValue,
+          unit: existingReport.unit ?? null,
+          quantity: existingReport.quantity ?? null,
+          unitPrice: existingReport.unitPrice ?? null,
+          currency: existingReport.currency,
         },
       });
     } else {

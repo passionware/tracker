@@ -131,6 +131,11 @@ function calculateBillingReconciliation(
           totalGross,
           currency: group.billingCurrency,
         },
+        oldValues: {
+          totalNet: existingBilling.totalNet,
+          totalGross: existingBilling.totalGross,
+          currency: existingBilling.currency,
+        },
       });
     } else {
       // Create new billing
@@ -247,6 +252,11 @@ function calculateCostReconciliation(
           netValue,
           grossValue,
           currency: group.primaryCurrency,
+        },
+        oldValues: {
+          netValue: existingCost.netValue,
+          grossValue: existingCost.grossValue ?? null,
+          currency: existingCost.currency,
         },
       });
     } else {
