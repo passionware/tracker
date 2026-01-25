@@ -31,7 +31,7 @@ export function useColumns(props: ReportsWidgetProps) {
     reportColumns.cost.immediateLinkingStatus.allowModify(props.services),
     reportColumns.cost.linkingStatus.read,
     reportColumns.netAmount(props.services),
-    reportColumns.quantity(props.services),
+    reportColumns.quantity(),
     reportColumns.unitPrice(props.services),
     baseColumnHelper.group({
       header: "Charging",

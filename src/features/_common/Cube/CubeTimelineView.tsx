@@ -20,6 +20,8 @@ interface CubeTimelineViewProps {
 
 // Custom event renderer that displays labels
 class LabeledEventRenderer extends AbstractEventRenderer {
+  hitboxResult = { left: 0, right: 0 };
+
   render(
     ctx: CanvasRenderingContext2D,
     event: any,
