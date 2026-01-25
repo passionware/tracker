@@ -13,6 +13,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ExportChooserPopover } from "@/features/_common/ExpressionChooser.tsx";
 import { renderSpinnerMutation } from "@/features/_common/patterns/renderSpinnerMutation.tsx";
@@ -37,7 +44,20 @@ export type LinkValue = {
   source: number;
   target: number;
   description: string;
+  // Optional breakdown fields
+  breakdown?: {
+    quantity?: number;
+    unit?: string;
+    sourceUnitPrice?: number;
+    targetUnitPrice?: number;
+    exchangeRate?: number;
+    sourceCurrency?: string;
+    targetCurrency?: string;
+  };
 };
+
+// todo: improve linking, make linking availabe for all tables, and navigable!
+// todo: use new admin.atellio service for persistent query params
 
 export type LinkPopoverProps = WithServices<
   [
@@ -64,6 +84,7 @@ export type LinkPopoverProps = WithServices<
   align?: PopoverContentProps["align"];
   side?: PopoverContentProps["side"];
   context: ExpressionContext;
+  showBreakdown?: boolean; // Show detailed breakdown section
 };
 
 export function LinkPopover(props: LinkPopoverProps) {
@@ -72,6 +93,12 @@ export function LinkPopover(props: LinkPopoverProps) {
       source: props.initialValues?.source ?? 0,
       target: props.initialValues?.target ?? 0,
       description: props.initialValues?.description ?? "",
+      // Breakdown fields
+      quantity: props.initialValues?.breakdown?.quantity ?? "",
+      unit: props.initialValues?.breakdown?.unit ?? "",
+      sourceUnitPrice: props.initialValues?.breakdown?.sourceUnitPrice ?? "",
+      targetUnitPrice: props.initialValues?.breakdown?.targetUnitPrice ?? "",
+      exchangeRate: props.initialValues?.breakdown?.exchangeRate ?? "",
     },
     mode: "onChange",
   });
@@ -90,10 +117,39 @@ export function LinkPopover(props: LinkPopoverProps) {
             onSubmit={form.handleSubmit(async () => {
               const data = form.getValues();
 
+              // Create breakdown object if fields are provided
+              const createBreakdown = () => {
+                if (
+                  data.quantity ||
+                  data.unit ||
+                  data.sourceUnitPrice ||
+                  data.targetUnitPrice ||
+                  data.exchangeRate
+                ) {
+                  return {
+                    quantity: data.quantity ? Number(data.quantity) : undefined,
+                    unit: data.unit || undefined,
+                    sourceUnitPrice: data.sourceUnitPrice
+                      ? Number(data.sourceUnitPrice)
+                      : undefined,
+                    targetUnitPrice: data.targetUnitPrice
+                      ? Number(data.targetUnitPrice)
+                      : undefined,
+                    exchangeRate: data.exchangeRate
+                      ? Number(data.exchangeRate)
+                      : undefined,
+                    sourceCurrency: props.sourceCurrency,
+                    targetCurrency: props.targetCurrency,
+                  };
+                }
+                return undefined;
+              };
+
               const allFields = {
                 source: Number(data.source),
                 target: Number(data.target),
                 description: data.description,
+                breakdown: createBreakdown(),
               };
               await promise.track(
                 props.onValueChange(
@@ -114,11 +170,7 @@ export function LinkPopover(props: LinkPopoverProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {props.sourceLabel ?? "Enter source amount"} (
-                    {props.services.formatService.financial.currencySymbol(
-                      props.sourceCurrency,
-                    )}
-                    )
+                    {props.sourceLabel ?? "Enter source amount"}
                   </FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
@@ -161,11 +213,7 @@ export function LinkPopover(props: LinkPopoverProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {props.targetLabel ?? "Enter target amount"} (
-                    {props.services.formatService.financial.currencySymbol(
-                      props.targetCurrency,
-                    )}
-                    )
+                    {props.targetLabel ?? "Enter target amount"}
                   </FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
@@ -197,6 +245,149 @@ export function LinkPopover(props: LinkPopoverProps) {
                 </FormItem>
               )}
             />
+
+            {/* Optional Breakdown Section */}
+            {props.showBreakdown && (
+              <>
+                <div className="text-amber-700 bg-amber-100 text-sm p-2 rounded-lg my-2 border">
+                  Detailed Breakdown (Optional)
+                  <span className="ml-2 text-xs text-muted-foreground block">
+                    Add unit, quantity, and rates for enhanced tracking
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="unit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="h">Hours</SelectItem>
+                              <SelectItem value="d">Days</SelectItem>
+                              <SelectItem value="pc">Pieces</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl>
+                          <NumberInput
+                            {...field}
+                            step={0.01}
+                            placeholder="e.g., 50"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="sourceUnitPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Source Rate ({props.sourceCurrency}/
+                          {form.watch("unit") || "unit"})
+                        </FormLabel>
+                        <FormControl>
+                          <NumberInput
+                            {...field}
+                            step={0.01}
+                            placeholder="e.g., 100"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="targetUnitPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Target Rate ({props.targetCurrency}/
+                          {form.watch("unit") || "unit"})
+                        </FormLabel>
+                        <FormControl>
+                          <NumberInput
+                            {...field}
+                            step={0.01}
+                            placeholder="e.g., 35"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {props.sourceCurrency !== props.targetCurrency && (
+                  <FormField
+                    control={form.control}
+                    name="exchangeRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Exchange Rate (1 {props.sourceCurrency} = ?{" "}
+                          {props.targetCurrency})
+                        </FormLabel>
+                        <FormControl>
+                          <NumberInput
+                            {...field}
+                            step={0.01}
+                            placeholder="e.g., 4.20"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Calculated total display */}
+                {form.watch("quantity") && form.watch("sourceUnitPrice") && (
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                    Source total:{" "}
+                    {(
+                      Number(form.watch("quantity")) *
+                      Number(form.watch("sourceUnitPrice"))
+                    ).toFixed(2)}{" "}
+                    {props.sourceCurrency}
+                    {form.watch("targetUnitPrice") && (
+                      <>
+                        <br />
+                        Target total:{" "}
+                        {(
+                          Number(form.watch("quantity")) *
+                          Number(form.watch("targetUnitPrice"))
+                        ).toFixed(2)}{" "}
+                        {props.targetCurrency}
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
 
             <FormField
               control={form.control}

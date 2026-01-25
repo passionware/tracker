@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/form";
 import { NumberInputAsString } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { ContractorPicker } from "@/features/_common/elements/pickers/ContractorPicker.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
@@ -31,6 +38,44 @@ import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
+
+// Debug helper to verify breakdown data handling
+const debugBreakdownData = (data: ReportPayload) => {
+  console.log("ReportForm submission breakdown data:", {
+    hasUnit: !!data.unit,
+    hasQuantity: !!data.quantity,
+    hasUnitPrice: !!data.unitPrice,
+    calculatedNetValue:
+      data.quantity && data.unitPrice ? data.quantity * data.unitPrice : null,
+    actualNetValue: data.netValue,
+    matches:
+      data.quantity && data.unitPrice
+        ? Math.abs(data.quantity * data.unitPrice - data.netValue) < 0.01
+        : null,
+  });
+};
+
+/**
+ * BREAKDOWN UPDATE SCENARIOS:
+ *
+ * 1. Create report with breakdown:
+ *    - Fill all breakdown fields
+ *    - Validation ensures quantity × unitPrice = netValue
+ *    - Saves breakdown data to database
+ *
+ * 2. Edit report with existing breakdown:
+ *    - Form loads with breakdown fields populated
+ *    - User can modify any field (validation still applies)
+ *    - Can remove breakdown entirely by clearing all fields
+ *
+ * 3. Edit report without breakdown:
+ *    - Add breakdown by filling all fields
+ *    - Same validation applies
+ *
+ * 4. Update only netValue (keep existing breakdown):
+ *    - Modify netValue to match new quantity × unitPrice
+ *    - Or clear breakdown fields to remove them
+ */
 
 export interface ReportWidgetFormProps
   extends WithServices<
@@ -60,9 +105,25 @@ type FormModel = {
   netValue: string;
   workspaceId: number | null;
   projectIterationId: number | null;
+  // Optional breakdown fields
+  unit: string;
+  quantity: string;
+  unitPrice: string;
 };
 
 export function ReportForm(props: ReportWidgetFormProps) {
+  // Debug: Log breakdown data from defaultValues
+  if (props.defaultValues) {
+    console.log("ReportForm initialized with breakdown data:", {
+      hasUnit: !!props.defaultValues.unit,
+      hasQuantity: !!props.defaultValues.quantity,
+      hasUnitPrice: !!props.defaultValues.unitPrice,
+      unit: props.defaultValues.unit,
+      quantity: props.defaultValues.quantity,
+      unitPrice: props.defaultValues.unitPrice,
+    });
+  }
+
   const form = useForm<FormModel>({
     defaultValues: {
       contractorId: props.defaultValues?.contractorId,
@@ -74,20 +135,58 @@ export function ReportForm(props: ReportWidgetFormProps) {
       description: props.defaultValues?.description ?? "",
       netValue: props.defaultValues?.netValue?.toString() ?? "",
       projectIterationId: props.defaultValues?.projectIterationId,
+      // Breakdown fields
+      unit: props.defaultValues?.unit ?? "",
+      quantity: props.defaultValues?.quantity?.toString() ?? "",
+      unitPrice: props.defaultValues?.unitPrice?.toString() ?? "",
     },
   });
 
   const processingPromise = promiseState.useRemoteData();
 
   function handleSubmit(data: FormModel) {
-    const transformedData = {
+    // Validate breakdown fields consistency
+    const hasAnyBreakdownField = data.unit || data.quantity || data.unitPrice;
+    const hasAllBreakdownFields = data.unit && data.quantity && data.unitPrice;
+
+    if (hasAnyBreakdownField && !hasAllBreakdownFields) {
+      form.setError("unit", {
+        message: "All breakdown fields must be provided together",
+      });
+      form.setError("quantity", {
+        message: "All breakdown fields must be provided together",
+      });
+      form.setError("unitPrice", {
+        message: "All breakdown fields must be provided together",
+      });
+      return;
+    }
+
+    // Validate that quantity × unitPrice = netValue when breakdown is provided
+    if (hasAllBreakdownFields) {
+      const calculatedNetValue =
+        parseFloat(data.quantity) * parseFloat(data.unitPrice);
+      const actualNetValue = parseFloat(data.netValue);
+
+      if (Math.abs(calculatedNetValue - actualNetValue) >= 0.01) {
+        form.setError("netValue", {
+          message: `Net value (${actualNetValue}) must equal quantity × unit price (${calculatedNetValue})`,
+        });
+        return;
+      }
+    }
+
+    // Clear any existing breakdown errors when validation passes
+    form.clearErrors(["unit", "quantity", "unitPrice", "netValue"]);
+
+    const transformedData: ReportPayload = {
       contractorId: maybe.getOrThrow(
         data.contractorId,
         "Contractor is required",
       ),
       netValue: parseFloat(data.netValue),
       description: data.description,
-      currency: maybe.getOrThrow(data.currency, "Currency is required"), // somehow ensure dates are correct against timezones// then check why gaps is not rendered as alert triangle
+      currency: maybe.getOrThrow(data.currency, "Currency is required"),
       periodEnd: maybe.getOrThrow(data.periodEnd, "Period end is required"),
       periodStart: maybe.getOrThrow(
         data.periodStart,
@@ -96,7 +195,15 @@ export function ReportForm(props: ReportWidgetFormProps) {
       clientId: maybe.getOrThrow(data.clientId, "Client is required"),
       workspaceId: maybe.getOrThrow(data.workspaceId, "Workspace is required"),
       projectIterationId: data.projectIterationId,
+      // Optional breakdown fields - only include if all are provided or all are empty
+      unit: hasAllBreakdownFields ? data.unit : undefined,
+      quantity: hasAllBreakdownFields ? parseFloat(data.quantity) : undefined,
+      unitPrice: hasAllBreakdownFields ? parseFloat(data.unitPrice) : undefined,
     };
+
+    // Debug breakdown data handling
+    debugBreakdownData(transformedData);
+
     void processingPromise.track(
       props.onSubmit(transformedData, getDirtyFields(transformedData, form)) ??
         Promise.resolve(),
@@ -285,6 +392,117 @@ export function ReportForm(props: ReportWidgetFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Optional Breakdown Section */}
+        <div className="col-span-2 space-y-4 p-4 border rounded-md bg-muted/20">
+          <div className="text-sm font-medium">
+            Detailed Breakdown (Optional)
+            <span className="ml-2 text-xs text-muted-foreground">
+              Add unit, quantity, and rate for enhanced reporting
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="unit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unit</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="h">Hours</SelectItem>
+                        <SelectItem value="d">Days</SelectItem>
+                        <SelectItem value="pc">Pieces</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>Unit of work</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormControl>
+                    <NumberInputAsString
+                      {...field}
+                      step={0.01}
+                      placeholder="e.g., 50"
+                    />
+                  </FormControl>
+                  <FormDescription>Amount of units</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="unitPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unit Price</FormLabel>
+                  <FormControl>
+                    <NumberInputAsString
+                      {...field}
+                      step={0.01}
+                      formatOptions={{
+                        ...maybe.map(form.watch("currency"), (currency) => ({
+                          style: "currency" as const,
+                          currency,
+                        })),
+                      }}
+                      placeholder="e.g., 100"
+                    />
+                  </FormControl>
+                  <FormDescription>Price per unit</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Calculated total display */}
+          {form.watch("quantity") && form.watch("unitPrice") && (
+            <div className="text-sm text-muted-foreground">
+              Calculated total:{" "}
+              {parseFloat(form.watch("quantity") || "0") *
+                parseFloat(form.watch("unitPrice") || "0")}{" "}
+              {form.watch("currency")}
+              {form.watch("netValue") && (
+                <span
+                  className={
+                    Math.abs(
+                      parseFloat(form.watch("netValue")) -
+                        parseFloat(form.watch("quantity") || "0") *
+                          parseFloat(form.watch("unitPrice") || "0"),
+                    ) < 0.01
+                      ? " text-green-600"
+                      : " text-red-600"
+                  }
+                >
+                  {" "}
+                  (
+                  {parseFloat(form.watch("netValue")) ===
+                  parseFloat(form.watch("quantity") || "0") *
+                    parseFloat(form.watch("unitPrice") || "0")
+                    ? "matches"
+                    : "differs from"}{" "}
+                  net value)
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <FormField
           control={form.control}
           name="description"
@@ -299,6 +517,7 @@ export function ReportForm(props: ReportWidgetFormProps) {
             </FormItem>
           )}
         />
+
         <Button type="button" variant="outline" onClick={props.onCancel}>
           Cancel
         </Button>

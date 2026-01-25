@@ -23,13 +23,13 @@ import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
-  const [_query, setQuery] = useState(
-    reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const query = chain(_query)
+  const queryParamsService =
+    props.services.queryParamsService.forEntity("reports");
+  const queryParams = queryParamsService.useQueryParams();
+
+  const query = chain(queryParams)
     .thru((x) =>
       reportQueryUtils.ensureDefault(x, props.workspaceId, props.clientId),
     )
@@ -61,7 +61,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               ),
             }}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={queryParamsService.setQueryParams}
             services={props.services}
           />
           <InlinePopoverForm
@@ -126,7 +126,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     >
       <ListView
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={queryParamsService.setQueryParams}
         data={rd.map(reports, (r) => r.entries)}
         onRowDoubleClick={async (row) => {
           const result =

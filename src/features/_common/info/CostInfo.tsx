@@ -127,11 +127,12 @@ export function CostInfo({
                         side="right"
                         align="center"
                         services={services}
-                        sourceCurrency={report.remainingAmount.currency}
-                        title="Link contractor report"
+                        sourceCurrency={costEntry.remainingAmount.currency}
+                        title="Link cost to report"
                         sourceLabel="Cost value"
                         targetLabel="Report value"
                         targetCurrency={report.remainingAmount.currency}
+                        showBreakdown={true}
                         initialValues={{
                           // billing
                           source: isSameCurrency
@@ -164,6 +165,7 @@ export function CostInfo({
                               reportId: report.id,
                               reportAmount: value.target,
                               description: value.description,
+                              breakdown: value.breakdown,
                             }),
                           )
                         }
@@ -208,18 +210,23 @@ export function CostInfo({
                     sourceCurrency={costEntry.netAmount.currency}
                     targetCurrency={link.report.currency}
                     title="Update linked report"
+                    showBreakdown={true}
                     initialValues={{
                       source: link.link.costAmount ?? undefined,
                       target: link.link.reportAmount ?? undefined,
                       description: link.link.description,
+                      breakdown: link.link.breakdown,
                     }}
-                    onValueChange={(_all, updates) =>
+                    onValueChange={(value, updates) =>
                       services.mutationService.updateCostReportLink(
                         link.link.id,
-                        mapKeys(updates, {
-                          source: "costAmount",
-                          target: "reportAmount",
-                        }),
+                        {
+                          ...mapKeys(updates, {
+                            source: "costAmount",
+                            target: "reportAmount",
+                          }),
+                          breakdown: value.breakdown,
+                        },
                       )
                     }
                   >

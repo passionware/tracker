@@ -32,6 +32,23 @@ import { maybe, rd, truthy } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
 
+// IMPORTANT: Backend must map database d_ prefixed columns to TypeScript interface fields:
+// d_unit → unit, d_quantity → quantity, d_unit_price → unitPrice
+
+// Helper to format unit abbreviations to readable form
+function formatUnit(unit: string): string {
+  switch (unit) {
+    case "h":
+      return "h";
+    case "d":
+      return "d";
+    case "pc":
+      return "pc";
+    default:
+      return unit;
+  }
+}
+
 export type ReportSearchBaseModel = Pick<
   ReportViewEntry,
   | "id"
@@ -43,6 +60,7 @@ export type ReportSearchBaseModel = Pick<
   | "remainingAmount"
   | "billedAmount"
   | "status"
+  | "originalReport"
 >;
 
 export const columnHelper = createColumnHelper<ReportViewEntry>();
@@ -58,6 +76,51 @@ export const reportColumns = {
         headerClassName: "bg-sky-50 border-x border-slate-800/10",
         cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
         sortKey: "netValue",
+      },
+    }),
+  quantity: () =>
+    baseColumnHelper.display({
+      header: "Quantity",
+      cell: (info) => {
+        const report = info.row.original.originalReport;
+        if (!report.quantity || !report.unit) {
+          return <div className="text-muted-foreground">-</div>;
+        }
+        return (
+          <div className="font-mono whitespace-nowrap">
+            {report.quantity}
+            <span className="bg-sky-50 text-sky-900 inline-block p-0.5 -my-0.5 rounded-sm">
+              {formatUnit(report.unit)}
+            </span>
+          </div>
+        );
+      },
+      meta: {
+        headerClassName: "bg-sky-50 border-x border-slate-800/10",
+        cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
+      },
+    }),
+  unitPrice: (services: WithFormatService) =>
+    baseColumnHelper.display({
+      header: "Rate",
+      cell: (info) => {
+        const report = info.row.original.originalReport;
+        if (!report.unitPrice || !report.unit) {
+          return <div className="text-muted-foreground">-</div>;
+        }
+        return (
+          <div className="font-mono whitespace-nowrap">
+            {services.formatService.financial.currency({
+              amount: report.unitPrice,
+              currency: report.currency,
+            })}
+            /{formatUnit(report.unit)}
+          </div>
+        );
+      },
+      meta: {
+        headerClassName: "bg-sky-50 border-x border-slate-800/10",
+        cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
       },
     }),
   contractor: {
