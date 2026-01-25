@@ -13,6 +13,7 @@ import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
@@ -32,7 +33,7 @@ import {
   ReportCostLinkPreview,
   ReportReconciliationPreview,
 } from "@/services/front/ReconciliationService/ReconciliationService.ts";
-import { mt, rd, RemoteData } from "@passionware/monads";
+import { maybe, mt, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -505,9 +506,53 @@ export function ReconciliationView(
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-slate-700">
-                          {label} {id === 0 ? "(New)" : `#${id}`}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {(type === "report" || type === "cost") && (
+                            <>
+                              {type === "report" && (
+                                <ContractorWidget
+                                  contractorId={maybe.of(
+                                    (item as ReportReconciliationPreview)
+                                      .contractorId,
+                                  )}
+                                  services={props.services}
+                                  layout="avatar"
+                                  size="sm"
+                                />
+                              )}
+                              {type === "cost" &&
+                                (item as CostReconciliationPreview)
+                                  .contractorId !== null &&
+                                (item as CostReconciliationPreview)
+                                  .contractorId !== undefined && (
+                                  <ContractorWidget
+                                    contractorId={maybe.of(
+                                      (item as CostReconciliationPreview)
+                                        .contractorId!,
+                                    )}
+                                    services={props.services}
+                                    layout="avatar"
+                                    size="sm"
+                                  />
+                                )}
+                              {type === "cost" &&
+                                ((item as CostReconciliationPreview)
+                                  .contractorId === null ||
+                                  (item as CostReconciliationPreview)
+                                    .contractorId === undefined) &&
+                                (item as CostReconciliationPreview)
+                                  .counterparty && (
+                                  <div className="text-xs text-slate-500">
+                                    {(item as CostReconciliationPreview)
+                                      .counterparty}
+                                  </div>
+                                )}
+                            </>
+                          )}
+                          <span className="text-sm font-medium text-slate-700">
+                            {label} {id === 0 ? "(New)" : `#${id}`}
+                          </span>
+                        </div>
                         {renderEditableBadge(type, item, isNew)}
                       </div>
                       {type === "report" && (

@@ -5,7 +5,6 @@ import { Cost } from "@/api/cost/cost.api.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { Report } from "@/api/reports/reports.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -23,7 +22,6 @@ import {
   ReportBillingLinkPreview,
   ReportCostLinkPreview,
   ReportReconciliationPreview,
-  ReportToUpdate,
   UseReconciliationViewParams,
 } from "./ReconciliationService.ts";
 import { calculateReportReconciliation } from "./calculateReportReconciliation.helper.ts";
@@ -437,12 +435,7 @@ export function createReconciliationService(
       existingReports,
     );
 
-    // Reconciliation rules: Only consider existing reports (99.9% are existing because we generated reports out of them)
-    // Filter out new reports (type === "create") - only work with existing reports
-    const existingReportPreviews = reportPreviews.filter(
-      (rp): rp is ReportToUpdate => rp.type === "update",
-    );
-
+    // Include both create and update reports in reconciliation
     // Get workspaceId from project
     const workspaceId =
       input.project.workspaceIds.length > 0
@@ -452,7 +445,7 @@ export function createReconciliationService(
     if (!workspaceId) {
       // Return empty reconciliation if no workspace
       return {
-        reports: existingReportPreviews,
+        reports: reportPreviews,
         billings: [],
         costs: [],
         reportBillingLinks: [],
@@ -487,7 +480,7 @@ export function createReconciliationService(
 
     const billingPreviews = calculateBillingReconciliation(
       input.report,
-      existingReportPreviews,
+      reportPreviews,
       linkedBillings,
       input.iteration,
       workspaceId,
@@ -495,24 +488,24 @@ export function createReconciliationService(
 
     const costPreviews = calculateCostReconciliation(
       input.report,
-      existingReportPreviews,
+      reportPreviews,
       linkedCosts,
       input.iteration,
     );
 
     const reportBillingLinks = calculateReportBillingLinks(
-      existingReportPreviews,
+      reportPreviews,
       billingPreviews,
       workspaceId,
     );
 
     const reportCostLinks = calculateReportCostLinks(
-      existingReportPreviews,
+      reportPreviews,
       costPreviews,
     );
 
     return {
-      reports: existingReportPreviews,
+      reports: reportPreviews,
       billings: billingPreviews,
       costs: costPreviews,
       reportBillingLinks,

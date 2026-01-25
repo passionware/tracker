@@ -22,6 +22,13 @@ function getContractorRateKey(contractorId: number, rate: RoleRate): string {
   return `${contractorId}-${getRateSignature(rate)}`;
 }
 
+/**
+ *
+ * @param report
+ * @param projectIteration
+ * @param existingReports
+ * @returns
+ */
 export function calculateReportReconciliation(
   report: GeneratedReportSource,
   projectIteration: ProjectIteration,
