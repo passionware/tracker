@@ -219,7 +219,7 @@ export const myServices = {
     },
     plugins: {
       tmetric: createTmetricPlugin({
-        services: { expressionService, reportService },
+        services: { expressionService },
       }),
     },
   }),

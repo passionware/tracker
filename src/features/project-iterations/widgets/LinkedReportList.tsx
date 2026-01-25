@@ -33,6 +33,7 @@ import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { useState } from "react";
 import { ReportGenerationWidget } from "./report-generation/tmetric/ReportGenerationWidget";
+import { uniqBy } from "lodash";
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -53,6 +54,10 @@ export function LinkedReportList(
     selectionState.selectNone(),
   );
   const reports = props.services.reportDisplayService.useReportView(query);
+  const iteration =
+    props.services.projectIterationService.useProjectIterationDetail(
+      props.projectIterationId,
+    );
   useSelectionCleanup(
     selection,
     rd.tryMap(reports, (r) => r.entries.map((e) => e.id)),
@@ -190,19 +195,27 @@ export function LinkedReportList(
                       //   projectIterationId: props.projectIterationId,
                       // });
                       if (!rd.isSuccess(reports)) return;
+                      if (!rd.isSuccess(iteration)) return;
 
                       const selectedReports = reports.data.entries.filter((e) =>
                         selectionState.isSelected(selection, e.id),
+                      );
+
+                      // Extract unique contractors from selected reports
+                      const contractors = uniqBy(
+                        selectedReports.map((e) => e.originalReport.contractor),
+                        (c) => c.id,
                       );
 
                       props.services.dialogService.show((api) => {
                         return (
                           <ReportGenerationWidget
                             {...api}
-                            reports={selectedReports.map(
-                              (e) => e.originalReport,
-                            )}
+                            contractors={contractors}
+                            periodStart={iteration.data.periodStart}
+                            periodEnd={iteration.data.periodEnd}
                             projectIterationId={props.projectIterationId}
+                            clientId={props.clientId}
                             services={props.services}
                           />
                         );

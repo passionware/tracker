@@ -1,6 +1,7 @@
-import { Report } from "@/api/reports/reports.api";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
+import { Workspace } from "@/api/workspace/workspace.api";
+import { Client } from "@/api/clients/clients.api";
 
 export type PrefilledRateResult = Array<{
   contractorId: number;
@@ -8,18 +9,26 @@ export type PrefilledRateResult = Array<{
 }>;
 
 /**
+ * Minimal context needed for expression evaluation.
+ */
+type ContractorContext = {
+  workspaceId: Workspace["id"];
+  clientId: Client["id"];
+};
+
+/**
  * Extracts prefilled rates from a GenericReport by resolving expression variables.
  * This function is agnostic to the source of the GenericReport (TMetric, etc.)
  *
  * @param report - The GenericReport to extract rates from
  * @param expressionService - Service to resolve expression variables
- * @param contractorReports - Map of contractorId to Report for context (workspaceId, clientId)
+ * @param contractorContexts - Map of contractorId to context (workspaceId, clientId) for expression evaluation
  * @returns Prefilled rates grouped by contractor
  */
 export async function extractPrefilledRatesFromGenericReport(
   report: GenericReport,
   expressionService: WithExpressionService["expressionService"],
-  contractorReports: Map<number, Report>,
+  contractorContexts: Map<number, ContractorContext>,
 ): Promise<PrefilledRateResult> {
   // Parse rate configuration (supports both simple strings and JSON arrays)
   // Only accepts TMetric project IDs (as used in environment entity rate configurations)
@@ -116,16 +125,16 @@ export async function extractPrefilledRatesFromGenericReport(
   const prefilled: PrefilledRateResult = [];
 
   for (const contractorId of contractorIds) {
-    // Find the report for this contractor to get the correct workspace/client context
-    const contractorReport = contractorReports.get(contractorId);
-    if (!contractorReport) {
+    // Find the context for this contractor to get the correct workspace/client for expression evaluation
+    const contractorContext = contractorContexts.get(contractorId);
+    if (!contractorContext) {
       continue;
     }
 
     for (const project of projects) {
       const expressionContext = {
-        workspaceId: contractorReport.workspaceId,
-        clientId: contractorReport.clientId,
+        workspaceId: contractorContext.workspaceId,
+        clientId: contractorContext.clientId,
         contractorId: contractorId,
       };
 

@@ -1,18 +1,14 @@
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport } from "@/services/io/_common/GenericReport.ts";
-import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { maybe } from "@passionware/monads";
-import { zip } from "lodash";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
 import { SharedIdMap } from "./_private/SharedIdMap.ts";
 import { createTMetricClient } from "./_private/TmetricClient.ts";
 
-type TmetricConfig = WithServices<[WithExpressionService, WithReportService]>;
+type TmetricConfig = WithServices<[WithExpressionService]>;
 
 export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
   return {
@@ -21,17 +17,13 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
         config.services,
         payload,
       );
-      const trackerReports = await config.services.reportService.ensureReports(
-        reportQueryUtils
-          .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
-          .build((q) => [
-            q.withFilter("id", {
-              operator: "oneOf",
-              value: payload.reports.map((r) => r.reportId),
-            }),
-          ]),
-      );
-      const configs = zip(configs_, trackerReports);
+
+      // Use data directly from payload - no need to fetch reports again
+      // The payload already contains all necessary fields (contractorId, workspaceId, clientId)
+      const configs = configs_.map((config, index) => {
+        const payloadReport = payload.reports[index];
+        return [config, payloadReport] as const;
+      });
 
       // Create shared ID maps for all contractors (one per field)
       const sharedIdMaps: Record<string, SharedIdMap> = {
@@ -49,16 +41,8 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             reportConfig.fetchParams,
           );
 
-          // Use contractor name as role ID to keep rates separate
-          const contractorRoleId = `contractor_${trackerReport.contractorId}`;
-          const adapted = adaptTMetricToGeneric({
-            entries: timeEntries,
-            defaultRoleId: contractorRoleId,
-            currency: trackerReport.currency,
-            contractorId: trackerReport.contractorId,
-            idMaps: sharedIdMaps, // Share the ID maps across contractors
-          });
           // Helper function to parse rate with currency from environment variable
+          // Rate expressions must include currency (e.g., "100 EUR")
           const parseRateWithCurrency = (
             rateString: string,
           ): { rate: number; currency: string } => {
@@ -71,9 +55,10 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
               const currency = parts[1].toUpperCase();
               return { rate, currency };
             } else {
-              // Format: "100" (no currency specified)
-              const rate = Number(parts[0]);
-              return { rate, currency: trackerReport.currency || "EUR" };
+              // Format: "100" (no currency specified) - not allowed
+              throw new Error(
+                `Rate expression must include currency: "${rateString}". Expected format: "100 EUR"`,
+              );
             }
           };
 
@@ -90,6 +75,15 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             );
           const { rate: costRate, currency: costCurrency } =
             parseRateWithCurrency(String(costRateString));
+
+          // Use contractor name as role ID to keep rates separate
+          const contractorRoleId = `contractor_${trackerReport.contractorId}`;
+          const adapted = adaptTMetricToGeneric({
+            entries: timeEntries,
+            defaultRoleId: contractorRoleId,
+            contractorId: trackerReport.contractorId,
+            idMaps: sharedIdMaps, // Share the ID maps across contractors
+          });
 
           // Get billing rate (what we charge the client) - with markup/interest
           const billingRateString =

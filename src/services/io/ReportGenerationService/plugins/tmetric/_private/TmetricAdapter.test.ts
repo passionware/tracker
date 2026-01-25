@@ -10,7 +10,6 @@ describe("TmetricAdapter", () => {
   ): TMetricAdapterInput => ({
     entries,
     defaultRoleId: "developer",
-    currency: "USD",
     contractorId: 123,
   });
 
@@ -191,7 +190,6 @@ describe("TmetricAdapter", () => {
 
     it("should use custom currency", () => {
       const input = createMockInput();
-      input.currency = "EUR";
 
       const result = adaptTMetricToGeneric(input);
 
@@ -259,21 +257,21 @@ describe("TmetricAdapter", () => {
       expect(
         inferActivity("daily standup", [createTag("activity:meeting")]),
       ).toBe("meeting");
-      expect(
-        inferActivity("discussion", [createTag("activity:meeting")]),
-      ).toBe("meeting");
-      expect(
-        inferActivity("chat", [createTag("activity:meeting")]),
-      ).toBe("meeting");
+      expect(inferActivity("discussion", [createTag("activity:meeting")])).toBe(
+        "meeting",
+      );
+      expect(inferActivity("chat", [createTag("activity:meeting")])).toBe(
+        "meeting",
+      );
     });
 
     it("should infer 'code_review' activity from 'activity:review' tag", () => {
-      expect(
-        inferActivity("code review", [createTag("activity:review")]),
-      ).toBe("code_review");
-      expect(
-        inferActivity("PR review", [createTag("activity:review")]),
-      ).toBe("code_review");
+      expect(inferActivity("code review", [createTag("activity:review")])).toBe(
+        "code_review",
+      );
+      expect(inferActivity("PR review", [createTag("activity:review")])).toBe(
+        "code_review",
+      );
       expect(
         inferActivity("checking code", [createTag("activity:review")]),
       ).toBe("code_review");
@@ -312,15 +310,15 @@ describe("TmetricAdapter", () => {
     });
 
     it("should handle case-insensitive tag matching", () => {
-      expect(
-        inferActivity("work", [createTag("activity:MEETING")]),
-      ).toBe("meeting");
-      expect(
-        inferActivity("work", [createTag("ACTIVITY:review")]),
-      ).toBe("code_review");
-      expect(
-        inferActivity("work", [createTag("Activity:Operations")]),
-      ).toBe("operations");
+      expect(inferActivity("work", [createTag("activity:MEETING")])).toBe(
+        "meeting",
+      );
+      expect(inferActivity("work", [createTag("ACTIVITY:review")])).toBe(
+        "code_review",
+      );
+      expect(inferActivity("work", [createTag("Activity:Operations")])).toBe(
+        "operations",
+      );
     });
 
     it("should fallback to description when no activity tag is present", () => {
@@ -359,9 +357,9 @@ describe("TmetricAdapter", () => {
 
     it("should handle tag name variations", () => {
       // "review" tag should map to "code_review"
-      expect(
-        inferActivity("work", [createTag("activity:review")]),
-      ).toBe("code_review");
+      expect(inferActivity("work", [createTag("activity:review")])).toBe(
+        "code_review",
+      );
       // "dev" tag should map to "development"
       expect(inferActivity("work", [createTag("activity:dev")])).toBe(
         "development",
