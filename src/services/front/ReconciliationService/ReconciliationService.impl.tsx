@@ -542,7 +542,7 @@ export function createReconciliationService(
     },
 
     executeReconciliation: async (params: ExecuteReconciliationParams) => {
-      const { facts } = params;
+      const { facts, dryRun = false, onLog } = params;
 
       // Build a map of UUID to fact for quick lookup
       const uuidToFact = new Map<string, Fact>();
@@ -592,7 +592,9 @@ export function createReconciliationService(
       ];
 
       // Map to track UUID -> ID for created/updated entities
-      const uuidToId = new Map<string, number>();
+      // In dry run, IDs are strings like "dry-1", "dry-2", etc.
+      const uuidToId = new Map<string, number | string>();
+      let dryRunCounter = 0;
 
       // Process facts in topological order
       for (const fact of sortedFacts) {
@@ -600,17 +602,56 @@ export function createReconciliationService(
           case "report": {
             switch (fact.action.type) {
               case "create": {
-                const result = await config.services.mutationService.createReport(
-                  fact.payload,
-                );
-                uuidToId.set(fact.uuid, result.id);
+                onLog?.({
+                  type: "create",
+                  entityType: "report",
+                  description: `Create report for contractor ${fact.payload.contractorId}`,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                });
+                if (!dryRun) {
+                  const result = await config.services.mutationService.createReport(
+                    fact.payload,
+                  );
+                  uuidToId.set(fact.uuid, result.id);
+                  onLog?.({
+                    type: "create",
+                    entityType: "report",
+                    description: `Created report for contractor ${fact.payload.contractorId}`,
+                    id: result.id,
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                } else {
+                  // In dry run, use a sequential placeholder ID for dependency resolution
+                  dryRunCounter++;
+                  const dryRunId = `dry-${dryRunCounter}`;
+                  uuidToId.set(fact.uuid, dryRunId);
+                  onLog?.({
+                    type: "create",
+                    entityType: "report",
+                    description: `Created report for contractor ${fact.payload.contractorId}`,
+                    id: dryRunCounter, // Use counter as numeric ID for display
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                }
                 break;
               }
               case "update": {
-                await config.services.mutationService.editReport(
-                  fact.action.id,
-                  fact.payload,
-                );
+                onLog?.({
+                  type: "update",
+                  entityType: "report",
+                  description: `Update report ${fact.action.id} for contractor ${fact.payload.contractorId}`,
+                  id: fact.action.id,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                  oldValues: fact.action.oldValues
+                    ? JSON.parse(JSON.stringify(fact.action.oldValues))
+                    : undefined,
+                });
+                if (!dryRun) {
+                  await config.services.mutationService.editReport(
+                    fact.action.id,
+                    fact.payload,
+                  );
+                }
                 uuidToId.set(fact.uuid, fact.action.id);
                 break;
               }
@@ -623,17 +664,55 @@ export function createReconciliationService(
           case "cost": {
             switch (fact.action.type) {
               case "create": {
-                const result = await config.services.mutationService.createCost(
-                  fact.payload,
-                );
-                uuidToId.set(fact.uuid, result.id);
+                onLog?.({
+                  type: "create",
+                  entityType: "cost",
+                  description: `Create cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                });
+                if (!dryRun) {
+                  const result = await config.services.mutationService.createCost(
+                    fact.payload,
+                  );
+                  uuidToId.set(fact.uuid, result.id);
+                  onLog?.({
+                    type: "create",
+                    entityType: "cost",
+                    description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
+                    id: result.id,
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                } else {
+                  dryRunCounter++;
+                  const dryRunId = `dry-${dryRunCounter}`;
+                  uuidToId.set(fact.uuid, dryRunId);
+                  onLog?.({
+                    type: "create",
+                    entityType: "cost",
+                    description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
+                    id: dryRunCounter,
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                }
                 break;
               }
               case "update": {
-                await config.services.mutationService.editCost(
-                  fact.action.id,
-                  fact.payload,
-                );
+                onLog?.({
+                  type: "update",
+                  entityType: "cost",
+                  description: `Update cost ${fact.action.id}`,
+                  id: fact.action.id,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                  oldValues: fact.action.oldValues
+                    ? JSON.parse(JSON.stringify(fact.action.oldValues))
+                    : undefined,
+                });
+                if (!dryRun) {
+                  await config.services.mutationService.editCost(
+                    fact.action.id,
+                    fact.payload,
+                  );
+                }
                 uuidToId.set(fact.uuid, fact.action.id);
                 break;
               }
@@ -646,18 +725,56 @@ export function createReconciliationService(
           case "billing": {
             switch (fact.action.type) {
               case "create": {
-                const result =
-                  await config.services.mutationService.createBilling(
-                    fact.payload,
-                  );
-                uuidToId.set(fact.uuid, result.id);
+                onLog?.({
+                  type: "create",
+                  entityType: "billing",
+                  description: `Create billing for workspace ${fact.payload.workspaceId}`,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                });
+                if (!dryRun) {
+                  const result =
+                    await config.services.mutationService.createBilling(
+                      fact.payload,
+                    );
+                  uuidToId.set(fact.uuid, result.id);
+                  onLog?.({
+                    type: "create",
+                    entityType: "billing",
+                    description: `Created billing for workspace ${fact.payload.workspaceId}`,
+                    id: result.id,
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                } else {
+                  dryRunCounter++;
+                  const dryRunId = `dry-${dryRunCounter}`;
+                  uuidToId.set(fact.uuid, dryRunId);
+                  onLog?.({
+                    type: "create",
+                    entityType: "billing",
+                    description: `Created billing for workspace ${fact.payload.workspaceId}`,
+                    id: dryRunCounter,
+                    payload: JSON.parse(JSON.stringify(fact.payload)),
+                  });
+                }
                 break;
               }
               case "update": {
-                await config.services.mutationService.editBilling(
-                  fact.action.id,
-                  fact.payload,
-                );
+                onLog?.({
+                  type: "update",
+                  entityType: "billing",
+                  description: `Update billing ${fact.action.id}`,
+                  id: fact.action.id,
+                  payload: JSON.parse(JSON.stringify(fact.payload)),
+                  oldValues: fact.action.oldValues
+                    ? JSON.parse(JSON.stringify(fact.action.oldValues))
+                    : undefined,
+                });
+                if (!dryRun) {
+                  await config.services.mutationService.editBilling(
+                    fact.action.id,
+                    fact.payload,
+                  );
+                }
                 uuidToId.set(fact.uuid, fact.action.id);
                 break;
               }
@@ -669,8 +786,9 @@ export function createReconciliationService(
 
           case "linkCostReport": {
             // Resolve IDs from linked facts
-            let costId: number | null = null;
-            let reportId: number | null = null;
+            // In dry run, IDs can be strings like "dry-1", "dry-2", etc.
+            let costId: number | string | null = null;
+            let reportId: number | string | null = null;
 
             for (const linkedUuid of fact.linkedFacts) {
               const linkedFact = uuidToFact.get(linkedUuid);
@@ -721,19 +839,38 @@ export function createReconciliationService(
 
             // Only create link if both IDs are resolved
             if (costId !== null && reportId !== null) {
-              await config.services.mutationService.linkCostAndReport({
+              // For logging, include the actual IDs (strings in dry run)
+              const logPayload = {
                 ...fact.payload,
                 costId,
                 reportId,
+              };
+              onLog?.({
+                type: "create",
+                entityType: "linkCostReport",
+                description: `Link cost ${costId} to report ${reportId}`,
+                payload: JSON.parse(JSON.stringify(logPayload)),
               });
+              if (!dryRun) {
+                // For actual API call, ensure IDs are numbers
+                const linkPayload = {
+                  ...fact.payload,
+                  costId: typeof costId === "string" ? 0 : costId,
+                  reportId: typeof reportId === "string" ? 0 : reportId,
+                };
+                await config.services.mutationService.linkCostAndReport(
+                  linkPayload as typeof fact.payload & { costId: number; reportId: number },
+                );
+              }
             }
             break;
           }
 
           case "linkBillingReport": {
             // Resolve IDs from linked facts
-            let billingId: number | null = null;
-            let reportId: number | null = null;
+            // In dry run, IDs can be strings like "dry-1", "dry-2", etc.
+            let billingId: number | string | null = null;
+            let reportId: number | string | null = null;
 
             for (const linkedUuid of fact.linkedFacts) {
               const linkedFact = uuidToFact.get(linkedUuid);
@@ -784,11 +921,29 @@ export function createReconciliationService(
 
             // Only create link if both IDs are resolved
             if (billingId !== null && reportId !== null) {
-              await config.services.mutationService.linkReportAndBilling({
+              // For logging, include the actual IDs (strings in dry run)
+              const logPayload = {
                 ...fact.payload,
                 billingId,
                 reportId,
+              };
+              onLog?.({
+                type: "create",
+                entityType: "linkBillingReport",
+                description: `Link billing ${billingId} to report ${reportId}`,
+                payload: JSON.parse(JSON.stringify(logPayload)),
               });
+              if (!dryRun) {
+                // For actual API call, ensure IDs are numbers
+                const linkPayload = {
+                  ...fact.payload,
+                  billingId: typeof billingId === "string" ? 0 : billingId,
+                  reportId: typeof reportId === "string" ? 0 : reportId,
+                };
+                await config.services.mutationService.linkReportAndBilling(
+                  linkPayload as typeof fact.payload & { billingId: number; reportId: number },
+                );
+              }
             }
             break;
           }

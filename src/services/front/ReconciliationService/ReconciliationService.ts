@@ -360,6 +360,18 @@ export interface ReconciliationInput {
 import { Fact } from "./ReconciliationService.types";
 
 /**
+ * Log entry for reconciliation operations
+ */
+export interface ReconciliationLogEntry {
+  type: "create" | "update";
+  entityType: "report" | "cost" | "billing" | "linkCostReport" | "linkBillingReport";
+  description: string;
+  id?: number; // ID for updates, or newly created ID
+  payload: unknown; // JSON snapshot of the payload being applied
+  oldValues?: unknown; // For updates, the old values before the change
+}
+
+/**
  * Parameters for executing reconciliation
  */
 export interface ExecuteReconciliationParams {
@@ -371,6 +383,8 @@ export interface ExecuteReconciliationParams {
     workspaceIds: number[];
   };
   projectIterationId: ProjectIteration["id"];
+  dryRun?: boolean;
+  onLog?: (entry: ReconciliationLogEntry) => void;
 }
 
 /**
