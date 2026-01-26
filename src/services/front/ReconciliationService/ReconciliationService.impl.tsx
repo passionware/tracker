@@ -542,7 +542,258 @@ export function createReconciliationService(
     },
 
     executeReconciliation: async (params: ExecuteReconciliationParams) => {
-      console.log("todo: execute reconciliation", params);
+      const { facts } = params;
+
+      // Build a map of UUID to fact for quick lookup
+      const uuidToFact = new Map<string, Fact>();
+      for (const fact of facts) {
+        uuidToFact.set(fact.uuid, fact);
+      }
+
+      // Separate facts by type for topological sorting
+      const reportFacts: ReportFact[] = [];
+      const costFacts: CostFact[] = [];
+      const billingFacts: BillingFact[] = [];
+      const linkCostReportFacts: LinkCostReportFact[] = [];
+      const linkBillingReportFacts: LinkBillingReportFact[] = [];
+
+      for (const fact of facts) {
+        if (fact.action.type === "ignore") {
+          continue; // Skip ignored facts
+        }
+        switch (fact.type) {
+          case "report":
+            reportFacts.push(fact);
+            break;
+          case "cost":
+            costFacts.push(fact);
+            break;
+          case "billing":
+            billingFacts.push(fact);
+            break;
+          case "linkCostReport":
+            linkCostReportFacts.push(fact);
+            break;
+          case "linkBillingReport":
+            linkBillingReportFacts.push(fact);
+            break;
+        }
+      }
+
+      // Topologically sort facts:
+      // Level 1: ReportFact, CostFact, BillingFact (independent)
+      // Level 2: LinkCostReportFact, LinkBillingReportFact (depend on Level 1)
+      const sortedFacts: Fact[] = [
+        ...reportFacts,
+        ...costFacts,
+        ...billingFacts,
+        ...linkCostReportFacts,
+        ...linkBillingReportFacts,
+      ];
+
+      // Map to track UUID -> ID for created/updated entities
+      const uuidToId = new Map<string, number>();
+
+      // Process facts in topological order
+      for (const fact of sortedFacts) {
+        switch (fact.type) {
+          case "report": {
+            switch (fact.action.type) {
+              case "create": {
+                const result = await config.services.mutationService.createReport(
+                  fact.payload,
+                );
+                uuidToId.set(fact.uuid, result.id);
+                break;
+              }
+              case "update": {
+                await config.services.mutationService.editReport(
+                  fact.action.id,
+                  fact.payload,
+                );
+                uuidToId.set(fact.uuid, fact.action.id);
+                break;
+              }
+              case "ignore":
+                break;
+            }
+            break;
+          }
+
+          case "cost": {
+            switch (fact.action.type) {
+              case "create": {
+                const result = await config.services.mutationService.createCost(
+                  fact.payload,
+                );
+                uuidToId.set(fact.uuid, result.id);
+                break;
+              }
+              case "update": {
+                await config.services.mutationService.editCost(
+                  fact.action.id,
+                  fact.payload,
+                );
+                uuidToId.set(fact.uuid, fact.action.id);
+                break;
+              }
+              case "ignore":
+                break;
+            }
+            break;
+          }
+
+          case "billing": {
+            switch (fact.action.type) {
+              case "create": {
+                const result =
+                  await config.services.mutationService.createBilling(
+                    fact.payload,
+                  );
+                uuidToId.set(fact.uuid, result.id);
+                break;
+              }
+              case "update": {
+                await config.services.mutationService.editBilling(
+                  fact.action.id,
+                  fact.payload,
+                );
+                uuidToId.set(fact.uuid, fact.action.id);
+                break;
+              }
+              case "ignore":
+                break;
+            }
+            break;
+          }
+
+          case "linkCostReport": {
+            // Resolve IDs from linked facts
+            let costId: number | null = null;
+            let reportId: number | null = null;
+
+            for (const linkedUuid of fact.linkedFacts) {
+              const linkedFact = uuidToFact.get(linkedUuid);
+              if (!linkedFact) continue;
+
+              switch (linkedFact.type) {
+                case "cost": {
+                  switch (linkedFact.action.type) {
+                    case "update":
+                      costId = linkedFact.action.id;
+                      break;
+                    case "create": {
+                      const createdId = uuidToId.get(linkedUuid);
+                      if (createdId !== undefined) {
+                        costId = createdId;
+                      }
+                      break;
+                    }
+                    case "ignore":
+                      break;
+                  }
+                  break;
+                }
+                case "report": {
+                  switch (linkedFact.action.type) {
+                    case "update":
+                      reportId = linkedFact.action.id;
+                      break;
+                    case "create": {
+                      const createdId = uuidToId.get(linkedUuid);
+                      if (createdId !== undefined) {
+                        reportId = createdId;
+                      }
+                      break;
+                    }
+                    case "ignore":
+                      break;
+                  }
+                  break;
+                }
+                case "billing":
+                case "linkCostReport":
+                case "linkBillingReport":
+                  // Not relevant for cost-report links
+                  break;
+              }
+            }
+
+            // Only create link if both IDs are resolved
+            if (costId !== null && reportId !== null) {
+              await config.services.mutationService.linkCostAndReport({
+                ...fact.payload,
+                costId,
+                reportId,
+              });
+            }
+            break;
+          }
+
+          case "linkBillingReport": {
+            // Resolve IDs from linked facts
+            let billingId: number | null = null;
+            let reportId: number | null = null;
+
+            for (const linkedUuid of fact.linkedFacts) {
+              const linkedFact = uuidToFact.get(linkedUuid);
+              if (!linkedFact) continue;
+
+              switch (linkedFact.type) {
+                case "billing": {
+                  switch (linkedFact.action.type) {
+                    case "update":
+                      billingId = linkedFact.action.id;
+                      break;
+                    case "create": {
+                      const createdId = uuidToId.get(linkedUuid);
+                      if (createdId !== undefined) {
+                        billingId = createdId;
+                      }
+                      break;
+                    }
+                    case "ignore":
+                      break;
+                  }
+                  break;
+                }
+                case "report": {
+                  switch (linkedFact.action.type) {
+                    case "update":
+                      reportId = linkedFact.action.id;
+                      break;
+                    case "create": {
+                      const createdId = uuidToId.get(linkedUuid);
+                      if (createdId !== undefined) {
+                        reportId = createdId;
+                      }
+                      break;
+                    }
+                    case "ignore":
+                      break;
+                  }
+                  break;
+                }
+                case "cost":
+                case "linkCostReport":
+                case "linkBillingReport":
+                  // Not relevant for billing-report links
+                  break;
+              }
+            }
+
+            // Only create link if both IDs are resolved
+            if (billingId !== null && reportId !== null) {
+              await config.services.mutationService.linkReportAndBilling({
+                ...fact.payload,
+                billingId,
+                reportId,
+              });
+            }
+            break;
+          }
+        }
+      }
     },
   };
 }
