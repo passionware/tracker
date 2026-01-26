@@ -1,4 +1,4 @@
-import { BillingQuery } from "@/api/billing/billing.api.ts";
+import { BillingQuery, billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
@@ -9,10 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -25,6 +28,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
+import { useState } from "react";
 
 export interface InlineBillingSearchProps
   extends WithServices<
@@ -50,12 +54,34 @@ type LinkValue = {
 };
 
 export function InlineBillingSearch(props: InlineBillingSearchProps) {
-  const billings = props.services.reportDisplayService.useBillingView(
-    props.query,
-  );
+  const [_query, setQuery] = useState<BillingQuery>(props.query);
+  const query = billingQueryUtils.narrowContext(_query, props.context);
+  const billings = props.services.reportDisplayService.useBillingView(query);
 
   return (
-    <div className={props.className}>
+    <InlineSearchLayout
+      className={props.className}
+      filters={
+        <BillingQueryBar
+          query={query}
+          onQueryChange={setQuery}
+          spec={{
+            workspace: idSpecUtils.takeOrElse(
+              props.context.workspaceId,
+              "disable",
+              "show",
+            ),
+            client: idSpecUtils.takeOrElse(
+              props.context.clientId,
+              "disable",
+              "show",
+            ),
+            contractor: "show",
+          }}
+          services={props.services}
+        />
+      }
+    >
       {rd
         .journey(billings)
         .wait(<Skeleton className="h-6" />)
@@ -140,6 +166,6 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
             </Table>
           );
         })}
-    </div>
+    </InlineSearchLayout>
   );
 }

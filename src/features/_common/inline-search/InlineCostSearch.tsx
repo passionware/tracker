@@ -16,23 +16,33 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
-import { useId } from "react";
+import { useState, useId } from "react";
 import { useForm, Controller } from "react-hook-form";
 
 export interface InlineCostSearchProps
   extends WithServices<
-    [WithReportDisplayService, WithFormatService, WithContractorService]
+    [
+      WithReportDisplayService,
+      WithFormatService,
+      WithContractorService,
+      WithClientService,
+      WithWorkspaceService,
+    ]
   > {
   query: CostQuery;
   onSelect: (data: { costId: number; value: LinkValue }) => void;
@@ -43,10 +53,25 @@ export interface InlineCostSearchProps
 }
 
 export function InlineCostSearch(props: InlineCostSearchProps) {
-  const costs = props.services.reportDisplayService.useCostView(props.query);
+  const [_query, setQuery] = useState<CostQuery>(props.query);
+  const costs = props.services.reportDisplayService.useCostView(_query);
 
   return (
-    <div className={props.className}>
+    <InlineSearchLayout
+      className={props.className}
+      filters={
+        <CostQueryBar
+          query={_query}
+          onQueryChange={setQuery}
+          spec={{
+            workspace: "show",
+            client: "show",
+            contractor: "show",
+          }}
+          services={props.services}
+        />
+      }
+    >
       {rd
         .journey(costs)
         .wait(<Skeleton className="h-6" />)
@@ -151,7 +176,7 @@ export function InlineCostSearch(props: InlineCostSearchProps) {
             </Table>
           );
         })}
-    </div>
+    </InlineSearchLayout>
   );
 }
 
