@@ -309,7 +309,7 @@ export function convertGeneratedReportToFacts(
         netValue,
         grossValue: netValue, // For now, gross = net
         currency: group.rate.costCurrency,
-        invoiceNumber: `COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
+        invoiceNumber: `DRAFT-COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
         counterparty: null,
         invoiceDate: projectIteration.periodStart,
         description: costDescription,
@@ -414,7 +414,7 @@ export function convertGeneratedReportToFacts(
         totalNet,
         totalGross,
         clientId: project.clientId,
-        invoiceNumber: `INV-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-WS${workspaceGroup.workspaceId}`,
+        invoiceNumber: `DRAFT-BILLING-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-WS${workspaceGroup.workspaceId}`,
         invoiceDate: projectIteration.periodStart,
         description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,

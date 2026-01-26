@@ -54,7 +54,7 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 **Key fields**:
 - `contractorId`: Which contractor to pay
 - `netValue`: Amount to pay (matches the report's netValue)
-- `invoiceNumber`: Generated invoice number (e.g., "COST-2024-01-1")
+- `invoiceNumber`: Generated invoice number (e.g., "DRAFT-COST-2024-01-1")
 - `workspaceId`: Which workspace this cost belongs to
 
 **Example**: Pay contractor 400 EUR for 8 hours of work = CostFact with netValue=400
@@ -93,7 +93,7 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - `currency`: Billing currency
 - `workspaceId`: Which workspace this billing belongs to
 - `clientId`: Which client to bill
-- `invoiceNumber`: Generated invoice number (e.g., "INV-2024-01-WS1")
+- `invoiceNumber`: Generated invoice number (e.g., "DRAFT-BILLING-2024-01-WS1")
 
 **Example**: Bill client 600 EUR (from 8 hours × 75 EUR/hour) = BillingFact with totalNet=600
 

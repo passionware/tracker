@@ -748,6 +748,14 @@ export function ReconciliationView(
                                     oldValues.currency,
                                     billingFact.payload.currency,
                                   )}
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-500">
+                                      Invoice:
+                                    </span>
+                                    <span className="font-medium text-xs">
+                                      {billingFact.payload.invoiceNumber}
+                                    </span>
+                                  </div>
                                 </>
                               );
                             })()
