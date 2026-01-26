@@ -460,42 +460,45 @@ export function ReconciliationView(
                                     This {label.toLowerCase()} will be created
                                     during reconciliation.
                                   </div>
-                                  {type === "cost" && (
-                                    <CostPicker
-                                      services={props.services}
-                                      workspaceId={props.workspaceId}
-                                      clientId={props.clientId}
-                                      onSelect={(costId) => {
-                                        // TODO: Handle selection - link fact to existing cost
-                                        console.log("Select cost", costId);
-                                      }}
-                                    />
-                                  )}
-                                  {type === "report" && (
-                                    <ReportPicker
-                                      services={props.services}
-                                      workspaceId={props.workspaceId}
-                                      clientId={props.clientId}
-                                      onSelect={(reportId) => {
-                                        // TODO: Handle selection - link fact to existing report
-                                        console.log("Select report", reportId);
-                                      }}
-                                    />
-                                  )}
-                                  {type === "billing" && (
-                                    <BillingPicker
-                                      services={props.services}
-                                      workspaceId={props.workspaceId}
-                                      clientId={props.clientId}
-                                      onSelect={(billingId) => {
-                                        // TODO: Handle selection - link fact to existing billing
-                                        console.log(
-                                          "Select billing",
-                                          billingId,
-                                        );
-                                      }}
-                                    />
-                                  )}
+                                    {type === "cost" && (
+                                      <CostPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        previewId={id === 0 ? undefined : id}
+                                        onSelect={(costId) => {
+                                          // TODO: Handle selection - link fact to existing cost
+                                          console.log("Select cost", costId);
+                                        }}
+                                      />
+                                    )}
+                                    {type === "report" && (
+                                      <ReportPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        previewId={id === 0 ? undefined : id}
+                                        onSelect={(reportId) => {
+                                          // TODO: Handle selection - link fact to existing report
+                                          console.log("Select report", reportId);
+                                        }}
+                                      />
+                                    )}
+                                    {type === "billing" && (
+                                      <BillingPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        previewId={id === 0 ? undefined : id}
+                                        onSelect={(billingId) => {
+                                          // TODO: Handle selection - link fact to existing billing
+                                          console.log(
+                                            "Select billing",
+                                            billingId,
+                                          );
+                                        }}
+                                      />
+                                    )}
                                 </div>
                               ) : (
                                 <div className="space-y-4">
