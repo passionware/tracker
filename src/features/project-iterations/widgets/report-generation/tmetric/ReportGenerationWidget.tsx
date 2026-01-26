@@ -34,6 +34,7 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { ContractorBase } from "@/api/contractor/contractor.api.ts";
 import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { determineContractorWorkspaces } from "@/services/front/ReconciliationService/determineContractorWorkspace.ts";
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
@@ -134,31 +135,12 @@ export function ReportGenerationWidget({
     const loadTmetricData = async () => {
       const projData = project.data;
 
-      // Find workspaceIds for each contractor from their existing reports
-      const contractorWorkspaceIds = new Map<number, number>();
-
-      for (const contractor of contractors) {
-        // Query for the most recent report for this contractor to get their workspaceId
-        const contractorReports = await services.reportService.ensureReports(
-          reportQueryUtils
-            .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
-            .build((q) => [
-              q.withFilter("contractorId", {
-                operator: "oneOf",
-                value: [contractor.id],
-              }),
-              q.withFilter("clientId", {
-                operator: "oneOf",
-                value: [projData.clientId],
-              }),
-            ]),
-        );
-
-        // Use workspaceId from contractor's most recent report, or fallback to 0
-        const wsId =
-          contractorReports.length > 0 ? contractorReports[0].workspaceId : 0;
-        contractorWorkspaceIds.set(contractor.id, wsId);
-      }
+      // Determine workspace for each contractor using rate variables
+      const contractorWorkspaceIds = await determineContractorWorkspaces({
+        services,
+        project: projData,
+        contractorIds: contractors.map((c) => c.id),
+      });
 
       // Use the plugin directly with contractor data (no need to create temporary reports)
       const tmetricPlugin = createTmetricPlugin({
