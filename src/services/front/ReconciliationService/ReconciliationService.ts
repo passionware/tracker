@@ -352,9 +352,11 @@ export interface ReconciliationInput {
   costs: Cost[];
   iteration: ProjectIteration;
   project: {
+    id: number;
     clientId: number;
     workspaceIds: number[];
   };
+  contractorWorkspaceMap: Map<number, number>;
 }
 
 /**

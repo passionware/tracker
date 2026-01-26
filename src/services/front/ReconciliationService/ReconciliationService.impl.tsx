@@ -5,6 +5,7 @@ import { Cost } from "@/api/cost/cost.api.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { Report } from "@/api/reports/reports.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -26,12 +27,28 @@ import {
 } from "./ReconciliationService.ts";
 import { calculateReportReconciliation } from "./calculateReportReconciliation.helper.ts";
 
+/**
+ * Helper to extract workspaceId from a report preview
+ */
+function getReportPreviewWorkspaceId(
+  reportPreview: ReportReconciliationPreview,
+  existingReports: Report[],
+): number | null {
+  if (reportPreview.type === "create") {
+    return reportPreview.payload.workspaceId;
+  } else {
+    // For update type, get workspaceId from existing report
+    const existingReport = existingReports.find((r) => r.id === reportPreview.id);
+    return existingReport?.workspaceId ?? null;
+  }
+}
+
 function calculateBillingReconciliation(
   report: GeneratedReportSource,
   reportPreviews: ReportReconciliationPreview[],
   existingBillings: Billing[],
+  existingReports: Report[],
   iteration: ProjectIteration,
-  workspaceId: number,
 ): BillingReconciliationPreview[] {
   // Group report previews by workspace and billing currency
   // Goal: 1 billing per workspace
@@ -47,6 +64,15 @@ function calculateBillingReconciliation(
 
   // Process report previews and group by workspace + billing currency
   for (const reportPreview of reportPreviews) {
+    const workspaceId = getReportPreviewWorkspaceId(
+      reportPreview,
+      existingReports,
+    );
+    if (!workspaceId) {
+      // Skip reports without workspaceId
+      continue;
+    }
+
     const key = `${workspaceId}-${reportPreview.billingCurrency}`;
 
     if (!groupedByWorkspaceCurrency.has(key)) {
@@ -155,6 +181,7 @@ function calculateCostReconciliation(
   report: GeneratedReportSource,
   reportPreviews: ReportReconciliationPreview[],
   existingCosts: Cost[],
+  existingReports: Report[],
   iteration: ProjectIteration,
 ): CostReconciliationPreview[] {
   // Goal: 1 cost per contractor
@@ -163,6 +190,7 @@ function calculateCostReconciliation(
     number,
     {
       contractorId: number;
+      workspaceId: number | null; // Workspace for this contractor
       reports: ReportReconciliationPreview[];
       totalCostNet: number;
       totalCostGross: number;
@@ -172,9 +200,15 @@ function calculateCostReconciliation(
 
   // Process report previews and group by contractor
   for (const reportPreview of reportPreviews) {
+    const workspaceId = getReportPreviewWorkspaceId(
+      reportPreview,
+      existingReports,
+    );
+
     if (!groupedByContractor.has(reportPreview.contractorId)) {
       groupedByContractor.set(reportPreview.contractorId, {
         contractorId: reportPreview.contractorId,
+        workspaceId,
         reports: [],
         totalCostNet: 0,
         totalCostGross: 0,
@@ -184,6 +218,10 @@ function calculateCostReconciliation(
 
     const group = groupedByContractor.get(reportPreview.contractorId)!;
     group.reports.push(reportPreview);
+    // Update workspaceId if not set (use first encountered)
+    if (!group.workspaceId && workspaceId) {
+      group.workspaceId = workspaceId;
+    }
     // Sum up cost amounts (netValue is the cost amount for the report)
     group.totalCostNet += reportPreview.netValue;
     group.totalCostGross += reportPreview.netValue; // For now, gross = net
@@ -258,7 +296,12 @@ function calculateCostReconciliation(
         },
       });
     } else {
-      // Create new cost
+      // Create new cost - use workspaceId from contractor's reports
+      if (!group.workspaceId) {
+        // Skip if no workspaceId found
+        continue;
+      }
+
       previews.push({
         ...baseCostFields,
         type: "create",
@@ -270,7 +313,7 @@ function calculateCostReconciliation(
           invoiceNumber: invoiceNumber,
           counterparty: null,
           description: `Generated from report #${report.id}`,
-          workspaceId: 0, // Will be filled in during execution
+          workspaceId: group.workspaceId,
         },
       });
     }
@@ -282,7 +325,7 @@ function calculateCostReconciliation(
 function calculateReportBillingLinks(
   reportPreviews: ReportReconciliationPreview[],
   billingPreviews: BillingReconciliationPreview[],
-  workspaceId: number,
+  existingReports: Report[],
 ): ReportBillingLinkPreview[] {
   const links: ReportBillingLinkPreview[] = [];
 
@@ -290,10 +333,16 @@ function calculateReportBillingLinks(
   // For each billing preview (which is per workspace + currency), link all matching reports
   for (const billingPreview of billingPreviews) {
     // Find all reports that match this billing's workspace and currency
-    // Since all reports are from the same workspace in reconciliation, we match by currency
-    const matchingReports = reportPreviews.filter(
-      (r) => r.billingCurrency === billingPreview.currency,
-    );
+    const matchingReports = reportPreviews.filter((r) => {
+      const reportWorkspaceId = getReportPreviewWorkspaceId(
+        r,
+        existingReports,
+      );
+      return (
+        reportWorkspaceId === billingPreview.workspaceId &&
+        r.billingCurrency === billingPreview.currency
+      );
+    });
 
     // Link all matching reports to this billing
     for (const reportPreview of matchingReports) {
@@ -303,13 +352,17 @@ function calculateReportBillingLinks(
       // Calculate the billing amount for this specific report
       const reportBillingAmount = reportPreview.quantity * billingUnitPrice;
 
+      const reportWorkspaceId = getReportPreviewWorkspaceId(
+        reportPreview,
+        existingReports,
+      );
       links.push({
         type: "create",
         reportId: reportPreview.type === "update" ? reportPreview.id : 0,
         billingId: billingPreview.type === "update" ? billingPreview.id : 0,
         reportAmount: reportPreview.netValue,
         billingAmount: reportBillingAmount,
-        description: `Link between report and billing for workspace ${workspaceId}`,
+        description: `Link between report and billing for workspace ${reportWorkspaceId ?? "unknown"}`,
         breakdown: {
           quantity: reportPreview.quantity,
           unit: reportPreview.unit,
@@ -324,7 +377,7 @@ function calculateReportBillingLinks(
           reportId: reportPreview.type === "update" ? reportPreview.id : 0,
           reportAmount: reportPreview.netValue,
           billingAmount: reportBillingAmount,
-          description: `Link between report and billing for workspace ${workspaceId}`,
+          description: `Link between report and billing for workspace ${reportWorkspaceId ?? "unknown"}`,
           breakdown: {
             quantity: reportPreview.quantity,
             unit: reportPreview.unit,
@@ -429,29 +482,13 @@ export function createReconciliationService(
     const existingReports = input.reportsView.entries.map(
       (e) => e.originalReport,
     );
+
     const reportPreviews = calculateReportReconciliation(
       input.report,
       input.iteration,
       existingReports,
+      input.contractorWorkspaceMap,
     );
-
-    // Include both create and update reports in reconciliation
-    // Get workspaceId from project
-    const workspaceId =
-      input.project.workspaceIds.length > 0
-        ? input.project.workspaceIds[0]
-        : null;
-
-    if (!workspaceId) {
-      // Return empty reconciliation if no workspace
-      return {
-        reports: reportPreviews,
-        billings: [],
-        costs: [],
-        reportBillingLinks: [],
-        reportCostLinks: [],
-      };
-    }
 
     // Reconciliation rules:
     // 1. Find costs only that are already linked to this report with any link
@@ -482,21 +519,22 @@ export function createReconciliationService(
       input.report,
       reportPreviews,
       linkedBillings,
+      existingReports,
       input.iteration,
-      workspaceId,
     );
 
     const costPreviews = calculateCostReconciliation(
       input.report,
       reportPreviews,
       linkedCosts,
+      existingReports,
       input.iteration,
     );
 
     const reportBillingLinks = calculateReportBillingLinks(
       reportPreviews,
       billingPreviews,
-      workspaceId,
+      existingReports,
     );
 
     const reportCostLinks = calculateReportCostLinks(
@@ -519,6 +557,12 @@ export function createReconciliationService(
       const project = config.services.projectService.useProject(
         params.projectId,
       );
+
+      // Get project contractors to build contractorWorkspaceMap
+      const projectContractors =
+        config.services.projectService.useProjectContractors(
+          params.projectId,
+        );
 
       // Query for existing reports assigned to this iteration
       const reportsQuery = rd.tryMap(params.iteration, (iteration) =>
@@ -559,18 +603,31 @@ export function createReconciliationService(
           costs,
           iteration: params.iteration,
           project,
+          projectContractors,
         }),
-        ({ reportsView, billings, costs, iteration, project }) => ({
-          report: params.report,
-          reportsView,
-          billings,
-          costs,
-          iteration,
-          project: {
-            clientId: project.clientId,
-            workspaceIds: project.workspaceIds,
-          },
-        }),
+        ({ reportsView, billings, costs, iteration, project, projectContractors }) => {
+          // Build contractorWorkspaceMap from project contractors
+          const contractorWorkspaceMap = new Map<number, number>();
+          for (const pc of projectContractors) {
+            if (pc.workspaceId) {
+              contractorWorkspaceMap.set(pc.contractor.id, pc.workspaceId);
+            }
+          }
+
+          return {
+            report: params.report,
+            reportsView,
+            billings,
+            costs,
+            iteration,
+            project: {
+              id: project.id,
+              clientId: project.clientId,
+              workspaceIds: project.workspaceIds,
+            },
+            contractorWorkspaceMap,
+          };
+        },
       );
 
       return rd.map(reconciliationInput, (input) =>
@@ -583,13 +640,6 @@ export function createReconciliationService(
     executeReconciliation: async (params: ExecuteReconciliationParams) => {
       const { preview, iteration, project, projectIterationId } = params;
 
-      // Use the first workspace ID from the project
-      const workspaceId =
-        project.workspaceIds.length > 0 ? project.workspaceIds[0] : null;
-      if (!workspaceId) {
-        throw new Error("Project has no workspace assigned");
-      }
-
       // Track created IDs for linking
       const reportIdMap = new Map<number, number>(); // oldId -> newId
       const billingIdMap = new Map<number, number>(); // oldId -> newId
@@ -598,13 +648,13 @@ export function createReconciliationService(
       // Reconcile Reports
       for (const reportPreview of preview.reports) {
         if (reportPreview.type === "create") {
-          // Create new report
+          // Create new report - use workspaceId from payload (already set per contractor)
           const result = await config.services.mutationService.createReport({
             ...reportPreview.payload,
             periodStart: iteration.periodStart,
             periodEnd: iteration.periodEnd,
             clientId: project.clientId,
-            workspaceId: workspaceId,
+            workspaceId: reportPreview.payload.workspaceId,
             projectIterationId: projectIterationId,
           });
           reportIdMap.set(0, result.id); // Map placeholder 0 to actual ID
@@ -621,11 +671,11 @@ export function createReconciliationService(
       // Reconcile Billings
       for (const billingPreview of preview.billings) {
         if (billingPreview.type === "create") {
-          // Create new billing
+          // Create new billing - use workspaceId from preview (already grouped by workspace)
           const result = await config.services.mutationService.createBilling({
             ...billingPreview.payload,
             clientId: project.clientId,
-            workspaceId: workspaceId,
+            workspaceId: billingPreview.workspaceId,
           });
           billingIdMap.set(0, result.id);
         } else {
@@ -641,10 +691,10 @@ export function createReconciliationService(
       // Reconcile Costs
       for (const costPreview of preview.costs) {
         if (costPreview.type === "create") {
-          // Create new cost
+          // Create new cost - use workspaceId from payload
           const result = await config.services.mutationService.createCost({
             ...costPreview.payload,
-            workspaceId: workspaceId,
+            workspaceId: costPreview.payload.workspaceId,
           });
           costIdMap.set(0, result.id);
         } else {

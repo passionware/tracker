@@ -27,12 +27,14 @@ function getContractorRateKey(contractorId: number, rate: RoleRate): string {
  * @param report
  * @param projectIteration
  * @param existingReports
+ * @param contractorWorkspaceMap - Map of contractorId to workspaceId for determining which workspace each contractor belongs to
  * @returns
  */
 export function calculateReportReconciliation(
   report: GeneratedReportSource,
   projectIteration: ProjectIteration,
   existingReports: Report[],
+  contractorWorkspaceMap: Map<number, number>,
 ): ReportReconciliationPreview[] {
   // Group time entries by contractor + rate
   const groupedByContractorRate = new Map<
@@ -185,6 +187,17 @@ export function calculateReportReconciliation(
         },
       });
     } else {
+      // Determine workspace for this contractor using explicit association
+      const contractorWorkspaceId = contractorWorkspaceMap.get(group.contractorId);
+
+      // Skip contractors without explicit workspace association
+      if (!contractorWorkspaceId) {
+        console.warn(
+          `Skipping contractor ${group.contractorId}: no workspace association found`,
+        );
+        continue;
+      }
+
       // Create new report (will be filtered out later, but keeping structure for completeness)
       updates.push({
         ...baseFields,
@@ -200,7 +213,7 @@ export function calculateReportReconciliation(
           periodStart: projectIteration.periodStart,
           periodEnd: projectIteration.periodEnd,
           clientId: 0, // Will be filled in during execution
-          workspaceId: 0, // Will be filled in during execution
+          workspaceId: contractorWorkspaceId,
           description: `Generated from report #${report.id}`,
           projectIterationId: report.projectIterationId,
         },
