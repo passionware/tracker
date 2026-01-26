@@ -296,6 +296,19 @@ export function IterationTabs(
     <Tabs value={currentTab} className="w-full bg-white sticky top-0 z-1">
       <TabsList>
         <TabsTrigger
+          value="generated-reports"
+          onClick={() =>
+            props.services.navigationService.navigate(
+              forIteration.generatedReports(),
+            )
+          }
+        >
+          Generated reports
+          <Badge variant="secondary" size="sm">
+            {rd.tryMap(generatedReports, (reports) => reports.length)}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger
           value="positions"
           onClick={() =>
             props.services.navigationService.navigate(forIteration.root())
@@ -328,19 +341,7 @@ export function IterationTabs(
             {rd.tryMap(linkedReports, (reports) => reports.entries.length)}
           </Badge>
         </TabsTrigger>
-        <TabsTrigger
-          value="generated-reports"
-          onClick={() =>
-            props.services.navigationService.navigate(
-              forIteration.generatedReports(),
-            )
-          }
-        >
-          Generated reports
-          <Badge variant="secondary" size="sm">
-            {rd.tryMap(generatedReports, (reports) => reports.length)}
-          </Badge>
-        </TabsTrigger>
+
         <TabsTrigger
           value="billings"
           onClick={() =>
