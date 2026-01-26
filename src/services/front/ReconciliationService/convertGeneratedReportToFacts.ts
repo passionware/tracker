@@ -22,7 +22,11 @@ export {
 /**
  * Formats a CalendarDate to a readable string (YYYY-MM-DD)
  */
-function formatDate(date: { year: number; month: number; day: number }): string {
+function formatDate(date: {
+  year: number;
+  month: number;
+  day: number;
+}): string {
   return `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 
@@ -291,7 +295,8 @@ export function convertGeneratedReportToFacts(
     // Create CostFact (linked to the report)
     const costUuid = uuidFactory();
     const contractorName =
-      contractorNameMap.get(group.contractorId) ?? `Contractor #${group.contractorId}`;
+      contractorNameMap.get(group.contractorId) ??
+      `Contractor #${group.contractorId}`;
     const costDescription = createCostDescription(
       project.name,
       contractorName,
@@ -311,7 +316,7 @@ export function convertGeneratedReportToFacts(
         currency: group.rate.costCurrency,
         invoiceNumber: `DRAFT-COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
         counterparty: null,
-        invoiceDate: projectIteration.periodStart,
+        invoiceDate: projectIteration.periodEnd,
         description: costDescription,
         workspaceId: contractorWorkspaceId,
       },
@@ -415,7 +420,7 @@ export function convertGeneratedReportToFacts(
         totalGross,
         clientId: project.clientId,
         invoiceNumber: `DRAFT-BILLING-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-WS${workspaceGroup.workspaceId}`,
-        invoiceDate: projectIteration.periodStart,
+        invoiceDate: projectIteration.periodEnd,
         description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,
       },
