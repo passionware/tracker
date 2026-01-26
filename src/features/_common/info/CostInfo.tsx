@@ -230,7 +230,17 @@ export function CostInfo({
                       source: link.link.costAmount ?? undefined,
                       target: link.link.reportAmount ?? undefined,
                       description: link.link.description,
-                      breakdown: link.link.breakdown,
+                      breakdown: link.link.breakdown
+                        ? {
+                            quantity: link.link.breakdown.quantity,
+                            unit: link.link.breakdown.unit,
+                            sourceUnitPrice: link.link.breakdown.costUnitPrice,
+                            targetUnitPrice: link.link.breakdown.reportUnitPrice,
+                            exchangeRate: link.link.breakdown.exchangeRate,
+                            sourceCurrency: link.link.breakdown.costCurrency,
+                            targetCurrency: link.link.breakdown.reportCurrency,
+                          }
+                        : undefined,
                     }}
                     onValueChange={(value, updates) =>
                       services.mutationService.updateCostReportLink(

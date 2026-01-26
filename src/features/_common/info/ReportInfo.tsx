@@ -294,7 +294,16 @@ export function ReportInfo({
                     source: link.link.reportAmount,
                     target: link.link.billingAmount,
                     description: link.link.description,
-                    breakdown: link.link.breakdown,
+                    breakdown: link.link.breakdown
+                      ? {
+                          quantity: link.link.breakdown.quantity,
+                          unit: link.link.breakdown.unit,
+                          sourceUnitPrice: link.link.breakdown.reportUnitPrice,
+                          targetUnitPrice: link.link.breakdown.billingUnitPrice,
+                          sourceCurrency: link.link.breakdown.reportCurrency,
+                          targetCurrency: link.link.breakdown.billingCurrency,
+                        }
+                      : undefined,
                   }}
                   onValueChange={(value, updates) =>
                     services.mutationService.updateBillingReportLink(
