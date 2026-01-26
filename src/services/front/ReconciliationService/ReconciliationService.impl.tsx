@@ -209,7 +209,7 @@ function matchCostFacts(
 }
 
 /**
- * Matches link facts and sets action (always create for links)
+ * Matches link facts and sets action (create/ignore if already exists)
  * Resolves IDs from matched facts
  */
 function matchLinkFacts(
@@ -218,8 +218,36 @@ function matchLinkFacts(
   reportFactUuidToFact: Map<string, ReportFact>,
   billingFactUuidToFact: Map<string, BillingFact>,
   costFactUuidToFact: Map<string, CostFact>,
+  existingBillings: Billing[],
+  existingCosts: Cost[],
 ): Fact[] {
   const matchedFacts: Fact[] = [];
+
+  // Build a set of existing cost-report links for quick lookup
+  const existingCostReportLinks = new Set<string>();
+  for (const cost of existingCosts) {
+    if (cost.linkReports) {
+      for (const linkEntry of cost.linkReports) {
+        if (linkEntry.report && linkEntry.link.costId !== null) {
+          const key = `${cost.id}-${linkEntry.report.id}`;
+          existingCostReportLinks.add(key);
+        }
+      }
+    }
+  }
+
+  // Build a set of existing billing-report links for quick lookup
+  const existingBillingReportLinks = new Set<string>();
+  for (const billing of existingBillings) {
+    if (billing.linkBillingReport) {
+      for (const linkEntry of billing.linkBillingReport) {
+        if (linkEntry.report && linkEntry.link.billingId !== null) {
+          const key = `${linkEntry.link.billingId}-${linkEntry.report.id}`;
+          existingBillingReportLinks.add(key);
+        }
+      }
+    }
+  }
 
   // Match cost-report links
   for (const linkFact of linkCostReportFacts) {
@@ -235,14 +263,37 @@ function matchLinkFacts(
     }
 
     if (reportFact && costFact) {
+      const costId =
+        costFact.action.type === "update" ? costFact.action.id : null;
+      const reportId =
+        reportFact.action.type === "update" ? reportFact.action.id : null;
+
+      // Check if link already exists
+      if (costId !== null && reportId !== null) {
+        const linkKey = `${costId}-${reportId}`;
+        if (existingCostReportLinks.has(linkKey)) {
+          // Link already exists - ignore
+          matchedFacts.push({
+            ...linkFact,
+            action: { type: "ignore" },
+            payload: {
+              ...linkFact.payload,
+              costId,
+              reportId,
+            },
+          });
+          continue;
+        }
+      }
+
+      // Create new link
       matchedFacts.push({
         ...linkFact,
         action: { type: "create" },
         payload: {
           ...linkFact.payload,
-          costId: costFact.action.type === "update" ? costFact.action.id : null,
-          reportId:
-            reportFact.action.type === "update" ? reportFact.action.id : null,
+          costId,
+          reportId,
         },
       });
     }
@@ -262,15 +313,37 @@ function matchLinkFacts(
     }
 
     if (reportFact && billingFact) {
+      const billingId =
+        billingFact.action.type === "update" ? billingFact.action.id : 0;
+      const reportId =
+        reportFact.action.type === "update" ? reportFact.action.id : 0;
+
+      // Check if link already exists
+      if (billingId !== 0 && reportId !== 0) {
+        const linkKey = `${billingId}-${reportId}`;
+        if (existingBillingReportLinks.has(linkKey)) {
+          // Link already exists - ignore
+          matchedFacts.push({
+            ...linkFact,
+            action: { type: "ignore" },
+            payload: {
+              ...linkFact.payload,
+              billingId,
+              reportId,
+            },
+          });
+          continue;
+        }
+      }
+
+      // Create new link
       matchedFacts.push({
         ...linkFact,
         action: { type: "create" },
         payload: {
           ...linkFact.payload,
-          billingId:
-            billingFact.action.type === "update" ? billingFact.action.id : 0,
-          reportId:
-            reportFact.action.type === "update" ? reportFact.action.id : 0,
+          billingId,
+          reportId,
         },
       });
     }
@@ -387,16 +460,26 @@ export function createReconciliationService(
       );
     });
 
-    // 2. Find billings that are linked to reports
-    //    (billings that have at least one link to any report)
-    const linkedBillings = input.billings.filter(
-      (billing) =>
-        billing.linkBillingReport && billing.linkBillingReport.length > 0,
-    );
+    // 2. Find billings that are eligible for reconciliation:
+    //    - Not linked to anything, OR
+    //    - Linked only to reports in this iteration (and not linked to any other reports)
+    const eligibleBillings = input.billings.filter((billing) => {
+      if (!billing.linkBillingReport || billing.linkBillingReport.length === 0) {
+        // Not linked to anything - eligible
+        return true;
+      }
+      // Check if all links are to reports in this iteration
+      const allLinksAreInIteration = billing.linkBillingReport.every(
+        (linkEntry) =>
+          linkEntry.report &&
+          iterationReportIds.has(linkEntry.report.id),
+      );
+      return allLinksAreInIteration;
+    });
 
     const matchedBillingFacts = matchBillingFacts(
       billingFacts,
-      linkedBillings,
+      eligibleBillings,
       input.iteration,
     );
 
@@ -429,6 +512,8 @@ export function createReconciliationService(
       reportFactUuidToFact,
       billingFactUuidToFact,
       costFactUuidToFact,
+      input.billings,
+      input.costs,
     );
 
     // Return all matched facts as a single array
