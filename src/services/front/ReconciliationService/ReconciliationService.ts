@@ -354,6 +354,7 @@ export interface ReconciliationInput {
   iteration: ProjectIteration;
   project: Project;
   contractorWorkspaceMap: Map<number, number>;
+  contractorNameMap: Map<number, string>;
 }
 
 /**

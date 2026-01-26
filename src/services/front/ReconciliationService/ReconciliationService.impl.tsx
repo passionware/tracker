@@ -408,6 +408,7 @@ export function createReconciliationService(
       input.iteration,
       input.project,
       input.contractorWorkspaceMap,
+      input.contractorNameMap,
     );
 
     // Separate facts by type
@@ -588,9 +589,15 @@ export function createReconciliationService(
         ({ reportsView, billings, costs, iteration, project, projectContractors }) => {
           // Build contractorWorkspaceMap from project contractors
           const contractorWorkspaceMap = new Map<number, number>();
+          const contractorNameMap = new Map<number, string>();
           for (const pc of projectContractors) {
             if (pc.workspaceId) {
               contractorWorkspaceMap.set(pc.contractor.id, pc.workspaceId);
+            }
+            // Build contractor name map - use fullName if available, otherwise name
+            const contractorName = pc.contractor.fullName ?? pc.contractor.name;
+            if (contractorName) {
+              contractorNameMap.set(pc.contractor.id, contractorName);
             }
           }
 
@@ -602,6 +609,7 @@ export function createReconciliationService(
             iteration,
             project,
             contractorWorkspaceMap,
+            contractorNameMap,
           };
         },
       );

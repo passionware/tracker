@@ -700,6 +700,17 @@ export function ReconciliationView(
                                 </div>
                               </div>
                             )}
+                            {(item as ReportReconciliationPreview).type === "create" &&
+                              (item as ReportReconciliationPreview).payload.description && (
+                              <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
+                                <div className="font-medium mb-1">
+                                  Description:
+                                </div>
+                                <div className="text-slate-600 whitespace-pre-wrap">
+                                  {(item as ReportReconciliationPreview).payload.description}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -783,6 +794,22 @@ export function ReconciliationView(
                                 </span>
                               </div>
                             </>
+                          )}
+                          {(item as BillingReconciliationPreview)
+                            .description && (
+                            <div className="pt-2 border-t border-slate-200">
+                              <div className="text-xs text-slate-500">
+                                <div className="font-medium mb-1">
+                                  Description:
+                                </div>
+                                <div className="text-slate-600 whitespace-pre-wrap">
+                                  {
+                                    (item as BillingReconciliationPreview)
+                                      .description
+                                  }
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
@@ -872,6 +899,22 @@ export function ReconciliationView(
                                 </div>
                               )}
                             </>
+                          )}
+                          {(item as CostReconciliationPreview)
+                            .description && (
+                            <div className="pt-2 border-t border-slate-200">
+                              <div className="text-xs text-slate-500">
+                                <div className="font-medium mb-1">
+                                  Description:
+                                </div>
+                                <div className="text-slate-600 whitespace-pre-wrap">
+                                  {
+                                    (item as CostReconciliationPreview)
+                                      .description
+                                  }
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
