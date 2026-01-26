@@ -262,11 +262,8 @@ export function ReconciliationView(
 
       if (!dryRun) {
         toast.success(`Successfully reconciled ${factsData.length} item(s)`);
-        setIsDialogOpen(false);
-        setDryRunLogs([]);
-        setProcessedFactUuids(new Set());
-        setFailedFactUuid(null);
-        setErrorMessage(null);
+        // Don't close dialog - keep it open to show completion status
+        // Don't clear logs - keep them visible to show what was completed
       }
     } catch (error) {
       if (!dryRun) {
