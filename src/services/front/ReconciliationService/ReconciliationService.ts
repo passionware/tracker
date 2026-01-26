@@ -9,6 +9,7 @@ import {
   LinkCostReport,
   LinkCostReportPayload,
 } from "@/api/link-cost-report/link-cost-report.ts";
+import { Project } from "@/api/project/project.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
 import { ReportView } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -351,11 +352,7 @@ export interface ReconciliationInput {
   billings: Billing[];
   costs: Cost[];
   iteration: ProjectIteration;
-  project: {
-    id: number;
-    clientId: number;
-    workspaceIds: number[];
-  };
+  project: Project;
   contractorWorkspaceMap: Map<number, number>;
 }
 

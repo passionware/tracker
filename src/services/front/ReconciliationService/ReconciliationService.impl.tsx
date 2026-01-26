@@ -2,7 +2,6 @@ import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { Billing } from "@/api/billing/billing.api.ts";
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Cost } from "@/api/cost/cost.api.ts";
-import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { Report } from "@/api/reports/reports.api.ts";
@@ -25,89 +24,106 @@ import {
   ReportReconciliationPreview,
   UseReconciliationViewParams,
 } from "./ReconciliationService.ts";
-import { calculateReportReconciliation } from "./calculateReportReconciliation.helper.ts";
+import { convertGeneratedReportToFacts } from "./convertGeneratedReportToFacts.ts";
+import {
+  ReportFact,
+  BillingFact,
+  CostFact,
+  LinkCostReportFact,
+  LinkBillingReportFact,
+} from "./ReconciliationService.types.ts";
 
 /**
- * Helper to extract workspaceId from a report preview
+ * Converts report facts to report reconciliation previews by matching against existing reports
  */
-function getReportPreviewWorkspaceId(
-  reportPreview: ReportReconciliationPreview,
+function convertReportFactsToPreviews(
+  reportFacts: Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>,
   existingReports: Report[],
-): number | null {
-  if (reportPreview.type === "create") {
-    return reportPreview.payload.workspaceId;
-  } else {
-    // For update type, get workspaceId from existing report
-    const existingReport = existingReports.find((r) => r.id === reportPreview.id);
-    return existingReport?.workspaceId ?? null;
-  }
-}
+): ReportReconciliationPreview[] {
+  const previews: ReportReconciliationPreview[] = [];
 
-function calculateBillingReconciliation(
-  report: GeneratedReportSource,
-  reportPreviews: ReportReconciliationPreview[],
-  existingBillings: Billing[],
-  existingReports: Report[],
-  iteration: ProjectIteration,
-): BillingReconciliationPreview[] {
-  // Group report previews by workspace and billing currency
-  // Goal: 1 billing per workspace
-  const groupedByWorkspaceCurrency = new Map<
-    string,
-    {
-      workspaceId: number;
-      billingCurrency: string;
-      totalBillingNet: number;
-      totalBillingGross: number;
-    }
-  >();
-
-  // Process report previews and group by workspace + billing currency
-  for (const reportPreview of reportPreviews) {
-    const workspaceId = getReportPreviewWorkspaceId(
-      reportPreview,
-      existingReports,
+  for (const fact of reportFacts) {
+    // Find existing report matching contractor, currency, project iteration, and unit price
+    const factUnitPrice = fact.payload.unitPrice ?? 0;
+    const existingReport = existingReports.find(
+      (r) => {
+        const rUnitPrice = r.unitPrice ?? 0;
+        return (
+          r.contractorId === fact.payload.contractorId &&
+          r.currency === fact.payload.currency &&
+          r.projectIterationId === fact.payload.projectIterationId &&
+          Math.abs(rUnitPrice - factUnitPrice) < 0.01
+        );
+      },
     );
-    if (!workspaceId) {
-      // Skip reports without workspaceId
-      continue;
-    }
 
-    const key = `${workspaceId}-${reportPreview.billingCurrency}`;
+    const quantity = fact.payload.quantity ?? 0;
+    const baseFields = {
+      contractorId: fact.payload.contractorId,
+      netValue: fact.payload.netValue,
+      unit: fact.payload.unit ?? "h",
+      quantity,
+      unitPrice: fact.payload.unitPrice ?? 0,
+      currency: fact.payload.currency,
+      billingUnitPrice: fact.billingUnitPrice,
+      billingCurrency: fact.billingCurrency,
+      rateSignature: "", // Can be enhanced later if needed
+    };
 
-    if (!groupedByWorkspaceCurrency.has(key)) {
-      groupedByWorkspaceCurrency.set(key, {
-        workspaceId: workspaceId,
-        billingCurrency: reportPreview.billingCurrency,
-        totalBillingNet: 0,
-        totalBillingGross: 0,
+    if (existingReport) {
+      // Update existing report
+      previews.push({
+        ...baseFields,
+        type: "update",
+        id: existingReport.id,
+        payload: {
+          netValue: fact.payload.netValue,
+          unit: fact.payload.unit ?? "h",
+          quantity,
+          unitPrice: fact.payload.unitPrice ?? 0,
+          currency: fact.payload.currency,
+        },
+        oldValues: {
+          netValue: existingReport.netValue,
+          unit: existingReport.unit ?? null,
+          quantity: existingReport.quantity ?? null,
+          unitPrice: existingReport.unitPrice ?? null,
+          currency: existingReport.currency,
+        },
+      });
+    } else {
+      // Create new report
+      previews.push({
+        ...baseFields,
+        type: "create",
+        payload: {
+          ...fact.payload,
+          unit: fact.payload.unit ?? "h",
+          quantity,
+          unitPrice: fact.payload.unitPrice ?? 0,
+        },
       });
     }
-
-    const group = groupedByWorkspaceCurrency.get(key)!;
-    // Calculate billing amount from report preview
-    // The report preview already has billingUnitPrice, so we can calculate billing amount
-    const billingAmount =
-      reportPreview.quantity * reportPreview.billingUnitPrice;
-    group.totalBillingNet += billingAmount;
-    group.totalBillingGross += billingAmount; // For now, gross = net (can be adjusted)
   }
 
+  return previews;
+}
+
+/**
+ * Converts billing facts to billing reconciliation previews by matching against existing billings
+ */
+function convertBillingFactsToPreviews(
+  billingFacts: BillingFact[],
+  existingBillings: Billing[],
+  iteration: ProjectIteration,
+): BillingReconciliationPreview[] {
   const previews: BillingReconciliationPreview[] = [];
 
-  // Calculate billing reconciliation for each workspace + currency group
-  for (const [, group] of groupedByWorkspaceCurrency) {
-    const totalNet = Math.round(group.totalBillingNet * 100) / 100;
-    const totalGross = Math.round(group.totalBillingGross * 100) / 100;
-
-    // Find existing billing for this workspace, currency, and period
-    // Match by workspaceId, currency, and period overlap
+  for (const fact of billingFacts) {
+    // Find existing billing matching workspace, currency, and period
     const existingBilling = existingBillings.find((b) => {
-      // Check workspace match
-      const matchesWorkspace = b.workspaceId === group.workspaceId;
-      // Check currency match
-      const matchesCurrency = b.currency === group.billingCurrency;
-      // Check period overlap (invoice date within iteration period)
+      const matchesWorkspace = b.workspaceId === fact.payload.workspaceId;
+      const matchesCurrency = b.currency === fact.payload.currency;
       const invoiceDate = new Date(
         iteration.periodStart.year,
         iteration.periodStart.month - 1,
@@ -125,35 +141,29 @@ function calculateBillingReconciliation(
       );
       const matchesPeriod =
         invoiceDate >= periodStart && invoiceDate <= periodEnd;
-
       return matchesWorkspace && matchesCurrency && matchesPeriod;
     });
 
-    // Generate invoice number if creating new
-    const invoiceNumber = existingBilling
-      ? existingBilling.invoiceNumber
-      : `INV-${iteration.periodStart.year}-${String(iteration.periodStart.month).padStart(2, "0")}-WS${group.workspaceId}`;
-
-    const baseBillingFields = {
-      workspaceId: group.workspaceId,
-      totalNet,
-      totalGross,
-      currency: group.billingCurrency,
-      invoiceNumber,
-      invoiceDate: iteration.periodStart, // Use period start as invoice date
-      description: `Generated from report #${report.id}`,
+    const baseFields = {
+      workspaceId: fact.payload.workspaceId,
+      totalNet: fact.payload.totalNet,
+      totalGross: fact.payload.totalGross,
+      currency: fact.payload.currency,
+      invoiceNumber: fact.payload.invoiceNumber,
+      invoiceDate: fact.payload.invoiceDate,
+      description: fact.payload.description,
     };
 
     if (existingBilling) {
       // Update existing billing
       previews.push({
-        ...baseBillingFields,
+        ...baseFields,
         type: "update",
         id: existingBilling.id,
         payload: {
-          totalNet,
-          totalGross,
-          currency: group.billingCurrency,
+          totalNet: fact.payload.totalNet,
+          totalGross: fact.payload.totalGross,
+          currency: fact.payload.currency,
         },
         oldValues: {
           totalNet: existingBilling.totalNet,
@@ -164,10 +174,10 @@ function calculateBillingReconciliation(
     } else {
       // Create new billing
       previews.push({
-        ...baseBillingFields,
+        ...baseFields,
         type: "create",
         payload: {
-          ...baseBillingFields,
+          ...fact.payload,
           clientId: 0, // Will be filled in during execution
         },
       });
@@ -177,70 +187,22 @@ function calculateBillingReconciliation(
   return previews;
 }
 
-function calculateCostReconciliation(
-  report: GeneratedReportSource,
-  reportPreviews: ReportReconciliationPreview[],
+/**
+ * Converts cost facts to cost reconciliation previews by matching against existing costs
+ */
+function convertCostFactsToPreviews(
+  costFacts: CostFact[],
   existingCosts: Cost[],
-  existingReports: Report[],
   iteration: ProjectIteration,
 ): CostReconciliationPreview[] {
-  // Goal: 1 cost per contractor
-  // Group report previews by contractor
-  const groupedByContractor = new Map<
-    number,
-    {
-      contractorId: number;
-      workspaceId: number | null; // Workspace for this contractor
-      reports: ReportReconciliationPreview[];
-      totalCostNet: number;
-      totalCostGross: number;
-      primaryCurrency: string; // Use the most common currency or first encountered
-    }
-  >();
-
-  // Process report previews and group by contractor
-  for (const reportPreview of reportPreviews) {
-    const workspaceId = getReportPreviewWorkspaceId(
-      reportPreview,
-      existingReports,
-    );
-
-    if (!groupedByContractor.has(reportPreview.contractorId)) {
-      groupedByContractor.set(reportPreview.contractorId, {
-        contractorId: reportPreview.contractorId,
-        workspaceId,
-        reports: [],
-        totalCostNet: 0,
-        totalCostGross: 0,
-        primaryCurrency: reportPreview.currency, // Use first currency as primary
-      });
-    }
-
-    const group = groupedByContractor.get(reportPreview.contractorId)!;
-    group.reports.push(reportPreview);
-    // Update workspaceId if not set (use first encountered)
-    if (!group.workspaceId && workspaceId) {
-      group.workspaceId = workspaceId;
-    }
-    // Sum up cost amounts (netValue is the cost amount for the report)
-    group.totalCostNet += reportPreview.netValue;
-    group.totalCostGross += reportPreview.netValue; // For now, gross = net
-  }
-
   const previews: CostReconciliationPreview[] = [];
 
-  // Calculate cost reconciliation for each contractor
-  for (const [, group] of groupedByContractor) {
-    const netValue = Math.round(group.totalCostNet * 100) / 100;
-    const grossValue = Math.round(group.totalCostGross * 100) / 100;
-
-    // Find existing cost for this contractor and period
-    // Match by contractor and period overlap (no currency requirement for matching)
+  for (const fact of costFacts) {
+    // Find existing cost matching contractor and period
     const existingCost = existingCosts.find((c) => {
-      // Check contractor match
       const matchesContractor =
-        c.contractor?.id === group.contractorId || c.contractor === null;
-      // Check period overlap (invoice date within iteration period)
+        c.contractor?.id === fact.payload.contractorId ||
+        (c.contractor === null && fact.payload.contractorId === null);
       const invoiceDate = new Date(
         iteration.periodStart.year,
         iteration.periodStart.month - 1,
@@ -258,36 +220,31 @@ function calculateCostReconciliation(
       );
       const matchesPeriod =
         invoiceDate >= periodStart && invoiceDate <= periodEnd;
-
       return matchesContractor && matchesPeriod;
     });
 
-    // Generate invoice number if creating new
-    const invoiceNumber: string | null = existingCost
-      ? maybe.mapOrNull(existingCost.invoiceNumber, (inv) => inv)
-      : `COST-${iteration.periodStart.year}-${String(iteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`;
-
-    const baseCostFields = {
-      contractorId: group.contractorId,
-      netValue,
-      grossValue,
-      currency: group.primaryCurrency, // Use primary currency (first encountered)
-      invoiceNumber,
-      counterparty: null, // Can be filled in later
-      invoiceDate: iteration.periodStart, // Use period start as invoice date
-      description: `Generated from report #${report.id}`,
+    const contractorId = fact.payload.contractorId ?? null;
+    const baseFields = {
+      contractorId,
+      netValue: fact.payload.netValue,
+      grossValue: fact.payload.grossValue ?? null,
+      currency: fact.payload.currency,
+      invoiceNumber: fact.payload.invoiceNumber ?? null,
+      counterparty: fact.payload.counterparty ?? null,
+      invoiceDate: fact.payload.invoiceDate,
+      description: fact.payload.description ?? null,
     };
 
     if (existingCost) {
       // Update existing cost
       previews.push({
-        ...baseCostFields,
+        ...baseFields,
         type: "update",
         id: existingCost.id,
         payload: {
-          netValue,
-          grossValue,
-          currency: group.primaryCurrency,
+          netValue: fact.payload.netValue,
+          grossValue: fact.payload.grossValue ?? null,
+          currency: fact.payload.currency,
         },
         oldValues: {
           netValue: existingCost.netValue,
@@ -296,24 +253,17 @@ function calculateCostReconciliation(
         },
       });
     } else {
-      // Create new cost - use workspaceId from contractor's reports
-      if (!group.workspaceId) {
-        // Skip if no workspaceId found
-        continue;
+      // Create new cost
+      if (!fact.payload.workspaceId) {
+        continue; // Skip if no workspaceId
       }
-
       previews.push({
-        ...baseCostFields,
+        ...baseFields,
         type: "create",
         payload: {
-          ...baseCostFields,
-          contractorId: group.contractorId
-            ? maybe.of(group.contractorId)
-            : maybe.ofAbsent(),
-          invoiceNumber: invoiceNumber,
-          counterparty: null,
-          description: `Generated from report #${report.id}`,
-          workspaceId: group.workspaceId,
+          ...fact.payload,
+          contractorId: contractorId !== null ? maybe.of(contractorId) : maybe.ofAbsent(),
+          workspaceId: fact.payload.workspaceId,
         },
       });
     }
@@ -322,146 +272,115 @@ function calculateCostReconciliation(
   return previews;
 }
 
-function calculateReportBillingLinks(
-  reportPreviews: ReportReconciliationPreview[],
-  billingPreviews: BillingReconciliationPreview[],
-  existingReports: Report[],
-): ReportBillingLinkPreview[] {
-  const links: ReportBillingLinkPreview[] = [];
+/**
+ * Converts link facts to link previews, matching report/billing/cost IDs from previews
+ * Uses UUID mappings to match facts to their corresponding previews
+ */
+function convertLinkFactsToPreviews(
+  linkCostReportFacts: LinkCostReportFact[],
+  linkBillingReportFacts: LinkBillingReportFact[],
+  reportFactUuidToPreview: Map<string, ReportReconciliationPreview>,
+  billingFactUuidToPreview: Map<string, BillingReconciliationPreview>,
+  costFactUuidToPreview: Map<string, CostReconciliationPreview>,
+  reportFacts: Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>,
+  billingFacts: BillingFact[],
+  costFacts: CostFact[],
+): {
+  reportCostLinks: ReportCostLinkPreview[];
+  reportBillingLinks: ReportBillingLinkPreview[];
+} {
+  const reportCostLinks: ReportCostLinkPreview[] = [];
+  const reportBillingLinks: ReportBillingLinkPreview[] = [];
 
-  // Goal: Link all reports from one workspace to the same billing
-  // For each billing preview (which is per workspace + currency), link all matching reports
-  for (const billingPreview of billingPreviews) {
-    // Find all reports that match this billing's workspace and currency
-    const matchingReports = reportPreviews.filter((r) => {
-      const reportWorkspaceId = getReportPreviewWorkspaceId(
-        r,
-        existingReports,
-      );
-      return (
-        reportWorkspaceId === billingPreview.workspaceId &&
-        r.billingCurrency === billingPreview.currency
-      );
-    });
-
-    // Link all matching reports to this billing
-    for (const reportPreview of matchingReports) {
-      // Calculate billing unit price from report's billing unit price
-      const billingUnitPrice = reportPreview.billingUnitPrice;
-
-      // Calculate the billing amount for this specific report
-      const reportBillingAmount = reportPreview.quantity * billingUnitPrice;
-
-      const reportWorkspaceId = getReportPreviewWorkspaceId(
-        reportPreview,
-        existingReports,
-      );
-      links.push({
-        type: "create",
-        reportId: reportPreview.type === "update" ? reportPreview.id : 0,
-        billingId: billingPreview.type === "update" ? billingPreview.id : 0,
-        reportAmount: reportPreview.netValue,
-        billingAmount: reportBillingAmount,
-        description: `Link between report and billing for workspace ${reportWorkspaceId ?? "unknown"}`,
-        breakdown: {
-          quantity: reportPreview.quantity,
-          unit: reportPreview.unit,
-          reportUnitPrice: reportPreview.unitPrice,
-          billingUnitPrice: billingUnitPrice,
-          reportCurrency: reportPreview.currency,
-          billingCurrency: billingPreview.currency,
-        },
-        payload: {
-          linkType: "reconcile",
-          billingId: billingPreview.type === "update" ? billingPreview.id : 0,
-          reportId: reportPreview.type === "update" ? reportPreview.id : 0,
-          reportAmount: reportPreview.netValue,
-          billingAmount: reportBillingAmount,
-          description: `Link between report and billing for workspace ${reportWorkspaceId ?? "unknown"}`,
-          breakdown: {
-            quantity: reportPreview.quantity,
-            unit: reportPreview.unit,
-            reportUnitPrice: reportPreview.unitPrice,
-            billingUnitPrice: billingUnitPrice,
-            reportCurrency: reportPreview.currency,
-            billingCurrency: billingPreview.currency,
-          },
-        },
-      });
-    }
+  // Create maps from fact to their related facts for link matching
+  // LinkCostReportFact links a cost to a report - we need to find which cost and report facts match
+  // Since link facts are created right after cost/report facts, we match by contractor and amounts
+  
+  // Build a map: reportFact UUID -> costFact UUID (via constraints.linkedToReport)
+  const reportUuidToCostUuid = new Map<string, string>();
+  for (const costFact of costFacts) {
+    reportUuidToCostUuid.set(costFact.constraints.linkedToReport, costFact.uuid);
   }
 
-  return links;
-}
-
-function calculateReportCostLinks(
-  reportPreviews: ReportReconciliationPreview[],
-  costPreviews: CostReconciliationPreview[],
-): ReportCostLinkPreview[] {
-  const links: ReportCostLinkPreview[] = [];
-
-  // Goal: Link all reports from a contractor to that contractor's cost
-  // For each cost preview (which is per contractor), link all reports from that contractor
-  for (const costPreview of costPreviews) {
-    if (costPreview.contractorId === null) {
-      continue; // Skip costs without contractor
-    }
-
-    // Find all reports for the same contractor
-    const matchingReports = reportPreviews.filter(
-      (r) => r.contractorId === costPreview.contractorId,
+  // Convert cost-report links
+  for (const linkFact of linkCostReportFacts) {
+    // Match link fact to report fact by matching amounts and contractor
+    // The link fact was created for a specific report fact, so we match by amount
+    const matchingReportFact = reportFacts.find(
+      (rf) =>
+        Math.abs(rf.payload.netValue - linkFact.payload.reportAmount) < 0.01 &&
+        Math.abs(rf.payload.netValue - linkFact.payload.costAmount) < 0.01,
     );
 
-    // Link all reports from this contractor to the contractor's cost
-    for (const reportPreview of matchingReports) {
-      // Calculate exchange rate if currencies differ
-      const exchangeRate =
-        reportPreview.currency === costPreview.currency ? 1 : 1; // TODO: Fetch actual exchange rate
+    if (!matchingReportFact) continue;
 
-      // Calculate cost amount for this specific report
-      // The cost is the sum of all reports, so we use the report's netValue as the cost amount for this link
-      const reportCostAmount = reportPreview.netValue;
+    const reportPreview = reportFactUuidToPreview.get(matchingReportFact.uuid);
+    const costUuid = reportUuidToCostUuid.get(matchingReportFact.uuid);
+    const costPreview = costUuid ? costFactUuidToPreview.get(costUuid) : undefined;
 
-      // Calculate cost unit price from report's unit price (since cost is per report)
-      const costUnitPrice = reportPreview.unitPrice;
-
-      links.push({
+    if (reportPreview && costPreview) {
+      reportCostLinks.push({
         type: "create",
         reportId: reportPreview.type === "update" ? reportPreview.id : 0,
         costId: costPreview.type === "update" ? costPreview.id : 0,
-        reportAmount: reportPreview.netValue,
-        costAmount: reportCostAmount, // Cost amount for this specific report
-        description: `Link between report and cost for contractor ${reportPreview.contractorId}`,
-        breakdown: {
-          quantity: reportPreview.quantity,
-          unit: reportPreview.unit,
-          reportUnitPrice: reportPreview.unitPrice,
-          costUnitPrice: costUnitPrice,
-          exchangeRate: exchangeRate,
-          reportCurrency: reportPreview.currency,
-          costCurrency: costPreview.currency,
-        },
+        reportAmount: linkFact.payload.reportAmount,
+        costAmount: linkFact.payload.costAmount,
+        description: linkFact.payload.description,
+        breakdown: linkFact.payload.breakdown,
         payload: {
+          ...linkFact.payload,
           costId: costPreview.type === "update" ? costPreview.id : null,
           reportId: reportPreview.type === "update" ? reportPreview.id : null,
-          costAmount: reportCostAmount,
-          reportAmount: reportPreview.netValue,
-          description: `Link between report and cost for contractor ${reportPreview.contractorId}`,
-          breakdown: {
-            quantity: reportPreview.quantity,
-            unit: reportPreview.unit,
-            reportUnitPrice: reportPreview.unitPrice,
-            costUnitPrice: costUnitPrice,
-            exchangeRate: exchangeRate,
-            reportCurrency: reportPreview.currency,
-            costCurrency: costPreview.currency,
-          },
         },
       });
     }
   }
 
-  return links;
+  // Build a map: billingFact UUID -> reportFact UUIDs (via constraints.linkedToReport)
+  // Actually, billing facts link to a report via constraints.linkedToReport, but multiple reports can link to one billing
+  // We need to match link facts by finding which report fact matches the link fact's reportAmount
+  
+  // Convert billing-report links
+  for (const linkFact of linkBillingReportFacts) {
+    // Match link fact to report fact by matching amounts
+    const matchingReportFact = reportFacts.find(
+      (rf) =>
+        Math.abs(rf.billingAmount - linkFact.payload.billingAmount) < 0.01 &&
+        Math.abs(rf.payload.netValue - linkFact.payload.reportAmount) < 0.01,
+    );
+
+    if (!matchingReportFact) continue;
+
+    const reportPreview = reportFactUuidToPreview.get(matchingReportFact.uuid);
+    
+    // Find billing preview by matching the billing fact that links to this report
+    // The billing fact's constraints.linkedToReport should match the report fact UUID
+    const matchingBillingFact = billingFacts.find(
+      (bf) => bf.constraints.linkedToReport === matchingReportFact.uuid,
+    );
+    const billingPreview = matchingBillingFact
+      ? billingFactUuidToPreview.get(matchingBillingFact.uuid)
+      : undefined;
+
+    if (reportPreview && billingPreview) {
+      reportBillingLinks.push({
+        type: "create",
+        reportId: reportPreview.type === "update" ? reportPreview.id : 0,
+        billingId: billingPreview.type === "update" ? billingPreview.id : 0,
+        reportAmount: linkFact.payload.reportAmount,
+        billingAmount: linkFact.payload.billingAmount,
+        description: linkFact.payload.description,
+        breakdown: linkFact.payload.breakdown,
+        payload: {
+          ...linkFact.payload,
+          billingId: billingPreview.type === "update" ? billingPreview.id : 0,
+          reportId: reportPreview.type === "update" ? reportPreview.id : 0,
+        },
+      });
+    }
+  }
+
+  return { reportCostLinks, reportBillingLinks };
 }
 
 export function createReconciliationService(
@@ -483,11 +402,36 @@ export function createReconciliationService(
       (e) => e.originalReport,
     );
 
-    const reportPreviews = calculateReportReconciliation(
+    // Step 1: Generate facts from the generated report
+    const facts = convertGeneratedReportToFacts(
       input.report,
       input.iteration,
-      existingReports,
+      input.project,
       input.contractorWorkspaceMap,
+    );
+
+    // Separate facts by type
+    const reportFacts = facts.filter(
+      (f): f is ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number } =>
+        f.type === "report",
+    ) as Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>;
+    const billingFacts = facts.filter(
+      (f): f is BillingFact => f.type === "billing",
+    );
+    const costFacts = facts.filter(
+      (f): f is CostFact => f.type === "cost",
+    );
+    const linkCostReportFacts = facts.filter(
+      (f): f is LinkCostReportFact => f.type === "linkCostReport",
+    );
+    const linkBillingReportFacts = facts.filter(
+      (f): f is LinkBillingReportFact => f.type === "linkBillingReport",
+    );
+
+    // Step 2: Convert facts to previews by matching against existing entities
+    const reportPreviews = convertReportFactsToPreviews(
+      reportFacts,
+      existingReports,
     );
 
     // Reconciliation rules:
@@ -505,42 +449,78 @@ export function createReconciliationService(
       );
     });
 
-    // 2. Find cost-report links that are pointing to reports that are subject of the process
-    //    (This is already handled by filtering costs above - only costs with links to iteration reports are included)
-
-    // 3. Find billings that are linked to reports
+    // 2. Find billings that are linked to reports
     //    (billings that have at least one link to any report)
     const linkedBillings = input.billings.filter(
       (billing) =>
         billing.linkBillingReport && billing.linkBillingReport.length > 0,
     );
 
-    const billingPreviews = calculateBillingReconciliation(
-      input.report,
-      reportPreviews,
+    const billingPreviews = convertBillingFactsToPreviews(
+      billingFacts,
       linkedBillings,
-      existingReports,
       input.iteration,
     );
 
-    const costPreviews = calculateCostReconciliation(
-      input.report,
-      reportPreviews,
+    const costPreviews = convertCostFactsToPreviews(
+      costFacts,
       linkedCosts,
-      existingReports,
       input.iteration,
     );
 
-    const reportBillingLinks = calculateReportBillingLinks(
-      reportPreviews,
-      billingPreviews,
-      existingReports,
-    );
+    // Step 3: Create UUID mappings for link conversion by matching facts to previews
+    const reportFactUuidToPreview = new Map<string, ReportReconciliationPreview>();
+    for (const fact of reportFacts) {
+      const matchingPreview = reportPreviews.find(
+        (preview) =>
+          preview.contractorId === fact.payload.contractorId &&
+          Math.abs(preview.netValue - fact.payload.netValue) < 0.01 &&
+          preview.quantity === fact.payload.quantity &&
+          preview.unitPrice === fact.payload.unitPrice,
+      );
+      if (matchingPreview) {
+        reportFactUuidToPreview.set(fact.uuid, matchingPreview);
+      }
+    }
 
-    const reportCostLinks = calculateReportCostLinks(
-      reportPreviews,
-      costPreviews,
-    );
+    const billingFactUuidToPreview = new Map<string, BillingReconciliationPreview>();
+    for (const fact of billingFacts) {
+      const matchingPreview = billingPreviews.find(
+        (preview) =>
+          preview.workspaceId === fact.payload.workspaceId &&
+          preview.currency === fact.payload.currency &&
+          Math.abs(preview.totalNet - fact.payload.totalNet) < 0.01,
+      );
+      if (matchingPreview) {
+        billingFactUuidToPreview.set(fact.uuid, matchingPreview);
+      }
+    }
+
+    const costFactUuidToPreview = new Map<string, CostReconciliationPreview>();
+    for (const fact of costFacts) {
+      const matchingPreview = costPreviews.find(
+        (preview) =>
+          preview.contractorId === fact.payload.contractorId &&
+          Math.abs(preview.netValue - fact.payload.netValue) < 0.01 &&
+          preview.currency === fact.payload.currency,
+      );
+      if (matchingPreview) {
+        costFactUuidToPreview.set(fact.uuid, matchingPreview);
+      }
+    }
+
+    // Step 4: Convert link facts to link previews
+    const { reportCostLinks, reportBillingLinks } =
+      convertLinkFactsToPreviews(
+        linkCostReportFacts,
+        linkBillingReportFacts,
+        reportFactUuidToPreview,
+        billingFactUuidToPreview,
+        costFactUuidToPreview,
+        reportFacts,
+        billingFacts,
+        costFacts,
+      );
 
     return {
       reports: reportPreviews,
@@ -620,11 +600,7 @@ export function createReconciliationService(
             billings,
             costs,
             iteration,
-            project: {
-              id: project.id,
-              clientId: project.clientId,
-              workspaceIds: project.workspaceIds,
-            },
+            project,
             contractorWorkspaceMap,
           };
         },
