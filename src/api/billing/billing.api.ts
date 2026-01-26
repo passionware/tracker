@@ -34,6 +34,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { CalendarDate } from "@internationalized/date";
+import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
 import { z } from "zod";
 
@@ -229,4 +230,5 @@ export const billingQuerySchema = z
 
 export interface BillingApi {
   getBillings: (query: BillingQuery) => Promise<Billing[]>;
+  getBilling: (id: Maybe<Billing["id"]>) => Promise<Billing>;
 }

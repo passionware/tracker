@@ -4,6 +4,8 @@ import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase
 import {
   project$,
   projectFromHttp,
+  projectContractor$,
+  projectContractorFromHttp,
 } from "@/api/project/project.api.http.schema.ts";
 import { ProjectApi } from "@/api/project/project.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
@@ -83,6 +85,33 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
       }
 
       return projectFromHttp(parseWithDataError(project$, data[0]));
+    },
+    getProjectContractors: async (projectId) => {
+      // Query link_contractor_project with contractor and workspace data
+      const { data, error } = await client
+        .from("link_contractor_project")
+        .select(
+          `
+          contractor_id,
+          workspace_id,
+          contractor:contractor_id (
+            id,
+            name,
+            full_name,
+            created_at,
+            user_id
+          )
+        `,
+        )
+        .eq("project_id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return parseWithDataError(z.array(projectContractor$), data).map(
+        projectContractorFromHttp,
+      );
     },
   };
 }

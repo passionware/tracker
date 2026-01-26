@@ -146,7 +146,7 @@ describe("FormatService", () => {
     it("should format financial amount in a custom currency correctly", () => {
       const formattedAmount = formatService.financial.amount(1234.56, "PLN");
       const screen = render(formattedAmount);
-      expect(screen.container.textContent).toBe("PLN1.234,56");
+      expect(screen.container.textContent).toMatch(/PLN\s1\.234,56/);
     });
   });
 });

@@ -15,7 +15,6 @@ export interface TMetricAdapterInput {
   entries: TMetricTimeEntry[];
   contractorId: Contractor["id"];
   defaultRoleId: string; // simple single role mapping for now
-  currency: string;
   idMaps?: Record<string, SharedIdMap>; // Optional shared ID maps per field (e.g., "activity", "task", "project")
 }
 

@@ -1,8 +1,9 @@
 import { Billing, BillingQuery } from "@/api/billing/billing.api.ts";
-import { RemoteData } from "@passionware/monads";
+import { Maybe, RemoteData } from "@passionware/monads";
 
 export interface BillingService {
-  useBillings(query: BillingQuery): RemoteData<Billing[]>;
+  useBillings(query: Maybe<BillingQuery>): RemoteData<Billing[]>;
+  useBilling(id: Maybe<Billing["id"]>): RemoteData<Billing>;
 }
 
 export interface WithBillingService {

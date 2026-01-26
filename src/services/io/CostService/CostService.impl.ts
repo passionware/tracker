@@ -18,12 +18,16 @@ export function createCostService(
   });
   return {
     useCosts: (query) =>
-      useQuery(
-        {
-          queryKey: ["cost", "list", query],
-          queryFn: () => api.getCosts(query),
-        },
-        queryClient,
+      ensureIdleQuery(
+        query,
+        useQuery(
+          {
+            enabled: maybe.isPresent(query),
+            queryKey: ["cost", "list", query],
+            queryFn: () => api.getCosts(query!),
+          },
+          queryClient,
+        ),
       ),
     useCost: (id) =>
       ensureIdleQuery(

@@ -72,6 +72,16 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    bulkDeleteCostReport: async (reportIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteCostReport(reportIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting cost reports",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
     deleteBilling: async (billingId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteBilling(billingId);
@@ -190,8 +200,8 @@ export function createMutationService(
         scope: "Deleting project iteration",
       });
     },
-    addContractorToProject: async (projectId, contractorId) => {
-      await api.addContractorToProject(projectId, contractorId);
+    addContractorToProject: async (projectId, contractorId, workspaceId) => {
+      await api.addContractorToProject(projectId, contractorId, workspaceId);
       await config.services.messageService.reportSystemEffect.sendRequest({
         scope: "Adding contractor to project",
       });
@@ -200,6 +210,20 @@ export function createMutationService(
       await api.unassignContractorFromProject(projectId, contractorId);
       await config.services.messageService.reportSystemEffect.sendRequest({
         scope: "Unassigning contractor from project",
+      });
+    },
+    updateContractorWorkspaceForProject: async (
+      projectId,
+      contractorId,
+      workspaceId,
+    ) => {
+      await api.updateContractorWorkspaceForProject(
+        projectId,
+        contractorId,
+        workspaceId,
+      );
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating contractor workspace for project",
       });
     },
   };

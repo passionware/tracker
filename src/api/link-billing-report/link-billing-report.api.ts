@@ -8,18 +8,18 @@ export interface LinkBillingBreakdown {
   billingCurrency: string; // billing currency snapshot for audit
 }
 
-export type LinkBillingReportPayload =
-  | {
-      linkType: "reconcile";
-      billingId: number;
-      reportId: number;
-      reportAmount: number; // Primary field - amount from report
-      billingAmount: number; // Primary field - amount from billing
-      description: string;
+export type ReconcileLinkBillingReportPayload = {
+  linkType: "reconcile";
+  billingId: number;
+  reportId: number;
+  reportAmount: number; // Primary field - amount from report
+  billingAmount: number; // Primary field - amount from billing
+  description: string;
+  breakdown?: LinkBillingBreakdown;
+};
 
-      // Enhanced linking breakdown (optional, all-or-nothing)
-      breakdown?: LinkBillingBreakdown;
-    }
+export type LinkBillingReportPayload =
+  | ReconcileLinkBillingReportPayload
   | {
       linkType: "clarify"; // todo we want clarify-report and clarify-billing
       description: string;

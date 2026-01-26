@@ -46,6 +46,7 @@ import {
 } from "recharts";
 import { GeneratedReportTabs } from "./GeneratedReportHeader";
 import { TimeEntriesView } from "./TimeEntriesView";
+import { ReconciliationView } from "./ReconciliationView";
 
 function BudgetPieChart(
   services: WithFrontServices["services"],
@@ -1106,6 +1107,16 @@ export function GeneratedReportDetail(
             <Route
               path="time-entries"
               element={<TimeEntriesView report={report} {...props} />}
+            />
+            <Route
+              path="reconciliation"
+              element={
+                <ReconciliationView
+                  report={report}
+                  iteration={iteration}
+                  {...props}
+                />
+              }
             />
           </Routes>
         ))}

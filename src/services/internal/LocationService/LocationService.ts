@@ -25,7 +25,7 @@ export interface LocationService {
     "positions" | "reports" | "billings" | "events" | "generated-reports"
   >;
   useCurrentGeneratedReportTab: () => Maybe<
-    "basic" | "time-entries" | "grouped-view"
+    "basic" | "time-entries" | "grouped-view" | "reconciliation"
   >;
   // maybe - we can be in the route which neither specific client nor all clients
   getCurrentClientId: () => Maybe<ClientSpec>;

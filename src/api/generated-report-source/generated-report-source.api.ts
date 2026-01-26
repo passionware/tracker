@@ -49,7 +49,7 @@ export const generatedReportSourceQueryUtils = withBuilderUtils({
       projectIterationId: null,
     },
     page: paginationUtils.ofDefault(),
-    sort: null,
+    sort: { field: "createdAt", order: "desc" },
   }),
 }).setInitialQueryFactory((x) => x.ofDefault);
 

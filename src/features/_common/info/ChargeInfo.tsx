@@ -44,7 +44,8 @@ import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { addDays, startOfDay } from "date-fns";
-import { chain, isUndefined, omitBy, sortBy } from "lodash";
+import { chain, sortBy } from "lodash";
+import { mapKeys } from "@passionware/platform-ts";
 import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
 
@@ -164,6 +165,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                           sourceLabel="Billing value"
                           targetLabel="Report value"
                           targetCurrency={report.remainingAmount.currency}
+                          showBreakdown={true}
                           initialValues={{
                             // billing
                             source: isSameCurrency
@@ -197,6 +199,20 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                                 reportId: report.id,
                                 reportAmount: value.target,
                                 description: value.description,
+                                breakdown: value.breakdown
+                                  ? {
+                                      quantity: value.breakdown.quantity ?? 0,
+                                      unit: value.breakdown.unit ?? "",
+                                      billingUnitPrice:
+                                        value.breakdown.sourceUnitPrice ?? 0,
+                                      reportUnitPrice:
+                                        value.breakdown.targetUnitPrice ?? 0,
+                                      billingCurrency:
+                                        value.breakdown.sourceCurrency ?? "",
+                                      reportCurrency:
+                                        value.breakdown.targetCurrency ?? "",
+                                    }
+                                  : undefined,
                               }),
                             )
                           }
@@ -284,22 +300,45 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                       sourceCurrency={billing.netAmount.currency}
                       targetCurrency={link.report.currency}
                       title="Update linked report"
+                      showBreakdown={true}
                       initialValues={{
                         source: link.link.billingAmount ?? undefined,
                         target: link.link.reportAmount ?? undefined,
                         description: link.link.description,
+                        breakdown: link.link.breakdown
+                          ? {
+                              quantity: link.link.breakdown.quantity,
+                              unit: link.link.breakdown.unit,
+                              sourceUnitPrice: link.link.breakdown.billingUnitPrice,
+                              targetUnitPrice: link.link.breakdown.reportUnitPrice,
+                              sourceCurrency: link.link.breakdown.billingCurrency,
+                              targetCurrency: link.link.breakdown.reportCurrency,
+                            }
+                          : undefined,
                       }}
-                      onValueChange={(_all, { source, target, ...values }) =>
+                      onValueChange={(value, updates) =>
                         services.mutationService.updateBillingReportLink(
                           link.link.id,
-                          omitBy(
-                            {
-                              billingAmount: source,
-                              reportAmount: target,
-                              ...values,
-                            },
-                            isUndefined,
-                          ),
+                          {
+                            ...mapKeys(updates, {
+                              source: "billingAmount",
+                              target: "reportAmount",
+                            }),
+                            breakdown: value.breakdown
+                              ? {
+                                  quantity: value.breakdown.quantity ?? 0,
+                                  unit: value.breakdown.unit ?? "",
+                                  billingUnitPrice:
+                                    value.breakdown.sourceUnitPrice ?? 0,
+                                  reportUnitPrice:
+                                    value.breakdown.targetUnitPrice ?? 0,
+                                  billingCurrency:
+                                    value.breakdown.sourceCurrency ?? "",
+                                  reportCurrency:
+                                    value.breakdown.targetCurrency ?? "",
+                                }
+                              : undefined,
+                          },
                         )
                       }
                     >

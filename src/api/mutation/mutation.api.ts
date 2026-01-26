@@ -27,6 +27,7 @@ export interface MutationApi {
   deleteBillingReportLink: (linkId: number) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
   deleteCostReport: (reportId: number) => Promise<void>;
+  bulkDeleteCostReport: (reportIds: number[]) => Promise<void>;
   deleteBilling: (billingId: number) => Promise<void>;
   deleteCost: (costId: number) => Promise<void>;
   deleteProject: (projectId: number) => Promise<void>;
@@ -69,9 +70,15 @@ export interface MutationApi {
   addContractorToProject: (
     projectId: number,
     contractorId: number,
+    workspaceId: number,
   ) => Promise<void>;
   unassignContractorFromProject: (
     projectId: number,
     contractorId: number,
+  ) => Promise<void>;
+  updateContractorWorkspaceForProject: (
+    projectId: number,
+    contractorId: number,
+    workspaceId: number,
   ) => Promise<void>;
 }

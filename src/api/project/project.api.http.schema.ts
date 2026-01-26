@@ -1,4 +1,4 @@
-import { Project } from "@/api/project/project.api.ts";
+import { Project, ProjectContractor } from "@/api/project/project.api.ts";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
 
@@ -31,5 +31,37 @@ export function projectFromHttp({
   return {
     ...camelData,
     workspaceIds,
+  };
+}
+
+const projectContractorContractor$ = z.object({
+  id: z.number(),
+  name: z.string(),
+  full_name: z.string(),
+  created_at: z.coerce.date(),
+  user_id: z.string().nullable(),
+});
+
+export const projectContractor$ = z.object({
+  contractor_id: z.number(),
+  workspace_id: z.number(),
+  contractor: projectContractorContractor$,
+});
+
+export type ProjectContractor$ = z.infer<typeof projectContractor$>;
+
+export function projectContractorFromHttp(
+  row: ProjectContractor$,
+): ProjectContractor {
+  const contractor = camelcaseKeys(row.contractor);
+  return {
+    contractor: {
+      id: contractor.id,
+      name: contractor.name,
+      fullName: contractor.fullName,
+      createdAt: contractor.createdAt,
+      projectIds: [], // Not needed for this use case
+    },
+    workspaceId: row.workspace_id,
   };
 }

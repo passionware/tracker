@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
+import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import {
   InfoLayout,
   InfoPopoverContent,
@@ -18,6 +19,7 @@ import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { assert } from "@/platform/lang/assert.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -33,6 +35,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Check, Link2, Loader2, Shuffle } from "lucide-react";
 import { ReactElement } from "react";
@@ -145,12 +148,95 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
         columns={[
           columnHelper.accessor("cost", {
             header: "Type",
-            cell: (info) =>
-              info.row.original.cost ? (
-                <Badge variant="positive">Cost</Badge>
-              ) : (
-                <Badge variant="secondary">Clarification</Badge>
-              ),
+            cell: (info) => {
+              const link = info.row.original;
+              if (!link.cost) {
+                return (
+                  <Badge variant="warning" size="sm">
+                    Clarification
+                  </Badge>
+                );
+              }
+              assert(link.link.costId, "cost is missing");
+              assert(link.link.reportId, "report is missing");
+              return (
+                <LinkPopover
+                  context={{
+                    contractorId: report.contractor.id,
+                    workspaceId: report.workspace.id,
+                    clientId: idSpecUtils.ofAll(),
+                  }}
+                  services={services}
+                  sourceLabel="Report amount"
+                  targetLabel="Cost amount"
+                  sourceCurrency={report.netAmount.currency}
+                  targetCurrency={link.cost.currency}
+                  title="Update linked cost"
+                  showBreakdown={true}
+                  initialValues={{
+                    source: link.link.reportAmount,
+                    target: link.link.costAmount,
+                    description: link.link.description,
+                    breakdown: link.link.breakdown
+                      ? {
+                          quantity: link.link.breakdown.quantity,
+                          unit: link.link.breakdown.unit,
+                          sourceUnitPrice: link.link.breakdown.reportUnitPrice,
+                          targetUnitPrice: link.link.breakdown.costUnitPrice,
+                          exchangeRate: link.link.breakdown.exchangeRate,
+                          sourceCurrency: link.link.breakdown.reportCurrency,
+                          targetCurrency: link.link.breakdown.costCurrency,
+                        }
+                      : undefined,
+                  }}
+                  onValueChange={(value, updates) =>
+                    services.mutationService.updateCostReportLink(
+                      link.link.id,
+                      {
+                        ...mapKeys(updates, {
+                          source: "reportAmount",
+                          target: "costAmount",
+                        }),
+                        breakdown: value.breakdown
+                          ? {
+                              quantity: value.breakdown.quantity ?? 0,
+                              unit: value.breakdown.unit ?? "",
+                              reportUnitPrice:
+                                value.breakdown.sourceUnitPrice ?? 0,
+                              costUnitPrice:
+                                value.breakdown.targetUnitPrice ?? 0,
+                              exchangeRate:
+                                value.breakdown.exchangeRate ?? 1,
+                              reportCurrency:
+                                value.breakdown.sourceCurrency ?? "",
+                              costCurrency:
+                                value.breakdown.targetCurrency ?? "",
+                            }
+                          : undefined,
+                      },
+                    )
+                  }
+                >
+                  <Button variant="headless" size="headless">
+                    {(() => {
+                      if (link.link.reportAmount < link.link.costAmount) {
+                        return (
+                          <Badge variant="warning" size="sm">
+                            Overcosted
+                          </Badge>
+                        );
+                      }
+                      if (link.link.reportAmount > link.link.costAmount) {
+                        return (
+                          <Badge variant="destructive">Undercosted</Badge>
+                        );
+                      }
+                      return <Badge variant="positive">Cost</Badge>;
+                    })()}
+                  </Button>
+                </LinkPopover>
+              );
+            },
           }),
           { ...costColumns.counterparty, accessorKey: "cost.counterparty" },
           columnHelper.accessor("cost.invoiceDate", {

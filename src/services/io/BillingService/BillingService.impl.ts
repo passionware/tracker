@@ -2,6 +2,8 @@ import { BillingApi } from "@/api/billing/billing.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { BillingService } from "@/services/io/BillingService/BillingService.ts";
 import { QueryClient, useQuery } from "@tanstack/react-query";
+import { ensureIdleQuery } from "../_common/ensureIdleQuery";
+import { maybe } from "@passionware/monads";
 
 export function createBillingService(
   api: BillingApi,
@@ -16,12 +18,29 @@ export function createBillingService(
   });
   return {
     useBillings: (query) => {
-      return useQuery(
-        {
-          queryKey: ["billing", "list", query],
-          queryFn: () => api.getBillings(query),
-        },
-        client,
+      return ensureIdleQuery(
+        query,
+        useQuery(
+          {
+            enabled: maybe.isPresent(query),
+            queryKey: ["billing", "list", query],
+            queryFn: () => api.getBillings(query!),
+          },
+          client,
+        ),
+      );
+    },
+    useBilling: (id) => {
+      return ensureIdleQuery(
+        id,
+        useQuery(
+          {
+            enabled: maybe.isPresent(id),
+            queryKey: ["billing", "item", id],
+            queryFn: () => api.getBilling(id!),
+          },
+          client,
+        ),
       );
     },
   };

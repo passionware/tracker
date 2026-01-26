@@ -1,4 +1,3 @@
-import { Report } from "@/api/reports/reports.api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,10 +9,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WithFrontServices } from "@/core/frontServices";
 import { DialogClose, DialogProps } from "@radix-ui/react-dialog";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import { promiseState } from "@passionware/platform-react";
-import { maybe, rd } from "@passionware/monads";
+import { rd } from "@passionware/monads";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import {
   Table,
@@ -29,9 +28,13 @@ import {
   extractPrefilledRatesFromGenericReport,
   PrefilledRateResult,
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
-import { uniqBy } from "lodash";
-import { ContractorBase } from "@/api/contractor/contractor.api";
 import { toast } from "sonner";
+import { CalendarDate } from "@internationalized/date";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
+import { ContractorBase } from "@/api/contractor/contractor.api.ts";
+import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { determineContractorWorkspaces } from "@/services/front/ReconciliationService/determineContractorWorkspace.ts";
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
@@ -75,14 +78,20 @@ function applyConfiguredRatesToReport(
 export interface ReportGenerationWidgetProps
   extends WithFrontServices,
     DialogProps {
-  reports: Report[];
+  contractors: ContractorBase[];
+  periodStart: CalendarDate;
+  periodEnd: CalendarDate;
   projectIterationId: number;
+  clientId: ClientSpec;
 }
 
 export function ReportGenerationWidget({
   services,
-  reports,
+  contractors,
+  periodStart,
+  periodEnd,
   projectIterationId,
+  clientId,
   ...props
 }: ReportGenerationWidgetProps) {
   const [configuredRates, setConfiguredRates] = useState<PrefilledRateResult>(
@@ -90,15 +99,15 @@ export function ReportGenerationWidget({
   );
   const [activeTab, setActiveTab] = useState("rates");
 
-  // Get current location for routing
-  const workspaceId = services.locationService.useCurrentWorkspaceId();
-  const clientId = services.locationService.useCurrentClientId();
-
-  // Get project iteration to access projectId
+  // Get project iteration to access projectId, period, currency
   const iteration =
     services.projectIterationService.useProjectIterationDetail(
       projectIterationId,
     );
+
+  // Get project to access clientId and workspaceIds
+  const iterationProjectId = rd.tryMap(iteration, (iter) => iter.projectId);
+  const project = services.projectService.useProject(iterationProjectId);
 
   const initialData = promiseState.useRemoteData<{
     reportData: GenericReport;
@@ -107,40 +116,47 @@ export function ReportGenerationWidget({
     prefilledRates: PrefilledRateResult;
   }>();
 
-  // Extract unique contractors from reports
-  const contractors = useMemo(
-    () =>
-      uniqBy(
-        reports.map((r) => r.contractor),
-        (c: ContractorBase) => c.id,
-      ),
-    [reports],
-  );
-
-  // Debug: Log contractors being processed
-  console.log(
-    "Processing contractors:",
-    contractors.map((c) => `${c.id}: ${c.fullName}`),
-  );
+  // Extract stable values for dependencies to prevent infinite loops
+  const projectIdValue =
+    project && rd.isSuccess(project) ? project.data.id : null;
+  const contractorsCount = contractors.length;
+  const periodStartString = periodStart.toString();
+  const periodEndString = periodEnd.toString();
 
   // Load TMetric data and extract projects for rate configuration
   useEffect(() => {
-    if (reports.length === 0) return;
+    // Early return if we don't have the necessary data
+    if (contractors.length === 0) return;
+
+    // Wait for iteration and project to be loaded
+    if (!rd.isSuccess(iteration)) return;
+    if (!project || !rd.isSuccess(project)) return;
 
     const loadTmetricData = async () => {
-      // Create TMetric plugin instance
+      const projData = project.data;
+
+      // Determine workspace for each contractor using rate variables
+      const contractorWorkspaceIds = await determineContractorWorkspaces({
+        services,
+        project: projData,
+        contractorIds: contractors.map((c) => c.id),
+      });
+
+      // Use the plugin directly with contractor data (no need to create temporary reports)
       const tmetricPlugin = createTmetricPlugin({
         services,
       });
 
       const result = await tmetricPlugin.getReport({
-        reports: reports.map((trackerReport) => ({
-          ...trackerReport,
-          reportId: trackerReport.id,
+        reports: contractors.map((contractor) => ({
+          contractorId: contractor.id,
+          periodStart,
+          periodEnd,
+          workspaceId: contractorWorkspaceIds.get(contractor.id) ?? 0,
+          clientId: projData.clientId,
         })),
       });
 
-      // Extract projects from GenericReport
       const projects = Object.entries(
         result.reportData.definitions.projectTypes,
       ).map(([projectId, projectType]) => ({
@@ -148,14 +164,26 @@ export function ReportGenerationWidget({
         name: projectType.name,
       }));
 
-      // Extract prefilled rates
-      const contractorReportsMap = new Map(
-        reports.map((r) => [r.contractor.id, r]),
+      // For prefilled rates, we need Report-like objects with workspaceId and clientId
+      // The extractPrefilledRatesFromGenericReport only uses these fields
+      // For prefilled rates, we only need workspaceId and clientId for expression context
+      const contractorContexts = new Map(
+        contractors.map((contractor) => {
+          const wsId = contractorWorkspaceIds.get(contractor.id) ?? 0;
+          return [
+            contractor.id,
+            {
+              workspaceId: wsId,
+              clientId: projData.clientId,
+            },
+          ];
+        }),
       );
+
       const prefilledRates = await extractPrefilledRatesFromGenericReport(
         result.reportData,
         services.expressionService,
-        contractorReportsMap,
+        contractorContexts,
       );
 
       return {
@@ -165,9 +193,25 @@ export function ReportGenerationWidget({
       };
     };
 
-    initialData.track(loadTmetricData());
+    const loadPromise = loadTmetricData();
+    if (loadPromise) {
+      initialData.track(
+        loadPromise.then((result) => {
+          if (!result) {
+            throw new Error("Failed to load report data");
+          }
+          return result;
+        }),
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reports]);
+  }, [
+    contractorsCount,
+    periodStartString,
+    periodEndString,
+    projectIterationId,
+    projectIdValue,
+  ]);
 
   const handleGenerateReport = async () => {
     try {
@@ -195,8 +239,29 @@ export function ReportGenerationWidget({
 
       // Get routing information for the toast link
       const projectId = rd.tryMap(iteration, (iter) => iter.projectId);
-      const wsId = maybe.getOrElse(workspaceId, undefined);
-      const clId = maybe.getOrElse(clientId, undefined);
+      // Get workspaceId from the first contractor (they should all be in the same workspace for a project)
+      const wsId =
+        contractors.length > 0
+          ? (
+              await services.reportService.ensureReports(
+                reportQueryUtils
+                  .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
+                  .build((q) => [
+                    q.withFilter("contractorId", {
+                      operator: "oneOf",
+                      value: [contractors[0].id],
+                    }),
+                    q.withFilter("clientId", {
+                      operator: "oneOf",
+                      value: [
+                        typeof clientId === "number" ? clientId : undefined,
+                      ].filter((id): id is number => id !== undefined),
+                    }),
+                  ]),
+              )
+            )[0]?.workspaceId
+          : undefined;
+      const clId = typeof clientId === "number" ? clientId : undefined;
 
       if (wsId && clId && projectId) {
         // Generate link to view the report
@@ -297,22 +362,26 @@ export function ReportGenerationWidget({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {reports.map((report) => (
-                            <TableRow key={report.id}>
-                              <TableCell className="font-medium text-primary">
-                                {report.contractor.fullName}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {report.description}
-                              </TableCell>
-                              <TableCell className="text-xs text-foreground">
-                                {services.formatService.temporal.range.long(
-                                  report.periodStart,
-                                  report.periodEnd,
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {contractors.map((contractor) => {
+                            const iter = rd.tryGet(iteration);
+
+                            return (
+                              <TableRow key={contractor.id}>
+                                <TableCell className="font-medium text-primary">
+                                  {contractor.fullName}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {`Report for ${iter?.periodStart} to ${iter?.periodEnd}`}
+                                </TableCell>
+                                <TableCell className="text-xs text-foreground">
+                                  {services.formatService.temporal.range.long(
+                                    periodStart,
+                                    periodEnd,
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>

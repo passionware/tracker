@@ -14,6 +14,11 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     return format(date, "yyyy-MM-dd");
   };
 
+  // Normalize currency to lowercase to match database enum (eur, usd, pln)
+  const normalizeCurrency = (currency: string): string => {
+    return currency.toLowerCase();
+  };
+
   function getInsertPayload(payload: LinkBillingReportPayload) {
     const basePayload = (() => {
       switch (payload.linkType) {
@@ -98,7 +103,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           net_value: report.netValue,
           period_start: formatDateForSupabase(report.periodStart),
           period_end: formatDateForSupabase(report.periodEnd),
-          currency: report.currency,
+          currency: normalizeCurrency(report.currency),
           client_id: report.clientId,
           workspace_id: report.workspaceId,
           // Optional breakdown fields
@@ -120,7 +125,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         .from("billing")
         .insert({
           total_net: billing.totalNet,
-          currency: billing.currency,
+          currency: normalizeCurrency(billing.currency),
           total_gross: billing.totalGross,
           client_id: billing.clientId,
           invoice_number: billing.invoiceNumber,
@@ -148,7 +153,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           invoice_date: formatDateForSupabase(cost.invoiceDate),
           net_value: cost.netValue,
           gross_value: cost.grossValue,
-          currency: cost.currency,
+          currency: normalizeCurrency(cost.currency),
           workspace_id: cost.workspaceId,
         })
         .select("id");
@@ -180,6 +185,18 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     },
     deleteCostReport: async (reportId) => {
       const response = await client.from("report").delete().eq("id", reportId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkDeleteCostReport: async (reportIds) => {
+      if (reportIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("report")
+        .delete()
+        .in("id", reportIds);
       if (response.error) {
         throw response.error;
       }
@@ -217,7 +234,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               ),
               net_value: takeIfPresent("netValue"),
               gross_value: takeIfPresent("grossValue"),
-              currency: takeIfPresent("currency"),
+              currency: maybe.map(
+                takeIfPresent("currency"),
+                normalizeCurrency,
+              ),
               workspace_id: takeIfPresent("workspaceId"),
             },
             (_, key) => key !== undefined,
@@ -238,7 +258,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           pickBy(
             {
               total_net: takeIfPresent("totalNet"),
-              currency: takeIfPresent("currency"),
+              currency: maybe.map(
+                takeIfPresent("currency"),
+                normalizeCurrency,
+              ),
               total_gross: takeIfPresent("totalGross"),
               client_id: takeIfPresent("clientId"),
               invoice_number: takeIfPresent("invoiceNumber"),
@@ -276,7 +299,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
                 takeIfPresent("periodEnd"),
                 formatDateForSupabase,
               ),
-              currency: takeIfPresent("currency"),
+              currency: maybe.map(
+                takeIfPresent("currency"),
+                normalizeCurrency,
+              ),
               client_id: takeIfPresent("clientId"),
               workspace_id: takeIfPresent("workspaceId"),
               project_iteration_id: takeIfPresent("projectIterationId"),
@@ -541,10 +567,11 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
-    addContractorToProject: async (projectId, contractorId) => {
+    addContractorToProject: async (projectId, contractorId, workspaceId) => {
       const response = await client.from("link_contractor_project").insert({
         project_id: projectId,
         contractor_id: contractorId,
+        workspace_id: workspaceId,
       });
       if (response.error) {
         throw response.error;
@@ -558,6 +585,20 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         .eq("contractor_id", contractorId);
       if (response.error) {
         throw response.error;
+      }
+    },
+    updateContractorWorkspaceForProject: async (
+      projectId,
+      contractorId,
+      workspaceId,
+    ) => {
+      const { error } = await client
+        .from("link_contractor_project")
+        .update({ workspace_id: workspaceId })
+        .eq("project_id", projectId)
+        .eq("contractor_id", contractorId);
+      if (error) {
+        throw error;
       }
     },
   };
