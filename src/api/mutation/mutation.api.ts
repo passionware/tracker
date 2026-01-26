@@ -69,9 +69,15 @@ export interface MutationApi {
   addContractorToProject: (
     projectId: number,
     contractorId: number,
+    workspaceId: number,
   ) => Promise<void>;
   unassignContractorFromProject: (
     projectId: number,
     contractorId: number,
+  ) => Promise<void>;
+  updateContractorWorkspaceForProject: (
+    projectId: number,
+    contractorId: number,
+    workspaceId: number,
   ) => Promise<void>;
 }

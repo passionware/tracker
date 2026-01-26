@@ -10,6 +10,10 @@ export function createMutationService(
 ): MutationService {
   const wait = () => delay(responseDelay);
   return {
+    updateContractorWorkspaceForProject: async () => {
+      onActionAccessor.get()("Updating contractor workspace for project");
+      await wait();
+    },
     bulkEditProjectIteration: async () => {
       onActionAccessor.get()("Bulk editing project iteration");
       await wait();

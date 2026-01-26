@@ -22,6 +22,7 @@ import {
   withSorterUtils,
 } from "@/api/_common/query/queryUtils.ts";
 import { Client } from "@/api/clients/clients.api.ts";
+import { Contractor } from "@/api/contractor/contractor.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Nullable } from "@/platform/typescript/Nullable.ts";
@@ -30,6 +31,11 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { z } from "zod";
+
+export interface ProjectContractor {
+  contractor: Contractor;
+  workspaceId: Workspace["id"];
+}
 
 export interface ProjectPayload {
   name: string;
@@ -142,4 +148,7 @@ export const projectQuerySchema = z
 export interface ProjectApi {
   getProjects: (query: ProjectQuery) => Promise<Project[]>;
   getProject: (id: Project["id"]) => Promise<Project>;
+  getProjectContractors: (
+    projectId: Project["id"],
+  ) => Promise<ProjectContractor[]>;
 }

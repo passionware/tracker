@@ -541,10 +541,11 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
-    addContractorToProject: async (projectId, contractorId) => {
+    addContractorToProject: async (projectId, contractorId, workspaceId) => {
       const response = await client.from("link_contractor_project").insert({
         project_id: projectId,
         contractor_id: contractorId,
+        workspace_id: workspaceId,
       });
       if (response.error) {
         throw response.error;
@@ -558,6 +559,20 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         .eq("contractor_id", contractorId);
       if (response.error) {
         throw response.error;
+      }
+    },
+    updateContractorWorkspaceForProject: async (
+      projectId,
+      contractorId,
+      workspaceId,
+    ) => {
+      const { error } = await client
+        .from("link_contractor_project")
+        .update({ workspace_id: workspaceId })
+        .eq("project_id", projectId)
+        .eq("contractor_id", contractorId);
+      if (error) {
+        throw error;
       }
     },
   };
