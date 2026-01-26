@@ -48,7 +48,7 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 
 **What it represents**:
 - The cost of paying a contractor for their work
-- Linked to a specific ReportFact (via UUID)
+- Linked to reports via LinkCostReportFact (see below)
 - Used for accounting/expense tracking
 
 **Key fields**:
@@ -56,9 +56,8 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - `netValue`: Amount to pay (matches the report's netValue)
 - `invoiceNumber`: Generated invoice number (e.g., "COST-2024-01-1")
 - `workspaceId`: Which workspace this cost belongs to
-- `constraints.linkedToReport`: UUID of the related ReportFact
 
-**Example**: Pay contractor 400 EUR for 8 hours of work = CostFact with netValue=400, linked to ReportFact
+**Example**: Pay contractor 400 EUR for 8 hours of work = CostFact with netValue=400
 
 ### 3. LinkCostReportFact
 
@@ -68,11 +67,13 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - Links a cost entry to a time report
 - Provides detailed breakdown of how the cost relates to the report
 - Used to track which costs correspond to which reports
+- **Source of truth** for cost-report relationships (used for highlighting)
 
 **Key fields**:
 - `costAmount`: Amount in the cost
 - `reportAmount`: Amount in the report
 - `breakdown`: Detailed information (quantity, unit prices, currencies, exchange rate)
+- `linkedFacts`: Array of fact UUIDs - the source of truth for relationships
 
 **Example**: Links a 400 EUR cost to an 8-hour report at 50 EUR/hour
 
@@ -84,6 +85,7 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - An invoice to send to the client
 - Grouped by workspace + currency (all reports in same workspace/currency = one billing)
 - Contains billing information (what we charge the client)
+- Linked to reports via LinkBillingReportFact (see below)
 
 **Key fields**:
 - `totalNet`: Total amount to bill (sum of all related reports' billing amounts)
@@ -92,7 +94,6 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - `workspaceId`: Which workspace this billing belongs to
 - `clientId`: Which client to bill
 - `invoiceNumber`: Generated invoice number (e.g., "INV-2024-01-WS1")
-- `constraints.linkedToReport`: UUID hint of a related ReportFact
 
 **Example**: Bill client 600 EUR (from 8 hours × 75 EUR/hour) = BillingFact with totalNet=600
 
@@ -104,12 +105,14 @@ Facts are **declarative expectations** - they describe the ideal state of the sy
 - Links a billing entry to a time report
 - Shows how much of the billing comes from each report
 - Provides detailed breakdown for reconciliation
+- **Source of truth** for report-billing relationships (used for highlighting)
 
 **Key fields**:
 - `reportAmount`: Amount from the report (cost side)
 - `billingAmount`: Amount in the billing (revenue side)
 - `linkType`: Always "reconcile" for generated reports
 - `breakdown`: Detailed information (quantity, unit prices, currencies)
+- `linkedFacts`: Array of fact UUIDs - the source of truth for relationships
 
 **Example**: Links a 600 EUR billing to an 8-hour report (400 EUR cost, 600 EUR billing)
 

@@ -357,11 +357,13 @@ export interface ReconciliationInput {
   contractorNameMap: Map<number, string>;
 }
 
+import { Fact } from "./ReconciliationService.types";
+
 /**
  * Parameters for executing reconciliation
  */
 export interface ExecuteReconciliationParams {
-  preview: ReconciliationPreview;
+  facts: Fact[];
   report: GeneratedReportSource;
   iteration: ProjectIteration;
   project: {
@@ -392,18 +394,19 @@ export interface ReconciliationService {
    */
   useReconciliationView: (
     params: UseReconciliationViewParams,
-  ) => RemoteData<ReconciliationPreview>;
+  ) => RemoteData<Fact[]>;
 
   /**
-   * Calculate and return reconciliation preview based on generated report and existing data
+   * Calculate and return reconciliation facts based on generated report and existing data
+   * Matches facts against existing entities and sets action (create/update)
    * Combines all data sources and applies reconciliation rules:
    * - Only considers existing reports (reportId > 0)
    * - Only considers costs linked to reports in the iteration
    * - Only considers billings linked to reports
    */
-  calculateReconciliationView: (
+  calculateReconciliationFacts: (
     input: ReconciliationInput,
-  ) => ReconciliationPreview;
+  ) => Fact[];
 
   /**
    * Execute reconciliation by creating/updating reports, billings, costs, and their links

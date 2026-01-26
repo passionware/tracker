@@ -9,9 +9,16 @@ import { ReconcileLinkBillingReportPayload } from "@/api/link-billing-report/lin
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report";
 import { ReportPayload } from "@/api/reports/reports.api";
 
+export type FactAction =
+  | { type: "ignore" }
+  | { type: "create" }
+  | { type: "update"; id: number; oldValues?: Record<string, unknown> };
+
 export interface FactBase {
   // whenever we want to adjust specific item base
   uuid: string;
+  // Planned action for this fact
+  action: FactAction;
 }
 
 /**
@@ -26,31 +33,27 @@ export interface ReportFact extends FactBase {
 export interface BillingFact extends FactBase {
   type: "billing";
   payload: Required<BillingPayload>;
-  constraints: {
-    // we should say that this billing should be linked to a specific report - this will be used by reconciler to determine if we can use existing billing or create a new one
-    // this is a hint, like `key` in React
-    linkedToReport: ReportFact["uuid"];
-  };
 }
 
 export interface CostFact extends FactBase {
   type: "cost";
   payload: Required<CostPayload>;
-  constraints: {
-    // we should say that this cost should be linked to a specific report - this will be used by reconciler to determine if we can use existing cost or create a new one
-    // this is a hint, like `key` in React
-    linkedToReport: ReportFact["uuid"];
-  };
 }
 
 export interface LinkCostReportFact extends FactBase {
   type: "linkCostReport";
   payload: Required<LinkCostReportPayload>;
+  // Source of truth for cost-report relationships
+  // Array of fact UUIDs
+  linkedFacts: Fact["uuid"][];
 }
 
 export interface LinkBillingReportFact extends FactBase {
   type: "linkBillingReport";
   payload: Required<ReconcileLinkBillingReportPayload>;
+  // Source of truth for report-billing relationships
+  // Array of fact UUIDs
+  linkedFacts: Fact["uuid"][];
 }
 
 export type Fact =

@@ -31,93 +31,76 @@ import {
   CostFact,
   LinkCostReportFact,
   LinkBillingReportFact,
+  Fact,
 } from "./ReconciliationService.types.ts";
+import { v5 as uuidv5 } from "uuid";
+import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 
 /**
- * Converts report facts to report reconciliation previews by matching against existing reports
+ * Matches report facts against existing reports and sets action (create/update)
  */
-function convertReportFactsToPreviews(
-  reportFacts: Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>,
+function matchReportFacts(
+  reportFacts: Array<
+    ReportFact & {
+      billingAmount: number;
+      billingCurrency: string;
+      billingUnitPrice: number;
+    }
+  >,
   existingReports: Report[],
-): ReportReconciliationPreview[] {
-  const previews: ReportReconciliationPreview[] = [];
+): ReportFact[] {
+  const matchedFacts: ReportFact[] = [];
 
   for (const fact of reportFacts) {
     // Find existing report matching contractor, currency, project iteration, and unit price
     const factUnitPrice = fact.payload.unitPrice ?? 0;
-    const existingReport = existingReports.find(
-      (r) => {
-        const rUnitPrice = r.unitPrice ?? 0;
-        return (
-          r.contractorId === fact.payload.contractorId &&
-          r.currency === fact.payload.currency &&
-          r.projectIterationId === fact.payload.projectIterationId &&
-          Math.abs(rUnitPrice - factUnitPrice) < 0.01
-        );
-      },
-    );
-
-    const quantity = fact.payload.quantity ?? 0;
-    const baseFields = {
-      contractorId: fact.payload.contractorId,
-      netValue: fact.payload.netValue,
-      unit: fact.payload.unit ?? "h",
-      quantity,
-      unitPrice: fact.payload.unitPrice ?? 0,
-      currency: fact.payload.currency,
-      billingUnitPrice: fact.billingUnitPrice,
-      billingCurrency: fact.billingCurrency,
-      rateSignature: "", // Can be enhanced later if needed
-    };
+    const existingReport = existingReports.find((r) => {
+      const rUnitPrice = r.unitPrice ?? 0;
+      return (
+        r.contractorId === fact.payload.contractorId &&
+        r.currency === fact.payload.currency &&
+        r.projectIterationId === fact.payload.projectIterationId &&
+        Math.abs(rUnitPrice - factUnitPrice) < 0.01
+      );
+    });
 
     if (existingReport) {
       // Update existing report
-      previews.push({
-        ...baseFields,
-        type: "update",
-        id: existingReport.id,
-        payload: {
-          netValue: fact.payload.netValue,
-          unit: fact.payload.unit ?? "h",
-          quantity,
-          unitPrice: fact.payload.unitPrice ?? 0,
-          currency: fact.payload.currency,
-        },
-        oldValues: {
-          netValue: existingReport.netValue,
-          unit: existingReport.unit ?? null,
-          quantity: existingReport.quantity ?? null,
-          unitPrice: existingReport.unitPrice ?? null,
-          currency: existingReport.currency,
+      matchedFacts.push({
+        ...fact,
+        action: {
+          type: "update",
+          id: existingReport.id,
+          oldValues: {
+            netValue: existingReport.netValue,
+            unit: existingReport.unit ?? null,
+            quantity: existingReport.quantity ?? null,
+            unitPrice: existingReport.unitPrice ?? null,
+            currency: existingReport.currency,
+          },
         },
       });
     } else {
       // Create new report
-      previews.push({
-        ...baseFields,
-        type: "create",
-        payload: {
-          ...fact.payload,
-          unit: fact.payload.unit ?? "h",
-          quantity,
-          unitPrice: fact.payload.unitPrice ?? 0,
-        },
+      matchedFacts.push({
+        ...fact,
+        action: { type: "create" },
       });
     }
   }
 
-  return previews;
+  return matchedFacts;
 }
 
 /**
- * Converts billing facts to billing reconciliation previews by matching against existing billings
+ * Matches billing facts against existing billings and sets action (create/update)
  */
-function convertBillingFactsToPreviews(
+function matchBillingFacts(
   billingFacts: BillingFact[],
   existingBillings: Billing[],
   iteration: ProjectIteration,
-): BillingReconciliationPreview[] {
-  const previews: BillingReconciliationPreview[] = [];
+): BillingFact[] {
+  const matchedFacts: BillingFact[] = [];
 
   for (const fact of billingFacts) {
     // Find existing billing matching workspace, currency, and period
@@ -144,58 +127,40 @@ function convertBillingFactsToPreviews(
       return matchesWorkspace && matchesCurrency && matchesPeriod;
     });
 
-    const baseFields = {
-      workspaceId: fact.payload.workspaceId,
-      totalNet: fact.payload.totalNet,
-      totalGross: fact.payload.totalGross,
-      currency: fact.payload.currency,
-      invoiceNumber: fact.payload.invoiceNumber,
-      invoiceDate: fact.payload.invoiceDate,
-      description: fact.payload.description,
-    };
-
     if (existingBilling) {
-      // Update existing billing
-      previews.push({
-        ...baseFields,
-        type: "update",
-        id: existingBilling.id,
-        payload: {
-          totalNet: fact.payload.totalNet,
-          totalGross: fact.payload.totalGross,
-          currency: fact.payload.currency,
-        },
-        oldValues: {
-          totalNet: existingBilling.totalNet,
-          totalGross: existingBilling.totalGross,
-          currency: existingBilling.currency,
+      matchedFacts.push({
+        ...fact,
+        action: {
+          type: "update",
+          id: existingBilling.id,
+          oldValues: {
+            totalNet: existingBilling.totalNet,
+            totalGross: existingBilling.totalGross,
+            currency: existingBilling.currency,
+          },
         },
       });
     } else {
       // Create new billing
-      previews.push({
-        ...baseFields,
-        type: "create",
-        payload: {
-          ...fact.payload,
-          clientId: 0, // Will be filled in during execution
-        },
+      matchedFacts.push({
+        ...fact,
+        action: { type: "create" },
       });
     }
   }
 
-  return previews;
+  return matchedFacts;
 }
 
 /**
- * Converts cost facts to cost reconciliation previews by matching against existing costs
+ * Matches cost facts against existing costs and sets action (create/update)
  */
-function convertCostFactsToPreviews(
+function matchCostFacts(
   costFacts: CostFact[],
   existingCosts: Cost[],
   iteration: ProjectIteration,
-): CostReconciliationPreview[] {
-  const previews: CostReconciliationPreview[] = [];
+): CostFact[] {
+  const matchedFacts: CostFact[] = [];
 
   for (const fact of costFacts) {
     // Find existing cost matching contractor and period
@@ -223,33 +188,18 @@ function convertCostFactsToPreviews(
       return matchesContractor && matchesPeriod;
     });
 
-    const contractorId = fact.payload.contractorId ?? null;
-    const baseFields = {
-      contractorId,
-      netValue: fact.payload.netValue,
-      grossValue: fact.payload.grossValue ?? null,
-      currency: fact.payload.currency,
-      invoiceNumber: fact.payload.invoiceNumber ?? null,
-      counterparty: fact.payload.counterparty ?? null,
-      invoiceDate: fact.payload.invoiceDate,
-      description: fact.payload.description ?? null,
-    };
-
     if (existingCost) {
       // Update existing cost
-      previews.push({
-        ...baseFields,
-        type: "update",
-        id: existingCost.id,
-        payload: {
-          netValue: fact.payload.netValue,
-          grossValue: fact.payload.grossValue ?? null,
-          currency: fact.payload.currency,
-        },
-        oldValues: {
-          netValue: existingCost.netValue,
-          grossValue: existingCost.grossValue ?? null,
-          currency: existingCost.currency,
+      matchedFacts.push({
+        ...fact,
+        action: {
+          type: "update",
+          id: existingCost.id,
+          oldValues: {
+            netValue: existingCost.netValue,
+            grossValue: existingCost.grossValue ?? null,
+            currency: existingCost.currency,
+          },
         },
       });
     } else {
@@ -257,130 +207,85 @@ function convertCostFactsToPreviews(
       if (!fact.payload.workspaceId) {
         continue; // Skip if no workspaceId
       }
-      previews.push({
-        ...baseFields,
-        type: "create",
-        payload: {
-          ...fact.payload,
-          contractorId: contractorId !== null ? maybe.of(contractorId) : maybe.ofAbsent(),
-          workspaceId: fact.payload.workspaceId,
-        },
+      matchedFacts.push({
+        ...fact,
+        action: { type: "create" },
       });
     }
   }
 
-  return previews;
+  return matchedFacts;
 }
 
 /**
- * Converts link facts to link previews, matching report/billing/cost IDs from previews
- * Uses UUID mappings to match facts to their corresponding previews
+ * Matches link facts and sets action (always create for links)
+ * Resolves IDs from matched facts
  */
-function convertLinkFactsToPreviews(
+function matchLinkFacts(
   linkCostReportFacts: LinkCostReportFact[],
   linkBillingReportFacts: LinkBillingReportFact[],
-  reportFactUuidToPreview: Map<string, ReportReconciliationPreview>,
-  billingFactUuidToPreview: Map<string, BillingReconciliationPreview>,
-  costFactUuidToPreview: Map<string, CostReconciliationPreview>,
-  reportFacts: Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>,
-  billingFacts: BillingFact[],
-  costFacts: CostFact[],
-): {
-  reportCostLinks: ReportCostLinkPreview[];
-  reportBillingLinks: ReportBillingLinkPreview[];
-} {
-  const reportCostLinks: ReportCostLinkPreview[] = [];
-  const reportBillingLinks: ReportBillingLinkPreview[] = [];
+  reportFactUuidToFact: Map<string, ReportFact>,
+  billingFactUuidToFact: Map<string, BillingFact>,
+  costFactUuidToFact: Map<string, CostFact>,
+): Fact[] {
+  const matchedFacts: Fact[] = [];
 
-  // Create maps from fact to their related facts for link matching
-  // LinkCostReportFact links a cost to a report - we need to find which cost and report facts match
-  // Since link facts are created right after cost/report facts, we match by contractor and amounts
-  
-  // Build a map: reportFact UUID -> costFact UUID (via constraints.linkedToReport)
-  const reportUuidToCostUuid = new Map<string, string>();
-  for (const costFact of costFacts) {
-    reportUuidToCostUuid.set(costFact.constraints.linkedToReport, costFact.uuid);
-  }
-
-  // Convert cost-report links
+  // Match cost-report links
   for (const linkFact of linkCostReportFacts) {
-    // Match link fact to report fact by matching amounts and contractor
-    // The link fact was created for a specific report fact, so we match by amount
-    const matchingReportFact = reportFacts.find(
-      (rf) =>
-        Math.abs(rf.payload.netValue - linkFact.payload.reportAmount) < 0.01 &&
-        Math.abs(rf.payload.netValue - linkFact.payload.costAmount) < 0.01,
-    );
+    // linkedFacts is an array of fact UUIDs - find cost and report facts
+    let costFact: CostFact | undefined;
+    let reportFact: ReportFact | undefined;
 
-    if (!matchingReportFact) continue;
+    for (const factUuid of linkFact.linkedFacts) {
+      const cost = costFactUuidToFact.get(factUuid);
+      const report = reportFactUuidToFact.get(factUuid);
+      if (cost) costFact = cost;
+      if (report) reportFact = report;
+    }
 
-    const reportPreview = reportFactUuidToPreview.get(matchingReportFact.uuid);
-    const costUuid = reportUuidToCostUuid.get(matchingReportFact.uuid);
-    const costPreview = costUuid ? costFactUuidToPreview.get(costUuid) : undefined;
-
-    if (reportPreview && costPreview) {
-      reportCostLinks.push({
-        type: "create",
-        reportId: reportPreview.type === "update" ? reportPreview.id : 0,
-        costId: costPreview.type === "update" ? costPreview.id : 0,
-        reportAmount: linkFact.payload.reportAmount,
-        costAmount: linkFact.payload.costAmount,
-        description: linkFact.payload.description,
-        breakdown: linkFact.payload.breakdown,
+    if (reportFact && costFact) {
+      matchedFacts.push({
+        ...linkFact,
+        action: { type: "create" },
         payload: {
           ...linkFact.payload,
-          costId: costPreview.type === "update" ? costPreview.id : null,
-          reportId: reportPreview.type === "update" ? reportPreview.id : null,
+          costId: costFact.action.type === "update" ? costFact.action.id : null,
+          reportId:
+            reportFact.action.type === "update" ? reportFact.action.id : null,
         },
       });
     }
   }
 
-  // Build a map: billingFact UUID -> reportFact UUIDs (via constraints.linkedToReport)
-  // Actually, billing facts link to a report via constraints.linkedToReport, but multiple reports can link to one billing
-  // We need to match link facts by finding which report fact matches the link fact's reportAmount
-  
-  // Convert billing-report links
+  // Match billing-report links
   for (const linkFact of linkBillingReportFacts) {
-    // Match link fact to report fact by matching amounts
-    const matchingReportFact = reportFacts.find(
-      (rf) =>
-        Math.abs(rf.billingAmount - linkFact.payload.billingAmount) < 0.01 &&
-        Math.abs(rf.payload.netValue - linkFact.payload.reportAmount) < 0.01,
-    );
+    // linkedFacts is an array of fact UUIDs - find report and billing facts
+    let billingFact: BillingFact | undefined;
+    let reportFact: ReportFact | undefined;
 
-    if (!matchingReportFact) continue;
+    for (const factUuid of linkFact.linkedFacts) {
+      const billing = billingFactUuidToFact.get(factUuid);
+      const report = reportFactUuidToFact.get(factUuid);
+      if (billing) billingFact = billing;
+      if (report) reportFact = report;
+    }
 
-    const reportPreview = reportFactUuidToPreview.get(matchingReportFact.uuid);
-    
-    // Find billing preview by matching the billing fact that links to this report
-    // The billing fact's constraints.linkedToReport should match the report fact UUID
-    const matchingBillingFact = billingFacts.find(
-      (bf) => bf.constraints.linkedToReport === matchingReportFact.uuid,
-    );
-    const billingPreview = matchingBillingFact
-      ? billingFactUuidToPreview.get(matchingBillingFact.uuid)
-      : undefined;
-
-    if (reportPreview && billingPreview) {
-      reportBillingLinks.push({
-        type: "create",
-        reportId: reportPreview.type === "update" ? reportPreview.id : 0,
-        billingId: billingPreview.type === "update" ? billingPreview.id : 0,
-        reportAmount: linkFact.payload.reportAmount,
-        billingAmount: linkFact.payload.billingAmount,
-        description: linkFact.payload.description,
-        breakdown: linkFact.payload.breakdown,
+    if (reportFact && billingFact) {
+      matchedFacts.push({
+        ...linkFact,
+        action: { type: "create" },
         payload: {
           ...linkFact.payload,
-          billingId: billingPreview.type === "update" ? billingPreview.id : 0,
-          reportId: reportPreview.type === "update" ? reportPreview.id : 0,
+          billingId:
+            billingFact.action.type === "update" ? billingFact.action.id : 0,
+          reportId:
+            reportFact.action.type === "update" ? reportFact.action.id : 0,
         },
       });
     }
   }
 
-  return { reportCostLinks, reportBillingLinks };
+  return matchedFacts;
 }
 
 export function createReconciliationService(
@@ -394,12 +299,46 @@ export function createReconciliationService(
     ]
   >,
 ): ReconciliationService {
+  // Create deterministic UUID factory based on report data
+  const createDeterministicUuidFactory = (
+    report: GeneratedReportSource,
+    iterationId: number,
+  ): (() => string) => {
+    // Create a namespace UUID from report and iteration ID for deterministic UUIDs
+    // Use a stable representation of time entries for consistent UUID generation
+    const timeEntriesKey = JSON.stringify(
+      report.data.timeEntries.map((e) => ({
+        id: e.id,
+        contractorId: e.contractorId,
+        startAt: e.startAt.toISOString(),
+        endAt: e.endAt.toISOString(),
+        projectId: e.projectId,
+        roleId: e.roleId,
+      })),
+    );
+    const namespace = uuidv5(
+      `${report.projectIterationId}-${iterationId}-${timeEntriesKey}`,
+      uuidv5.DNS,
+    );
+    let counter = 0;
+    return () => {
+      counter++;
+      return uuidv5(`${namespace}-${counter}`, uuidv5.DNS);
+    };
+  };
+
   // Internal calculation function
-  const calculateReconciliationViewImpl = (
+  const calculateReconciliationFactsImpl = (
     input: ReconciliationInput,
-  ): ReconciliationPreview => {
+  ): Fact[] => {
     const existingReports = input.reportsView.entries.map(
       (e) => e.originalReport,
+    );
+
+    // Create deterministic UUID factory based on report data
+    const uuidFactory = createDeterministicUuidFactory(
+      input.report,
+      input.iteration.id,
     );
 
     // Step 1: Generate facts from the generated report
@@ -409,19 +348,29 @@ export function createReconciliationService(
       input.project,
       input.contractorWorkspaceMap,
       input.contractorNameMap,
+      uuidFactory,
     );
 
     // Separate facts by type
     const reportFacts = facts.filter(
-      (f): f is ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number } =>
-        f.type === "report",
-    ) as Array<ReportFact & { billingAmount: number; billingCurrency: string; billingUnitPrice: number }>;
+      (
+        f,
+      ): f is ReportFact & {
+        billingAmount: number;
+        billingCurrency: string;
+        billingUnitPrice: number;
+      } => f.type === "report",
+    ) as Array<
+      ReportFact & {
+        billingAmount: number;
+        billingCurrency: string;
+        billingUnitPrice: number;
+      }
+    >;
     const billingFacts = facts.filter(
       (f): f is BillingFact => f.type === "billing",
     );
-    const costFacts = facts.filter(
-      (f): f is CostFact => f.type === "cost",
-    );
+    const costFacts = facts.filter((f): f is CostFact => f.type === "cost");
     const linkCostReportFacts = facts.filter(
       (f): f is LinkCostReportFact => f.type === "linkCostReport",
     );
@@ -429,11 +378,8 @@ export function createReconciliationService(
       (f): f is LinkBillingReportFact => f.type === "linkBillingReport",
     );
 
-    // Step 2: Convert facts to previews by matching against existing entities
-    const reportPreviews = convertReportFactsToPreviews(
-      reportFacts,
-      existingReports,
-    );
+    // Step 2: Match facts against existing entities and set actions
+    const matchedReportFacts = matchReportFacts(reportFacts, existingReports);
 
     // Reconciliation rules:
     // 1. Find costs only that are already linked to this report with any link
@@ -457,82 +403,54 @@ export function createReconciliationService(
         billing.linkBillingReport && billing.linkBillingReport.length > 0,
     );
 
-    const billingPreviews = convertBillingFactsToPreviews(
+    const matchedBillingFacts = matchBillingFacts(
       billingFacts,
       linkedBillings,
       input.iteration,
     );
 
-    const costPreviews = convertCostFactsToPreviews(
+    const matchedCostFacts = matchCostFacts(
       costFacts,
       linkedCosts,
       input.iteration,
     );
 
-    // Step 3: Create UUID mappings for link conversion by matching facts to previews
-    const reportFactUuidToPreview = new Map<string, ReportReconciliationPreview>();
-    for (const fact of reportFacts) {
-      const matchingPreview = reportPreviews.find(
-        (preview) =>
-          preview.contractorId === fact.payload.contractorId &&
-          Math.abs(preview.netValue - fact.payload.netValue) < 0.01 &&
-          preview.quantity === fact.payload.quantity &&
-          preview.unitPrice === fact.payload.unitPrice,
-      );
-      if (matchingPreview) {
-        reportFactUuidToPreview.set(fact.uuid, matchingPreview);
-      }
+    // Step 3: Create UUID mappings for link matching
+    const reportFactUuidToFact = new Map<string, ReportFact>();
+    for (const fact of matchedReportFacts) {
+      reportFactUuidToFact.set(fact.uuid, fact);
     }
 
-    const billingFactUuidToPreview = new Map<string, BillingReconciliationPreview>();
-    for (const fact of billingFacts) {
-      const matchingPreview = billingPreviews.find(
-        (preview) =>
-          preview.workspaceId === fact.payload.workspaceId &&
-          preview.currency === fact.payload.currency &&
-          Math.abs(preview.totalNet - fact.payload.totalNet) < 0.01,
-      );
-      if (matchingPreview) {
-        billingFactUuidToPreview.set(fact.uuid, matchingPreview);
-      }
+    const billingFactUuidToFact = new Map<string, BillingFact>();
+    for (const fact of matchedBillingFacts) {
+      billingFactUuidToFact.set(fact.uuid, fact);
     }
 
-    const costFactUuidToPreview = new Map<string, CostReconciliationPreview>();
-    for (const fact of costFacts) {
-      const matchingPreview = costPreviews.find(
-        (preview) =>
-          preview.contractorId === fact.payload.contractorId &&
-          Math.abs(preview.netValue - fact.payload.netValue) < 0.01 &&
-          preview.currency === fact.payload.currency,
-      );
-      if (matchingPreview) {
-        costFactUuidToPreview.set(fact.uuid, matchingPreview);
-      }
+    const costFactUuidToFact = new Map<string, CostFact>();
+    for (const fact of matchedCostFacts) {
+      costFactUuidToFact.set(fact.uuid, fact);
     }
 
-    // Step 4: Convert link facts to link previews
-    const { reportCostLinks, reportBillingLinks } =
-      convertLinkFactsToPreviews(
-        linkCostReportFacts,
-        linkBillingReportFacts,
-        reportFactUuidToPreview,
-        billingFactUuidToPreview,
-        costFactUuidToPreview,
-        reportFacts,
-        billingFacts,
-        costFacts,
-      );
+    // Step 4: Match link facts
+    const matchedLinkFacts = matchLinkFacts(
+      linkCostReportFacts,
+      linkBillingReportFacts,
+      reportFactUuidToFact,
+      billingFactUuidToFact,
+      costFactUuidToFact,
+    );
 
-    return {
-      reports: reportPreviews,
-      billings: billingPreviews,
-      costs: costPreviews,
-      reportBillingLinks,
-      reportCostLinks,
-    };
+    // Return all matched facts as a single array
+    return [
+      ...matchedReportFacts,
+      ...matchedBillingFacts,
+      ...matchedCostFacts,
+      ...matchedLinkFacts,
+    ];
   };
 
   return {
+    calculateReconciliationFacts: calculateReconciliationFactsImpl,
     useReconciliationView: (params: UseReconciliationViewParams) => {
       // Get project to access clientId and workspaceIds
       const project = config.services.projectService.useProject(
@@ -541,9 +459,7 @@ export function createReconciliationService(
 
       // Get project contractors to build contractorWorkspaceMap
       const projectContractors =
-        config.services.projectService.useProjectContractors(
-          params.projectId,
-        );
+        config.services.projectService.useProjectContractors(params.projectId);
 
       // Query for existing reports assigned to this iteration
       const reportsQuery = rd.tryMap(params.iteration, (iteration) =>
@@ -577,20 +493,13 @@ export function createReconciliationService(
 
       const costs = config.services.costService.useCosts(costsQuery);
 
-      const reconciliationInput = rd.map(
-        rd.combine({
-          reportsView,
-          billings,
-          costs,
-          iteration: params.iteration,
-          project,
-          projectContractors,
-        }),
-        ({ reportsView, billings, costs, iteration, project, projectContractors }) => {
-          // Build contractorWorkspaceMap from project contractors
+      // Memoize contractor maps to ensure stable references
+      const contractorMaps = rd.useMemoMap(
+        rd.useStable(projectContractors),
+        (contractors) => {
           const contractorWorkspaceMap = new Map<number, number>();
           const contractorNameMap = new Map<number, string>();
-          for (const pc of projectContractors) {
+          for (const pc of contractors) {
             if (pc.workspaceId) {
               contractorWorkspaceMap.set(pc.contractor.id, pc.workspaceId);
             }
@@ -600,7 +509,29 @@ export function createReconciliationService(
               contractorNameMap.set(pc.contractor.id, contractorName);
             }
           }
+          return { contractorWorkspaceMap, contractorNameMap };
+        },
+      );
 
+      const reconciliationInput = rd.useMemoMap(
+        rd.useStable(
+          rd.combine({
+            reportsView,
+            billings,
+            costs,
+            iteration: params.iteration,
+            project,
+            contractorMaps,
+          }),
+        ),
+        ({
+          reportsView,
+          billings,
+          costs,
+          iteration,
+          project,
+          contractorMaps,
+        }) => {
           return {
             report: params.report,
             reportsView,
@@ -608,18 +539,16 @@ export function createReconciliationService(
             costs,
             iteration,
             project,
-            contractorWorkspaceMap,
-            contractorNameMap,
+            contractorWorkspaceMap: contractorMaps.contractorWorkspaceMap,
+            contractorNameMap: contractorMaps.contractorNameMap,
           };
         },
       );
 
-      return rd.map(reconciliationInput, (input) =>
-        calculateReconciliationViewImpl(input),
+      return rd.useMemoMap(reconciliationInput, (input) =>
+        calculateReconciliationFactsImpl(input),
       );
     },
-
-    calculateReconciliationView: calculateReconciliationViewImpl,
 
     executeReconciliation: async (params: ExecuteReconciliationParams) => {
       const { preview, iteration, project, projectIterationId } = params;

@@ -24,19 +24,99 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import {
-  BillingReconciliationPreview,
-  CostReconciliationPreview,
-  getBillingId,
-  getCostId,
-  getReportId,
-  ReportBillingLinkPreview,
-  ReportCostLinkPreview,
-  ReportReconciliationPreview,
-} from "@/services/front/ReconciliationService/ReconciliationService.ts";
+  ReportFact,
+  BillingFact,
+  CostFact,
+  LinkCostReportFact,
+  LinkBillingReportFact,
+  Fact,
+} from "@/services/front/ReconciliationService/ReconciliationService.types.ts";
 import { maybe, mt, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+// Helper function to extract ID from fact
+function getFactId(fact: ReportFact | BillingFact | CostFact): number {
+  return fact.action.type === "update" ? fact.action.id : 0;
+}
+
+// Simple BFS traversal: follow links based on fact types and direction constraints
+function findRelatedFactUuids(
+  startUuid: string,
+  uuidToFactType: Map<string, Fact["type"]>,
+  facts: Array<Fact>,
+): Set<string> {
+  const related = new Set<string>([startUuid]);
+  const visited = new Set<string>([startUuid]);
+  const startFactType = uuidToFactType.get(startUuid);
+  if (!startFactType) return related;
+
+  // Build connections: fact UUID -> Set of directly connected UUIDs
+  const connections = new Map<string, Set<string>>();
+  facts.forEach((fact) => connections.set(fact.uuid, new Set()));
+
+  // Link facts connect to entities in their linkedFacts array
+  facts.forEach((fact) => {
+    if (fact.type === "linkCostReport" || fact.type === "linkBillingReport") {
+      const linkFact = fact as LinkCostReportFact | LinkBillingReportFact;
+      linkFact.linkedFacts.forEach((linkedUuid) => {
+        connections.get(linkFact.uuid)!.add(linkedUuid);
+        connections.get(linkedUuid)!.add(linkFact.uuid);
+      });
+    }
+  });
+
+  // Determine allowed directions
+  const canGoRight = startFactType === "cost" || startFactType === "linkCostReport" || startFactType === "report";
+  const canGoLeft = startFactType === "billing" || startFactType === "linkBillingReport" || startFactType === "report";
+
+  // BFS with direction tracking
+  const queue: Array<{ uuid: string; canGoRight: boolean; canGoLeft: boolean }> = [
+    { uuid: startUuid, canGoRight, canGoLeft },
+  ];
+
+  while (queue.length > 0) {
+    const { uuid, canGoRight: canR, canGoLeft: canL } = queue.shift()!;
+    const factType = uuidToFactType.get(uuid);
+    if (!factType) continue;
+
+    for (const neighborUuid of connections.get(uuid) || []) {
+      if (visited.has(neighborUuid)) continue;
+      const neighborType = uuidToFactType.get(neighborUuid);
+      if (!neighborType || neighborType === startFactType) continue;
+
+      // Determine if this is a valid forward traversal
+      const isRightward =
+        (factType === "cost" && neighborType === "linkCostReport") ||
+        (factType === "linkCostReport" && neighborType === "report") ||
+        (factType === "report" && neighborType === "linkBillingReport") ||
+        (factType === "linkBillingReport" && neighborType === "billing");
+
+      const isLeftward =
+        (factType === "billing" && neighborType === "linkBillingReport") ||
+        (factType === "linkBillingReport" && neighborType === "report") ||
+        (factType === "report" && neighborType === "linkCostReport");
+
+      // Allow reverse traversal from link facts to their connected entities (for highlighting)
+      const isReverseToEntity =
+        (factType === "linkCostReport" && neighborType === "cost") ||
+        (factType === "linkBillingReport" && neighborType === "billing");
+
+      if ((canR && isRightward) || (canL && isLeftward) || isReverseToEntity) {
+        visited.add(neighborUuid);
+        related.add(neighborUuid);
+        queue.push({
+          uuid: neighborUuid,
+          canGoRight: isRightward || (canR && neighborType === "report"),
+          canGoLeft: isLeftward || (canL && neighborType === "report"),
+        });
+      }
+    }
+  }
+
+  return related;
+}
 
 export function ReconciliationView(
   props: WithFrontServices & {
@@ -48,26 +128,49 @@ export function ReconciliationView(
     clientId: ClientSpec;
   },
 ) {
-  const reconciliation =
-    props.services.reconciliationService.useReconciliationView({
-      report: props.report,
-      iteration: props.iteration,
-      projectId: props.projectId,
-      workspaceId: props.workspaceId,
-      clientId: props.clientId,
-    });
+  const facts = props.services.reconciliationService.useReconciliationView({
+    report: props.report,
+    iteration: props.iteration,
+    projectId: props.projectId,
+    workspaceId: props.workspaceId,
+    clientId: props.clientId,
+  });
 
   // Get project to access clientId and workspaceIds (needed for executeReconciliation)
   const project = props.services.projectService.useProject(props.projectId);
 
-  const [hoveredItem, setHoveredItem] = useState<{
-    rowIndex: number;
-    column: "cost" | "costLink" | "report" | "billingLink" | "billing";
-  } | null>(null);
+  const [hoveredFactUuid, setHoveredFactUuid] = useState<string | null>(null);
+
+  // Get facts data once
+  const factsData = rd.tryGet(facts);
+
+  // Compute highlighted facts based on hovered fact UUID
+  // Use facts directly to avoid dependency on potentially unstable factsData reference
+  const highlightedFactUuids = useMemo(() => {
+    if (!hoveredFactUuid) {
+      return new Set<string>();
+    }
+
+    const currentFactsData = rd.tryGet(facts);
+    if (!currentFactsData) {
+      return new Set<string>();
+    }
+
+    const activeFacts = currentFactsData.filter(
+      (fact) => fact.action.type !== "ignore",
+    );
+
+    // Build UUID to fact type map for directional traversal
+    const uuidToFactType = new Map<string, Fact["type"]>();
+    activeFacts.forEach((fact) => {
+      uuidToFactType.set(fact.uuid, fact.type);
+    });
+
+    return findRelatedFactUuids(hoveredFactUuid, uuidToFactType, activeFacts);
+  }, [hoveredFactUuid, facts]);
 
   const reconciliationMutation = promiseState.useMutation(async () => {
-    const preview = rd.tryGet(reconciliation);
-    if (!preview) {
+    if (!factsData) {
       toast.error("Reconciliation data not available");
       return;
     }
@@ -85,7 +188,7 @@ export function ReconciliationView(
     }
 
     await props.services.reconciliationService.executeReconciliation({
-      preview,
+      facts: factsData,
       report: props.report,
       iteration: iterationData,
       project: {
@@ -95,14 +198,7 @@ export function ReconciliationView(
       projectIterationId: props.projectIterationId,
     });
 
-    const totalItems =
-      preview.reports.length +
-      preview.billings.length +
-      preview.costs.length +
-      preview.reportBillingLinks.length +
-      preview.reportCostLinks.length;
-
-    toast.success(`Successfully reconciled ${totalItems} item(s)`);
+    toast.success(`Successfully reconciled ${factsData.length} item(s)`);
   });
 
   const handleReconciliation = () => {
@@ -114,19 +210,37 @@ export function ReconciliationView(
 
   const isReconciling = mt.isInProgress(reconciliationMutation.state);
 
+  // Calculate totalItems from reconciliation data for header button
+  const totalItems = factsData ? factsData.length : 0;
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Reconciliation</CardTitle>
-          <CardDescription>
-            Preview of reconciliation operations based on generated report data.
-            This includes reports, billing, costs, and their links.
-          </CardDescription>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <CardTitle>Reconciliation</CardTitle>
+              <CardDescription>
+                Preview of reconciliation operations based on generated report
+                data. This includes reports, billing, costs, and their links.
+              </CardDescription>
+            </div>
+            {totalItems > 0 && (
+              <Button
+                onClick={handleReconciliation}
+                disabled={isReconciling}
+                className="shrink-0"
+              >
+                {isReconciling
+                  ? "Reconciling..."
+                  : `Reconcile ${totalItems} Item(s)`}
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col min-h-0">
           {rd
-            .journey(reconciliation)
+            .journey(facts)
             .wait(
               <div className="space-y-4">
                 <Skeleton className="h-32 w-full" />
@@ -134,15 +248,13 @@ export function ReconciliationView(
               </div>,
             )
             .catch(renderError)
-            .map((preview) => {
-              const totalItems =
-                preview.reports.length +
-                preview.billings.length +
-                preview.costs.length +
-                preview.reportBillingLinks.length +
-                preview.reportCostLinks.length;
+            .map((factsData) => {
+              // Filter out ignored facts
+              const activeFacts = factsData.filter(
+                (fact) => fact.action.type !== "ignore",
+              );
 
-              if (totalItems === 0) {
+              if (activeFacts.length === 0) {
                 return (
                   <div className="text-sm text-slate-600">
                     No items to reconcile for this iteration.
@@ -203,34 +315,6 @@ export function ReconciliationView(
                 );
               };
 
-              // Type guard helpers
-              const isBillingUpdate = (
-                item: BillingReconciliationPreview,
-              ): item is Extract<
-                BillingReconciliationPreview,
-                { type: "update" }
-              > => {
-                return item.type === "update";
-              };
-
-              const isCostUpdate = (
-                item: CostReconciliationPreview,
-              ): item is Extract<
-                CostReconciliationPreview,
-                { type: "update" }
-              > => {
-                return item.type === "update";
-              };
-
-              const isReportUpdate = (
-                item: ReportReconciliationPreview,
-              ): item is Extract<
-                ReportReconciliationPreview,
-                { type: "update" }
-              > => {
-                return item.type === "update";
-              };
-
               // Navigation handlers for header buttons
               const handleCostHeaderClick = () => {
                 props.services.navigationService.navigate(
@@ -262,10 +346,7 @@ export function ReconciliationView(
               // Helper to render badge with popover for editing
               const renderEditableBadge = (
                 type: "cost" | "report" | "billing",
-                item:
-                  | CostReconciliationPreview
-                  | ReportReconciliationPreview
-                  | BillingReconciliationPreview,
+                item: CostFact | ReportFact | BillingFact,
                 isNew: boolean,
               ) => {
                 if (isNew) {
@@ -279,7 +360,7 @@ export function ReconciliationView(
                 // For updates, wrap badge in InlinePopoverForm
                 const projectData = rd.tryGet(project);
                 const iterationData = rd.tryGet(props.iteration);
-                if (!projectData) {
+                if (!projectData || item.action.type !== "update") {
                   return (
                     <Badge variant="info" tone="secondary" size="sm">
                       Will be updated
@@ -299,10 +380,19 @@ export function ReconciliationView(
                   );
                 }
 
-                if (type === "cost" && item.type === "update") {
-                  const costItem = item as Extract<
-                    CostReconciliationPreview,
-                    { type: "update" }
+                if (type === "cost" && item.action.type === "update") {
+                  const costFact = item as CostFact;
+                  // Narrow the action type
+                  if (costFact.action.type !== "update") {
+                    return (
+                      <Badge variant="info" tone="secondary" size="sm">
+                        Will be updated
+                      </Badge>
+                    );
+                  }
+                  const updateAction = costFact.action;
+                  const oldValues = (updateAction.oldValues || {}) as Partial<
+                    CostFact["payload"]
                   >;
                   return (
                     <InlinePopoverForm
@@ -322,22 +412,24 @@ export function ReconciliationView(
                           <CostForm
                             onCancel={bag.close}
                             defaultValues={{
-                              netValue: costItem.oldValues.netValue ?? costItem.netValue,
-                              grossValue: costItem.oldValues.grossValue ?? costItem.grossValue,
-                              currency: costItem.oldValues.currency ?? costItem.currency,
-                              invoiceNumber: costItem.invoiceNumber,
-                              counterparty: costItem.counterparty,
-                              invoiceDate: costItem.invoiceDate,
-                              description: costItem.description,
-                              contractorId: costItem.contractorId
-                                ? costItem.contractorId
-                                : null,
-                              workspaceId: workspaceId,
+                              netValue:
+                                oldValues.netValue ?? costFact.payload.netValue,
+                              grossValue:
+                                oldValues.grossValue ??
+                                costFact.payload.grossValue,
+                              currency:
+                                oldValues.currency ?? costFact.payload.currency,
+                              invoiceNumber: costFact.payload.invoiceNumber,
+                              counterparty: costFact.payload.counterparty,
+                              invoiceDate: costFact.payload.invoiceDate,
+                              description: costFact.payload.description,
+                              contractorId: costFact.payload.contractorId,
+                              workspaceId: costFact.payload.workspaceId,
                             }}
                             services={props.services}
                             onSubmit={async (data, changes) => {
                               await props.services.mutationService.editCost(
-                                costItem.id,
+                                updateAction.id,
                                 changes,
                               );
                               bag.close();
@@ -349,10 +441,26 @@ export function ReconciliationView(
                   );
                 }
 
-                if (type === "report" && item.type === "update") {
-                  const reportItem = item as Extract<
-                    ReportReconciliationPreview,
-                    { type: "update" }
+                if (type === "report" && item.action.type === "update") {
+                  const reportFact = item as ReportFact;
+                  // Narrow the action type
+                  if (reportFact.action.type !== "update") {
+                    if (!iterationData) {
+                      return (
+                        <Badge variant="info" tone="secondary" size="sm">
+                          Will be updated
+                        </Badge>
+                      );
+                    }
+                    return (
+                      <Badge variant="info" tone="secondary" size="sm">
+                        Will be updated
+                      </Badge>
+                    );
+                  }
+                  const updateAction = reportFact.action;
+                  const oldValues = (updateAction.oldValues || {}) as Partial<
+                    ReportFact["payload"]
                   >;
                   if (!iterationData) {
                     return (
@@ -379,23 +487,32 @@ export function ReconciliationView(
                           <ReportForm
                             onCancel={bag.close}
                             defaultValues={{
-                              contractorId: reportItem.contractorId,
-                              netValue: reportItem.oldValues.netValue ?? reportItem.netValue,
-                              unit: reportItem.oldValues.unit ?? reportItem.unit,
-                              quantity: reportItem.oldValues.quantity ?? reportItem.quantity,
-                              unitPrice: reportItem.oldValues.unitPrice ?? reportItem.unitPrice,
-                              currency: reportItem.oldValues.currency ?? reportItem.currency,
+                              contractorId: reportFact.payload.contractorId,
+                              netValue:
+                                oldValues.netValue ??
+                                reportFact.payload.netValue,
+                              unit: oldValues.unit ?? reportFact.payload.unit,
+                              quantity:
+                                oldValues.quantity ??
+                                reportFact.payload.quantity,
+                              unitPrice:
+                                oldValues.unitPrice ??
+                                reportFact.payload.unitPrice,
+                              currency:
+                                oldValues.currency ??
+                                reportFact.payload.currency,
                               periodStart: iterationData.periodStart,
                               periodEnd: iterationData.periodEnd,
                               clientId: projectData.clientId,
-                              workspaceId: workspaceId,
-                              description: `Generated from report #${props.report.id}`,
-                              projectIterationId: props.projectIterationId,
+                              workspaceId: reportFact.payload.workspaceId,
+                              description: reportFact.payload.description,
+                              projectIterationId:
+                                reportFact.payload.projectIterationId,
                             }}
                             services={props.services}
                             onSubmit={async (data, changes) => {
                               await props.services.mutationService.editReport(
-                                reportItem.id,
+                                updateAction.id,
                                 changes,
                               );
                               bag.close();
@@ -407,10 +524,19 @@ export function ReconciliationView(
                   );
                 }
 
-                if (type === "billing" && item.type === "update") {
-                  const billingItem = item as Extract<
-                    BillingReconciliationPreview,
-                    { type: "update" }
+                if (type === "billing" && item.action.type === "update") {
+                  const billingFact = item as BillingFact;
+                  // Narrow the action type
+                  if (billingFact.action.type !== "update") {
+                    return (
+                      <Badge variant="info" tone="secondary" size="sm">
+                        Will be updated
+                      </Badge>
+                    );
+                  }
+                  const updateAction = billingFact.action;
+                  const oldValues = (updateAction.oldValues || {}) as Partial<
+                    BillingFact["payload"]
                   >;
                   return (
                     <InlinePopoverForm
@@ -430,19 +556,25 @@ export function ReconciliationView(
                           <BillingForm
                             onCancel={bag.close}
                             defaultValues={{
-                              totalNet: billingItem.oldValues.totalNet ?? billingItem.totalNet,
-                              totalGross: billingItem.oldValues.totalGross ?? billingItem.totalGross,
-                              currency: billingItem.oldValues.currency ?? billingItem.currency,
-                              invoiceNumber: billingItem.invoiceNumber,
-                              invoiceDate: billingItem.invoiceDate,
-                              description: billingItem.description,
+                              totalNet:
+                                oldValues.totalNet ??
+                                billingFact.payload.totalNet,
+                              totalGross:
+                                oldValues.totalGross ??
+                                billingFact.payload.totalGross,
+                              currency:
+                                oldValues.currency ??
+                                billingFact.payload.currency,
+                              invoiceNumber: billingFact.payload.invoiceNumber,
+                              invoiceDate: billingFact.payload.invoiceDate,
+                              description: billingFact.payload.description,
                               clientId: projectData.clientId,
-                              workspaceId: workspaceId,
+                              workspaceId: billingFact.payload.workspaceId,
                             }}
                             services={props.services}
                             onSubmit={async (data, changes) => {
                               await props.services.mutationService.editBilling(
-                                billingItem.id,
+                                updateAction.id,
                                 changes,
                               );
                               bag.close();
@@ -464,28 +596,12 @@ export function ReconciliationView(
               // Helper function to render a compact item card
               const renderItemCard = (
                 type: "cost" | "report" | "billing",
-                item:
-                  | CostReconciliationPreview
-                  | ReportReconciliationPreview
-                  | BillingReconciliationPreview,
-                rowIndex: number,
-                column: "cost" | "report" | "billing",
-                isHighlighted: boolean,
+                item: CostFact | ReportFact | BillingFact,
               ) => {
-                const isNew =
-                  (type === "cost" &&
-                    (item as CostReconciliationPreview).type === "create") ||
-                  (type === "report" &&
-                    (item as ReportReconciliationPreview).type === "create") ||
-                  (type === "billing" &&
-                    (item as BillingReconciliationPreview).type === "create");
-                const isUpdate = !isNew;
-                const id =
-                  type === "cost"
-                    ? getCostId(item as CostReconciliationPreview)
-                    : type === "report"
-                      ? getReportId(item as ReportReconciliationPreview)
-                      : getBillingId(item as BillingReconciliationPreview);
+                const isHighlighted = highlightedFactUuids.has(item.uuid);
+                const isNew = item.action.type === "create";
+                const isUpdate = item.action.type === "update";
+                const id = getFactId(item);
                 const label =
                   type === "cost"
                     ? "Cost"
@@ -495,14 +611,14 @@ export function ReconciliationView(
 
                 return (
                   <Card
-                    key={`${type}-${rowIndex}`}
-                    className={`border-slate-200 mb-3 transition-all ${
+                    key={`${type}-${item.uuid}`}
+                    className={`border-slate-200 bg-white mb-3 transition-all ${
                       isHighlighted
-                        ? "ring-2 ring-indigo-500 shadow-lg scale-[1.02]"
+                        ? "ring-2 ring-indigo-500 shadow-lg scale-[1.02] bg-indigo-50"
                         : ""
                     }`}
-                    onMouseEnter={() => setHoveredItem({ rowIndex, column })}
-                    onMouseLeave={() => setHoveredItem(null)}
+                    onMouseOver={() => setHoveredFactUuid(item.uuid)}
+                    onMouseLeave={() => setHoveredFactUuid(null)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -512,8 +628,7 @@ export function ReconciliationView(
                               {type === "report" && (
                                 <ContractorWidget
                                   contractorId={maybe.of(
-                                    (item as ReportReconciliationPreview)
-                                      .contractorId,
+                                    (item as ReportFact).payload.contractorId,
                                   )}
                                   services={props.services}
                                   layout="avatar"
@@ -521,14 +636,13 @@ export function ReconciliationView(
                                 />
                               )}
                               {type === "cost" &&
-                                (item as CostReconciliationPreview)
-                                  .contractorId !== null &&
-                                (item as CostReconciliationPreview)
-                                  .contractorId !== undefined && (
+                                (item as CostFact).payload.contractorId !==
+                                  null &&
+                                (item as CostFact).payload.contractorId !==
+                                  undefined && (
                                   <ContractorWidget
                                     contractorId={maybe.of(
-                                      (item as CostReconciliationPreview)
-                                        .contractorId!,
+                                      (item as CostFact).payload.contractorId!,
                                     )}
                                     services={props.services}
                                     layout="avatar"
@@ -536,15 +650,13 @@ export function ReconciliationView(
                                   />
                                 )}
                               {type === "cost" &&
-                                ((item as CostReconciliationPreview)
-                                  .contractorId === null ||
-                                  (item as CostReconciliationPreview)
-                                    .contractorId === undefined) &&
-                                (item as CostReconciliationPreview)
-                                  .counterparty && (
+                                ((item as CostFact).payload.contractorId ===
+                                  null ||
+                                  (item as CostFact).payload.contractorId ===
+                                    undefined) &&
+                                (item as CostFact).payload.counterparty && (
                                   <div className="text-xs text-slate-500">
-                                    {(item as CostReconciliationPreview)
-                                      .counterparty}
+                                    {(item as CostFact).payload.counterparty}
                                   </div>
                                 )}
                             </>
@@ -558,63 +670,59 @@ export function ReconciliationView(
                       {type === "report" && (
                         <div className="space-y-2 text-sm">
                           {isUpdate &&
-                          isReportUpdate(
-                            item as ReportReconciliationPreview,
-                          ) ? (
+                          item.action.type === "update" &&
+                          item.action.oldValues ? (
                             (() => {
-                              const reportUpdate = item as Extract<
-                                ReportReconciliationPreview,
-                                { type: "update" }
-                              >;
+                              const reportFact = item as ReportFact;
+                              const oldValues = item.action
+                                .oldValues as Partial<ReportFact["payload"]>;
                               return (
                                 <>
                                   {renderFieldDiff(
                                     "Net Value",
-                                    reportUpdate.oldValues.netValue,
-                                    reportUpdate.netValue,
+                                    oldValues.netValue,
+                                    reportFact.payload.netValue,
                                     (value) => {
                                       return formatAmountAsString(
                                         value as number,
-                                        reportUpdate.oldValues.currency ||
-                                          reportUpdate.currency,
+                                        (oldValues.currency ||
+                                          reportFact.payload
+                                            .currency) as string,
                                       );
                                     },
                                   )}
                                   {renderFieldDiff(
                                     "Quantity",
-                                    reportUpdate.oldValues.quantity !== null &&
-                                      reportUpdate.oldValues.quantity !==
-                                        undefined
-                                      ? `${reportUpdate.oldValues.quantity!.toFixed(2)} ${
-                                          reportUpdate.oldValues.unit || "h"
+                                    oldValues.quantity !== null &&
+                                      oldValues.quantity !== undefined
+                                      ? `${oldValues.quantity!.toFixed(2)} ${
+                                          oldValues.unit || "h"
                                         }`
                                       : undefined,
-                                    `${reportUpdate.quantity.toFixed(2)} ${
-                                      reportUpdate.unit
+                                    `${reportFact.payload.quantity!.toFixed(2)} ${
+                                      reportFact.payload.unit || "h"
                                     }`,
                                   )}
                                   {renderFieldDiff(
                                     "Unit Price",
-                                    reportUpdate.oldValues.unitPrice !== null &&
-                                      reportUpdate.oldValues.unitPrice !==
-                                        undefined
+                                    oldValues.unitPrice !== null &&
+                                      oldValues.unitPrice !== undefined
                                       ? `${formatAmountAsString(
-                                          reportUpdate.oldValues.unitPrice!,
-                                          reportUpdate.oldValues.currency ||
-                                            reportUpdate.currency,
-                                        )}/${
-                                          reportUpdate.oldValues.unit || "h"
-                                        }`
+                                          oldValues.unitPrice!,
+                                          (oldValues.currency ||
+                                            reportFact.payload
+                                              .currency) as string,
+                                        )}/${oldValues.unit || "h"}`
                                       : undefined,
                                     `${formatAmountAsString(
-                                      reportUpdate.unitPrice,
-                                      reportUpdate.currency,
-                                    )}/${reportUpdate.unit}`,
+                                      reportFact.payload.unitPrice!,
+                                      reportFact.payload.currency,
+                                    )}/${reportFact.payload.unit || "h"}`,
                                   )}
                                   {renderFieldDiff(
                                     "Currency",
-                                    reportUpdate.oldValues.currency,
-                                    reportUpdate.currency,
+                                    oldValues.currency,
+                                    reportFact.payload.currency,
                                   )}
                                 </>
                               );
@@ -629,12 +737,10 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: (
-                                          item as ReportReconciliationPreview
-                                        ).netValue,
-                                        currency: (
-                                          item as ReportReconciliationPreview
-                                        ).currency,
+                                        amount: (item as ReportFact).payload
+                                          .netValue,
+                                        currency: (item as ReportFact).payload
+                                          .currency,
                                       },
                                     ]}
                                     services={props.services}
@@ -650,9 +756,9 @@ export function ReconciliationView(
                                 </span>
                                 <span className="font-medium">
                                   {(
-                                    item as ReportReconciliationPreview
-                                  ).quantity.toFixed(2)}{" "}
-                                  {(item as ReportReconciliationPreview).unit}
+                                    item as ReportFact
+                                  ).payload.quantity!.toFixed(2)}{" "}
+                                  {(item as ReportFact).payload.unit || "h"}
                                 </span>
                               </div>
                               <div className="flex justify-between">
@@ -661,53 +767,22 @@ export function ReconciliationView(
                                 </span>
                                 <span className="font-medium">
                                   {props.services.formatService.financial.amount(
-                                    (item as ReportReconciliationPreview)
-                                      .unitPrice,
-                                    (item as ReportReconciliationPreview)
-                                      .currency,
+                                    (item as ReportFact).payload.unitPrice!,
+                                    (item as ReportFact).payload.currency,
                                   )}
-                                  /{(item as ReportReconciliationPreview).unit}
+                                  /{(item as ReportFact).payload.unit || "h"}
                                 </span>
                               </div>
                             </>
                           )}
                           <div className="pt-2 border-t border-slate-200">
-                            <div className="flex justify-between mb-2">
-                              <span className="text-slate-500 text-xs">
-                                Billing Unit Price:
-                              </span>
-                              <span className="font-medium text-xs">
-                                {props.services.formatService.financial.amount(
-                                  (item as ReportReconciliationPreview)
-                                    .billingUnitPrice,
-                                  (item as ReportReconciliationPreview)
-                                    .billingCurrency,
-                                )}
-                                /{(item as ReportReconciliationPreview).unit}
-                              </span>
-                            </div>
-                            {(item as ReportReconciliationPreview)
-                              .rateSignature && (
-                              <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
-                                <div className="font-medium mb-1">
-                                  Rate Conditions:
-                                </div>
-                                <div className="text-slate-600">
-                                  {
-                                    (item as ReportReconciliationPreview)
-                                      .rateSignature
-                                  }
-                                </div>
-                              </div>
-                            )}
-                            {(item as ReportReconciliationPreview).type === "create" &&
-                              (item as ReportReconciliationPreview).payload.description && (
+                            {(item as ReportFact).payload.description && (
                               <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
                                 <div className="font-medium mb-1">
                                   Description:
                                 </div>
                                 <div className="text-slate-600 whitespace-pre-wrap">
-                                  {(item as ReportReconciliationPreview).payload.description}
+                                  {(item as ReportFact).payload.description}
                                 </div>
                               </div>
                             )}
@@ -717,44 +792,44 @@ export function ReconciliationView(
                       {type === "billing" && (
                         <div className="space-y-2 text-sm">
                           {isUpdate &&
-                          isBillingUpdate(
-                            item as BillingReconciliationPreview,
-                          ) ? (
+                          item.action.type === "update" &&
+                          item.action.oldValues ? (
                             (() => {
-                              const billingUpdate = item as Extract<
-                                BillingReconciliationPreview,
-                                { type: "update" }
-                              >;
+                              const billingFact = item as BillingFact;
+                              const oldValues = item.action
+                                .oldValues as Partial<BillingFact["payload"]>;
                               return (
                                 <>
                                   {renderFieldDiff(
                                     "Net Amount",
-                                    billingUpdate.oldValues.totalNet,
-                                    billingUpdate.totalNet,
+                                    oldValues.totalNet,
+                                    billingFact.payload.totalNet,
                                     (value) => {
                                       return formatAmountAsString(
                                         value as number,
-                                        billingUpdate.oldValues.currency ||
-                                          billingUpdate.currency,
+                                        (oldValues.currency ||
+                                          billingFact.payload
+                                            .currency) as string,
                                       );
                                     },
                                   )}
                                   {renderFieldDiff(
                                     "Gross Amount",
-                                    billingUpdate.oldValues.totalGross,
-                                    billingUpdate.totalGross,
+                                    oldValues.totalGross,
+                                    billingFact.payload.totalGross,
                                     (value) => {
                                       return formatAmountAsString(
                                         value as number,
-                                        billingUpdate.oldValues.currency ||
-                                          billingUpdate.currency,
+                                        (oldValues.currency ||
+                                          billingFact.payload
+                                            .currency) as string,
                                       );
                                     },
                                   )}
                                   {renderFieldDiff(
                                     "Currency",
-                                    billingUpdate.oldValues.currency,
-                                    billingUpdate.currency,
+                                    oldValues.currency,
+                                    billingFact.payload.currency,
                                   )}
                                 </>
                               );
@@ -769,12 +844,10 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: (
-                                          item as BillingReconciliationPreview
-                                        ).totalNet,
-                                        currency: (
-                                          item as BillingReconciliationPreview
-                                        ).currency,
+                                        amount: (item as BillingFact).payload
+                                          .totalNet,
+                                        currency: (item as BillingFact).payload
+                                          .currency,
                                       },
                                     ]}
                                     services={props.services}
@@ -787,26 +860,19 @@ export function ReconciliationView(
                               <div className="flex justify-between">
                                 <span className="text-slate-500">Invoice:</span>
                                 <span className="font-medium text-xs">
-                                  {
-                                    (item as BillingReconciliationPreview)
-                                      .invoiceNumber
-                                  }
+                                  {(item as BillingFact).payload.invoiceNumber}
                                 </span>
                               </div>
                             </>
                           )}
-                          {(item as BillingReconciliationPreview)
-                            .description && (
+                          {(item as BillingFact).payload.description && (
                             <div className="pt-2 border-t border-slate-200">
                               <div className="text-xs text-slate-500">
                                 <div className="font-medium mb-1">
                                   Description:
                                 </div>
                                 <div className="text-slate-600 whitespace-pre-wrap">
-                                  {
-                                    (item as BillingReconciliationPreview)
-                                      .description
-                                  }
+                                  {(item as BillingFact).payload.description}
                                 </div>
                               </div>
                             </div>
@@ -816,45 +882,46 @@ export function ReconciliationView(
                       {type === "cost" && (
                         <div className="space-y-2 text-sm">
                           {isUpdate &&
-                          isCostUpdate(item as CostReconciliationPreview) ? (
+                          item.action.type === "update" &&
+                          item.action.oldValues ? (
                             (() => {
-                              const costUpdate = item as Extract<
-                                CostReconciliationPreview,
-                                { type: "update" }
-                              >;
+                              const costFact = item as CostFact;
+                              const oldValues = item.action
+                                .oldValues as Partial<CostFact["payload"]>;
                               return (
                                 <>
                                   {renderFieldDiff(
                                     "Net Value",
-                                    costUpdate.oldValues.netValue,
-                                    costUpdate.netValue,
+                                    oldValues.netValue,
+                                    costFact.payload.netValue,
                                     (value) => {
                                       return formatAmountAsString(
                                         value as number,
-                                        costUpdate.oldValues.currency ||
-                                          costUpdate.currency,
+                                        (oldValues.currency ||
+                                          costFact.payload.currency) as string,
                                       );
                                     },
                                   )}
                                   {renderFieldDiff(
                                     "Gross Value",
-                                    costUpdate.oldValues.grossValue,
-                                    costUpdate.grossValue,
+                                    oldValues.grossValue,
+                                    costFact.payload.grossValue,
                                     (value) => {
                                       return value !== null &&
                                         value !== undefined
                                         ? formatAmountAsString(
                                             value as number,
-                                            costUpdate.oldValues.currency ||
-                                              costUpdate.currency,
+                                            (oldValues.currency ||
+                                              costFact.payload
+                                                .currency) as string,
                                           )
                                         : "—";
                                     },
                                   )}
                                   {renderFieldDiff(
                                     "Currency",
-                                    costUpdate.oldValues.currency,
-                                    costUpdate.currency,
+                                    oldValues.currency,
+                                    costFact.payload.currency,
                                   )}
                                 </>
                               );
@@ -869,12 +936,10 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: (
-                                          item as CostReconciliationPreview
-                                        ).netValue,
-                                        currency: (
-                                          item as CostReconciliationPreview
-                                        ).currency,
+                                        amount: (item as CostFact).payload
+                                          .netValue,
+                                        currency: (item as CostFact).payload
+                                          .currency,
                                       },
                                     ]}
                                     services={props.services}
@@ -884,34 +949,26 @@ export function ReconciliationView(
                                   />
                                 </span>
                               </div>
-                              {(item as CostReconciliationPreview)
-                                .invoiceNumber && (
+                              {(item as CostFact).payload.invoiceNumber && (
                                 <div className="flex justify-between">
                                   <span className="text-slate-500">
                                     Invoice:
                                   </span>
                                   <span className="font-medium text-xs">
-                                    {
-                                      (item as CostReconciliationPreview)
-                                        .invoiceNumber
-                                    }
+                                    {(item as CostFact).payload.invoiceNumber}
                                   </span>
                                 </div>
                               )}
                             </>
                           )}
-                          {(item as CostReconciliationPreview)
-                            .description && (
+                          {(item as CostFact).payload.description && (
                             <div className="pt-2 border-t border-slate-200">
                               <div className="text-xs text-slate-500">
                                 <div className="font-medium mb-1">
                                   Description:
                                 </div>
                                 <div className="text-slate-600 whitespace-pre-wrap">
-                                  {
-                                    (item as CostReconciliationPreview)
-                                      .description
-                                  }
+                                  {(item as CostFact).payload.description}
                                 </div>
                               </div>
                             </div>
@@ -923,135 +980,165 @@ export function ReconciliationView(
                 );
               };
 
-              // Build rows for 5-column layout: (cost)(link)(report)(link)(billing)
-              // Each row represents a linked chain: cost -> report -> billing
+              // Build rows for 5-column layout: (cost)(costLink)(report)(billingLink)(billing)
+              // Display facts 1:1 - each fact gets its own row
               interface ReconciliationRow {
-                cost: CostReconciliationPreview | null;
-                costLink: ReportCostLinkPreview | null;
-                report: ReportReconciliationPreview | null;
-                billingLink: ReportBillingLinkPreview | null;
-                billing: BillingReconciliationPreview | null;
+                cost: CostFact | null;
+                costLink: LinkCostReportFact | null;
+                report: ReportFact | null;
+                billingLink: LinkBillingReportFact | null;
+                billing: BillingFact | null;
               }
+
+              // Separate facts by type
+              const costFacts = activeFacts.filter(
+                (f): f is CostFact => f.type === "cost",
+              );
+              const reportFacts = activeFacts.filter(
+                (f): f is ReportFact => f.type === "report",
+              );
+              const billingFacts = activeFacts.filter(
+                (f): f is BillingFact => f.type === "billing",
+              );
+              const costLinkFacts = activeFacts.filter(
+                (f): f is LinkCostReportFact => f.type === "linkCostReport",
+              );
+              const billingLinkFacts = activeFacts.filter(
+                (f): f is LinkBillingReportFact =>
+                  f.type === "linkBillingReport",
+              );
 
               const rows: ReconciliationRow[] = [];
-              const usedCostIds = new Set<number>();
-              const usedBillingIds = new Set<number>();
 
-              // Iterate through ALL reports to ensure every report is displayed
-              // Each report in preview.reports is already unique by contractor + rate + currency
-              // (grouped in calculateReportReconciliation)
-              // Reports are shown separately - each gets its own row
-              for (const report of preview.reports) {
-                const reportId = getReportId(report);
-                // Find billing link for this report (match by reportId)
-                const billingLink = preview.reportBillingLinks.find(
-                  (bl) => bl.reportId === reportId,
+              // Track which links have been shown to avoid duplicates
+              const shownCostLinks = new Set<string>(); // fact UUID
+              const shownBillingLinks = new Set<string>(); // fact UUID
+
+              // Step 1: Add all costs (each cost gets its own row)
+              for (const cost of costFacts) {
+                // Find cost-report link for this cost
+                const costLink = costLinkFacts.find(
+                  (cl) =>
+                    cl.linkedFacts.includes(cost.uuid) &&
+                    !shownCostLinks.has(cl.uuid),
                 );
-                const billing = billingLink
-                  ? preview.billings.find(
-                      (b) => getBillingId(b) === billingLink.billingId,
-                    )
-                  : null;
 
-                // Find cost link for this report (match by reportId)
-                const costLink = preview.reportCostLinks.find(
-                  (cl) => cl.reportId === reportId,
-                );
-                const cost = costLink
-                  ? preview.costs.find((c) => getCostId(c) === costLink.costId)
-                  : null;
-
-                // Check if cost/billing tiles are already used - if so, don't show them again
-                // But always show the report tile (each report is separate)
-                const isCostUsed = cost
-                  ? usedCostIds.has(getCostId(cost))
-                  : false;
-                const isBillingUsed = billing
-                  ? usedBillingIds.has(getBillingId(billing))
-                  : false;
-
-                rows.push({
-                  cost: isCostUsed ? null : cost || null, // Only show cost tile if not already used
-                  costLink: costLink || null,
-                  report, // Always show the report tile - each report is separate
-                  billingLink: billingLink || null,
-                  billing: isBillingUsed ? null : billing || null, // Only show billing tile if not already used
-                });
-
-                // Mark items as used (for tile deduplication)
-                if (cost && !isCostUsed) {
-                  usedCostIds.add(getCostId(cost));
+                if (costLink) {
+                  shownCostLinks.add(costLink.uuid);
                 }
-                if (billing && !isBillingUsed) {
-                  usedBillingIds.add(getBillingId(billing));
-                }
-              }
-
-              // Add standalone costs (no links)
-              for (const cost of preview.costs) {
-                const costId = getCostId(cost);
-                if (usedCostIds.has(costId)) continue;
 
                 rows.push({
                   cost,
-                  costLink: null,
+                  costLink: costLink || null,
                   report: null,
                   billingLink: null,
                   billing: null,
                 });
-
-                usedCostIds.add(costId);
               }
 
-              // Add standalone billings (no links)
-              for (const billing of preview.billings) {
-                const billingId = getBillingId(billing);
-                if (usedBillingIds.has(billingId)) continue;
+              // Step 2: Add all reports (each report gets its own row)
+              for (const report of reportFacts) {
+                // Find links for this report (only unshown ones)
+                const costLink = costLinkFacts.find(
+                  (cl) =>
+                    cl.linkedFacts.includes(report.uuid) &&
+                    !shownCostLinks.has(cl.uuid),
+                );
+
+                const billingLink = billingLinkFacts.find(
+                  (bl) =>
+                    bl.linkedFacts.includes(report.uuid) &&
+                    !shownBillingLinks.has(bl.uuid),
+                );
+
+                if (costLink) {
+                  shownCostLinks.add(costLink.uuid);
+                }
+                if (billingLink) {
+                  shownBillingLinks.add(billingLink.uuid);
+                }
+
+                rows.push({
+                  cost: null,
+                  costLink: costLink || null,
+                  report,
+                  billingLink: billingLink || null,
+                  billing: null,
+                });
+              }
+
+              // Step 3: Add all billings (each billing gets its own row)
+              for (const billing of billingFacts) {
+                // Find first unshown billing-report link for this billing
+                const billingLink = billingLinkFacts.find(
+                  (bl) =>
+                    bl.linkedFacts.includes(billing.uuid) &&
+                    !shownBillingLinks.has(bl.uuid),
+                );
+
+                if (billingLink) {
+                  shownBillingLinks.add(billingLink.uuid);
+                }
 
                 rows.push({
                   cost: null,
                   costLink: null,
                   report: null,
-                  billingLink: null,
+                  billingLink: billingLink || null,
                   billing,
                 });
+              }
 
-                usedBillingIds.add(billingId);
+              // Step 4: Add remaining billing-report links that weren't shown
+              for (const billingLink of billingLinkFacts) {
+                if (!shownBillingLinks.has(billingLink.uuid)) {
+                  rows.push({
+                    cost: null,
+                    costLink: null,
+                    report: null,
+                    billingLink,
+                    billing: null,
+                  });
+                }
+              }
+
+              // Step 5: Add remaining cost-report links that weren't shown
+              for (const costLink of costLinkFacts) {
+                if (!shownCostLinks.has(costLink.uuid)) {
+                  rows.push({
+                    cost: null,
+                    costLink,
+                    report: null,
+                    billingLink: null,
+                    billing: null,
+                  });
+                }
               }
 
               // Helper to render link card with breakdown
               const renderLink = (
-                link: ReportCostLinkPreview | ReportBillingLinkPreview | null,
-                rowIndex: number,
-                column: "costLink" | "billingLink",
-                isHighlighted: boolean,
+                link: LinkCostReportFact | LinkBillingReportFact,
               ) => {
-                if (!link) {
-                  return (
-                    <div className="flex items-center justify-center h-full min-h-[120px]">
-                      <div className="text-xs text-slate-300">—</div>
-                    </div>
-                  );
-                }
-
-                // Determine link type based on properties
-                const isCostLink = "costId" in link;
+                const isHighlighted = highlightedFactUuids.has(link.uuid);
+                // Determine link type based on fact type
+                const isCostLink = link.type === "linkCostReport";
                 const costLink = isCostLink
-                  ? (link as ReportCostLinkPreview)
+                  ? (link as LinkCostReportFact)
                   : null;
                 const billingLink = !isCostLink
-                  ? (link as ReportBillingLinkPreview)
+                  ? (link as LinkBillingReportFact)
                   : null;
 
                 return (
                   <Card
-                    className={`border-slate-200 mb-3 transition-all ${
+                    key={`link-${link.uuid}`}
+                    className={`border-2 border-dashed border-purple-300 bg-purple-50/30 mb-3 transition-all ${
                       isHighlighted
-                        ? "ring-2 ring-indigo-500 shadow-lg scale-[1.02]"
+                        ? "ring-2 ring-purple-500 shadow-lg scale-[1.02] bg-purple-100 border-purple-400"
                         : ""
                     }`}
-                    onMouseEnter={() => setHoveredItem({ rowIndex, column })}
-                    onMouseLeave={() => setHoveredItem(null)}
+                    onMouseOver={() => setHoveredFactUuid(link.uuid)}
+                    onMouseLeave={() => setHoveredFactUuid(null)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -1067,13 +1154,13 @@ export function ReconciliationView(
                         </Badge>
                       </div>
                       <div className="space-y-2 text-sm">
-                        {costLink ? (
+                        {costLink && costLink.payload.breakdown ? (
                           <>
                             <div className="flex justify-between">
                               <span className="text-slate-500">Quantity:</span>
                               <span className="font-medium">
-                                {costLink.breakdown.quantity.toFixed(2)}{" "}
-                                {costLink.breakdown.unit}
+                                {costLink.payload.breakdown.quantity.toFixed(2)}{" "}
+                                {costLink.payload.breakdown.unit}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1082,10 +1169,10 @@ export function ReconciliationView(
                               </span>
                               <span className="font-medium">
                                 {props.services.formatService.financial.amount(
-                                  costLink.breakdown.reportUnitPrice,
-                                  costLink.breakdown.reportCurrency,
+                                  costLink.payload.breakdown.reportUnitPrice,
+                                  costLink.payload.breakdown.reportCurrency,
                                 )}
-                                /{costLink.breakdown.unit}
+                                /{costLink.payload.breakdown.unit}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1094,19 +1181,21 @@ export function ReconciliationView(
                               </span>
                               <span className="font-medium">
                                 {props.services.formatService.financial.amount(
-                                  costLink.breakdown.costUnitPrice,
-                                  costLink.breakdown.costCurrency,
+                                  costLink.payload.breakdown.costUnitPrice,
+                                  costLink.payload.breakdown.costCurrency,
                                 )}
-                                /{costLink.breakdown.unit}
+                                /{costLink.payload.breakdown.unit}
                               </span>
                             </div>
-                            {costLink.breakdown.exchangeRate !== 1 && (
+                            {costLink.payload.breakdown.exchangeRate !== 1 && (
                               <div className="flex justify-between">
                                 <span className="text-slate-500">
                                   Exchange Rate:
                                 </span>
                                 <span className="font-medium text-xs">
-                                  {costLink.breakdown.exchangeRate.toFixed(4)}
+                                  {costLink.payload.breakdown.exchangeRate.toFixed(
+                                    4,
+                                  )}
                                 </span>
                               </div>
                             )}
@@ -1119,9 +1208,10 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: costLink.reportAmount,
+                                        amount: costLink.payload.reportAmount,
                                         currency:
-                                          costLink.breakdown.reportCurrency,
+                                          costLink.payload.breakdown
+                                            .reportCurrency,
                                       },
                                     ]}
                                     services={props.services}
@@ -1139,9 +1229,10 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: costLink.costAmount,
+                                        amount: costLink.payload.costAmount,
                                         currency:
-                                          costLink.breakdown.costCurrency,
+                                          costLink.payload.breakdown
+                                            .costCurrency,
                                       },
                                     ]}
                                     services={props.services}
@@ -1153,13 +1244,15 @@ export function ReconciliationView(
                               </div>
                             </div>
                           </>
-                        ) : billingLink ? (
+                        ) : billingLink && billingLink.payload.breakdown ? (
                           <>
                             <div className="flex justify-between">
                               <span className="text-slate-500">Quantity:</span>
                               <span className="font-medium">
-                                {billingLink.breakdown.quantity.toFixed(2)}{" "}
-                                {billingLink.breakdown.unit}
+                                {billingLink.payload.breakdown.quantity.toFixed(
+                                  2,
+                                )}{" "}
+                                {billingLink.payload.breakdown.unit}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1168,10 +1261,10 @@ export function ReconciliationView(
                               </span>
                               <span className="font-medium">
                                 {props.services.formatService.financial.amount(
-                                  billingLink.breakdown.reportUnitPrice,
-                                  billingLink.breakdown.reportCurrency,
+                                  billingLink.payload.breakdown.reportUnitPrice,
+                                  billingLink.payload.breakdown.reportCurrency,
                                 )}
-                                /{billingLink.breakdown.unit}
+                                /{billingLink.payload.breakdown.unit}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1180,10 +1273,11 @@ export function ReconciliationView(
                               </span>
                               <span className="font-medium">
                                 {props.services.formatService.financial.amount(
-                                  billingLink.breakdown.billingUnitPrice,
-                                  billingLink.breakdown.billingCurrency,
+                                  billingLink.payload.breakdown
+                                    .billingUnitPrice,
+                                  billingLink.payload.breakdown.billingCurrency,
                                 )}
-                                /{billingLink.breakdown.unit}
+                                /{billingLink.payload.breakdown.unit}
                               </span>
                             </div>
                             <div className="pt-2 border-t border-slate-200">
@@ -1195,9 +1289,11 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: billingLink.reportAmount,
+                                        amount:
+                                          billingLink.payload.reportAmount,
                                         currency:
-                                          billingLink.breakdown.reportCurrency,
+                                          billingLink.payload.breakdown
+                                            .reportCurrency,
                                       },
                                     ]}
                                     services={props.services}
@@ -1215,9 +1311,11 @@ export function ReconciliationView(
                                   <CurrencyValueWidget
                                     values={[
                                       {
-                                        amount: billingLink.billingAmount,
+                                        amount:
+                                          billingLink.payload.billingAmount,
                                         currency:
-                                          billingLink.breakdown.billingCurrency,
+                                          billingLink.payload.breakdown
+                                            .billingCurrency,
                                       },
                                     ]}
                                     services={props.services}
@@ -1236,201 +1334,161 @@ export function ReconciliationView(
                 );
               };
 
+              // Separate items by column type (only actual items, no placeholders)
+              const costItems: CostFact[] = [];
+              const costLinkItems: LinkCostReportFact[] = [];
+              const reportItems: ReportFact[] = [];
+              const billingLinkItems: LinkBillingReportFact[] = [];
+              const billingItems: BillingFact[] = [];
+
+              // Track which links have been added to avoid duplicates
+              const addedCostLinks = new Set<string>();
+              const addedBillingLinks = new Set<string>();
+
+              rows.forEach((row) => {
+                if (row.cost) {
+                  costItems.push(row.cost);
+                }
+                if (row.costLink && !addedCostLinks.has(row.costLink.uuid)) {
+                  costLinkItems.push(row.costLink);
+                  addedCostLinks.add(row.costLink.uuid);
+                }
+                if (row.report) {
+                  reportItems.push(row.report);
+                }
+                if (
+                  row.billingLink &&
+                  !addedBillingLinks.has(row.billingLink.uuid)
+                ) {
+                  billingLinkItems.push(row.billingLink);
+                  addedBillingLinks.add(row.billingLink.uuid);
+                }
+                if (row.billing) {
+                  billingItems.push(row.billing);
+                }
+              });
+
               return (
-                <div className="space-y-4">
+                <div className="flex flex-col flex-1 min-h-0">
                   {/* Column Headers */}
-                  <div className="grid grid-cols-5 gap-4 pb-2 border-b border-slate-200">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleCostHeaderClick();
-                      }}
-                      className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
-                      style={{ pointerEvents: "auto" }}
-                    >
-                      Cost
-                    </button>
-                    <div className="text-sm font-semibold text-slate-700 text-center">
-                      Link
+                  <div className="flex flex-row gap-4 pb-2 border-b border-slate-200 shrink-0">
+                    <div className="flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleCostHeaderClick();
+                        }}
+                        className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
+                        style={{ pointerEvents: "auto" }}
+                      >
+                        Cost
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleReportHeaderClick();
-                      }}
-                      className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
-                      style={{ pointerEvents: "auto" }}
-                    >
-                      Report
-                    </button>
-                    <div className="text-sm font-semibold text-slate-700 text-center">
-                      Link
+                    <div className="flex-1 min-w-0 text-center">
+                      <div className="text-sm font-semibold text-slate-700">
+                        Cost→Report Link
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleBillingHeaderClick();
-                      }}
-                      className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
-                      style={{ pointerEvents: "auto" }}
-                    >
-                      Billing
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleReportHeaderClick();
+                        }}
+                        className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
+                        style={{ pointerEvents: "auto" }}
+                      >
+                        Report
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-0 text-center">
+                      <div className="text-sm font-semibold text-slate-700">
+                        Report→Billing Link
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleBillingHeaderClick();
+                        }}
+                        className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
+                        style={{ pointerEvents: "auto" }}
+                      >
+                        Billing
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Rows */}
+                  {/* Columns */}
                   {rows.length > 0 ? (
-                    rows.map((row, index) => {
-                      // Determine which items should be highlighted based on hover
-                      // Cost card hover → highlight cost + costLink
-                      // Cost link hover → highlight cost + costLink + report
-                      // Report card hover → highlight costLink + report + billingLink
-                      // Billing link hover → highlight report + billingLink + billing
-                      // Billing card hover → highlight billingLink + billing
-                      const isCostHighlighted =
-                        hoveredItem?.rowIndex === index &&
-                        (hoveredItem.column === "cost" ||
-                          hoveredItem.column === "costLink");
-                      const isCostLinkHighlighted =
-                        hoveredItem?.rowIndex === index &&
-                        (hoveredItem.column === "costLink" ||
-                          hoveredItem.column === "cost" ||
-                          hoveredItem.column === "report");
-                      const isReportHighlighted =
-                        hoveredItem?.rowIndex === index &&
-                        (hoveredItem.column === "report" ||
-                          hoveredItem.column === "costLink" ||
-                          hoveredItem.column === "billingLink");
-                      const isBillingLinkHighlighted =
-                        hoveredItem?.rowIndex === index &&
-                        (hoveredItem.column === "billingLink" ||
-                          hoveredItem.column === "report" ||
-                          hoveredItem.column === "billing");
-                      const isBillingHighlighted =
-                        hoveredItem?.rowIndex === index &&
-                        (hoveredItem.column === "billing" ||
-                          hoveredItem.column === "billingLink");
-
-                      return (
-                        <div
-                          key={index}
-                          className="grid grid-cols-5 gap-4 items-start"
-                        >
-                          {/* Cost Column */}
-                          <div>
-                            {row.cost ? (
-                              renderItemCard(
-                                "cost",
-                                row.cost,
-                                index,
-                                "cost",
-                                isCostHighlighted,
-                              )
-                            ) : (
-                              <div className="text-xs text-slate-400 italic py-8 text-center">
-                                —
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Cost Link Column */}
-                          <div>
-                            {renderLink(
-                              row.costLink,
-                              index,
-                              "costLink",
-                              isCostLinkHighlighted,
-                            )}
-                          </div>
-
-                          {/* Report Column */}
-                          <div>
-                            {row.report ? (
-                              renderItemCard(
-                                "report",
-                                row.report,
-                                index,
-                                "report",
-                                isReportHighlighted,
-                              )
-                            ) : (
-                              <div className="text-xs text-slate-400 italic py-8 text-center">
-                                —
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Billing Link Column */}
-                          <div>
-                            {renderLink(
-                              row.billingLink,
-                              index,
-                              "billingLink",
-                              isBillingLinkHighlighted,
-                            )}
-                          </div>
-
-                          {/* Billing Column */}
-                          <div>
-                            {row.billing ? (
-                              renderItemCard(
-                                "billing",
-                                row.billing,
-                                index,
-                                "billing",
-                                isBillingHighlighted,
-                              )
-                            ) : (
-                              <div className="text-xs text-slate-400 italic py-8 text-center">
-                                —
-                              </div>
-                            )}
-                          </div>
+                    <div className="flex flex-row gap-4 flex-1 min-h-0">
+                      {/* Cost Column */}
+                      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
+                        <div className="space-y-3">
+                          {costItems.map((item, index) => (
+                            <div key={`cost-${item.uuid}-${index}`}>
+                              {renderItemCard("cost", item)}
+                            </div>
+                          ))}
                         </div>
-                      );
-                    })
+                      </div>
+
+                      {/* Cost Link Column */}
+                      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
+                        <div className="space-y-3">
+                          {costLinkItems.map((item, index) => (
+                            <div key={`costLink-${item.uuid}-${index}`}>
+                              {renderLink(item)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Report Column */}
+                      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
+                        <div className="space-y-3">
+                          {reportItems.map((item, index) => (
+                            <div key={`report-${item.uuid}-${index}`}>
+                              {renderItemCard("report", item)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Billing Link Column */}
+                      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
+                        <div className="space-y-3">
+                          {billingLinkItems.map((item, index) => (
+                            <div key={`billingLink-${item.uuid}-${index}`}>
+                              {renderLink(item)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Billing Column */}
+                      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
+                        <div className="space-y-3">
+                          {billingItems.map((item, index) => (
+                            <div key={`billing-${item.uuid}-${index}`}>
+                              {renderItemCard("billing", item)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div className="text-sm text-slate-600 py-8 text-center">
                       No items to reconcile
                     </div>
                   )}
-
-                  {/* Links Summary */}
-                  {(preview.reportBillingLinks.length > 0 ||
-                    preview.reportCostLinks.length > 0) && (
-                    <div className="pt-4 border-t border-slate-200">
-                      <div className="text-sm text-slate-600">
-                        <span className="font-medium">
-                          {preview.reportCostLinks.length} cost link
-                          {preview.reportCostLinks.length !== 1 ? "s" : ""}
-                        </span>
-                        {" · "}
-                        <span className="font-medium">
-                          {preview.reportBillingLinks.length} billing link
-                          {preview.reportBillingLinks.length !== 1 ? "s" : ""}
-                        </span>
-                        {" will be created"}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-4 border-t border-slate-200">
-                    <Button
-                      onClick={handleReconciliation}
-                      disabled={isReconciling}
-                      className="w-full md:w-auto"
-                    >
-                      {isReconciling
-                        ? "Reconciling..."
-                        : `Reconcile ${totalItems} Item(s)`}
-                    </Button>
-                  </div>
                 </div>
               );
             })}

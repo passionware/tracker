@@ -272,9 +272,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-1",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "contractorId": 1,
             "counterparty": null,
@@ -294,6 +291,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-2",
         },
         {
+          "linkedFacts": [
+            "uuid-2",
+            "uuid-1",
+          ],
           "payload": {
             "breakdown": {
               "costCurrency": "EUR",
@@ -342,9 +343,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-4",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-4",
-          },
           "payload": {
             "contractorId": 2,
             "counterparty": null,
@@ -364,6 +362,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-5",
         },
         {
+          "linkedFacts": [
+            "uuid-5",
+            "uuid-4",
+          ],
           "payload": {
             "breakdown": {
               "costCurrency": "EUR",
@@ -412,9 +414,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-7",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-7",
-          },
           "payload": {
             "contractorId": 4,
             "counterparty": null,
@@ -434,6 +433,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-8",
         },
         {
+          "linkedFacts": [
+            "uuid-8",
+            "uuid-7",
+          ],
           "payload": {
             "breakdown": {
               "costCurrency": "PLN",
@@ -482,9 +485,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-10",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-10",
-          },
           "payload": {
             "contractorId": 5,
             "counterparty": null,
@@ -504,6 +504,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-11",
         },
         {
+          "linkedFacts": [
+            "uuid-11",
+            "uuid-10",
+          ],
           "payload": {
             "breakdown": {
               "costCurrency": "PLN",
@@ -524,9 +528,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-12",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -561,6 +562,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-13",
         },
         {
+          "linkedFacts": [
+            "uuid-1",
+            "uuid-13",
+          ],
           "payload": {
             "billingAmount": 320,
             "billingId": 0,
@@ -581,6 +586,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-14",
         },
         {
+          "linkedFacts": [
+            "uuid-4",
+            "uuid-13",
+          ],
           "payload": {
             "billingAmount": 400,
             "billingId": 0,
@@ -601,6 +610,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-15",
         },
         {
+          "linkedFacts": [
+            "uuid-7",
+            "uuid-13",
+          ],
           "payload": {
             "billingAmount": 320,
             "billingId": 0,
@@ -621,6 +634,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-16",
         },
         {
+          "linkedFacts": [
+            "uuid-10",
+            "uuid-13",
+          ],
           "payload": {
             "billingAmount": 240,
             "billingId": 0,
@@ -1016,9 +1033,6 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1102,9 +1116,6 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1127,9 +1138,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-7",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-4",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1223,9 +1231,6 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1248,9 +1253,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-7",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-4",
-          },
           "payload": {
             "clientId": 10,
             "currency": "USD",
@@ -1549,6 +1551,10 @@ describe("convertGeneratedReportToFacts", () => {
     expect(linkFacts).toMatchInlineSnapshot(`
       [
         {
+          "linkedFacts": [
+            "uuid-2",
+            "uuid-1",
+          ],
           "payload": {
             "breakdown": {
               "costCurrency": "EUR",
@@ -1569,6 +1575,10 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-3",
         },
         {
+          "linkedFacts": [
+            "uuid-1",
+            "uuid-4",
+          ],
           "payload": {
             "billingAmount": 600,
             "billingId": 0,
@@ -1631,9 +1641,6 @@ describe("convertGeneratedReportToFacts", () => {
     expect([costFact, billingFact]).toMatchInlineSnapshot(`
       [
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "contractorId": 1,
             "counterparty": null,
@@ -1653,9 +1660,6 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-2",
         },
         {
-          "constraints": {
-            "linkedToReport": "uuid-1",
-          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",

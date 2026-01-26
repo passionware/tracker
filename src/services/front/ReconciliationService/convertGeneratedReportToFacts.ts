@@ -266,6 +266,7 @@ export function convertGeneratedReportToFacts(
     } = {
       uuid: reportUuid,
       type: "report",
+      action: { type: "ignore" },
       payload: {
         contractorId: group.contractorId,
         periodStart: projectIteration.periodStart,
@@ -302,6 +303,7 @@ export function convertGeneratedReportToFacts(
     const costFact: CostFact = {
       uuid: costUuid,
       type: "cost",
+      action: { type: "ignore" },
       payload: {
         contractorId: group.contractorId,
         netValue,
@@ -313,9 +315,6 @@ export function convertGeneratedReportToFacts(
         description: costDescription,
         workspaceId: contractorWorkspaceId,
       },
-      constraints: {
-        linkedToReport: reportUuid,
-      },
     };
     costFacts.push(costFact);
     facts.push(costFact);
@@ -324,6 +323,7 @@ export function convertGeneratedReportToFacts(
     const linkCostReportFact: LinkCostReportFact = {
       uuid: uuidFactory(),
       type: "linkCostReport",
+      action: { type: "ignore" },
       payload: {
         costId: null, // Will be resolved during reconciliation
         reportId: null, // Will be resolved during reconciliation
@@ -340,6 +340,7 @@ export function convertGeneratedReportToFacts(
           costCurrency: group.rate.costCurrency,
         },
       },
+      linkedFacts: [costUuid, reportUuid],
     };
     facts.push(linkCostReportFact);
   }
@@ -407,6 +408,7 @@ export function convertGeneratedReportToFacts(
     const billingFact: BillingFact = {
       uuid: billingUuid,
       type: "billing",
+      action: { type: "ignore" },
       payload: {
         currency: workspaceGroup.billingCurrency,
         totalNet,
@@ -416,10 +418,6 @@ export function convertGeneratedReportToFacts(
         invoiceDate: projectIteration.periodStart,
         description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,
-      },
-      constraints: {
-        // Link to the first report as a hint (all reports in this group should be linked)
-        linkedToReport: workspaceGroup.reports[0]?.uuid ?? "",
       },
     };
     facts.push(billingFact);
@@ -434,6 +432,7 @@ export function convertGeneratedReportToFacts(
       const linkBillingReportFact: LinkBillingReportFact = {
         uuid: uuidFactory(),
         type: "linkBillingReport",
+        action: { type: "ignore" },
         payload: {
           linkType: "reconcile",
           billingId: 0, // Will be resolved during reconciliation
@@ -450,6 +449,7 @@ export function convertGeneratedReportToFacts(
             billingCurrency: workspaceGroup.billingCurrency,
           },
         },
+        linkedFacts: [reportFact.uuid, billingUuid],
       };
       facts.push(linkBillingReportFact);
     }
