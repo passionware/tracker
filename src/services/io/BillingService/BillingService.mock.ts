@@ -13,9 +13,7 @@ export function createBillingService(): BillingService {
         totalBillingValue: 0,
         billingBalance: 0,
         remainingBalance: 0,
-        client: maybe.getOrThrow(
-          clientsMock.static.list.find((c) => c.id === x.clientId),
-        ),
+        client: maybe.getOrThrow(clientsMock.static.list[0]),
         linkBillingReport: [],
         contractors: [],
       }),
