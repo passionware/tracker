@@ -20,6 +20,37 @@ export {
 } from "./determineContractorWorkspace.ts";
 
 /**
+ * Formats a CalendarDate to a readable string (YYYY-MM-DD)
+ */
+function formatDate(date: { year: number; month: number; day: number }): string {
+  return `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
+}
+
+/**
+ * Formats a date range
+ */
+function formatDateRange(
+  start: { year: number; month: number; day: number },
+  end: { year: number; month: number; day: number },
+): string {
+  return `${formatDate(start)} to ${formatDate(end)}`;
+}
+
+/**
+ * Formats a number with currency symbol
+ */
+function formatCurrency(amount: number, currency: string): string {
+  return `${amount.toFixed(2)} ${currency}`;
+}
+
+/**
+ * Formats a rate with currency
+ */
+function formatRate(rate: number, currency: string): string {
+  return `${rate.toFixed(2)} ${currency}/h`;
+}
+
+/**
  * Creates a unique signature for a rate to identify it uniquely
  */
 function getRateSignature(rate: RoleRate): string {
@@ -37,6 +68,86 @@ function getContractorRateKey(contractorId: number, rate: RoleRate): string {
 }
 
 /**
+ * Creates a descriptive report description
+ */
+function createReportDescription(
+  projectName: string,
+  dateRange: string,
+  hours: number,
+  internalRate: number,
+  internalCurrency: string,
+  externalRate: number,
+  externalCurrency: string,
+  reportValue: number,
+  billingValue: number,
+): string {
+  return [
+    `Project: ${projectName}`,
+    `Period: ${dateRange}`,
+    `Hours: ${hours.toFixed(2)}h`,
+    `Internal Rate: ${formatRate(internalRate, internalCurrency)}`,
+    `External Rate: ${formatRate(externalRate, externalCurrency)}`,
+    ``,
+    `Report Value (Internal): ${formatCurrency(reportValue, internalCurrency)}`,
+    `Billing Value (External): ${formatCurrency(billingValue, externalCurrency)}`,
+  ].join("\n");
+}
+
+/**
+ * Creates a descriptive billing description with all linked reports
+ */
+function createBillingDescription(
+  projectName: string,
+  reports: Array<{
+    contractorId: number;
+    contractorName: string;
+    hours: number;
+    billingRate: number;
+    billingAmount: number;
+  }>,
+  total: number,
+  currency: string,
+): string {
+  const reportLines = reports.map((report, index) => {
+    return [
+      `  ${index + 1}. ${report.contractorName}`,
+      `     Hours: ${report.hours.toFixed(2)}h`,
+      `     Rate: ${formatRate(report.billingRate, currency)}`,
+      `     Amount: ${formatCurrency(report.billingAmount, currency)}`,
+    ].join("\n");
+  });
+
+  return [
+    `Project: ${projectName}`,
+    ``,
+    `Linked Reports:`,
+    ...reportLines,
+    ``,
+    `Total: ${formatCurrency(total, currency)}`,
+  ].join("\n");
+}
+
+/**
+ * Creates a descriptive cost description
+ */
+function createCostDescription(
+  projectName: string,
+  contractorName: string,
+  hours: number,
+  internalRate: number,
+  currency: string,
+  costValue: number,
+): string {
+  return [
+    `Project: ${projectName}`,
+    `Contractor: ${contractorName}`,
+    `Hours: ${hours.toFixed(2)}h`,
+    `Internal Rate: ${formatRate(internalRate, currency)}`,
+    `Cost Value: ${formatCurrency(costValue, currency)}`,
+  ].join("\n");
+}
+
+/**
  * Converts a generated report to an array of facts that should exist in the system.
  * This function describes what should be in the system without checking if items already exist.
  *
@@ -50,6 +161,8 @@ function getContractorRateKey(contractorId: number, rate: RoleRate): string {
  *                                  2. Checking rate variables for each workspace (if expressionService is provided)
  *                                  3. Falling back to the first workspace in project.workspaceIds
  *                                  Contractors don't have a direct workspace property - they can work in different workspaces for different projects/clients.
+ * @param contractorNameMap - Map of contractorId to contractor name. Used for generating descriptive fact descriptions.
+ * @param uuidFactory - Optional function to generate UUIDs. Defaults to uuidv4. Useful for testing with deterministic UUIDs.
  * @returns Array of facts describing what should be in the system
  */
 export function convertGeneratedReportToFacts(
@@ -57,6 +170,8 @@ export function convertGeneratedReportToFacts(
   projectIteration: ProjectIteration,
   project: Project,
   contractorWorkspaceMap: Map<number, number>,
+  contractorNameMap: Map<number, string> = new Map(),
+  uuidFactory: () => string = uuidv4,
 ): Fact[] {
   const facts: Fact[] = [];
 
@@ -128,7 +243,22 @@ export function convertGeneratedReportToFacts(
       0;
 
     // Create ReportFact
-    const reportUuid = uuidv4();
+    const reportUuid = uuidFactory();
+    const dateRange = formatDateRange(
+      projectIteration.periodStart,
+      projectIteration.periodEnd,
+    );
+    const reportDescription = createReportDescription(
+      project.name,
+      dateRange,
+      quantity,
+      unitPrice,
+      group.rate.costCurrency,
+      billingUnitPrice,
+      group.rate.billingCurrency,
+      netValue,
+      billingAmount,
+    );
     const reportFact: ReportFact & {
       billingAmount: number;
       billingCurrency: string;
@@ -142,7 +272,7 @@ export function convertGeneratedReportToFacts(
         periodEnd: projectIteration.periodEnd,
         clientId: project.clientId,
         workspaceId: contractorWorkspaceId,
-        description: `Generated from report #${generatedReport.id}`,
+        description: reportDescription,
         netValue,
         unit: "h",
         quantity,
@@ -158,7 +288,17 @@ export function convertGeneratedReportToFacts(
     facts.push(reportFact);
 
     // Create CostFact (linked to the report)
-    const costUuid = uuidv4();
+    const costUuid = uuidFactory();
+    const contractorName =
+      contractorNameMap.get(group.contractorId) ?? `Contractor #${group.contractorId}`;
+    const costDescription = createCostDescription(
+      project.name,
+      contractorName,
+      quantity,
+      unitPrice,
+      group.rate.costCurrency,
+      netValue,
+    );
     const costFact: CostFact = {
       uuid: costUuid,
       type: "cost",
@@ -170,7 +310,7 @@ export function convertGeneratedReportToFacts(
         invoiceNumber: `COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
         counterparty: null,
         invoiceDate: projectIteration.periodStart,
-        description: `Generated from report #${generatedReport.id}`,
+        description: costDescription,
         workspaceId: contractorWorkspaceId,
       },
       constraints: {
@@ -182,7 +322,7 @@ export function convertGeneratedReportToFacts(
 
     // Create LinkCostReportFact
     const linkCostReportFact: LinkCostReportFact = {
-      uuid: uuidv4(),
+      uuid: uuidFactory(),
       type: "linkCostReport",
       payload: {
         costId: null, // Will be resolved during reconciliation
@@ -248,7 +388,22 @@ export function convertGeneratedReportToFacts(
     const totalNet = Math.round(workspaceGroup.totalBillingNet * 100) / 100;
     const totalGross = Math.round(workspaceGroup.totalBillingGross * 100) / 100;
 
-    const billingUuid = uuidv4();
+    const billingUuid = uuidFactory();
+    const billingReports = workspaceGroup.reports.map((report) => ({
+      contractorId: report.payload.contractorId,
+      contractorName:
+        contractorNameMap.get(report.payload.contractorId) ??
+        `Contractor #${report.payload.contractorId}`,
+      hours: report.payload.quantity ?? 0,
+      billingRate: report.billingUnitPrice,
+      billingAmount: report.billingAmount,
+    }));
+    const billingDescription = createBillingDescription(
+      project.name,
+      billingReports,
+      totalNet,
+      workspaceGroup.billingCurrency,
+    );
     const billingFact: BillingFact = {
       uuid: billingUuid,
       type: "billing",
@@ -259,7 +414,7 @@ export function convertGeneratedReportToFacts(
         clientId: project.clientId,
         invoiceNumber: `INV-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-WS${workspaceGroup.workspaceId}`,
         invoiceDate: projectIteration.periodStart,
-        description: `Generated from report #${generatedReport.id}`,
+        description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,
       },
       constraints: {
@@ -277,7 +432,7 @@ export function convertGeneratedReportToFacts(
       const billingAmount = reportFact.billingAmount;
 
       const linkBillingReportFact: LinkBillingReportFact = {
-        uuid: uuidv4(),
+        uuid: uuidFactory(),
         type: "linkBillingReport",
         payload: {
           linkType: "reconcile",
