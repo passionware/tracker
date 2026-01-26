@@ -9,16 +9,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import { PopoverHeader } from "@/components/ui/popover.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
-import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { BillingForm } from "@/features/billing/BillingForm.tsx";
-import { CostForm } from "@/features/costs/CostForm.tsx";
-import { ReportForm } from "@/features/reports/ReportForm.tsx";
+import { BillingPreview } from "@/features/_common/previews/BillingPreview.tsx";
+import { CostPreview } from "@/features/_common/previews/CostPreview.tsx";
+import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
+import { BillingPicker } from "@/features/_common/pickers/BillingPicker.tsx";
+import { CostPicker } from "@/features/_common/pickers/CostPicker.tsx";
+import { ReportPicker } from "@/features/_common/pickers/ReportPicker.tsx";
+import { X } from "lucide-react";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -68,13 +76,21 @@ function findRelatedFactUuids(
   });
 
   // Determine allowed directions
-  const canGoRight = startFactType === "cost" || startFactType === "linkCostReport" || startFactType === "report";
-  const canGoLeft = startFactType === "billing" || startFactType === "linkBillingReport" || startFactType === "report";
+  const canGoRight =
+    startFactType === "cost" ||
+    startFactType === "linkCostReport" ||
+    startFactType === "report";
+  const canGoLeft =
+    startFactType === "billing" ||
+    startFactType === "linkBillingReport" ||
+    startFactType === "report";
 
   // BFS with direction tracking
-  const queue: Array<{ uuid: string; canGoRight: boolean; canGoLeft: boolean }> = [
-    { uuid: startUuid, canGoRight, canGoLeft },
-  ];
+  const queue: Array<{
+    uuid: string;
+    canGoRight: boolean;
+    canGoLeft: boolean;
+  }> = [{ uuid: startUuid, canGoRight, canGoLeft }];
 
   while (queue.length > 0) {
     const { uuid, canGoRight: canR, canGoLeft: canL } = queue.shift()!;
@@ -343,263 +359,12 @@ export function ReconciliationView(
                 );
               };
 
-              // Helper to render badge with popover for editing
-              const renderEditableBadge = (
-                type: "cost" | "report" | "billing",
-                item: CostFact | ReportFact | BillingFact,
-                isNew: boolean,
-              ) => {
-                if (isNew) {
-                  return (
-                    <Badge variant="success" tone="secondary" size="sm">
-                      Will be created
-                    </Badge>
-                  );
-                }
-
-                // For updates, wrap badge in InlinePopoverForm
-                const projectData = rd.tryGet(project);
-                const iterationData = rd.tryGet(props.iteration);
-                if (!projectData || item.action.type !== "update") {
-                  return (
-                    <Badge variant="info" tone="secondary" size="sm">
-                      Will be updated
-                    </Badge>
-                  );
-                }
-
-                const workspaceId =
-                  projectData.workspaceIds.length > 0
-                    ? projectData.workspaceIds[0]
-                    : null;
-                if (!workspaceId) {
-                  return (
-                    <Badge variant="info" tone="secondary" size="sm">
-                      Will be updated
-                    </Badge>
-                  );
-                }
-
-                if (type === "cost" && item.action.type === "update") {
-                  const costFact = item as CostFact;
-                  // Narrow the action type
-                  if (costFact.action.type !== "update") {
-                    return (
-                      <Badge variant="info" tone="secondary" size="sm">
-                        Will be updated
-                      </Badge>
-                    );
-                  }
-                  const updateAction = costFact.action;
-                  const oldValues = (updateAction.oldValues || {}) as Partial<
-                    CostFact["payload"]
-                  >;
-                  return (
-                    <InlinePopoverForm
-                      trigger={
-                        <Badge
-                          variant="info"
-                          tone="secondary"
-                          size="sm"
-                          className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          Will be updated
-                        </Badge>
-                      }
-                      content={(bag) => (
-                        <>
-                          <PopoverHeader>Edit cost</PopoverHeader>
-                          <CostForm
-                            onCancel={bag.close}
-                            defaultValues={{
-                              netValue:
-                                oldValues.netValue ?? costFact.payload.netValue,
-                              grossValue:
-                                oldValues.grossValue ??
-                                costFact.payload.grossValue,
-                              currency:
-                                oldValues.currency ?? costFact.payload.currency,
-                              invoiceNumber: costFact.payload.invoiceNumber,
-                              counterparty: costFact.payload.counterparty,
-                              invoiceDate: costFact.payload.invoiceDate,
-                              description: costFact.payload.description,
-                              contractorId: costFact.payload.contractorId,
-                              workspaceId: costFact.payload.workspaceId,
-                            }}
-                            services={props.services}
-                            onSubmit={async (data, changes) => {
-                              await props.services.mutationService.editCost(
-                                updateAction.id,
-                                changes,
-                              );
-                              bag.close();
-                            }}
-                          />
-                        </>
-                      )}
-                    />
-                  );
-                }
-
-                if (type === "report" && item.action.type === "update") {
-                  const reportFact = item as ReportFact;
-                  // Narrow the action type
-                  if (reportFact.action.type !== "update") {
-                    if (!iterationData) {
-                      return (
-                        <Badge variant="info" tone="secondary" size="sm">
-                          Will be updated
-                        </Badge>
-                      );
-                    }
-                    return (
-                      <Badge variant="info" tone="secondary" size="sm">
-                        Will be updated
-                      </Badge>
-                    );
-                  }
-                  const updateAction = reportFact.action;
-                  const oldValues = (updateAction.oldValues || {}) as Partial<
-                    ReportFact["payload"]
-                  >;
-                  if (!iterationData) {
-                    return (
-                      <Badge variant="info" tone="secondary" size="sm">
-                        Will be updated
-                      </Badge>
-                    );
-                  }
-                  return (
-                    <InlinePopoverForm
-                      trigger={
-                        <Badge
-                          variant="info"
-                          tone="secondary"
-                          size="sm"
-                          className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          Will be updated
-                        </Badge>
-                      }
-                      content={(bag) => (
-                        <>
-                          <PopoverHeader>Edit report</PopoverHeader>
-                          <ReportForm
-                            onCancel={bag.close}
-                            defaultValues={{
-                              contractorId: reportFact.payload.contractorId,
-                              netValue:
-                                oldValues.netValue ??
-                                reportFact.payload.netValue,
-                              unit: oldValues.unit ?? reportFact.payload.unit,
-                              quantity:
-                                oldValues.quantity ??
-                                reportFact.payload.quantity,
-                              unitPrice:
-                                oldValues.unitPrice ??
-                                reportFact.payload.unitPrice,
-                              currency:
-                                oldValues.currency ??
-                                reportFact.payload.currency,
-                              periodStart: iterationData.periodStart,
-                              periodEnd: iterationData.periodEnd,
-                              clientId: projectData.clientId,
-                              workspaceId: reportFact.payload.workspaceId,
-                              description: reportFact.payload.description,
-                              projectIterationId:
-                                reportFact.payload.projectIterationId,
-                            }}
-                            services={props.services}
-                            onSubmit={async (data, changes) => {
-                              await props.services.mutationService.editReport(
-                                updateAction.id,
-                                changes,
-                              );
-                              bag.close();
-                            }}
-                          />
-                        </>
-                      )}
-                    />
-                  );
-                }
-
-                if (type === "billing" && item.action.type === "update") {
-                  const billingFact = item as BillingFact;
-                  // Narrow the action type
-                  if (billingFact.action.type !== "update") {
-                    return (
-                      <Badge variant="info" tone="secondary" size="sm">
-                        Will be updated
-                      </Badge>
-                    );
-                  }
-                  const updateAction = billingFact.action;
-                  const oldValues = (updateAction.oldValues || {}) as Partial<
-                    BillingFact["payload"]
-                  >;
-                  return (
-                    <InlinePopoverForm
-                      trigger={
-                        <Badge
-                          variant="info"
-                          tone="secondary"
-                          size="sm"
-                          className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          Will be updated
-                        </Badge>
-                      }
-                      content={(bag) => (
-                        <>
-                          <PopoverHeader>Edit billing</PopoverHeader>
-                          <BillingForm
-                            onCancel={bag.close}
-                            defaultValues={{
-                              totalNet:
-                                oldValues.totalNet ??
-                                billingFact.payload.totalNet,
-                              totalGross:
-                                oldValues.totalGross ??
-                                billingFact.payload.totalGross,
-                              currency:
-                                oldValues.currency ??
-                                billingFact.payload.currency,
-                              invoiceNumber: billingFact.payload.invoiceNumber,
-                              invoiceDate: billingFact.payload.invoiceDate,
-                              description: billingFact.payload.description,
-                              clientId: projectData.clientId,
-                              workspaceId: billingFact.payload.workspaceId,
-                            }}
-                            services={props.services}
-                            onSubmit={async (data, changes) => {
-                              await props.services.mutationService.editBilling(
-                                updateAction.id,
-                                changes,
-                              );
-                              bag.close();
-                            }}
-                          />
-                        </>
-                      )}
-                    />
-                  );
-                }
-
-                return (
-                  <Badge variant="info" tone="secondary" size="sm">
-                    Will be updated
-                  </Badge>
-                );
-              };
-
               // Helper function to render a compact item card
               const renderItemCard = (
                 type: "cost" | "report" | "billing",
                 item: CostFact | ReportFact | BillingFact,
               ) => {
                 const isHighlighted = highlightedFactUuids.has(item.uuid);
-                const isNew = item.action.type === "create";
                 const isUpdate = item.action.type === "update";
                 const id = getFactId(item);
                 const label =
@@ -620,7 +385,7 @@ export function ReconciliationView(
                     onMouseOver={() => setHoveredFactUuid(item.uuid)}
                     onMouseLeave={() => setHoveredFactUuid(null)}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-4 relative">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           {(type === "report" || type === "cost") && (
@@ -665,7 +430,156 @@ export function ReconciliationView(
                             {label} {id === 0 ? "(New)" : `#${id}`}
                           </span>
                         </div>
-                        {renderEditableBadge(type, item, isNew)}
+                        <div className="flex items-center gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Badge
+                                variant={id === 0 ? "success" : "info"}
+                                tone="secondary"
+                                size="sm"
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {id === 0
+                                  ? "Will be created"
+                                  : "Will be updated"}
+                              </Badge>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-[600px] max-h-[80vh] overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <PopoverHeader>
+                                {id === 0
+                                  ? `Select ${label}`
+                                  : `${label} #${id} Preview`}
+                              </PopoverHeader>
+                              {id === 0 ? (
+                                <div className="space-y-4">
+                                  <div className="text-sm text-slate-500">
+                                    This {label.toLowerCase()} will be created
+                                    during reconciliation.
+                                  </div>
+                                  {type === "cost" && (
+                                    <CostPicker
+                                      services={props.services}
+                                      workspaceId={props.workspaceId}
+                                      clientId={props.clientId}
+                                      onSelect={(costId) => {
+                                        // TODO: Handle selection - link fact to existing cost
+                                        console.log("Select cost", costId);
+                                      }}
+                                    />
+                                  )}
+                                  {type === "report" && (
+                                    <ReportPicker
+                                      services={props.services}
+                                      workspaceId={props.workspaceId}
+                                      clientId={props.clientId}
+                                      onSelect={(reportId) => {
+                                        // TODO: Handle selection - link fact to existing report
+                                        console.log("Select report", reportId);
+                                      }}
+                                    />
+                                  )}
+                                  {type === "billing" && (
+                                    <BillingPicker
+                                      services={props.services}
+                                      workspaceId={props.workspaceId}
+                                      clientId={props.clientId}
+                                      onSelect={(billingId) => {
+                                        // TODO: Handle selection - link fact to existing billing
+                                        console.log(
+                                          "Select billing",
+                                          billingId,
+                                        );
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  {type === "cost" && (
+                                    <CostPreview
+                                      services={props.services}
+                                      costId={id}
+                                    />
+                                  )}
+                                  {type === "report" && (
+                                    <ReportPreview
+                                      services={props.services}
+                                      reportId={id}
+                                    />
+                                  )}
+                                  {type === "billing" && (
+                                    <BillingPreview
+                                      services={props.services}
+                                      billingId={id}
+                                    />
+                                  )}
+                                  <div className="pt-4 border-t border-slate-200">
+                                    <div className="text-sm font-medium mb-2">
+                                      Change {label}:
+                                    </div>
+                                    {type === "cost" && (
+                                      <CostPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        onSelect={(costId) => {
+                                          // TODO: Handle selection - link fact to existing cost
+                                          console.log("Select cost", costId);
+                                        }}
+                                      />
+                                    )}
+                                    {type === "report" && (
+                                      <ReportPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        onSelect={(reportId) => {
+                                          // TODO: Handle selection - link fact to existing report
+                                          console.log(
+                                            "Select report",
+                                            reportId,
+                                          );
+                                        }}
+                                      />
+                                    )}
+                                    {type === "billing" && (
+                                      <BillingPicker
+                                        services={props.services}
+                                        workspaceId={props.workspaceId}
+                                        clientId={props.clientId}
+                                        onSelect={(billingId) => {
+                                          // TODO: Handle selection - link fact to existing billing
+                                          console.log(
+                                            "Select billing",
+                                            billingId,
+                                          );
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="pt-2">
+                                    <Button
+                                      variant="outline-destructive"
+                                      size="sm"
+                                      onClick={() => {
+                                        // TODO: Handle clear - set back to "will be created"
+                                        console.log("Clear", type, id);
+                                      }}
+                                      className="w-full"
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Clear (will be created)
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </div>
                       {type === "report" && (
                         <div className="space-y-2 text-sm">

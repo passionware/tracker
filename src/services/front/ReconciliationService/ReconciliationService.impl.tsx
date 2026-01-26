@@ -1,40 +1,31 @@
-import { billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { Billing } from "@/api/billing/billing.api.ts";
-import { costQueryUtils } from "@/api/cost/cost.api.ts";
-import { Cost } from "@/api/cost/cost.api.ts";
+import { Billing, billingQueryUtils } from "@/api/billing/billing.api.ts";
+import { Cost, costQueryUtils } from "@/api/cost/cost.api.ts";
+import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { Report } from "@/api/reports/reports.api.ts";
+import { Report, reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
-import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { rd, maybe } from "@passionware/monads";
-import {
-  BillingReconciliationPreview,
-  CostReconciliationPreview,
-  ExecuteReconciliationParams,
-  ReconciliationInput,
-  ReconciliationPreview,
-  ReconciliationService,
-  ReportBillingLinkPreview,
-  ReportCostLinkPreview,
-  ReportReconciliationPreview,
-  UseReconciliationViewParams,
-} from "./ReconciliationService.ts";
+import { rd } from "@passionware/monads";
+import { v5 as uuidv5 } from "uuid";
 import { convertGeneratedReportToFacts } from "./convertGeneratedReportToFacts.ts";
 import {
-  ReportFact,
+  ExecuteReconciliationParams,
+  ReconciliationInput,
+  ReconciliationService,
+  UseReconciliationViewParams,
+} from "./ReconciliationService.ts";
+import {
   BillingFact,
   CostFact,
-  LinkCostReportFact,
-  LinkBillingReportFact,
   Fact,
+  LinkBillingReportFact,
+  LinkCostReportFact,
+  ReportFact,
 } from "./ReconciliationService.types.ts";
-import { v5 as uuidv5 } from "uuid";
-import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 
 /**
  * Matches report facts against existing reports and sets action (create/update)
@@ -551,121 +542,7 @@ export function createReconciliationService(
     },
 
     executeReconciliation: async (params: ExecuteReconciliationParams) => {
-      const { preview, iteration, project, projectIterationId } = params;
-
-      // Track created IDs for linking
-      const reportIdMap = new Map<number, number>(); // oldId -> newId
-      const billingIdMap = new Map<number, number>(); // oldId -> newId
-      const costIdMap = new Map<number, number>(); // oldId -> newId
-
-      // Reconcile Reports
-      for (const reportPreview of preview.reports) {
-        if (reportPreview.type === "create") {
-          // Create new report - use workspaceId from payload (already set per contractor)
-          const result = await config.services.mutationService.createReport({
-            ...reportPreview.payload,
-            periodStart: iteration.periodStart,
-            periodEnd: iteration.periodEnd,
-            clientId: project.clientId,
-            workspaceId: reportPreview.payload.workspaceId,
-            projectIterationId: projectIterationId,
-          });
-          reportIdMap.set(0, result.id); // Map placeholder 0 to actual ID
-        } else {
-          // Update existing report
-          await config.services.mutationService.editReport(
-            reportPreview.id,
-            reportPreview.payload,
-          );
-          reportIdMap.set(reportPreview.id, reportPreview.id);
-        }
-      }
-
-      // Reconcile Billings
-      for (const billingPreview of preview.billings) {
-        if (billingPreview.type === "create") {
-          // Create new billing - use workspaceId from preview (already grouped by workspace)
-          const result = await config.services.mutationService.createBilling({
-            ...billingPreview.payload,
-            clientId: project.clientId,
-            workspaceId: billingPreview.workspaceId,
-          });
-          billingIdMap.set(0, result.id);
-        } else {
-          // Update existing billing
-          await config.services.mutationService.editBilling(
-            billingPreview.id,
-            billingPreview.payload,
-          );
-          billingIdMap.set(billingPreview.id, billingPreview.id);
-        }
-      }
-
-      // Reconcile Costs
-      for (const costPreview of preview.costs) {
-        if (costPreview.type === "create") {
-          // Create new cost - use workspaceId from payload
-          const result = await config.services.mutationService.createCost({
-            ...costPreview.payload,
-            workspaceId: costPreview.payload.workspaceId,
-          });
-          costIdMap.set(0, result.id);
-        } else {
-          // Update existing cost
-          await config.services.mutationService.editCost(
-            costPreview.id,
-            costPreview.payload,
-          );
-          costIdMap.set(costPreview.id, costPreview.id);
-        }
-      }
-
-      // Create/Update Report-Billing Links
-      for (const link of preview.reportBillingLinks) {
-        const actualReportId = reportIdMap.get(link.reportId) ?? link.reportId;
-        const actualBillingId =
-          billingIdMap.get(link.billingId) ?? link.billingId;
-
-        if (actualReportId && actualBillingId) {
-          if (link.type === "create") {
-            await config.services.mutationService.linkReportAndBilling({
-              ...link.payload,
-              billingId: actualBillingId,
-              reportId: actualReportId,
-            });
-          } else {
-            await config.services.mutationService.updateBillingReportLink(
-              link.id,
-              link.payload,
-            );
-          }
-        }
-      }
-
-      // Create/Update Report-Cost Links
-      for (const link of preview.reportCostLinks) {
-        const actualReportId = reportIdMap.get(link.reportId) ?? link.reportId;
-        const actualCostId = costIdMap.get(link.costId) ?? link.costId;
-
-        if (actualReportId && actualCostId) {
-          if (link.type === "create") {
-            await config.services.mutationService.linkCostAndReport({
-              ...link.payload,
-              costId: actualCostId as number | null,
-              reportId: actualReportId as number | null,
-            });
-          } else {
-            await config.services.mutationService.updateCostReportLink(
-              link.id,
-              {
-                ...link.payload,
-                costId: actualCostId as number | null,
-                reportId: actualReportId as number | null,
-              },
-            );
-          }
-        }
-      }
+      console.log("todo: execute reconciliation", params);
     },
   };
 }

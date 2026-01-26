@@ -30,5 +30,18 @@ export function createBillingService(
         ),
       );
     },
+    useBilling: (id) => {
+      return ensureIdleQuery(
+        id,
+        useQuery(
+          {
+            enabled: maybe.isPresent(id),
+            queryKey: ["billing", "item", id],
+            queryFn: () => api.getBilling(id!),
+          },
+          client,
+        ),
+      );
+    },
   };
 }

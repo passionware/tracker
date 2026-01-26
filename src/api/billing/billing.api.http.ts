@@ -117,5 +117,16 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
       }
       return parseWithDataError(z.array(billing$), data).map(billingFromHttp);
     },
+    getBilling: async (id) => {
+      const { data, error } = await client
+        .from("billing_with_details")
+        .select("*, client(*), workspace(*)")
+        .eq("id", id)
+        .single();
+      if (error) {
+        throw error;
+      }
+      return billingFromHttp(parseWithDataError(billing$, data));
+    },
   };
 }
