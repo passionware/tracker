@@ -85,6 +85,10 @@ export function createMutationService(
       onActionAccessor.get()("Deleting cost report");
       await wait();
     },
+    bulkDeleteCostReport: async () => {
+      onActionAccessor.get()("Bulk deleting cost reports");
+      await wait();
+    },
     createProject: async () => {
       onActionAccessor.get()("Creating project");
       await wait();
