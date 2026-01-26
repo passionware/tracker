@@ -39,7 +39,7 @@ import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { BillingPicker } from "@/features/_common/pickers/BillingPicker.tsx";
 import { CostPicker } from "@/features/_common/pickers/CostPicker.tsx";
 import { ReportPicker } from "@/features/_common/pickers/ReportPicker.tsx";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, X, Check, AlertCircle } from "lucide-react";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -203,6 +203,11 @@ export function ReconciliationView(
   const [dryRunLogs, setDryRunLogs] = useState<ReconciliationLogEntry[]>([]);
   const [isRunningDryRun, setIsRunningDryRun] = useState(false);
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+  const [processedFactUuids, setProcessedFactUuids] = useState<Set<string>>(
+    new Set(),
+  );
+  const [failedFactUuid, setFailedFactUuid] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const executeReconciliation = async (dryRun: boolean) => {
     if (!factsData) {
@@ -223,28 +228,77 @@ export function ReconciliationView(
     }
 
     const logs: ReconciliationLogEntry[] = [];
-    await props.services.reconciliationService.executeReconciliation({
-      facts: factsData,
-      report: props.report,
-      iteration: iterationData,
-      project: {
-        clientId: projectData.clientId,
-        workspaceIds: projectData.workspaceIds,
-      },
-      projectIterationId: props.projectIterationId,
-      dryRun,
-      onLog: (entry) => {
-        logs.push(entry);
-        if (dryRun) {
-          setDryRunLogs([...logs]);
-        }
-      },
-    });
+    const completedFactUuids = new Set<string>();
+    
+    try {
+      await props.services.reconciliationService.executeReconciliation({
+        facts: factsData,
+        report: props.report,
+        iteration: iterationData,
+        project: {
+          clientId: projectData.clientId,
+          workspaceIds: projectData.workspaceIds,
+        },
+        projectIterationId: props.projectIterationId,
+        dryRun,
+        onLog: (entry) => {
+          if (dryRun) {
+            // Only add completion logs (entries with id for creates, or update entries)
+            // This avoids duplicates - the service logs both "Create" and "Created" for creates
+            if (entry.id !== undefined || entry.type === "update") {
+              logs.push(entry);
+              setDryRunLogs([...logs]);
+            }
+          } else {
+            // During actual reconciliation, don't add to logs array
+            // Just track which facts are completed (entries with id for creates, or update entries)
+            if (entry.factUuid && (entry.id !== undefined || entry.type === "update")) {
+              completedFactUuids.add(entry.factUuid);
+              setProcessedFactUuids((prev) => new Set(prev).add(entry.factUuid!));
+            }
+          }
+        },
+      });
 
-    if (!dryRun) {
-      toast.success(`Successfully reconciled ${factsData.length} item(s)`);
-      setIsDialogOpen(false);
-      setDryRunLogs([]);
+      if (!dryRun) {
+        toast.success(`Successfully reconciled ${factsData.length} item(s)`);
+        setIsDialogOpen(false);
+        setDryRunLogs([]);
+        setProcessedFactUuids(new Set());
+        setFailedFactUuid(null);
+        setErrorMessage(null);
+      }
+    } catch (error) {
+      if (!dryRun) {
+        // Extract error message
+        let errorMsg = "Failed to reconcile";
+        if (error instanceof Error) {
+          errorMsg = error.message;
+        } else if (error && typeof error === "object" && "message" in error) {
+          errorMsg = String(error.message);
+        }
+        
+        // Find the first fact that doesn't have a completion log
+        // This is the fact that failed during processing
+        // Find first non-completed fact from dry run logs
+        const failedLog = dryRunLogs.find(
+          (log) => log.factUuid && !completedFactUuids.has(log.factUuid),
+        );
+        
+        if (failedLog?.factUuid) {
+          setFailedFactUuid(failedLog.factUuid);
+          setErrorMessage(errorMsg);
+          
+          // Find and expand the failed log entry
+          const failedLogIndex = dryRunLogs.findIndex(
+            (log) => log.factUuid === failedLog.factUuid,
+          );
+          if (failedLogIndex !== -1) {
+            setExpandedLogs((prev) => new Set(prev).add(failedLogIndex));
+          }
+        }
+      }
+      throw error; // Re-throw to let mutation handle it
     }
   };
 
@@ -255,6 +309,9 @@ export function ReconciliationView(
   const handleReconciliation = async () => {
     setIsDialogOpen(true);
     setDryRunLogs([]);
+    setProcessedFactUuids(new Set());
+    setFailedFactUuid(null);
+    setErrorMessage(null);
     setIsRunningDryRun(true);
     try {
       await executeReconciliation(true);
@@ -298,14 +355,23 @@ export function ReconciliationView(
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Reconciliation Preview</DialogTitle>
+            <DialogTitle>
+              {isReconciling
+                ? "Reconciling..."
+                : isRunningDryRun
+                  ? "Reconciliation Preview"
+                  : "Reconciliation Preview"}
+            </DialogTitle>
             <DialogDescription>
-              Review the operations that will be performed. Click Confirm to
-              proceed with the reconciliation.
+              {isReconciling
+                ? "Reconciliation in progress. Items will be marked as completed as they are processed."
+                : isRunningDryRun
+                  ? "Running preview..."
+                  : "Review the operations that will be performed. Click Confirm to proceed with the reconciliation."}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto min-h-0">
-            {isRunningDryRun ? (
+            {isRunningDryRun && !isReconciling ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-sm text-slate-500">Running preview...</div>
               </div>
@@ -319,6 +385,13 @@ export function ReconciliationView(
               <div className="space-y-2">
                 {dryRunLogs.map((log, index) => {
                   const isOpen = expandedLogs.has(index);
+                  const isProcessed =
+                    log.factUuid && processedFactUuids.has(log.factUuid);
+                  // Only mark as failed if it's not already processed (atomic - once processed, stays processed)
+                  const isFailed =
+                    !isProcessed &&
+                    log.factUuid &&
+                    failedFactUuid === log.factUuid;
                   return (
                     <Collapsible
                       key={index}
@@ -335,9 +408,22 @@ export function ReconciliationView(
                         });
                       }}
                     >
-                      <div className="border border-slate-200 rounded-lg dark:border-slate-800">
+                      <div
+                        className={`border rounded-lg dark:border-slate-800 transition-colors ${
+                          isFailed
+                            ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+                            : isProcessed
+                              ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                              : "border-slate-200"
+                        }`}
+                      >
                         <CollapsibleTrigger className="w-full">
                           <div className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                            {isFailed ? (
+                              <AlertCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                            ) : isProcessed ? (
+                              <Check className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
+                            ) : null}
                             <Badge
                               variant={
                                 log.type === "create" ? "primary" : "secondary"
@@ -354,6 +440,11 @@ export function ReconciliationView(
                               <div className="text-xs text-slate-500 mt-1">
                                 {log.description}
                               </div>
+                              {isFailed && errorMessage && (
+                                <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                                  Error: {errorMessage}
+                                </div>
+                              )}
                             </div>
                             <ChevronDown
                               className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
@@ -364,6 +455,21 @@ export function ReconciliationView(
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-slate-800 pt-3">
+                            {isFailed && errorMessage && (
+                              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded p-3">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">
+                                      Error Details:
+                                    </div>
+                                    <div className="text-xs text-red-600 dark:text-red-400">
+                                      {errorMessage}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             <div>
                               <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                 Payload:

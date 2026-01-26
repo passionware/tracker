@@ -369,6 +369,7 @@ export interface ReconciliationLogEntry {
   id?: number; // ID for updates, or newly created ID
   payload: unknown; // JSON snapshot of the payload being applied
   oldValues?: unknown; // For updates, the old values before the change
+  factUuid?: string; // UUID of the fact that generated this log entry
 }
 
 /**

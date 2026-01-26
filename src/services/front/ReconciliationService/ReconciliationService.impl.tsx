@@ -692,6 +692,7 @@ export function createReconciliationService(
                   entityType: "report",
                   description: `Create report for contractor ${fact.payload.contractorId}`,
                   payload: JSON.parse(JSON.stringify(fact.payload)),
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   const result = await config.services.mutationService.createReport(
@@ -704,6 +705,7 @@ export function createReconciliationService(
                     description: `Created report for contractor ${fact.payload.contractorId}`,
                     id: result.id,
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 } else {
                   // In dry run, use a sequential placeholder ID for dependency resolution
@@ -716,6 +718,7 @@ export function createReconciliationService(
                     description: `Created report for contractor ${fact.payload.contractorId}`,
                     id: dryRunCounter, // Use counter as numeric ID for display
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 }
                 break;
@@ -730,6 +733,7 @@ export function createReconciliationService(
                   oldValues: fact.action.oldValues
                     ? JSON.parse(JSON.stringify(fact.action.oldValues))
                     : undefined,
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   await config.services.mutationService.editReport(
@@ -754,6 +758,7 @@ export function createReconciliationService(
                   entityType: "cost",
                   description: `Create cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
                   payload: JSON.parse(JSON.stringify(fact.payload)),
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   const result = await config.services.mutationService.createCost(
@@ -766,6 +771,7 @@ export function createReconciliationService(
                     description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
                     id: result.id,
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 } else {
                   dryRunCounter++;
@@ -777,6 +783,7 @@ export function createReconciliationService(
                     description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
                     id: dryRunCounter,
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 }
                 break;
@@ -791,6 +798,7 @@ export function createReconciliationService(
                   oldValues: fact.action.oldValues
                     ? JSON.parse(JSON.stringify(fact.action.oldValues))
                     : undefined,
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   await config.services.mutationService.editCost(
@@ -815,6 +823,7 @@ export function createReconciliationService(
                   entityType: "billing",
                   description: `Create billing for workspace ${fact.payload.workspaceId}`,
                   payload: JSON.parse(JSON.stringify(fact.payload)),
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   const result =
@@ -828,6 +837,7 @@ export function createReconciliationService(
                     description: `Created billing for workspace ${fact.payload.workspaceId}`,
                     id: result.id,
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 } else {
                   dryRunCounter++;
@@ -839,6 +849,7 @@ export function createReconciliationService(
                     description: `Created billing for workspace ${fact.payload.workspaceId}`,
                     id: dryRunCounter,
                     payload: JSON.parse(JSON.stringify(fact.payload)),
+                    factUuid: fact.uuid,
                   });
                 }
                 break;
@@ -853,6 +864,7 @@ export function createReconciliationService(
                   oldValues: fact.action.oldValues
                     ? JSON.parse(JSON.stringify(fact.action.oldValues))
                     : undefined,
+                  factUuid: fact.uuid,
                 });
                 if (!dryRun) {
                   await config.services.mutationService.editBilling(
@@ -935,6 +947,7 @@ export function createReconciliationService(
                 entityType: "linkCostReport",
                 description: `Link cost ${costId} to report ${reportId}`,
                 payload: JSON.parse(JSON.stringify(logPayload)),
+                factUuid: fact.uuid,
               });
               if (!dryRun) {
                 // For actual API call, ensure IDs are numbers
@@ -1017,6 +1030,7 @@ export function createReconciliationService(
                 entityType: "linkBillingReport",
                 description: `Link billing ${billingId} to report ${reportId}`,
                 payload: JSON.parse(JSON.stringify(logPayload)),
+                factUuid: fact.uuid,
               });
               if (!dryRun) {
                 // For actual API call, ensure IDs are numbers
