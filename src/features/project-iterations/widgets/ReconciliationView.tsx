@@ -57,6 +57,7 @@ import { maybe, mt, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Helper function to extract ID from fact
 function getFactId(fact: ReportFact | BillingFact | CostFact): number {
@@ -245,14 +246,31 @@ export function ReconciliationView(
           if (dryRun) {
             // Only add completion logs (entries with id for creates, or update entries)
             // This avoids duplicates - the service logs both "Create" and "Created" for creates
-            if (entry.id !== undefined || entry.type === "update") {
+            // Link entries (linkCostReport, linkBillingReport) don't have IDs but should be shown
+            const isLinkEntry =
+              entry.entityType === "linkCostReport" ||
+              entry.entityType === "linkBillingReport";
+            if (
+              entry.id !== undefined ||
+              entry.type === "update" ||
+              isLinkEntry
+            ) {
               logs.push(entry);
               setDryRunLogs([...logs]);
             }
           } else {
             // During actual reconciliation, don't add to logs array
             // Just track which facts are completed (entries with id for creates, or update entries)
-            if (entry.factUuid && (entry.id !== undefined || entry.type === "update")) {
+            // Link entries are considered completed when logged (they don't have separate completion logs)
+            const isLinkEntry =
+              entry.entityType === "linkCostReport" ||
+              entry.entityType === "linkBillingReport";
+            if (
+              entry.factUuid &&
+              (entry.id !== undefined ||
+                entry.type === "update" ||
+                isLinkEntry)
+            ) {
               completedFactUuids.add(entry.factUuid);
               setProcessedFactUuids((prev) => new Set(prev).add(entry.factUuid!));
             }
@@ -405,22 +423,65 @@ export function ReconciliationView(
                         });
                       }}
                     >
-                      <div
-                        className={`border rounded-lg dark:border-slate-800 transition-colors ${
-                          isFailed
-                            ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+                      <motion.div
+                        initial={false}
+                        animate={{
+                          borderColor: isFailed
+                            ? "rgb(239 68 68)"
                             : isProcessed
-                              ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                              : "border-slate-200"
+                              ? "rgb(34 197 94)"
+                              : "rgb(226 232 240)",
+                          backgroundColor: isFailed
+                            ? "rgb(254 242 242)"
+                            : isProcessed
+                              ? "rgb(240 253 244)"
+                              : "transparent",
+                        }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className={`border rounded-lg ${
+                          isFailed
+                            ? "dark:border-red-500 dark:bg-red-950/20"
+                            : isProcessed
+                              ? "dark:border-green-500 dark:bg-green-950/20"
+                              : "dark:border-slate-800"
                         }`}
                       >
                         <CollapsibleTrigger className="w-full">
                           <div className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                            {isFailed ? (
-                              <AlertCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
-                            ) : isProcessed ? (
-                              <Check className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
-                            ) : null}
+                            {/* Reserve space for icon to prevent layout shift */}
+                            <div className="h-5 w-5 shrink-0 mt-0.5 flex items-center justify-center">
+                              <AnimatePresence mode="wait">
+                                {isFailed ? (
+                                  <motion.div
+                                    key="error"
+                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
+                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    exit={{ scale: 0, rotate: 180, opacity: 0 }}
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 500,
+                                      damping: 25,
+                                    }}
+                                  >
+                                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                  </motion.div>
+                                ) : isProcessed ? (
+                                  <motion.div
+                                    key="success"
+                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
+                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    exit={{ scale: 0, rotate: 180, opacity: 0 }}
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 500,
+                                      damping: 25,
+                                    }}
+                                  >
+                                    <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                  </motion.div>
+                                ) : null}
+                              </AnimatePresence>
+                            </div>
                             <Badge
                               variant={
                                 log.type === "create" ? "primary" : "secondary"
@@ -437,11 +498,19 @@ export function ReconciliationView(
                               <div className="text-xs text-slate-500 mt-1">
                                 {log.description}
                               </div>
-                              {isFailed && errorMessage && (
-                                <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
-                                  Error: {errorMessage}
-                                </div>
-                              )}
+                              <AnimatePresence>
+                                {isFailed && errorMessage && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium overflow-hidden"
+                                  >
+                                    Error: {errorMessage}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                             <ChevronDown
                               className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
@@ -451,22 +520,41 @@ export function ReconciliationView(
                           </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-slate-800 pt-3">
-                            {isFailed && errorMessage && (
-                              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded p-3">
-                                <div className="flex items-start gap-2">
-                                  <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
-                                  <div className="flex-1">
-                                    <div className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">
-                                      Error Details:
-                                    </div>
-                                    <div className="text-xs text-red-600 dark:text-red-400">
-                                      {errorMessage}
+                          <motion.div
+                            initial={false}
+                            className="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-slate-800 pt-3"
+                          >
+                            <AnimatePresence>
+                              {isFailed && errorMessage && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded p-3"
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <motion.div
+                                      animate={{ rotate: [0, -10, 10, -10, 0] }}
+                                      transition={{
+                                        duration: 0.5,
+                                        ease: "easeInOut",
+                                      }}
+                                    >
+                                      <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                    </motion.div>
+                                    <div className="flex-1">
+                                      <div className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">
+                                        Error Details:
+                                      </div>
+                                      <div className="text-xs text-red-600 dark:text-red-400">
+                                        {errorMessage}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
-                            )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                             <div>
                               <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                 Payload:
@@ -485,9 +573,9 @@ export function ReconciliationView(
                                 </pre>
                               </div>
                             ) : null}
-                          </div>
+                          </motion.div>
                         </CollapsibleContent>
-                      </div>
+                      </motion.div>
                     </Collapsible>
                   );
                 })}
