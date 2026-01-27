@@ -230,7 +230,7 @@ export function ReconciliationView(
 
     const logs: ReconciliationLogEntry[] = [];
     const completedFactUuids = new Set<string>();
-    
+
     try {
       await props.services.reconciliationService.executeReconciliation({
         facts: factsData,
@@ -267,12 +267,12 @@ export function ReconciliationView(
               entry.entityType === "linkBillingReport";
             if (
               entry.factUuid &&
-              (entry.id !== undefined ||
-                entry.type === "update" ||
-                isLinkEntry)
+              (entry.id !== undefined || entry.type === "update" || isLinkEntry)
             ) {
               completedFactUuids.add(entry.factUuid);
-              setProcessedFactUuids((prev) => new Set(prev).add(entry.factUuid!));
+              setProcessedFactUuids((prev) =>
+                new Set(prev).add(entry.factUuid!),
+              );
             }
           }
         },
@@ -292,18 +292,18 @@ export function ReconciliationView(
         } else if (error && typeof error === "object" && "message" in error) {
           errorMsg = String(error.message);
         }
-        
+
         // Find the first fact that doesn't have a completion log
         // This is the fact that failed during processing
         // Find first non-completed fact from dry run logs
         const failedLog = dryRunLogs.find(
           (log) => log.factUuid && !completedFactUuids.has(log.factUuid),
         );
-        
+
         if (failedLog?.factUuid) {
           setFailedFactUuid(failedLog.factUuid);
           setErrorMessage(errorMsg);
-          
+
           // Find and expand the failed log entry
           const failedLogIndex = dryRunLogs.findIndex(
             (log) => log.factUuid === failedLog.factUuid,
@@ -454,8 +454,16 @@ export function ReconciliationView(
                                 {isFailed ? (
                                   <motion.div
                                     key="error"
-                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
-                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    initial={{
+                                      scale: 0,
+                                      rotate: -180,
+                                      opacity: 0,
+                                    }}
+                                    animate={{
+                                      scale: 1,
+                                      rotate: 0,
+                                      opacity: 1,
+                                    }}
                                     exit={{ scale: 0, rotate: 180, opacity: 0 }}
                                     transition={{
                                       type: "spring",
@@ -468,8 +476,16 @@ export function ReconciliationView(
                                 ) : isProcessed ? (
                                   <motion.div
                                     key="success"
-                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
-                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    initial={{
+                                      scale: 0,
+                                      rotate: -180,
+                                      opacity: 0,
+                                    }}
+                                    animate={{
+                                      scale: 1,
+                                      rotate: 0,
+                                      opacity: 1,
+                                    }}
                                     exit={{ scale: 0, rotate: 180, opacity: 0 }}
                                     transition={{
                                       type: "spring",
@@ -569,7 +585,9 @@ export function ReconciliationView(
                                   Old Values:
                                 </div>
                                 <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-x-auto">
-                                  {String(JSON.stringify(log.oldValues, null, 2))}
+                                  {String(
+                                    JSON.stringify(log.oldValues, null, 2),
+                                  )}
                                 </pre>
                               </div>
                             ) : null}
@@ -1451,13 +1469,13 @@ export function ReconciliationView(
                           <span className="text-sm font-medium text-slate-700">
                             Link
                           </span>
-                          <Badge
-                            variant={isCostLink ? "info" : "primary"}
-                            tone="secondary"
-                            size="sm"
-                          >
-                            {isCostLink ? "Cost → Report" : "Report → Billing"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="success" tone="secondary" size="sm">
+                              {link.action.type === "ignore"
+                                ? "Already exists"
+                                : "Will be created"}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="space-y-2 text-sm">
                           {costLink && costLink.payload.breakdown ? (
