@@ -1,16 +1,24 @@
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
+import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import {
@@ -18,23 +26,32 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
+import { cn } from "@/lib/utils";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import {
+  addDaysToCalendarDate,
+  calendarDateToJSDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date";
 import {
   SelectionState,
   selectionState,
   useSelectionCleanup,
 } from "@/platform/lang/SelectionState.ts";
 import {
-  addDaysToCalendarDate,
-  calendarDateToJSDate,
-  dateToCalendarDate,
-} from "@/platform/lang/internationalized-date";
+  DefaultTimelineItem,
+  InfiniteTimeline,
+  Lane,
+  TimelineItem,
+} from "@/platform/passionware-timeline/passionware-timeline";
+import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, groupBy, partialRight } from "lodash";
@@ -48,25 +65,8 @@ import {
   Sun,
   Table,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  DefaultTimelineItem,
-  InfiniteTimeline,
-  Lane,
-  TimelineItem,
-} from "@/platform/passionware-timeline/passionware-timeline";
-import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
-import { Skeleton } from "@/components/ui/skeleton.tsx";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable.tsx";
-import { Switch } from "@/components/ui/switch.tsx";
-import { cn } from "@/lib/utils";
-import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -85,10 +85,39 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     selectionState.selectNone(),
   );
 
+  // Load preferences from service
+  const savedPreferences = props.services.preferenceService.useTimelineView();
   const [viewMode, setViewMode] = useState<"timeline" | "table" | "both">(
-    "both",
+    savedPreferences.viewMode,
   );
-  const [timelineDarkMode, setTimelineDarkMode] = useState(false);
+  const [timelineDarkMode, setTimelineDarkMode] = useState(
+    savedPreferences.darkMode,
+  );
+  const [splitRatio, setSplitRatio] = useState(savedPreferences.splitRatio);
+
+  // Load preferences on mount
+  useEffect(() => {
+    void (async () => {
+      const prefs = await props.services.preferenceService.getTimelineView();
+      setViewMode(prefs.viewMode);
+      setTimelineDarkMode(prefs.darkMode);
+      setSplitRatio(prefs.splitRatio);
+    })();
+  }, [props.services.preferenceService]);
+
+  // Save preferences when they change
+  useEffect(() => {
+    void props.services.preferenceService.setTimelineView({
+      viewMode,
+      darkMode: timelineDarkMode,
+      splitRatio,
+    });
+  }, [
+    viewMode,
+    timelineDarkMode,
+    splitRatio,
+    props.services.preferenceService,
+  ]);
 
   const viewModeItems = [
     {
@@ -273,6 +302,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             onQueryChange={queryParamsService.setQueryParams}
             services={props.services}
           />
+          <Separator orientation="vertical" className="h-6" />
           <SimpleSinglePicker
             items={viewModeItems}
             value={viewMode}

@@ -11,5 +11,22 @@ export function createPreferenceService(config: {
     setIsDangerMode: (value: boolean) => {
       config.onAction.get()("setIsDangerMode", value);
     },
+    useTimelineView: () => {
+      return {
+        viewMode: "both",
+        darkMode: false,
+        splitRatio: 40,
+      };
+    },
+    getTimelineView: async () => {
+      return {
+        viewMode: "both",
+        darkMode: false,
+        splitRatio: 40,
+      };
+    },
+    setTimelineView: async () => {
+      return;
+    },
   };
 }

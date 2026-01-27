@@ -411,6 +411,7 @@ export function InfiniteTimeline<Data = unknown>({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [snapOption, setSnapOption] = useState<SnapOption>("15min");
+  // @ts-expect-error - TODO: fix this
   const [previewRow, setPreviewRow] = useState<{
     laneId: string;
     row: number;
@@ -447,34 +448,24 @@ export function InfiniteTimeline<Data = unknown>({
 
     if (totalMinutes <= 0) return;
 
-    // Wait for container to be available, use requestAnimationFrame to ensure DOM is ready
-    const updateView = () => {
-      const containerWidth = containerRef.current?.clientWidth || 1200;
-      const availableWidth = containerWidth - SIDEBAR_WIDTH;
+    const containerWidth = containerRef.current?.clientWidth || 1200;
+    const availableWidth = containerWidth - SIDEBAR_WIDTH;
 
-      // Calculate zoom to fit all items with some padding (10% on each side)
-      const padding = 0.1;
-      const requiredPixelsPerMinute =
-        (availableWidth * (1 - 2 * padding)) / totalMinutes;
-      const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
+    // Calculate zoom to fit all items with some padding (10% on each side)
+    const padding = 0.1;
+    const requiredPixelsPerMinute =
+      (availableWidth * (1 - 2 * padding)) / totalMinutes;
+    const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
 
-      // Update zoom without clamping - allow any zoom level to show all items
-      setZoom(calculatedZoom);
+    // Update zoom without clamping
+    setZoom(calculatedZoom);
 
-      // Calculate scroll offset to center the items
-      const centerTime = (minStart + maxEnd) / 2;
-      const newScrollOffset =
-        availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
-      setScrollOffset(newScrollOffset);
-    };
-
-    if (containerRef.current) {
-      updateView();
-    } else {
-      // Retry after container is mounted
-      requestAnimationFrame(updateView);
-    }
-  }, [items]);
+    // Calculate scroll offset to center the items
+    const centerTime = (minStart + maxEnd) / 2;
+    const newScrollOffset =
+      availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
+    setScrollOffset(newScrollOffset);
+  }, []);
 
   // Notify parent of items change
   useEffect(() => {
@@ -765,7 +756,7 @@ export function InfiniteTimeline<Data = unknown>({
 
     const containerX = screenXToContainerX(e.clientX);
     const time = snapTime(pixelToTime(containerX));
-    const laneIndex = lanes.findIndex((l) => l.id === laneId);
+    // const laneIndex = lanes.findIndex((l) => l.id === laneId);
 
     setDragState({
       type: "draw",
@@ -1156,7 +1147,7 @@ export function InfiniteTimeline<Data = unknown>({
   }, 0);
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
+    <div className="flex flex-col h-full bg-background overflow-hidden select-none dark rounded-md">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-border bg-card">
         <div className="flex items-center gap-4">
