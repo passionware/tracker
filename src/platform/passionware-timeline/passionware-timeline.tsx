@@ -10,6 +10,14 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 
 // Types
 export interface TimelineItem<Data = unknown> {
@@ -269,7 +277,6 @@ export function DefaultTimelineItem<Data = unknown>({
         isSelected &&
           "ring-2 ring-foreground ring-offset-1 ring-offset-background",
         isHovered && !isSelected && "ring-1 ring-foreground/50",
-        isMinWidth && "ring-1 ring-foreground/80",
       )}
       style={{
         left,
@@ -1170,30 +1177,36 @@ export function InfiniteTimeline<Data = unknown>({
           {/* Snap Options */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Snap:</span>
-            <select
+            <Select
               value={snapOption}
-              onChange={(e) => setSnapOption(e.target.value as SnapOption)}
-              className="h-7 px-2 text-xs bg-secondary text-secondary-foreground rounded border-none focus:ring-1 focus:ring-ring outline-none"
+              onValueChange={(value) => setSnapOption(value as SnapOption)}
             >
-              <option value="none">None</option>
-              <option value="5min">5 min</option>
-              <option value="15min">15 min</option>
-              <option value="30min">30 min</option>
-              <option value="1hour">1 hour</option>
-              <option value="1day">1 day</option>
-            </select>
+              <SelectTrigger className="h-7 w-24 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="5min">5 min</SelectItem>
+                <SelectItem value="15min">15 min</SelectItem>
+                <SelectItem value="30min">30 min</SelectItem>
+                <SelectItem value="1hour">1 hour</SelectItem>
+                <SelectItem value="1day">1 day</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
               Zoom: {Math.round(zoom * 100)}%
             </span>
-            <button
+            <Button
               onClick={() => setZoom(1)}
-              className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
+              variant="outline"
+              className="h-7"
+              size="xs"
             >
               Reset
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1838,7 +1851,8 @@ export function InfiniteTimeline<Data = unknown>({
         {/* Current time indicator (now line) */}
         {(() => {
           const now = new Date();
-          const nowMinutes = now.getHours() * 60 + now.getMinutes();
+          // Calculate minutes from baseDate to now
+          const nowMinutes = (now.getTime() - baseDate.getTime()) / (1000 * 60);
           const x = timeToPixel(nowMinutes);
           if (
             x < SIDEBAR_WIDTH ||
@@ -1848,8 +1862,9 @@ export function InfiniteTimeline<Data = unknown>({
 
           return (
             <div
-              className="absolute  bottom-0 w-px bg-destructive z-30 pointer-events-none"
+              className="absolute bottom-0 w-px bg-destructive z-30 pointer-events-none"
               style={{ left: x, top: HEADER_HEIGHT + 8 }}
+              title="Now"
             >
               <div className="absolute top-0 -translate-x-[calc(50%-0.5px)] size-2.5 bg-destructive rounded-b-full" />
             </div>
