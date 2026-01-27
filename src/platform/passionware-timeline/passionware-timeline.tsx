@@ -166,6 +166,37 @@ function formatDate(minutes: number, baseDate?: Date): string {
   });
 }
 
+// Format month and year
+function formatMonthYear(minutes: number, baseDate?: Date): string {
+  const base = baseDate || BASE_DATE;
+  const date = new Date(base.getTime() + minutes * 60 * 1000);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// Format year only
+function formatYear(minutes: number, baseDate?: Date): string {
+  const base = baseDate || BASE_DATE;
+  const date = new Date(base.getTime() + minutes * 60 * 1000);
+  return date.getFullYear().toString();
+}
+
+// Format week (start of week)
+function formatWeek(minutes: number, baseDate?: Date): string {
+  const base = baseDate || BASE_DATE;
+  const date = new Date(base.getTime() + minutes * 60 * 1000);
+  // Get start of week (Sunday)
+  const dayOfWeek = date.getDay();
+  const startOfWeek = new Date(date);
+  startOfWeek.setDate(date.getDate() - dayOfWeek);
+  return startOfWeek.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 // Default Timeline Item Component
 interface DefaultTimelineItemProps<Data = unknown> {
   item: TimelineItem<Data>;
@@ -736,14 +767,21 @@ export function InfiniteTimeline<Data = unknown>({
 
   // Calculate spacing in pixels to determine label density
   const hourSpacingPx = 60 * pixelsPerMinute; // 60 minutes per hour
+  const daySpacingPx = 1440 * pixelsPerMinute; // 1440 minutes per day
   const quarterSpacingPx = 15 * pixelsPerMinute; // 15 minutes
 
-  // Determine label interval based on spacing
-  // If spacing < 30px: show labels every 12 hours (12, 0)
-  // If spacing < 50px: show labels every 6 hours (0, 6, 12, 18)
-  // If spacing < 80px: show labels every 3 hours (0, 3, 6, 9, 12, 15, 18, 21)
-  // Otherwise: show all hour labels
-  // If 15-min spacing >= 40px: also show 15-minute labels
+  // Determine time scale based on zoom level
+  type TimeScale = "hours" | "days" | "weeks" | "months";
+  const getTimeScale = (): TimeScale => {
+    if (daySpacingPx < 20) return "months"; // Very zoomed out - show months
+    if (daySpacingPx < 50) return "weeks"; // Zoomed out - show weeks
+    if (daySpacingPx < 200) return "days"; // Medium zoom - show days
+    return "hours"; // Zoomed in - show hours
+  };
+
+  const timeScale = getTimeScale();
+
+  // Determine label interval for hour view
   const getLabelInterval = (): number => {
     if (hourSpacingPx < 20) return 12 * 60; // 12 hours
     if (hourSpacingPx < 30) return 6 * 60; // 6 hours
@@ -754,31 +792,111 @@ export function InfiniteTimeline<Data = unknown>({
   const labelInterval = getLabelInterval();
   const showQuarterLabels = quarterSpacingPx >= 55; // Show 15-min labels when spacing is good
 
-  // Generate time markers (hourly with 15-min subdivisions)
+  // Generate markers based on time scale
   const hourMarkers: number[] = [];
   const quarterMarkers: number[] = [];
-  const startHour = Math.floor(startTime / 60) * 60;
-  const endHour = Math.ceil(endTime / 60) * 60;
+  const dayMarkers: number[] = [];
+  const weekMarkers: number[] = [];
+  const monthMarkers: number[] = [];
+  const yearMarkers: number[] = [];
 
-  for (let t = startHour; t <= endHour; t += 60) {
-    hourMarkers.push(t);
-  }
+  if (timeScale === "hours") {
+    // Generate time markers (hourly with 15-min subdivisions)
+    const startHour = Math.floor(startTime / 60) * 60;
+    const endHour = Math.ceil(endTime / 60) * 60;
 
-  // Only show quarter markers if hour spacing is reasonable
-  if (hourSpacingPx >= 30) {
-    for (let t = startHour; t <= endHour; t += 15) {
-      if (t % 60 !== 0) {
-        quarterMarkers.push(t);
+    for (let t = startHour; t <= endHour; t += 60) {
+      hourMarkers.push(t);
+    }
+
+    // Only show quarter markers if hour spacing is reasonable
+    if (hourSpacingPx >= 30) {
+      for (let t = startHour; t <= endHour; t += 15) {
+        if (t % 60 !== 0) {
+          quarterMarkers.push(t);
+        }
       }
     }
-  }
 
-  // Generate day markers
-  const dayMarkers: number[] = [];
-  const startDay = getDayStart(startTime);
-  const endDay = getDayStart(endTime) + 1440;
-  for (let d = startDay; d <= endDay; d += 1440) {
-    dayMarkers.push(d);
+    // Generate day markers for top header
+    const startDay = getDayStart(startTime);
+    const endDay = getDayStart(endTime) + 1440;
+    for (let d = startDay; d <= endDay; d += 1440) {
+      dayMarkers.push(d);
+    }
+  } else if (timeScale === "days") {
+    // Show days in time header, months in top header
+    const startDay = getDayStart(startTime);
+    const endDay = getDayStart(endTime) + 1440;
+    for (let d = startDay; d <= endDay; d += 1440) {
+      dayMarkers.push(d);
+    }
+
+    // Generate month markers for top header
+    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
+    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+
+    while (currentMonth < endMonth) {
+      const monthStart = new Date(currentMonth);
+      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      monthMarkers.push(monthMinutes);
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+  } else if (timeScale === "weeks") {
+    // Show weeks in time header, months in top header
+    const startDay = getDayStart(startTime);
+    const endDay = getDayStart(endTime) + 1440;
+    
+    // Find first Sunday (start of week)
+    let currentWeek = startDay;
+    const startDate = new Date(baseDate.getTime() + startDay * 60 * 1000);
+    const dayOfWeek = startDate.getDay();
+    if (dayOfWeek !== 0) {
+      currentWeek -= dayOfWeek * 1440; // Go back to Sunday
+    }
+
+    for (let w = currentWeek; w <= endDay; w += 10080) { // 7 days = 10080 minutes
+      weekMarkers.push(w);
+    }
+
+    // Generate month markers for top header
+    const startDate2 = new Date(baseDate.getTime() + startTime * 60 * 1000);
+    const endDate2 = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const currentMonth = new Date(startDate2.getFullYear(), startDate2.getMonth(), 1);
+    const endMonth = new Date(endDate2.getFullYear(), endDate2.getMonth() + 1, 1);
+
+    while (currentMonth < endMonth) {
+      const monthStart = new Date(currentMonth);
+      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      monthMarkers.push(monthMinutes);
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+  } else if (timeScale === "months") {
+    // Show months in time header, years in top header
+    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
+    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+
+    while (currentMonth < endMonth) {
+      const monthStart = new Date(currentMonth);
+      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      monthMarkers.push(monthMinutes);
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+
+    // Generate year markers for top header (only at start of each year)
+    const currentYear = new Date(startDate.getFullYear(), 0, 1);
+    const endYear = new Date(endDate.getFullYear() + 1, 0, 1);
+
+    while (currentYear < endYear) {
+      const yearStart = new Date(currentYear);
+      const yearMinutes = (yearStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      yearMarkers.push(yearMinutes);
+      currentYear.setFullYear(currentYear.getFullYear() + 1);
+    }
   }
 
   // Drawing preview dimensions
@@ -951,7 +1069,7 @@ export function InfiniteTimeline<Data = unknown>({
           style={{ paddingLeft: SIDEBAR_WIDTH }}
         >
           <div className="relative h-full overflow-hidden">
-            {dayMarkers.map((minutes) => {
+            {timeScale === "hours" && dayMarkers.map((minutes) => {
               const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
               const containerWidth = containerRef.current?.clientWidth || 2000;
               if (x < -200 || x > containerWidth + 200) return null;
@@ -962,8 +1080,42 @@ export function InfiniteTimeline<Data = unknown>({
                   className="absolute top-0 h-full flex items-center"
                   style={{ left: x }}
                 >
-                  <span className="text-xs font-medium text-foreground pl-2">
+                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
                     {formatDate(minutes, baseDate)}
+                  </span>
+                </div>
+              );
+            })}
+            {(timeScale === "days" || timeScale === "weeks") && monthMarkers.map((minutes) => {
+              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const containerWidth = containerRef.current?.clientWidth || 2000;
+              if (x < -200 || x > containerWidth + 200) return null;
+
+              return (
+                <div
+                  key={`month-${minutes}`}
+                  className="absolute top-0 h-full flex items-center"
+                  style={{ left: x }}
+                >
+                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
+                    {formatMonthYear(minutes, baseDate)}
+                  </span>
+                </div>
+              );
+            })}
+            {timeScale === "months" && yearMarkers.map((minutes) => {
+              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const containerWidth = containerRef.current?.clientWidth || 2000;
+              if (x < -200 || x > containerWidth + 200) return null;
+
+              return (
+                <div
+                  key={`year-${minutes}`}
+                  className="absolute top-0 h-full flex items-center"
+                  style={{ left: x }}
+                >
+                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
+                    {formatYear(minutes, baseDate)}
                   </span>
                 </div>
               );
@@ -977,90 +1129,202 @@ export function InfiniteTimeline<Data = unknown>({
           style={{ paddingLeft: SIDEBAR_WIDTH }}
         >
           <div className="relative h-full overflow-hidden">
-            {/* Quarter hour ticks */}
-            {quarterMarkers.map((minutes) => {
+            {timeScale === "hours" && (
+              <>
+                {/* Quarter hour ticks */}
+                {quarterMarkers.map((minutes) => {
+                  const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                  const containerWidth = containerRef.current?.clientWidth || 2000;
+                  if (x < -50 || x > containerWidth) return null;
+
+                  // Show label if 15-minute labels are enabled
+                  const shouldShowLabel = showQuarterLabels;
+
+                  return (
+                    <div
+                      key={`q-${minutes}`}
+                      className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                      style={{ left: x }}
+                    >
+                      {shouldShowLabel && (
+                        <span className="text-xs tabular-nums -translate-x-1/2 text-muted-foreground">
+                          {formatTime(minutes)}
+                        </span>
+                      )}
+                      <div
+                        className={cn(
+                          "w-px mt-0.5 ml-0",
+                          shouldShowLabel ? "h-1 bg-border" : "h-1 bg-border",
+                        )}
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* Hour markers */}
+                {hourMarkers.map((minutes) => {
+                  const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                  const containerWidth = containerRef.current?.clientWidth || 2000;
+                  if (x < -50 || x > containerWidth) return null;
+
+                  // Get hour of day (0-23) for this marker
+                  const hourOfDay = Math.floor((minutes % 1440) / 60);
+
+                  // Determine if this hour should show a label based on interval
+                  let shouldShowLabel = false;
+                  if (labelInterval === 60) {
+                    // Show all hours
+                    shouldShowLabel = true;
+                  } else if (labelInterval === 3 * 60) {
+                    // Show every 3 hours: 0, 3, 6, 9, 12, 15, 18, 21
+                    shouldShowLabel = hourOfDay % 3 === 0;
+                  } else if (labelInterval === 6 * 60) {
+                    // Show every 6 hours: 0, 6, 12, 18
+                    shouldShowLabel = hourOfDay % 6 === 0;
+                  } else if (labelInterval === 12 * 60) {
+                    // Show every 12 hours: 0, 12
+                    shouldShowLabel = hourOfDay % 12 === 0;
+                  }
+
+                  const isMainHour = minutes % 60 === 0;
+                  const isMajorMarker = minutes % 360 === 0; // Every 6 hours
+
+                  return (
+                    <div
+                      key={`h-${minutes}`}
+                      className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                      style={{ left: x }}
+                    >
+                      {shouldShowLabel && (
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums -translate-x-1/2",
+                            isMainHour
+                              ? "text-foreground font-medium"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {formatTime(minutes)}
+                        </span>
+                      )}
+                      <div
+                        className={cn(
+                          "w-px mt-0.5 ml-0",
+                          isMajorMarker
+                            ? "h-2 bg-foreground/50"
+                            : shouldShowLabel
+                              ? "h-1.5 bg-muted-foreground"
+                              : "h-1 bg-border/60",
+                        )}
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {timeScale === "days" && dayMarkers.map((minutes) => {
               const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
               const containerWidth = containerRef.current?.clientWidth || 2000;
               if (x < -50 || x > containerWidth) return null;
 
-              // Show label if 15-minute labels are enabled
-              const shouldShowLabel = showQuarterLabels;
+              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+              const isFirstOfMonth = date.getDate() === 1;
 
               return (
                 <div
-                  key={`q-${minutes}`}
+                  key={`day-${minutes}`}
                   className="absolute top-0 h-full flex flex-col justify-end pb-1"
                   style={{ left: x }}
                 >
-                  {shouldShowLabel && (
-                    <span className="text-xs tabular-nums -translate-x-1/2 text-muted-foreground">
-                      {formatTime(minutes)}
-                    </span>
-                  )}
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums -translate-x-1/2",
+                      isFirstOfMonth
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
                   <div
                     className={cn(
                       "w-px mt-0.5 ml-0",
-                      shouldShowLabel ? "h-1 bg-border" : "h-1 bg-border",
+                      isFirstOfMonth
+                        ? "h-2 bg-foreground/50"
+                        : "h-1 bg-border/60",
                     )}
                   />
                 </div>
               );
             })}
 
-            {/* Hour markers */}
-            {hourMarkers.map((minutes) => {
+            {timeScale === "weeks" && weekMarkers.map((minutes) => {
               const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
               const containerWidth = containerRef.current?.clientWidth || 2000;
               if (x < -50 || x > containerWidth) return null;
 
-              // Get hour of day (0-23) for this marker
-              const hourOfDay = Math.floor((minutes % 1440) / 60);
-
-              // Determine if this hour should show a label based on interval
-              let shouldShowLabel = false;
-              if (labelInterval === 60) {
-                // Show all hours
-                shouldShowLabel = true;
-              } else if (labelInterval === 3 * 60) {
-                // Show every 3 hours: 0, 3, 6, 9, 12, 15, 18, 21
-                shouldShowLabel = hourOfDay % 3 === 0;
-              } else if (labelInterval === 6 * 60) {
-                // Show every 6 hours: 0, 6, 12, 18
-                shouldShowLabel = hourOfDay % 6 === 0;
-              } else if (labelInterval === 12 * 60) {
-                // Show every 12 hours: 0, 12
-                shouldShowLabel = hourOfDay % 12 === 0;
-              }
-
-              const isMainHour = minutes % 60 === 0;
-              const isMajorMarker = minutes % 360 === 0; // Every 6 hours
+              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+              const isFirstOfMonth = date.getDate() <= 7;
 
               return (
                 <div
-                  key={`h-${minutes}`}
+                  key={`week-${minutes}`}
                   className="absolute top-0 h-full flex flex-col justify-end pb-1"
                   style={{ left: x }}
                 >
-                  {shouldShowLabel && (
-                    <span
-                      className={cn(
-                        "text-xs tabular-nums -translate-x-1/2",
-                        isMainHour
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {formatTime(minutes)}
-                    </span>
-                  )}
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums -translate-x-1/2",
+                      isFirstOfMonth
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {formatWeek(minutes, baseDate)}
+                  </span>
                   <div
                     className={cn(
                       "w-px mt-0.5 ml-0",
-                      isMajorMarker
+                      isFirstOfMonth
                         ? "h-2 bg-foreground/50"
-                        : shouldShowLabel
-                          ? "h-1.5 bg-muted-foreground"
-                          : "h-1 bg-border/60",
+                        : "h-1 bg-border/60",
+                    )}
+                  />
+                </div>
+              );
+            })}
+
+            {timeScale === "months" && monthMarkers.map((minutes) => {
+              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const containerWidth = containerRef.current?.clientWidth || 2000;
+              if (x < -50 || x > containerWidth) return null;
+
+              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+              const isQuarter = date.getMonth() % 3 === 0;
+
+              return (
+                <div
+                  key={`month-${minutes}`}
+                  className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                  style={{ left: x }}
+                >
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums -translate-x-1/2",
+                      isQuarter
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {date.toLocaleDateString("en-US", { month: "short" })}
+                  </span>
+                  <div
+                    className={cn(
+                      "w-px mt-0.5 ml-0",
+                      isQuarter
+                        ? "h-2 bg-foreground/50"
+                        : "h-1 bg-border/60",
                     )}
                   />
                 </div>
@@ -1130,56 +1394,191 @@ export function InfiniteTimeline<Data = unknown>({
           >
             {/* Grid Lines */}
             <div className="absolute inset-0 pointer-events-none">
-              {/* Quarter hour lines (subtle) */}
-              {quarterMarkers.map((minutes) => {
-                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-                const containerWidth =
-                  containerRef.current?.clientWidth || 2000;
-                if (x < 0 || x > containerWidth) return null;
+              {timeScale === "hours" && (
+                <>
+                  {/* Quarter hour lines (subtle) */}
+                  {quarterMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
 
-                return (
-                  <div
-                    key={`qgrid-${minutes}`}
-                    className="absolute top-0 w-px bg-border/20"
-                    style={{ left: x, height: totalHeight }}
-                  />
-                );
-              })}
+                    return (
+                      <div
+                        key={`qgrid-${minutes}`}
+                        className="absolute top-0 w-px bg-border/20"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
 
-              {/* Hour lines */}
-              {hourMarkers.map((minutes) => {
-                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-                const containerWidth =
-                  containerRef.current?.clientWidth || 2000;
-                if (x < 0 || x > containerWidth) return null;
+                  {/* Hour lines */}
+                  {hourMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
 
-                return (
-                  <div
-                    key={`hgrid-${minutes}`}
-                    className={cn(
-                      "absolute top-0 w-px",
-                      minutes % 360 === 0 ? "bg-timeline-grid" : "bg-border/40",
-                    )}
-                    style={{ left: x, height: totalHeight }}
-                  />
-                );
-              })}
+                    return (
+                      <div
+                        key={`hgrid-${minutes}`}
+                        className={cn(
+                          "absolute top-0 w-px",
+                          minutes % 360 === 0 ? "bg-timeline-grid" : "bg-border/40",
+                        )}
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
 
-              {/* Day lines */}
-              {dayMarkers.map((minutes) => {
-                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-                const containerWidth =
-                  containerRef.current?.clientWidth || 2000;
-                if (x < 0 || x > containerWidth) return null;
+                  {/* Day lines */}
+                  {dayMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
 
-                return (
-                  <div
-                    key={`dgrid-${minutes}`}
-                    className="absolute top-0 w-0.5 bg-primary/30"
-                    style={{ left: x, height: totalHeight }}
-                  />
-                );
-              })}
+                    return (
+                      <div
+                        key={`dgrid-${minutes}`}
+                        className="absolute top-0 w-0.5 bg-primary/30"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                </>
+              )}
+
+              {timeScale === "days" && (
+                <>
+                  {/* Day lines */}
+                  {dayMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const isFirstOfMonth = date.getDate() === 1;
+
+                    return (
+                      <div
+                        key={`dgrid-${minutes}`}
+                        className={cn(
+                          "absolute top-0 w-px",
+                          isFirstOfMonth ? "bg-primary/30" : "bg-border/40",
+                        )}
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+
+                  {/* Month lines */}
+                  {monthMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    return (
+                      <div
+                        key={`mgrid-${minutes}`}
+                        className="absolute top-0 w-0.5 bg-primary/50"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                </>
+              )}
+
+              {timeScale === "weeks" && (
+                <>
+                  {/* Week lines */}
+                  {weekMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const isFirstOfMonth = date.getDate() <= 7;
+
+                    return (
+                      <div
+                        key={`wgrid-${minutes}`}
+                        className={cn(
+                          "absolute top-0 w-px",
+                          isFirstOfMonth ? "bg-primary/30" : "bg-border/40",
+                        )}
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+
+                  {/* Month lines */}
+                  {monthMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    return (
+                      <div
+                        key={`mgrid-${minutes}`}
+                        className="absolute top-0 w-0.5 bg-primary/50"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                </>
+              )}
+
+              {timeScale === "months" && (
+                <>
+                  {/* Month lines */}
+                  {monthMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const isQuarter = date.getMonth() % 3 === 0;
+                    const isYearStart = date.getMonth() === 0;
+
+                    return (
+                      <div
+                        key={`mgrid-${minutes}`}
+                        className={cn(
+                          "absolute top-0 w-px",
+                          isYearStart
+                            ? "bg-primary/50"
+                            : isQuarter
+                              ? "bg-primary/30"
+                              : "bg-border/40",
+                        )}
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+
+                  {/* Year lines (thicker) */}
+                  {yearMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    return (
+                      <div
+                        key={`ygrid-${minutes}`}
+                        className="absolute top-0 w-0.5 bg-primary/60"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                </>
+              )}
             </div>
 
             {/* Lanes */}
