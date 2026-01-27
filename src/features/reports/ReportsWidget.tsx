@@ -375,6 +375,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             searchPlaceholder="Search view mode"
             size="sm"
             variant="outline"
+            searchable={false}
           />
           {viewMode !== "table" && (
             <>
@@ -392,6 +393,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 searchPlaceholder="Search group by"
                 size="sm"
                 variant="outline"
+                searchable={false}
               />
               <div className="flex items-center gap-2">
                 <Sun

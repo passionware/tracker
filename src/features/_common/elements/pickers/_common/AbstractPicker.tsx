@@ -54,6 +54,7 @@ export type AbstractPickerProps<Id, Data> = Overwrite<
     side?: PopoverContentProps["side"];
     layout?: "full" | "avatar";
     placeholder?: string;
+    searchable?: boolean;
   }
 >;
 
@@ -86,6 +87,7 @@ export function AbstractPicker<Id, Data>(
     align = "start",
     side = "bottom",
     placeholder,
+    searchable = true,
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -168,11 +170,13 @@ export function AbstractPicker<Id, Data>(
       <PopoverTrigger asChild>{button}</PopoverTrigger>
       <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
         <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={config.searchPlaceholder || "Search item"}
-            value={query}
-            onValueChange={setQuery}
-          />
+          {searchable && (
+            <CommandInput
+              placeholder={config.searchPlaceholder || "Search item"}
+              value={query}
+              onValueChange={setQuery}
+            />
+          )}
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">

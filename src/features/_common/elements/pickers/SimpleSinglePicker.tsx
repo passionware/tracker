@@ -22,6 +22,7 @@ interface SimpleSinglePickerProps
   searchPlaceholder?: string;
   placeholder?: string;
   itemSize?: AbstractEntityViewProps["size"];
+  searchable?: boolean;
 }
 
 export function SimpleSinglePicker({
