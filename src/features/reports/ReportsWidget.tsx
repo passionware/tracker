@@ -41,11 +41,14 @@ import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  DefaultTimelineItem,
   InfiniteTimeline,
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -289,15 +292,88 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      {timelineData.items.length > 0 && (
-        <div className="h-[400px] mb-4 shrink-0">
-          <InfiniteTimeline
-            items={timelineData.items}
-            lanes={timelineData.lanes}
-            baseDate={timelineData.baseDate}
-          />
-        </div>
-      )}
+      {rd
+        .journey(finalReports)
+        .wait(
+          <div className="h-[400px] mb-4 shrink-0 rounded-md overflow-hidden dark bg-card">
+            <div className="h-full flex flex-col">
+              {/* Skeleton header */}
+              <div className="h-12 border-b flex items-center px-4">
+                <Skeleton className="h-4 w-24" />
+              </div>
+              {/* Skeleton lanes */}
+              <div className="flex-1 flex flex-col">
+                {[1, 2, 3, 4].map((laneIndex) => (
+                  <div
+                    key={laneIndex}
+                    className="flex items-center border-b last:border-b-0"
+                    style={{ height: "80px" }}
+                  >
+                    {/* Lane label skeleton */}
+                    <div className="w-[180px] border-r p-4 shrink-0">
+                      <Skeleton className="h-5 w-28" />
+                    </div>
+                    {/* Timeline items skeleton */}
+                    <div className="flex-1 relative p-2">
+                      <div className="flex gap-2">
+                        <Skeleton
+                          className="h-12 rounded"
+                          style={{ width: `${80 + laneIndex * 20}px` }}
+                        />
+                        <Skeleton
+                          className="h-12 rounded"
+                          style={{ width: `${100 + laneIndex * 15}px` }}
+                        />
+                        {laneIndex % 2 === 0 && (
+                          <Skeleton
+                            className="h-12 rounded"
+                            style={{ width: `${60 + laneIndex * 10}px` }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>,
+        )
+        .catch(() => null)
+        .map(() => {
+          if (timelineData.items.length === 0) {
+            return null;
+          }
+          return (
+            <div className="h-[400px] mb-4 shrink-0">
+              <InfiniteTimeline
+                items={timelineData.items}
+                lanes={timelineData.lanes}
+                baseDate={timelineData.baseDate}
+                renderItem={(itemProps) => {
+                  const reportEntry = itemProps.item.data as ReportViewEntry;
+                  if (!reportEntry) {
+                    // Fallback to default if no report data
+                    return <DefaultTimelineItem {...itemProps} />;
+                  }
+
+                  return (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <DefaultTimelineItem {...itemProps} />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-96 p-4">
+                        <ReportPreview
+                          services={props.services}
+                          reportId={reportEntry.id}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  );
+                }}
+              />
+            </div>
+          );
+        })}
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}

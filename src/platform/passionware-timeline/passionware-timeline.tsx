@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { cn } from "@/lib/utils";
@@ -205,12 +206,17 @@ interface DefaultTimelineItemProps<Data = unknown> {
   isSelected: boolean;
   isHovered: boolean;
   isMinWidth: boolean;
-  onMouseDown: (e: ReactMouseEvent, item: TimelineItem<Data>, type: "move" | "resize-start" | "resize-end") => void;
+  onMouseDown: (
+    e: ReactMouseEvent,
+    item: TimelineItem<Data>,
+    type: "move" | "resize-start" | "resize-end",
+  ) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
 }
 
-function DefaultTimelineItem<Data = unknown>({
+export function DefaultTimelineItem<Data = unknown>({
   item,
   left,
   width,
@@ -220,17 +226,49 @@ function DefaultTimelineItem<Data = unknown>({
   onMouseDown,
   onMouseEnter,
   onMouseLeave,
+  onClick,
+  ...props
 }: DefaultTimelineItemProps<Data>) {
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef(false);
+
+  const handleMouseDown = (e: ReactMouseEvent) => {
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    hasDraggedRef.current = false;
+    onMouseDown(e, item, "move");
+
+    const handleMove = () => {
+      hasDraggedRef.current = true;
+    };
+
+    const handleUp = (upEvent: globalThis.MouseEvent) => {
+      if (mouseDownPosRef.current && onClick) {
+        const deltaX = Math.abs(upEvent.clientX - mouseDownPosRef.current.x);
+        const deltaY = Math.abs(upEvent.clientY - mouseDownPosRef.current.y);
+        // Only trigger click if mouse moved less than 5px (not a drag)
+        if (deltaX < 5 && deltaY < 5 && !hasDraggedRef.current) {
+          onClick(e, item);
+        }
+      }
+      mouseDownPosRef.current = null;
+      hasDraggedRef.current = false;
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  };
+
   return (
     <div
+      {...props}
       className={cn(
         "absolute rounded transition-shadow cursor-grab group",
         item.color || "bg-primary",
         isSelected &&
           "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-        isHovered &&
-          !isSelected &&
-          "ring-1 ring-foreground/50",
+        isHovered && !isSelected && "ring-1 ring-foreground/50",
         isMinWidth && "ring-1 ring-foreground/80",
       )}
       style={{
@@ -239,7 +277,7 @@ function DefaultTimelineItem<Data = unknown>({
         top: 8 + (item.row || 0) * SUB_ROW_HEIGHT,
         height: SUB_ROW_HEIGHT - 4,
       }}
-      onMouseDown={(e) => onMouseDown(e, item, "move")}
+      onMouseDown={handleMouseDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -281,11 +319,17 @@ interface InfiniteTimelineProps<Data = unknown> {
     isSelected: boolean;
     isHovered: boolean;
     isMinWidth: boolean;
-    onMouseDown: (e: ReactMouseEvent, item: TimelineItem<Data>, type: "move" | "resize-start" | "resize-end") => void;
+    onMouseDown: (
+      e: ReactMouseEvent,
+      item: TimelineItem<Data>,
+      type: "move" | "resize-start" | "resize-end",
+    ) => void;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
+    onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
   }) => React.ReactNode;
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
+  onItemClick?: (item: TimelineItem<Data>) => void;
 }
 
 export function InfiniteTimeline<Data = unknown>({
@@ -294,6 +338,7 @@ export function InfiniteTimeline<Data = unknown>({
   baseDate: externalBaseDate,
   renderItem,
   onItemsChange,
+  onItemClick,
 }: InfiniteTimelineProps<Data> = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
@@ -303,13 +348,54 @@ export function InfiniteTimeline<Data = unknown>({
     row: number;
   } | null>(null);
   const baseDate = externalBaseDate || BASE_DATE;
-  const [items, setItems] = useState<TimelineItem<Data>[]>(externalItems || initialItems as TimelineItem<Data>[]);
+  const [items, setItems] = useState<TimelineItem<Data>[]>(
+    externalItems || (initialItems as TimelineItem<Data>[]),
+  );
   const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
-  const [scrollOffset, setScrollOffset] = useState(
-    -toMinutes(7) * PIXELS_PER_MINUTE,
-  ); // Start scrolled to show 8AM
+
+  // Calculate initial zoom and scroll to fit all items
+  const initialView = useMemo(() => {
+    const allItems = externalItems && externalItems.length > 0 ? externalItems : (initialItems as TimelineItem<Data>[]);
+    if (!allItems || allItems.length === 0) {
+      return {
+        zoom: 1,
+        scrollOffset: -toMinutes(7) * PIXELS_PER_MINUTE,
+      };
+    }
+
+    const minStart = Math.min(...allItems.map(item => item.start));
+    const maxEnd = Math.max(...allItems.map(item => item.end));
+    const totalMinutes = maxEnd - minStart;
+
+    if (totalMinutes <= 0) {
+      return {
+        zoom: 1,
+        scrollOffset: -toMinutes(7) * PIXELS_PER_MINUTE,
+      };
+    }
+
+    // Estimate container width (will be refined when container is mounted)
+    const estimatedContainerWidth = 1200;
+    const availableWidth = estimatedContainerWidth - SIDEBAR_WIDTH;
+    
+    // Calculate zoom to fit all items with some padding (10% on each side)
+    const padding = 0.1;
+    const requiredPixelsPerMinute = (availableWidth * (1 - 2 * padding)) / totalMinutes;
+    const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
+    
+    // Don't clamp - use the calculated zoom
+    const zoom = calculatedZoom;
+
+    // Calculate scroll offset to center the items
+    const centerTime = (minStart + maxEnd) / 2;
+    const scrollOffset = (availableWidth / 2) - (centerTime * PIXELS_PER_MINUTE * zoom);
+
+    return { zoom, scrollOffset };
+  }, [externalItems]);
+
+  const [scrollOffset, setScrollOffset] = useState(initialView.scrollOffset);
   const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(initialView.zoom);
   const [dragState, setDragState] = useState<DragState<Data> | null>(null);
   const [panState, setPanState] = useState<{
     startX: number;
@@ -338,12 +424,50 @@ export function InfiniteTimeline<Data = unknown>({
     [snapOption],
   );
 
-  // Sync external items
+  // Sync external items and update view when items change
   useEffect(() => {
     if (externalItems) {
       setItems(externalItems);
     }
   }, [externalItems]);
+
+  // Update zoom and scroll when items change to fit all items
+  useEffect(() => {
+    const allItems = items;
+    if (!allItems || allItems.length === 0) return;
+
+    const minStart = Math.min(...allItems.map(item => item.start));
+    const maxEnd = Math.max(...allItems.map(item => item.end));
+    const totalMinutes = maxEnd - minStart;
+
+    if (totalMinutes <= 0) return;
+
+    // Wait for container to be available, use requestAnimationFrame to ensure DOM is ready
+    const updateView = () => {
+      const containerWidth = containerRef.current?.clientWidth || 1200;
+      const availableWidth = containerWidth - SIDEBAR_WIDTH;
+      
+      // Calculate zoom to fit all items with some padding (10% on each side)
+      const padding = 0.1;
+      const requiredPixelsPerMinute = (availableWidth * (1 - 2 * padding)) / totalMinutes;
+      const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
+      
+      // Update zoom without clamping - allow any zoom level to show all items
+      setZoom(calculatedZoom);
+
+      // Calculate scroll offset to center the items
+      const centerTime = (minStart + maxEnd) / 2;
+      const newScrollOffset = (availableWidth / 2) - (centerTime * PIXELS_PER_MINUTE * calculatedZoom);
+      setScrollOffset(newScrollOffset);
+    };
+
+    if (containerRef.current) {
+      updateView();
+    } else {
+      // Retry after container is mounted
+      requestAnimationFrame(updateView);
+    }
+  }, [items]);
 
   // Notify parent of items change
   useEffect(() => {
@@ -835,12 +959,17 @@ export function InfiniteTimeline<Data = unknown>({
     // Generate month markers for top header
     const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
     const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
-    const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const currentMonth = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      1,
+    );
     const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthMinutes =
+        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -848,7 +977,7 @@ export function InfiniteTimeline<Data = unknown>({
     // Show weeks in time header, months in top header
     const startDay = getDayStart(startTime);
     const endDay = getDayStart(endTime) + 1440;
-    
+
     // Find first Sunday (start of week)
     let currentWeek = startDay;
     const startDate = new Date(baseDate.getTime() + startDay * 60 * 1000);
@@ -857,19 +986,29 @@ export function InfiniteTimeline<Data = unknown>({
       currentWeek -= dayOfWeek * 1440; // Go back to Sunday
     }
 
-    for (let w = currentWeek; w <= endDay; w += 10080) { // 7 days = 10080 minutes
+    for (let w = currentWeek; w <= endDay; w += 10080) {
+      // 7 days = 10080 minutes
       weekMarkers.push(w);
     }
 
     // Generate month markers for top header
     const startDate2 = new Date(baseDate.getTime() + startTime * 60 * 1000);
     const endDate2 = new Date(baseDate.getTime() + endTime * 60 * 1000);
-    const currentMonth = new Date(startDate2.getFullYear(), startDate2.getMonth(), 1);
-    const endMonth = new Date(endDate2.getFullYear(), endDate2.getMonth() + 1, 1);
+    const currentMonth = new Date(
+      startDate2.getFullYear(),
+      startDate2.getMonth(),
+      1,
+    );
+    const endMonth = new Date(
+      endDate2.getFullYear(),
+      endDate2.getMonth() + 1,
+      1,
+    );
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthMinutes =
+        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -877,12 +1016,17 @@ export function InfiniteTimeline<Data = unknown>({
     // Show months in time header, years in top header
     const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
     const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
-    const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const currentMonth = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      1,
+    );
     const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes = (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthMinutes =
+        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -893,7 +1037,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentYear < endYear) {
       const yearStart = new Date(currentYear);
-      const yearMinutes = (yearStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const yearMinutes =
+        (yearStart.getTime() - baseDate.getTime()) / (1000 * 60);
       yearMarkers.push(yearMinutes);
       currentYear.setFullYear(currentYear.getFullYear() + 1);
     }
@@ -1069,57 +1214,63 @@ export function InfiniteTimeline<Data = unknown>({
           style={{ paddingLeft: SIDEBAR_WIDTH }}
         >
           <div className="relative h-full overflow-hidden">
-            {timeScale === "hours" && dayMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -200 || x > containerWidth + 200) return null;
+            {timeScale === "hours" &&
+              dayMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -200 || x > containerWidth + 200) return null;
 
-              return (
-                <div
-                  key={`day-${minutes}`}
-                  className="absolute top-0 h-full flex items-center"
-                  style={{ left: x }}
-                >
-                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                    {formatDate(minutes, baseDate)}
-                  </span>
-                </div>
-              );
-            })}
-            {(timeScale === "days" || timeScale === "weeks") && monthMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -200 || x > containerWidth + 200) return null;
+                return (
+                  <div
+                    key={`day-${minutes}`}
+                    className="absolute top-0 h-full flex items-center"
+                    style={{ left: x }}
+                  >
+                    <span className="text-xs font-medium text-foreground -translate-x-1/2">
+                      {formatDate(minutes, baseDate)}
+                    </span>
+                  </div>
+                );
+              })}
+            {(timeScale === "days" || timeScale === "weeks") &&
+              monthMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -200 || x > containerWidth + 200) return null;
 
-              return (
-                <div
-                  key={`month-${minutes}`}
-                  className="absolute top-0 h-full flex items-center"
-                  style={{ left: x }}
-                >
-                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                    {formatMonthYear(minutes, baseDate)}
-                  </span>
-                </div>
-              );
-            })}
-            {timeScale === "months" && yearMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -200 || x > containerWidth + 200) return null;
+                return (
+                  <div
+                    key={`month-${minutes}`}
+                    className="absolute top-0 h-full flex items-center"
+                    style={{ left: x }}
+                  >
+                    <span className="text-xs font-medium text-foreground -translate-x-1/2">
+                      {formatMonthYear(minutes, baseDate)}
+                    </span>
+                  </div>
+                );
+              })}
+            {timeScale === "months" &&
+              yearMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -200 || x > containerWidth + 200) return null;
 
-              return (
-                <div
-                  key={`year-${minutes}`}
-                  className="absolute top-0 h-full flex items-center"
-                  style={{ left: x }}
-                >
-                  <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                    {formatYear(minutes, baseDate)}
-                  </span>
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={`year-${minutes}`}
+                    className="absolute top-0 h-full flex items-center"
+                    style={{ left: x }}
+                  >
+                    <span className="text-xs font-medium text-foreground -translate-x-1/2">
+                      {formatYear(minutes, baseDate)}
+                    </span>
+                  </div>
+                );
+              })}
           </div>
         </div>
 
@@ -1134,7 +1285,8 @@ export function InfiniteTimeline<Data = unknown>({
                 {/* Quarter hour ticks */}
                 {quarterMarkers.map((minutes) => {
                   const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-                  const containerWidth = containerRef.current?.clientWidth || 2000;
+                  const containerWidth =
+                    containerRef.current?.clientWidth || 2000;
                   if (x < -50 || x > containerWidth) return null;
 
                   // Show label if 15-minute labels are enabled
@@ -1164,7 +1316,8 @@ export function InfiniteTimeline<Data = unknown>({
                 {/* Hour markers */}
                 {hourMarkers.map((minutes) => {
                   const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-                  const containerWidth = containerRef.current?.clientWidth || 2000;
+                  const containerWidth =
+                    containerRef.current?.clientWidth || 2000;
                   if (x < -50 || x > containerWidth) return null;
 
                   // Get hour of day (0-23) for this marker
@@ -1223,113 +1376,120 @@ export function InfiniteTimeline<Data = unknown>({
               </>
             )}
 
-            {timeScale === "days" && dayMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -50 || x > containerWidth) return null;
+            {timeScale === "days" &&
+              dayMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -50 || x > containerWidth) return null;
 
-              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
-              const isFirstOfMonth = date.getDate() === 1;
+                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const isFirstOfMonth = date.getDate() === 1;
 
-              return (
-                <div
-                  key={`day-${minutes}`}
-                  className="absolute top-0 h-full flex flex-col justify-end pb-1"
-                  style={{ left: x }}
-                >
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums -translate-x-1/2",
-                      isFirstOfMonth
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
+                return (
                   <div
-                    className={cn(
-                      "w-px mt-0.5 ml-0",
-                      isFirstOfMonth
-                        ? "h-2 bg-foreground/50"
-                        : "h-1 bg-border/60",
-                    )}
-                  />
-                </div>
-              );
-            })}
-
-            {timeScale === "weeks" && weekMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -50 || x > containerWidth) return null;
-
-              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
-              const isFirstOfMonth = date.getDate() <= 7;
-
-              return (
-                <div
-                  key={`week-${minutes}`}
-                  className="absolute top-0 h-full flex flex-col justify-end pb-1"
-                  style={{ left: x }}
-                >
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums -translate-x-1/2",
-                      isFirstOfMonth
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground",
-                    )}
+                    key={`day-${minutes}`}
+                    className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                    style={{ left: x }}
                   >
-                    {formatWeek(minutes, baseDate)}
-                  </span>
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums -translate-x-1/2",
+                        isFirstOfMonth
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <div
+                      className={cn(
+                        "w-px mt-0.5 ml-0",
+                        isFirstOfMonth
+                          ? "h-2 bg-foreground/50"
+                          : "h-1 bg-border/60",
+                      )}
+                    />
+                  </div>
+                );
+              })}
+
+            {timeScale === "weeks" &&
+              weekMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -50 || x > containerWidth) return null;
+
+                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const isFirstOfMonth = date.getDate() <= 7;
+
+                return (
                   <div
-                    className={cn(
-                      "w-px mt-0.5 ml-0",
-                      isFirstOfMonth
-                        ? "h-2 bg-foreground/50"
-                        : "h-1 bg-border/60",
-                    )}
-                  />
-                </div>
-              );
-            })}
-
-            {timeScale === "months" && monthMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < -50 || x > containerWidth) return null;
-
-              const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
-              const isQuarter = date.getMonth() % 3 === 0;
-
-              return (
-                <div
-                  key={`month-${minutes}`}
-                  className="absolute top-0 h-full flex flex-col justify-end pb-1"
-                  style={{ left: x }}
-                >
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums -translate-x-1/2",
-                      isQuarter
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground",
-                    )}
+                    key={`week-${minutes}`}
+                    className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                    style={{ left: x }}
                   >
-                    {date.toLocaleDateString("en-US", { month: "short" })}
-                  </span>
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums -translate-x-1/2",
+                        isFirstOfMonth
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {formatWeek(minutes, baseDate)}
+                    </span>
+                    <div
+                      className={cn(
+                        "w-px mt-0.5 ml-0",
+                        isFirstOfMonth
+                          ? "h-2 bg-foreground/50"
+                          : "h-1 bg-border/60",
+                      )}
+                    />
+                  </div>
+                );
+              })}
+
+            {timeScale === "months" &&
+              monthMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -50 || x > containerWidth) return null;
+
+                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const isQuarter = date.getMonth() % 3 === 0;
+
+                return (
                   <div
-                    className={cn(
-                      "w-px mt-0.5 ml-0",
-                      isQuarter
-                        ? "h-2 bg-foreground/50"
-                        : "h-1 bg-border/60",
-                    )}
-                  />
-                </div>
-              );
-            })}
+                    key={`month-${minutes}`}
+                    className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                    style={{ left: x }}
+                  >
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums -translate-x-1/2",
+                        isQuarter
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {date.toLocaleDateString("en-US", { month: "short" })}
+                    </span>
+                    <div
+                      className={cn(
+                        "w-px mt-0.5 ml-0",
+                        isQuarter ? "h-2 bg-foreground/50" : "h-1 bg-border/60",
+                      )}
+                    />
+                  </div>
+                );
+              })}
           </div>
         </div>
 
@@ -1424,7 +1584,9 @@ export function InfiniteTimeline<Data = unknown>({
                         key={`hgrid-${minutes}`}
                         className={cn(
                           "absolute top-0 w-px",
-                          minutes % 360 === 0 ? "bg-timeline-grid" : "bg-border/40",
+                          minutes % 360 === 0
+                            ? "bg-timeline-grid"
+                            : "bg-border/40",
                         )}
                         style={{ left: x, height: totalHeight }}
                       />
@@ -1458,7 +1620,9 @@ export function InfiniteTimeline<Data = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const date = new Date(
+                      baseDate.getTime() + minutes * 60 * 1000,
+                    );
                     const isFirstOfMonth = date.getDate() === 1;
 
                     return (
@@ -1500,7 +1664,9 @@ export function InfiniteTimeline<Data = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const date = new Date(
+                      baseDate.getTime() + minutes * 60 * 1000,
+                    );
                     const isFirstOfMonth = date.getDate() <= 7;
 
                     return (
@@ -1542,7 +1708,9 @@ export function InfiniteTimeline<Data = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                    const date = new Date(
+                      baseDate.getTime() + minutes * 60 * 1000,
+                    );
                     const isQuarter = date.getMonth() % 3 === 0;
                     const isYearStart = date.getMonth() === 0;
 
@@ -1628,11 +1796,21 @@ export function InfiniteTimeline<Data = unknown>({
                       onMouseDown: handleItemMouseDown,
                       onMouseEnter: () => setHoveredItemId(item.id),
                       onMouseLeave: () => setHoveredItemId(null),
+                      onClick: onItemClick
+                        ? (e: ReactMouseEvent) => {
+                            e.stopPropagation();
+                            onItemClick(item);
+                          }
+                        : undefined,
                     };
 
                     return (
                       <React.Fragment key={item.id}>
-                        {renderItem ? renderItem(itemProps) : <DefaultTimelineItem {...itemProps} />}
+                        {renderItem ? (
+                          renderItem(itemProps)
+                        ) : (
+                          <DefaultTimelineItem {...itemProps} />
+                        )}
                       </React.Fragment>
                     );
                   })}
