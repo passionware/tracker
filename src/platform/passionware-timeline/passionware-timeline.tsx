@@ -362,7 +362,7 @@ export function InfiniteTimeline() {
         setZoom(newZoom);
         setScrollOffset(newScrollOffset);
       } else if (e.shiftKey) {
-        // Shift+scroll: vertical scrolling
+        // Shift+scroll: vertical scrolling (when shift is pressed, deltaX contains the vertical scroll)
         setVerticalScrollOffset((prev) => {
           const containerHeight = containerRef.current?.clientHeight || 0;
           const preview = previewItemRef.current;
@@ -375,7 +375,10 @@ export function InfiniteTimeline() {
             0,
             totalHeight - containerHeight + HEADER_HEIGHT,
           );
-          return Math.max(0, Math.min(maxOffset, prev - e.deltaY));
+          // When shift is pressed, horizontal scroll becomes vertical, so use deltaX
+          const scrollDelta =
+            Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+          return Math.max(0, Math.min(maxOffset, prev + scrollDelta));
         });
       } else {
         // Regular scroll: horizontal pan
@@ -418,7 +421,7 @@ export function InfiniteTimeline() {
       const deltaX = e.clientX - panState.startX;
       const deltaY = e.clientY - panState.startY;
 
-      setScrollOffset(panState.startScrollOffset - deltaX);
+      setScrollOffset(panState.startScrollOffset + deltaX);
       const containerHeight = containerRef.current?.clientHeight || 0;
       const preview = previewItemRef.current;
       const totalHeight = lanes.reduce((sum, lane) => {
@@ -899,35 +902,44 @@ export function InfiniteTimeline() {
           className="absolute top-14 left-0 bottom-0 bg-card border-r border-border z-10 overflow-hidden"
           style={{
             width: SIDEBAR_WIDTH,
-            transform: `translateY(-${verticalScrollOffset}px)`,
           }}
         >
-          {lanes.map((lane, index) => {
-            const lanePreview =
-              calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
-                ? calculatedPreviewItem
-                : undefined;
-            return (
-              <div
-                key={lane.id}
-                className={cn(
-                  "flex items-start gap-3 px-4 py-3 border-b border-border",
-                  index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt",
-                )}
-                style={{ height: getLaneHeight(lane.id, lanePreview) }}
-              >
+          <div
+            style={{
+              transform: `translateY(-${verticalScrollOffset}px)`,
+              position: "relative",
+            }}
+          >
+            {lanes.map((lane, index) => {
+              const lanePreview =
+                calculatedPreviewItem &&
+                calculatedPreviewItem.laneId === lane.id
+                  ? calculatedPreviewItem
+                  : undefined;
+              return (
                 <div
+                  key={lane.id}
                   className={cn(
-                    "w-2 h-2 rounded-full mt-0.5 shrink-0",
-                    lane.color,
+                    "flex items-start gap-3 px-4 py-3 border-b border-border",
+                    index % 2 === 0
+                      ? "bg-timeline-lane"
+                      : "bg-timeline-lane-alt",
                   )}
-                />
-                <span className="text-sm text-foreground truncate">
-                  {lane.name}
-                </span>
-              </div>
-            );
-          })}
+                  style={{ height: getLaneHeight(lane.id, lanePreview) }}
+                >
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full mt-0.5 shrink-0",
+                      lane.color,
+                    )}
+                  />
+                  <span className="text-sm text-foreground truncate">
+                    {lane.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Timeline Grid and Items */}
@@ -936,162 +948,176 @@ export function InfiniteTimeline() {
           style={{
             left: SIDEBAR_WIDTH,
             right: 0,
-            transform: `translateY(-${verticalScrollOffset}px)`,
           }}
         >
-          {/* Grid Lines */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Quarter hour lines (subtle) */}
-            {quarterMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < 0 || x > containerWidth) return null;
+          <div
+            style={{
+              transform: `translateY(-${verticalScrollOffset}px)`,
+              position: "relative",
+            }}
+          >
+            {/* Grid Lines */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Quarter hour lines (subtle) */}
+              {quarterMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < 0 || x > containerWidth) return null;
+
+                return (
+                  <div
+                    key={`qgrid-${minutes}`}
+                    className="absolute top-0 w-px bg-border/20"
+                    style={{ left: x, height: totalHeight }}
+                  />
+                );
+              })}
+
+              {/* Hour lines */}
+              {hourMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < 0 || x > containerWidth) return null;
+
+                return (
+                  <div
+                    key={`hgrid-${minutes}`}
+                    className={cn(
+                      "absolute top-0 w-px",
+                      minutes % 360 === 0 ? "bg-timeline-grid" : "bg-border/40",
+                    )}
+                    style={{ left: x, height: totalHeight }}
+                  />
+                );
+              })}
+
+              {/* Day lines */}
+              {dayMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < 0 || x > containerWidth) return null;
+
+                return (
+                  <div
+                    key={`dgrid-${minutes}`}
+                    className="absolute top-0 w-0.5 bg-primary/30"
+                    style={{ left: x, height: totalHeight }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Lanes */}
+            {lanes.map((lane, laneIndex) => {
+              const previewForLane =
+                calculatedPreviewItem &&
+                calculatedPreviewItem.laneId === lane.id
+                  ? calculatedPreviewItem
+                  : undefined;
+              const itemsWithRows = getItemsWithRows(lane.id, previewForLane);
+              const laneHeight = getLaneHeight(lane.id, previewForLane);
+              const yOffset = getLaneYOffset(laneIndex);
 
               return (
                 <div
-                  key={`qgrid-${minutes}`}
-                  className="absolute top-0 w-px bg-border/20"
-                  style={{ left: x, height: totalHeight }}
-                />
-              );
-            })}
-
-            {/* Hour lines */}
-            {hourMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < 0 || x > containerWidth) return null;
-
-              return (
-                <div
-                  key={`hgrid-${minutes}`}
+                  key={lane.id}
                   className={cn(
-                    "absolute top-0 w-px",
-                    minutes % 360 === 0 ? "bg-timeline-grid" : "bg-border/40",
+                    "absolute left-0 right-0 border-b border-border",
+                    laneIndex % 2 === 0
+                      ? "bg-timeline-lane"
+                      : "bg-timeline-lane-alt",
                   )}
-                  style={{ left: x, height: totalHeight }}
-                />
-              );
-            })}
+                  style={{
+                    top: yOffset,
+                    height: laneHeight,
+                  }}
+                  onMouseDown={(e) => handleLaneMouseDown(e, lane.id)}
+                >
+                  {/* Items in this lane */}
+                  {itemsWithRows.map((item) => {
+                    const left = timeToPixel(item.start) - SIDEBAR_WIDTH;
+                    const naturalWidth =
+                      (item.end - item.start) * pixelsPerMinute;
+                    const MIN_VISIBLE_WIDTH = 3;
+                    const isMinWidth = naturalWidth < MIN_VISIBLE_WIDTH;
+                    const width = Math.max(naturalWidth, MIN_VISIBLE_WIDTH);
+                    const isSelected = selectedItemId === item.id;
+                    const isHovered = hoveredItemId === item.id;
 
-            {/* Day lines */}
-            {dayMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
-              const containerWidth = containerRef.current?.clientWidth || 2000;
-              if (x < 0 || x > containerWidth) return null;
+                    return (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "absolute rounded transition-shadow cursor-grab group",
+                          item.color || "bg-primary",
+                          isSelected &&
+                            "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+                          isHovered &&
+                            !isSelected &&
+                            "ring-1 ring-foreground/50",
+                          isMinWidth && "ring-1 ring-foreground/80",
+                        )}
+                        style={{
+                          left,
+                          width,
+                          top: 8 + item.row * SUB_ROW_HEIGHT,
+                          height: SUB_ROW_HEIGHT - 4,
+                        }}
+                        onMouseDown={(e) =>
+                          handleItemMouseDown(e, item, "move")
+                        }
+                        onMouseEnter={() => setHoveredItemId(item.id)}
+                        onMouseLeave={() => setHoveredItemId(null)}
+                      >
+                        {/* Resize handle - start */}
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-l transition-opacity"
+                          onMouseDown={(e) =>
+                            handleItemMouseDown(e, item, "resize-start")
+                          }
+                        />
 
-              return (
-                <div
-                  key={`dgrid-${minutes}`}
-                  className="absolute top-0 w-0.5 bg-primary/30"
-                  style={{ left: x, height: totalHeight }}
-                />
+                        {/* Item content */}
+                        <div className="absolute inset-x-2 inset-y-0 flex items-center overflow-hidden">
+                          <span className="text-xs font-medium text-primary-foreground truncate">
+                            {item.label}
+                          </span>
+                        </div>
+
+                        {/* Resize handle - end */}
+                        <div
+                          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-r transition-opacity"
+                          onMouseDown={(e) =>
+                            handleItemMouseDown(e, item, "resize-end")
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {/* Drawing Preview */}
+                  {drawingPreview && drawingPreview.laneId === lane.id && (
+                    <DrawingPreview
+                      startTime={drawingPreview.startTime}
+                      timeToPixel={(t) => timeToPixel(t) - SIDEBAR_WIDTH}
+                      laneIndex={laneIndex}
+                      containerRef={containerRef}
+                      pixelsPerMinute={pixelsPerMinute}
+                      scrollOffset={scrollOffset}
+                      snapTime={snapTime}
+                      existingItems={itemsWithRows}
+                      onPreviewUpdate={(_start, _end, row) => {
+                        setPreviewRow({ laneId: lane.id, row });
+                      }}
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
-
-          {/* Lanes */}
-          {lanes.map((lane, laneIndex) => {
-            const previewForLane =
-              calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
-                ? calculatedPreviewItem
-                : undefined;
-            const itemsWithRows = getItemsWithRows(lane.id, previewForLane);
-            const laneHeight = getLaneHeight(lane.id, previewForLane);
-            const yOffset = getLaneYOffset(laneIndex);
-
-            return (
-              <div
-                key={lane.id}
-                className={cn(
-                  "absolute left-0 right-0 border-b border-border",
-                  laneIndex % 2 === 0
-                    ? "bg-timeline-lane"
-                    : "bg-timeline-lane-alt",
-                )}
-                style={{
-                  top: yOffset,
-                  height: laneHeight,
-                }}
-                onMouseDown={(e) => handleLaneMouseDown(e, lane.id)}
-              >
-                {/* Items in this lane */}
-                {itemsWithRows.map((item) => {
-                  const left = timeToPixel(item.start) - SIDEBAR_WIDTH;
-                  const naturalWidth =
-                    (item.end - item.start) * pixelsPerMinute;
-                  const MIN_VISIBLE_WIDTH = 3;
-                  const isMinWidth = naturalWidth < MIN_VISIBLE_WIDTH;
-                  const width = Math.max(naturalWidth, MIN_VISIBLE_WIDTH);
-                  const isSelected = selectedItemId === item.id;
-                  const isHovered = hoveredItemId === item.id;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "absolute rounded transition-shadow cursor-grab group",
-                        item.color || "bg-primary",
-                        isSelected &&
-                          "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-                        isHovered && !isSelected && "ring-1 ring-foreground/50",
-                        isMinWidth && "ring-1 ring-foreground/80",
-                      )}
-                      style={{
-                        left,
-                        width,
-                        top: 8 + item.row * SUB_ROW_HEIGHT,
-                        height: SUB_ROW_HEIGHT - 4,
-                      }}
-                      onMouseDown={(e) => handleItemMouseDown(e, item, "move")}
-                      onMouseEnter={() => setHoveredItemId(item.id)}
-                      onMouseLeave={() => setHoveredItemId(null)}
-                    >
-                      {/* Resize handle - start */}
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-l transition-opacity"
-                        onMouseDown={(e) =>
-                          handleItemMouseDown(e, item, "resize-start")
-                        }
-                      />
-
-                      {/* Item content */}
-                      <div className="absolute inset-x-2 inset-y-0 flex items-center overflow-hidden">
-                        <span className="text-xs font-medium text-primary-foreground truncate">
-                          {item.label}
-                        </span>
-                      </div>
-
-                      {/* Resize handle - end */}
-                      <div
-                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-r transition-opacity"
-                        onMouseDown={(e) =>
-                          handleItemMouseDown(e, item, "resize-end")
-                        }
-                      />
-                    </div>
-                  );
-                })}
-
-                {/* Drawing Preview */}
-                {drawingPreview && drawingPreview.laneId === lane.id && (
-                  <DrawingPreview
-                    startTime={drawingPreview.startTime}
-                    timeToPixel={(t) => timeToPixel(t) - SIDEBAR_WIDTH}
-                    laneIndex={laneIndex}
-                    containerRef={containerRef}
-                    pixelsPerMinute={pixelsPerMinute}
-                    scrollOffset={scrollOffset}
-                    snapTime={snapTime}
-                    existingItems={itemsWithRows}
-                    onPreviewUpdate={(_start, _end, row) => {
-                      setPreviewRow({ laneId: lane.id, row });
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
         </div>
 
         {/* Current time indicator (now line) */}
