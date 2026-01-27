@@ -355,7 +355,10 @@ export function InfiniteTimeline<Data = unknown>({
 
   // Calculate initial zoom and scroll to fit all items
   const initialView = useMemo(() => {
-    const allItems = externalItems && externalItems.length > 0 ? externalItems : (initialItems as TimelineItem<Data>[]);
+    const allItems =
+      externalItems && externalItems.length > 0
+        ? externalItems
+        : (initialItems as TimelineItem<Data>[]);
     if (!allItems || allItems.length === 0) {
       return {
         zoom: 1,
@@ -363,8 +366,8 @@ export function InfiniteTimeline<Data = unknown>({
       };
     }
 
-    const minStart = Math.min(...allItems.map(item => item.start));
-    const maxEnd = Math.max(...allItems.map(item => item.end));
+    const minStart = Math.min(...allItems.map((item) => item.start));
+    const maxEnd = Math.max(...allItems.map((item) => item.end));
     const totalMinutes = maxEnd - minStart;
 
     if (totalMinutes <= 0) {
@@ -377,18 +380,20 @@ export function InfiniteTimeline<Data = unknown>({
     // Estimate container width (will be refined when container is mounted)
     const estimatedContainerWidth = 1200;
     const availableWidth = estimatedContainerWidth - SIDEBAR_WIDTH;
-    
+
     // Calculate zoom to fit all items with some padding (10% on each side)
     const padding = 0.1;
-    const requiredPixelsPerMinute = (availableWidth * (1 - 2 * padding)) / totalMinutes;
+    const requiredPixelsPerMinute =
+      (availableWidth * (1 - 2 * padding)) / totalMinutes;
     const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
-    
+
     // Don't clamp - use the calculated zoom
     const zoom = calculatedZoom;
 
     // Calculate scroll offset to center the items
     const centerTime = (minStart + maxEnd) / 2;
-    const scrollOffset = (availableWidth / 2) - (centerTime * PIXELS_PER_MINUTE * zoom);
+    const scrollOffset =
+      availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * zoom;
 
     return { zoom, scrollOffset };
   }, [externalItems]);
@@ -436,8 +441,8 @@ export function InfiniteTimeline<Data = unknown>({
     const allItems = items;
     if (!allItems || allItems.length === 0) return;
 
-    const minStart = Math.min(...allItems.map(item => item.start));
-    const maxEnd = Math.max(...allItems.map(item => item.end));
+    const minStart = Math.min(...allItems.map((item) => item.start));
+    const maxEnd = Math.max(...allItems.map((item) => item.end));
     const totalMinutes = maxEnd - minStart;
 
     if (totalMinutes <= 0) return;
@@ -446,18 +451,20 @@ export function InfiniteTimeline<Data = unknown>({
     const updateView = () => {
       const containerWidth = containerRef.current?.clientWidth || 1200;
       const availableWidth = containerWidth - SIDEBAR_WIDTH;
-      
+
       // Calculate zoom to fit all items with some padding (10% on each side)
       const padding = 0.1;
-      const requiredPixelsPerMinute = (availableWidth * (1 - 2 * padding)) / totalMinutes;
+      const requiredPixelsPerMinute =
+        (availableWidth * (1 - 2 * padding)) / totalMinutes;
       const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
-      
+
       // Update zoom without clamping - allow any zoom level to show all items
       setZoom(calculatedZoom);
 
       // Calculate scroll offset to center the items
       const centerTime = (minStart + maxEnd) / 2;
-      const newScrollOffset = (availableWidth / 2) - (centerTime * PIXELS_PER_MINUTE * calculatedZoom);
+      const newScrollOffset =
+        availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
       setScrollOffset(newScrollOffset);
     };
 
@@ -1149,7 +1156,7 @@ export function InfiniteTimeline<Data = unknown>({
   }, 0);
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden select-none dark rounded-md">
+    <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-border bg-card">
         <div className="flex items-center gap-4">
