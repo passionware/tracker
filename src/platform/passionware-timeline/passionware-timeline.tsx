@@ -1196,10 +1196,10 @@ export function InfiniteTimeline() {
 
           return (
             <div
-              className="absolute top-6 bottom-0 w-0.5 bg-destructive z-30 pointer-events-none"
-              style={{ left: x }}
+              className="absolute  bottom-0 w-px bg-destructive z-30 pointer-events-none"
+              style={{ left: x, top: HEADER_HEIGHT + 8 }}
             >
-              <div className="absolute top-0 -translate-x-1/2 w-2.5 h-2.5 bg-destructive rounded-full" />
+              <div className="absolute top-0 -translate-x-[calc(50%-0.5px)] size-2.5 bg-destructive rounded-b-full" />
             </div>
           );
         })()}
