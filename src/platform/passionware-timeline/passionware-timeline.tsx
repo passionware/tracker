@@ -625,6 +625,26 @@ export function InfiniteTimeline() {
 
   const { startTime, endTime } = getVisibleRange();
 
+  // Calculate spacing in pixels to determine label density
+  const hourSpacingPx = 60 * pixelsPerMinute; // 60 minutes per hour
+  const quarterSpacingPx = 15 * pixelsPerMinute; // 15 minutes
+
+  // Determine label interval based on spacing
+  // If spacing < 30px: show labels every 12 hours (12, 0)
+  // If spacing < 50px: show labels every 6 hours (0, 6, 12, 18)
+  // If spacing < 80px: show labels every 3 hours (0, 3, 6, 9, 12, 15, 18, 21)
+  // Otherwise: show all hour labels
+  // If 15-min spacing >= 40px: also show 15-minute labels
+  const getLabelInterval = (): number => {
+    if (hourSpacingPx < 20) return 12 * 60; // 12 hours
+    if (hourSpacingPx < 30) return 6 * 60; // 6 hours
+    if (hourSpacingPx < 80) return 3 * 60; // 3 hours
+    return 60; // 1 hour (all hours)
+  };
+
+  const labelInterval = getLabelInterval();
+  const showQuarterLabels = quarterSpacingPx >= 55; // Show 15-min labels when spacing is good
+
   // Generate time markers (hourly with 15-min subdivisions)
   const hourMarkers: number[] = [];
   const quarterMarkers: number[] = [];
@@ -634,9 +654,13 @@ export function InfiniteTimeline() {
   for (let t = startHour; t <= endHour; t += 60) {
     hourMarkers.push(t);
   }
-  for (let t = startHour; t <= endHour; t += 15) {
-    if (t % 60 !== 0) {
-      quarterMarkers.push(t);
+
+  // Only show quarter markers if hour spacing is reasonable
+  if (hourSpacingPx >= 30) {
+    for (let t = startHour; t <= endHour; t += 15) {
+      if (t % 60 !== 0) {
+        quarterMarkers.push(t);
+      }
     }
   }
 
@@ -850,12 +874,27 @@ export function InfiniteTimeline() {
               const containerWidth = containerRef.current?.clientWidth || 2000;
               if (x < -50 || x > containerWidth) return null;
 
+              // Show label if 15-minute labels are enabled
+              const shouldShowLabel = showQuarterLabels;
+
               return (
                 <div
                   key={`q-${minutes}`}
-                  className="absolute bottom-0 w-px h-2 bg-border"
+                  className="absolute top-0 h-full flex flex-col justify-end pb-1"
                   style={{ left: x }}
-                />
+                >
+                  {shouldShowLabel && (
+                    <span className="text-xs tabular-nums -translate-x-1/2 text-muted-foreground">
+                      {formatTime(minutes)}
+                    </span>
+                  )}
+                  <div
+                    className={cn(
+                      "w-px mt-0.5 mx-auto",
+                      shouldShowLabel ? "h-1 bg-border/60" : "h-2 bg-border",
+                    )}
+                  />
+                </div>
               );
             })}
 
@@ -865,7 +904,27 @@ export function InfiniteTimeline() {
               const containerWidth = containerRef.current?.clientWidth || 2000;
               if (x < -50 || x > containerWidth) return null;
 
+              // Get hour of day (0-23) for this marker
+              const hourOfDay = Math.floor((minutes % 1440) / 60);
+
+              // Determine if this hour should show a label based on interval
+              let shouldShowLabel = false;
+              if (labelInterval === 60) {
+                // Show all hours
+                shouldShowLabel = true;
+              } else if (labelInterval === 3 * 60) {
+                // Show every 3 hours: 0, 3, 6, 9, 12, 15, 18, 21
+                shouldShowLabel = hourOfDay % 3 === 0;
+              } else if (labelInterval === 6 * 60) {
+                // Show every 6 hours: 0, 6, 12, 18
+                shouldShowLabel = hourOfDay % 6 === 0;
+              } else if (labelInterval === 12 * 60) {
+                // Show every 12 hours: 0, 12
+                shouldShowLabel = hourOfDay % 12 === 0;
+              }
+
               const isMainHour = minutes % 60 === 0;
+              const isMajorMarker = minutes % 360 === 0; // Every 6 hours
 
               return (
                 <div
@@ -873,22 +932,26 @@ export function InfiniteTimeline() {
                   className="absolute top-0 h-full flex flex-col justify-end pb-1"
                   style={{ left: x }}
                 >
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums -translate-x-1/2",
-                      isMainHour
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {formatTime(minutes)}
-                  </span>
+                  {shouldShowLabel && (
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums -translate-x-1/2",
+                        isMainHour
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {formatTime(minutes)}
+                    </span>
+                  )}
                   <div
                     className={cn(
                       "w-px mt-0.5 mx-auto",
-                      minutes % 360 === 0
+                      isMajorMarker
                         ? "h-2 bg-foreground/50"
-                        : "h-1.5 bg-muted-foreground",
+                        : shouldShowLabel
+                          ? "h-1.5 bg-muted-foreground"
+                          : "h-1 bg-border/60",
                     )}
                   />
                 </div>
