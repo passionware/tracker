@@ -1,4 +1,8 @@
 import {
+  BooleanFilter,
+  booleanFilterSchema,
+} from "@/api/_common/query/filters/BooleanFilter.ts";
+import {
   DateFilter,
   dateFilterSchema,
 } from "@/api/_common/query/filters/DateFilter.ts";
@@ -80,6 +84,7 @@ export type BillingQuery = WithFilters<{
   remainingAmount: Nullable<NumberFilter>;
   contractorId: Nullable<EnumFilter<Nullable<Contractor["id"]>>>;
   invoiceDate: Nullable<DateFilter>;
+  commitState: Nullable<BooleanFilter>;
 }> &
   WithPagination &
   WithSorter<
@@ -109,6 +114,7 @@ export const billingQueryUtils = withBuilderUtils({
           remainingAmount: null,
           contractorId: null,
           invoiceDate: null,
+          commitState: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "invoiceDate", order: "asc" },
@@ -194,6 +200,9 @@ export const billingQuerySchema = z
         .default(null),
       invoiceDate: z
         .preprocess(strToNull, dateFilterSchema.nullable())
+        .default(null),
+      commitState: z
+        .preprocess(strToNull, booleanFilterSchema.nullable())
         .default(null),
     }),
     page: paginationSchema,

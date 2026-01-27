@@ -37,7 +37,7 @@ import { sharedColumns } from "./columns/_common/sharedColumns";
 import { SelectionLayout } from "./SelectionLayout";
 
 // Simple approach: make selection props optional and handle at runtime
-export type ListViewProps<TData, Query extends SortableQueryBase> = {
+export type ListViewProps<TData, Query extends SortableQueryBase, TId> = {
   data: RemoteData<TData[]>;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   columns: ColumnDef<any, any>[];
@@ -50,19 +50,13 @@ export type ListViewProps<TData, Query extends SortableQueryBase> = {
   onQueryChange: (query: Query, sorter: Query["sort"]) => void;
   renderAdditionalData?: (row: TData) => React.ReactNode;
   // Optional selection props - only works when data has id property
-  selection?: TData extends { id: infer TId }
-    ? SelectionState<TId>
-    : SelectionState<never>;
-  onSelectionChange?: (
-    selection: TData extends { id: infer TId }
-      ? SelectionState<TId>
-      : SelectionState<never>,
-  ) => void;
+  selection?: SelectionState<TId>;
+  onSelectionChange?: (selection: SelectionState<TId>) => void;
   toolbar?: React.ReactNode;
 };
 
-export function ListView<TData, Query extends SortableQueryBase>(
-  props: ListViewProps<TData, Query>,
+export function ListView<TData, Query extends SortableQueryBase, TId>(
+  props: ListViewProps<TData, Query, TId>,
 ): React.ReactElement {
   const {
     data,
@@ -315,7 +309,9 @@ export function ListView<TData, Query extends SortableQueryBase>(
       );
 
       return (
-        <div className={cn("rounded-md border overflow-auto isolate", className)}>
+        <div
+          className={cn("rounded-md border overflow-auto isolate", className)}
+        >
           <Table>
             {/* NAGŁÓWEK */}
             <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
