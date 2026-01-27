@@ -1,5 +1,7 @@
 # Commit messages
 
-Use conventional commits. make subject concise and explain the purpose (why's). If the topic requires clarifiaction provide short body, ideally max one sentence.
-Do not include the body if the topic is clear
+Use conventional commits. make subject short and explain the purpose (why's). If the topic really really requires clarifiaction provide short body, ideally max one sentence / 100char.
+Do not include the body if the topic is clear.
+
+For few files change, please avoid body, just headline
 
