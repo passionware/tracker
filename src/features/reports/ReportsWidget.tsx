@@ -56,7 +56,9 @@ import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, groupBy, partialRight } from "lodash";
 import {
+  BriefcaseBusiness,
   Check,
+  HardHat,
   LayoutGrid,
   Loader2,
   Moon,
@@ -64,6 +66,7 @@ import {
   SplitSquareHorizontal,
   Sun,
   Table,
+  Frame,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -94,6 +97,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     savedPreferences.darkMode,
   );
   const [splitRatio, setSplitRatio] = useState(savedPreferences.splitRatio);
+  const [timelineGroupBy, setTimelineGroupBy] = useState<
+    "contractor" | "client" | "workspace"
+  >(savedPreferences.groupBy);
 
   // Load preferences on mount
   useEffect(() => {
@@ -102,6 +108,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       setViewMode(prefs.viewMode);
       setTimelineDarkMode(prefs.darkMode);
       setSplitRatio(prefs.splitRatio);
+      setTimelineGroupBy(prefs.groupBy);
     })();
   }, [props.services.preferenceService]);
 
@@ -111,11 +118,13 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       viewMode,
       darkMode: timelineDarkMode,
       splitRatio,
+      groupBy: timelineGroupBy,
     });
   }, [
     viewMode,
     timelineDarkMode,
     splitRatio,
+    timelineGroupBy,
     props.services.preferenceService,
   ]);
 
@@ -134,6 +143,24 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       id: "table",
       label: "Table",
       icon: <Table className="h-4 w-4" />,
+    },
+  ];
+
+  const groupByItems = [
+    {
+      id: "contractor",
+      label: "Contractor",
+      icon: <HardHat className="h-4 w-4" />,
+    },
+    {
+      id: "client",
+      label: "Client",
+      icon: <BriefcaseBusiness className="h-4 w-4" />,
+    },
+    {
+      id: "workspace",
+      label: "Workspace",
+      icon: <Frame className="h-4 w-4" />,
     },
   ];
 
@@ -224,23 +251,58 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           return Math.floor(diffMs / (1000 * 60));
         };
 
-        // Group reports by contractor
-        const reportsByContractor = groupBy(reports, (r) => r.contractor.id);
+        // Group reports by selected option
+        const getGroupKey = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return report.contractor.id.toString();
+            case "client":
+              return report.client.id.toString();
+            case "workspace":
+              return report.workspace.id.toString();
+          }
+        };
 
-        // Create lanes (one per contractor)
-        const lanes: Lane[] = Object.entries(reportsByContractor).map(
-          ([contractorId, contractorReports], index) => {
-            const contractor = contractorReports[0].contractor;
-            const colors = [
-              "bg-chart-1",
-              "bg-chart-2",
-              "bg-chart-3",
-              "bg-chart-4",
-              "bg-chart-5",
-            ];
+        const getGroupName = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return (
+                report.contractor.fullName || `Contractor ${report.contractor.id}`
+              );
+            case "client":
+              return report.client.name || `Client ${report.client.id}`;
+            case "workspace":
+              return report.workspace.name || `Workspace ${report.workspace.id}`;
+          }
+        };
+
+        const getLaneId = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return `contractor-${report.contractor.id}`;
+            case "client":
+              return `client-${report.client.id}`;
+            case "workspace":
+              return `workspace-${report.workspace.id}`;
+          }
+        };
+
+        const groupedReports = groupBy(reports, getGroupKey);
+
+        // Create lanes (one per group)
+        const colors = [
+          "bg-chart-1",
+          "bg-chart-2",
+          "bg-chart-3",
+          "bg-chart-4",
+          "bg-chart-5",
+        ];
+        const lanes: Lane[] = Object.entries(groupedReports).map(
+          ([, groupReports], index) => {
+            const firstReport = groupReports[0] as ReportViewEntry;
             return {
-              id: `contractor-${contractorId}`,
-              name: contractor.fullName || `Contractor ${contractorId}`,
+              id: getLaneId(firstReport),
+              name: getGroupName(firstReport),
               color: colors[index % colors.length],
             };
           },
@@ -257,18 +319,16 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             const startMinutes = dateToMinutes(startDate);
             const endMinutes = dateToMinutes(endDate);
 
-            const contractorLane = lanes.find(
-              (l) => l.id === `contractor-${report.contractor.id}`,
-            );
+            const laneId = getLaneId(report);
+            const lane = lanes.find((l) => l.id === laneId);
 
             return {
               id: `report-${report.id}`,
-              laneId:
-                contractorLane?.id || `contractor-${report.contractor.id}`,
+              laneId: lane?.id || laneId,
               start: startMinutes,
               end: endMinutes,
               label: report.description || `Report #${report.id}`,
-              color: contractorLane?.color,
+              color: lane?.color,
               data: report,
             };
           },
@@ -277,7 +337,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         return { lanes, items, baseDate };
       }) ?? { lanes: [], items: [], baseDate: new Date() }
     );
-  }, [finalReports]);
+  }, [finalReports, timelineGroupBy]);
 
   return (
     <CommonPageContainer
@@ -315,31 +375,50 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             searchPlaceholder="Search view mode"
             size="sm"
             variant="outline"
+            searchable={false}
           />
           {viewMode !== "table" && (
-            <div className="flex items-center gap-2">
-              <Sun
-                className={cn(
-                  "h-4 w-4",
-                  timelineDarkMode
-                    ? "text-muted-foreground"
-                    : "text-foreground",
-                )}
+            <>
+              <SimpleSinglePicker
+                items={groupByItems}
+                value={timelineGroupBy}
+                onSelect={(value) => {
+                  if (value) {
+                    setTimelineGroupBy(
+                      value as "contractor" | "client" | "workspace",
+                    );
+                  }
+                }}
+                placeholder="Group by"
+                searchPlaceholder="Search group by"
+                size="sm"
+                variant="outline"
+                searchable={false}
               />
-              <Switch
-                checked={timelineDarkMode}
-                onCheckedChange={setTimelineDarkMode}
-                aria-label="Toggle timeline dark mode"
-              />
-              <Moon
-                className={cn(
-                  "h-4 w-4",
-                  timelineDarkMode
-                    ? "text-foreground"
-                    : "text-muted-foreground",
-                )}
-              />
-            </div>
+              <div className="flex items-center gap-2">
+                <Sun
+                  className={cn(
+                    "h-4 w-4",
+                    timelineDarkMode
+                      ? "text-muted-foreground"
+                      : "text-foreground",
+                  )}
+                />
+                <Switch
+                  checked={timelineDarkMode}
+                  onCheckedChange={setTimelineDarkMode}
+                  aria-label="Toggle timeline dark mode"
+                />
+                <Moon
+                  className={cn(
+                    "h-4 w-4",
+                    timelineDarkMode
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                />
+              </div>
+            </>
           )}
           <Separator orientation="vertical" className="h-6" />
           <InlinePopoverForm
@@ -499,6 +578,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimeline
+              key={timelineGroupBy}
               items={timelineData.items}
               lanes={timelineData.lanes}
               baseDate={timelineData.baseDate}
