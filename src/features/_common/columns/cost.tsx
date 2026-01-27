@@ -1,6 +1,7 @@
 import { Cost } from "@/api/cost/cost.api.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { CostInfoPopover } from "@/features/_common/info/CostInfo.tsx";
 import { assert } from "@/platform/lang/assert.ts";
@@ -21,6 +22,22 @@ import { maybe } from "@passionware/monads";
 import { startCase } from "lodash";
 
 export const costColumns = {
+  commitStatus: (services: MergeServices<[WithMutationService]>) =>
+    getColumnHelper<CostEntry>().display({
+      id: "commitStatus",
+      header: "",
+      cell: (info) => (
+        <CommitStatusBadge
+          id={info.row.original.id}
+          isCommitted={info.row.original.originalCost.isCommitted}
+          entityType="cost"
+          services={services}
+        />
+      ),
+      meta: {
+        cellClassName: "w-10",
+      },
+    }),
   invoiceNumber: getColumnHelper<Pick<Cost, "invoiceNumber">>().accessor(
     "invoiceNumber",
     {

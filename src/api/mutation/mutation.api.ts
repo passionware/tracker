@@ -81,4 +81,6 @@ export interface MutationApi {
     contractorId: number,
     workspaceId: number,
   ) => Promise<void>;
+  commit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;
+  undoCommit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;
 }

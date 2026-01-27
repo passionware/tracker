@@ -26,6 +26,7 @@ export function useColumns(props: BillingWidgetProps) {
     billingColumns.report.linkedValue(props.services),
     billingColumns.report.remainingValue(props.services),
     sharedColumns.description,
+    billingColumns.commitStatus(props.services),
     columnHelper.display({
       id: "actions",
       cell: (info) => (

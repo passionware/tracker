@@ -61,6 +61,7 @@ export function BillingList(props: BillingListProps) {
         billingColumns.report.linkedValue(props.services),
         billingColumns.netAmount(props.services),
         billingColumns.report.remainingValue(props.services),
+        billingColumns.commitStatus(props.services),
         props.renderSelect &&
           sharedColumns.select<BillingViewEntry>((info, button, track) => {
             const billing = info.row.original;

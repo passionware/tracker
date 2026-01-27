@@ -52,6 +52,7 @@ export interface BillingPayload {
 export interface BillingBase extends BillingPayload {
   id: number;
   createdAt: Date;
+  isCommitted: boolean;
 }
 
 export interface Billing extends BillingBase {

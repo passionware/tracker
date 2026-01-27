@@ -10,6 +10,14 @@ export function createMutationService(
 ): MutationService {
   const wait = () => delay(responseDelay);
   return {
+    commit: async (entityType) => {
+      onActionAccessor.get()(`Committing ${entityType}`);
+      await wait();
+    },
+    undoCommit: async (entityType) => {
+      onActionAccessor.get()(`Undoing commit of ${entityType}`);
+      await wait();
+    },
     updateContractorWorkspaceForProject: async () => {
       onActionAccessor.get()("Updating contractor workspace for project");
       await wait();

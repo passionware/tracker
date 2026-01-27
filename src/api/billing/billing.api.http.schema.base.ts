@@ -14,6 +14,7 @@ export const billingBase$ = z.object({
   invoice_date: z.string().transform(parseDate),
   description: z.string().nullable(),
   workspace_id: z.number(),
+  is_committed: z.boolean(),
 });
 
 export type BillingBase$ = z.output<typeof billingBase$>;

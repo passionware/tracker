@@ -378,6 +378,7 @@ export interface ReportPayload {
 export interface ReportBase extends ReportPayload {
   id: number;
   createdAt: string;
+  isCommitted: boolean;
 }
 
 export type Report = ReportBase & {

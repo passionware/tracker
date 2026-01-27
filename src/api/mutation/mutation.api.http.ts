@@ -601,5 +601,25 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw error;
       }
     },
+    commit: async (entityType, id) => {
+      const { error } = await client.rpc("set_committed", {
+        p_table: entityType,
+        p_id: id,
+        p_value: true,
+      });
+      if (error) {
+        throw error;
+      }
+    },
+    undoCommit: async (entityType, id) => {
+      const { error } = await client.rpc("set_committed", {
+        p_table: entityType,
+        p_id: id,
+        p_value: false,
+      });
+      if (error) {
+        throw error;
+      }
+    },
   };
 }

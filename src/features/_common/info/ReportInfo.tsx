@@ -10,6 +10,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
@@ -83,7 +84,15 @@ export function ReportInfo({
     <InfoLayout
       header={
         <>
-          Report's linking to billing
+          <div className="flex items-center gap-2">
+            <span>Report's linking to billing</span>
+            <CommitStatusBadge
+              id={report.id}
+              isCommitted={report.originalReport.isCommitted}
+              entityType="report"
+              services={services}
+            />
+          </div>
           <TransferView
             fromAmount={report.remainingAmount}
             toAmount={report.linkedReportAmount}

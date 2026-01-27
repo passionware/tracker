@@ -55,6 +55,7 @@ export interface CostPayload {
 export interface CostBase extends CostPayload {
   id: number;
   createdAt: Date;
+  isCommitted: boolean;
 }
 
 export interface Cost extends CostBase {

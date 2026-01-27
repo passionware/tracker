@@ -23,6 +23,7 @@ export const costMock = createMockFactory<CostBase>(
     netValue: faker.number.float(),
     createdAt: faker.date.recent(),
     invoiceNumber: faker.string.alphanumeric(),
+    isCommitted: false,
   }),
   [
     {
@@ -37,6 +38,7 @@ export const costMock = createMockFactory<CostBase>(
       currency: "PLN",
       counterparty: "Test counterparty",
       invoiceNumber: "2025/09/01",
+      isCommitted: false,
     },
   ],
 );

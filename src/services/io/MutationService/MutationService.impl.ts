@@ -9,6 +9,18 @@ export function createMutationService(
   api: MutationApi,
 ): MutationService {
   return {
+    commit: async (entityType, id) => {
+      await api.commit(entityType, id);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: `Committing ${entityType}`,
+      });
+    },
+    undoCommit: async (entityType, id) => {
+      await api.undoCommit(entityType, id);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: `Undoing commit of ${entityType}`,
+      });
+    },
     linkReportAndBilling: async (payload) => {
       await api.linkReportAndBilling(payload);
       await config.services.messageService.reportSystemEffect.sendRequest({

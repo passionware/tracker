@@ -53,6 +53,7 @@ const meta = {
         originalReport: {
           id: 1,
           createdAt: "2024-01-01",
+          isCommitted: false,
           contractorId: contractorMock.static.list[0].id,
           clientId: clientsMock.static.list[0].id,
           workspaceId: workspaceMock.static.list[0].id,
@@ -88,6 +89,7 @@ const meta = {
         originalReport: {
           id: 2,
           createdAt: "2024-01-01",
+          isCommitted: false,
           contractorId: contractorMock.static.list[0].id,
           clientId: clientsMock.static.list[0].id,
           workspaceId: workspaceMock.static.list[0].id,
@@ -123,6 +125,7 @@ const meta = {
         originalReport: {
           id: 3,
           createdAt: "2024-01-01",
+          isCommitted: false,
           contractorId: contractorMock.static.list[0].id,
           clientId: clientsMock.static.list[1].id,
           workspaceId: workspaceMock.static.list[1].id,

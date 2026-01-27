@@ -2,6 +2,7 @@ import { Cost } from "@/api/cost/cost.api.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { maybe, rd } from "@passionware/monads";
@@ -40,6 +41,12 @@ export function CostPreview({ services, costId }: CostPreviewProps) {
           <span className="text-sm font-medium text-slate-700">
             Cost #{cost.id}
           </span>
+          <CommitStatusBadge
+            id={cost.id}
+            isCommitted={cost.isCommitted}
+            entityType="cost"
+            services={services}
+          />
         </div>
 
         <div className="space-y-2 text-sm">

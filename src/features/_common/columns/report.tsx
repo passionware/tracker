@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ReportCostInfoPopover } from "@/features/_common/info/ReportCostInfo.tsx";
 import { ReportInfoPopover } from "@/features/_common/info/ReportInfo.tsx";
@@ -121,6 +122,24 @@ export const reportColumns = {
       meta: {
         headerClassName: "bg-sky-50 border-x border-slate-800/10",
         cellClassName: "bg-sky-50/50 border-x border-slate-800/10",
+      },
+    }),
+  commitStatus: (
+    services: MergeServices<[WithMutationService]>,
+  ) =>
+    baseColumnHelper.display({
+      id: "commitStatus",
+      header: "",
+      cell: (info) => (
+        <CommitStatusBadge
+          id={info.row.original.id}
+          isCommitted={info.row.original.originalReport.isCommitted}
+          entityType="report"
+          services={services}
+        />
+      ),
+      meta: {
+        cellClassName: "w-10",
       },
     }),
   contractor: {
