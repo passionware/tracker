@@ -10,6 +10,7 @@ import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { rd } from "@passionware/monads";
+import { produce } from "immer";
 import { v5 as uuidv5 } from "uuid";
 import { convertGeneratedReportToFacts } from "./convertGeneratedReportToFacts.ts";
 import {
@@ -28,340 +29,65 @@ import {
 } from "./ReconciliationService.types.ts";
 
 /**
- * Matches report facts against existing reports and sets action (create/update)
+ * Helper: Check if a report matches a fact
  */
-function matchReportFacts(
-  reportFacts: Array<
-    ReportFact & {
-      billingAmount: number;
-      billingCurrency: string;
-      billingUnitPrice: number;
-    }
-  >,
-  existingReports: Report[],
-): ReportFact[] {
-  const matchedFacts: ReportFact[] = [];
+function matchesReport(
+  report: Report,
+  fact: ReportFact & {
+    billingAmount: number;
+    billingCurrency: string;
+    billingUnitPrice: number;
+  },
+): boolean {
+  const factUnitPrice = fact.payload.unitPrice ?? 0;
+  const rUnitPrice = report.unitPrice ?? 0;
+  const matchesContractor = report.contractorId === fact.payload.contractorId;
+  const matchesCurrency = report.currency === fact.payload.currency;
+  const matchesIteration =
+    report.projectIterationId === fact.payload.projectIterationId;
+  const matchesPeriod =
+    report.periodStart.toString() === fact.payload.periodStart.toString() &&
+    report.periodEnd.toString() === fact.payload.periodEnd.toString();
+  const matchesUnitPrice = Math.abs(rUnitPrice - factUnitPrice) < 0.01;
 
-  for (const fact of reportFacts) {
-    // Find existing report matching contractor, currency, project iteration, period range, and unit price
-    const factUnitPrice = fact.payload.unitPrice ?? 0;
-    const existingReport = existingReports.find((r) => {
-      const rUnitPrice = r.unitPrice ?? 0;
-      const matchesContractor = r.contractorId === fact.payload.contractorId;
-      const matchesCurrency = r.currency === fact.payload.currency;
-      const matchesIteration =
-        r.projectIterationId === fact.payload.projectIterationId;
-      const matchesPeriod =
-        r.periodStart.toString() === fact.payload.periodStart.toString() &&
-        r.periodEnd.toString() === fact.payload.periodEnd.toString();
-      const matchesUnitPrice = Math.abs(rUnitPrice - factUnitPrice) < 0.01;
-
-      return (
-        matchesContractor &&
-        matchesCurrency &&
-        matchesIteration &&
-        matchesPeriod &&
-        matchesUnitPrice
-      );
-    });
-
-    if (existingReport) {
-      // Update existing report
-      matchedFacts.push({
-        ...fact,
-        action: {
-          type: "update",
-          id: existingReport.id,
-          oldValues: {
-            netValue: existingReport.netValue,
-            unit: existingReport.unit ?? null,
-            quantity: existingReport.quantity ?? null,
-            unitPrice: existingReport.unitPrice ?? null,
-            currency: existingReport.currency,
-          },
-        },
-      });
-    } else {
-      // Create new report
-      matchedFacts.push({
-        ...fact,
-        action: { type: "create" },
-      });
-    }
-  }
-
-  return matchedFacts;
+  return (
+    matchesContractor &&
+    matchesCurrency &&
+    matchesIteration &&
+    matchesPeriod &&
+    matchesUnitPrice
+  );
 }
 
 /**
- * Matches billing facts against existing billings and sets action (create/update)
+ * Helper: Check if a billing matches a fact
  */
-function matchBillingFacts(
-  billingFacts: BillingFact[],
-  existingBillings: Billing[],
+function matchesBilling(
+  billing: Billing,
+  fact: BillingFact,
   iteration: ProjectIteration,
-): BillingFact[] {
-  const matchedFacts: BillingFact[] = [];
-
-  for (const fact of billingFacts) {
-    // Find existing billing matching workspace, currency, and period
-    const existingBilling = existingBillings.find((b) => {
-      const matchesWorkspace = b.workspaceId === fact.payload.workspaceId;
-      const matchesCurrency = b.currency === fact.payload.currency;
-      const invoiceDate = new Date(
-        iteration.periodStart.year,
-        iteration.periodStart.month - 1,
-        iteration.periodStart.day,
-      );
-      const periodStart = new Date(
-        iteration.periodStart.year,
-        iteration.periodStart.month - 1,
-        iteration.periodStart.day,
-      );
-      const periodEnd = new Date(
-        iteration.periodEnd.year,
-        iteration.periodEnd.month - 1,
-        iteration.periodEnd.day,
-      );
-      const matchesPeriod =
-        invoiceDate >= periodStart && invoiceDate <= periodEnd;
-      return matchesWorkspace && matchesCurrency && matchesPeriod;
-    });
-
-    if (existingBilling) {
-      matchedFacts.push({
-        ...fact,
-        action: {
-          type: "update",
-          id: existingBilling.id,
-          oldValues: {
-            totalNet: existingBilling.totalNet,
-            totalGross: existingBilling.totalGross,
-            currency: existingBilling.currency,
-          },
-        },
-      });
-    } else {
-      // Create new billing
-      matchedFacts.push({
-        ...fact,
-        action: { type: "create" },
-      });
-    }
-  }
-
-  return matchedFacts;
+): boolean {
+  const matchesWorkspace = billing.workspaceId === fact.payload.workspaceId;
+  const matchesCurrency = billing.currency === fact.payload.currency;
+  const matchesPeriod =
+    iteration.periodStart.compare(billing.invoiceDate) <= 0 &&
+    billing.invoiceDate.compare(iteration.periodEnd) <= 0;
+  return matchesWorkspace && matchesCurrency && matchesPeriod;
 }
 
 /**
- * Matches cost facts against existing costs and sets action (create/update)
+ * Helper: Check if a cost matches a fact
  */
-function matchCostFacts(
-  costFacts: CostFact[],
-  existingCosts: Cost[],
-  iteration: ProjectIteration,
-): CostFact[] {
-  const matchedFacts: CostFact[] = [];
-
-  for (const fact of costFacts) {
-    // Find existing cost matching contractor and period
-    const existingCost = existingCosts.find((c) => {
-      const matchesContractor =
-        c.contractor?.id === fact.payload.contractorId ||
-        (c.contractor === null && fact.payload.contractorId === null);
-      const invoiceDate = new Date(
-        iteration.periodStart.year,
-        iteration.periodStart.month - 1,
-        iteration.periodStart.day,
-      );
-      const periodStart = new Date(
-        iteration.periodStart.year,
-        iteration.periodStart.month - 1,
-        iteration.periodStart.day,
-      );
-      const periodEnd = new Date(
-        iteration.periodEnd.year,
-        iteration.periodEnd.month - 1,
-        iteration.periodEnd.day,
-      );
-      const matchesPeriod =
-        invoiceDate >= periodStart && invoiceDate <= periodEnd;
-      return matchesContractor && matchesPeriod;
-    });
-
-    if (existingCost) {
-      // Update existing cost
-      matchedFacts.push({
-        ...fact,
-        action: {
-          type: "update",
-          id: existingCost.id,
-          oldValues: {
-            netValue: existingCost.netValue,
-            grossValue: existingCost.grossValue ?? null,
-            currency: existingCost.currency,
-          },
-        },
-      });
-    } else {
-      // Create new cost
-      if (!fact.payload.workspaceId) {
-        continue; // Skip if no workspaceId
-      }
-      matchedFacts.push({
-        ...fact,
-        action: { type: "create" },
-      });
-    }
-  }
-
-  return matchedFacts;
+function matchesCost(cost: Cost, fact: CostFact, iteration: ProjectIteration): boolean {
+  const matchesContractor =
+    cost.contractor?.id === fact.payload.contractorId ||
+    (cost.contractor === null && fact.payload.contractorId === null);
+  const matchesPeriod =
+    iteration.periodStart.compare(cost.invoiceDate) <= 0 &&
+    cost.invoiceDate.compare(iteration.periodEnd) <= 0;
+  return matchesContractor && matchesPeriod;
 }
 
-/**
- * Matches link facts and sets action (create/ignore if already exists)
- * Resolves IDs from matched facts
- */
-function matchLinkFacts(
-  linkCostReportFacts: LinkCostReportFact[],
-  linkBillingReportFacts: LinkBillingReportFact[],
-  reportFactUuidToFact: Map<string, ReportFact>,
-  billingFactUuidToFact: Map<string, BillingFact>,
-  costFactUuidToFact: Map<string, CostFact>,
-  existingBillings: Billing[],
-  existingCosts: Cost[],
-): Fact[] {
-  const matchedFacts: Fact[] = [];
-
-  // Build a set of existing cost-report links for quick lookup
-  const existingCostReportLinks = new Set<string>();
-  for (const cost of existingCosts) {
-    if (cost.linkReports) {
-      for (const linkEntry of cost.linkReports) {
-        if (linkEntry.report && linkEntry.link.costId !== null) {
-          const key = `${cost.id}-${linkEntry.report.id}`;
-          existingCostReportLinks.add(key);
-        }
-      }
-    }
-  }
-
-  // Build a set of existing billing-report links for quick lookup
-  const existingBillingReportLinks = new Set<string>();
-  for (const billing of existingBillings) {
-    if (billing.linkBillingReport) {
-      for (const linkEntry of billing.linkBillingReport) {
-        if (linkEntry.report && linkEntry.link.billingId !== null) {
-          const key = `${linkEntry.link.billingId}-${linkEntry.report.id}`;
-          existingBillingReportLinks.add(key);
-        }
-      }
-    }
-  }
-
-  // Match cost-report links
-  for (const linkFact of linkCostReportFacts) {
-    debugger;
-    // linkedFacts is an array of fact UUIDs - find cost and report facts
-    let costFact: CostFact | undefined;
-    let reportFact: ReportFact | undefined;
-
-    for (const factUuid of linkFact.linkedFacts) {
-      const cost = costFactUuidToFact.get(factUuid);
-      const report = reportFactUuidToFact.get(factUuid);
-      if (cost) costFact = cost;
-      if (report) reportFact = report;
-    }
-
-    if (reportFact && costFact) {
-      const costId =
-        costFact.action.type === "update" ? costFact.action.id : null;
-      const reportId =
-        reportFact.action.type === "update" ? reportFact.action.id : null;
-
-      // Check if link already exists
-      if (costId !== null && reportId !== null) {
-        const linkKey = `${costId}-${reportId}`;
-        if (existingCostReportLinks.has(linkKey)) {
-          // Link already exists - ignore
-          matchedFacts.push({
-            ...linkFact,
-            action: { type: "ignore" },
-            payload: {
-              ...linkFact.payload,
-              costId,
-              reportId,
-            },
-          });
-          continue;
-        }
-      }
-
-      // Create new link
-      matchedFacts.push({
-        ...linkFact,
-        action: { type: "create" },
-        payload: {
-          ...linkFact.payload,
-          costId,
-          reportId,
-        },
-      });
-    }
-  }
-
-  // Match billing-report links
-  for (const linkFact of linkBillingReportFacts) {
-    // linkedFacts is an array of fact UUIDs - find report and billing facts
-    let billingFact: BillingFact | undefined;
-    let reportFact: ReportFact | undefined;
-
-    for (const factUuid of linkFact.linkedFacts) {
-      const billing = billingFactUuidToFact.get(factUuid);
-      const report = reportFactUuidToFact.get(factUuid);
-      if (billing) billingFact = billing;
-      if (report) reportFact = report;
-    }
-
-    if (reportFact && billingFact) {
-      const billingId =
-        billingFact.action.type === "update" ? billingFact.action.id : 0;
-      const reportId =
-        reportFact.action.type === "update" ? reportFact.action.id : 0;
-
-      // Check if link already exists
-      if (billingId !== 0 && reportId !== 0) {
-        const linkKey = `${billingId}-${reportId}`;
-        if (existingBillingReportLinks.has(linkKey)) {
-          // Link already exists - ignore
-          matchedFacts.push({
-            ...linkFact,
-            action: { type: "ignore" },
-            payload: {
-              ...linkFact.payload,
-              billingId,
-              reportId,
-            },
-          });
-          continue;
-        }
-      }
-
-      // Create new link
-      matchedFacts.push({
-        ...linkFact,
-        action: { type: "create" },
-        payload: {
-          ...linkFact.payload,
-          billingId,
-          reportId,
-        },
-      });
-    }
-  }
-
-  return matchedFacts;
-}
 
 export function createReconciliationService(
   config: WithServices<
@@ -416,7 +142,7 @@ export function createReconciliationService(
       input.iteration.id,
     );
 
-    // Step 1: Generate facts from the generated report
+    // Step 1: Generate facts from the generated report (all start with action: ignore)
     const facts = convertGeneratedReportToFacts(
       input.report,
       input.iteration,
@@ -426,116 +152,249 @@ export function createReconciliationService(
       uuidFactory,
     );
 
-    // Separate facts by type
-    const reportFacts = facts.filter(
-      (
-        f,
-      ): f is ReportFact & {
-        billingAmount: number;
-        billingCurrency: string;
-        billingUnitPrice: number;
-      } => f.type === "report",
-    ) as Array<
-      ReportFact & {
-        billingAmount: number;
-        billingCurrency: string;
-        billingUnitPrice: number;
-      }
-    >;
-    const billingFacts = facts.filter(
-      (f): f is BillingFact => f.type === "billing",
-    );
-    const costFacts = facts.filter((f): f is CostFact => f.type === "cost");
-    const linkCostReportFacts = facts.filter(
-      (f): f is LinkCostReportFact => f.type === "linkCostReport",
-    );
-    const linkBillingReportFacts = facts.filter(
-      (f): f is LinkBillingReportFact => f.type === "linkBillingReport",
-    );
-
-    // Step 2: Match facts against existing entities and set actions
-    const matchedReportFacts = matchReportFacts(reportFacts, existingReports);
-
-    // Reconciliation rules:
-    // 1. Find costs only that are already linked to this report with any link
-    //    (costs that have at least one link to reports in the iteration)
+    // Step 2: Match report facts and update actions
+    const reportIdToFact = new Map<number, string>(); // existingReport.id -> factUUID
     const iterationReportIds = new Set(existingReports.map((r) => r.id));
+
+    // Find costs that are already linked to reports in this iteration
     const linkedCosts = input.costs.filter((cost) => {
       if (!cost.linkReports || cost.linkReports.length === 0) {
         return false;
       }
-      // Check if any link points to a report in the iteration
       return cost.linkReports.some(
         (linkReport) =>
           linkReport.report && iterationReportIds.has(linkReport.report.id),
       );
     });
 
-    // 2. Find billings that are eligible for reconciliation:
-    //    - Not linked to anything, OR
-    //    - Linked only to reports in this iteration (and not linked to any other reports)
+    // Find billings that are eligible for reconciliation:
+    // - Not linked to anything, OR
+    // - Linked only to reports in this iteration
     const eligibleBillings = input.billings.filter((billing) => {
       if (
         !billing.linkBillingReport ||
         billing.linkBillingReport.length === 0
       ) {
-        // Not linked to anything - eligible
         return true;
       }
-      // Check if all links are to reports in this iteration
-      const allLinksAreInIteration = billing.linkBillingReport.every(
+      return billing.linkBillingReport.every(
         (linkEntry) =>
           linkEntry.report && iterationReportIds.has(linkEntry.report.id),
       );
-      return allLinksAreInIteration;
     });
 
-    const matchedBillingFacts = matchBillingFacts(
-      billingFacts,
-      eligibleBillings,
-      input.iteration,
-    );
-
-    const matchedCostFacts = matchCostFacts(
-      costFacts,
-      linkedCosts,
-      input.iteration,
-    );
-
-    // Step 3: Create UUID mappings for link matching
-    const reportFactUuidToFact = new Map<string, ReportFact>();
-    for (const fact of matchedReportFacts) {
-      reportFactUuidToFact.set(fact.uuid, fact);
+    // Build sets of existing links for quick lookup
+    const existingCostReportLinks = new Set<string>();
+    for (const cost of input.costs) {
+      if (cost.linkReports) {
+        for (const linkEntry of cost.linkReports) {
+          if (linkEntry.report && linkEntry.link.costId !== null) {
+            const key = `${cost.id}-${linkEntry.report.id}`;
+            existingCostReportLinks.add(key);
+          }
+        }
+      }
     }
 
-    const billingFactUuidToFact = new Map<string, BillingFact>();
-    for (const fact of matchedBillingFacts) {
-      billingFactUuidToFact.set(fact.uuid, fact);
+    const existingBillingReportLinks = new Set<string>();
+    for (const billing of input.billings) {
+      if (billing.linkBillingReport) {
+        for (const linkEntry of billing.linkBillingReport) {
+          if (linkEntry.report && linkEntry.link.billingId !== null) {
+            const key = `${linkEntry.link.billingId}-${linkEntry.report.id}`;
+            existingBillingReportLinks.add(key);
+          }
+        }
+      }
     }
 
-    const costFactUuidToFact = new Map<string, CostFact>();
-    for (const fact of matchedCostFacts) {
-      costFactUuidToFact.set(fact.uuid, fact);
-    }
+    // Step 4: Use immer to immutably update facts
+    return produce(facts, (draft: Fact[]) => {
+      // First pass: Match report facts
+      for (const fact of draft) {
+        switch (fact.type) {
+          case "report": {
+            const reportFact = fact as ReportFact & {
+              billingAmount: number;
+              billingCurrency: string;
+              billingUnitPrice: number;
+            };
+            const existingReport = existingReports.find((r) =>
+              matchesReport(r, reportFact),
+            );
 
-    // Step 4: Match link facts
-    const matchedLinkFacts = matchLinkFacts(
-      linkCostReportFacts,
-      linkBillingReportFacts,
-      reportFactUuidToFact,
-      billingFactUuidToFact,
-      costFactUuidToFact,
-      input.billings,
-      input.costs,
-    );
+            if (existingReport) {
+              fact.action = {
+                type: "update",
+                id: existingReport.id,
+                oldValues: {
+                  netValue: existingReport.netValue,
+                  unit: existingReport.unit ?? null,
+                  quantity: existingReport.quantity ?? null,
+                  unitPrice: existingReport.unitPrice ?? null,
+                  currency: existingReport.currency,
+                },
+              };
+              reportIdToFact.set(existingReport.id, fact.uuid);
+            } else {
+              fact.action = { type: "create" };
+            }
+            break;
+          }
+        }
+      }
 
-    // Return all matched facts as a single array
-    return [
-      ...matchedReportFacts,
-      ...matchedBillingFacts,
-      ...matchedCostFacts,
-      ...matchedLinkFacts,
-    ];
+      // Build UUID index for faster lookup of linked facts
+      const draftUuidToFact = new Map<string, Fact>();
+      for (const f of draft) {
+        draftUuidToFact.set(f.uuid, f);
+      }
+
+      // Second pass: Match cost and billing facts, and update link facts
+      for (const fact of draft) {
+        switch (fact.type) {
+          case "cost": {
+            const costFact = fact as CostFact;
+            if (!costFact.payload.workspaceId) {
+              continue; // Skip if no workspaceId
+            }
+            const existingCost = linkedCosts.find((c) =>
+              matchesCost(c, costFact, input.iteration),
+            );
+
+            if (existingCost) {
+              fact.action = {
+                type: "update",
+                id: existingCost.id,
+                oldValues: {
+                  netValue: existingCost.netValue,
+                  grossValue: existingCost.grossValue ?? null,
+                  currency: existingCost.currency,
+                },
+              };
+            } else {
+              fact.action = { type: "create" };
+            }
+            break;
+          }
+          case "billing": {
+            const billingFact = fact as BillingFact;
+            const existingBilling = eligibleBillings.find((b) =>
+              matchesBilling(b, billingFact, input.iteration),
+            );
+
+            if (existingBilling) {
+              fact.action = {
+                type: "update",
+                id: existingBilling.id,
+                oldValues: {
+                  totalNet: existingBilling.totalNet,
+                  totalGross: existingBilling.totalGross,
+                  currency: existingBilling.currency,
+                },
+              };
+            } else {
+              fact.action = { type: "create" };
+            }
+            break;
+          }
+          case "linkCostReport": {
+            const linkFact = fact as LinkCostReportFact;
+            let costFact: CostFact | undefined;
+            let reportFact: ReportFact | undefined;
+
+            // Find linked cost and report facts from draft (to get updated actions)
+            for (const factUuid of linkFact.linkedFacts) {
+              const linkedFact = draftUuidToFact.get(factUuid);
+              if (!linkedFact) continue;
+              switch (linkedFact.type) {
+                case "cost":
+                  costFact = linkedFact as CostFact;
+                  break;
+                case "report":
+                  reportFact = linkedFact as ReportFact;
+                  break;
+              }
+            }
+
+            if (reportFact && costFact) {
+              const costId =
+                costFact.action.type === "update" ? costFact.action.id : null;
+              const reportId =
+                reportFact.action.type === "update" ? reportFact.action.id : null;
+
+              // Update payload with resolved IDs
+              linkFact.payload.costId = costId;
+              linkFact.payload.reportId = reportId;
+
+              // Check if link already exists (only if both IDs are available)
+              if (costId !== null && reportId !== null) {
+                const linkKey = `${costId}-${reportId}`;
+                if (existingCostReportLinks.has(linkKey)) {
+                  fact.action = { type: "ignore" };
+                  continue;
+                }
+              }
+
+              // Create new link (even if IDs are null, they'll be resolved during execution)
+              fact.action = { type: "create" };
+            } else {
+              // If linked facts not found, keep as ignore
+              fact.action = { type: "ignore" };
+            }
+            break;
+          }
+          case "linkBillingReport": {
+            const linkFact = fact as LinkBillingReportFact;
+            let billingFact: BillingFact | undefined;
+            let reportFact: ReportFact | undefined;
+
+            // Find linked billing and report facts from draft (to get updated actions)
+            for (const factUuid of linkFact.linkedFacts) {
+              const linkedFact = draftUuidToFact.get(factUuid);
+              if (!linkedFact) continue;
+              switch (linkedFact.type) {
+                case "billing":
+                  billingFact = linkedFact as BillingFact;
+                  break;
+                case "report":
+                  reportFact = linkedFact as ReportFact;
+                  break;
+              }
+            }
+
+            if (reportFact && billingFact) {
+              const billingId =
+                billingFact.action.type === "update"
+                  ? billingFact.action.id
+                  : 0;
+              const reportId =
+                reportFact.action.type === "update" ? reportFact.action.id : 0;
+
+              // Update payload with resolved IDs
+              linkFact.payload.billingId = billingId;
+              linkFact.payload.reportId = reportId;
+
+              // Check if link already exists (only if both IDs are available)
+              if (billingId !== 0 && reportId !== 0) {
+                const linkKey = `${billingId}-${reportId}`;
+                if (existingBillingReportLinks.has(linkKey)) {
+                  fact.action = { type: "ignore" };
+                  continue;
+                }
+              }
+
+              // Create new link (even if IDs are 0, they'll be resolved during execution)
+              fact.action = { type: "create" };
+            } else {
+              // If linked facts not found, keep as ignore
+              fact.action = { type: "ignore" };
+            }
+            break;
+          }
+        }
+      }
+    });
   };
 
   return {
