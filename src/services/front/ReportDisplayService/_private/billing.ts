@@ -23,40 +23,55 @@ export function useBillingView(
       WithExchangeService,
     ]
   >,
+  selectedIds?: number[],
 ) {
   const view = rd.useMemoMap(rd.combine({ billings, workspaces }), (data) => {
     const entries = data.billings.map((billing) =>
       calculateBilling(billing, data.workspaces),
     );
-    const groupedEntries = groupBy(entries, (cost) => cost.netAmount.currency);
-    return {
-      entries,
-      total: {
+
+    const calculateTotals = (entriesToSum: typeof entries) => {
+      const grouped = groupBy(entriesToSum, (cost) => cost.netAmount.currency);
+      return {
         netAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.netAmount.amount),
             currency,
           })),
         ),
         grossAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.grossAmount.amount),
             currency,
           })),
         ),
         matchedAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.matchedAmount.amount),
             currency,
           })),
         ),
         remainingAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.remainingAmount.amount),
             currency,
           })),
         ),
-      },
+      };
+    };
+
+    const total = calculateTotals(entries);
+    const totalSelected =
+      selectedIds && selectedIds.length > 0
+        ? calculateTotals(
+            entries.filter((entry) => selectedIds.includes(entry.id)),
+          )
+        : undefined;
+
+    return {
+      entries,
+      total,
+      totalSelected,
     };
   });
 
@@ -81,12 +96,22 @@ export function useBillingView(
         ),
       );
 
-    Object.values(data.view.total).forEach((total) => {
-      total.approximatedJointValue.amount = sumBy(total.values, (value) => {
-        const rate = getCurrencyRate(value.currency);
-        return value.amount * rate.rate;
+    const updateApproximatedValue = (total: typeof data.view.total) => {
+      Object.values(total).forEach((totalValue) => {
+        totalValue.approximatedJointValue.amount = sumBy(
+          totalValue.values,
+          (value) => {
+            const rate = getCurrencyRate(value.currency);
+            return value.amount * rate.rate;
+          },
+        );
       });
-    });
+    };
+
+    updateApproximatedValue(data.view.total);
+    if (data.view.totalSelected) {
+      updateApproximatedValue(data.view.totalSelected);
+    }
 
     return data.view;
   });

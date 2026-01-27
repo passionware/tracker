@@ -34,7 +34,7 @@ import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function CostWidget(props: PotentialCostWidgetProps) {
@@ -47,7 +47,6 @@ export function CostWidget(props: PotentialCostWidgetProps) {
     props.workspaceId,
     props.clientId,
   );
-  const costs = props.services.reportDisplayService.useCostView(query);
 
   const addCostState = promiseState.useRemoteData<void>();
 
@@ -55,15 +54,30 @@ export function CostWidget(props: PotentialCostWidgetProps) {
     selectionState.selectNone(),
   );
 
-  useSelectionCleanup(
-    selection,
-    rd.tryMap(costs, (r) => r.entries.map((e) => e.id)),
-    setSelection,
+  // Get costs - we'll calculate selected IDs from the costs data
+  const costs = props.services.reportDisplayService.useCostView(query, undefined);
+
+  // Calculate selected IDs from selection state and available costs
+  const selectedCostIds = useMemo(() => {
+    return selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(costs)?.entries.map((e) => e.id) ?? [],
+    );
+  }, [selection, costs]);
+
+  // Get costs with selection totals if any items are selected
+  const costsWithSelection = props.services.reportDisplayService.useCostView(
+    query,
+    selectedCostIds.length > 0 ? selectedCostIds : undefined,
   );
 
-  const selectedCostIds = selectionState.getSelectedIds(
+  // Use costs with selection totals if available, otherwise use regular costs
+  const finalCosts = selectedCostIds.length > 0 ? costsWithSelection : costs;
+
+  useSelectionCleanup(
     selection,
-    rd.tryGet(costs)?.entries.map((e) => e.id) ?? [],
+    rd.tryMap(finalCosts, (r) => r.entries.map((e) => e.id)),
+    setSelection,
   );
 
   const deleteMutation = promiseState.useMutation(async () => {
@@ -138,7 +152,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                       undefined,
                     ),
                     currency: rd.tryMap(
-                      costs,
+                      finalCosts,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.netAmount
                           .currency,
@@ -164,7 +178,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
-        data={rd.map(costs, (x) => x.entries)}
+        data={rd.map(finalCosts, (x) => x.entries)}
         selection={selection}
         onSelectionChange={setSelection}
         columns={columns}
@@ -196,7 +210,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   {selectionState.getTotalSelected(
                     selection,
-                    rd.tryGet(costs)?.entries.length ?? 0,
+                    rd.tryGet(finalCosts)?.entries.length ?? 0,
                   )}{" "}
                   selected
                 </span>
@@ -245,22 +259,27 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               A list of all costs associated with the selected workspace.
             </div>
             {rd.mapOrElse(
-              costs,
+              finalCosts,
               (view) => {
+                const totals = view.totalSelected ?? view.total;
+                const selectedCount = view.totalSelected
+                  ? selectedCostIds.length
+                  : view.entries.length;
+                
                 const billingDetails = [
-                  { label: "Net total", value: view.total.netAmount },
-                  // { label: "Charged gross", value: view.total.grossAmount },
-                  { label: "Total matched", value: view.total.matchedAmount },
+                  { label: "Net total", value: totals.netAmount },
+                  // { label: "Charged gross", value: totals.grossAmount },
+                  { label: "Total matched", value: totals.matchedAmount },
                   {
                     label: "Total remaining",
-                    value: view.total.remainingAmount,
+                    value: totals.remainingAmount,
                   },
                 ];
 
                 return (
                   <>
                     <h3 className="my-3 text-base font-semibold">
-                      Summary ({view.entries.length} costs)
+                      Summary ({selectedCount} {selectedCount === 1 ? "cost" : "costs"})
                     </h3>
                     <Summary>
                       {billingDetails.map((item) => (

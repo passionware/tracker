@@ -22,27 +22,27 @@ export function createReportDisplayService(
   >,
 ): ReportDisplayService {
   return {
-    useReportView: (query) => {
+    useReportView: (query, selectedIds) => {
       const reports = config.services.reportService.useReports(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
 
-      return useReportView(reports, workspaces, config);
+      return useReportView(reports, workspaces, config, selectedIds);
     },
-    useBillingView: (query) => {
+    useBillingView: (query, selectedIds) => {
       const billings = config.services.billingService.useBillings(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return useBillingView(billings, workspaces, config);
+      return useBillingView(billings, workspaces, config, selectedIds);
     },
-    useCostView: (query) => {
+    useCostView: (query, selectedIds) => {
       const costs = config.services.costService.useCosts(query);
       const workspaces = config.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.ofEmpty(),
       );
-      return useCostView(costs, workspaces, config);
+      return useCostView(costs, workspaces, config, selectedIds);
     },
   };
 }

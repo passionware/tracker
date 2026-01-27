@@ -37,7 +37,7 @@ import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
@@ -51,23 +51,36 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     )
     .value();
 
-  const reports = props.services.reportDisplayService.useReportView(query);
-
   const addReportState = promiseState.useRemoteData<void>();
 
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
 
-  useSelectionCleanup(
-    selection,
-    rd.tryMap(reports, (r) => r.entries.map((e) => e.id)),
-    setSelection,
+  // Get reports - we'll calculate selected IDs from the reports data
+  const reports = props.services.reportDisplayService.useReportView(query, undefined);
+
+  // Calculate selected IDs from selection state and available reports
+  const selectedReportIds = useMemo(() => {
+    return selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+    );
+  }, [selection, reports]);
+
+  // Get reports with selection totals if any items are selected
+  const reportsWithSelection = props.services.reportDisplayService.useReportView(
+    query,
+    selectedReportIds.length > 0 ? selectedReportIds : undefined,
   );
 
-  const selectedReportIds = selectionState.getSelectedIds(
+  // Use reports with selection totals if available, otherwise use regular reports
+  const finalReports = selectedReportIds.length > 0 ? reportsWithSelection : reports;
+
+  useSelectionCleanup(
     selection,
-    rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+    rd.tryMap(finalReports, (r) => r.entries.map((e) => e.id)),
+    setSelection,
   );
 
   const deleteMutation = promiseState.useMutation(async () => {
@@ -146,18 +159,18 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                       undefined,
                     ),
                     currency: rd.tryMap(
-                      reports,
+                      finalReports,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.netAmount
                           .currency,
                     ),
                     contractorId: rd.tryMap(
-                      reports,
+                      finalReports,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.contractor
                           .id,
                     ),
-                    periodStart: rd.tryMap(reports, (reports) =>
+                    periodStart: rd.tryMap(finalReports, (reports) =>
                       maybe.map(
                         reports.entries[reports.entries.length - 1]?.periodEnd,
                         partialRight(addDaysToCalendarDate, 1),
@@ -184,7 +197,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
-        data={rd.map(reports, (r) => r.entries)}
+        data={rd.map(finalReports, (r) => r.entries)}
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(x) => x.id}
@@ -214,7 +227,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   {selectionState.getTotalSelected(
                     selection,
-                    rd.tryGet(reports)?.entries.length ?? 0,
+                    rd.tryGet(finalReports)?.entries.length ?? 0,
                   )}{" "}
                   selected
                 </span>
@@ -262,36 +275,41 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           <>
             A list of all reported work for given client, matched with billing
             or clarifications.
-            {rd.tryMap(reports, (view) => {
+            {rd.tryMap(finalReports, (view) => {
+              const totals = view.totalSelected ?? view.total;
+              const selectedCount = view.totalSelected
+                ? selectedReportIds.length
+                : view.entries.length;
+              
               const billingDetails = [
                 {
                   label: "Reported",
                   description: "Total value of reported work",
-                  value: view.total.netAmount,
+                  value: totals.netAmount,
                 },
                 {
                   label: "Billed",
                   description: "How much billed value is linked to reports",
-                  value: view.total.chargedAmount,
+                  value: totals.chargedAmount,
                 },
                 {
                   label: "To link",
                   description:
                     "Report amount that is not yet linked to any billing",
-                  value: view.total.toChargeAmount,
+                  value: totals.toChargeAmount,
                 },
-                { label: "To pay", value: view.total.toCompensateAmount },
-                { label: "Paid", value: view.total.compensatedAmount },
+                { label: "To pay", value: totals.toCompensateAmount },
+                { label: "Paid", value: totals.compensatedAmount },
                 {
                   label: "To compensate",
-                  value: view.total.toFullyCompensateAmount,
+                  value: totals.toFullyCompensateAmount,
                 },
               ];
 
               return (
                 <>
                   <h3 className="my-3 text-base font-semibold ">
-                    Summary ({view.entries.length} reports)
+                    Summary ({selectedCount} {selectedCount === 1 ? "report" : "reports"})
                   </h3>
                   <Summary>
                     {billingDetails.map((item) => (

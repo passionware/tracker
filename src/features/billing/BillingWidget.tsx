@@ -32,7 +32,7 @@ import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useColumns } from "./BillingWidget.columns";
 
@@ -46,7 +46,6 @@ export function BillingWidget(props: BillingWidgetProps) {
     props.workspaceId,
     props.clientId,
   );
-  const billings = props.services.reportDisplayService.useBillingView(query);
 
   const addBillingState = promiseState.useRemoteData();
 
@@ -54,15 +53,30 @@ export function BillingWidget(props: BillingWidgetProps) {
     selectionState.selectNone(),
   );
 
-  useSelectionCleanup(
-    selection,
-    rd.tryMap(billings, (r) => r.entries.map((e) => e.id)),
-    setSelection,
+  // Get billings - we'll calculate selected IDs from the billings data
+  const billings = props.services.reportDisplayService.useBillingView(query, undefined);
+
+  // Calculate selected IDs from selection state and available billings
+  const selectedBillingIds = useMemo(() => {
+    return selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(billings)?.entries.map((e) => e.id) ?? [],
+    );
+  }, [selection, billings]);
+
+  // Get billings with selection totals if any items are selected
+  const billingsWithSelection = props.services.reportDisplayService.useBillingView(
+    query,
+    selectedBillingIds.length > 0 ? selectedBillingIds : undefined,
   );
 
-  const selectedBillingIds = selectionState.getSelectedIds(
+  // Use billings with selection totals if available, otherwise use regular billings
+  const finalBillings = selectedBillingIds.length > 0 ? billingsWithSelection : billings;
+
+  useSelectionCleanup(
     selection,
-    rd.tryGet(billings)?.entries.map((e) => e.id) ?? [],
+    rd.tryMap(finalBillings, (r) => r.entries.map((e) => e.id)),
+    setSelection,
   );
 
   const deleteMutation = promiseState.useMutation(async () => {
@@ -136,7 +150,7 @@ export function BillingWidget(props: BillingWidgetProps) {
                       undefined,
                     ),
                     currency: rd.tryMap(
-                      billings,
+                      finalBillings,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.netAmount
                           .currency,
@@ -167,7 +181,7 @@ export function BillingWidget(props: BillingWidgetProps) {
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
-        data={rd.map(billings, (x) => x.entries)}
+        data={rd.map(finalBillings, (x) => x.entries)}
         selection={selection}
         onSelectionChange={setSelection}
         columns={columns}
@@ -197,7 +211,7 @@ export function BillingWidget(props: BillingWidgetProps) {
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   {selectionState.getTotalSelected(
                     selection,
-                    rd.tryGet(billings)?.entries.length ?? 0,
+                    rd.tryGet(finalBillings)?.entries.length ?? 0,
                   )}{" "}
                   selected
                 </span>
@@ -246,18 +260,23 @@ export function BillingWidget(props: BillingWidgetProps) {
             <div className="mb-2 font-semibold text-gray-700">
               A list of all billings for the selected client.
             </div>
-            {rd.tryMap(billings, (view) => {
+            {rd.tryMap(finalBillings, (view) => {
+              const totals = view.totalSelected ?? view.total;
+              const selectedCount = view.totalSelected
+                ? selectedBillingIds.length
+                : view.entries.length;
+              
               const billingDetails = [
-                { label: "Charged", value: view.total.netAmount },
-                // { label: "Charged gross", value: view.total.grossAmount },
-                { label: "Reconciled", value: view.total.matchedAmount },
-                { label: "To reconcile", value: view.total.remainingAmount },
+                { label: "Charged", value: totals.netAmount },
+                // { label: "Charged gross", value: totals.grossAmount },
+                { label: "Reconciled", value: totals.matchedAmount },
+                { label: "To reconcile", value: totals.remainingAmount },
               ];
 
               return (
                 <div>
                   <h3 className="my-3 text-base font-semibold text-gray-900">
-                    Summary ({view.entries.length} invoices)
+                    Summary ({selectedCount} {selectedCount === 1 ? "invoice" : "invoices"})
                   </h3>
                   <Summary>
                     {billingDetails.map((item) => (

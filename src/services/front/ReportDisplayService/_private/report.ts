@@ -27,29 +27,30 @@ export function useReportView(
       WithExchangeService,
     ]
   >,
+  selectedIds?: number[],
 ) {
   const view = rd.useMemoMap(rd.combine({ reports, workspaces }), (data) => {
     const entries = data.reports.map((report) =>
       calculateReportEntry(report, data.workspaces),
     );
-    const groupedEntries = groupBy(entries, (cost) => cost.netAmount.currency);
-    return {
-      entries,
-      total: {
+
+    const calculateTotals = (entriesToSum: typeof entries) => {
+      const grouped = groupBy(entriesToSum, (cost) => cost.netAmount.currency);
+      return {
         netAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.netAmount.amount),
             currency,
           })),
         ),
         billedAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.billedAmount.amount),
             currency,
           })),
         ),
         linkedReportAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(
               reports,
               (report) => report.linkedReportAmount.amount,
@@ -58,25 +59,25 @@ export function useReportView(
           })),
         ),
         chargedAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.billedAmount.amount),
             currency,
           })),
         ),
         toChargeAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.remainingAmount.amount),
             currency,
           })),
         ),
         compensatedAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(reports, (report) => report.compensatedAmount.amount),
             currency,
           })),
         ),
         toCompensateAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(
               reports,
               (report) => report.remainingCompensationAmount.amount,
@@ -85,7 +86,7 @@ export function useReportView(
           })),
         ),
         toFullyCompensateAmount: prepareValues(
-          Object.entries(groupedEntries).map(([currency, reports]) => ({
+          Object.entries(grouped).map(([currency, reports]) => ({
             amount: sumBy(
               reports,
               (report) => report.remainingFullCompensationAmount.amount,
@@ -93,7 +94,21 @@ export function useReportView(
             currency,
           })),
         ),
-      },
+      };
+    };
+
+    const total = calculateTotals(entries);
+    const totalSelected =
+      selectedIds && selectedIds.length > 0
+        ? calculateTotals(
+            entries.filter((entry) => selectedIds.includes(entry.id)),
+          )
+        : undefined;
+
+    return {
+      entries,
+      total,
+      totalSelected,
     };
   });
   const currencies = rd.useMemoMap(view, (data) =>
@@ -117,12 +132,22 @@ export function useReportView(
         ),
       );
 
-    Object.values(data.view.total).forEach((total) => {
-      total.approximatedJointValue.amount = sumBy(total.values, (value) => {
-        const rate = getCurrencyRate(value.currency);
-        return value.amount * rate.rate;
+    const updateApproximatedValue = (total: typeof data.view.total) => {
+      Object.values(total).forEach((totalValue) => {
+        totalValue.approximatedJointValue.amount = sumBy(
+          totalValue.values,
+          (value) => {
+            const rate = getCurrencyRate(value.currency);
+            return value.amount * rate.rate;
+          },
+        );
       });
-    });
+    };
+
+    updateApproximatedValue(data.view.total);
+    if (data.view.totalSelected) {
+      updateApproximatedValue(data.view.totalSelected);
+    }
 
     return data.view;
   });
