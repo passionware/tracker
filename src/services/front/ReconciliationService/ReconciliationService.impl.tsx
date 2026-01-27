@@ -43,15 +43,25 @@ function matchReportFacts(
   const matchedFacts: ReportFact[] = [];
 
   for (const fact of reportFacts) {
-    // Find existing report matching contractor, currency, project iteration, and unit price
+    // Find existing report matching contractor, currency, project iteration, period range, and unit price
     const factUnitPrice = fact.payload.unitPrice ?? 0;
     const existingReport = existingReports.find((r) => {
       const rUnitPrice = r.unitPrice ?? 0;
+      const matchesContractor = r.contractorId === fact.payload.contractorId;
+      const matchesCurrency = r.currency === fact.payload.currency;
+      const matchesIteration =
+        r.projectIterationId === fact.payload.projectIterationId;
+      const matchesPeriod =
+        r.periodStart.toString() === fact.payload.periodStart.toString() &&
+        r.periodEnd.toString() === fact.payload.periodEnd.toString();
+      const matchesUnitPrice = Math.abs(rUnitPrice - factUnitPrice) < 0.01;
+
       return (
-        r.contractorId === fact.payload.contractorId &&
-        r.currency === fact.payload.currency &&
-        r.projectIterationId === fact.payload.projectIterationId &&
-        Math.abs(rUnitPrice - factUnitPrice) < 0.01
+        matchesContractor &&
+        matchesCurrency &&
+        matchesIteration &&
+        matchesPeriod &&
+        matchesUnitPrice
       );
     });
 
@@ -251,6 +261,7 @@ function matchLinkFacts(
 
   // Match cost-report links
   for (const linkFact of linkCostReportFacts) {
+    debugger;
     // linkedFacts is an array of fact UUIDs - find cost and report facts
     let costFact: CostFact | undefined;
     let reportFact: ReportFact | undefined;
