@@ -49,7 +49,7 @@ export type ReportListProps = WithServices<
 
 export function ReportList(props: ReportListProps) {
   return (
-    <ListView<ReportSearchBaseModel, ReportQuery>
+    <ListView<ReportSearchBaseModel, ReportQuery, number>
       data={props.data}
       columns={[
         ...reportColumns.getContextual(props.context),
@@ -79,6 +79,7 @@ export function ReportList(props: ReportListProps) {
       ].filter(maybe.isPresent)}
       query={props.query}
       onQueryChange={props.onQueryChange}
+      getRowId={(x) => x.id}
     />
   );
 }

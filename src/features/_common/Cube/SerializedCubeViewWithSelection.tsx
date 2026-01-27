@@ -112,6 +112,7 @@ export function SerializedCubeViewWithSelection({
               query={query as any}
               onQueryChange={() => {}}
               caption={`Raw data view with ${items.length} items`}
+              getRowId={(x) => x.id}
             />
           </div>
         );

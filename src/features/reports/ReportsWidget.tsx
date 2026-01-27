@@ -187,6 +187,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         data={rd.map(reports, (r) => r.entries)}
         selection={selection}
         onSelectionChange={setSelection}
+        getRowId={(x) => x.id}
         onRowDoubleClick={async (row) => {
           const result =
             await props.services.messageService.editReport.sendRequest({

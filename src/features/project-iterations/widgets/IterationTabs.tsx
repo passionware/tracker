@@ -159,6 +159,7 @@ function GenerateReportButton(
                       onQueryChange={() => {}}
                       selection={selection}
                       onSelectionChange={setSelection}
+                      getRowId={(x) => x.id}
                       columns={[
                         contractorColumnHelper.accessor("name", {
                           header: "Name",

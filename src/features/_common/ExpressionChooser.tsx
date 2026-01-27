@@ -76,6 +76,7 @@ function XExpressionChooser({
       onQueryChange={() => void 0}
       className={className}
       data={vars}
+      getRowId={(x) => x.id}
       columns={[
         sharedColumns.workspaceId(services),
         sharedColumns.clientId(services),

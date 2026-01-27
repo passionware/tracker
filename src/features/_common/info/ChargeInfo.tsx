@@ -109,9 +109,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         selectedLinkIds,
       );
       setSelection(selectionState.selectNone());
-      toast.success(
-        `Successfully deleted ${selectedLinkIds.length} link(s)`,
-      );
+      toast.success(`Successfully deleted ${selectedLinkIds.length} link(s)`);
     } catch (error) {
       console.error("Error deleting links:", error);
       toast.error("Failed to delete links");
@@ -339,9 +337,7 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         data={rd.of(billing.links)}
         selection={selection}
         onSelectionChange={setSelection}
-        getRowId={(row: Billing["linkBillingReport"][number]) =>
-          row.link.id.toString()
-        }
+        getRowId={(row: Billing["linkBillingReport"][number]) => row.link.id}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -375,10 +371,14 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                           ? {
                               quantity: link.link.breakdown.quantity,
                               unit: link.link.breakdown.unit,
-                              sourceUnitPrice: link.link.breakdown.billingUnitPrice,
-                              targetUnitPrice: link.link.breakdown.reportUnitPrice,
-                              sourceCurrency: link.link.breakdown.billingCurrency,
-                              targetCurrency: link.link.breakdown.reportCurrency,
+                              sourceUnitPrice:
+                                link.link.breakdown.billingUnitPrice,
+                              targetUnitPrice:
+                                link.link.breakdown.reportUnitPrice,
+                              sourceCurrency:
+                                link.link.breakdown.billingCurrency,
+                              targetCurrency:
+                                link.link.breakdown.reportCurrency,
                             }
                           : undefined,
                       }}
@@ -422,7 +422,10 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             ...sharedColumns.contractorId(services),
             accessorKey: "report.contractorId",
           },
-          { ...reportColumns.period(services), accessorFn: (x) => x.report },
+          {
+            ...reportColumns.period(services),
+            accessorFn: (x: any) => x.report,
+          },
           columnHelper.accessor((x) => x.link, {
             header: "Linking",
             cell: (cellInfo) => {
@@ -502,11 +505,15 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             }),
         ].filter(truthy.isTruthy)}
         toolbar={
-          selectionState.getTotalSelected(selection, billing.links.length) > 0 ? (
+          selectionState.getTotalSelected(selection, billing.links.length) >
+          0 ? (
             <ListToolbar>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {selectionState.getTotalSelected(selection, billing.links.length)}{" "}
+                  {selectionState.getTotalSelected(
+                    selection,
+                    billing.links.length,
+                  )}{" "}
                   selected
                 </span>
               </div>
@@ -523,9 +530,8 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                   <PopoverContent className="w-80 p-4" align="start">
                     <div className="space-y-3">
                       <div className="text-sm text-slate-700">
-                        Are you sure you want to delete{" "}
-                        {selectedLinkIds.length} selected link(s)? This action
-                        cannot be undone.
+                        Are you sure you want to delete {selectedLinkIds.length}{" "}
+                        selected link(s)? This action cannot be undone.
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm">

@@ -192,6 +192,7 @@ export function ProjectContractors(props: ProjectContractorsProps) {
         data={projectContractors}
         query={emptyQuery}
         onQueryChange={() => {}}
+        getRowId={(x) => x.contractor.id}
         columns={[
           c.accessor("contractor.name", {
             header: "Name",

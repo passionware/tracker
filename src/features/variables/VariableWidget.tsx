@@ -147,6 +147,7 @@ export function VariableWidget(props: VariableWidgetProps) {
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
+        getRowId={(x) => x.id}
         data={variables}
         onRowDoubleClick={async (row) => {
           const result =

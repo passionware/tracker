@@ -171,6 +171,7 @@ export function BillingWidget(props: BillingWidgetProps) {
         selection={selection}
         onSelectionChange={setSelection}
         columns={columns}
+        getRowId={(x) => x.id}
         onRowDoubleClick={async (x) => {
           const result =
             await props.services.messageService.editBilling.sendRequest({

@@ -126,6 +126,7 @@ export function ProjectIterations(props: ProjectIterationsProps) {
         onQueryChange={setQuery}
         selection={selection}
         onSelectionChange={setSelection}
+        getRowId={(x) => x.id}
         onRowDoubleClick={(row) => {
           props.services.navigationService.navigate(
             props.services.routingService
@@ -197,7 +198,10 @@ export function ProjectIterations(props: ProjectIterationsProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenu
+                  open={dropdownOpen}
+                  onOpenChange={setDropdownOpen}
+                >
                   <DropdownMenuTrigger asChild>
                     <ListToolbarButton
                       variant="default"

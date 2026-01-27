@@ -107,9 +107,7 @@ export function CostInfo({
     try {
       await services.mutationService.bulkDeleteCostReportLink(selectedLinkIds);
       setSelection(selectionState.selectNone());
-      toast.success(
-        `Successfully deleted ${selectedLinkIds.length} link(s)`,
-      );
+      toast.success(`Successfully deleted ${selectedLinkIds.length} link(s)`);
     } catch (error) {
       console.error("Error deleting links:", error);
       toast.error("Failed to delete links");
@@ -264,7 +262,7 @@ export function CostInfo({
         data={rd.of(costEntry.linkReports)}
         selection={selection}
         onSelectionChange={setSelection}
-        getRowId={(row) => row.link.id.toString()}
+        getRowId={(row) => row.link.id}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -294,7 +292,8 @@ export function CostInfo({
                             quantity: link.link.breakdown.quantity,
                             unit: link.link.breakdown.unit,
                             sourceUnitPrice: link.link.breakdown.costUnitPrice,
-                            targetUnitPrice: link.link.breakdown.reportUnitPrice,
+                            targetUnitPrice:
+                              link.link.breakdown.reportUnitPrice,
                             exchangeRate: link.link.breakdown.exchangeRate,
                             sourceCurrency: link.link.breakdown.costCurrency,
                             targetCurrency: link.link.breakdown.reportCurrency,
@@ -317,8 +316,7 @@ export function CostInfo({
                                   value.breakdown.targetUnitPrice ?? 0,
                                 costUnitPrice:
                                   value.breakdown.sourceUnitPrice ?? 0,
-                                exchangeRate:
-                                  value.breakdown.exchangeRate ?? 1,
+                                exchangeRate: value.breakdown.exchangeRate ?? 1,
                                 reportCurrency:
                                   value.breakdown.targetCurrency ?? "",
                                 costCurrency:
@@ -435,9 +433,8 @@ export function CostInfo({
                   <PopoverContent className="w-80 p-4" align="start">
                     <div className="space-y-3">
                       <div className="text-sm text-slate-700">
-                        Are you sure you want to delete{" "}
-                        {selectedLinkIds.length} selected link(s)? This action
-                        cannot be undone.
+                        Are you sure you want to delete {selectedLinkIds.length}{" "}
+                        selected link(s)? This action cannot be undone.
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm">

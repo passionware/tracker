@@ -139,6 +139,7 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
         onQueryChange={setQuery}
         data={rd.map(costs, (x) => x.entries)}
         columns={columns}
+        getRowId={(x) => x.id}
         onRowDoubleClick={async (x) => {
           const result =
             await props.services.messageService.editCost.sendRequest({

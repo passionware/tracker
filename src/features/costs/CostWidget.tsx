@@ -168,6 +168,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         selection={selection}
         onSelectionChange={setSelection}
         columns={columns}
+        getRowId={(x) => x.id}
         onRowDoubleClick={async (x) => {
           const result =
             await props.services.messageService.editCost.sendRequest({
@@ -213,9 +214,8 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                   <PopoverContent className="w-80 p-4" align="start">
                     <div className="space-y-3">
                       <div className="text-sm text-slate-700">
-                        Are you sure you want to delete{" "}
-                        {selectedCostIds.length} selected cost(s)? This action
-                        cannot be undone.
+                        Are you sure you want to delete {selectedCostIds.length}{" "}
+                        selected cost(s)? This action cannot be undone.
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm">

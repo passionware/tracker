@@ -121,6 +121,7 @@ export function GeneratedReportList(
       onSelectionChange={setSelection}
       query={query}
       onQueryChange={() => {}}
+      getRowId={(x) => x.id}
       onRowDoubleClick={(report) => {
         if (props.projectId) {
           props.services.navigationService.navigate(

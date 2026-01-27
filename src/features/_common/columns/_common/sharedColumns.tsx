@@ -34,10 +34,11 @@ import { CellContext } from "@tanstack/react-table";
 import { ReactElement, ReactNode } from "react";
 
 export const sharedColumns = {
-  selection: <T extends { id: string | number }>(
-    state: SelectionState<T["id"]>,
+  selection: <T, TId>(
+    state: SelectionState<TId>,
     data: RemoteData<T[]>,
-    onSelectionChange: (state: SelectionState<T["id"]>) => void,
+    onSelectionChange: (state: SelectionState<TId>) => void,
+    getRowId: (row: T) => TId,
   ) => {
     const isEverythingSelected = selectionState.isSelectAll(state);
     const isMixedSelected = selectionState.isPartiallySelected(
@@ -60,7 +61,9 @@ export const sharedColumns = {
           onClick: (e: React.MouseEvent<HTMLTableCellElement>) => {
             e.preventDefault();
             e.stopPropagation();
-            onSelectionChange(selectionState.toggle(state, row.original.id));
+            onSelectionChange(
+              selectionState.toggle(state, getRowId(row.original)),
+            );
           },
         }),
         headerProps: () => ({
@@ -80,17 +83,18 @@ export const sharedColumns = {
           onCheckedChange={handleToggleAll}
         />
       ),
-      cell: (info) => (
-        <Checkbox
-          className="align-middle"
-          checked={selectionState.isSelected(state, info.row.original.id)}
-          onCheckedChange={() =>
-            onSelectionChange(
-              selectionState.toggle(state, info.row.original.id),
-            )
-          }
-        />
-      ),
+      cell: (info) => {
+        const rowId = getRowId(info.row.original);
+        return (
+          <Checkbox
+            className="align-middle"
+            checked={selectionState.isSelected(state, rowId)}
+            onCheckedChange={() =>
+              onSelectionChange(selectionState.toggle(state, rowId))
+            }
+          />
+        );
+      },
     });
   },
   workspaceId: (services: WithWorkspaceService) =>
