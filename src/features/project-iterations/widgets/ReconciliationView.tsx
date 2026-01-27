@@ -32,6 +32,8 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { BillingPreview } from "@/features/_common/previews/BillingPreview.tsx";
 import { CostPreview } from "@/features/_common/previews/CostPreview.tsx";
@@ -39,7 +41,7 @@ import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { BillingPicker } from "@/features/_common/pickers/BillingPicker.tsx";
 import { CostPicker } from "@/features/_common/pickers/CostPicker.tsx";
 import { ReportPicker } from "@/features/_common/pickers/ReportPicker.tsx";
-import { ChevronDown, X, Check, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Check, AlertCircle } from "lucide-react";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -230,7 +232,7 @@ export function ReconciliationView(
 
     const logs: ReconciliationLogEntry[] = [];
     const completedFactUuids = new Set<string>();
-    
+
     try {
       await props.services.reconciliationService.executeReconciliation({
         facts: factsData,
@@ -267,12 +269,12 @@ export function ReconciliationView(
               entry.entityType === "linkBillingReport";
             if (
               entry.factUuid &&
-              (entry.id !== undefined ||
-                entry.type === "update" ||
-                isLinkEntry)
+              (entry.id !== undefined || entry.type === "update" || isLinkEntry)
             ) {
               completedFactUuids.add(entry.factUuid);
-              setProcessedFactUuids((prev) => new Set(prev).add(entry.factUuid!));
+              setProcessedFactUuids((prev) =>
+                new Set(prev).add(entry.factUuid!),
+              );
             }
           }
         },
@@ -292,18 +294,18 @@ export function ReconciliationView(
         } else if (error && typeof error === "object" && "message" in error) {
           errorMsg = String(error.message);
         }
-        
+
         // Find the first fact that doesn't have a completion log
         // This is the fact that failed during processing
         // Find first non-completed fact from dry run logs
         const failedLog = dryRunLogs.find(
           (log) => log.factUuid && !completedFactUuids.has(log.factUuid),
         );
-        
+
         if (failedLog?.factUuid) {
           setFailedFactUuid(failedLog.factUuid);
           setErrorMessage(errorMsg);
-          
+
           // Find and expand the failed log entry
           const failedLogIndex = dryRunLogs.findIndex(
             (log) => log.factUuid === failedLog.factUuid,
@@ -454,8 +456,16 @@ export function ReconciliationView(
                                 {isFailed ? (
                                   <motion.div
                                     key="error"
-                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
-                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    initial={{
+                                      scale: 0,
+                                      rotate: -180,
+                                      opacity: 0,
+                                    }}
+                                    animate={{
+                                      scale: 1,
+                                      rotate: 0,
+                                      opacity: 1,
+                                    }}
                                     exit={{ scale: 0, rotate: 180, opacity: 0 }}
                                     transition={{
                                       type: "spring",
@@ -468,8 +478,16 @@ export function ReconciliationView(
                                 ) : isProcessed ? (
                                   <motion.div
                                     key="success"
-                                    initial={{ scale: 0, rotate: -180, opacity: 0 }}
-                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    initial={{
+                                      scale: 0,
+                                      rotate: -180,
+                                      opacity: 0,
+                                    }}
+                                    animate={{
+                                      scale: 1,
+                                      rotate: 0,
+                                      opacity: 1,
+                                    }}
                                     exit={{ scale: 0, rotate: 180, opacity: 0 }}
                                     transition={{
                                       type: "spring",
@@ -569,7 +587,9 @@ export function ReconciliationView(
                                   Old Values:
                                 </div>
                                 <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-x-auto">
-                                  {String(JSON.stringify(log.oldValues, null, 2))}
+                                  {String(
+                                    JSON.stringify(log.oldValues, null, 2),
+                                  )}
                                 </pre>
                               </div>
                             ) : null}
@@ -759,47 +779,60 @@ export function ReconciliationView(
                       <CardContent className="p-4 relative">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            {(type === "report" || type === "cost") && (
+                            {(type === "report" ||
+                              type === "cost" ||
+                              type === "billing") && (
                               <>
-                                {type === "report" && (
-                                  <ContractorWidget
-                                    contractorId={maybe.of(
-                                      (item as ReportFact).payload.contractorId,
-                                    )}
-                                    services={props.services}
-                                    layout="avatar"
-                                    size="sm"
-                                  />
-                                )}
-                                {type === "cost" &&
-                                  (item as CostFact).payload.contractorId !==
-                                    null &&
-                                  (item as CostFact).payload.contractorId !==
-                                    undefined && (
-                                    <ContractorWidget
-                                      contractorId={maybe.of(
-                                        (item as CostFact).payload
-                                          .contractorId!,
+                                {(type === "report" || type === "cost") && (
+                                  <>
+                                    <WorkspaceWidget
+                                      workspaceId={maybe.of(
+                                        (item as ReportFact).payload
+                                          .workspaceId,
                                       )}
                                       services={props.services}
                                       layout="avatar"
                                       size="sm"
                                     />
-                                  )}
-                                {type === "cost" &&
-                                  ((item as CostFact).payload.contractorId ===
-                                    null ||
-                                    (item as CostFact).payload.contractorId ===
-                                      undefined) &&
-                                  (item as CostFact).payload.counterparty && (
-                                    <div className="text-xs text-slate-500">
-                                      {(item as CostFact).payload.counterparty}
-                                    </div>
-                                  )}
+                                    <ChevronRight className="h-4 w-4 text-slate-400 -mx-2" />
+                                    <ContractorWidget
+                                      contractorId={maybe.of(
+                                        (item as ReportFact).payload
+                                          .contractorId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                  </>
+                                )}
+                                {type === "billing" && (
+                                  <>
+                                    <WorkspaceWidget
+                                      workspaceId={maybe.of(
+                                        (item as BillingFact).payload
+                                          .workspaceId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                    <ChevronRight className="h-4 w-4 text-slate-400 -mx-2" />
+                                    <ClientWidget
+                                      clientId={maybe.of(
+                                        (item as BillingFact).payload.clientId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                  </>
+                                )}
                               </>
                             )}
                             <span className="text-sm font-medium text-slate-700">
-                              {label} {id === 0 ? "(New)" : `#${id}`}
+                              {label}
+                              {id === 0 ? null : ` #${id}`}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1451,13 +1484,13 @@ export function ReconciliationView(
                           <span className="text-sm font-medium text-slate-700">
                             Link
                           </span>
-                          <Badge
-                            variant={isCostLink ? "info" : "primary"}
-                            tone="secondary"
-                            size="sm"
-                          >
-                            {isCostLink ? "Cost → Report" : "Report → Billing"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="success" tone="secondary" size="sm">
+                              {link.action.type === "ignore"
+                                ? "Already exists"
+                                : "Will be created"}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="space-y-2 text-sm">
                           {costLink && costLink.payload.breakdown ? (
@@ -1682,6 +1715,37 @@ export function ReconciliationView(
                   if (row.billing) {
                     billingItems.push(row.billing);
                   }
+                });
+
+                // Create order maps for sorting links by their target facts
+                const costOrderMap = new Map<string, number>();
+                costFacts.forEach((cost, index) => {
+                  costOrderMap.set(cost.uuid, index);
+                });
+
+                const reportOrderMap = new Map<string, number>();
+                reportFacts.forEach((report, index) => {
+                  reportOrderMap.set(report.uuid, index);
+                });
+
+                // Sort cost-report links by the order of the cost they link to
+                // linkedFacts[0] is the cost UUID, linkedFacts[1] is the report UUID
+                costLinkItems.sort((a, b) => {
+                  const costUuidA = a.linkedFacts[0];
+                  const costUuidB = b.linkedFacts[0];
+                  const orderA = costOrderMap.get(costUuidA) ?? Infinity;
+                  const orderB = costOrderMap.get(costUuidB) ?? Infinity;
+                  return orderA - orderB;
+                });
+
+                // Sort report-billing links by the order of the report they link to
+                // linkedFacts[0] is the report UUID, linkedFacts[1] is the billing UUID
+                billingLinkItems.sort((a, b) => {
+                  const reportUuidA = a.linkedFacts[0];
+                  const reportUuidB = b.linkedFacts[0];
+                  const orderA = reportOrderMap.get(reportUuidA) ?? Infinity;
+                  const orderB = reportOrderMap.get(reportUuidB) ?? Infinity;
+                  return orderA - orderB;
                 });
 
                 return (
