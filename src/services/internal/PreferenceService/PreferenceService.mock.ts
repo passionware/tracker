@@ -16,6 +16,7 @@ export function createPreferenceService(config: {
         viewMode: "both",
         darkMode: false,
         splitRatio: 40,
+        groupBy: "contractor",
       };
     },
     getTimelineView: async () => {
@@ -23,6 +24,7 @@ export function createPreferenceService(config: {
         viewMode: "both",
         darkMode: false,
         splitRatio: 40,
+        groupBy: "contractor",
       };
     },
     setTimelineView: async () => {
