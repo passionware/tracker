@@ -39,6 +39,7 @@ import { chain, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { InfiniteTimeline } from "@/platform/passionware-timeline/passionware-timeline";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -58,7 +59,10 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   );
 
   // Get reports - we'll calculate selected IDs from the reports data
-  const reports = props.services.reportDisplayService.useReportView(query, undefined);
+  const reports = props.services.reportDisplayService.useReportView(
+    query,
+    undefined,
+  );
 
   // Calculate selected IDs from selection state and available reports
   const selectedReportIds = useMemo(() => {
@@ -69,13 +73,15 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   }, [selection, reports]);
 
   // Get reports with selection totals if any items are selected
-  const reportsWithSelection = props.services.reportDisplayService.useReportView(
-    query,
-    selectedReportIds.length > 0 ? selectedReportIds : undefined,
-  );
+  const reportsWithSelection =
+    props.services.reportDisplayService.useReportView(
+      query,
+      selectedReportIds.length > 0 ? selectedReportIds : undefined,
+    );
 
   // Use reports with selection totals if available, otherwise use regular reports
-  const finalReports = selectedReportIds.length > 0 ? reportsWithSelection : reports;
+  const finalReports =
+    selectedReportIds.length > 0 ? reportsWithSelection : reports;
 
   useSelectionCleanup(
     selection,
@@ -194,6 +200,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
+      <InfiniteTimeline />
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
@@ -280,7 +287,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               const selectedCount = view.totalSelected
                 ? selectedReportIds.length
                 : view.entries.length;
-              
+
               const billingDetails = [
                 {
                   label: "Reported",
@@ -309,7 +316,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               return (
                 <>
                   <h3 className="my-3 text-base font-semibold ">
-                    Summary ({selectedCount} {selectedCount === 1 ? "report" : "reports"})
+                    Summary ({selectedCount}{" "}
+                    {selectedCount === 1 ? "report" : "reports"})
                   </h3>
                   <Summary>
                     {billingDetails.map((item) => (
