@@ -890,7 +890,7 @@ export function InfiniteTimeline() {
                   )}
                   <div
                     className={cn(
-                      "w-px mt-0.5 mx-auto",
+                      "w-px mt-0.5 ml-0",
                       shouldShowLabel ? "h-1 bg-border/60" : "h-2 bg-border",
                     )}
                   />
@@ -946,7 +946,7 @@ export function InfiniteTimeline() {
                   )}
                   <div
                     className={cn(
-                      "w-px mt-0.5 mx-auto",
+                      "w-px mt-0.5 ml-0",
                       isMajorMarker
                         ? "h-2 bg-foreground/50"
                         : shouldShowLabel
