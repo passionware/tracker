@@ -7,9 +7,18 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
+import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import {
@@ -17,27 +26,46 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
+import { cn } from "@/lib/utils";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import {
+  addDaysToCalendarDate,
+  calendarDateToJSDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date";
 import {
   SelectionState,
   selectionState,
   useSelectionCleanup,
 } from "@/platform/lang/SelectionState.ts";
 import {
-  addDaysToCalendarDate,
-  dateToCalendarDate,
-} from "@/platform/lang/internationalized-date";
+  DefaultTimelineItem,
+  InfiniteTimeline,
+  Lane,
+  TimelineItem,
+} from "@/platform/passionware-timeline/passionware-timeline";
+import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { chain, partialRight } from "lodash";
-import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { chain, groupBy, partialRight } from "lodash";
+import {
+  Check,
+  LayoutGrid,
+  Loader2,
+  Moon,
+  PlusCircle,
+  SplitSquareHorizontal,
+  Sun,
+  Table,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
@@ -51,23 +79,93 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     )
     .value();
 
-  const reports = props.services.reportDisplayService.useReportView(query);
-
   const addReportState = promiseState.useRemoteData<void>();
 
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
 
-  useSelectionCleanup(
-    selection,
-    rd.tryMap(reports, (r) => r.entries.map((e) => e.id)),
-    setSelection,
+  // Load preferences from service
+  const savedPreferences = props.services.preferenceService.useTimelineView();
+  const [viewMode, setViewMode] = useState<"timeline" | "table" | "both">(
+    savedPreferences.viewMode,
+  );
+  const [timelineDarkMode, setTimelineDarkMode] = useState(
+    savedPreferences.darkMode,
+  );
+  const [splitRatio, setSplitRatio] = useState(savedPreferences.splitRatio);
+
+  // Load preferences on mount
+  useEffect(() => {
+    void (async () => {
+      const prefs = await props.services.preferenceService.getTimelineView();
+      setViewMode(prefs.viewMode);
+      setTimelineDarkMode(prefs.darkMode);
+      setSplitRatio(prefs.splitRatio);
+    })();
+  }, [props.services.preferenceService]);
+
+  // Save preferences when they change
+  useEffect(() => {
+    void props.services.preferenceService.setTimelineView({
+      viewMode,
+      darkMode: timelineDarkMode,
+      splitRatio,
+    });
+  }, [
+    viewMode,
+    timelineDarkMode,
+    splitRatio,
+    props.services.preferenceService,
+  ]);
+
+  const viewModeItems = [
+    {
+      id: "timeline",
+      label: "Timeline",
+      icon: <LayoutGrid className="h-4 w-4" />,
+    },
+    {
+      id: "both",
+      label: "Both",
+      icon: <SplitSquareHorizontal className="h-4 w-4" />,
+    },
+    {
+      id: "table",
+      label: "Table",
+      icon: <Table className="h-4 w-4" />,
+    },
+  ];
+
+  // Get reports - we'll calculate selected IDs from the reports data
+  const reports = props.services.reportDisplayService.useReportView(
+    query,
+    undefined,
   );
 
-  const selectedReportIds = selectionState.getSelectedIds(
+  // Calculate selected IDs from selection state and available reports
+  const selectedReportIds = useMemo(() => {
+    return selectionState.getSelectedIds(
+      selection,
+      rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+    );
+  }, [selection, reports]);
+
+  // Get reports with selection totals if any items are selected
+  const reportsWithSelection =
+    props.services.reportDisplayService.useReportView(
+      query,
+      selectedReportIds.length > 0 ? selectedReportIds : undefined,
+    );
+
+  // Use reports with selection totals if available, otherwise use regular reports
+  const finalReports =
+    selectedReportIds.length > 0 ? reportsWithSelection : reports;
+
+  useSelectionCleanup(
     selection,
-    rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
+    rd.tryMap(finalReports, (r) => r.entries.map((e) => e.id)),
+    setSelection,
   );
 
   const deleteMutation = promiseState.useMutation(async () => {
@@ -98,6 +196,89 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   const columns = useColumns(props);
 
+  // Convert CalendarDate to minutes from a base date (start of the earliest report)
+  const timelineData = useMemo(() => {
+    return (
+      rd.tryMap(finalReports, (reportView) => {
+        const reports = reportView.entries;
+        if (reports.length === 0) {
+          return { lanes: [], items: [], baseDate: new Date() };
+        }
+
+        // Find the earliest report start date to use as base
+        const lastestDate = reports.reduce(
+          (lastest: Date, report: ReportViewEntry) => {
+            const endDate = calendarDateToJSDate(report.periodEnd);
+            return endDate > lastest ? endDate : lastest;
+          },
+          calendarDateToJSDate(reports[0].periodEnd),
+        );
+
+        // Set base date to start of day of lastest report
+        const baseDate = new Date(lastestDate);
+        baseDate.setHours(0, 0, 0, 0);
+
+        // Convert date to minutes from base date
+        const dateToMinutes = (date: Date): number => {
+          const diffMs = date.getTime() - baseDate.getTime();
+          return Math.floor(diffMs / (1000 * 60));
+        };
+
+        // Group reports by contractor
+        const reportsByContractor = groupBy(reports, (r) => r.contractor.id);
+
+        // Create lanes (one per contractor)
+        const lanes: Lane[] = Object.entries(reportsByContractor).map(
+          ([contractorId, contractorReports], index) => {
+            const contractor = contractorReports[0].contractor;
+            const colors = [
+              "bg-chart-1",
+              "bg-chart-2",
+              "bg-chart-3",
+              "bg-chart-4",
+              "bg-chart-5",
+            ];
+            return {
+              id: `contractor-${contractorId}`,
+              name: contractor.fullName || `Contractor ${contractorId}`,
+              color: colors[index % colors.length],
+            };
+          },
+        );
+
+        // Convert reports to timeline items
+        const items: TimelineItem<ReportViewEntry>[] = reports.map(
+          (report: ReportViewEntry) => {
+            const startDate = calendarDateToJSDate(report.periodStart);
+            const endDate = calendarDateToJSDate(report.periodEnd);
+            // Add one day to end date to include the full end day
+            endDate.setHours(23, 59, 59, 999);
+
+            const startMinutes = dateToMinutes(startDate);
+            const endMinutes = dateToMinutes(endDate);
+
+            const contractorLane = lanes.find(
+              (l) => l.id === `contractor-${report.contractor.id}`,
+            );
+
+            return {
+              id: `report-${report.id}`,
+              laneId:
+                contractorLane?.id || `contractor-${report.contractor.id}`,
+              start: startMinutes,
+              end: endMinutes,
+              label: report.description || `Report #${report.id}`,
+              color: contractorLane?.color,
+              data: report,
+            };
+          },
+        );
+
+        return { lanes, items, baseDate };
+      }) ?? { lanes: [], items: [], baseDate: new Date() }
+    );
+  }, [finalReports]);
+
   return (
     <CommonPageContainer
       segments={[
@@ -121,6 +302,46 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             onQueryChange={queryParamsService.setQueryParams}
             services={props.services}
           />
+          <Separator orientation="vertical" className="h-6" />
+          <SimpleSinglePicker
+            items={viewModeItems}
+            value={viewMode}
+            onSelect={(value) => {
+              if (value) {
+                setViewMode(value as "timeline" | "table" | "both");
+              }
+            }}
+            placeholder="View mode"
+            searchPlaceholder="Search view mode"
+            size="sm"
+            variant="outline"
+          />
+          {viewMode !== "table" && (
+            <div className="flex items-center gap-2">
+              <Sun
+                className={cn(
+                  "h-4 w-4",
+                  timelineDarkMode
+                    ? "text-muted-foreground"
+                    : "text-foreground",
+                )}
+              />
+              <Switch
+                checked={timelineDarkMode}
+                onCheckedChange={setTimelineDarkMode}
+                aria-label="Toggle timeline dark mode"
+              />
+              <Moon
+                className={cn(
+                  "h-4 w-4",
+                  timelineDarkMode
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              />
+            </div>
+          )}
+          <Separator orientation="vertical" className="h-6" />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">
@@ -146,18 +367,18 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                       undefined,
                     ),
                     currency: rd.tryMap(
-                      reports,
+                      finalReports,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.netAmount
                           .currency,
                     ),
                     contractorId: rd.tryMap(
-                      reports,
+                      finalReports,
                       (reports) =>
                         reports.entries[reports.entries.length - 1]?.contractor
                           .id,
                     ),
-                    periodStart: rd.tryMap(reports, (reports) =>
+                    periodStart: rd.tryMap(finalReports, (reports) =>
                       maybe.map(
                         reports.entries[reports.entries.length - 1]?.periodEnd,
                         partialRight(addDaysToCalendarDate, 1),
@@ -181,10 +402,139 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
+      <div className="flex-1 min-h-0">
+        {viewMode === "both" ? (
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            <ResizablePanel
+              defaultSize={40}
+              minSize={20}
+              className="flex flex-col min-h-0"
+            >
+              {renderTimeline()}
+            </ResizablePanel>
+            <ResizableHandle withHandle className="my-2" />
+            <ResizablePanel
+              defaultSize={60}
+              minSize={30}
+              className="flex flex-col min-h-0"
+            >
+              {renderTableView()}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : viewMode === "timeline" ? (
+          <div className="h-full">{renderTimeline()}</div>
+        ) : (
+          <div className="h-full">{renderTableView()}</div>
+        )}
+      </div>
+    </CommonPageContainer>
+  );
+
+  function renderTimeline() {
+    return rd
+      .journey(finalReports)
+      .wait(
+        <div
+          className={cn(
+            "h-full rounded-md overflow-hidden bg-card",
+            timelineDarkMode && "dark",
+          )}
+        >
+          <div className="h-full flex flex-col">
+            {/* Skeleton header */}
+            <div className="h-12 border-b flex items-center px-4">
+              <Skeleton className="h-4 w-24" />
+            </div>
+            {/* Skeleton lanes */}
+            <div className="flex-1 flex flex-col">
+              {[1, 2, 3, 4].map((laneIndex) => (
+                <div
+                  key={laneIndex}
+                  className="flex items-center border-b last:border-b-0"
+                  style={{ height: "80px" }}
+                >
+                  {/* Lane label skeleton */}
+                  <div className="w-[180px] border-r p-4 shrink-0">
+                    <Skeleton className="h-5 w-28" />
+                  </div>
+                  {/* Timeline items skeleton */}
+                  <div className="flex-1 relative p-2">
+                    <div className="flex gap-2">
+                      <Skeleton
+                        className="h-12 rounded"
+                        style={{ width: `${80 + laneIndex * 20}px` }}
+                      />
+                      <Skeleton
+                        className="h-12 rounded"
+                        style={{ width: `${100 + laneIndex * 15}px` }}
+                      />
+                      {laneIndex % 2 === 0 && (
+                        <Skeleton
+                          className="h-12 rounded"
+                          style={{ width: `${60 + laneIndex * 10}px` }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+      )
+      .catch(() => null)
+      .map(() => {
+        if (timelineData.items.length === 0) {
+          return (
+            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+              No timeline data available
+            </div>
+          );
+        }
+        return (
+          <div
+            className={cn(
+              "h-full rounded-md overflow-hidden bg-card",
+              timelineDarkMode && "dark",
+            )}
+          >
+            <InfiniteTimeline
+              items={timelineData.items}
+              lanes={timelineData.lanes}
+              baseDate={timelineData.baseDate}
+              renderItem={(itemProps) => {
+                const reportEntry = itemProps.item.data as ReportViewEntry;
+                if (!reportEntry) {
+                  // Fallback to default if no report data
+                  return <DefaultTimelineItem {...itemProps} />;
+                }
+
+                return (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <DefaultTimelineItem {...itemProps} />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-96 p-4">
+                      <ReportPreview
+                        services={props.services}
+                        reportId={reportEntry.id}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                );
+              }}
+            />
+          </div>
+        );
+      });
+  }
+
+  function renderTableView() {
+    return (
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
-        data={rd.map(reports, (r) => r.entries)}
+        data={rd.map(finalReports, (r) => r.entries)}
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(x) => x.id}
@@ -214,7 +564,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   {selectionState.getTotalSelected(
                     selection,
-                    rd.tryGet(reports)?.entries.length ?? 0,
+                    rd.tryGet(finalReports)?.entries.length ?? 0,
                   )}{" "}
                   selected
                 </span>
@@ -262,36 +612,42 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           <>
             A list of all reported work for given client, matched with billing
             or clarifications.
-            {rd.tryMap(reports, (view) => {
+            {rd.tryMap(finalReports, (view) => {
+              const totals = view.totalSelected ?? view.total;
+              const selectedCount = view.totalSelected
+                ? selectedReportIds.length
+                : view.entries.length;
+
               const billingDetails = [
                 {
                   label: "Reported",
                   description: "Total value of reported work",
-                  value: view.total.netAmount,
+                  value: totals.netAmount,
                 },
                 {
                   label: "Billed",
                   description: "How much billed value is linked to reports",
-                  value: view.total.chargedAmount,
+                  value: totals.chargedAmount,
                 },
                 {
                   label: "To link",
                   description:
                     "Report amount that is not yet linked to any billing",
-                  value: view.total.toChargeAmount,
+                  value: totals.toChargeAmount,
                 },
-                { label: "To pay", value: view.total.toCompensateAmount },
-                { label: "Paid", value: view.total.compensatedAmount },
+                { label: "To pay", value: totals.toCompensateAmount },
+                { label: "Paid", value: totals.compensatedAmount },
                 {
                   label: "To compensate",
-                  value: view.total.toFullyCompensateAmount,
+                  value: totals.toFullyCompensateAmount,
                 },
               ];
 
               return (
                 <>
                   <h3 className="my-3 text-base font-semibold ">
-                    Summary ({view.entries.length} reports)
+                    Summary ({selectedCount}{" "}
+                    {selectedCount === 1 ? "report" : "reports"})
                   </h3>
                   <Summary>
                     {billingDetails.map((item) => (
@@ -310,6 +666,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           </>
         }
       />
-    </CommonPageContainer>
-  );
+    );
+  }
 }

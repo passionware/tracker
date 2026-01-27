@@ -25,6 +25,16 @@ export interface ReportView {
     toCompensateAmount: CurrencyValueGroup;
     toFullyCompensateAmount: CurrencyValueGroup;
   };
+  totalSelected?: {
+    netAmount: CurrencyValueGroup;
+    billedAmount: CurrencyValueGroup;
+    linkedReportAmount: CurrencyValueGroup;
+    chargedAmount: CurrencyValueGroup;
+    toChargeAmount: CurrencyValueGroup;
+    compensatedAmount: CurrencyValueGroup;
+    toCompensateAmount: CurrencyValueGroup;
+    toFullyCompensateAmount: CurrencyValueGroup;
+  };
 }
 
 export interface ReportViewEntry {
@@ -66,6 +76,12 @@ export interface ReportViewEntry {
 export interface BillingView {
   entries: BillingViewEntry[];
   total: {
+    netAmount: CurrencyValueGroup;
+    grossAmount: CurrencyValueGroup;
+    matchedAmount: CurrencyValueGroup;
+    remainingAmount: CurrencyValueGroup;
+  };
+  totalSelected?: {
     netAmount: CurrencyValueGroup;
     grossAmount: CurrencyValueGroup;
     matchedAmount: CurrencyValueGroup;
@@ -134,23 +150,41 @@ export type CostView = {
     matchedAmount: CurrencyValueGroup; // each for each currency
     remainingAmount: CurrencyValueGroup; // each for each currency
   };
+  totalSelected?: {
+    netAmount: CurrencyValueGroup; // each for each currency
+    matchedAmount: CurrencyValueGroup; // each for each currency
+    remainingAmount: CurrencyValueGroup; // each for each currency
+  };
 };
 
 export interface ReportDisplayService {
   /**
    * Returns a list of reports, with all links and billing information.
+   * @param query - Query to filter reports
+   * @param selectedIds - Optional array of selected report IDs to calculate totals for
    */
-  useReportView: (query: Maybe<ReportQuery>) => RemoteData<ReportView>;
+  useReportView: (
+    query: Maybe<ReportQuery>,
+    selectedIds?: number[],
+  ) => RemoteData<ReportView>;
   /**
    * Returns a list of billing information, with all links and contractor report information.
-   * @param query
+   * @param query - Query to filter billings
+   * @param selectedIds - Optional array of selected billing IDs to calculate totals for
    */
-  useBillingView: (query: Maybe<BillingQuery>) => RemoteData<BillingView>;
+  useBillingView: (
+    query: Maybe<BillingQuery>,
+    selectedIds?: number[],
+  ) => RemoteData<BillingView>;
   /**
    * Returns a list of costs, with all links and contractor report information.
-   * @param query
+   * @param query - Query to filter costs
+   * @param selectedIds - Optional array of selected cost IDs to calculate totals for
    */
-  useCostView: (query: Maybe<CostQuery>) => RemoteData<CostView>;
+  useCostView: (
+    query: Maybe<CostQuery>,
+    selectedIds?: number[],
+  ) => RemoteData<CostView>;
 }
 
 export interface WithReportDisplayService {

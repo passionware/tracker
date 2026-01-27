@@ -1,13 +1,27 @@
 import { Report } from "@/api/reports/reports.api.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { WithServices } from "@/platform/typescript/services";
+import { WithExchangeService } from "@/services/ExchangeService/ExchangeService";
+import { WithFormatService } from "@/services/FormatService/FormatService";
+import { WithContractorService } from "@/services/io/ContractorService/ContractorService";
+import { WithMutationService } from "@/services/io/MutationService/MutationService";
+import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { maybe, rd } from "@passionware/monads";
 
-export interface ReportPreviewProps extends WithFrontServices {
+export interface ReportPreviewProps
+  extends WithServices<
+    [
+      WithReportService,
+      WithMutationService,
+      WithContractorService,
+      WithFormatService,
+      WithExchangeService,
+    ]
+  > {
   reportId: Report["id"];
 }
 

@@ -136,8 +136,8 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
     },
     getReport: async (id) => {
       const { data, error } = await client
-        .from("report_with_details, contractor(*), client(*)")
-        .select("*")
+        .from("report_with_details")
+        .select("*, contractor (*), client (*), workspace (name)")
         .eq("id", id)
         .single();
       if (error) {
