@@ -17,6 +17,10 @@ import {
   InfoLayout,
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
+import {
+  ListToolbar,
+  ListToolbarButton,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -37,12 +41,18 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { rd, truthy } from "@passionware/monads";
+import {
+  SelectionState,
+  selectionState,
+  useSelectionCleanup,
+} from "@/platform/lang/SelectionState.ts";
+import { maybe, mt, rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Check, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
-import { ReactElement } from "react";
+import { ReactElement, useState } from "react";
+import { toast } from "sonner";
 
 export interface CostInfoProps
   extends WithServices<
@@ -73,6 +83,43 @@ export function CostInfo({
   const linkingState = promiseState.useRemoteData();
 
   const isDangerMode = services.preferenceService.useIsDangerMode();
+
+  const [selection, setSelection] = useState<SelectionState<number>>(
+    selectionState.selectNone(),
+  );
+
+  useSelectionCleanup(
+    selection,
+    maybe.of(costEntry.linkReports.map((link) => link.link.id)),
+    setSelection,
+  );
+
+  const selectedLinkIds = selectionState.getSelectedIds(
+    selection,
+    costEntry.linkReports.map((link) => link.link.id),
+  );
+
+  const deleteMutation = promiseState.useMutation(async () => {
+    if (selectedLinkIds.length === 0) {
+      return;
+    }
+
+    try {
+      await services.mutationService.bulkDeleteCostReportLink(selectedLinkIds);
+      setSelection(selectionState.selectNone());
+      toast.success(
+        `Successfully deleted ${selectedLinkIds.length} link(s)`,
+      );
+    } catch (error) {
+      console.error("Error deleting links:", error);
+      toast.error("Failed to delete links");
+    }
+  });
+
+  async function handleBatchDelete() {
+    if (selectedLinkIds.length === 0) return;
+    await deleteMutation.track(void 0);
+  }
 
   return (
     <InfoLayout
@@ -215,6 +262,9 @@ export function CostInfo({
     >
       <ListView
         data={rd.of(costEntry.linkReports)}
+        selection={selection}
+        onSelectionChange={setSelection}
+        getRowId={(row) => row.link.id.toString()}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -357,6 +407,60 @@ export function CostInfo({
         ].filter(truthy.isTruthy)}
         query={reportQueryUtils.ofDefault(workspaceId, clientId)}
         onQueryChange={() => void 0}
+        toolbar={
+          selectionState.getTotalSelected(
+            selection,
+            costEntry.linkReports.length,
+          ) > 0 ? (
+            <ListToolbar>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {selectionState.getTotalSelected(
+                    selection,
+                    costEntry.linkReports.length,
+                  )}{" "}
+                  selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div>
+                      <ListToolbarButton variant="destructive">
+                        Delete
+                      </ListToolbarButton>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4" align="start">
+                    <div className="space-y-3">
+                      <div className="text-sm text-slate-700">
+                        Are you sure you want to delete{" "}
+                        {selectedLinkIds.length} selected link(s)? This action
+                        cannot be undone.
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm">
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleBatchDelete}
+                          disabled={mt.isInProgress(deleteMutation.state)}
+                        >
+                          {mt.isInProgress(deleteMutation.state)
+                            ? "Deleting..."
+                            : "Confirm"}
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </ListToolbar>
+          ) : undefined
+        }
       />
     </InfoLayout>
   );

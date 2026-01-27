@@ -174,11 +174,35 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    bulkDeleteBillingReportLink: async (linkIds) => {
+      if (linkIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("link_billing_report")
+        .delete()
+        .in("id", linkIds);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     deleteCostReportLink: async (linkId) => {
       const response = await client
         .from("link_cost_report")
         .delete()
         .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkDeleteCostReportLink: async (linkIds) => {
+      if (linkIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("link_cost_report")
+        .delete()
+        .in("id", linkIds);
       if (response.error) {
         throw response.error;
       }

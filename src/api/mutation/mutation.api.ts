@@ -25,7 +25,9 @@ export interface MutationApi {
   ) => Promise<{ id: ProjectIterationPosition["id"] }>;
   createCost: (cost: CostPayload) => Promise<{ id: Cost["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
+  bulkDeleteBillingReportLink: (linkIds: number[]) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
+  bulkDeleteCostReportLink: (linkIds: number[]) => Promise<void>;
   deleteCostReport: (reportId: number) => Promise<void>;
   bulkDeleteCostReport: (reportIds: number[]) => Promise<void>;
   deleteBilling: (billingId: number) => Promise<void>;

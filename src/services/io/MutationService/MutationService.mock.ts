@@ -53,8 +53,16 @@ export function createMutationService(
       onActionAccessor.get()("Deleting billing report link");
       await wait();
     },
+    bulkDeleteBillingReportLink: async () => {
+      onActionAccessor.get()("Bulk deleting billing report links");
+      await wait();
+    },
     deleteCostReportLink: async () => {
       onActionAccessor.get()("Deleting cost report link");
+      await wait();
+    },
+    bulkDeleteCostReportLink: async () => {
+      onActionAccessor.get()("Bulk deleting cost report links");
       await wait();
     },
     editReport: async () => {
