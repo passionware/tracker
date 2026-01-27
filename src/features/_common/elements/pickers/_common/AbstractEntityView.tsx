@@ -12,13 +12,18 @@ import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { cva, VariantProps } from "class-variance-authority";
 import { CircleSlash, TriangleAlert } from "lucide-react";
 import { ComponentPropsWithRef } from "react";
+import React from "react";
 
 export type AbstractEntityViewProps = SwitchProps<
   ComponentPropsWithRef<"div">,
   "children",
   VariantProps<typeof entityViewVariants> & {
     layout?: "full" | "avatar";
-    entity: RemoteData<{ name: string; avatarUrl: Maybe<string> }>;
+    entity: RemoteData<{
+      name: string;
+      avatarUrl: Maybe<string>;
+      icon?: React.ReactNode;
+    }>;
   }
 >;
 
@@ -62,13 +67,29 @@ export function AbstractEntityView({
             {entity.avatarUrl && (
               <AvatarImage src={entity.avatarUrl} alt={entity.name} />
             )}
-            <AvatarFallback>{getInitials(entity.name)}</AvatarFallback>
+            <AvatarFallback>
+              {getInitials(entity.name)}
+            </AvatarFallback>
           </>
         ))}
     </Avatar>
   );
 
+  const entityData = rd.useLastWithPlaceholder(entity);
+  const entityValue = rd.tryGet(entityData);
+  const icon = entityValue?.icon;
+  const hasIcon = icon !== undefined && icon !== null;
+
   if (layout === "avatar") {
+    if (hasIcon) {
+      return (
+        <SimpleTooltip title={rd.tryGet(entity)?.name}>
+          <div className={cn(entityViewVariants({ size }), className, "flex items-center justify-center")}>
+            {icon}
+          </div>
+        </SimpleTooltip>
+      );
+    }
     return (
       <SimpleTooltip title={rd.tryGet(entity)?.name}>{avatar}</SimpleTooltip>
     );
@@ -81,7 +102,13 @@ export function AbstractEntityView({
         className,
       )}
     >
-      {avatar}
+      {hasIcon ? (
+        <div className={cn(entityViewVariants({ size }), "flex items-center justify-center")}>
+          {icon}
+        </div>
+      ) : (
+        avatar
+      )}
       <span className="min-w-0 truncate">
         {rd
           .fullJourney(entity)

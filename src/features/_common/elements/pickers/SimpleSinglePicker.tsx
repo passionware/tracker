@@ -2,7 +2,7 @@ import {
   Unassigned,
   unassignedUtils,
 } from "@/api/_common/query/filters/Unassigned.ts";
-import { AbstractMultiPicker } from "@/features/_common/elements/pickers/_common/AbstractMultiPicker.tsx";
+import { AbstractPicker } from "@/features/_common/elements/pickers/_common/AbstractPicker.tsx";
 import {
   SimpleItem,
   SimpleView,
@@ -11,47 +11,55 @@ import { rd } from "@passionware/monads";
 import { ComponentProps } from "react";
 import { AbstractEntityViewProps } from "./_common/AbstractEntityView";
 
-interface SimpleArrayPickerProps
+interface SimpleSinglePickerProps
   extends Omit<
-    ComponentProps<typeof AbstractMultiPicker>,
+    ComponentProps<typeof AbstractPicker<string, SimpleItem>>,
     "value" | "onSelect" | "config"
   > {
   items: SimpleItem[];
-  value: string[];
-  onSelect: (value: string[]) => void;
+  value: string | null | undefined;
+  onSelect: (value: string | null) => void;
   searchPlaceholder?: string;
   placeholder?: string;
   itemSize?: AbstractEntityViewProps["size"];
 }
 
-export function SimpleArrayPicker({
+export function SimpleSinglePicker({
   items,
   value,
   onSelect,
   searchPlaceholder = "Search for an item",
-  placeholder = "Select items",
+  placeholder = "Select item",
   itemSize = "md",
   ...props
-}: SimpleArrayPickerProps) {
+}: SimpleSinglePickerProps) {
   const handleSelect = (
-    selectedValue: Array<Unassigned | string>,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _selectedItem: unknown,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _action: string,
+    selectedValue: Unassigned | string | null | undefined,
   ) => {
     // Filter out Unassigned items and only pass string IDs to the callback
-    const stringValues = selectedValue.filter(
-      unassignedUtils.isAssigned,
-    ) as string[];
-    onSelect(stringValues);
+    if (
+      selectedValue === null ||
+      selectedValue === undefined ||
+      unassignedUtils.isUnassigned(selectedValue)
+    ) {
+      onSelect(null);
+      return;
+    }
+    onSelect(selectedValue as string);
   };
 
   return (
-    <AbstractMultiPicker
-      value={value}
+    <AbstractPicker
+      value={value ?? null}
       onSelect={handleSelect}
       config={{
+        useItem: (id) => {
+          if (!id) {
+            return rd.ofIdle();
+          }
+          const item = items.find((p) => p.id === id);
+          return item ? rd.of(item) : rd.ofIdle();
+        },
         renderItem: (item, pickerProps) => {
           return (
             <SimpleView
@@ -64,8 +72,6 @@ export function SimpleArrayPicker({
         renderOption: (item: SimpleItem) => <SimpleView item={rd.of(item)} />,
         getKey: (item: SimpleItem) => item.id,
         getItemId: (item: SimpleItem) => item.id,
-        useSelectedItems: (ids: Array<Unassigned | string>) =>
-          rd.of(items.filter((p) => ids.includes(p.id))),
         useItems: (query: string) => {
           if (!query) {
             return rd.of(items);

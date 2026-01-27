@@ -1,6 +1,7 @@
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import {
   Popover,
   PopoverContent,
@@ -37,7 +38,16 @@ import {
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { chain, groupBy, partialRight } from "lodash";
-import { Check, Loader2, PlusCircle } from "lucide-react";
+import {
+  Check,
+  LayoutGrid,
+  Loader2,
+  Moon,
+  PlusCircle,
+  SplitSquareHorizontal,
+  Sun,
+  Table,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -49,6 +59,14 @@ import {
 import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
+import { cn } from "@/lib/utils";
+import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -66,6 +84,29 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
+
+  const [viewMode, setViewMode] = useState<"timeline" | "table" | "both">(
+    "both",
+  );
+  const [timelineDarkMode, setTimelineDarkMode] = useState(false);
+
+  const viewModeItems = [
+    {
+      id: "timeline",
+      label: "Timeline",
+      icon: <LayoutGrid className="h-4 w-4" />,
+    },
+    {
+      id: "both",
+      label: "Both",
+      icon: <SplitSquareHorizontal className="h-4 w-4" />,
+    },
+    {
+      id: "table",
+      label: "Table",
+      icon: <Table className="h-4 w-4" />,
+    },
+  ];
 
   // Get reports - we'll calculate selected IDs from the reports data
   const reports = props.services.reportDisplayService.useReportView(
@@ -232,6 +273,45 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             onQueryChange={queryParamsService.setQueryParams}
             services={props.services}
           />
+          <SimpleSinglePicker
+            items={viewModeItems}
+            value={viewMode}
+            onSelect={(value) => {
+              if (value) {
+                setViewMode(value as "timeline" | "table" | "both");
+              }
+            }}
+            placeholder="View mode"
+            searchPlaceholder="Search view mode"
+            size="sm"
+            variant="outline"
+          />
+          {viewMode !== "table" && (
+            <div className="flex items-center gap-2">
+              <Sun
+                className={cn(
+                  "h-4 w-4",
+                  timelineDarkMode
+                    ? "text-muted-foreground"
+                    : "text-foreground",
+                )}
+              />
+              <Switch
+                checked={timelineDarkMode}
+                onCheckedChange={setTimelineDarkMode}
+                aria-label="Toggle timeline dark mode"
+              />
+              <Moon
+                className={cn(
+                  "h-4 w-4",
+                  timelineDarkMode
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              />
+            </div>
+          )}
+          <Separator orientation="vertical" className="h-6" />
           <InlinePopoverForm
             trigger={
               <Button variant="accent1" size="sm" className="flex">
@@ -292,88 +372,135 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      {rd
-        .journey(finalReports)
-        .wait(
-          <div className="h-[400px] mb-4 shrink-0 rounded-md overflow-hidden dark bg-card">
-            <div className="h-full flex flex-col">
-              {/* Skeleton header */}
-              <div className="h-12 border-b flex items-center px-4">
-                <Skeleton className="h-4 w-24" />
-              </div>
-              {/* Skeleton lanes */}
-              <div className="flex-1 flex flex-col">
-                {[1, 2, 3, 4].map((laneIndex) => (
-                  <div
-                    key={laneIndex}
-                    className="flex items-center border-b last:border-b-0"
-                    style={{ height: "80px" }}
-                  >
-                    {/* Lane label skeleton */}
-                    <div className="w-[180px] border-r p-4 shrink-0">
-                      <Skeleton className="h-5 w-28" />
-                    </div>
-                    {/* Timeline items skeleton */}
-                    <div className="flex-1 relative p-2">
-                      <div className="flex gap-2">
+      <div className="flex-1 min-h-0">
+        {viewMode === "both" ? (
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            <ResizablePanel
+              defaultSize={40}
+              minSize={20}
+              className="flex flex-col min-h-0"
+            >
+              {renderTimeline()}
+            </ResizablePanel>
+            <ResizableHandle withHandle className="my-2" />
+            <ResizablePanel
+              defaultSize={60}
+              minSize={30}
+              className="flex flex-col min-h-0"
+            >
+              {renderTableView()}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : viewMode === "timeline" ? (
+          <div className="h-full">{renderTimeline()}</div>
+        ) : (
+          <div className="h-full">{renderTableView()}</div>
+        )}
+      </div>
+    </CommonPageContainer>
+  );
+
+  function renderTimeline() {
+    return rd
+      .journey(finalReports)
+      .wait(
+        <div
+          className={cn(
+            "h-full rounded-md overflow-hidden bg-card",
+            timelineDarkMode && "dark",
+          )}
+        >
+          <div className="h-full flex flex-col">
+            {/* Skeleton header */}
+            <div className="h-12 border-b flex items-center px-4">
+              <Skeleton className="h-4 w-24" />
+            </div>
+            {/* Skeleton lanes */}
+            <div className="flex-1 flex flex-col">
+              {[1, 2, 3, 4].map((laneIndex) => (
+                <div
+                  key={laneIndex}
+                  className="flex items-center border-b last:border-b-0"
+                  style={{ height: "80px" }}
+                >
+                  {/* Lane label skeleton */}
+                  <div className="w-[180px] border-r p-4 shrink-0">
+                    <Skeleton className="h-5 w-28" />
+                  </div>
+                  {/* Timeline items skeleton */}
+                  <div className="flex-1 relative p-2">
+                    <div className="flex gap-2">
+                      <Skeleton
+                        className="h-12 rounded"
+                        style={{ width: `${80 + laneIndex * 20}px` }}
+                      />
+                      <Skeleton
+                        className="h-12 rounded"
+                        style={{ width: `${100 + laneIndex * 15}px` }}
+                      />
+                      {laneIndex % 2 === 0 && (
                         <Skeleton
                           className="h-12 rounded"
-                          style={{ width: `${80 + laneIndex * 20}px` }}
+                          style={{ width: `${60 + laneIndex * 10}px` }}
                         />
-                        <Skeleton
-                          className="h-12 rounded"
-                          style={{ width: `${100 + laneIndex * 15}px` }}
-                        />
-                        {laneIndex % 2 === 0 && (
-                          <Skeleton
-                            className="h-12 rounded"
-                            style={{ width: `${60 + laneIndex * 10}px` }}
-                          />
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          </div>,
-        )
-        .catch(() => null)
-        .map(() => {
-          if (timelineData.items.length === 0) {
-            return null;
-          }
+          </div>
+        </div>,
+      )
+      .catch(() => null)
+      .map(() => {
+        if (timelineData.items.length === 0) {
           return (
-            <div className="h-[400px] mb-4 shrink-0">
-              <InfiniteTimeline
-                items={timelineData.items}
-                lanes={timelineData.lanes}
-                baseDate={timelineData.baseDate}
-                renderItem={(itemProps) => {
-                  const reportEntry = itemProps.item.data as ReportViewEntry;
-                  if (!reportEntry) {
-                    // Fallback to default if no report data
-                    return <DefaultTimelineItem {...itemProps} />;
-                  }
-
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <DefaultTimelineItem {...itemProps} />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-96 p-4">
-                        <ReportPreview
-                          services={props.services}
-                          reportId={reportEntry.id}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }}
-              />
+            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+              No timeline data available
             </div>
           );
-        })}
+        }
+        return (
+          <div
+            className={cn(
+              "h-full rounded-md overflow-hidden bg-card",
+              timelineDarkMode && "dark",
+            )}
+          >
+            <InfiniteTimeline
+              items={timelineData.items}
+              lanes={timelineData.lanes}
+              baseDate={timelineData.baseDate}
+              renderItem={(itemProps) => {
+                const reportEntry = itemProps.item.data as ReportViewEntry;
+                if (!reportEntry) {
+                  // Fallback to default if no report data
+                  return <DefaultTimelineItem {...itemProps} />;
+                }
+
+                return (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <DefaultTimelineItem {...itemProps} />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-96 p-4">
+                      <ReportPreview
+                        services={props.services}
+                        reportId={reportEntry.id}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                );
+              }}
+            />
+          </div>
+        );
+      });
+  }
+
+  function renderTableView() {
+    return (
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
@@ -509,6 +636,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           </>
         }
       />
-    </CommonPageContainer>
-  );
+    );
+  }
 }
