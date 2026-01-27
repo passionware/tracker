@@ -32,6 +32,8 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
+import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
+import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { BillingPreview } from "@/features/_common/previews/BillingPreview.tsx";
 import { CostPreview } from "@/features/_common/previews/CostPreview.tsx";
@@ -39,7 +41,7 @@ import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import { BillingPicker } from "@/features/_common/pickers/BillingPicker.tsx";
 import { CostPicker } from "@/features/_common/pickers/CostPicker.tsx";
 import { ReportPicker } from "@/features/_common/pickers/ReportPicker.tsx";
-import { ChevronDown, X, Check, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Check, AlertCircle } from "lucide-react";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -777,47 +779,57 @@ export function ReconciliationView(
                       <CardContent className="p-4 relative">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            {(type === "report" || type === "cost") && (
+                            {(type === "report" ||
+                              type === "cost" ||
+                              type === "billing") && (
                               <>
-                                {type === "report" && (
-                                  <ContractorWidget
-                                    contractorId={maybe.of(
-                                      (item as ReportFact).payload.contractorId,
-                                    )}
-                                    services={props.services}
-                                    layout="avatar"
-                                    size="sm"
-                                  />
-                                )}
-                                {type === "cost" &&
-                                  (item as CostFact).payload.contractorId !==
-                                    null &&
-                                  (item as CostFact).payload.contractorId !==
-                                    undefined && (
-                                    <ContractorWidget
-                                      contractorId={maybe.of(
-                                        (item as CostFact).payload
-                                          .contractorId!,
+                                {(type === "report" || type === "cost") && (
+                                  <>
+                                    <WorkspaceWidget
+                                      workspaceId={maybe.of(
+                                        (item as ReportFact).payload.workspaceId,
                                       )}
                                       services={props.services}
                                       layout="avatar"
                                       size="sm"
                                     />
-                                  )}
-                                {type === "cost" &&
-                                  ((item as CostFact).payload.contractorId ===
-                                    null ||
-                                    (item as CostFact).payload.contractorId ===
-                                      undefined) &&
-                                  (item as CostFact).payload.counterparty && (
-                                    <div className="text-xs text-slate-500">
-                                      {(item as CostFact).payload.counterparty}
-                                    </div>
-                                  )}
+                                    <ChevronRight className="h-4 w-4 text-slate-400 -mx-2" />
+                                    <ContractorWidget
+                                      contractorId={maybe.of(
+                                        (item as ReportFact).payload.contractorId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                  </>
+                                )}
+                                {type === "billing" && (
+                                  <>
+                                    <WorkspaceWidget
+                                      workspaceId={maybe.of(
+                                        (item as BillingFact).payload.workspaceId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                    <ChevronRight className="h-4 w-4 text-slate-400 -mx-2" />
+                                    <ClientWidget
+                                      clientId={maybe.of(
+                                        (item as BillingFact).payload.clientId,
+                                      )}
+                                      services={props.services}
+                                      layout="avatar"
+                                      size="sm"
+                                    />
+                                  </>
+                                )}
                               </>
                             )}
                             <span className="text-sm font-medium text-slate-700">
-                              {label} {id === 0 ? "(New)" : `#${id}`}
+                              {label}
+                              {id === 0 ? null : ` #${id}`}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
