@@ -133,16 +133,16 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         }
 
         // Find the earliest report start date to use as base
-        const earliestDate = reports.reduce(
-          (earliest: Date, report: ReportViewEntry) => {
-            const startDate = calendarDateToJSDate(report.periodStart);
-            return startDate < earliest ? startDate : earliest;
+        const lastestDate = reports.reduce(
+          (lastest: Date, report: ReportViewEntry) => {
+            const endDate = calendarDateToJSDate(report.periodEnd);
+            return endDate > lastest ? endDate : lastest;
           },
-          calendarDateToJSDate(reports[0].periodStart),
+          calendarDateToJSDate(reports[0].periodEnd),
         );
 
-        // Set base date to start of day of earliest report
-        const baseDate = new Date(earliestDate);
+        // Set base date to start of day of lastest report
+        const baseDate = new Date(lastestDate);
         baseDate.setHours(0, 0, 0, 0);
 
         // Convert date to minutes from base date
