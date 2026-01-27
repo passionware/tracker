@@ -464,15 +464,17 @@ export function createReconciliationService(
     //    - Not linked to anything, OR
     //    - Linked only to reports in this iteration (and not linked to any other reports)
     const eligibleBillings = input.billings.filter((billing) => {
-      if (!billing.linkBillingReport || billing.linkBillingReport.length === 0) {
+      if (
+        !billing.linkBillingReport ||
+        billing.linkBillingReport.length === 0
+      ) {
         // Not linked to anything - eligible
         return true;
       }
       // Check if all links are to reports in this iteration
       const allLinksAreInIteration = billing.linkBillingReport.every(
         (linkEntry) =>
-          linkEntry.report &&
-          iterationReportIds.has(linkEntry.report.id),
+          linkEntry.report && iterationReportIds.has(linkEntry.report.id),
       );
       return allLinksAreInIteration;
     });
@@ -695,9 +697,10 @@ export function createReconciliationService(
                   factUuid: fact.uuid,
                 });
                 if (!dryRun) {
-                  const result = await config.services.mutationService.createReport(
-                    fact.payload,
-                  );
+                  const result =
+                    await config.services.mutationService.createReport(
+                      fact.payload,
+                    );
                   uuidToId.set(fact.uuid, result.id);
                   onLog?.({
                     type: "create",
@@ -761,9 +764,10 @@ export function createReconciliationService(
                   factUuid: fact.uuid,
                 });
                 if (!dryRun) {
-                  const result = await config.services.mutationService.createCost(
-                    fact.payload,
-                  );
+                  const result =
+                    await config.services.mutationService.createCost(
+                      fact.payload,
+                    );
                   uuidToId.set(fact.uuid, result.id);
                   onLog?.({
                     type: "create",
@@ -957,7 +961,10 @@ export function createReconciliationService(
                   reportId: typeof reportId === "string" ? 0 : reportId,
                 };
                 await config.services.mutationService.linkCostAndReport(
-                  linkPayload as typeof fact.payload & { costId: number; reportId: number },
+                  linkPayload as typeof fact.payload & {
+                    costId: number;
+                    reportId: number;
+                  },
                 );
               }
             }
@@ -1030,7 +1037,6 @@ export function createReconciliationService(
                 entityType: "linkBillingReport",
                 description: `Link billing ${billingId} to report ${reportId}`,
                 payload: JSON.parse(JSON.stringify(logPayload)),
-                factUuid: fact.uuid,
               });
               if (!dryRun) {
                 // For actual API call, ensure IDs are numbers
@@ -1040,7 +1046,10 @@ export function createReconciliationService(
                   reportId: typeof reportId === "string" ? 0 : reportId,
                 };
                 await config.services.mutationService.linkReportAndBilling(
-                  linkPayload as typeof fact.payload & { billingId: number; reportId: number },
+                  linkPayload as typeof fact.payload & {
+                    billingId: number;
+                    reportId: number;
+                  },
                 );
               }
             }
