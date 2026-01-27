@@ -400,7 +400,7 @@ export function convertGeneratedReportToFacts(
       groupedCostsByContractorCurrency.set(key, {
         contractorId,
         currency: tempCost.costFact.payload.currency,
-        workspaceId: tempCost.costFact.payload.workspaceId ?? project.workspaceIds[0] ?? 0,
+        workspaceId: tempCost.costFact.payload.workspaceId,
         costFacts: [],
         totalNetValue: 0,
         totalGrossValue: 0,
@@ -410,7 +410,9 @@ export function convertGeneratedReportToFacts(
     const group = groupedCostsByContractorCurrency.get(key)!;
     group.costFacts.push(tempCost);
     group.totalNetValue += tempCost.costFact.payload.netValue;
-    group.totalGrossValue += tempCost.costFact.payload.grossValue ?? tempCost.costFact.payload.netValue;
+    group.totalGrossValue +=
+      tempCost.costFact.payload.grossValue ??
+      tempCost.costFact.payload.netValue;
   }
 
   // Create merged cost facts and update link facts

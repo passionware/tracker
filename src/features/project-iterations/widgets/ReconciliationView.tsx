@@ -787,7 +787,8 @@ export function ReconciliationView(
                                   <>
                                     <WorkspaceWidget
                                       workspaceId={maybe.of(
-                                        (item as ReportFact).payload.workspaceId,
+                                        (item as ReportFact).payload
+                                          .workspaceId,
                                       )}
                                       services={props.services}
                                       layout="avatar"
@@ -796,7 +797,8 @@ export function ReconciliationView(
                                     <ChevronRight className="h-4 w-4 text-slate-400 -mx-2" />
                                     <ContractorWidget
                                       contractorId={maybe.of(
-                                        (item as ReportFact).payload.contractorId,
+                                        (item as ReportFact).payload
+                                          .contractorId,
                                       )}
                                       services={props.services}
                                       layout="avatar"
@@ -808,7 +810,8 @@ export function ReconciliationView(
                                   <>
                                     <WorkspaceWidget
                                       workspaceId={maybe.of(
-                                        (item as BillingFact).payload.workspaceId,
+                                        (item as BillingFact).payload
+                                          .workspaceId,
                                       )}
                                       services={props.services}
                                       layout="avatar"
@@ -1712,6 +1715,37 @@ export function ReconciliationView(
                   if (row.billing) {
                     billingItems.push(row.billing);
                   }
+                });
+
+                // Create order maps for sorting links by their target facts
+                const costOrderMap = new Map<string, number>();
+                costFacts.forEach((cost, index) => {
+                  costOrderMap.set(cost.uuid, index);
+                });
+
+                const reportOrderMap = new Map<string, number>();
+                reportFacts.forEach((report, index) => {
+                  reportOrderMap.set(report.uuid, index);
+                });
+
+                // Sort cost-report links by the order of the cost they link to
+                // linkedFacts[0] is the cost UUID, linkedFacts[1] is the report UUID
+                costLinkItems.sort((a, b) => {
+                  const costUuidA = a.linkedFacts[0];
+                  const costUuidB = b.linkedFacts[0];
+                  const orderA = costOrderMap.get(costUuidA) ?? Infinity;
+                  const orderB = costOrderMap.get(costUuidB) ?? Infinity;
+                  return orderA - orderB;
+                });
+
+                // Sort report-billing links by the order of the report they link to
+                // linkedFacts[0] is the report UUID, linkedFacts[1] is the billing UUID
+                billingLinkItems.sort((a, b) => {
+                  const reportUuidA = a.linkedFacts[0];
+                  const reportUuidB = b.linkedFacts[0];
+                  const orderA = reportOrderMap.get(reportUuidA) ?? Infinity;
+                  const orderB = reportOrderMap.get(reportUuidB) ?? Infinity;
+                  return orderA - orderB;
                 });
 
                 return (
