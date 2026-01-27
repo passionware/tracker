@@ -1147,7 +1147,7 @@ export function InfiniteTimeline<Data = unknown>({
   }, 0);
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden select-none dark rounded-md">
+    <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-border bg-card">
         <div className="flex items-center gap-4">
