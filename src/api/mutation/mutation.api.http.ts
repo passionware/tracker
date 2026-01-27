@@ -210,8 +210,32 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    bulkDeleteBilling: async (billingIds) => {
+      if (billingIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("billing")
+        .delete()
+        .in("id", billingIds);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     deleteCost: async (costId) => {
       const response = await client.from("cost").delete().eq("id", costId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkDeleteCost: async (costIds) => {
+      if (costIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("cost")
+        .delete()
+        .in("id", costIds);
       if (response.error) {
         throw response.error;
       }

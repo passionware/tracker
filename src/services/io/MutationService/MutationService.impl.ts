@@ -104,11 +104,31 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    bulkDeleteBilling: async (billingIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteBilling(billingIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting billings",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
     deleteCost: async (costId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteCost(costId);
         await config.services.messageService.reportSystemEffect.sendRequest({
           scope: "Deleting cost",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
+    bulkDeleteCost: async (costIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteCost(costIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting costs",
         });
       } else {
         throw new Error("Danger mode is not enabled");

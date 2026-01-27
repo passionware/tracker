@@ -14,6 +14,7 @@ import {
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { maybe, rd } from "@passionware/monads";
+import { WithMutationService } from "@/services/io/MutationService/MutationService";
 
 export interface CostPickerProps
   extends WithServices<
@@ -24,6 +25,7 @@ export interface CostPickerProps
       WithCostService,
       WithClientService,
       WithWorkspaceService,
+      WithMutationService,
     ]
   > {
   workspaceId: WorkspaceSpec;
@@ -45,9 +47,8 @@ export function CostPicker({
     previewId ? maybe.of(previewId) : maybe.ofAbsent(),
   );
 
-  const query = rd.tryMap(
-    previewCost,
-    (cost: Cost) =>
+  const query =
+    rd.tryMap(previewCost, (cost: Cost) =>
       costQueryUtils
         .getBuilder(cost.workspaceId, idSpecUtils.ofAll())
         .build((q) => [
@@ -64,11 +65,12 @@ export function CostPicker({
               ]
             : []),
         ]),
-  ) ?? costQueryUtils.ensureDefault(
-    costQueryUtils.ofDefault(workspaceId, clientId),
-    workspaceId,
-    clientId,
-  );
+    ) ??
+    costQueryUtils.ensureDefault(
+      costQueryUtils.ofDefault(workspaceId, clientId),
+      workspaceId,
+      clientId,
+    );
 
   return (
     <InlineCostSearch
