@@ -171,13 +171,26 @@ function getDayStart(minutes: number): number {
 
 export function InfiniteTimeline() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewItemRef = useRef<{
+    laneId: string;
+    start: number;
+    end: number;
+    row: number;
+  } | null>(null);
   const [items, setItems] = useState<TimelineItem[]>(initialItems);
   const [lanes] = useState<Lane[]>(initialLanes);
   const [scrollOffset, setScrollOffset] = useState(
     -toMinutes(7) * PIXELS_PER_MINUTE,
   ); // Start scrolled to show 8AM
+  const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const [panState, setPanState] = useState<{
+    startX: number;
+    startY: number;
+    startScrollOffset: number;
+    startVerticalScrollOffset: number;
+  } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [snapOption, setSnapOption] = useState<SnapOption>("15min");
@@ -185,6 +198,7 @@ export function InfiniteTimeline() {
     laneId: string;
     row: number;
   } | null>(null);
+  const [currentMouseX, setCurrentMouseX] = useState<number | null>(null);
 
   const pixelsPerMinute = PIXELS_PER_MINUTE * zoom;
 
@@ -200,7 +214,10 @@ export function InfiniteTimeline() {
 
   // Calculate sub-rows for overlapping items in a lane
   const getItemsWithRows = useCallback(
-    (laneId: string) => {
+    (
+      laneId: string,
+      previewItem?: { start: number; end: number; row: number },
+    ) => {
       const laneItems = items.filter((item) => item.laneId === laneId);
       const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
       const itemsWithRows: (TimelineItem & { row: number })[] = [];
@@ -211,12 +228,20 @@ export function InfiniteTimeline() {
         let foundRow = false;
 
         while (!foundRow) {
-          const hasOverlap = itemsWithRows.some(
+          // Check collision with already placed items
+          const hasOverlapWithItems = itemsWithRows.some(
             (placed) =>
               placed.row === row &&
               !(item.end <= placed.start || item.start >= placed.end),
           );
-          if (!hasOverlap) {
+
+          // Check collision with preview item if it's in this lane and on this row
+          const hasOverlapWithPreview =
+            previewItem &&
+            previewItem.row === row &&
+            !(item.end <= previewItem.start || item.start >= previewItem.end);
+
+          if (!hasOverlapWithItems && !hasOverlapWithPreview) {
             foundRow = true;
           } else {
             row++;
@@ -233,35 +258,43 @@ export function InfiniteTimeline() {
 
   // Get max rows for a lane
   const getMaxRows = useCallback(
-    (laneId: string) => {
-      const itemsWithRows = getItemsWithRows(laneId);
-      if (itemsWithRows.length === 0) return 1;
-      return Math.max(...itemsWithRows.map((i) => i.row)) + 1;
+    (
+      laneId: string,
+      previewItem?: { start: number; end: number; row: number },
+    ) => {
+      const itemsWithRows = getItemsWithRows(laneId, previewItem);
+      if (itemsWithRows.length === 0 && !previewItem) return 1;
+      const maxItemRow =
+        itemsWithRows.length > 0
+          ? Math.max(...itemsWithRows.map((i) => i.row))
+          : -1;
+      const previewRow = previewItem ? previewItem.row : -1;
+      return Math.max(maxItemRow, previewRow) + 1;
     },
     [getItemsWithRows],
   );
 
   // Get lane height (including preview row if drawing)
   const getLaneHeight = useCallback(
-    (laneId: string) => {
-      let maxRows = Math.max(getMaxRows(laneId), 2);
-      // Include preview row if drawing in this lane
-      // previewRow.row is 0-indexed, so we need (row + 1) to get the total number of rows
-      if (previewRow && previewRow.laneId === laneId) {
-        const previewRowCount = previewRow.row + 1;
-        maxRows = Math.max(maxRows, previewRowCount);
-      }
+    (
+      laneId: string,
+      previewItem?: { start: number; end: number; row: number },
+    ) => {
+      const maxRows = Math.max(getMaxRows(laneId, previewItem), 2);
       return Math.max(LANE_HEIGHT, maxRows * SUB_ROW_HEIGHT + 16);
     },
-    [getMaxRows, previewRow],
+    [getMaxRows],
   );
 
   // Calculate lane Y offset
   const getLaneYOffset = useCallback(
     (laneIndex: number) => {
       let offset = 0;
+      const preview = previewItemRef.current;
       for (let i = 0; i < laneIndex; i++) {
-        offset += getLaneHeight(lanes[i].id);
+        const lanePreview =
+          preview && preview.laneId === lanes[i].id ? preview : undefined;
+        offset += getLaneHeight(lanes[i].id, lanePreview);
       }
       return offset;
     },
@@ -301,7 +334,7 @@ export function InfiniteTimeline() {
     [scrollOffset, pixelsPerMinute],
   );
 
-  // Handle wheel scroll (horizontal pan and zoom)
+  // Handle wheel scroll (horizontal pan, vertical scroll, and zoom)
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
@@ -328,12 +361,28 @@ export function InfiniteTimeline() {
 
         setZoom(newZoom);
         setScrollOffset(newScrollOffset);
+      } else if (e.shiftKey) {
+        // Shift+scroll: vertical scrolling
+        setVerticalScrollOffset((prev) => {
+          const containerHeight = containerRef.current?.clientHeight || 0;
+          const preview = previewItemRef.current;
+          const totalHeight = lanes.reduce((sum, lane) => {
+            const lanePreview =
+              preview && preview.laneId === lane.id ? preview : undefined;
+            return sum + getLaneHeight(lane.id, lanePreview);
+          }, 0);
+          const maxOffset = Math.max(
+            0,
+            totalHeight - containerHeight + HEADER_HEIGHT,
+          );
+          return Math.max(0, Math.min(maxOffset, prev - e.deltaY));
+        });
       } else {
-        // Pan
+        // Regular scroll: horizontal pan
         setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
       }
     },
-    [zoom, scrollOffset],
+    [zoom, scrollOffset, lanes, getLaneHeight],
   );
 
   useEffect(() => {
@@ -343,6 +392,72 @@ export function InfiniteTimeline() {
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
+
+  // Handle middle mouse button panning
+  const handleMouseDown = useCallback(
+    (e: globalThis.MouseEvent) => {
+      // Middle mouse button (button 1) or wheel button
+      if (e.button === 1 && !dragState) {
+        e.preventDefault();
+        setPanState({
+          startX: e.clientX,
+          startY: e.clientY,
+          startScrollOffset: scrollOffset,
+          startVerticalScrollOffset: verticalScrollOffset,
+        });
+      }
+    },
+    [dragState, scrollOffset, verticalScrollOffset],
+  );
+
+  // Handle panning with middle mouse button
+  const handlePanMove = useCallback(
+    (e: globalThis.MouseEvent) => {
+      if (!panState) return;
+
+      const deltaX = e.clientX - panState.startX;
+      const deltaY = e.clientY - panState.startY;
+
+      setScrollOffset(panState.startScrollOffset - deltaX);
+      const containerHeight = containerRef.current?.clientHeight || 0;
+      const preview = previewItemRef.current;
+      const totalHeight = lanes.reduce((sum, lane) => {
+        const lanePreview =
+          preview && preview.laneId === lane.id ? preview : undefined;
+        return sum + getLaneHeight(lane.id, lanePreview);
+      }, 0);
+      const maxOffset = Math.max(
+        0,
+        totalHeight - containerHeight + HEADER_HEIGHT,
+      );
+      const newOffset = panState.startVerticalScrollOffset - deltaY;
+      setVerticalScrollOffset(Math.max(0, Math.min(maxOffset, newOffset)));
+    },
+    [panState, lanes, getLaneHeight],
+  );
+
+  const handlePanUp = useCallback(() => {
+    setPanState(null);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener("mousedown", handleMouseDown);
+    if (panState) {
+      window.addEventListener("mousemove", handlePanMove);
+      window.addEventListener("mouseup", handlePanUp);
+      // Prevent context menu on middle mouse
+      window.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
+
+    return () => {
+      container.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handlePanMove);
+      window.removeEventListener("mouseup", handlePanUp);
+    };
+  }, [handleMouseDown, handlePanMove, handlePanUp, panState]);
 
   // Generate a unique ID
   const generateId = () =>
@@ -354,6 +469,8 @@ export function InfiniteTimeline() {
     item: TimelineItem,
     type: "move" | "resize-start" | "resize-end",
   ) => {
+    // Ignore middle mouse button
+    if (e.button === 1) return;
     e.stopPropagation();
     const containerX = screenXToContainerX(e.clientX);
     setSelectedItemId(item.id);
@@ -368,6 +485,8 @@ export function InfiniteTimeline() {
 
   // Handle mouse down on lane (start drawing)
   const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
+    // Ignore middle mouse button
+    if (e.button === 1) return;
     if (dragState) return;
 
     const containerX = screenXToContainerX(e.clientX);
@@ -381,6 +500,7 @@ export function InfiniteTimeline() {
       startTime: time,
       drawStart: time,
     });
+    setCurrentMouseX(e.clientX);
 
     setSelectedItemId(null);
   };
@@ -394,6 +514,8 @@ export function InfiniteTimeline() {
       const currentTime = pixelToTime(containerX);
 
       if (dragState.type === "draw" && dragState.drawStart !== undefined) {
+        // Track mouse position for preview item calculation
+        setCurrentMouseX(e.clientX);
         return;
       }
 
@@ -470,6 +592,7 @@ export function InfiniteTimeline() {
 
       setDragState(null);
       setPreviewRow(null);
+      setCurrentMouseX(null);
     },
     [dragState, pixelToTime, lanes, snapTime, screenXToContainerX],
   );
@@ -539,14 +662,95 @@ export function InfiniteTimeline() {
 
   const drawingPreview = getDrawingPreview();
 
+  // Calculate preview item's full information for collision detection
+  const calculatedPreviewItem = React.useMemo(() => {
+    if (
+      !dragState ||
+      dragState.type !== "draw" ||
+      dragState.drawStart === undefined ||
+      !dragState.laneId ||
+      currentMouseX === null
+    ) {
+      return null;
+    }
+
+    const containerX = screenXToContainerX(currentMouseX);
+    const currentTime = snapTime(pixelToTime(containerX));
+    const previewStart = Math.min(dragState.drawStart, currentTime);
+    const previewEnd = Math.max(dragState.drawStart, currentTime);
+
+    // Calculate row for preview item (without considering it in existing items yet)
+    const laneItems = items.filter((item) => item.laneId === dragState.laneId);
+    const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
+    const itemsWithRows: (TimelineItem & { row: number })[] = [];
+
+    for (const item of sortedItems) {
+      let row = 0;
+      let foundRow = false;
+
+      while (!foundRow) {
+        const hasOverlap = itemsWithRows.some(
+          (placed) =>
+            placed.row === row &&
+            !(item.end <= placed.start || item.start >= placed.end),
+        );
+        if (!hasOverlap) {
+          foundRow = true;
+        } else {
+          row++;
+        }
+      }
+
+      itemsWithRows.push({ ...item, row });
+    }
+
+    // Calculate preview item's row
+    let previewRow = 0;
+    let foundPreviewRow = false;
+    while (!foundPreviewRow) {
+      const hasOverlap = itemsWithRows.some(
+        (placed) =>
+          placed.row === previewRow &&
+          !(previewEnd <= placed.start || previewStart >= placed.end),
+      );
+      if (!hasOverlap) {
+        foundPreviewRow = true;
+      } else {
+        previewRow++;
+      }
+    }
+
+    return {
+      laneId: dragState.laneId,
+      start: previewStart,
+      end: previewEnd,
+      row: previewRow,
+    };
+  }, [
+    dragState,
+    currentMouseX,
+    items,
+    snapTime,
+    pixelToTime,
+    screenXToContainerX,
+  ]);
+
+  // Update ref when preview item changes
+  useEffect(() => {
+    previewItemRef.current = calculatedPreviewItem;
+  }, [calculatedPreviewItem]);
+
   // Total timeline height
-  const totalHeight = lanes.reduce(
-    (sum, lane) => sum + getLaneHeight(lane.id),
-    0,
-  );
+  const totalHeight = lanes.reduce((sum, lane) => {
+    const lanePreview =
+      calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
+        ? calculatedPreviewItem
+        : undefined;
+    return sum + getLaneHeight(lane.id, lanePreview);
+  }, 0);
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden select-none dark">
+    <div className="flex flex-col h-full bg-background overflow-hidden select-none dark rounded-md">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-border bg-card">
         <div className="flex items-center gap-4">
@@ -555,6 +759,10 @@ export function InfiniteTimeline() {
           </h2>
           <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
             <span>Scroll to pan</span>
+            <span className="text-border">|</span>
+            <span>Shift+Scroll to scroll vertically</span>
+            <span className="text-border">|</span>
+            <span>Middle mouse to pan</span>
             <span className="text-border">|</span>
             <span>Ctrl+Scroll to zoom</span>
             <span className="text-border">|</span>
@@ -597,7 +805,9 @@ export function InfiniteTimeline() {
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
-        style={{ cursor: dragState ? "grabbing" : "crosshair" }}
+        style={{
+          cursor: panState ? "grabbing" : dragState ? "grabbing" : "crosshair",
+        }}
       >
         {/* Date Header */}
         <div
@@ -687,34 +897,47 @@ export function InfiniteTimeline() {
         {/* Lane Labels (Sidebar) */}
         <div
           className="absolute top-14 left-0 bottom-0 bg-card border-r border-border z-10 overflow-hidden"
-          style={{ width: SIDEBAR_WIDTH }}
+          style={{
+            width: SIDEBAR_WIDTH,
+            transform: `translateY(-${verticalScrollOffset}px)`,
+          }}
         >
-          {lanes.map((lane, index) => (
-            <div
-              key={lane.id}
-              className={cn(
-                "flex items-start gap-3 px-4 py-3 border-b border-border",
-                index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt",
-              )}
-              style={{ height: getLaneHeight(lane.id) }}
-            >
+          {lanes.map((lane, index) => {
+            const lanePreview =
+              calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
+                ? calculatedPreviewItem
+                : undefined;
+            return (
               <div
+                key={lane.id}
                 className={cn(
-                  "w-2 h-2 rounded-full mt-0.5 shrink-0",
-                  lane.color,
+                  "flex items-start gap-3 px-4 py-3 border-b border-border",
+                  index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt",
                 )}
-              />
-              <span className="text-sm text-foreground truncate">
-                {lane.name}
-              </span>
-            </div>
-          ))}
+                style={{ height: getLaneHeight(lane.id, lanePreview) }}
+              >
+                <div
+                  className={cn(
+                    "w-2 h-2 rounded-full mt-0.5 shrink-0",
+                    lane.color,
+                  )}
+                />
+                <span className="text-sm text-foreground truncate">
+                  {lane.name}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Timeline Grid and Items */}
         <div
           className="absolute top-14 bottom-0 overflow-hidden"
-          style={{ left: SIDEBAR_WIDTH, right: 0 }}
+          style={{
+            left: SIDEBAR_WIDTH,
+            right: 0,
+            transform: `translateY(-${verticalScrollOffset}px)`,
+          }}
         >
           {/* Grid Lines */}
           <div className="absolute inset-0 pointer-events-none">
@@ -769,8 +992,12 @@ export function InfiniteTimeline() {
 
           {/* Lanes */}
           {lanes.map((lane, laneIndex) => {
-            const itemsWithRows = getItemsWithRows(lane.id);
-            const laneHeight = getLaneHeight(lane.id);
+            const previewForLane =
+              calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
+                ? calculatedPreviewItem
+                : undefined;
+            const itemsWithRows = getItemsWithRows(lane.id, previewForLane);
+            const laneHeight = getLaneHeight(lane.id, previewForLane);
             const yOffset = getLaneYOffset(laneIndex);
 
             return (
@@ -983,9 +1210,30 @@ function DrawingPreview({
   const row = calculateRow();
 
   // Report preview position for parent to use in collision calculations
+  const prevValuesRef = useRef<{
+    start: number;
+    end: number;
+    row: number;
+  } | null>(null);
+  const onPreviewUpdateRef = useRef(onPreviewUpdate);
+
+  // Keep the ref updated
   useEffect(() => {
-    onPreviewUpdate(previewStart, previewEnd, row);
-  }, [previewStart, previewEnd, row, onPreviewUpdate]);
+    onPreviewUpdateRef.current = onPreviewUpdate;
+  }, [onPreviewUpdate]);
+
+  useEffect(() => {
+    // Only update if values actually changed
+    if (
+      !prevValuesRef.current ||
+      prevValuesRef.current.start !== previewStart ||
+      prevValuesRef.current.end !== previewEnd ||
+      prevValuesRef.current.row !== row
+    ) {
+      prevValuesRef.current = { start: previewStart, end: previewEnd, row };
+      onPreviewUpdateRef.current(previewStart, previewEnd, row);
+    }
+  }, [previewStart, previewEnd, row]);
 
   const left = timeToPixel(previewStart);
   const right = timeToPixel(previewEnd);
