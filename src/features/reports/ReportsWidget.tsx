@@ -211,7 +211,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             ];
             return {
               id: `contractor-${contractorId}`,
-              name: contractor.name || `Contractor ${contractorId}`,
+              name: contractor.fullName || `Contractor ${contractorId}`,
               color: colors[index % colors.length],
             };
           },
