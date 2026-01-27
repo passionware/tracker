@@ -489,7 +489,125 @@ $$;
 COMMENT ON FUNCTION undo_commit_cost IS 'Uncommits a cost, allowing future updates and deletes';
 
 -- ============================================================================
--- 6. GRANT PERMISSIONS
+-- 6. UPDATE VIEWS TO INCLUDE is_committed
+-- ============================================================================
+
+-- Update billing_with_details view to include is_committed
+DROP VIEW IF EXISTS billing_with_details;
+CREATE VIEW billing_with_details AS
+ SELECT "billing"."id",
+    "billing"."created_at",
+    "billing"."currency",
+    "billing"."total_net",
+    "billing"."total_gross",
+    "billing"."client_id",
+    "billing"."invoice_number",
+    "billing"."invoice_date",
+    "billing"."description",
+    "billing"."workspace_id",
+    "billing"."is_committed",
+    COALESCE("jsonb_agg"(DISTINCT "jsonb_build_object"('link', "row_to_json"("link_billing_report".*), 'report', "row_to_json"("report".*))) FILTER (WHERE ("link_billing_report"."id" IS NOT NULL)), '[]'::"jsonb") AS "link_billing_reports",
+    COALESCE("jsonb_agg"(DISTINCT "jsonb_build_object"('contractor', "row_to_json"("contractor".*))) FILTER (WHERE ("contractor"."id" IS NOT NULL)), '[]'::"jsonb") AS "contractors",
+    COALESCE("array_agg"(DISTINCT "contractor"."id") FILTER (WHERE ("contractor"."id" IS NOT NULL)), ARRAY[]::bigint[]) AS "linked_contractor_ids",
+    "row_to_json"("client".*) AS "client",
+    "round"(COALESCE(("sum"("link_billing_report"."report_amount") FILTER (WHERE ("link_billing_report"."billing_id" = "billing"."id")))::numeric, (0)::numeric), 2) AS "total_report_value",
+    "round"(COALESCE(("sum"("link_billing_report"."billing_amount") FILTER (WHERE ("link_billing_report"."billing_id" = "billing"."id")))::numeric, (0)::numeric), 2) AS "total_billing_value",
+    "round"((COALESCE(("sum"("link_billing_report"."billing_amount") FILTER (WHERE ("link_billing_report"."billing_id" = "billing"."id")))::numeric, (0)::numeric) - COALESCE(("sum"("link_billing_report"."report_amount") FILTER (WHERE ("link_billing_report"."billing_id" = "billing"."id")))::numeric, (0)::numeric)), 2) AS "billing_balance",
+    "round"((("billing"."total_net")::numeric - COALESCE(("sum"("link_billing_report"."billing_amount") FILTER (WHERE ("link_billing_report"."billing_id" = "billing"."id")))::numeric, (0)::numeric)), 2) AS "remaining_balance"
+   FROM (((("billing"
+     LEFT JOIN "link_billing_report" ON (("billing"."id" = "link_billing_report"."billing_id")))
+     LEFT JOIN "report" ON (("link_billing_report"."report_id" = "report"."id")))
+     LEFT JOIN "contractor" ON (("report"."contractor_id" = "contractor"."id")))
+     LEFT JOIN "client" ON (("billing"."client_id" = "client"."id")))
+  GROUP BY "billing"."id", "client"."id";
+
+-- Update report_with_details view to include is_committed
+-- Note: This view was updated in 20251218000004_add_report_unit_breakdown.sql, using that as base
+DROP VIEW IF EXISTS report_with_details;
+CREATE VIEW report_with_details AS
+SELECT
+    report.id,
+    report.created_at,
+    report.contractor_id,
+    report.description,
+    report.net_value,
+    report.period_start,
+    report.period_end,
+    report.currency,
+    report.client_id,
+    report.workspace_id,
+    report.project_iteration_id,
+    report.d_unit,
+    report.d_quantity,
+    report.d_unit_price,
+    report.is_committed,
+    COALESCE(jsonb_agg(DISTINCT jsonb_build_object('link', row_to_json(link_billing_report.*), 'billing', row_to_json(billing.*))) FILTER (WHERE link_billing_report.id IS NOT NULL), '[]'::jsonb) AS link_billing_reports,
+    COALESCE(jsonb_agg(DISTINCT jsonb_build_object('link', row_to_json(link_cost_report.*), 'cost', row_to_json(cost.*))) FILTER (WHERE link_cost_report.id IS NOT NULL), '[]'::jsonb) AS link_cost_reports,
+    round(COALESCE(sum(DISTINCT link_billing_report.billing_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric), 2) AS total_billing_billing_value,
+    round(COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric), 2) AS total_cost_cost_value,
+    round((report.net_value::numeric - COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric)), 2) AS report_billing_balance,
+    round((report.net_value::numeric - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS report_cost_balance,
+    round((COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id)::numeric, 0::numeric) - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS billing_cost_balance,
+    round((LEAST(COALESCE(sum(DISTINCT link_billing_report.report_amount) FILTER (WHERE link_billing_report.report_id = report.id AND link_billing_report.billing_id IS NOT NULL)::numeric, 0::numeric), report.net_value::numeric) - COALESCE(sum(DISTINCT link_cost_report.report_amount) FILTER (WHERE link_cost_report.report_id = report.id)::numeric, 0::numeric)), 2) AS immediate_payment_due,
+    (SELECT row_to_json(previous_report.*)
+     FROM report previous_report
+     WHERE previous_report.contractor_id = report.contractor_id
+       AND previous_report.client_id = report.client_id
+       AND previous_report.workspace_id = report.workspace_id
+       AND previous_report.period_end <= report.period_end
+       AND previous_report.id <> report.id
+     ORDER BY previous_report.period_end DESC
+     LIMIT 1) AS previous_report
+FROM report
+LEFT JOIN link_billing_report ON report.id = link_billing_report.report_id
+LEFT JOIN billing ON link_billing_report.billing_id = billing.id
+LEFT JOIN link_cost_report ON report.id = link_cost_report.report_id
+LEFT JOIN cost ON link_cost_report.cost_id = cost.id
+GROUP BY report.id;
+
+-- Update cost_with_details view to include is_committed
+DROP VIEW IF EXISTS cost_with_details;
+CREATE VIEW cost_with_details AS
+ SELECT "cost"."id",
+    "cost"."created_at",
+    "cost"."invoice_number",
+    "cost"."counterparty",
+    "cost"."description",
+    "cost"."invoice_date",
+    "cost"."net_value",
+    "cost"."gross_value",
+    "cost"."contractor_id",
+    "cost"."currency",
+    "cost"."workspace_id",
+    "cost"."is_committed",
+    COALESCE("jsonb_agg"("jsonb_build_object"('link', "row_to_json"("link_cost_report".*), 'report', "row_to_json"("report".*))) FILTER (WHERE ("link_cost_report"."id" IS NOT NULL)), '[]'::"jsonb") AS "linked_reports",
+    COALESCE(NULLIF(ARRAY( SELECT DISTINCT "report_1"."client_id"
+           FROM ("report" "report_1"
+             JOIN "link_cost_report" "link_cost_report_1" ON (("report_1"."id" = "link_cost_report_1"."report_id")))
+          WHERE ("link_cost_report_1"."cost_id" = "cost"."id")), '{}'::bigint[]), (ARRAY['-1'::integer])::bigint[]) AS "client_ids",
+        CASE
+            WHEN ("cost"."contractor_id" IS NOT NULL) THEN "row_to_json"("contractor".*)
+            ELSE NULL::"json"
+        END AS "contractor",
+    COALESCE(NULLIF(ARRAY( SELECT DISTINCT "client"."id"
+           FROM (("client"
+             JOIN "report" "report_1" ON (("client"."id" = "report_1"."client_id")))
+             JOIN "cost" "linked_cost" ON (("report_1"."contractor_id" = "linked_cost"."contractor_id")))
+          WHERE (("linked_cost"."id" = "cost"."id") AND ("linked_cost"."workspace_id" = "cost"."workspace_id") AND ("report_1"."workspace_id" = "cost"."workspace_id"))), '{}'::bigint[]), (ARRAY['-1'::integer])::bigint[]) AS "potential_clients",
+    "round"(COALESCE(( SELECT ("sum"("link_cost_report_1"."cost_amount"))::numeric AS "sum"
+           FROM "link_cost_report" "link_cost_report_1"
+          WHERE ("link_cost_report_1"."cost_id" = "cost"."id")), (0)::numeric), 2) AS "linked_reports_amount",
+    "round"((("cost"."net_value")::numeric - COALESCE(( SELECT ("sum"("link_cost_report_1"."cost_amount"))::numeric AS "sum"
+           FROM "link_cost_report" "link_cost_report_1"
+          WHERE ("link_cost_report_1"."cost_id" = "cost"."id")), (0)::numeric)), 2) AS "linked_reports_remainder"
+   FROM ((("cost"
+     LEFT JOIN "link_cost_report" ON (("cost"."id" = "link_cost_report"."cost_id")))
+     LEFT JOIN "report" ON (("report"."id" = "link_cost_report"."report_id")))
+     LEFT JOIN "contractor" ON (("contractor"."id" = "cost"."contractor_id")))
+  GROUP BY "cost"."id", "contractor"."id";
+
+-- ============================================================================
+-- 7. GRANT PERMISSIONS
 -- ============================================================================
 
 -- Grant permissions for commit/undo functions
