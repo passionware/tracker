@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // Types
-export interface TimelineItem {
+export interface TimelineItem<Data = unknown> {
   id: string;
   laneId: string;
   start: number; // Time in minutes from epoch
@@ -19,6 +19,7 @@ export interface TimelineItem {
   label: string;
   color?: string;
   row?: number; // Sub-row for parallel items
+  data?: Data; // Custom data attached to the item
 }
 
 export interface Lane {
@@ -27,13 +28,13 @@ export interface Lane {
   color: string;
 }
 
-interface DragState {
+interface DragState<Data = unknown> {
   type: "move" | "resize-start" | "resize-end" | "draw";
   itemId?: string;
   laneId?: string;
   startX: number;
   startTime: number;
-  originalItem?: TimelineItem;
+  originalItem?: TimelineItem<Data>;
   drawStart?: number;
 }
 
@@ -155,8 +156,9 @@ function formatTime(minutes: number): string {
 }
 
 // Format date from minutes offset
-function formatDate(minutes: number): string {
-  const date = new Date(BASE_DATE.getTime() + minutes * 60 * 1000);
+function formatDate(minutes: number, baseDate?: Date): string {
+  const base = baseDate || BASE_DATE;
+  const date = new Date(base.getTime() + minutes * 60 * 1000);
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -164,12 +166,104 @@ function formatDate(minutes: number): string {
   });
 }
 
+// Default Timeline Item Component
+interface DefaultTimelineItemProps<Data = unknown> {
+  item: TimelineItem<Data>;
+  left: number;
+  width: number;
+  isSelected: boolean;
+  isHovered: boolean;
+  isMinWidth: boolean;
+  onMouseDown: (e: ReactMouseEvent, item: TimelineItem<Data>, type: "move" | "resize-start" | "resize-end") => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}
+
+function DefaultTimelineItem<Data = unknown>({
+  item,
+  left,
+  width,
+  isSelected,
+  isHovered,
+  isMinWidth,
+  onMouseDown,
+  onMouseEnter,
+  onMouseLeave,
+}: DefaultTimelineItemProps<Data>) {
+  return (
+    <div
+      className={cn(
+        "absolute rounded transition-shadow cursor-grab group",
+        item.color || "bg-primary",
+        isSelected &&
+          "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+        isHovered &&
+          !isSelected &&
+          "ring-1 ring-foreground/50",
+        isMinWidth && "ring-1 ring-foreground/80",
+      )}
+      style={{
+        left,
+        width,
+        top: 8 + (item.row || 0) * SUB_ROW_HEIGHT,
+        height: SUB_ROW_HEIGHT - 4,
+      }}
+      onMouseDown={(e) => onMouseDown(e, item, "move")}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {/* Resize handle - start */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-l transition-opacity"
+        onMouseDown={(e) => onMouseDown(e, item, "resize-start")}
+      />
+
+      {/* Item content */}
+      <div className="absolute inset-x-2 inset-y-0 flex items-center overflow-hidden">
+        <span className="text-xs font-medium text-primary-foreground truncate">
+          {item.label}
+        </span>
+      </div>
+
+      {/* Resize handle - end */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-r transition-opacity"
+        onMouseDown={(e) => onMouseDown(e, item, "resize-end")}
+      />
+    </div>
+  );
+}
+
 // Get day offset in minutes
 function getDayStart(minutes: number): number {
   return Math.floor(minutes / 1440) * 1440;
 }
 
-export function InfiniteTimeline() {
+interface InfiniteTimelineProps<Data = unknown> {
+  items?: TimelineItem<Data>[];
+  lanes?: Lane[];
+  baseDate?: Date;
+  renderItem?: (props: {
+    item: TimelineItem<Data>;
+    left: number;
+    width: number;
+    isSelected: boolean;
+    isHovered: boolean;
+    isMinWidth: boolean;
+    onMouseDown: (e: ReactMouseEvent, item: TimelineItem<Data>, type: "move" | "resize-start" | "resize-end") => void;
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
+  }) => React.ReactNode;
+  onItemsChange?: (items: TimelineItem<Data>[]) => void;
+}
+
+export function InfiniteTimeline<Data = unknown>({
+  items: externalItems,
+  lanes: externalLanes,
+  baseDate: externalBaseDate,
+  renderItem,
+  onItemsChange,
+}: InfiniteTimelineProps<Data> = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
     laneId: string;
@@ -177,14 +271,15 @@ export function InfiniteTimeline() {
     end: number;
     row: number;
   } | null>(null);
-  const [items, setItems] = useState<TimelineItem[]>(initialItems);
-  const [lanes] = useState<Lane[]>(initialLanes);
+  const baseDate = externalBaseDate || BASE_DATE;
+  const [items, setItems] = useState<TimelineItem<Data>[]>(externalItems || initialItems as TimelineItem<Data>[]);
+  const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
   const [scrollOffset, setScrollOffset] = useState(
     -toMinutes(7) * PIXELS_PER_MINUTE,
   ); // Start scrolled to show 8AM
   const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [dragState, setDragState] = useState<DragState<Data> | null>(null);
   const [panState, setPanState] = useState<{
     startX: number;
     startY: number;
@@ -212,6 +307,20 @@ export function InfiniteTimeline() {
     [snapOption],
   );
 
+  // Sync external items
+  useEffect(() => {
+    if (externalItems) {
+      setItems(externalItems);
+    }
+  }, [externalItems]);
+
+  // Notify parent of items change
+  useEffect(() => {
+    if (onItemsChange) {
+      onItemsChange(items);
+    }
+  }, [items, onItemsChange]);
+
   // Calculate sub-rows for overlapping items in a lane
   const getItemsWithRows = useCallback(
     (
@@ -220,7 +329,7 @@ export function InfiniteTimeline() {
     ) => {
       const laneItems = items.filter((item) => item.laneId === laneId);
       const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-      const itemsWithRows: (TimelineItem & { row: number })[] = [];
+      const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
 
       for (const item of sortedItems) {
         // Find the first available row
@@ -353,7 +462,7 @@ export function InfiniteTimeline() {
 
         // Calculate new zoom level
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(0.25, Math.min(4, zoom * zoomFactor));
+        const newZoom = Math.max(0.001, Math.min(4, zoom * zoomFactor));
 
         // Calculate new scroll offset to keep the same time under the mouse
         const newScrollOffset =
@@ -469,7 +578,7 @@ export function InfiniteTimeline() {
   // Handle mouse down on item (start drag)
   const handleItemMouseDown = (
     e: ReactMouseEvent,
-    item: TimelineItem,
+    item: TimelineItem<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
     // Ignore middle mouse button
@@ -580,14 +689,14 @@ export function InfiniteTimeline() {
 
         if (end - start >= MIN_ITEM_DURATION) {
           const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId);
-          const newItem: TimelineItem = {
+          const newItem: TimelineItem<Data> = {
             id: generateId(),
             laneId: dragState.laneId,
             start,
             end,
             label: "New Event",
             color: ITEM_COLORS[laneIndex % ITEM_COLORS.length],
-          };
+          } as TimelineItem<Data>;
           setItems((prev) => [...prev, newItem]);
           setSelectedItemId(newItem.id);
         }
@@ -709,7 +818,7 @@ export function InfiniteTimeline() {
     // Calculate row for preview item (without considering it in existing items yet)
     const laneItems = items.filter((item) => item.laneId === dragState.laneId);
     const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-    const itemsWithRows: (TimelineItem & { row: number })[] = [];
+    const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
 
     for (const item of sortedItems) {
       let row = 0;
@@ -854,7 +963,7 @@ export function InfiniteTimeline() {
                   style={{ left: x }}
                 >
                   <span className="text-xs font-medium text-foreground pl-2">
-                    {formatDate(minutes)}
+                    {formatDate(minutes, baseDate)}
                   </span>
                 </div>
               );
@@ -1110,54 +1219,22 @@ export function InfiniteTimeline() {
                     const isSelected = selectedItemId === item.id;
                     const isHovered = hoveredItemId === item.id;
 
+                    const itemProps = {
+                      item,
+                      left,
+                      width,
+                      isSelected,
+                      isHovered,
+                      isMinWidth,
+                      onMouseDown: handleItemMouseDown,
+                      onMouseEnter: () => setHoveredItemId(item.id),
+                      onMouseLeave: () => setHoveredItemId(null),
+                    };
+
                     return (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          "absolute rounded transition-shadow cursor-grab group",
-                          item.color || "bg-primary",
-                          isSelected &&
-                            "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-                          isHovered &&
-                            !isSelected &&
-                            "ring-1 ring-foreground/50",
-                          isMinWidth && "ring-1 ring-foreground/80",
-                        )}
-                        style={{
-                          left,
-                          width,
-                          top: 8 + item.row * SUB_ROW_HEIGHT,
-                          height: SUB_ROW_HEIGHT - 4,
-                        }}
-                        onMouseDown={(e) =>
-                          handleItemMouseDown(e, item, "move")
-                        }
-                        onMouseEnter={() => setHoveredItemId(item.id)}
-                        onMouseLeave={() => setHoveredItemId(null)}
-                      >
-                        {/* Resize handle - start */}
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-l transition-opacity"
-                          onMouseDown={(e) =>
-                            handleItemMouseDown(e, item, "resize-start")
-                          }
-                        />
-
-                        {/* Item content */}
-                        <div className="absolute inset-x-2 inset-y-0 flex items-center overflow-hidden">
-                          <span className="text-xs font-medium text-primary-foreground truncate">
-                            {item.label}
-                          </span>
-                        </div>
-
-                        {/* Resize handle - end */}
-                        <div
-                          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-r transition-opacity"
-                          onMouseDown={(e) =>
-                            handleItemMouseDown(e, item, "resize-end")
-                          }
-                        />
-                      </div>
+                      <React.Fragment key={item.id}>
+                        {renderItem ? renderItem(itemProps) : <DefaultTimelineItem {...itemProps} />}
+                      </React.Fragment>
                     );
                   })}
 
@@ -1250,7 +1327,7 @@ function DrawingPreview({
   pixelsPerMinute: number;
   scrollOffset: number;
   snapTime: (time: number) => number;
-  existingItems: (TimelineItem & { row: number })[];
+  existingItems: (TimelineItem<unknown> & { row: number })[];
   onPreviewUpdate: (start: number, end: number, row: number) => void;
 }) {
   // Initialize with the start position so it doesn't flash from -infinity

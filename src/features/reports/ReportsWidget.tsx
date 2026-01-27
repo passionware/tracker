@@ -31,15 +31,21 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import {
   addDaysToCalendarDate,
+  calendarDateToJSDate,
   dateToCalendarDate,
 } from "@/platform/lang/internationalized-date";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { chain, partialRight } from "lodash";
+import { chain, groupBy, partialRight } from "lodash";
 import { Check, Loader2, PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { InfiniteTimeline } from "@/platform/passionware-timeline/passionware-timeline";
+import {
+  InfiniteTimeline,
+  Lane,
+  TimelineItem,
+} from "@/platform/passionware-timeline/passionware-timeline";
+import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -116,6 +122,89 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   }
 
   const columns = useColumns(props);
+
+  // Convert CalendarDate to minutes from a base date (start of the earliest report)
+  const timelineData = useMemo(() => {
+    return (
+      rd.tryMap(finalReports, (reportView) => {
+        const reports = reportView.entries;
+        if (reports.length === 0) {
+          return { lanes: [], items: [], baseDate: new Date() };
+        }
+
+        // Find the earliest report start date to use as base
+        const earliestDate = reports.reduce(
+          (earliest: Date, report: ReportViewEntry) => {
+            const startDate = calendarDateToJSDate(report.periodStart);
+            return startDate < earliest ? startDate : earliest;
+          },
+          calendarDateToJSDate(reports[0].periodStart),
+        );
+
+        // Set base date to start of day of earliest report
+        const baseDate = new Date(earliestDate);
+        baseDate.setHours(0, 0, 0, 0);
+
+        // Convert date to minutes from base date
+        const dateToMinutes = (date: Date): number => {
+          const diffMs = date.getTime() - baseDate.getTime();
+          return Math.floor(diffMs / (1000 * 60));
+        };
+
+        // Group reports by contractor
+        const reportsByContractor = groupBy(reports, (r) => r.contractor.id);
+
+        // Create lanes (one per contractor)
+        const lanes: Lane[] = Object.entries(reportsByContractor).map(
+          ([contractorId, contractorReports], index) => {
+            const contractor = contractorReports[0].contractor;
+            const colors = [
+              "bg-chart-1",
+              "bg-chart-2",
+              "bg-chart-3",
+              "bg-chart-4",
+              "bg-chart-5",
+            ];
+            return {
+              id: `contractor-${contractorId}`,
+              name: contractor.name || `Contractor ${contractorId}`,
+              color: colors[index % colors.length],
+            };
+          },
+        );
+
+        // Convert reports to timeline items
+        const items: TimelineItem<ReportViewEntry>[] = reports.map(
+          (report: ReportViewEntry) => {
+            const startDate = calendarDateToJSDate(report.periodStart);
+            const endDate = calendarDateToJSDate(report.periodEnd);
+            // Add one day to end date to include the full end day
+            endDate.setHours(23, 59, 59, 999);
+
+            const startMinutes = dateToMinutes(startDate);
+            const endMinutes = dateToMinutes(endDate);
+
+            const contractorLane = lanes.find(
+              (l) => l.id === `contractor-${report.contractor.id}`,
+            );
+
+            return {
+              id: `report-${report.id}`,
+              laneId:
+                contractorLane?.id || `contractor-${report.contractor.id}`,
+              start: startMinutes,
+              end: endMinutes,
+              label: report.description || `Report #${report.id}`,
+              color: contractorLane?.color,
+              data: report,
+            };
+          },
+        );
+
+        return { lanes, items, baseDate };
+      }) ?? { lanes: [], items: [], baseDate: new Date() }
+    );
+  }, [finalReports]);
 
   return (
     <CommonPageContainer
@@ -200,7 +289,15 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      <InfiniteTimeline />
+      {timelineData.items.length > 0 && (
+        <div className="h-[400px] mb-4 shrink-0">
+          <InfiniteTimeline
+            items={timelineData.items}
+            lanes={timelineData.lanes}
+            baseDate={timelineData.baseDate}
+          />
+        </div>
+      )}
       <ListView
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
