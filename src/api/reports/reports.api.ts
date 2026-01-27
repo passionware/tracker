@@ -1,4 +1,8 @@
 import {
+  BooleanFilter,
+  booleanFilterSchema,
+} from "@/api/_common/query/filters/BooleanFilter.ts";
+import {
   DateFilter,
   dateFilterSchema,
 } from "@/api/_common/query/filters/DateFilter.ts";
@@ -378,6 +382,7 @@ export interface ReportPayload {
 export interface ReportBase extends ReportPayload {
   id: number;
   createdAt: string;
+  isCommitted: boolean;
 }
 
 export type Report = ReportBase & {
@@ -414,6 +419,7 @@ export type ReportQuery = WithFilters<{
   immediatePaymentDue: Nullable<NumberFilter>;
   projectIterationId: Nullable<EnumFilter<Nullable<ProjectIteration["id"]>>>;
   id: Nullable<EnumFilter<Report["id"]>>;
+  commitState: Nullable<BooleanFilter>;
 }> &
   WithPagination &
   WithSorter<
@@ -468,6 +474,9 @@ export const reportQuerySchema = z
       id: z
         .preprocess(strToNull, enumFilterSchema(z.coerce.number()).nullable())
         .default(null),
+      commitState: z
+        .preprocess(strToNull, booleanFilterSchema.nullable())
+        .default(null),
     }),
     page: paginationSchema,
     sort: z
@@ -519,6 +528,7 @@ export const reportQueryUtils = withBuilderUtils({
           immediatePaymentDue: null,
           projectIterationId: null,
           id: null,
+          commitState: null,
         },
         page: { page: 0, pageSize: 10 },
         sort: { field: "period", order: "asc" },

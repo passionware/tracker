@@ -19,6 +19,7 @@ import {
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import { maybe, rd } from "@passionware/monads";
+import { WithMutationService } from "@/services/io/MutationService/MutationService";
 
 export interface BillingPickerProps
   extends WithServices<
@@ -30,6 +31,7 @@ export interface BillingPickerProps
       WithWorkspaceService,
       WithContractorService,
       WithBillingService,
+      WithMutationService,
     ]
   > {
   workspaceId: WorkspaceSpec;
@@ -72,16 +74,18 @@ export function BillingPicker({
       clientId,
     );
 
-  const context: ExpressionContext =
-    rd.tryMap(previewBilling, (billing: Billing) => ({
+  const context: ExpressionContext = rd.tryMap(
+    previewBilling,
+    (billing: Billing) => ({
       workspaceId: billing.workspaceId,
       clientId: billing.clientId,
       contractorId: idSpecUtils.ofAll(),
-    })) ?? {
-      workspaceId,
-      clientId,
-      contractorId: idSpecUtils.ofAll(),
-    };
+    }),
+  ) ?? {
+    workspaceId,
+    clientId,
+    contractorId: idSpecUtils.ofAll(),
+  };
 
   // Create a dummy maxAmount for the inline search
   const maxAmount: CurrencyValue = {

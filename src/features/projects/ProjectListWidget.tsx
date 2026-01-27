@@ -128,6 +128,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
           queryParamsService.setQueryParams(newQuery)
         }
         data={projects}
+        getRowId={(x) => x.id}
         onRowDoubleClick={(project) => {
           props.services.navigationService.navigate(
             props.services.routingService

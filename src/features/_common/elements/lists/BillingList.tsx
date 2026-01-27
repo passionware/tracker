@@ -51,7 +51,7 @@ export type BillingListProps = WithServices<
 
 export function BillingList(props: BillingListProps) {
   return (
-    <ListView<BillingViewEntry, BillingQuery>
+    <ListView<BillingViewEntry, BillingQuery, number>
       data={props.data}
       columns={[
         ...billingColumns.getContextual(props.context),
@@ -61,6 +61,7 @@ export function BillingList(props: BillingListProps) {
         billingColumns.report.linkedValue(props.services),
         billingColumns.netAmount(props.services),
         billingColumns.report.remainingValue(props.services),
+        billingColumns.commitStatus(props.services),
         props.renderSelect &&
           sharedColumns.select<BillingViewEntry>((info, button, track) => {
             const billing = info.row.original;
@@ -69,6 +70,7 @@ export function BillingList(props: BillingListProps) {
       ].filter(maybe.isPresent)}
       query={props.query}
       onQueryChange={props.onQueryChange}
+      getRowId={(x) => x.id}
     />
   );
 }

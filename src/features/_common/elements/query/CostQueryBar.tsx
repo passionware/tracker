@@ -1,4 +1,5 @@
 import { CostQuery, costQueryUtils } from "@/api/cost/cost.api.ts";
+import { BooleanFilterWidget } from "@/features/_common/elements/filters/BooleanFilterWidget.tsx";
 import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
 import { CommonQueryBar } from "@/features/_common/elements/query/_common/CommonQueryBar.tsx";
 import { QueryBarSpec } from "@/features/_common/elements/query/_common/QueryBarSpec.tsx";
@@ -58,6 +59,11 @@ export function CostQueryBar(props: CostQueryBarProps) {
         value={props.query.filters.invoiceDate}
         fieldLabel="Period"
         onUpdate={handleChange("invoiceDate", maybe.getOrNull)}
+      />
+      <BooleanFilterWidget
+        value={props.query.filters.commitState}
+        fieldLabel="Commited"
+        onUpdate={handleChange("commitState", maybe.getOrNull)}
       />
     </QueryBarLayout>
   );

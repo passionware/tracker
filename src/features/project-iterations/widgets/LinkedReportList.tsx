@@ -93,6 +93,7 @@ export function LinkedReportList(
       onSelectionChange={setSelection}
       query={query}
       onQueryChange={() => {}}
+      getRowId={(x) => x.id}
       columns={[
         reportColumns.contractor.withAdjacency,
         reportColumns.billing.linkingStatus.read(props.services),

@@ -1,4 +1,5 @@
 import { BillingQuery, billingQueryUtils } from "@/api/billing/billing.api.ts";
+import { BooleanFilterWidget } from "@/features/_common/elements/filters/BooleanFilterWidget.tsx";
 import { DateFilterWidget } from "@/features/_common/elements/filters/DateFilterWidget.tsx";
 import { CommonQueryBar } from "@/features/_common/elements/query/_common/CommonQueryBar.tsx";
 import { QueryBarSpec } from "@/features/_common/elements/query/_common/QueryBarSpec.tsx";
@@ -62,6 +63,11 @@ export function BillingQueryBar(props: BillingQueryBarProps) {
         value={props.query.filters.invoiceDate}
         fieldLabel="Invoice date"
         onUpdate={handleChange("invoiceDate", maybe.getOrNull)}
+      />
+      <BooleanFilterWidget
+        value={props.query.filters.commitState}
+        fieldLabel="Commited"
+        onUpdate={handleChange("commitState", maybe.getOrNull)}
       />
     </QueryBarLayout>
   );

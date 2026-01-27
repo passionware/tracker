@@ -13,6 +13,7 @@ import {
 } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, RemoteData } from "@passionware/monads";
 import { Overwrite } from "@passionware/platform-ts";
@@ -25,6 +26,7 @@ export type ReportListProps = WithServices<
     WithExpressionService,
     WithWorkspaceService,
     WithContractorService,
+    WithMutationService,
   ]
 > &
   Overwrite<
@@ -47,7 +49,7 @@ export type ReportListProps = WithServices<
 
 export function ReportList(props: ReportListProps) {
   return (
-    <ListView<ReportSearchBaseModel, ReportQuery>
+    <ListView<ReportSearchBaseModel, ReportQuery, number>
       data={props.data}
       columns={[
         ...reportColumns.getContextual(props.context),
@@ -68,6 +70,7 @@ export function ReportList(props: ReportListProps) {
           ? reportColumns.cost.remainingValue(props.services)
           : null,
         sharedColumns.description,
+        reportColumns.commitStatus(props.services),
         props.renderSelect &&
           sharedColumns.select<ReportSearchBaseModel>((info, button, track) => {
             const report = info.row.original;
@@ -76,6 +79,7 @@ export function ReportList(props: ReportListProps) {
       ].filter(maybe.isPresent)}
       query={props.query}
       onQueryChange={props.onQueryChange}
+      getRowId={(x) => x.id}
     />
   );
 }

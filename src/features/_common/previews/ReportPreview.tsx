@@ -2,6 +2,7 @@ import { Report } from "@/api/reports/reports.api.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { maybe, rd } from "@passionware/monads";
@@ -35,6 +36,12 @@ export function ReportPreview({ services, reportId }: ReportPreviewProps) {
           <span className="text-sm font-medium text-slate-700">
             Report #{report.id}
           </span>
+          <CommitStatusBadge
+            id={report.id}
+            isCommitted={report.isCommitted}
+            entityType="report"
+            services={services}
+          />
         </div>
 
         <div className="space-y-2 text-sm">

@@ -9,6 +9,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
@@ -18,6 +19,10 @@ import {
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
+import {
+  ListToolbar,
+  ListToolbarButton,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
@@ -40,14 +45,20 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe, rd } from "@passionware/monads";
+import {
+  SelectionState,
+  selectionState,
+  useSelectionCleanup,
+} from "@/platform/lang/SelectionState.ts";
+import { maybe, mt, rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { addDays, startOfDay } from "date-fns";
 import { chain, sortBy } from "lodash";
 import { mapKeys } from "@passionware/platform-ts";
-import { Check, Link2, Loader2, Shuffle } from "lucide-react";
-import { ReactElement } from "react";
+import { Check, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
+import { ReactElement, useState } from "react";
+import { toast } from "sonner";
 
 export interface ChargeInfoProps
   extends WithServices<
@@ -69,6 +80,46 @@ const columnHelper = createColumnHelper<Billing["linkBillingReport"][number]>();
 
 export function ChargeInfo({ billing, services }: ChargeInfoProps) {
   const clarifyState = promiseState.useRemoteData();
+  const linkingState = promiseState.useRemoteData();
+
+  const isDangerMode = services.preferenceService.useIsDangerMode();
+
+  const [selection, setSelection] = useState<SelectionState<number>>(
+    selectionState.selectNone(),
+  );
+
+  useSelectionCleanup(
+    selection,
+    maybe.of(billing.links.map((link) => link.link.id)),
+    setSelection,
+  );
+
+  const selectedLinkIds = selectionState.getSelectedIds(
+    selection,
+    billing.links.map((link) => link.link.id),
+  );
+
+  const deleteMutation = promiseState.useMutation(async () => {
+    if (selectedLinkIds.length === 0) {
+      return;
+    }
+
+    try {
+      await services.mutationService.bulkDeleteBillingReportLink(
+        selectedLinkIds,
+      );
+      setSelection(selectionState.selectNone());
+      toast.success(`Successfully deleted ${selectedLinkIds.length} link(s)`);
+    } catch (error) {
+      console.error("Error deleting links:", error);
+      toast.error("Failed to delete links");
+    }
+  });
+
+  async function handleBatchDelete() {
+    if (selectedLinkIds.length === 0) return;
+    await deleteMutation.track(void 0);
+  }
 
   const query = chain(
     reportQueryUtils.ofDefault(
@@ -110,7 +161,15 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
     <InfoLayout
       header={
         <>
-          Link billing to reports
+          <div className="flex items-center gap-2">
+            <span>Link billing to reports</span>
+            <CommitStatusBadge
+              id={billing.id}
+              isCommitted={billing.originalBilling.isCommitted}
+              entityType="billing"
+              services={services}
+            />
+          </div>
           <TransferView
             services={services}
             fromAmount={billing.remainingAmount}
@@ -276,6 +335,9 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         query={query}
         onQueryChange={() => {}}
         data={rd.of(billing.links)}
+        selection={selection}
+        onSelectionChange={setSelection}
+        getRowId={(row: Billing["linkBillingReport"][number]) => row.link.id}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -309,10 +371,14 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                           ? {
                               quantity: link.link.breakdown.quantity,
                               unit: link.link.breakdown.unit,
-                              sourceUnitPrice: link.link.breakdown.billingUnitPrice,
-                              targetUnitPrice: link.link.breakdown.reportUnitPrice,
-                              sourceCurrency: link.link.breakdown.billingCurrency,
-                              targetCurrency: link.link.breakdown.reportCurrency,
+                              sourceUnitPrice:
+                                link.link.breakdown.billingUnitPrice,
+                              targetUnitPrice:
+                                link.link.breakdown.reportUnitPrice,
+                              sourceCurrency:
+                                link.link.breakdown.billingCurrency,
+                              targetCurrency:
+                                link.link.breakdown.reportCurrency,
                             }
                           : undefined,
                       }}
@@ -356,7 +422,10 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             ...sharedColumns.contractorId(services),
             accessorKey: "report.contractorId",
           },
-          { ...reportColumns.period(services), accessorFn: (x) => x.report },
+          {
+            ...reportColumns.period(services),
+            accessorFn: (x: any) => x.report,
+          },
           columnHelper.accessor((x) => x.link, {
             header: "Linking",
             cell: (cellInfo) => {
@@ -415,7 +484,77 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
             accessorKey: "report.description",
             header: "Report description",
           },
-        ]}
+          isDangerMode &&
+            columnHelper.display({
+              header: "Actions",
+              cell: (info) => (
+                <Button
+                  variant="outline-destructive"
+                  size="icon-xs"
+                  onClick={() => {
+                    linkingState.track(
+                      services.mutationService.deleteBillingReportLink(
+                        info.row.original.link.id,
+                      ),
+                    );
+                  }}
+                >
+                  <Trash2 />
+                </Button>
+              ),
+            }),
+        ].filter(truthy.isTruthy)}
+        toolbar={
+          selectionState.getTotalSelected(selection, billing.links.length) >
+          0 ? (
+            <ListToolbar>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {selectionState.getTotalSelected(
+                    selection,
+                    billing.links.length,
+                  )}{" "}
+                  selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div>
+                      <ListToolbarButton variant="destructive">
+                        Delete
+                      </ListToolbarButton>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4" align="start">
+                    <div className="space-y-3">
+                      <div className="text-sm text-slate-700">
+                        Are you sure you want to delete {selectedLinkIds.length}{" "}
+                        selected link(s)? This action cannot be undone.
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm">
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleBatchDelete}
+                          disabled={mt.isInProgress(deleteMutation.state)}
+                        >
+                          {mt.isInProgress(deleteMutation.state)
+                            ? "Deleting..."
+                            : "Confirm"}
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </ListToolbar>
+          ) : undefined
+        }
       />
     </InfoLayout>
   );

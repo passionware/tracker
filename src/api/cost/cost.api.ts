@@ -1,4 +1,8 @@
 import {
+  BooleanFilter,
+  booleanFilterSchema,
+} from "@/api/_common/query/filters/BooleanFilter.ts";
+import {
   DateFilter,
   dateFilterSchema,
 } from "@/api/_common/query/filters/DateFilter.ts";
@@ -55,6 +59,7 @@ export interface CostPayload {
 export interface CostBase extends CostPayload {
   id: number;
   createdAt: Date;
+  isCommitted: boolean;
 }
 
 export interface Cost extends CostBase {
@@ -74,6 +79,7 @@ export type CostQuery = WithSearch &
     linkedRemainder: Nullable<NumberFilter>;
     linkedAmount: Nullable<NumberFilter>;
     invoiceDate: Nullable<DateFilter>;
+    commitState: Nullable<BooleanFilter>;
   }> &
   WithPagination &
   WithSorter<
@@ -105,6 +111,7 @@ export const costQueryUtils = withBuilderUtils({
           linkedAmount: null,
           potentialClientId: null,
           invoiceDate: null,
+          commitState: null,
         },
         page: paginationUtils.ofDefault(),
         sort: { field: "contractor", order: "asc" },
@@ -189,6 +196,9 @@ export const costQuerySchema = z
         .default(null),
       invoiceDate: z
         .preprocess(strToNull, dateFilterSchema.nullable())
+        .default(null),
+      commitState: z
+        .preprocess(strToNull, booleanFilterSchema.nullable())
         .default(null),
     }),
     page: paginationSchema,

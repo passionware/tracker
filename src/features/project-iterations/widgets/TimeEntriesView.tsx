@@ -72,6 +72,7 @@ export function TimeEntriesView(
             </div>
           ) : (
             <ListView
+              getRowId={(x) => x.id}
               data={timeEntriesData}
               query={query}
               onQueryChange={() => {}}

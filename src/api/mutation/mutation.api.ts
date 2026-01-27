@@ -25,11 +25,15 @@ export interface MutationApi {
   ) => Promise<{ id: ProjectIterationPosition["id"] }>;
   createCost: (cost: CostPayload) => Promise<{ id: Cost["id"] }>;
   deleteBillingReportLink: (linkId: number) => Promise<void>;
+  bulkDeleteBillingReportLink: (linkIds: number[]) => Promise<void>;
   deleteCostReportLink: (linkId: number) => Promise<void>;
+  bulkDeleteCostReportLink: (linkIds: number[]) => Promise<void>;
   deleteCostReport: (reportId: number) => Promise<void>;
   bulkDeleteCostReport: (reportIds: number[]) => Promise<void>;
   deleteBilling: (billingId: number) => Promise<void>;
+  bulkDeleteBilling: (billingIds: number[]) => Promise<void>;
   deleteCost: (costId: number) => Promise<void>;
+  bulkDeleteCost: (costIds: number[]) => Promise<void>;
   deleteProject: (projectId: number) => Promise<void>;
   deleteProjectIteration: (iterationId: number) => Promise<void>;
   deleteProjectIterationPosition: (positionId: number) => Promise<void>;
@@ -81,4 +85,6 @@ export interface MutationApi {
     contractorId: number,
     workspaceId: number,
   ) => Promise<void>;
+  commit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;
+  undoCommit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;
 }

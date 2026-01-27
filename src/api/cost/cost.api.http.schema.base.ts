@@ -15,6 +15,7 @@ export const costBase$ = z.object({
   contractor_id: z.number().nullable(),
   currency: z.string(),
   workspace_id: z.number(),
+  is_committed: z.boolean(),
 });
 
 export type CostBase$ = z.output<typeof costBase$>;

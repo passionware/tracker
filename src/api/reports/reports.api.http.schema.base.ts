@@ -19,6 +19,7 @@ export const reportBase$ = z.object({
   d_unit: z.string().nullable(),
   d_quantity: z.number().nullable(),
   d_unit_price: z.number().nullable(),
+  is_committed: z.boolean(),
 });
 export type ReportBase$ = z.output<typeof reportBase$>;
 

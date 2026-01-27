@@ -174,11 +174,35 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    bulkDeleteBillingReportLink: async (linkIds) => {
+      if (linkIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("link_billing_report")
+        .delete()
+        .in("id", linkIds);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     deleteCostReportLink: async (linkId) => {
       const response = await client
         .from("link_cost_report")
         .delete()
         .eq("id", linkId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkDeleteCostReportLink: async (linkIds) => {
+      if (linkIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("link_cost_report")
+        .delete()
+        .in("id", linkIds);
       if (response.error) {
         throw response.error;
       }
@@ -210,8 +234,32 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    bulkDeleteBilling: async (billingIds) => {
+      if (billingIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("billing")
+        .delete()
+        .in("id", billingIds);
+      if (response.error) {
+        throw response.error;
+      }
+    },
     deleteCost: async (costId) => {
       const response = await client.from("cost").delete().eq("id", costId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkDeleteCost: async (costIds) => {
+      if (costIds.length === 0) {
+        return;
+      }
+      const response = await client
+        .from("cost")
+        .delete()
+        .in("id", costIds);
       if (response.error) {
         throw response.error;
       }
@@ -597,6 +645,26 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         .update({ workspace_id: workspaceId })
         .eq("project_id", projectId)
         .eq("contractor_id", contractorId);
+      if (error) {
+        throw error;
+      }
+    },
+    commit: async (entityType, id) => {
+      const { error } = await client.rpc("set_committed", {
+        p_table: entityType,
+        p_id: id,
+        p_value: true,
+      });
+      if (error) {
+        throw error;
+      }
+    },
+    undoCommit: async (entityType, id) => {
+      const { error } = await client.rpc("set_committed", {
+        p_table: entityType,
+        p_id: id,
+        p_value: false,
+      });
       if (error) {
         throw error;
       }

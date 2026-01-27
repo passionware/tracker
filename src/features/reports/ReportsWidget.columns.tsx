@@ -58,6 +58,7 @@ export function useColumns(props: ReportsWidgetProps) {
     }),
     reportColumns.period(props.services),
     sharedColumns.description,
+    reportColumns.commitStatus(props.services),
     columnHelper.display({
       id: "actions",
       enableHiding: false,

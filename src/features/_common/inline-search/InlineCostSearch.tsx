@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
@@ -28,6 +29,7 @@ import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Maybe, rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
@@ -42,6 +44,7 @@ export interface InlineCostSearchProps
       WithContractorService,
       WithClientService,
       WithWorkspaceService,
+      WithMutationService,
     ]
   > {
   query: CostQuery;
@@ -85,6 +88,7 @@ export function InlineCostSearch(props: InlineCostSearchProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead></TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>Invoice Number</TableHead>
                   <TableHead>Net Amount</TableHead>
@@ -95,6 +99,14 @@ export function InlineCostSearch(props: InlineCostSearchProps) {
               <TableBody>
                 {costs.entries.map((cost) => (
                   <TableRow key={cost.id}>
+                    <TableCell>
+                      <CommitStatusBadge
+                        id={cost.id}
+                        isCommitted={cost.originalCost.isCommitted}
+                        entityType="cost"
+                        services={props.services}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-row gap-1 items-center">
                         <WorkspaceView

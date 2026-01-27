@@ -33,6 +33,7 @@ export function useColumns(props: PotentialCostWidgetProps) {
     costColumns.report.linkedValue(props.services),
     costColumns.report.remainingValue(props.services),
     sharedColumns.description,
+    costColumns.commitStatus(props.services),
     columnHelper.display({
       id: "actions",
       cell: (info) => (

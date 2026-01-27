@@ -2,9 +2,11 @@ import { Cost } from "@/api/cost/cost.api.ts";
 import { RollingBadge } from "@/components/ui/badge.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { ContractorView } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { ChargeInfoPopover } from "@/features/_common/info/ChargeInfo.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ExpressionContext,
@@ -22,6 +24,22 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import { maybe, rd, truthy } from "@passionware/monads";
 
 export const billingColumns = {
+  commitStatus: (services: MergeServices<[WithMutationService]>) =>
+    getColumnHelper<BillingViewEntry>().display({
+      id: "commitStatus",
+      header: "",
+      cell: (info) => (
+        <CommitStatusBadge
+          id={info.row.original.id}
+          isCommitted={info.row.original.originalBilling.isCommitted}
+          entityType="billing"
+          services={services}
+        />
+      ),
+      meta: {
+        cellClassName: "w-10",
+      },
+    }),
   invoiceNumber: getColumnHelper<Pick<Cost, "invoiceNumber">>().accessor(
     "invoiceNumber",
     {

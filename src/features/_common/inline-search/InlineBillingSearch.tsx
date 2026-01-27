@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { ClientView } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
@@ -26,6 +27,7 @@ import {
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 import { useState } from "react";
@@ -39,6 +41,7 @@ export interface InlineBillingSearchProps
       WithExpressionService,
       WithWorkspaceService,
       WithContractorService,
+      WithMutationService,
     ]
   > {
   query: BillingQuery;
@@ -95,6 +98,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead></TableHead>
                   <TableHead>Id</TableHead>
                   <TableHead>Issuer</TableHead>
                   <TableHead>Client</TableHead>
@@ -108,6 +112,14 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
               <TableBody>
                 {billings.entries.map((billing) => (
                   <TableRow key={billing.id}>
+                    <TableCell>
+                      <CommitStatusBadge
+                        id={billing.id}
+                        isCommitted={billing.originalBilling.isCommitted}
+                        entityType="billing"
+                        services={props.services}
+                      />
+                    </TableCell>
                     <TableCell>{billing.id}</TableCell>
                     <TableCell>
                       <WorkspaceView

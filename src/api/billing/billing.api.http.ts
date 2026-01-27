@@ -1,3 +1,4 @@
+import { booleanFilterSupabaseUtils } from "@/api/_common/query/filters/BooleanFilter.supabase.ts";
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
@@ -93,6 +94,14 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
           request,
           query.filters.invoiceDate,
           "invoice_date",
+        );
+      }
+
+      if (query.filters.commitState) {
+        request = booleanFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.commitState,
+          "is_committed",
         );
       }
 

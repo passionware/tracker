@@ -2,6 +2,7 @@ import { Billing } from "@/api/billing/billing.api.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { maybe, rd } from "@passionware/monads";
 
@@ -29,6 +30,12 @@ export function BillingPreview({ services, billingId }: BillingPreviewProps) {
             <span className="text-sm font-medium text-slate-700">
               Billing #{billing.id}
             </span>
+            <CommitStatusBadge
+              id={billing.id}
+              isCommitted={billing.isCommitted}
+              entityType="billing"
+              services={services}
+            />
           </div>
 
           <div className="space-y-2 text-sm">

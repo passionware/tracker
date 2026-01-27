@@ -9,6 +9,18 @@ export function createMutationService(
   api: MutationApi,
 ): MutationService {
   return {
+    commit: async (entityType, id) => {
+      await api.commit(entityType, id);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: `Committing ${entityType}`,
+      });
+    },
+    undoCommit: async (entityType, id) => {
+      await api.undoCommit(entityType, id);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: `Undoing commit of ${entityType}`,
+      });
+    },
     linkReportAndBilling: async (payload) => {
       await api.linkReportAndBilling(payload);
       await config.services.messageService.reportSystemEffect.sendRequest({
@@ -52,11 +64,31 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    bulkDeleteBillingReportLink: async (linkIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteBillingReportLink(linkIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting billing report links",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
     deleteCostReportLink: async (linkId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteCostReportLink(linkId);
         await config.services.messageService.reportSystemEffect.sendRequest({
           scope: "Deleting cost report link",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
+    bulkDeleteCostReportLink: async (linkIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteCostReportLink(linkIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting cost report links",
         });
       } else {
         throw new Error("Danger mode is not enabled");
@@ -92,11 +124,31 @@ export function createMutationService(
         throw new Error("Danger mode is not enabled");
       }
     },
+    bulkDeleteBilling: async (billingIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteBilling(billingIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting billings",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
     deleteCost: async (costId) => {
       if (config.services.preferenceService.getIsDangerMode()) {
         await api.deleteCost(costId);
         await config.services.messageService.reportSystemEffect.sendRequest({
           scope: "Deleting cost",
+        });
+      } else {
+        throw new Error("Danger mode is not enabled");
+      }
+    },
+    bulkDeleteCost: async (costIds) => {
+      if (config.services.preferenceService.getIsDangerMode()) {
+        await api.bulkDeleteCost(costIds);
+        await config.services.messageService.reportSystemEffect.sendRequest({
+          scope: "Bulk deleting costs",
         });
       } else {
         throw new Error("Danger mode is not enabled");

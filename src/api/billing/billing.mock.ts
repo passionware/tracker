@@ -19,6 +19,7 @@ export const billingMock = createMockFactory<BillingBase>(
     workspaceId: faker.helpers.arrayElement(
       workspaceMock.static.list.map((w) => w.id),
     ),
+    isCommitted: false,
   }),
   [
     {
@@ -32,6 +33,7 @@ export const billingMock = createMockFactory<BillingBase>(
       description: "Test description",
       totalNet: 12000,
       totalGross: 14760,
+      isCommitted: false,
     },
   ],
 );

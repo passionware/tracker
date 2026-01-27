@@ -1,3 +1,4 @@
+import { booleanFilterSupabaseUtils } from "@/api/_common/query/filters/BooleanFilter.supabase.ts";
 import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { numberFilterSupabaseUtils } from "@/api/_common/query/filters/NumberFilter.supabase.ts";
@@ -102,6 +103,14 @@ export function createReportsApi(client: SupabaseClient): ReportApi {
           request,
           query.filters.projectIterationId,
           "project_iteration_id",
+        );
+      }
+
+      if (query.filters.commitState) {
+        request = booleanFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.commitState,
+          "is_committed",
         );
       }
 

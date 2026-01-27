@@ -54,6 +54,7 @@ export function PositionList(
   };
   return (
     <ListView
+      getRowId={() => -1}
       onRowDoubleClick={async (row) => {
         if (!isEvent(row)) return;
         const result =

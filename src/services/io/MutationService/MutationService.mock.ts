@@ -10,6 +10,14 @@ export function createMutationService(
 ): MutationService {
   const wait = () => delay(responseDelay);
   return {
+    commit: async (entityType) => {
+      onActionAccessor.get()(`Committing ${entityType}`);
+      await wait();
+    },
+    undoCommit: async (entityType) => {
+      onActionAccessor.get()(`Undoing commit of ${entityType}`);
+      await wait();
+    },
     updateContractorWorkspaceForProject: async () => {
       onActionAccessor.get()("Updating contractor workspace for project");
       await wait();
@@ -45,8 +53,16 @@ export function createMutationService(
       onActionAccessor.get()("Deleting billing report link");
       await wait();
     },
+    bulkDeleteBillingReportLink: async () => {
+      onActionAccessor.get()("Bulk deleting billing report links");
+      await wait();
+    },
     deleteCostReportLink: async () => {
       onActionAccessor.get()("Deleting cost report link");
+      await wait();
+    },
+    bulkDeleteCostReportLink: async () => {
+      onActionAccessor.get()("Bulk deleting cost report links");
       await wait();
     },
     editReport: async () => {
@@ -79,6 +95,14 @@ export function createMutationService(
     },
     deleteBilling: async () => {
       onActionAccessor.get()("Deleting billing");
+      await wait();
+    },
+    bulkDeleteBilling: async () => {
+      onActionAccessor.get()("Bulk deleting billings");
+      await wait();
+    },
+    bulkDeleteCost: async () => {
+      onActionAccessor.get()("Bulk deleting costs");
       await wait();
     },
     deleteCostReport: async () => {

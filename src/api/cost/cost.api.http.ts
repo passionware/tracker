@@ -1,3 +1,4 @@
+import { booleanFilterSupabaseUtils } from "@/api/_common/query/filters/BooleanFilter.supabase.ts";
 import { dateFilterSupabaseUtils } from "@/api/_common/query/filters/DateFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import { cost$, costFromHttp } from "@/api/cost/cost.api.http.schema.ts";
@@ -171,6 +172,14 @@ export function createCostApi(client: SupabaseClient): CostApi {
           request,
           query.filters.invoiceDate,
           "invoice_date",
+        );
+      }
+
+      if (query.filters.commitState) {
+        request = booleanFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.commitState,
+          "is_committed",
         );
       }
 
