@@ -370,7 +370,7 @@ USING (
 -- ============================================================================
 
 -- Generic function to set committed status for any table
-CREATE OR REPLACE FUNCTION mmitted(
+CREATE OR REPLACE FUNCTION set_committed(
   p_table text,
   p_id bigint,
   p_value boolean
