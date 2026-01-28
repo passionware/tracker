@@ -60,7 +60,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             <Button
               slot="increment"
               className={cn(
-                "flex h-5 w-10 items-center justify-center border-b border-border bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-tr-md",
+                "flex h-5 w-10 items-center justify-center border-b border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-tr-md",
                 buttonClassName,
               )}
             >
@@ -69,7 +69,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             <Button
               slot="decrement"
               className={cn(
-                "flex h-5 w-10 items-center justify-center bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-br-md",
+                "flex h-5 w-10 items-center justify-center bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-br-md",
                 buttonClassName,
               )}
             >
