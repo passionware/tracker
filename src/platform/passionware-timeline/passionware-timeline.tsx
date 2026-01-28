@@ -28,7 +28,7 @@ export interface TimelineItem<Data = unknown> {
   label: string;
   color?: string;
   row?: number; // Sub-row for parallel items
-  data?: Data; // Custom data attached to the item
+  data: Data; // Custom data attached to the item
 }
 
 export interface Lane {
@@ -96,6 +96,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(9, 30),
     label: "Team Standup",
     color: "bg-chart-1",
+    data: null,
   },
   {
     id: "item-2",
@@ -104,6 +105,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(11, 30),
     label: "Product Review",
     color: "bg-chart-1",
+    data: null,
   },
   {
     id: "item-3",
@@ -112,6 +114,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(10),
     label: "Sprint Planning",
     color: "bg-chart-1",
+    data: null,
   }, // Overlapping
   {
     id: "item-4",
@@ -120,6 +123,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(12),
     label: "Workshop",
     color: "bg-chart-2",
+    data: null,
   },
   {
     id: "item-5",
@@ -128,6 +132,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(13),
     label: "Training Session",
     color: "bg-chart-2",
+    data: null,
   }, // Overlapping
   {
     id: "item-6",
@@ -136,6 +141,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(10),
     label: "All Hands",
     color: "bg-chart-3",
+    data: null,
   },
   {
     id: "item-7",
@@ -144,6 +150,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(14),
     label: "Zoom Call",
     color: "bg-chart-4",
+    data: null,
   },
   {
     id: "item-8",
@@ -152,6 +159,7 @@ const initialItems: TimelineItem[] = [
     end: toMinutes(17),
     label: "Client Meeting",
     color: "bg-chart-5",
+    data: null,
   },
 ];
 
@@ -225,6 +233,7 @@ interface DefaultTimelineItemProps<Data = unknown> {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
+  onMouseOver?: () => void;
 }
 
 export function DefaultTimelineItem<Data = unknown>({
@@ -238,6 +247,7 @@ export function DefaultTimelineItem<Data = unknown>({
   onMouseEnter,
   onMouseLeave,
   onClick,
+  onMouseOver,
   ...props
 }: DefaultTimelineItemProps<Data>) {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -291,6 +301,7 @@ export function DefaultTimelineItem<Data = unknown>({
       onMouseDown={handleMouseDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onMouseOver={onMouseOver}
     >
       {/* Resize handle - start */}
       <div
@@ -341,6 +352,7 @@ interface InfiniteTimelineProps<Data = unknown> {
   }) => React.ReactNode;
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
+  onItemHover?: (item: TimelineItem<Data>) => void;
 }
 
 export function InfiniteTimeline<Data = unknown>({
@@ -350,6 +362,7 @@ export function InfiniteTimeline<Data = unknown>({
   renderItem,
   onItemsChange,
   onItemClick,
+  onItemHover,
 }: InfiniteTimelineProps<Data> = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
@@ -679,9 +692,10 @@ export function InfiniteTimeline<Data = unknown>({
         // If clicking on timeline items or lanes, don't pan
         // Also check if meta/ctrl key is pressed (used for drawing)
         if (
-          (e.metaKey || e.ctrlKey) ||
-          target.closest('[data-timeline-item]') ||
-          target.closest('[data-timeline-lane]')
+          e.metaKey ||
+          e.ctrlKey ||
+          target.closest("[data-timeline-item]") ||
+          target.closest("[data-timeline-lane]")
         ) {
           return;
         }
@@ -775,7 +789,7 @@ export function InfiniteTimeline<Data = unknown>({
     // Check if this is a drawing action (middle mouse or cmd+left)
     const isDrawingButton =
       e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
-    
+
     if (isDrawingButton) {
       // Start drawing
       if (dragState) return;
@@ -796,7 +810,7 @@ export function InfiniteTimeline<Data = unknown>({
       // Regular left click on empty lane space - allow panning
       // Check if we're clicking on an item
       const target = e.target as HTMLElement;
-      if (target.closest('[data-timeline-item]')) {
+      if (target.closest("[data-timeline-item]")) {
         return; // Let item handle it
       }
       // Start panning
@@ -1604,9 +1618,10 @@ export function InfiniteTimeline<Data = unknown>({
               // Check if we're clicking on an item or lane
               const target = e.target as HTMLElement;
               if (
-                (e.metaKey || e.ctrlKey) ||
-                target.closest('[data-timeline-item]') ||
-                target.closest('[data-timeline-lane]')
+                e.metaKey ||
+                e.ctrlKey ||
+                target.closest("[data-timeline-item]") ||
+                target.closest("[data-timeline-lane]")
               ) {
                 return;
               }
@@ -1872,11 +1887,11 @@ export function InfiniteTimeline<Data = unknown>({
                       onMouseDown: handleItemMouseDown,
                       onMouseEnter: () => setHoveredItemId(item.id),
                       onMouseLeave: () => setHoveredItemId(null),
-                      onClick: onItemClick
-                        ? (e: ReactMouseEvent) => {
-                            e.stopPropagation();
-                            onItemClick(item);
-                          }
+                      onMouseDownCapture: onItemClick
+                        ? (_e: ReactMouseEvent) => onItemClick(item)
+                        : undefined,
+                      onMouseOver: onItemHover
+                        ? () => onItemHover(item)
                         : undefined,
                     };
 

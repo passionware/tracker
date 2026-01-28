@@ -7,7 +7,10 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { SplitViewLayout, ViewMode } from "@/features/_common/SplitViewLayout.tsx";
+import {
+  SplitViewLayout,
+  ViewMode,
+} from "@/features/_common/SplitViewLayout.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -66,6 +69,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { createSimpleEvent } from "@passionware/simple-event";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -86,9 +90,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   // Load preferences from service
   const savedPreferences = props.services.preferenceService.useTimelineView();
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    savedPreferences.viewMode,
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>(savedPreferences.viewMode);
   const [timelineDarkMode, setTimelineDarkMode] = useState(
     savedPreferences.darkMode,
   );
@@ -107,6 +109,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       setTimelineGroupBy(prefs.groupBy);
     })();
   }, [props.services.preferenceService]);
+
+  const scrollEvent = useMemo(createSimpleEvent<number>, []);
 
   // Save preferences when they change
   useEffect(() => {
@@ -557,31 +561,39 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimeline
+              onItemClick={(item) => {
+                scrollEvent.emit(item.data.id);
+              }}
               key={timelineGroupBy}
               items={timelineData.items}
               lanes={timelineData.lanes}
               baseDate={timelineData.baseDate}
-              renderItem={(itemProps) => {
-                const reportEntry = itemProps.item.data as ReportViewEntry;
-                if (!reportEntry) {
-                  // Fallback to default if no report data
-                  return <DefaultTimelineItem {...itemProps} />;
-                }
+              renderItem={
+                viewMode === "timeline"
+                  ? (itemProps) => {
+                      const reportEntry = itemProps.item
+                        .data as ReportViewEntry;
+                      if (!reportEntry) {
+                        // Fallback to default if no report data
+                        return <DefaultTimelineItem {...itemProps} />;
+                      }
 
-                return (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <DefaultTimelineItem {...itemProps} />
-                    </PopoverTrigger>
-                    <PopoverContent className="w-96 p-4">
-                      <ReportPreview
-                        services={props.services}
-                        reportId={reportEntry.id}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                );
-              }}
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <DefaultTimelineItem {...itemProps} />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-96 p-4">
+                            <ReportPreview
+                              services={props.services}
+                              reportId={reportEntry.id}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    }
+                  : undefined
+              }
             />
           </div>
         );
@@ -591,6 +603,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   function renderTableView() {
     return (
       <ListView
+        scrollEvent={scrollEvent}
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
         data={rd.map(finalReports, (r) => r.entries)}
