@@ -160,14 +160,6 @@ function toExternalItem<Data>(
   };
 }
 
-const initialLanes: Lane[] = [
-  { id: "lane-1", name: "Meeting Room A", color: "bg-chart-1" },
-  { id: "lane-2", name: "Meeting Room B", color: "bg-chart-2" },
-  { id: "lane-3", name: "Conference Hall", color: "bg-chart-3" },
-  { id: "lane-4", name: "Virtual", color: "bg-chart-4" },
-  { id: "lane-5", name: "External", color: "bg-chart-5" },
-];
-
 // Note: initialItems removed - component now requires external items with ZonedDateTime
 
 // Format time from minutes to display string
@@ -365,7 +357,7 @@ interface InfiniteTimelineProps<Data = unknown> {
 
 export function InfiniteTimeline<Data = unknown>({
   items: externalItems,
-  lanes: externalLanes,
+  lanes,
   timeZone = getLocalTimeZone(),
   renderItem,
   onItemsChange,
@@ -410,7 +402,6 @@ export function InfiniteTimeline<Data = unknown>({
   const [items, setItems] = useState<TimelineItemInternal<Data>[]>(
     initialInternalItems as TimelineItemInternal<Data>[],
   );
-  const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
 
   // Calculate initial zoom and scroll to fit all items
   const initialView = useMemo(() => {
@@ -1214,7 +1205,7 @@ export function InfiniteTimeline<Data = unknown>({
     // Get all items in this lane, including the preview item
     const laneItems = items.filter((item) => item.laneId === dragState.laneId);
     const allItems = [...laneItems, previewItemTemp];
-    
+
     // Sort all items by start time (same as getItemsWithRows)
     const sortedItems = allItems.sort((a, b) => a.start - b.start);
     const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
