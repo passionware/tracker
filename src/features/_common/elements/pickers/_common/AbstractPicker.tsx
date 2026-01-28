@@ -153,7 +153,7 @@ export function AbstractPicker<Id, Data>(
             <div
               className={cn(
                 "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                "text-sky-800 dark:text-sky-50 ",
+                "text-accent-foreground",
               )}
             >
               <Unlink2 />

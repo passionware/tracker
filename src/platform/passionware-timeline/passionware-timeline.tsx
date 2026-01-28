@@ -9,6 +9,11 @@ import {
   useMemo,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import {
+  ZonedDateTime,
+  getLocalTimeZone,
+  fromAbsolute,
+} from "@internationalized/date";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -19,16 +24,28 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 
-// Types
+// External types - using @internationalized/date
 export interface TimelineItem<Data = unknown> {
   id: string;
   laneId: string;
-  start: number; // Time in minutes from epoch
+  start: ZonedDateTime; // External interface uses ZonedDateTime
+  end: ZonedDateTime;
+  label: string;
+  color?: string;
+  row?: number; // Sub-row for parallel items
+  data: Data; // Custom data attached to the item
+}
+
+// Internal types - using minutes for performance
+interface TimelineItemInternal<Data = unknown> {
+  id: string;
+  laneId: string;
+  start: number; // Time in minutes from base date (auto-calculated)
   end: number;
   label: string;
   color?: string;
   row?: number; // Sub-row for parallel items
-  data?: Data; // Custom data attached to the item
+  data: Data; // Custom data attached to the item
 }
 
 export interface Lane {
@@ -43,8 +60,9 @@ interface DragState<Data = unknown> {
   laneId?: string;
   startX: number;
   startTime: number;
-  originalItem?: TimelineItem<Data>;
+  originalItem?: TimelineItemInternal<Data>;
   drawStart?: number;
+  hasCrossedThreshold?: boolean; // Whether mouse has moved enough to start drag
 }
 
 type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
@@ -52,6 +70,7 @@ type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
 // Constants
 const PIXELS_PER_MINUTE = 2; // Base pixels per minute
 const MIN_ITEM_DURATION = 5; // Minimum 5 minutes
+const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 const LANE_HEIGHT = 80;
 const SUB_ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
@@ -80,6 +99,67 @@ const ITEM_COLORS = [
 const BASE_DATE = new Date(2025, 0, 27, 8, 0); // Jan 27, 2025 8:00 AM
 const toMinutes = (hours: number, mins = 0) => hours * 60 + mins;
 
+// Conversion utilities between ZonedDateTime and minutes
+// baseDate is auto-calculated from items, so no prop needed
+function zonedDateTimeToMinutes(
+  zonedDateTime: ZonedDateTime,
+  baseDate: ZonedDateTime,
+): number {
+  const baseMs = baseDate.toDate().getTime();
+  const dateMs = zonedDateTime.toDate().getTime();
+  return Math.floor((dateMs - baseMs) / (1000 * 60));
+}
+
+function minutesToZonedDateTime(
+  minutes: number,
+  baseDate: ZonedDateTime,
+): ZonedDateTime {
+  const baseMs = baseDate.toDate().getTime();
+  const targetMs = baseMs + minutes * 60 * 1000;
+  return fromAbsolute(targetMs, baseDate.timeZone);
+}
+
+function dateToZonedDateTime(
+  date: Date,
+  timeZone: string = getLocalTimeZone(),
+): ZonedDateTime {
+  return fromAbsolute(date.getTime(), timeZone);
+}
+
+function zonedDateTimeToDate(zonedDateTime: ZonedDateTime): Date {
+  return zonedDateTime.toDate();
+}
+
+// Helper to convert minutes to Date using base ZonedDateTime
+function minutesToDate(minutes: number, baseDate: ZonedDateTime): Date {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  return zonedDateTime.toDate();
+}
+
+// Convert external TimelineItem to internal format
+function toInternalItem<Data>(
+  item: TimelineItem<Data>,
+  baseDate: ZonedDateTime,
+): TimelineItemInternal<Data> {
+  return {
+    ...item,
+    start: zonedDateTimeToMinutes(item.start, baseDate),
+    end: zonedDateTimeToMinutes(item.end, baseDate),
+  };
+}
+
+// Convert internal TimelineItem to external format
+function toExternalItem<Data>(
+  item: TimelineItemInternal<Data>,
+  baseDate: ZonedDateTime,
+): TimelineItem<Data> {
+  return {
+    ...item,
+    start: minutesToZonedDateTime(item.start, baseDate),
+    end: minutesToZonedDateTime(item.end, baseDate),
+  };
+}
+
 const initialLanes: Lane[] = [
   { id: "lane-1", name: "Meeting Room A", color: "bg-chart-1" },
   { id: "lane-2", name: "Meeting Room B", color: "bg-chart-2" },
@@ -88,86 +168,24 @@ const initialLanes: Lane[] = [
   { id: "lane-5", name: "External", color: "bg-chart-5" },
 ];
 
-const initialItems: TimelineItem[] = [
-  {
-    id: "item-1",
-    laneId: "lane-1",
-    start: toMinutes(8),
-    end: toMinutes(9, 30),
-    label: "Team Standup",
-    color: "bg-chart-1",
-  },
-  {
-    id: "item-2",
-    laneId: "lane-1",
-    start: toMinutes(10),
-    end: toMinutes(11, 30),
-    label: "Product Review",
-    color: "bg-chart-1",
-  },
-  {
-    id: "item-3",
-    laneId: "lane-1",
-    start: toMinutes(8, 30),
-    end: toMinutes(10),
-    label: "Sprint Planning",
-    color: "bg-chart-1",
-  }, // Overlapping
-  {
-    id: "item-4",
-    laneId: "lane-2",
-    start: toMinutes(9),
-    end: toMinutes(12),
-    label: "Workshop",
-    color: "bg-chart-2",
-  },
-  {
-    id: "item-5",
-    laneId: "lane-2",
-    start: toMinutes(11),
-    end: toMinutes(13),
-    label: "Training Session",
-    color: "bg-chart-2",
-  }, // Overlapping
-  {
-    id: "item-6",
-    laneId: "lane-3",
-    start: toMinutes(8),
-    end: toMinutes(10),
-    label: "All Hands",
-    color: "bg-chart-3",
-  },
-  {
-    id: "item-7",
-    laneId: "lane-4",
-    start: toMinutes(13),
-    end: toMinutes(14),
-    label: "Zoom Call",
-    color: "bg-chart-4",
-  },
-  {
-    id: "item-8",
-    laneId: "lane-5",
-    start: toMinutes(15),
-    end: toMinutes(17),
-    label: "Client Meeting",
-    color: "bg-chart-5",
-  },
-];
+// Note: initialItems removed - component now requires external items with ZonedDateTime
 
 // Format time from minutes to display string
 function formatTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60) % 24;
-  const mins = minutes % 60;
+  // Normalize minutes to handle negative values correctly
+  // Convert to positive equivalent within a day
+  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const mins = normalizedMinutes % 60;
   const period = hours >= 12 ? "PM" : "AM";
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
   return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
 }
 
 // Format date from minutes offset
-function formatDate(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatDate(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -176,9 +194,9 @@ function formatDate(minutes: number, baseDate?: Date): string {
 }
 
 // Format month and year
-function formatMonthYear(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatMonthYear(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
@@ -186,16 +204,16 @@ function formatMonthYear(minutes: number, baseDate?: Date): string {
 }
 
 // Format year only
-function formatYear(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatYear(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.getFullYear().toString();
 }
 
 // Format week (start of week)
-function formatWeek(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatWeek(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   // Get start of week (Sunday)
   const dayOfWeek = date.getDay();
   const startOfWeek = new Date(date);
@@ -222,6 +240,7 @@ interface DefaultTimelineItemProps<Data = unknown> {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
+  onMouseOver?: () => void;
 }
 
 export function DefaultTimelineItem<Data = unknown>({
@@ -235,6 +254,7 @@ export function DefaultTimelineItem<Data = unknown>({
   onMouseEnter,
   onMouseLeave,
   onClick,
+  onMouseOver,
   ...props
 }: DefaultTimelineItemProps<Data>) {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -271,6 +291,7 @@ export function DefaultTimelineItem<Data = unknown>({
   return (
     <div
       {...props}
+      data-timeline-item
       className={cn(
         "absolute rounded transition-shadow cursor-grab group",
         item.color || "bg-primary",
@@ -287,6 +308,7 @@ export function DefaultTimelineItem<Data = unknown>({
       onMouseDown={handleMouseDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onMouseOver={onMouseOver}
     >
       {/* Resize handle - start */}
       <div
@@ -318,7 +340,8 @@ function getDayStart(minutes: number): number {
 interface InfiniteTimelineProps<Data = unknown> {
   items?: TimelineItem<Data>[];
   lanes?: Lane[];
-  baseDate?: Date;
+  timeZone?: string; // Timezone for date conversions, defaults to local
+  // baseDate is auto-calculated from items, no prop needed!
   renderItem?: (props: {
     item: TimelineItem<Data>;
     left: number;
@@ -337,15 +360,17 @@ interface InfiniteTimelineProps<Data = unknown> {
   }) => React.ReactNode;
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
+  onItemHover?: (item: TimelineItem<Data>) => void;
 }
 
 export function InfiniteTimeline<Data = unknown>({
   items: externalItems,
   lanes: externalLanes,
-  baseDate: externalBaseDate,
+  timeZone = getLocalTimeZone(),
   renderItem,
   onItemsChange,
   onItemClick,
+  onItemHover,
 }: InfiniteTimelineProps<Data> = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
@@ -354,18 +379,42 @@ export function InfiniteTimeline<Data = unknown>({
     end: number;
     row: number;
   } | null>(null);
-  const baseDate = externalBaseDate || BASE_DATE;
-  const [items, setItems] = useState<TimelineItem<Data>[]>(
-    externalItems || (initialItems as TimelineItem<Data>[]),
+
+  // Auto-calculate baseDate from items (earliest start time, or default)
+  const baseDateZoned = useMemo(() => {
+    if (externalItems && externalItems.length > 0) {
+      // Use the earliest item's start time as base
+      const earliest = externalItems.reduce((earliest, item) => {
+        const itemMs = item.start.toDate().getTime();
+        const earliestMs = earliest.toDate().getTime();
+        return itemMs < earliestMs ? item.start : earliest;
+      }, externalItems[0].start);
+      // Round down to start of day for cleaner calculations
+      const earliestDate = earliest.toDate();
+      earliestDate.setHours(0, 0, 0, 0);
+      return fromAbsolute(earliestDate.getTime(), earliest.timeZone);
+    }
+    // Default base date if no items
+    return dateToZonedDateTime(BASE_DATE, timeZone);
+  }, [externalItems, timeZone]);
+
+  // Convert external items to internal format (minutes)
+  const initialInternalItems = useMemo(() => {
+    if (externalItems && externalItems.length > 0) {
+      return externalItems.map((item) => toInternalItem(item, baseDateZoned));
+    }
+    // No initial items - return empty array if no external items provided
+    return [];
+  }, [externalItems, baseDateZoned]);
+
+  const [items, setItems] = useState<TimelineItemInternal<Data>[]>(
+    initialInternalItems as TimelineItemInternal<Data>[],
   );
   const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
 
   // Calculate initial zoom and scroll to fit all items
   const initialView = useMemo(() => {
-    const allItems =
-      externalItems && externalItems.length > 0
-        ? externalItems
-        : (initialItems as TimelineItem<Data>[]);
+    const allItems = initialInternalItems;
     if (!allItems || allItems.length === 0) {
       return {
         zoom: 1,
@@ -403,7 +452,7 @@ export function InfiniteTimeline<Data = unknown>({
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * zoom;
 
     return { zoom, scrollOffset };
-  }, [externalItems]);
+  }, [initialInternalItems]);
 
   const [scrollOffset, setScrollOffset] = useState(initialView.scrollOffset);
   const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
@@ -440,9 +489,12 @@ export function InfiniteTimeline<Data = unknown>({
   // Sync external items and update view when items change
   useEffect(() => {
     if (externalItems) {
-      setItems(externalItems);
+      const internalItems = externalItems.map((item) =>
+        toInternalItem(item, baseDateZoned),
+      );
+      setItems(internalItems);
     }
-  }, [externalItems]);
+  }, [externalItems, baseDateZoned]);
 
   // Update zoom and scroll when items change to fit all items
   useEffect(() => {
@@ -474,12 +526,15 @@ export function InfiniteTimeline<Data = unknown>({
     setScrollOffset(newScrollOffset);
   }, []);
 
-  // Notify parent of items change
+  // Notify parent of items change (convert internal to external format)
   useEffect(() => {
     if (onItemsChange) {
-      onItemsChange(items);
+      const externalItems = items.map((item) =>
+        toExternalItem(item, baseDateZoned),
+      );
+      onItemsChange(externalItems);
     }
-  }, [items, onItemsChange]);
+  }, [items, onItemsChange, baseDateZoned]);
 
   // Calculate sub-rows for overlapping items in a lane
   const getItemsWithRows = useCallback(
@@ -489,7 +544,8 @@ export function InfiniteTimeline<Data = unknown>({
     ) => {
       const laneItems = items.filter((item) => item.laneId === laneId);
       const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-      const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
+      const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] =
+        [];
 
       for (const item of sortedItems) {
         // Find the first available row
@@ -603,7 +659,7 @@ export function InfiniteTimeline<Data = unknown>({
     [scrollOffset, pixelsPerMinute],
   );
 
-  // Handle wheel scroll (horizontal pan, vertical scroll, and zoom)
+  // Handle wheel scroll (vertical scroll, horizontal pan with shift, and zoom)
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
@@ -631,7 +687,10 @@ export function InfiniteTimeline<Data = unknown>({
         setZoom(newZoom);
         setScrollOffset(newScrollOffset);
       } else if (e.shiftKey) {
-        // Shift+scroll: vertical scrolling (when shift is pressed, deltaX contains the vertical scroll)
+        // Shift+scroll: horizontal pan
+        setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
+      } else {
+        // Regular scroll: vertical scrolling
         setVerticalScrollOffset((prev) => {
           const containerHeight = containerRef.current?.clientHeight || 0;
           const preview = previewItemRef.current;
@@ -644,14 +703,10 @@ export function InfiniteTimeline<Data = unknown>({
             0,
             totalHeight - containerHeight + HEADER_HEIGHT,
           );
-          // When shift is pressed, horizontal scroll becomes vertical, so use deltaX
           const scrollDelta =
             Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
           return Math.max(0, Math.min(maxOffset, prev + scrollDelta));
         });
-      } else {
-        // Regular scroll: horizontal pan
-        setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
       }
     },
     [zoom, scrollOffset, lanes, getLaneHeight],
@@ -665,11 +720,24 @@ export function InfiniteTimeline<Data = unknown>({
     return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
-  // Handle middle mouse button panning
+  // Handle left mouse button panning (when not on items/lanes)
   const handleMouseDown = useCallback(
     (e: globalThis.MouseEvent) => {
-      // Middle mouse button (button 1) or wheel button
-      if (e.button === 1 && !dragState) {
+      // Left mouse button (button 0) for panning, but only if not on items/lanes
+      // Items and lanes will handle their own mouse events and stop propagation
+      if (e.button === 0 && !dragState && !panState) {
+        // Check if we're clicking on an item or lane by checking the target
+        const target = e.target as HTMLElement;
+        // If clicking on timeline items or lanes, don't pan
+        // Also check if meta/ctrl key is pressed (used for drawing)
+        if (
+          e.metaKey ||
+          e.ctrlKey ||
+          target.closest("[data-timeline-item]") ||
+          target.closest("[data-timeline-lane]")
+        ) {
+          return;
+        }
         e.preventDefault();
         setPanState({
           startX: e.clientX,
@@ -679,7 +747,7 @@ export function InfiniteTimeline<Data = unknown>({
         });
       }
     },
-    [dragState, scrollOffset, verticalScrollOffset],
+    [dragState, panState, scrollOffset, verticalScrollOffset],
   );
 
   // Handle panning with middle mouse button
@@ -735,14 +803,14 @@ export function InfiniteTimeline<Data = unknown>({
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Handle mouse down on item (start drag)
+  // Handle mouse down on item (start drag) - uses internal format
   const handleItemMouseDown = (
     e: ReactMouseEvent,
-    item: TimelineItem<Data>,
+    item: TimelineItemInternal<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
-    // Ignore middle mouse button
-    if (e.button === 1) return;
+    // Ignore middle mouse button and cmd+left (used for drawing)
+    if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) return;
     e.stopPropagation();
     const containerX = screenXToContainerX(e.clientX);
     setSelectedItemId(item.id);
@@ -752,29 +820,52 @@ export function InfiniteTimeline<Data = unknown>({
       startX: e.clientX,
       startTime: pixelToTime(containerX),
       originalItem: { ...item },
+      hasCrossedThreshold: false,
     });
+    // Convert to external format for callback
+    const externalItem = toExternalItem(item, baseDateZoned);
+    onItemClick?.(externalItem);
   };
 
-  // Handle mouse down on lane (start drawing)
+  // Handle mouse down on lane (start drawing or allow panning)
   const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
-    // Ignore middle mouse button
-    if (e.button === 1) return;
-    if (dragState) return;
+    // Check if this is a drawing action (middle mouse or cmd+left)
+    const isDrawingButton =
+      e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
 
-    const containerX = screenXToContainerX(e.clientX);
-    const time = snapTime(pixelToTime(containerX));
-    // const laneIndex = lanes.findIndex((l) => l.id === laneId);
+    if (isDrawingButton) {
+      // Start drawing
+      if (dragState) return;
+      e.stopPropagation();
+      const containerX = screenXToContainerX(e.clientX);
+      const time = snapTime(pixelToTime(containerX));
 
-    setDragState({
-      type: "draw",
-      laneId,
-      startX: e.clientX,
-      startTime: time,
-      drawStart: time,
-    });
-    setCurrentMouseX(e.clientX);
-
-    setSelectedItemId(null);
+      setDragState({
+        type: "draw",
+        laneId,
+        startX: e.clientX,
+        startTime: time,
+        drawStart: time,
+      });
+      setCurrentMouseX(e.clientX);
+      setSelectedItemId(null);
+    } else if (e.button === 0 && !dragState && !panState) {
+      // Regular left click on empty lane space - allow panning
+      // Check if we're clicking on an item
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-timeline-item]")) {
+        return; // Let item handle it
+      }
+      // Start panning
+      e.preventDefault();
+      e.stopPropagation();
+      setPanState({
+        startX: e.clientX,
+        startY: e.clientY,
+        startScrollOffset: scrollOffset,
+        startVerticalScrollOffset: verticalScrollOffset,
+      });
+    }
   };
 
   // Handle global mouse move
@@ -791,7 +882,20 @@ export function InfiniteTimeline<Data = unknown>({
         return;
       }
 
-      if (dragState.originalItem && dragState.itemId) {
+      // Check if we've crossed the drag threshold
+      const deltaX = Math.abs(e.clientX - dragState.startX);
+      const hasCrossedThreshold =
+        dragState.hasCrossedThreshold || deltaX >= DRAG_THRESHOLD;
+
+      // Update drag state to mark threshold as crossed
+      if (hasCrossedThreshold && !dragState.hasCrossedThreshold) {
+        setDragState((prev) =>
+          prev ? { ...prev, hasCrossedThreshold: true } : null,
+        );
+      }
+
+      // Only update items if threshold has been crossed
+      if (hasCrossedThreshold && dragState.originalItem && dragState.itemId) {
         setItems((prev) =>
           prev.map((item) => {
             if (item.id !== dragState.itemId) return item;
@@ -837,34 +941,46 @@ export function InfiniteTimeline<Data = unknown>({
     (e: globalThis.MouseEvent) => {
       if (!dragState) return;
 
-      if (
+      // Store drag state values before clearing
+      const wasDrawing =
         dragState.type === "draw" &&
         dragState.laneId &&
-        dragState.drawStart !== undefined
-      ) {
+        dragState.drawStart !== undefined;
+
+      let newItem: TimelineItemInternal<Data> | null = null;
+
+      if (wasDrawing) {
         const containerX = screenXToContainerX(e.clientX);
         const endTime = snapTime(pixelToTime(containerX));
-        const start = Math.min(dragState.drawStart, endTime);
-        const end = Math.max(dragState.drawStart, endTime);
+        const start = Math.min(dragState.drawStart!, endTime);
+        const end = Math.max(dragState.drawStart!, endTime);
 
         if (end - start >= MIN_ITEM_DURATION) {
-          const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId);
-          const newItem: TimelineItem<Data> = {
+          const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId!);
+          // Create item in internal format (minutes)
+          newItem = {
             id: generateId(),
-            laneId: dragState.laneId,
+            laneId: dragState.laneId!,
             start,
             end,
             label: "New Event",
             color: ITEM_COLORS[laneIndex % ITEM_COLORS.length],
-          } as TimelineItem<Data>;
-          setItems((prev) => [...prev, newItem]);
-          setSelectedItemId(newItem.id);
+          } as TimelineItemInternal<Data>;
         }
       }
 
+      // Clear preview ref and drag state FIRST to prevent stale layout calculations
+      // This ensures calculatedPreviewItem becomes null before we add the new item
+      previewItemRef.current = null;
       setDragState(null);
       setPreviewRow(null);
       setCurrentMouseX(null);
+
+      // Then add the new item (if any) - this will trigger a re-render with correct layout
+      if (newItem) {
+        setItems((prev) => [...prev, newItem!]);
+        setSelectedItemId(newItem.id);
+      }
     },
     [dragState, pixelToTime, lanes, snapTime, screenXToContainerX],
   );
@@ -962,8 +1078,8 @@ export function InfiniteTimeline<Data = unknown>({
     }
 
     // Generate month markers for top header
-    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate = minutesToDate(startTime, baseDateZoned);
+    const endDate = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate.getFullYear(),
       startDate.getMonth(),
@@ -973,8 +1089,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -985,7 +1101,7 @@ export function InfiniteTimeline<Data = unknown>({
 
     // Find first Sunday (start of week)
     let currentWeek = startDay;
-    const startDate = new Date(baseDate.getTime() + startDay * 60 * 1000);
+    const startDate = minutesToDate(startDay, baseDateZoned);
     const dayOfWeek = startDate.getDay();
     if (dayOfWeek !== 0) {
       currentWeek -= dayOfWeek * 1440; // Go back to Sunday
@@ -997,8 +1113,8 @@ export function InfiniteTimeline<Data = unknown>({
     }
 
     // Generate month markers for top header
-    const startDate2 = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate2 = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate2 = minutesToDate(startTime, baseDateZoned);
+    const endDate2 = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate2.getFullYear(),
       startDate2.getMonth(),
@@ -1012,15 +1128,15 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
   } else if (timeScale === "months") {
     // Show months in time header, years in top header
-    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate = minutesToDate(startTime, baseDateZoned);
+    const endDate = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate.getFullYear(),
       startDate.getMonth(),
@@ -1030,8 +1146,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -1042,8 +1158,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentYear < endYear) {
       const yearStart = new Date(currentYear);
-      const yearMinutes =
-        (yearStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const yearZoned = dateToZonedDateTime(yearStart, timeZone);
+      const yearMinutes = zonedDateTimeToMinutes(yearZoned, baseDateZoned);
       yearMarkers.push(yearMinutes);
       currentYear.setFullYear(currentYear.getFullYear() + 1);
     }
@@ -1067,6 +1183,7 @@ export function InfiniteTimeline<Data = unknown>({
   const drawingPreview = getDrawingPreview();
 
   // Calculate preview item's full information for collision detection
+  // This uses the same logic as getItemsWithRows to ensure the preview row matches the final row
   const calculatedPreviewItem = React.useMemo(() => {
     if (
       !dragState ||
@@ -1083,21 +1200,38 @@ export function InfiniteTimeline<Data = unknown>({
     const previewStart = Math.min(dragState.drawStart, currentTime);
     const previewEnd = Math.max(dragState.drawStart, currentTime);
 
-    // Calculate row for preview item (without considering it in existing items yet)
-    const laneItems = items.filter((item) => item.laneId === dragState.laneId);
-    const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-    const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
+    // Create a temporary preview item to include in the sorted processing
+    // This ensures the preview row matches exactly what the final row will be
+    const previewItemTemp: TimelineItemInternal<Data> = {
+      id: "__preview__",
+      laneId: dragState.laneId,
+      start: previewStart,
+      end: previewEnd,
+      label: "",
+      data: undefined as Data,
+    };
 
+    // Get all items in this lane, including the preview item
+    const laneItems = items.filter((item) => item.laneId === dragState.laneId);
+    const allItems = [...laneItems, previewItemTemp];
+    
+    // Sort all items by start time (same as getItemsWithRows)
+    const sortedItems = allItems.sort((a, b) => a.start - b.start);
+    const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
+
+    // Process items in sorted order (same logic as getItemsWithRows)
     for (const item of sortedItems) {
       let row = 0;
       let foundRow = false;
 
       while (!foundRow) {
+        // Check collision with already placed items
         const hasOverlap = itemsWithRows.some(
           (placed) =>
             placed.row === row &&
             !(item.end <= placed.start || item.start >= placed.end),
         );
+
         if (!hasOverlap) {
           foundRow = true;
         } else {
@@ -1108,27 +1242,20 @@ export function InfiniteTimeline<Data = unknown>({
       itemsWithRows.push({ ...item, row });
     }
 
-    // Calculate preview item's row
-    let previewRow = 0;
-    let foundPreviewRow = false;
-    while (!foundPreviewRow) {
-      const hasOverlap = itemsWithRows.some(
-        (placed) =>
-          placed.row === previewRow &&
-          !(previewEnd <= placed.start || previewStart >= placed.end),
-      );
-      if (!hasOverlap) {
-        foundPreviewRow = true;
-      } else {
-        previewRow++;
-      }
+    // Find the preview item's row from the processed items
+    const previewItemWithRow = itemsWithRows.find(
+      (item) => item.id === "__preview__",
+    );
+
+    if (!previewItemWithRow) {
+      return null;
     }
 
     return {
       laneId: dragState.laneId,
       start: previewStart,
       end: previewEnd,
-      row: previewRow,
+      row: previewItemWithRow.row,
     };
   }, [
     dragState,
@@ -1162,15 +1289,15 @@ export function InfiniteTimeline<Data = unknown>({
             Timeline Editor
           </h2>
           <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Scroll to pan</span>
+            <span>Drag to pan</span>
             <span className="text-border">|</span>
-            <span>Shift+Scroll to scroll vertically</span>
+            <span>Scroll to scroll vertically</span>
             <span className="text-border">|</span>
-            <span>Middle mouse to pan</span>
+            <span>Shift+Scroll to pan horizontally</span>
             <span className="text-border">|</span>
             <span>Ctrl+Scroll to zoom</span>
             <span className="text-border">|</span>
-            <span>Click+Drag to draw</span>
+            <span>Middle mouse or Cmd+Click to draw</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -1216,7 +1343,13 @@ export function InfiniteTimeline<Data = unknown>({
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
         style={{
-          cursor: panState ? "grabbing" : dragState ? "grabbing" : "crosshair",
+          cursor: panState
+            ? "grabbing"
+            : dragState && dragState.type === "draw"
+              ? "crosshair"
+              : dragState
+                ? "grabbing"
+                : "grab",
         }}
       >
         {/* Date Header */}
@@ -1239,7 +1372,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatDate(minutes, baseDate)}
+                      {formatDate(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1258,7 +1391,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatMonthYear(minutes, baseDate)}
+                      {formatMonthYear(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1277,7 +1410,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatYear(minutes, baseDate)}
+                      {formatYear(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1332,7 +1465,9 @@ export function InfiniteTimeline<Data = unknown>({
                   if (x < -50 || x > containerWidth) return null;
 
                   // Get hour of day (0-23) for this marker
-                  const hourOfDay = Math.floor((minutes % 1440) / 60);
+                  // Normalize to handle negative minutes correctly
+                  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+                  const hourOfDay = Math.floor(normalizedMinutes / 60);
 
                   // Determine if this hour should show a label based on interval
                   let shouldShowLabel = false;
@@ -1394,7 +1529,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isFirstOfMonth = date.getDate() === 1;
 
                 return (
@@ -1435,7 +1570,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isFirstOfMonth = date.getDate() <= 7;
 
                 return (
@@ -1452,7 +1587,7 @@ export function InfiniteTimeline<Data = unknown>({
                           : "text-muted-foreground",
                       )}
                     >
-                      {formatWeek(minutes, baseDate)}
+                      {formatWeek(minutes, baseDateZoned)}
                     </span>
                     <div
                       className={cn(
@@ -1473,7 +1608,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isQuarter = date.getMonth() % 3 === 0;
 
                 return (
@@ -1556,6 +1691,29 @@ export function InfiniteTimeline<Data = unknown>({
             left: SIDEBAR_WIDTH,
             right: 0,
           }}
+          onMouseDown={(e) => {
+            // Handle panning on empty space in the grid
+            if (e.button === 0 && !dragState && !panState) {
+              // Check if we're clicking on an item or lane
+              const target = e.target as HTMLElement;
+              if (
+                e.metaKey ||
+                e.ctrlKey ||
+                target.closest("[data-timeline-item]") ||
+                target.closest("[data-timeline-lane]")
+              ) {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              setPanState({
+                startX: e.clientX,
+                startY: e.clientY,
+                startScrollOffset: scrollOffset,
+                startVerticalScrollOffset: verticalScrollOffset,
+              });
+            }
+          }}
         >
           <div
             style={{
@@ -1632,7 +1790,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isFirstOfMonth = date.getDate() === 1;
 
@@ -1676,7 +1834,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isFirstOfMonth = date.getDate() <= 7;
 
@@ -1720,7 +1878,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isQuarter = date.getMonth() % 3 === 0;
                     const isYearStart = date.getMonth() === 0;
@@ -1774,6 +1932,7 @@ export function InfiniteTimeline<Data = unknown>({
               return (
                 <div
                   key={lane.id}
+                  data-timeline-lane
                   className={cn(
                     "absolute left-0 right-0 border-b border-border",
                     laneIndex % 2 === 0
@@ -1797,21 +1956,31 @@ export function InfiniteTimeline<Data = unknown>({
                     const isSelected = selectedItemId === item.id;
                     const isHovered = hoveredItemId === item.id;
 
+                    // Convert internal item to external format for renderItem callback
+                    const externalItem = toExternalItem(item, baseDateZoned);
                     const itemProps = {
-                      item,
+                      item: externalItem,
                       left,
                       width,
                       isSelected,
                       isHovered,
                       isMinWidth,
-                      onMouseDown: handleItemMouseDown,
+                      onMouseDown: (
+                        e: ReactMouseEvent,
+                        item: TimelineItem<Data>,
+                        type: "move" | "resize-start" | "resize-end",
+                      ) => {
+                        // Convert back to internal for drag handling
+                        const internalItem = toInternalItem(
+                          item,
+                          baseDateZoned,
+                        );
+                        handleItemMouseDown(e, internalItem, type);
+                      },
                       onMouseEnter: () => setHoveredItemId(item.id),
                       onMouseLeave: () => setHoveredItemId(null),
-                      onClick: onItemClick
-                        ? (e: ReactMouseEvent) => {
-                            e.stopPropagation();
-                            onItemClick(item);
-                          }
+                      onMouseOver: onItemHover
+                        ? () => onItemHover(externalItem)
                         : undefined,
                     };
 
@@ -1836,6 +2005,9 @@ export function InfiniteTimeline<Data = unknown>({
                       pixelsPerMinute={pixelsPerMinute}
                       scrollOffset={scrollOffset}
                       snapTime={snapTime}
+                      previewRow={
+                        previewForLane ? previewForLane.row : undefined
+                      }
                       existingItems={itemsWithRows}
                       onPreviewUpdate={(_start, _end, row) => {
                         setPreviewRow({ laneId: lane.id, row });
@@ -1850,9 +2022,9 @@ export function InfiniteTimeline<Data = unknown>({
 
         {/* Current time indicator (now line) */}
         {(() => {
-          const now = new Date();
+          const now = dateToZonedDateTime(new Date(), timeZone);
           // Calculate minutes from baseDate to now
-          const nowMinutes = (now.getTime() - baseDate.getTime()) / (1000 * 60);
+          const nowMinutes = zonedDateTimeToMinutes(now, baseDateZoned);
           const x = timeToPixel(nowMinutes);
           if (
             x < SIDEBAR_WIDTH ||
@@ -1907,6 +2079,7 @@ function DrawingPreview({
   pixelsPerMinute,
   scrollOffset,
   snapTime,
+  previewRow: previewRowProp,
   existingItems,
   onPreviewUpdate,
 }: {
@@ -1917,7 +2090,8 @@ function DrawingPreview({
   pixelsPerMinute: number;
   scrollOffset: number;
   snapTime: (time: number) => number;
-  existingItems: (TimelineItem<unknown> & { row: number })[];
+  previewRow?: number;
+  existingItems: (TimelineItemInternal<unknown> & { row: number })[];
   onPreviewUpdate: (start: number, end: number, row: number) => void;
 }) {
   // Initialize with the start position so it doesn't flash from -infinity
@@ -1944,8 +2118,13 @@ function DrawingPreview({
   const previewStart = Math.min(startTime, currentTime);
   const previewEnd = Math.max(startTime, currentTime);
 
-  // Calculate row based on collision with existing items
+  // Use the preview row from calculatedPreviewItem if provided, otherwise calculate it
+  // This ensures the preview row matches exactly what the final row will be
   const calculateRow = () => {
+    if (previewRowProp !== undefined) {
+      return previewRowProp;
+    }
+    // Fallback calculation if previewRow not provided
     let row = 0;
     let foundRow = false;
     while (!foundRow) {

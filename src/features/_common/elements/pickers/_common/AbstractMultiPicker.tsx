@@ -178,8 +178,8 @@ export function AbstractMultiPicker<Id, Data>(
                   value.length > 1 ? (
                     <div
                       className={cn(
-                        "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-slate-100",
-                        "text-sky-800 dark:text-sky-50 ",
+                        "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-accent",
+                        "text-accent-foreground",
                       )}
                     >
                       <Unlink2 />
@@ -188,7 +188,7 @@ export function AbstractMultiPicker<Id, Data>(
                     <div
                       className={cn(
                         "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                        "text-sky-800 dark:text-sky-50 ",
+                        "text-accent-foreground",
                       )}
                     >
                       <Unlink2 />

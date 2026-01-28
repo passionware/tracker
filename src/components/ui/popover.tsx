@@ -19,7 +19,7 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "w-72 rounded-md border border-slate-200 bg-white p-4 text-slate-950 shadow-md outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+        "w-72 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-hidden",
         "max-h-[calc(var(--radix-popover-content-available-height)-2rem)] overflow-y-auto",
         "max-w-[calc(var(--radix-popover-content-available-width)-2rem)] overflow-x-auto",
         contentAnimations.popover,
@@ -39,7 +39,7 @@ function PopoverHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("text-lg text-slate-700 pb-4 font-light ", className)}>
+    <div className={cn("text-lg text-popover-foreground pb-4 font-light ", className)}>
       {children}
     </div>
   );

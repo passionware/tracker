@@ -53,7 +53,7 @@ export function AbstractEntityView({
         .fullJourney(entity)
         .initially(
           <SimpleTooltip title="No workspace">
-            <CircleSlash className="w-full h-full text-slate-400" />
+            <CircleSlash className="w-full h-full text-muted-foreground" />
           </SimpleTooltip>,
         )
         .wait(<Skeleton className="size-8 rounded-full" />)
@@ -67,9 +67,7 @@ export function AbstractEntityView({
             {entity.avatarUrl && (
               <AvatarImage src={entity.avatarUrl} alt={entity.name} />
             )}
-            <AvatarFallback>
-              {getInitials(entity.name)}
-            </AvatarFallback>
+            <AvatarFallback>{getInitials(entity.name)}</AvatarFallback>
           </>
         ))}
     </Avatar>
@@ -84,7 +82,13 @@ export function AbstractEntityView({
     if (hasIcon) {
       return (
         <SimpleTooltip title={rd.tryGet(entity)?.name}>
-          <div className={cn(entityViewVariants({ size }), className, "flex items-center justify-center")}>
+          <div
+            className={cn(
+              entityViewVariants({ size }),
+              className,
+              "flex items-center justify-center",
+            )}
+          >
             {icon}
           </div>
         </SimpleTooltip>
@@ -98,12 +102,17 @@ export function AbstractEntityView({
   return (
     <div
       className={cn(
-        "flex items-center flex-row gap-2 text-xs whitespace-pre",
+        "flex items-center flex-row gap-2 text-xs whitespace-pre text-foreground",
         className,
       )}
     >
       {hasIcon ? (
-        <div className={cn(entityViewVariants({ size }), "flex items-center justify-center")}>
+        <div
+          className={cn(
+            entityViewVariants({ size }),
+            "flex items-center justify-center",
+          )}
+        >
           {icon}
         </div>
       ) : (

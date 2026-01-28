@@ -121,6 +121,10 @@
   .slide-out-to-right-2 {
     animation: slide-out-to-right 0.2s ease-in;
   }
+
+  .list-view-row-highlight {
+    animation: list-view-row-highlight 2.5s ease-out forwards;
+  }
 }
 
 @keyframes animate-in {
@@ -273,6 +277,18 @@
   }
 }
 
+@keyframes list-view-row-highlight {
+  0% {
+    background-color: var(
+      --highlight-color,
+      color-mix(in oklch, var(--primary) 35%, transparent)
+    );
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 :root {
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
@@ -340,6 +356,8 @@
   --muted: oklch(0.96 0.005 260);
   --muted-foreground: oklch(0.45 0.01 260);
   --accent: oklch(0.96 0.01 160);
+  --highlight: oklch(0.96 0.15 80);
+  --highlight-foreground: oklch(0.15 0.01 260);
   --accent-foreground: oklch(0.15 0.01 260);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
@@ -381,6 +399,8 @@
   --muted: oklch(0.2 0.01 260);
   --muted-foreground: oklch(0.6 0 0);
   --accent: oklch(0.65 0.18 160);
+  --highlight: oklch(0.65 0.18 160);
+  --highlight-foreground: oklch(0.12 0.01 260);
   --accent-foreground: oklch(0.12 0.01 260);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.95 0 0);
@@ -426,6 +446,8 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);

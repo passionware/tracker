@@ -8,10 +8,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable.tsx";
+  SplitViewLayout,
+  ViewMode,
+} from "@/features/_common/SplitViewLayout.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -70,6 +69,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { createSimpleEvent } from "@passionware/simple-event";
+import { getLocalTimeZone, toZoned } from "@internationalized/date";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -90,9 +91,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   // Load preferences from service
   const savedPreferences = props.services.preferenceService.useTimelineView();
-  const [viewMode, setViewMode] = useState<"timeline" | "table" | "both">(
-    savedPreferences.viewMode,
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>(savedPreferences.viewMode);
   const [timelineDarkMode, setTimelineDarkMode] = useState(
     savedPreferences.darkMode,
   );
@@ -111,6 +110,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       setTimelineGroupBy(prefs.groupBy);
     })();
   }, [props.services.preferenceService]);
+
+  const scrollEvent = useMemo(createSimpleEvent<number>, []);
 
   // Save preferences when they change
   useEffect(() => {
@@ -224,120 +225,95 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const columns = useColumns(props);
 
   // Convert CalendarDate to minutes from a base date (start of the earliest report)
-  const timelineData = useMemo(() => {
-    return (
-      rd.tryMap(finalReports, (reportView) => {
-        const reports = reportView.entries;
-        if (reports.length === 0) {
-          return { lanes: [], items: [], baseDate: new Date() };
-        }
+  const timelineData = rd.useMemoMap(finalReports, (reportView) => {
+    const reports = reportView.entries;
+    if (reports.length === 0) {
+      return { lanes: [], items: [] };
+    }
 
-        // Find the earliest report start date to use as base
-        const lastestDate = reports.reduce(
-          (lastest: Date, report: ReportViewEntry) => {
-            const endDate = calendarDateToJSDate(report.periodEnd);
-            return endDate > lastest ? endDate : lastest;
-          },
-          calendarDateToJSDate(reports[0].periodEnd),
-        );
+    // Group reports by selected option
+    const getGroupKey = (report: ReportViewEntry): string => {
+      switch (timelineGroupBy) {
+        case "contractor":
+          return report.contractor.id.toString();
+        case "client":
+          return report.client.id.toString();
+        case "workspace":
+          return report.workspace.id.toString();
+      }
+    };
 
-        // Set base date to start of day of lastest report
-        const baseDate = new Date(lastestDate);
-        baseDate.setHours(0, 0, 0, 0);
+    const getGroupName = (report: ReportViewEntry): string => {
+      switch (timelineGroupBy) {
+        case "contractor":
+          return (
+            report.contractor.fullName || `Contractor ${report.contractor.id}`
+          );
+        case "client":
+          return report.client.name || `Client ${report.client.id}`;
+        case "workspace":
+          return report.workspace.name || `Workspace ${report.workspace.id}`;
+      }
+    };
 
-        // Convert date to minutes from base date
-        const dateToMinutes = (date: Date): number => {
-          const diffMs = date.getTime() - baseDate.getTime();
-          return Math.floor(diffMs / (1000 * 60));
+    const getLaneId = (report: ReportViewEntry): string => {
+      switch (timelineGroupBy) {
+        case "contractor":
+          return `contractor-${report.contractor.id}`;
+        case "client":
+          return `client-${report.client.id}`;
+        case "workspace":
+          return `workspace-${report.workspace.id}`;
+      }
+    };
+
+    const groupedReports = groupBy(reports, getGroupKey);
+
+    // Create lanes (one per group)
+    const colors = [
+      "bg-chart-1",
+      "bg-chart-2",
+      "bg-chart-3",
+      "bg-chart-4",
+      "bg-chart-5",
+    ];
+    const lanes: Lane[] = Object.entries(groupedReports).map(
+      ([, groupReports], index) => {
+        const firstReport = groupReports[0] as ReportViewEntry;
+        return {
+          id: getLaneId(firstReport),
+          name: getGroupName(firstReport),
+          color: colors[index % colors.length],
         };
-
-        // Group reports by selected option
-        const getGroupKey = (report: ReportViewEntry): string => {
-          switch (timelineGroupBy) {
-            case "contractor":
-              return report.contractor.id.toString();
-            case "client":
-              return report.client.id.toString();
-            case "workspace":
-              return report.workspace.id.toString();
-          }
-        };
-
-        const getGroupName = (report: ReportViewEntry): string => {
-          switch (timelineGroupBy) {
-            case "contractor":
-              return (
-                report.contractor.fullName || `Contractor ${report.contractor.id}`
-              );
-            case "client":
-              return report.client.name || `Client ${report.client.id}`;
-            case "workspace":
-              return report.workspace.name || `Workspace ${report.workspace.id}`;
-          }
-        };
-
-        const getLaneId = (report: ReportViewEntry): string => {
-          switch (timelineGroupBy) {
-            case "contractor":
-              return `contractor-${report.contractor.id}`;
-            case "client":
-              return `client-${report.client.id}`;
-            case "workspace":
-              return `workspace-${report.workspace.id}`;
-          }
-        };
-
-        const groupedReports = groupBy(reports, getGroupKey);
-
-        // Create lanes (one per group)
-        const colors = [
-          "bg-chart-1",
-          "bg-chart-2",
-          "bg-chart-3",
-          "bg-chart-4",
-          "bg-chart-5",
-        ];
-        const lanes: Lane[] = Object.entries(groupedReports).map(
-          ([, groupReports], index) => {
-            const firstReport = groupReports[0] as ReportViewEntry;
-            return {
-              id: getLaneId(firstReport),
-              name: getGroupName(firstReport),
-              color: colors[index % colors.length],
-            };
-          },
-        );
-
-        // Convert reports to timeline items
-        const items: TimelineItem<ReportViewEntry>[] = reports.map(
-          (report: ReportViewEntry) => {
-            const startDate = calendarDateToJSDate(report.periodStart);
-            const endDate = calendarDateToJSDate(report.periodEnd);
-            // Add one day to end date to include the full end day
-            endDate.setHours(23, 59, 59, 999);
-
-            const startMinutes = dateToMinutes(startDate);
-            const endMinutes = dateToMinutes(endDate);
-
-            const laneId = getLaneId(report);
-            const lane = lanes.find((l) => l.id === laneId);
-
-            return {
-              id: `report-${report.id}`,
-              laneId: lane?.id || laneId,
-              start: startMinutes,
-              end: endMinutes,
-              label: report.description || `Report #${report.id}`,
-              color: lane?.color,
-              data: report,
-            };
-          },
-        );
-
-        return { lanes, items, baseDate };
-      }) ?? { lanes: [], items: [], baseDate: new Date() }
+      },
     );
-  }, [finalReports, timelineGroupBy]);
+
+    // Convert reports to timeline items
+    const items: TimelineItem<ReportViewEntry>[] = reports.map(
+      (report: ReportViewEntry) => {
+        const endDate = calendarDateToJSDate(report.periodEnd);
+        // Add one day to end date to include the full end day
+        endDate.setHours(23, 59, 59, 999);
+
+        const laneId = getLaneId(report);
+        const lane = lanes.find((l) => l.id === laneId);
+
+        return {
+          id: `report-${report.id}`,
+          laneId: lane?.id || laneId,
+          start: toZoned(report.periodStart, getLocalTimeZone()),
+          end: toZoned(report.periodEnd, getLocalTimeZone()).add({
+            days: 1,
+          }),
+          label: report.description || `Report #${report.id}`,
+          color: lane?.color,
+          data: report,
+        } satisfies TimelineItem<ReportViewEntry>;
+      },
+    );
+
+    return { lanes, items };
+  });
 
   return (
     <CommonPageContainer
@@ -368,7 +344,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             value={viewMode}
             onSelect={(value) => {
               if (value) {
-                setViewMode(value as "timeline" | "table" | "both");
+                setViewMode(value as ViewMode);
               }
             }}
             placeholder="View mode"
@@ -481,37 +457,17 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      <div className="flex-1 min-h-0">
-        {viewMode === "both" ? (
-          <ResizablePanelGroup direction="vertical" className="h-full">
-            <ResizablePanel
-              defaultSize={40}
-              minSize={20}
-              className="flex flex-col min-h-0"
-            >
-              {renderTimeline()}
-            </ResizablePanel>
-            <ResizableHandle withHandle className="my-2" />
-            <ResizablePanel
-              defaultSize={60}
-              minSize={30}
-              className="flex flex-col min-h-0"
-            >
-              {renderTableView()}
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : viewMode === "timeline" ? (
-          <div className="h-full">{renderTimeline()}</div>
-        ) : (
-          <div className="h-full">{renderTableView()}</div>
-        )}
-      </div>
+      <SplitViewLayout
+        topSlot={renderTimeline()}
+        bottomSlot={renderTableView()}
+        viewMode={viewMode}
+      />
     </CommonPageContainer>
   );
 
   function renderTimeline() {
     return rd
-      .journey(finalReports)
+      .journey(timelineData)
       .wait(
         <div
           className={cn(
@@ -562,7 +518,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </div>,
       )
       .catch(() => null)
-      .map(() => {
+      .map((timelineData) => {
         if (timelineData.items.length === 0) {
           return (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -578,31 +534,37 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimeline
+              onItemClick={(item) => {
+                scrollEvent.emit(item.data.id);
+              }}
               key={timelineGroupBy}
               items={timelineData.items}
               lanes={timelineData.lanes}
-              baseDate={timelineData.baseDate}
-              renderItem={(itemProps) => {
-                const reportEntry = itemProps.item.data as ReportViewEntry;
-                if (!reportEntry) {
-                  // Fallback to default if no report data
-                  return <DefaultTimelineItem {...itemProps} />;
-                }
+              renderItem={
+                viewMode === "timeline"
+                  ? (itemProps) => {
+                      const reportEntry = itemProps.item.data;
+                      if (!reportEntry) {
+                        // Fallback to default if no report data
+                        return <DefaultTimelineItem {...itemProps} />;
+                      }
 
-                return (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <DefaultTimelineItem {...itemProps} />
-                    </PopoverTrigger>
-                    <PopoverContent className="w-96 p-4">
-                      <ReportPreview
-                        services={props.services}
-                        reportId={reportEntry.id}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                );
-              }}
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <DefaultTimelineItem {...itemProps} />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-96 p-4">
+                            <ReportPreview
+                              services={props.services}
+                              reportId={reportEntry.id}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    }
+                  : undefined
+              }
             />
           </div>
         );
@@ -612,6 +574,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   function renderTableView() {
     return (
       <ListView
+        scrollEvent={scrollEvent}
         query={query}
         onQueryChange={queryParamsService.setQueryParams}
         data={rd.map(finalReports, (r) => r.entries)}

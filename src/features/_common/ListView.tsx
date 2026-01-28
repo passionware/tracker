@@ -35,6 +35,10 @@ import * as React from "react";
 import { ReactNode } from "react";
 import { sharedColumns } from "./columns/_common/sharedColumns";
 import { SelectionLayout } from "./SelectionLayout";
+import {
+  SimpleEvent,
+  useSimpleEventSubscription,
+} from "@passionware/simple-event";
 
 // Simple approach: make selection props optional and handle at runtime
 export type ListViewProps<TData, Query extends SortableQueryBase, TId> = {
@@ -54,6 +58,7 @@ export type ListViewProps<TData, Query extends SortableQueryBase, TId> = {
   onSelectionChange?: (selection: SelectionState<TId>) => void;
   toolbar?: React.ReactNode;
   getRowId: (row: TData) => TId;
+  scrollEvent?: SimpleEvent<TId>;
 };
 
 export function ListView<TData, Query extends SortableQueryBase, TId>(
@@ -132,6 +137,28 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
     debugTable: false,
   });
 
+  const itemContainerRef = React.useRef<HTMLTableSectionElement | null>(null);
+
+  useSimpleEventSubscription(props.scrollEvent?.addListener, (id) => {
+    if (!itemContainerRef.current) return;
+    const rowElement = itemContainerRef.current.querySelector(
+      `[data-item-id="${id}"]`,
+    ) as HTMLElement | null;
+    if (rowElement && typeof rowElement.scrollIntoView === "function") {
+      // Add highlight class immediately
+      rowElement.classList.add("list-view-row-highlight");
+      // Scroll instantly (faster)
+      rowElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      // Remove highlight class after animation completes
+      setTimeout(() => {
+        rowElement.classList.remove("list-view-row-highlight");
+      }, 2500);
+    }
+  });
+
   const columnsElement = table.getHeaderGroups().map((headerGroup) => (
     <TableRow key={headerGroup.id}>
       {headerGroup.headers.map((header) =>
@@ -201,10 +228,10 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
       // Wyświetlamy skeletony
       <div className={cn("rounded-md border overflow-auto", className)}>
         <Table>
-          <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
+          <TableHeader className="sticky top-0 bg-background hover:bg-background z-10 shadow-sm">
             {columnsElement}
           </TableHeader>
-          <TableBody className="bg-white">
+          <TableBody className="bg-background">
             {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
                 {table.getVisibleLeafColumns().map((_, colIndex) => (
@@ -234,9 +261,10 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
       const tbody = (
         <TableBody
           className={cn(
-            "border-b bg-white",
+            "border-b bg-background",
             getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
           )}
+          ref={itemContainerRef}
         >
           {/* Sprawdź, czy mamy wiersze w modelu */}
           {table.getRowModel().rows?.length ? (
@@ -247,6 +275,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
                   <TableRow
                     key={row.id}
                     data-item-id={String(rowId)}
+                    className="[--highlight-color:var(--color-highlight)]"
                     aria-selected={maybe.mapOrElse(
                       selection,
                       (selection) =>
@@ -331,7 +360,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
         >
           <Table>
             {/* NAGŁÓWEK */}
-            <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
+            <TableHeader className="sticky top-0 bg-popover hover:bg-sidebar-accent z-10 shadow-sm">
               {columnsElement}
             </TableHeader>
 
