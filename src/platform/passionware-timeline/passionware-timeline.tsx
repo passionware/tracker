@@ -157,8 +157,11 @@ const initialItems: TimelineItem[] = [
 
 // Format time from minutes to display string
 function formatTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60) % 24;
-  const mins = minutes % 60;
+  // Normalize minutes to handle negative values correctly
+  // Convert to positive equivalent within a day
+  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const mins = normalizedMinutes % 60;
   const period = hours >= 12 ? "PM" : "AM";
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
   return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
@@ -1369,7 +1372,9 @@ export function InfiniteTimeline<Data = unknown>({
                   if (x < -50 || x > containerWidth) return null;
 
                   // Get hour of day (0-23) for this marker
-                  const hourOfDay = Math.floor((minutes % 1440) / 60);
+                  // Normalize to handle negative minutes correctly
+                  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+                  const hourOfDay = Math.floor(normalizedMinutes / 60);
 
                   // Determine if this hour should show a label based on interval
                   let shouldShowLabel = false;
