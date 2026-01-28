@@ -7,11 +7,7 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable.tsx";
+import { SplitViewLayout, ViewMode } from "@/features/_common/SplitViewLayout.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -90,7 +86,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   // Load preferences from service
   const savedPreferences = props.services.preferenceService.useTimelineView();
-  const [viewMode, setViewMode] = useState<"timeline" | "table" | "both">(
+  const [viewMode, setViewMode] = useState<ViewMode>(
     savedPreferences.viewMode,
   );
   const [timelineDarkMode, setTimelineDarkMode] = useState(
@@ -371,7 +367,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             value={viewMode}
             onSelect={(value) => {
               if (value) {
-                setViewMode(value as "timeline" | "table" | "both");
+                setViewMode(value as ViewMode);
               }
             }}
             placeholder="View mode"
@@ -484,31 +480,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      <div className={viewMode === "both" ? "flex-1 min-h-0" : "contents"}>
-        {viewMode === "both" ? (
-          <ResizablePanelGroup direction="vertical" className="h-full">
-            <ResizablePanel
-              defaultSize={40}
-              minSize={20}
-              className="flex flex-col min-h-0"
-            >
-              {renderTimeline()}
-            </ResizablePanel>
-            <ResizableHandle withHandle className="my-2" />
-            <ResizablePanel
-              defaultSize={60}
-              minSize={30}
-              className="flex flex-col min-h-0"
-            >
-              {renderTableView()}
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : viewMode === "timeline" ? (
-          renderTimeline()
-        ) : (
-          renderTableView()
-        )}
-      </div>
+      <SplitViewLayout
+        topSlot={renderTimeline()}
+        bottomSlot={renderTableView()}
+        viewMode={viewMode}
+      />
     </CommonPageContainer>
   );
 
