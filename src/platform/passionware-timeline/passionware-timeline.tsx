@@ -45,6 +45,7 @@ interface DragState<Data = unknown> {
   startTime: number;
   originalItem?: TimelineItem<Data>;
   drawStart?: number;
+  hasCrossedThreshold?: boolean; // Whether mouse has moved enough to start drag
 }
 
 type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
@@ -52,6 +53,7 @@ type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
 // Constants
 const PIXELS_PER_MINUTE = 2; // Base pixels per minute
 const MIN_ITEM_DURATION = 5; // Minimum 5 minutes
+const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 const LANE_HEIGHT = 80;
 const SUB_ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
@@ -781,6 +783,7 @@ export function InfiniteTimeline<Data = unknown>({
       startX: e.clientX,
       startTime: pixelToTime(containerX),
       originalItem: { ...item },
+      hasCrossedThreshold: false,
     });
     onItemClick?.(item);
   };
@@ -840,7 +843,20 @@ export function InfiniteTimeline<Data = unknown>({
         return;
       }
 
-      if (dragState.originalItem && dragState.itemId) {
+      // Check if we've crossed the drag threshold
+      const deltaX = Math.abs(e.clientX - dragState.startX);
+      const hasCrossedThreshold =
+        dragState.hasCrossedThreshold || deltaX >= DRAG_THRESHOLD;
+
+      // Update drag state to mark threshold as crossed
+      if (hasCrossedThreshold && !dragState.hasCrossedThreshold) {
+        setDragState((prev) =>
+          prev ? { ...prev, hasCrossedThreshold: true } : null,
+        );
+      }
+
+      // Only update items if threshold has been crossed
+      if (hasCrossedThreshold && dragState.originalItem && dragState.itemId) {
         setItems((prev) =>
           prev.map((item) => {
             if (item.id !== dragState.itemId) return item;
