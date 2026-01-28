@@ -271,6 +271,7 @@ export function DefaultTimelineItem<Data = unknown>({
   return (
     <div
       {...props}
+      data-timeline-item
       className={cn(
         "absolute rounded transition-shadow cursor-grab group",
         item.color || "bg-primary",
@@ -603,7 +604,7 @@ export function InfiniteTimeline<Data = unknown>({
     [scrollOffset, pixelsPerMinute],
   );
 
-  // Handle wheel scroll (horizontal pan, vertical scroll, and zoom)
+  // Handle wheel scroll (vertical scroll, horizontal pan with shift, and zoom)
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
@@ -631,7 +632,10 @@ export function InfiniteTimeline<Data = unknown>({
         setZoom(newZoom);
         setScrollOffset(newScrollOffset);
       } else if (e.shiftKey) {
-        // Shift+scroll: vertical scrolling (when shift is pressed, deltaX contains the vertical scroll)
+        // Shift+scroll: horizontal pan
+        setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
+      } else {
+        // Regular scroll: vertical scrolling
         setVerticalScrollOffset((prev) => {
           const containerHeight = containerRef.current?.clientHeight || 0;
           const preview = previewItemRef.current;
@@ -644,14 +648,10 @@ export function InfiniteTimeline<Data = unknown>({
             0,
             totalHeight - containerHeight + HEADER_HEIGHT,
           );
-          // When shift is pressed, horizontal scroll becomes vertical, so use deltaX
           const scrollDelta =
             Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
           return Math.max(0, Math.min(maxOffset, prev + scrollDelta));
         });
-      } else {
-        // Regular scroll: horizontal pan
-        setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
       }
     },
     [zoom, scrollOffset, lanes, getLaneHeight],
@@ -665,11 +665,23 @@ export function InfiniteTimeline<Data = unknown>({
     return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
-  // Handle middle mouse button panning
+  // Handle left mouse button panning (when not on items/lanes)
   const handleMouseDown = useCallback(
     (e: globalThis.MouseEvent) => {
-      // Middle mouse button (button 1) or wheel button
-      if (e.button === 1 && !dragState) {
+      // Left mouse button (button 0) for panning, but only if not on items/lanes
+      // Items and lanes will handle their own mouse events and stop propagation
+      if (e.button === 0 && !dragState && !panState) {
+        // Check if we're clicking on an item or lane by checking the target
+        const target = e.target as HTMLElement;
+        // If clicking on timeline items or lanes, don't pan
+        // Also check if meta/ctrl key is pressed (used for drawing)
+        if (
+          (e.metaKey || e.ctrlKey) ||
+          target.closest('[data-timeline-item]') ||
+          target.closest('[data-timeline-lane]')
+        ) {
+          return;
+        }
         e.preventDefault();
         setPanState({
           startX: e.clientX,
@@ -679,7 +691,7 @@ export function InfiniteTimeline<Data = unknown>({
         });
       }
     },
-    [dragState, scrollOffset, verticalScrollOffset],
+    [dragState, panState, scrollOffset, verticalScrollOffset],
   );
 
   // Handle panning with middle mouse button
@@ -741,8 +753,8 @@ export function InfiniteTimeline<Data = unknown>({
     item: TimelineItem<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
-    // Ignore middle mouse button
-    if (e.button === 1) return;
+    // Ignore middle mouse button and cmd+left (used for drawing)
+    if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) return;
     e.stopPropagation();
     const containerX = screenXToContainerX(e.clientX);
     setSelectedItemId(item.id);
@@ -755,26 +767,45 @@ export function InfiniteTimeline<Data = unknown>({
     });
   };
 
-  // Handle mouse down on lane (start drawing)
+  // Handle mouse down on lane (start drawing or allow panning)
   const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
-    // Ignore middle mouse button
-    if (e.button === 1) return;
-    if (dragState) return;
+    // Check if this is a drawing action (middle mouse or cmd+left)
+    const isDrawingButton =
+      e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
+    
+    if (isDrawingButton) {
+      // Start drawing
+      if (dragState) return;
+      e.stopPropagation();
+      const containerX = screenXToContainerX(e.clientX);
+      const time = snapTime(pixelToTime(containerX));
 
-    const containerX = screenXToContainerX(e.clientX);
-    const time = snapTime(pixelToTime(containerX));
-    // const laneIndex = lanes.findIndex((l) => l.id === laneId);
-
-    setDragState({
-      type: "draw",
-      laneId,
-      startX: e.clientX,
-      startTime: time,
-      drawStart: time,
-    });
-    setCurrentMouseX(e.clientX);
-
-    setSelectedItemId(null);
+      setDragState({
+        type: "draw",
+        laneId,
+        startX: e.clientX,
+        startTime: time,
+        drawStart: time,
+      });
+      setCurrentMouseX(e.clientX);
+      setSelectedItemId(null);
+    } else if (e.button === 0 && !dragState && !panState) {
+      // Regular left click on empty lane space - allow panning
+      // Check if we're clicking on an item
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-timeline-item]')) {
+        return; // Let item handle it
+      }
+      // Start panning
+      e.preventDefault();
+      e.stopPropagation();
+      setPanState({
+        startX: e.clientX,
+        startY: e.clientY,
+        startScrollOffset: scrollOffset,
+        startVerticalScrollOffset: verticalScrollOffset,
+      });
+    }
   };
 
   // Handle global mouse move
@@ -1162,15 +1193,15 @@ export function InfiniteTimeline<Data = unknown>({
             Timeline Editor
           </h2>
           <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Scroll to pan</span>
+            <span>Drag to pan</span>
             <span className="text-border">|</span>
-            <span>Shift+Scroll to scroll vertically</span>
+            <span>Scroll to scroll vertically</span>
             <span className="text-border">|</span>
-            <span>Middle mouse to pan</span>
+            <span>Shift+Scroll to pan horizontally</span>
             <span className="text-border">|</span>
             <span>Ctrl+Scroll to zoom</span>
             <span className="text-border">|</span>
-            <span>Click+Drag to draw</span>
+            <span>Middle mouse or Cmd+Click to draw</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -1216,7 +1247,13 @@ export function InfiniteTimeline<Data = unknown>({
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
         style={{
-          cursor: panState ? "grabbing" : dragState ? "grabbing" : "crosshair",
+          cursor: panState
+            ? "grabbing"
+            : dragState && dragState.type === "draw"
+              ? "crosshair"
+              : dragState
+                ? "grabbing"
+                : "grab",
         }}
       >
         {/* Date Header */}
@@ -1556,6 +1593,28 @@ export function InfiniteTimeline<Data = unknown>({
             left: SIDEBAR_WIDTH,
             right: 0,
           }}
+          onMouseDown={(e) => {
+            // Handle panning on empty space in the grid
+            if (e.button === 0 && !dragState && !panState) {
+              // Check if we're clicking on an item or lane
+              const target = e.target as HTMLElement;
+              if (
+                (e.metaKey || e.ctrlKey) ||
+                target.closest('[data-timeline-item]') ||
+                target.closest('[data-timeline-lane]')
+              ) {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              setPanState({
+                startX: e.clientX,
+                startY: e.clientY,
+                startScrollOffset: scrollOffset,
+                startVerticalScrollOffset: verticalScrollOffset,
+              });
+            }
+          }}
         >
           <div
             style={{
@@ -1774,6 +1833,7 @@ export function InfiniteTimeline<Data = unknown>({
               return (
                 <div
                   key={lane.id}
+                  data-timeline-lane
                   className={cn(
                     "absolute left-0 right-0 border-b border-border",
                     laneIndex % 2 === 0
