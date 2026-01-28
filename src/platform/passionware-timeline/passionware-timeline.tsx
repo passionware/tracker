@@ -9,6 +9,11 @@ import {
   useMemo,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import {
+  ZonedDateTime,
+  getLocalTimeZone,
+  fromAbsolute,
+} from "@internationalized/date";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -19,11 +24,23 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 
-// Types
+// External types - using @internationalized/date
 export interface TimelineItem<Data = unknown> {
   id: string;
   laneId: string;
-  start: number; // Time in minutes from epoch
+  start: ZonedDateTime; // External interface uses ZonedDateTime
+  end: ZonedDateTime;
+  label: string;
+  color?: string;
+  row?: number; // Sub-row for parallel items
+  data: Data; // Custom data attached to the item
+}
+
+// Internal types - using minutes for performance
+interface TimelineItemInternal<Data = unknown> {
+  id: string;
+  laneId: string;
+  start: number; // Time in minutes from base date (auto-calculated)
   end: number;
   label: string;
   color?: string;
@@ -43,7 +60,7 @@ interface DragState<Data = unknown> {
   laneId?: string;
   startX: number;
   startTime: number;
-  originalItem?: TimelineItem<Data>;
+  originalItem?: TimelineItemInternal<Data>;
   drawStart?: number;
   hasCrossedThreshold?: boolean; // Whether mouse has moved enough to start drag
 }
@@ -82,6 +99,67 @@ const ITEM_COLORS = [
 const BASE_DATE = new Date(2025, 0, 27, 8, 0); // Jan 27, 2025 8:00 AM
 const toMinutes = (hours: number, mins = 0) => hours * 60 + mins;
 
+// Conversion utilities between ZonedDateTime and minutes
+// baseDate is auto-calculated from items, so no prop needed
+function zonedDateTimeToMinutes(
+  zonedDateTime: ZonedDateTime,
+  baseDate: ZonedDateTime,
+): number {
+  const baseMs = baseDate.toDate().getTime();
+  const dateMs = zonedDateTime.toDate().getTime();
+  return Math.floor((dateMs - baseMs) / (1000 * 60));
+}
+
+function minutesToZonedDateTime(
+  minutes: number,
+  baseDate: ZonedDateTime,
+): ZonedDateTime {
+  const baseMs = baseDate.toDate().getTime();
+  const targetMs = baseMs + minutes * 60 * 1000;
+  return fromAbsolute(targetMs, baseDate.timeZone);
+}
+
+function dateToZonedDateTime(
+  date: Date,
+  timeZone: string = getLocalTimeZone(),
+): ZonedDateTime {
+  return fromAbsolute(date.getTime(), timeZone);
+}
+
+function zonedDateTimeToDate(zonedDateTime: ZonedDateTime): Date {
+  return zonedDateTime.toDate();
+}
+
+// Helper to convert minutes to Date using base ZonedDateTime
+function minutesToDate(minutes: number, baseDate: ZonedDateTime): Date {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  return zonedDateTime.toDate();
+}
+
+// Convert external TimelineItem to internal format
+function toInternalItem<Data>(
+  item: TimelineItem<Data>,
+  baseDate: ZonedDateTime,
+): TimelineItemInternal<Data> {
+  return {
+    ...item,
+    start: zonedDateTimeToMinutes(item.start, baseDate),
+    end: zonedDateTimeToMinutes(item.end, baseDate),
+  };
+}
+
+// Convert internal TimelineItem to external format
+function toExternalItem<Data>(
+  item: TimelineItemInternal<Data>,
+  baseDate: ZonedDateTime,
+): TimelineItem<Data> {
+  return {
+    ...item,
+    start: minutesToZonedDateTime(item.start, baseDate),
+    end: minutesToZonedDateTime(item.end, baseDate),
+  };
+}
+
 const initialLanes: Lane[] = [
   { id: "lane-1", name: "Meeting Room A", color: "bg-chart-1" },
   { id: "lane-2", name: "Meeting Room B", color: "bg-chart-2" },
@@ -90,80 +168,7 @@ const initialLanes: Lane[] = [
   { id: "lane-5", name: "External", color: "bg-chart-5" },
 ];
 
-const initialItems: TimelineItem[] = [
-  {
-    id: "item-1",
-    laneId: "lane-1",
-    start: toMinutes(8),
-    end: toMinutes(9, 30),
-    label: "Team Standup",
-    color: "bg-chart-1",
-    data: null,
-  },
-  {
-    id: "item-2",
-    laneId: "lane-1",
-    start: toMinutes(10),
-    end: toMinutes(11, 30),
-    label: "Product Review",
-    color: "bg-chart-1",
-    data: null,
-  },
-  {
-    id: "item-3",
-    laneId: "lane-1",
-    start: toMinutes(8, 30),
-    end: toMinutes(10),
-    label: "Sprint Planning",
-    color: "bg-chart-1",
-    data: null,
-  }, // Overlapping
-  {
-    id: "item-4",
-    laneId: "lane-2",
-    start: toMinutes(9),
-    end: toMinutes(12),
-    label: "Workshop",
-    color: "bg-chart-2",
-    data: null,
-  },
-  {
-    id: "item-5",
-    laneId: "lane-2",
-    start: toMinutes(11),
-    end: toMinutes(13),
-    label: "Training Session",
-    color: "bg-chart-2",
-    data: null,
-  }, // Overlapping
-  {
-    id: "item-6",
-    laneId: "lane-3",
-    start: toMinutes(8),
-    end: toMinutes(10),
-    label: "All Hands",
-    color: "bg-chart-3",
-    data: null,
-  },
-  {
-    id: "item-7",
-    laneId: "lane-4",
-    start: toMinutes(13),
-    end: toMinutes(14),
-    label: "Zoom Call",
-    color: "bg-chart-4",
-    data: null,
-  },
-  {
-    id: "item-8",
-    laneId: "lane-5",
-    start: toMinutes(15),
-    end: toMinutes(17),
-    label: "Client Meeting",
-    color: "bg-chart-5",
-    data: null,
-  },
-];
+// Note: initialItems removed - component now requires external items with ZonedDateTime
 
 // Format time from minutes to display string
 function formatTime(minutes: number): string {
@@ -178,9 +183,9 @@ function formatTime(minutes: number): string {
 }
 
 // Format date from minutes offset
-function formatDate(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatDate(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -189,9 +194,9 @@ function formatDate(minutes: number, baseDate?: Date): string {
 }
 
 // Format month and year
-function formatMonthYear(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatMonthYear(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
@@ -199,16 +204,16 @@ function formatMonthYear(minutes: number, baseDate?: Date): string {
 }
 
 // Format year only
-function formatYear(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatYear(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   return date.getFullYear().toString();
 }
 
 // Format week (start of week)
-function formatWeek(minutes: number, baseDate?: Date): string {
-  const base = baseDate || BASE_DATE;
-  const date = new Date(base.getTime() + minutes * 60 * 1000);
+function formatWeek(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  const date = zonedDateTimeToDate(zonedDateTime);
   // Get start of week (Sunday)
   const dayOfWeek = date.getDay();
   const startOfWeek = new Date(date);
@@ -335,7 +340,8 @@ function getDayStart(minutes: number): number {
 interface InfiniteTimelineProps<Data = unknown> {
   items?: TimelineItem<Data>[];
   lanes?: Lane[];
-  baseDate?: Date;
+  timeZone?: string; // Timezone for date conversions, defaults to local
+  // baseDate is auto-calculated from items, no prop needed!
   renderItem?: (props: {
     item: TimelineItem<Data>;
     left: number;
@@ -360,7 +366,7 @@ interface InfiniteTimelineProps<Data = unknown> {
 export function InfiniteTimeline<Data = unknown>({
   items: externalItems,
   lanes: externalLanes,
-  baseDate: externalBaseDate,
+  timeZone = getLocalTimeZone(),
   renderItem,
   onItemsChange,
   onItemClick,
@@ -373,18 +379,42 @@ export function InfiniteTimeline<Data = unknown>({
     end: number;
     row: number;
   } | null>(null);
-  const baseDate = externalBaseDate || BASE_DATE;
-  const [items, setItems] = useState<TimelineItem<Data>[]>(
-    externalItems || (initialItems as TimelineItem<Data>[]),
+
+  // Auto-calculate baseDate from items (earliest start time, or default)
+  const baseDateZoned = useMemo(() => {
+    if (externalItems && externalItems.length > 0) {
+      // Use the earliest item's start time as base
+      const earliest = externalItems.reduce((earliest, item) => {
+        const itemMs = item.start.toDate().getTime();
+        const earliestMs = earliest.toDate().getTime();
+        return itemMs < earliestMs ? item.start : earliest;
+      }, externalItems[0].start);
+      // Round down to start of day for cleaner calculations
+      const earliestDate = earliest.toDate();
+      earliestDate.setHours(0, 0, 0, 0);
+      return fromAbsolute(earliestDate.getTime(), earliest.timeZone);
+    }
+    // Default base date if no items
+    return dateToZonedDateTime(BASE_DATE, timeZone);
+  }, [externalItems, timeZone]);
+
+  // Convert external items to internal format (minutes)
+  const initialInternalItems = useMemo(() => {
+    if (externalItems && externalItems.length > 0) {
+      return externalItems.map((item) => toInternalItem(item, baseDateZoned));
+    }
+    // No initial items - return empty array if no external items provided
+    return [];
+  }, [externalItems, baseDateZoned]);
+
+  const [items, setItems] = useState<TimelineItemInternal<Data>[]>(
+    initialInternalItems as TimelineItemInternal<Data>[],
   );
   const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
 
   // Calculate initial zoom and scroll to fit all items
   const initialView = useMemo(() => {
-    const allItems =
-      externalItems && externalItems.length > 0
-        ? externalItems
-        : (initialItems as TimelineItem<Data>[]);
+    const allItems = initialInternalItems;
     if (!allItems || allItems.length === 0) {
       return {
         zoom: 1,
@@ -422,7 +452,7 @@ export function InfiniteTimeline<Data = unknown>({
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * zoom;
 
     return { zoom, scrollOffset };
-  }, [externalItems]);
+  }, [initialInternalItems]);
 
   const [scrollOffset, setScrollOffset] = useState(initialView.scrollOffset);
   const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
@@ -459,9 +489,12 @@ export function InfiniteTimeline<Data = unknown>({
   // Sync external items and update view when items change
   useEffect(() => {
     if (externalItems) {
-      setItems(externalItems);
+      const internalItems = externalItems.map((item) =>
+        toInternalItem(item, baseDateZoned),
+      );
+      setItems(internalItems);
     }
-  }, [externalItems]);
+  }, [externalItems, baseDateZoned]);
 
   // Update zoom and scroll when items change to fit all items
   useEffect(() => {
@@ -493,12 +526,15 @@ export function InfiniteTimeline<Data = unknown>({
     setScrollOffset(newScrollOffset);
   }, []);
 
-  // Notify parent of items change
+  // Notify parent of items change (convert internal to external format)
   useEffect(() => {
     if (onItemsChange) {
-      onItemsChange(items);
+      const externalItems = items.map((item) =>
+        toExternalItem(item, baseDateZoned),
+      );
+      onItemsChange(externalItems);
     }
-  }, [items, onItemsChange]);
+  }, [items, onItemsChange, baseDateZoned]);
 
   // Calculate sub-rows for overlapping items in a lane
   const getItemsWithRows = useCallback(
@@ -508,7 +544,8 @@ export function InfiniteTimeline<Data = unknown>({
     ) => {
       const laneItems = items.filter((item) => item.laneId === laneId);
       const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-      const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
+      const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] =
+        [];
 
       for (const item of sortedItems) {
         // Find the first available row
@@ -766,10 +803,10 @@ export function InfiniteTimeline<Data = unknown>({
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Handle mouse down on item (start drag)
+  // Handle mouse down on item (start drag) - uses internal format
   const handleItemMouseDown = (
     e: ReactMouseEvent,
-    item: TimelineItem<Data>,
+    item: TimelineItemInternal<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
     // Ignore middle mouse button and cmd+left (used for drawing)
@@ -785,7 +822,9 @@ export function InfiniteTimeline<Data = unknown>({
       originalItem: { ...item },
       hasCrossedThreshold: false,
     });
-    onItemClick?.(item);
+    // Convert to external format for callback
+    const externalItem = toExternalItem(item, baseDateZoned);
+    onItemClick?.(externalItem);
   };
 
   // Handle mouse down on lane (start drawing or allow panning)
@@ -914,14 +953,15 @@ export function InfiniteTimeline<Data = unknown>({
 
         if (end - start >= MIN_ITEM_DURATION) {
           const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId);
-          const newItem: TimelineItem<Data> = {
+          // Create item in internal format (minutes)
+          const newItem: TimelineItemInternal<Data> = {
             id: generateId(),
             laneId: dragState.laneId,
             start,
             end,
             label: "New Event",
             color: ITEM_COLORS[laneIndex % ITEM_COLORS.length],
-          } as TimelineItem<Data>;
+          } as TimelineItemInternal<Data>;
           setItems((prev) => [...prev, newItem]);
           setSelectedItemId(newItem.id);
         }
@@ -1027,8 +1067,8 @@ export function InfiniteTimeline<Data = unknown>({
     }
 
     // Generate month markers for top header
-    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate = minutesToDate(startTime, baseDateZoned);
+    const endDate = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate.getFullYear(),
       startDate.getMonth(),
@@ -1038,8 +1078,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -1050,7 +1090,7 @@ export function InfiniteTimeline<Data = unknown>({
 
     // Find first Sunday (start of week)
     let currentWeek = startDay;
-    const startDate = new Date(baseDate.getTime() + startDay * 60 * 1000);
+    const startDate = minutesToDate(startDay, baseDateZoned);
     const dayOfWeek = startDate.getDay();
     if (dayOfWeek !== 0) {
       currentWeek -= dayOfWeek * 1440; // Go back to Sunday
@@ -1062,8 +1102,8 @@ export function InfiniteTimeline<Data = unknown>({
     }
 
     // Generate month markers for top header
-    const startDate2 = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate2 = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate2 = minutesToDate(startTime, baseDateZoned);
+    const endDate2 = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate2.getFullYear(),
       startDate2.getMonth(),
@@ -1077,15 +1117,15 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
   } else if (timeScale === "months") {
     // Show months in time header, years in top header
-    const startDate = new Date(baseDate.getTime() + startTime * 60 * 1000);
-    const endDate = new Date(baseDate.getTime() + endTime * 60 * 1000);
+    const startDate = minutesToDate(startTime, baseDateZoned);
+    const endDate = minutesToDate(endTime, baseDateZoned);
     const currentMonth = new Date(
       startDate.getFullYear(),
       startDate.getMonth(),
@@ -1095,8 +1135,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentMonth < endMonth) {
       const monthStart = new Date(currentMonth);
-      const monthMinutes =
-        (monthStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
+      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
@@ -1107,8 +1147,8 @@ export function InfiniteTimeline<Data = unknown>({
 
     while (currentYear < endYear) {
       const yearStart = new Date(currentYear);
-      const yearMinutes =
-        (yearStart.getTime() - baseDate.getTime()) / (1000 * 60);
+      const yearZoned = dateToZonedDateTime(yearStart, timeZone);
+      const yearMinutes = zonedDateTimeToMinutes(yearZoned, baseDateZoned);
       yearMarkers.push(yearMinutes);
       currentYear.setFullYear(currentYear.getFullYear() + 1);
     }
@@ -1151,7 +1191,7 @@ export function InfiniteTimeline<Data = unknown>({
     // Calculate row for preview item (without considering it in existing items yet)
     const laneItems = items.filter((item) => item.laneId === dragState.laneId);
     const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-    const itemsWithRows: (TimelineItem<Data> & { row: number })[] = [];
+    const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
 
     for (const item of sortedItems) {
       let row = 0;
@@ -1310,7 +1350,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatDate(minutes, baseDate)}
+                      {formatDate(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1329,7 +1369,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatMonthYear(minutes, baseDate)}
+                      {formatMonthYear(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1348,7 +1388,7 @@ export function InfiniteTimeline<Data = unknown>({
                     style={{ left: x }}
                   >
                     <span className="text-xs font-medium text-foreground -translate-x-1/2">
-                      {formatYear(minutes, baseDate)}
+                      {formatYear(minutes, baseDateZoned)}
                     </span>
                   </div>
                 );
@@ -1467,7 +1507,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isFirstOfMonth = date.getDate() === 1;
 
                 return (
@@ -1508,7 +1548,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isFirstOfMonth = date.getDate() <= 7;
 
                 return (
@@ -1525,7 +1565,7 @@ export function InfiniteTimeline<Data = unknown>({
                           : "text-muted-foreground",
                       )}
                     >
-                      {formatWeek(minutes, baseDate)}
+                      {formatWeek(minutes, baseDateZoned)}
                     </span>
                     <div
                       className={cn(
@@ -1546,7 +1586,7 @@ export function InfiniteTimeline<Data = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = new Date(baseDate.getTime() + minutes * 60 * 1000);
+                const date = minutesToDate(minutes, baseDateZoned);
                 const isQuarter = date.getMonth() % 3 === 0;
 
                 return (
@@ -1728,7 +1768,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isFirstOfMonth = date.getDate() === 1;
 
@@ -1772,7 +1812,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isFirstOfMonth = date.getDate() <= 7;
 
@@ -1816,7 +1856,7 @@ export function InfiniteTimeline<Data = unknown>({
                     if (x < 0 || x > containerWidth) return null;
 
                     const date = new Date(
-                      baseDate.getTime() + minutes * 60 * 1000,
+                      minutesToDate(minutes, baseDateZoned),
                     );
                     const isQuarter = date.getMonth() % 3 === 0;
                     const isYearStart = date.getMonth() === 0;
@@ -1894,18 +1934,31 @@ export function InfiniteTimeline<Data = unknown>({
                     const isSelected = selectedItemId === item.id;
                     const isHovered = hoveredItemId === item.id;
 
+                    // Convert internal item to external format for renderItem callback
+                    const externalItem = toExternalItem(item, baseDateZoned);
                     const itemProps = {
-                      item,
+                      item: externalItem,
                       left,
                       width,
                       isSelected,
                       isHovered,
                       isMinWidth,
-                      onMouseDown: handleItemMouseDown,
+                      onMouseDown: (
+                        e: ReactMouseEvent,
+                        item: TimelineItem<Data>,
+                        type: "move" | "resize-start" | "resize-end",
+                      ) => {
+                        // Convert back to internal for drag handling
+                        const internalItem = toInternalItem(
+                          item,
+                          baseDateZoned,
+                        );
+                        handleItemMouseDown(e, internalItem, type);
+                      },
                       onMouseEnter: () => setHoveredItemId(item.id),
                       onMouseLeave: () => setHoveredItemId(null),
                       onMouseOver: onItemHover
-                        ? () => onItemHover(item)
+                        ? () => onItemHover(externalItem)
                         : undefined,
                     };
 
@@ -1944,9 +1997,9 @@ export function InfiniteTimeline<Data = unknown>({
 
         {/* Current time indicator (now line) */}
         {(() => {
-          const now = new Date();
+          const now = dateToZonedDateTime(new Date(), timeZone);
           // Calculate minutes from baseDate to now
-          const nowMinutes = (now.getTime() - baseDate.getTime()) / (1000 * 60);
+          const nowMinutes = zonedDateTimeToMinutes(now, baseDateZoned);
           const x = timeToPixel(nowMinutes);
           if (
             x < SIDEBAR_WIDTH ||
@@ -2011,7 +2064,7 @@ function DrawingPreview({
   pixelsPerMinute: number;
   scrollOffset: number;
   snapTime: (time: number) => number;
-  existingItems: (TimelineItem<unknown> & { row: number })[];
+  existingItems: (TimelineItemInternal<unknown> & { row: number })[];
   onPreviewUpdate: (start: number, end: number, row: number) => void;
 }) {
   // Initialize with the start position so it doesn't flash from -infinity
