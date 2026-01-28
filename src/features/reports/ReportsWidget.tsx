@@ -1,3 +1,5 @@
+import { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
+import { Project } from "@/api/project/project.api";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -7,10 +9,6 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import {
-  SplitViewLayout,
-  ViewMode,
-} from "@/features/_common/SplitViewLayout.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -26,7 +24,14 @@ import {
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
-import { renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
+import {
+  SplitViewLayout,
+  ViewMode,
+} from "@/features/_common/SplitViewLayout.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
@@ -51,12 +56,15 @@ import {
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import { createSimpleEvent } from "@passionware/simple-event";
 import { chain, groupBy, partialRight } from "lodash";
 import {
   BriefcaseBusiness,
   Check,
+  Frame,
   GitBranch,
   HardHat,
   LayoutGrid,
@@ -66,12 +74,9 @@ import {
   SplitSquareHorizontal,
   Sun,
   Table,
-  Frame,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createSimpleEvent } from "@passionware/simple-event";
-import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { getDimmedClasses } from "../_common/DimmedContainer";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
@@ -271,7 +276,17 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   // Convert CalendarDate to minutes from a base date (start of the earliest report)
   const timelineData = rd.useLastWithPlaceholder(
     rd.useMemoMap(
-      rd.useStable(rd.combine({ finalReports, projectIterations, projects })),
+      rd.useStable(
+        rd.combine({
+          finalReports,
+          projectIterations: rd.isIdle(projectIterations)
+            ? rd.of({} as Record<number, ProjectIteration>)
+            : projectIterations,
+          projects: rd.isIdle(projects)
+            ? rd.of({} as Record<number, Project>)
+            : projects,
+        }),
+      ),
       ({ finalReports, projectIterations, projects }) => {
         const reportView = finalReports;
         const projectsData = projects;
@@ -605,7 +620,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           </div>
         </div>,
       )
-      .catch(() => null)
+      .catch(renderError)
       .map((timeline) => {
         if (timeline.items.length === 0) {
           return (
