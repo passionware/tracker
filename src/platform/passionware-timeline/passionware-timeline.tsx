@@ -941,35 +941,46 @@ export function InfiniteTimeline<Data = unknown>({
     (e: globalThis.MouseEvent) => {
       if (!dragState) return;
 
-      if (
+      // Store drag state values before clearing
+      const wasDrawing =
         dragState.type === "draw" &&
         dragState.laneId &&
-        dragState.drawStart !== undefined
-      ) {
+        dragState.drawStart !== undefined;
+
+      let newItem: TimelineItemInternal<Data> | null = null;
+
+      if (wasDrawing) {
         const containerX = screenXToContainerX(e.clientX);
         const endTime = snapTime(pixelToTime(containerX));
-        const start = Math.min(dragState.drawStart, endTime);
-        const end = Math.max(dragState.drawStart, endTime);
+        const start = Math.min(dragState.drawStart!, endTime);
+        const end = Math.max(dragState.drawStart!, endTime);
 
         if (end - start >= MIN_ITEM_DURATION) {
-          const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId);
+          const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId!);
           // Create item in internal format (minutes)
-          const newItem: TimelineItemInternal<Data> = {
+          newItem = {
             id: generateId(),
-            laneId: dragState.laneId,
+            laneId: dragState.laneId!,
             start,
             end,
             label: "New Event",
             color: ITEM_COLORS[laneIndex % ITEM_COLORS.length],
           } as TimelineItemInternal<Data>;
-          setItems((prev) => [...prev, newItem]);
-          setSelectedItemId(newItem.id);
         }
       }
 
+      // Clear preview ref and drag state FIRST to prevent stale layout calculations
+      // This ensures calculatedPreviewItem becomes null before we add the new item
+      previewItemRef.current = null;
       setDragState(null);
       setPreviewRow(null);
       setCurrentMouseX(null);
+
+      // Then add the new item (if any) - this will trigger a re-render with correct layout
+      if (newItem) {
+        setItems((prev) => [...prev, newItem!]);
+        setSelectedItemId(newItem.id);
+      }
     },
     [dragState, pixelToTime, lanes, snapTime, screenXToContainerX],
   );
@@ -1172,6 +1183,7 @@ export function InfiniteTimeline<Data = unknown>({
   const drawingPreview = getDrawingPreview();
 
   // Calculate preview item's full information for collision detection
+  // This uses the same logic as getItemsWithRows to ensure the preview row matches the final row
   const calculatedPreviewItem = React.useMemo(() => {
     if (
       !dragState ||
@@ -1188,21 +1200,38 @@ export function InfiniteTimeline<Data = unknown>({
     const previewStart = Math.min(dragState.drawStart, currentTime);
     const previewEnd = Math.max(dragState.drawStart, currentTime);
 
-    // Calculate row for preview item (without considering it in existing items yet)
+    // Create a temporary preview item to include in the sorted processing
+    // This ensures the preview row matches exactly what the final row will be
+    const previewItemTemp: TimelineItemInternal<Data> = {
+      id: "__preview__",
+      laneId: dragState.laneId,
+      start: previewStart,
+      end: previewEnd,
+      label: "",
+      data: undefined as Data,
+    };
+
+    // Get all items in this lane, including the preview item
     const laneItems = items.filter((item) => item.laneId === dragState.laneId);
-    const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
+    const allItems = [...laneItems, previewItemTemp];
+    
+    // Sort all items by start time (same as getItemsWithRows)
+    const sortedItems = allItems.sort((a, b) => a.start - b.start);
     const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
 
+    // Process items in sorted order (same logic as getItemsWithRows)
     for (const item of sortedItems) {
       let row = 0;
       let foundRow = false;
 
       while (!foundRow) {
+        // Check collision with already placed items
         const hasOverlap = itemsWithRows.some(
           (placed) =>
             placed.row === row &&
             !(item.end <= placed.start || item.start >= placed.end),
         );
+
         if (!hasOverlap) {
           foundRow = true;
         } else {
@@ -1213,27 +1242,20 @@ export function InfiniteTimeline<Data = unknown>({
       itemsWithRows.push({ ...item, row });
     }
 
-    // Calculate preview item's row
-    let previewRow = 0;
-    let foundPreviewRow = false;
-    while (!foundPreviewRow) {
-      const hasOverlap = itemsWithRows.some(
-        (placed) =>
-          placed.row === previewRow &&
-          !(previewEnd <= placed.start || previewStart >= placed.end),
-      );
-      if (!hasOverlap) {
-        foundPreviewRow = true;
-      } else {
-        previewRow++;
-      }
+    // Find the preview item's row from the processed items
+    const previewItemWithRow = itemsWithRows.find(
+      (item) => item.id === "__preview__",
+    );
+
+    if (!previewItemWithRow) {
+      return null;
     }
 
     return {
       laneId: dragState.laneId,
       start: previewStart,
       end: previewEnd,
-      row: previewRow,
+      row: previewItemWithRow.row,
     };
   }, [
     dragState,
@@ -1983,6 +2005,9 @@ export function InfiniteTimeline<Data = unknown>({
                       pixelsPerMinute={pixelsPerMinute}
                       scrollOffset={scrollOffset}
                       snapTime={snapTime}
+                      previewRow={
+                        previewForLane ? previewForLane.row : undefined
+                      }
                       existingItems={itemsWithRows}
                       onPreviewUpdate={(_start, _end, row) => {
                         setPreviewRow({ laneId: lane.id, row });
@@ -2054,6 +2079,7 @@ function DrawingPreview({
   pixelsPerMinute,
   scrollOffset,
   snapTime,
+  previewRow: previewRowProp,
   existingItems,
   onPreviewUpdate,
 }: {
@@ -2064,6 +2090,7 @@ function DrawingPreview({
   pixelsPerMinute: number;
   scrollOffset: number;
   snapTime: (time: number) => number;
+  previewRow?: number;
   existingItems: (TimelineItemInternal<unknown> & { row: number })[];
   onPreviewUpdate: (start: number, end: number, row: number) => void;
 }) {
@@ -2091,8 +2118,13 @@ function DrawingPreview({
   const previewStart = Math.min(startTime, currentTime);
   const previewEnd = Math.max(startTime, currentTime);
 
-  // Calculate row based on collision with existing items
+  // Use the preview row from calculatedPreviewItem if provided, otherwise calculate it
+  // This ensures the preview row matches exactly what the final row will be
   const calculateRow = () => {
+    if (previewRowProp !== undefined) {
+      return previewRowProp;
+    }
+    // Fallback calculation if previewRow not provided
     let row = 0;
     let foundRow = false;
     while (!foundRow) {
