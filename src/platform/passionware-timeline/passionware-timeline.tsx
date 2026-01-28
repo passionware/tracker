@@ -330,8 +330,8 @@ function getDayStart(minutes: number): number {
 }
 
 interface InfiniteTimelineProps<Data = unknown> {
-  items?: TimelineItem<Data>[];
-  lanes?: Lane[];
+  items: TimelineItem<Data>[];
+  lanes: Lane[];
   timeZone?: string; // Timezone for date conversions, defaults to local
   // baseDate is auto-calculated from items, no prop needed!
   renderItem?: (props: {
@@ -363,7 +363,7 @@ export function InfiniteTimeline<Data = unknown>({
   onItemsChange,
   onItemClick,
   onItemHover,
-}: InfiniteTimelineProps<Data> = {}) {
+}: InfiniteTimelineProps<Data>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
     laneId: string;
