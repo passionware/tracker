@@ -71,7 +71,7 @@ type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
 const PIXELS_PER_MINUTE = 2; // Base pixels per minute
 const MIN_ITEM_DURATION = 5; // Minimum 5 minutes
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
-const LANE_HEIGHT = 80;
+const LANE_HEIGHT = 70;
 const SUB_ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const SIDEBAR_WIDTH = 180;
@@ -1695,7 +1695,7 @@ export function InfiniteTimeline<Data = unknown>({
                       lane.color,
                     )}
                   />
-                  <span className="text-sm text-foreground break-words whitespace-normal min-w-0 overflow-clip">
+                  <span className="text-xs text-foreground whitespace-normal truncate min-w-0 h-full">
                     {lane.name}
                   </span>
                 </div>
