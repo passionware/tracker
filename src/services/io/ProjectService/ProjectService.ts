@@ -16,6 +16,9 @@ export interface ProjectService {
   ensureProjectContractors(
     projectId: Project["id"],
   ): Promise<ProjectContractor[]>;
+  useProjectById: (
+    ids: Maybe<Project["id"][]>,
+  ) => RemoteData<Record<Project["id"], Project>>;
 }
 
 export interface WithProjectService {

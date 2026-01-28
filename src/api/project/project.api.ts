@@ -49,9 +49,7 @@ export interface ProjectBase extends ProjectPayload {
   id: number;
   createdAt: Date;
 }
-export interface Project extends ProjectBase {
-  // optional relation fields
-}
+export type Project = ProjectBase;
 
 export type ProjectQuery = WithFilters<{
   clientId: EnumFilter<Client["id"]>;
@@ -151,4 +149,7 @@ export interface ProjectApi {
   getProjectContractors: (
     projectId: Project["id"],
   ) => Promise<ProjectContractor[]>;
+  getProjectsByIds: (
+    ids: Project["id"][],
+  ) => Promise<Record<Project["id"], Project>>;
 }

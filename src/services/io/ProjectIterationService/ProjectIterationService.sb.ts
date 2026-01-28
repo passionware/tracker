@@ -3,6 +3,7 @@ import {
   ProjectIterationDetail,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { ProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
+import { rd } from "@passionware/monads";
 import {
   ArgsScopedAccessor,
   testQuery,
@@ -19,5 +20,6 @@ export function createProjectIterationService(config: {
       testQuery.useData(config.itemAccessor.use()),
     ensureProjectIterations: () =>
       testQuery.asPromise(config.listAccessor.get()),
+    useProjectIterationById: () => rd.of({}),
   };
 }

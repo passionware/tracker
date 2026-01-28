@@ -51,5 +51,17 @@ export function createProjectIterationService({
           client,
         ),
       ),
+    useProjectIterationById: (ids) =>
+      ensureIdleQuery(
+        ids,
+        useQuery(
+          {
+            enabled: !!ids && ids.length > 0,
+            queryKey: ["project-iteration", "by-ids", ids],
+            queryFn: () => api.getProjectIterationsByIds(ids!),
+          },
+          client,
+        ),
+      ),
   };
 }

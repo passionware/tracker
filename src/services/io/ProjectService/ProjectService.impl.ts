@@ -69,5 +69,17 @@ export function createProjectService(
         queryKey: ["project", "contractors", projectId],
         queryFn: () => config.api.getProjectContractors(projectId),
       }),
+    useProjectById: (ids) =>
+      ensureIdleQuery(
+        ids,
+        useQuery(
+          {
+            enabled: !!ids && ids.length > 0,
+            queryKey: ["project", "by-ids", ids],
+            queryFn: () => config.api.getProjectsByIds(ids!),
+          },
+          config.client,
+        ),
+      ),
   };
 }

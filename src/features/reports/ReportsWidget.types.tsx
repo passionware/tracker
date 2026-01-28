@@ -18,6 +18,8 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithReportService } from "@/services/io/ReportService/ReportService";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
+import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 
 export interface ReportsWidgetProps
   extends WithServices<
@@ -39,6 +41,8 @@ export interface ReportsWidgetProps
       WithContractorService,
       WithFormatService,
       WithExchangeService,
+      WithProjectIterationService,
+      WithProjectService,
     ]
   > {
   clientId: ClientSpec;

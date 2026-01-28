@@ -31,5 +31,6 @@ export function createProjectService(config: {
           workspaceId: 1,
         })),
       ),
+    useProjectById: () => rd.of({}),
   };
 }
