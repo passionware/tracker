@@ -57,6 +57,7 @@ import { chain, groupBy, partialRight } from "lodash";
 import {
   BriefcaseBusiness,
   Check,
+  GitBranch,
   HardHat,
   LayoutGrid,
   Loader2,
@@ -97,7 +98,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   );
   const [splitRatio, setSplitRatio] = useState(savedPreferences.splitRatio);
   const [timelineGroupBy, setTimelineGroupBy] = useState<
-    "contractor" | "client" | "workspace"
+    "contractor" | "client" | "workspace" | "projectIteration"
   >(savedPreferences.groupBy);
 
   // Load preferences on mount
@@ -163,6 +164,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       label: "Workspace",
       icon: <Frame className="h-4 w-4" />,
     },
+    {
+      id: "projectIteration",
+      label: "Project",
+      icon: <GitBranch className="h-4 w-4" />,
+    },
   ];
 
   // Get reports - we'll calculate selected IDs from the reports data
@@ -224,8 +230,52 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   const columns = useColumns(props);
 
+  // Extract project iteration IDs from reports when grouping by project iteration
+  const projectIterationIds = useMemo(() => {
+    if (timelineGroupBy !== "projectIteration") {
+      return maybe.ofAbsent();
+    }
+    return rd.tryMap(finalReports, (reportView) => {
+      const ids = reportView.entries
+        .map((entry) => entry.originalReport.projectIterationId)
+        .filter((id): id is number => id !== null);
+      return Array.from(new Set(ids));
+    });
+  }, [finalReports, timelineGroupBy]);
+
+  // Load project iterations when needed
+  const projectIterations =
+    props.services.projectIterationService.useProjectIterationById(
+      maybe.map(projectIterationIds, (ids) => ids),
+    );
+
+  // Extract project IDs from loaded project iterations
+  const projectIds = useMemo(() => {
+    if (timelineGroupBy !== "projectIteration") {
+      return maybe.ofAbsent();
+    }
+    return rd.tryMap(projectIterations, (iterations) => {
+      const ids = Object.values(iterations)
+        .map((iteration) => iteration.projectId)
+        .filter((id): id is number => id !== null);
+      return Array.from(new Set(ids));
+    });
+  }, [projectIterations, timelineGroupBy]);
+
+  // Load projects when needed
+  const projects = props.services.projectService.useProjectById(
+    maybe.map(projectIds, (ids) => ids),
+  );
+
   // Convert CalendarDate to minutes from a base date (start of the earliest report)
   const timelineData = rd.useMemoMap(finalReports, (reportView) => {
+    // Get iterations and projects data, defaulting to empty records if not grouping by project iteration
+    const iterationsData =
+      timelineGroupBy === "projectIteration"
+        ? (rd.tryGet(projectIterations) ?? {})
+        : {};
+    const projectsData =
+      timelineGroupBy === "projectIteration" ? (rd.tryGet(projects) ?? {}) : {};
     const reports = reportView.entries;
     if (reports.length === 0) {
       return { lanes: [], items: [] };
@@ -240,6 +290,10 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           return report.client.id.toString();
         case "workspace":
           return report.workspace.id.toString();
+        case "projectIteration": {
+          const iterationId = report.originalReport.projectIterationId;
+          return iterationId !== null ? iterationId.toString() : "no-iteration";
+        }
       }
     };
 
@@ -253,6 +307,21 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           return report.client.name || `Client ${report.client.id}`;
         case "workspace":
           return report.workspace.name || `Workspace ${report.workspace.id}`;
+        case "projectIteration": {
+          const iterationId = report.originalReport.projectIterationId;
+          if (iterationId === null) {
+            return "No Project Iteration";
+          }
+          const iteration = iterationsData[iterationId];
+          if (!iteration) {
+            return `Iteration ${iterationId}`;
+          }
+          const project = iteration.projectId
+            ? projectsData[iteration.projectId]
+            : undefined;
+          const projectName = project?.name || `Project ${iteration.projectId}`;
+          return `${projectName} - Iteration #${iteration.ordinalNumber}`;
+        }
       }
     };
 
@@ -264,6 +333,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           return `client-${report.client.id}`;
         case "workspace":
           return `workspace-${report.workspace.id}`;
+        case "projectIteration": {
+          const iterationId = report.originalReport.projectIterationId;
+          return iterationId !== null
+            ? `iteration-${iterationId}`
+            : "no-iteration";
+        }
       }
     };
 
@@ -361,7 +436,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 onSelect={(value) => {
                   if (value) {
                     setTimelineGroupBy(
-                      value as "contractor" | "client" | "workspace",
+                      value as
+                        | "contractor"
+                        | "client"
+                        | "workspace"
+                        | "projectIteration",
                     );
                   }
                 }}

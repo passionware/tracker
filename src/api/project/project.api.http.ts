@@ -7,7 +7,7 @@ import {
   projectContractor$,
   projectContractorFromHttp,
 } from "@/api/project/project.api.http.schema.ts";
-import { ProjectApi } from "@/api/project/project.api.ts";
+import { ProjectApi, Project } from "@/api/project/project.api.ts";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -112,6 +112,29 @@ export function createProjectApi(client: SupabaseClient): ProjectApi {
       return parseWithDataError(z.array(projectContractor$), data).map(
         projectContractorFromHttp,
       );
+    },
+    getProjectsByIds: async (ids) => {
+      if (ids.length === 0) {
+        return {};
+      }
+      const { data, error } = await client
+        .from("project")
+        .select(
+          `
+          *,
+          link_project_workspace(*)
+        `,
+        )
+        .in("id", ids);
+      if (error) {
+        throw error;
+      }
+      const projects = parseWithDataError(z.array(project$), data).map(
+        projectFromHttp,
+      );
+      return Object.fromEntries(
+        projects.map((project) => [project.id, project]),
+      ) as Record<Project["id"], Project>;
     },
   };
 }

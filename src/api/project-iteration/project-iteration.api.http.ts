@@ -9,7 +9,7 @@ import {
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { ProjectIterationApi } from "./project-iteration.api";
+import { ProjectIterationApi, ProjectIteration } from "./project-iteration.api";
 
 export function createProjectIterationApi(
   client: SupabaseClient,
@@ -64,6 +64,25 @@ export function createProjectIterationApi(
       return projectIterationDetailFromHttp(
         parseWithDataError(projectIterationDetail$, data),
       );
+    },
+    getProjectIterationsByIds: async (ids) => {
+      if (ids.length === 0) {
+        return {};
+      }
+      const { data, error } = await client
+        .from("project_iteration")
+        .select("*")
+        .in("id", ids);
+      if (error) {
+        throw error;
+      }
+      const iterations = parseWithDataError(
+        z.array(projectIteration$),
+        data,
+      ).map(projectIterationFromHttp);
+      return Object.fromEntries(
+        iterations.map((iteration) => [iteration.id, iteration]),
+      ) as Record<ProjectIteration["id"], ProjectIteration>;
     },
   };
 }

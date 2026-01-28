@@ -2,7 +2,7 @@ export interface TimelineViewPreferences {
   viewMode: "timeline" | "table" | "both";
   darkMode: boolean;
   splitRatio: number; // Percentage for timeline panel (0-100)
-  groupBy: "contractor" | "client" | "workspace";
+  groupBy: "contractor" | "client" | "workspace" | "projectIteration";
 }
 
 export interface PreferenceService {

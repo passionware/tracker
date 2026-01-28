@@ -94,6 +94,9 @@ export interface ProjectIterationApi {
     query: ProjectIterationQuery,
   ) => Promise<ProjectIteration[]>;
   getProjectIterationDetail: (id: number) => Promise<ProjectIterationDetail>;
+  getProjectIterationsByIds: (
+    ids: ProjectIteration["id"][],
+  ) => Promise<Record<ProjectIteration["id"], ProjectIteration>>;
 }
 
 /**

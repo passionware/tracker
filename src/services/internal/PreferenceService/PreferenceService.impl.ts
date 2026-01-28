@@ -21,7 +21,7 @@ const timelineViewPreferencesSchema = z.object({
   viewMode: z.enum(["timeline", "table", "both"]),
   darkMode: z.boolean(),
   splitRatio: z.number().min(0).max(100),
-  groupBy: z.enum(["contractor", "client", "workspace"]),
+  groupBy: z.enum(["contractor", "client", "workspace", "projectIteration"]),
 });
 
 const defaultTimelineViewPreferences: TimelineViewPreferences = {

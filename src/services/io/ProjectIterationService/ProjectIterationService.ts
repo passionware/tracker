@@ -15,6 +15,9 @@ export interface ProjectIterationService {
   useProjectIterationDetail: (
     id: Maybe<ProjectIterationDetail["id"]>,
   ) => RemoteData<ProjectIterationDetail>;
+  useProjectIterationById: (
+    ids: Maybe<ProjectIteration["id"][]>,
+  ) => RemoteData<Record<ProjectIteration["id"], ProjectIteration>>;
 }
 
 export interface WithProjectIterationService {
