@@ -298,13 +298,13 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
   }
 
   return (
-    <div className={cn("p-4", className)}>
+    <div className={cn("p-4 h-full flex flex-col", className)}>
       {breakdownDimension && (
         <div className="text-xs text-slate-500 mb-2 flex-shrink-0">
           Grouped by {breakdownDimension.name}
         </div>
       )}
-      <div className="w-full h-[28rem] rounded-md overflow-hidden border border-slate-200">
+      <div className="w-full h-full rounded-md overflow-hidden border border-slate-200">
         <InfiniteTimeline items={items} lanes={lanes} />
       </div>
     </div>
