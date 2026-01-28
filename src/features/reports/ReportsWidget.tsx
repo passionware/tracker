@@ -72,6 +72,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createSimpleEvent } from "@passionware/simple-event";
 import { getLocalTimeZone, toZoned } from "@internationalized/date";
+import { getDimmedClasses } from "../_common/DimmedContainer";
 
 export function ReportsWidget(props: ReportsWidgetProps) {
   const queryParamsService =
@@ -268,127 +269,135 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   );
 
   // Convert CalendarDate to minutes from a base date (start of the earliest report)
-  const timelineData = rd.useMemoMap(finalReports, (reportView) => {
-    // Get iterations and projects data, defaulting to empty records if not grouping by project iteration
-    const iterationsData =
-      timelineGroupBy === "projectIteration"
-        ? (rd.tryGet(projectIterations) ?? {})
-        : {};
-    const projectsData =
-      timelineGroupBy === "projectIteration" ? (rd.tryGet(projects) ?? {}) : {};
-    const reports = reportView.entries;
-    if (reports.length === 0) {
-      return { lanes: [], items: [] };
-    }
-
-    // Group reports by selected option
-    const getGroupKey = (report: ReportViewEntry): string => {
-      switch (timelineGroupBy) {
-        case "contractor":
-          return report.contractor.id.toString();
-        case "client":
-          return report.client.id.toString();
-        case "workspace":
-          return report.workspace.id.toString();
-        case "projectIteration": {
-          const iterationId = report.originalReport.projectIterationId;
-          return iterationId !== null ? iterationId.toString() : "no-iteration";
+  const timelineData = rd.useLastWithPlaceholder(
+    rd.useMemoMap(
+      rd.useStable(rd.combine({ finalReports, projectIterations, projects })),
+      ({ finalReports, projectIterations, projects }) => {
+        const reportView = finalReports;
+        const projectsData = projects;
+        // Get iterations and projects data, defaulting to empty records if not grouping by project iteration
+        const iterationsData = projectIterations;
+        const reports = reportView.entries;
+        if (reports.length === 0) {
+          return { lanes: [], items: [] };
         }
-      }
-    };
 
-    const getGroupName = (report: ReportViewEntry): string => {
-      switch (timelineGroupBy) {
-        case "contractor":
-          return (
-            report.contractor.fullName || `Contractor ${report.contractor.id}`
-          );
-        case "client":
-          return report.client.name || `Client ${report.client.id}`;
-        case "workspace":
-          return report.workspace.name || `Workspace ${report.workspace.id}`;
-        case "projectIteration": {
-          const iterationId = report.originalReport.projectIterationId;
-          if (iterationId === null) {
-            return "No Project Iteration";
+        // Group reports by selected option
+        const getGroupKey = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return report.contractor.id.toString();
+            case "client":
+              return report.client.id.toString();
+            case "workspace":
+              return report.workspace.id.toString();
+            case "projectIteration": {
+              const iterationId = report.originalReport.projectIterationId;
+              return iterationId !== null
+                ? iterationId.toString()
+                : "no-iteration";
+            }
           }
-          const iteration = iterationsData[iterationId];
-          if (!iteration) {
-            return `Iteration ${iterationId}`;
-          }
-          const project = iteration.projectId
-            ? projectsData[iteration.projectId]
-            : undefined;
-          const projectName = project?.name || `Project ${iteration.projectId}`;
-          return `${projectName} - Iteration #${iteration.ordinalNumber}`;
-        }
-      }
-    };
-
-    const getLaneId = (report: ReportViewEntry): string => {
-      switch (timelineGroupBy) {
-        case "contractor":
-          return `contractor-${report.contractor.id}`;
-        case "client":
-          return `client-${report.client.id}`;
-        case "workspace":
-          return `workspace-${report.workspace.id}`;
-        case "projectIteration": {
-          const iterationId = report.originalReport.projectIterationId;
-          return iterationId !== null
-            ? `iteration-${iterationId}`
-            : "no-iteration";
-        }
-      }
-    };
-
-    const groupedReports = groupBy(reports, getGroupKey);
-
-    // Create lanes (one per group)
-    const colors = [
-      "bg-chart-1",
-      "bg-chart-2",
-      "bg-chart-3",
-      "bg-chart-4",
-      "bg-chart-5",
-    ];
-    const lanes: Lane[] = Object.entries(groupedReports).map(
-      ([, groupReports], index) => {
-        const firstReport = groupReports[0] as ReportViewEntry;
-        return {
-          id: getLaneId(firstReport),
-          name: getGroupName(firstReport),
-          color: colors[index % colors.length],
         };
+
+        const getGroupName = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return (
+                report.contractor.fullName ||
+                `Contractor ${report.contractor.id}`
+              );
+            case "client":
+              return report.client.name || `Client ${report.client.id}`;
+            case "workspace":
+              return (
+                report.workspace.name || `Workspace ${report.workspace.id}`
+              );
+            case "projectIteration": {
+              const iterationId = report.originalReport.projectIterationId;
+              if (iterationId === null) {
+                return "No Project Iteration";
+              }
+              const iteration = iterationsData[iterationId];
+              if (!iteration) {
+                return `Iteration ${iterationId}`;
+              }
+              const project = iteration.projectId
+                ? projectsData[iteration.projectId]
+                : undefined;
+              const projectName =
+                project?.name || `Project ${iteration.projectId}`;
+              return `${projectName} #${iteration.ordinalNumber}`;
+            }
+          }
+        };
+
+        const getLaneId = (report: ReportViewEntry): string => {
+          switch (timelineGroupBy) {
+            case "contractor":
+              return `contractor-${report.contractor.id}`;
+            case "client":
+              return `client-${report.client.id}`;
+            case "workspace":
+              return `workspace-${report.workspace.id}`;
+            case "projectIteration": {
+              const iterationId = report.originalReport.projectIterationId;
+              return iterationId !== null
+                ? `iteration-${iterationId}`
+                : "no-iteration";
+            }
+          }
+        };
+
+        const groupedReports = groupBy(reports, getGroupKey);
+
+        // Create lanes (one per group)
+        const colors = [
+          "bg-chart-1",
+          "bg-chart-2",
+          "bg-chart-3",
+          "bg-chart-4",
+          "bg-chart-5",
+        ];
+        const lanes: Lane[] = Object.entries(groupedReports).map(
+          ([, groupReports], index) => {
+            const firstReport = groupReports[0] as ReportViewEntry;
+            return {
+              id: getLaneId(firstReport),
+              name: getGroupName(firstReport),
+              color: colors[index % colors.length],
+            };
+          },
+        );
+
+        // Convert reports to timeline items
+        const items: TimelineItem<ReportViewEntry>[] = reports.map(
+          (report: ReportViewEntry) => {
+            const endDate = calendarDateToJSDate(report.periodEnd);
+            // Add one day to end date to include the full end day
+            endDate.setHours(23, 59, 59, 999);
+
+            const laneId = getLaneId(report);
+            const lane = lanes.find((l) => l.id === laneId);
+
+            return {
+              id: `report-${report.id}`,
+              laneId: lane?.id || laneId,
+              start: toZoned(report.periodStart, getLocalTimeZone()),
+              end: toZoned(report.periodEnd, getLocalTimeZone()).add({
+                days: 1,
+              }),
+              label: report.description || `Report #${report.id}`,
+              color: lane?.color,
+              data: report,
+            } satisfies TimelineItem<ReportViewEntry>;
+          },
+        );
+
+        return { lanes, items };
       },
-    );
-
-    // Convert reports to timeline items
-    const items: TimelineItem<ReportViewEntry>[] = reports.map(
-      (report: ReportViewEntry) => {
-        const endDate = calendarDateToJSDate(report.periodEnd);
-        // Add one day to end date to include the full end day
-        endDate.setHours(23, 59, 59, 999);
-
-        const laneId = getLaneId(report);
-        const lane = lanes.find((l) => l.id === laneId);
-
-        return {
-          id: `report-${report.id}`,
-          laneId: lane?.id || laneId,
-          start: toZoned(report.periodStart, getLocalTimeZone()),
-          end: toZoned(report.periodEnd, getLocalTimeZone()).add({
-            days: 1,
-          }),
-          label: report.description || `Report #${report.id}`,
-          color: lane?.color,
-          data: report,
-        } satisfies TimelineItem<ReportViewEntry>;
-      },
-    );
-
-    return { lanes, items };
-  });
+    ),
+  );
 
   return (
     <CommonPageContainer
@@ -597,8 +606,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </div>,
       )
       .catch(() => null)
-      .map((timelineData) => {
-        if (timelineData.items.length === 0) {
+      .map((timeline) => {
+        if (timeline.items.length === 0) {
           return (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
               No timeline data available
@@ -610,6 +619,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             className={cn(
               "h-full rounded-md overflow-hidden bg-card",
               timelineDarkMode && "dark",
+              getDimmedClasses(rd.isPlaceholderData(timelineData)),
             )}
           >
             <InfiniteTimeline
@@ -617,8 +627,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 scrollEvent.emit(item.data.id);
               }}
               key={timelineGroupBy}
-              items={timelineData.items}
-              lanes={timelineData.lanes}
+              items={timeline.items}
+              lanes={timeline.lanes}
               renderItem={
                 viewMode === "timeline"
                   ? (itemProps) => {

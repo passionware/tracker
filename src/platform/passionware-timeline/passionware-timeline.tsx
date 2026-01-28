@@ -1675,7 +1675,7 @@ export function InfiniteTimeline<Data = unknown>({
                       lane.color,
                     )}
                   />
-                  <span className="text-sm text-foreground truncate">
+                  <span className="text-sm text-foreground break-words whitespace-normal min-w-0">
                     {lane.name}
                   </span>
                 </div>
