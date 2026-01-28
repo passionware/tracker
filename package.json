@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.5.0",
-    "@gravity-ui/timeline": "^1.27.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@internationalized/date": "^3.9.0",

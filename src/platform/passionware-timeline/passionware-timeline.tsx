@@ -71,7 +71,7 @@ type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
 const PIXELS_PER_MINUTE = 2; // Base pixels per minute
 const MIN_ITEM_DURATION = 5; // Minimum 5 minutes
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
-const LANE_HEIGHT = 80;
+const LANE_HEIGHT = 70;
 const SUB_ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const SIDEBAR_WIDTH = 180;
@@ -159,14 +159,6 @@ function toExternalItem<Data>(
     end: minutesToZonedDateTime(item.end, baseDate),
   };
 }
-
-const initialLanes: Lane[] = [
-  { id: "lane-1", name: "Meeting Room A", color: "bg-chart-1" },
-  { id: "lane-2", name: "Meeting Room B", color: "bg-chart-2" },
-  { id: "lane-3", name: "Conference Hall", color: "bg-chart-3" },
-  { id: "lane-4", name: "Virtual", color: "bg-chart-4" },
-  { id: "lane-5", name: "External", color: "bg-chart-5" },
-];
 
 // Note: initialItems removed - component now requires external items with ZonedDateTime
 
@@ -338,8 +330,8 @@ function getDayStart(minutes: number): number {
 }
 
 interface InfiniteTimelineProps<Data = unknown> {
-  items?: TimelineItem<Data>[];
-  lanes?: Lane[];
+  items: TimelineItem<Data>[];
+  lanes: Lane[];
   timeZone?: string; // Timezone for date conversions, defaults to local
   // baseDate is auto-calculated from items, no prop needed!
   renderItem?: (props: {
@@ -365,13 +357,13 @@ interface InfiniteTimelineProps<Data = unknown> {
 
 export function InfiniteTimeline<Data = unknown>({
   items: externalItems,
-  lanes: externalLanes,
+  lanes,
   timeZone = getLocalTimeZone(),
   renderItem,
   onItemsChange,
   onItemClick,
   onItemHover,
-}: InfiniteTimelineProps<Data> = {}) {
+}: InfiniteTimelineProps<Data>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
     laneId: string;
@@ -398,8 +390,8 @@ export function InfiniteTimeline<Data = unknown>({
     return dateToZonedDateTime(BASE_DATE, timeZone);
   }, [externalItems, timeZone]);
 
-  // Convert external items to internal format (minutes)
-  const initialInternalItems = useMemo(() => {
+  // Convert external items to internal format (minutes) - use useMemo instead of useState
+  const items = useMemo(() => {
     if (externalItems && externalItems.length > 0) {
       return externalItems.map((item) => toInternalItem(item, baseDateZoned));
     }
@@ -407,14 +399,9 @@ export function InfiniteTimeline<Data = unknown>({
     return [];
   }, [externalItems, baseDateZoned]);
 
-  const [items, setItems] = useState<TimelineItemInternal<Data>[]>(
-    initialInternalItems as TimelineItemInternal<Data>[],
-  );
-  const [lanes] = useState<Lane[]>(externalLanes || initialLanes);
-
   // Calculate initial zoom and scroll to fit all items
   const initialView = useMemo(() => {
-    const allItems = initialInternalItems;
+    const allItems = items;
     if (!allItems || allItems.length === 0) {
       return {
         zoom: 1,
@@ -452,7 +439,7 @@ export function InfiniteTimeline<Data = unknown>({
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * zoom;
 
     return { zoom, scrollOffset };
-  }, [initialInternalItems]);
+  }, [items]);
 
   const [scrollOffset, setScrollOffset] = useState(initialView.scrollOffset);
   const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
@@ -486,15 +473,18 @@ export function InfiniteTimeline<Data = unknown>({
     [snapOption],
   );
 
-  // Sync external items and update view when items change
-  useEffect(() => {
-    if (externalItems) {
-      const internalItems = externalItems.map((item) =>
-        toInternalItem(item, baseDateZoned),
-      );
-      setItems(internalItems);
-    }
-  }, [externalItems, baseDateZoned]);
+  // Temporary modifications during drag operations (merged with items for rendering)
+  const [dragModifications, setDragModifications] = useState<
+    Map<string, Partial<TimelineItemInternal<Data>>>
+  >(new Map());
+
+  // Merge items with drag modifications for rendering
+  const mergedItems = useMemo(() => {
+    return items.map((item) => {
+      const modification = dragModifications.get(item.id);
+      return modification ? { ...item, ...modification } : item;
+    });
+  }, [items, dragModifications]);
 
   // Update zoom and scroll when items change to fit all items
   useEffect(() => {
@@ -524,17 +514,10 @@ export function InfiniteTimeline<Data = unknown>({
     const newScrollOffset =
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
     setScrollOffset(newScrollOffset);
-  }, []);
+  }, [items]);
 
-  // Notify parent of items change (convert internal to external format)
-  useEffect(() => {
-    if (onItemsChange) {
-      const externalItems = items.map((item) =>
-        toExternalItem(item, baseDateZoned),
-      );
-      onItemsChange(externalItems);
-    }
-  }, [items, onItemsChange, baseDateZoned]);
+  // Note: onItemsChange is now called directly when items are modified (drag, draw, delete)
+  // No need for a useEffect since items is derived from externalItems via useMemo
 
   // Calculate sub-rows for overlapping items in a lane
   const getItemsWithRows = useCallback(
@@ -542,7 +525,7 @@ export function InfiniteTimeline<Data = unknown>({
       laneId: string,
       previewItem?: { start: number; end: number; row: number },
     ) => {
-      const laneItems = items.filter((item) => item.laneId === laneId);
+      const laneItems = mergedItems.filter((item) => item.laneId === laneId);
       const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
       const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] =
         [];
@@ -578,7 +561,7 @@ export function InfiniteTimeline<Data = unknown>({
 
       return itemsWithRows;
     },
-    [items],
+    [mergedItems],
   );
 
   // Get max rows for a lane
@@ -894,43 +877,41 @@ export function InfiniteTimeline<Data = unknown>({
         );
       }
 
-      // Only update items if threshold has been crossed
+      // Only update drag modifications if threshold has been crossed
       if (hasCrossedThreshold && dragState.originalItem && dragState.itemId) {
-        setItems((prev) =>
-          prev.map((item) => {
-            if (item.id !== dragState.itemId) return item;
+        const original = dragState.originalItem!;
+        const deltaTime = currentTime - dragState.startTime;
+        let newStart = original.start;
+        let newEnd = original.end;
 
-            const original = dragState.originalItem!;
-            const deltaTime = currentTime - dragState.startTime;
-            let newStart = original.start;
-            let newEnd = original.end;
+        switch (dragState.type) {
+          case "move":
+            newStart = snapTime(original.start + deltaTime);
+            newEnd = newStart + (original.end - original.start);
+            break;
+          case "resize-start":
+            newStart = snapTime(
+              Math.min(
+                original.start + deltaTime,
+                original.end - MIN_ITEM_DURATION,
+              ),
+            );
+            break;
+          case "resize-end":
+            newEnd = snapTime(
+              Math.max(
+                original.end + deltaTime,
+                original.start + MIN_ITEM_DURATION,
+              ),
+            );
+            break;
+        }
 
-            switch (dragState.type) {
-              case "move":
-                newStart = snapTime(original.start + deltaTime);
-                newEnd = newStart + (original.end - original.start);
-                break;
-              case "resize-start":
-                newStart = snapTime(
-                  Math.min(
-                    original.start + deltaTime,
-                    original.end - MIN_ITEM_DURATION,
-                  ),
-                );
-                break;
-              case "resize-end":
-                newEnd = snapTime(
-                  Math.max(
-                    original.end + deltaTime,
-                    original.start + MIN_ITEM_DURATION,
-                  ),
-                );
-                break;
-            }
-
-            return { ...item, start: newStart, end: newEnd };
-          }),
-        );
+        setDragModifications((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(dragState.itemId!, { start: newStart, end: newEnd });
+          return newMap;
+        });
       }
     },
     [dragState, pixelToTime, snapTime, screenXToContainerX],
@@ -976,13 +957,44 @@ export function InfiniteTimeline<Data = unknown>({
       setPreviewRow(null);
       setCurrentMouseX(null);
 
-      // Then add the new item (if any) - this will trigger a re-render with correct layout
+      // Apply drag modifications and notify parent
+      if (dragModifications.size > 0 && dragState.itemId) {
+        const updatedItems = items.map((item) => {
+          const modification = dragModifications.get(item.id);
+          return modification ? { ...item, ...modification } : item;
+        });
+        if (onItemsChange) {
+          const externalItems = updatedItems.map((item) =>
+            toExternalItem(item, baseDateZoned),
+          );
+          onItemsChange(externalItems);
+        }
+        setDragModifications(new Map());
+      }
+
+      // Then add the new item (if any) and notify parent
       if (newItem) {
-        setItems((prev) => [...prev, newItem!]);
+        const updatedItems = [...items, newItem];
+        if (onItemsChange) {
+          const externalItems = updatedItems.map((item) =>
+            toExternalItem(item, baseDateZoned),
+          );
+          onItemsChange(externalItems);
+        }
         setSelectedItemId(newItem.id);
       }
     },
-    [dragState, pixelToTime, lanes, snapTime, screenXToContainerX],
+    [
+      dragState,
+      dragModifications,
+      items,
+      pixelToTime,
+      lanes,
+      snapTime,
+      screenXToContainerX,
+      onItemsChange,
+      baseDateZoned,
+    ],
   );
 
   useEffect(() => {
@@ -1000,13 +1012,19 @@ export function InfiniteTimeline<Data = unknown>({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === "Delete" || e.key === "Backspace") && selectedItemId) {
-        setItems((prev) => prev.filter((item) => item.id !== selectedItemId));
+        const updatedItems = items.filter((item) => item.id !== selectedItemId);
+        if (onItemsChange) {
+          const externalItems = updatedItems.map((item) =>
+            toExternalItem(item, baseDateZoned),
+          );
+          onItemsChange(externalItems);
+        }
         setSelectedItemId(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItemId]);
+  }, [selectedItemId, items, onItemsChange, baseDateZoned]);
 
   const { startTime, endTime } = getVisibleRange();
 
@@ -1212,9 +1230,11 @@ export function InfiniteTimeline<Data = unknown>({
     };
 
     // Get all items in this lane, including the preview item
-    const laneItems = items.filter((item) => item.laneId === dragState.laneId);
+    const laneItems = mergedItems.filter(
+      (item) => item.laneId === dragState.laneId,
+    );
     const allItems = [...laneItems, previewItemTemp];
-    
+
     // Sort all items by start time (same as getItemsWithRows)
     const sortedItems = allItems.sort((a, b) => a.start - b.start);
     const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
@@ -1260,7 +1280,7 @@ export function InfiniteTimeline<Data = unknown>({
   }, [
     dragState,
     currentMouseX,
-    items,
+    mergedItems,
     snapTime,
     pixelToTime,
     screenXToContainerX,
@@ -1675,7 +1695,7 @@ export function InfiniteTimeline<Data = unknown>({
                       lane.color,
                     )}
                   />
-                  <span className="text-sm text-foreground break-words whitespace-normal min-w-0">
+                  <span className="text-xs text-foreground whitespace-normal truncate min-w-0 h-full">
                     {lane.name}
                   </span>
                 </div>
@@ -2052,7 +2072,7 @@ export function InfiniteTimeline<Data = unknown>({
         <div className="flex items-center gap-4">
           {selectedItemId &&
             (() => {
-              const item = items.find((i) => i.id === selectedItemId);
+              const item = mergedItems.find((i) => i.id === selectedItemId);
               if (!item) return null;
               return (
                 <span>
