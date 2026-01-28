@@ -48,7 +48,7 @@ export function CubeLayout({
       {/* Left Sidebar */}
       {leftSidebar && (
         <div
-          className={`${leftSidebarWidth} border-r border-slate-200 bg-white overflow-y-auto flex flex-col`}
+          className={`${leftSidebarWidth} border-r border-border bg-card overflow-y-auto flex flex-col`}
         >
           {leftSidebar}
         </div>
@@ -64,14 +64,14 @@ export function CubeLayout({
           <Collapsible
             open={isBottomSlotOpen}
             onOpenChange={setIsBottomSlotOpen}
-            className="border-t border-slate-200 bg-white flex-shrink-0"
+            className="border-t border-border bg-card flex-shrink-0"
           >
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full h-8 px-2 justify-between rounded-none border-b border-slate-200 hover:bg-slate-50"
+                className="w-full h-8 px-2 justify-between rounded-none border-b border-border hover:bg-accent"
               >
-                <span className="text-xs font-medium text-slate-600">
+                <span className="text-xs font-medium text-muted-foreground">
                   {bottomSlotTitle || "Timeline View"}
                 </span>
                 {isBottomSlotOpen ? (
@@ -82,7 +82,7 @@ export function CubeLayout({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="overflow-hidden">
-              <div className="h-96 overflow-y-auto overflow-x-hidden">
+              <div className="overflow-y-auto overflow-x-hidden">
                 {bottomSlot}
               </div>
             </CollapsibleContent>
@@ -93,7 +93,7 @@ export function CubeLayout({
       {/* Right Sidebar */}
       {rightSidebar && (
         <div
-          className={`${rightSidebarWidth} border-l border-slate-200 bg-white overflow-y-auto`}
+          className={`${rightSidebarWidth} border-l border-border bg-card overflow-y-auto`}
         >
           {rightSidebar}
         </div>
