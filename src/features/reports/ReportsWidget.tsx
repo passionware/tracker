@@ -267,12 +267,15 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           switch (timelineGroupBy) {
             case "contractor":
               return (
-                report.contractor.fullName || `Contractor ${report.contractor.id}`
+                report.contractor.fullName ||
+                `Contractor ${report.contractor.id}`
               );
             case "client":
               return report.client.name || `Client ${report.client.id}`;
             case "workspace":
-              return report.workspace.name || `Workspace ${report.workspace.id}`;
+              return (
+                report.workspace.name || `Workspace ${report.workspace.id}`
+              );
           }
         };
 
@@ -481,7 +484,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         </>
       }
     >
-      <div className="flex-1 min-h-0">
+      <div className={viewMode === "both" ? "flex-1 min-h-0" : "contents"}>
         {viewMode === "both" ? (
           <ResizablePanelGroup direction="vertical" className="h-full">
             <ResizablePanel
@@ -501,9 +504,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : viewMode === "timeline" ? (
-          <div className="h-full">{renderTimeline()}</div>
+          renderTimeline()
         ) : (
-          <div className="h-full">{renderTableView()}</div>
+          renderTableView()
         )}
       </div>
     </CommonPageContainer>
