@@ -782,6 +782,7 @@ export function InfiniteTimeline<Data = unknown>({
       startTime: pixelToTime(containerX),
       originalItem: { ...item },
     });
+    onItemClick?.(item);
   };
 
   // Handle mouse down on lane (start drawing or allow panning)
@@ -1887,9 +1888,6 @@ export function InfiniteTimeline<Data = unknown>({
                       onMouseDown: handleItemMouseDown,
                       onMouseEnter: () => setHoveredItemId(item.id),
                       onMouseLeave: () => setHoveredItemId(null),
-                      onMouseDownCapture: onItemClick
-                        ? (_e: ReactMouseEvent) => onItemClick(item)
-                        : undefined,
                       onMouseOver: onItemHover
                         ? () => onItemHover(item)
                         : undefined,
