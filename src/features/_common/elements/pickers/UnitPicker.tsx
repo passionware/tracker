@@ -19,7 +19,7 @@ export const UnitPicker = injectConfig(AbstractPicker<Unit["id"], Unit>)
         {unassignedUtils.mapOrElse(
           item,
           (item) => (
-            <span className="inline-block -my-0.5 p-0.5 bg-sky-50 border-sky-200 border rounded-sm text-sky-900 text-xs ml-auto">
+            <span className="inline-block -my-0.5 p-0.5 bg-accent border-border border rounded-sm text-accent-foreground text-xs ml-auto">
               {item.id}
             </span>
           ),

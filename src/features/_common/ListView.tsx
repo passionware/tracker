@@ -201,10 +201,10 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
       // Wyświetlamy skeletony
       <div className={cn("rounded-md border overflow-auto", className)}>
         <Table>
-          <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
+          <TableHeader className="sticky top-0 bg-background hover:bg-background z-10 shadow-sm">
             {columnsElement}
           </TableHeader>
-          <TableBody className="bg-white">
+          <TableBody className="bg-background">
             {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
                 {table.getVisibleLeafColumns().map((_, colIndex) => (
@@ -234,7 +234,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
       const tbody = (
         <TableBody
           className={cn(
-            "border-b bg-white",
+            "border-b bg-background",
             getDimmedClasses(rd.isPlaceholderData(dataWithPlaceholder)),
           )}
         >
@@ -331,7 +331,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
         >
           <Table>
             {/* NAGŁÓWEK */}
-            <TableHeader className="sticky top-0 bg-white hover:bg-white z-10 shadow-sm">
+            <TableHeader className="sticky top-0 bg-popover hover:bg-sidebar-accent z-10 shadow-sm">
               {columnsElement}
             </TableHeader>
 

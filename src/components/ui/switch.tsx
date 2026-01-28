@@ -9,9 +9,9 @@ const switchVariants = cva(
     variants: {
       variant: {
         normal:
-          "focus-visible:ring-slate-950 focus-visible:ring-offset-white data-[state=checked]:bg-slate-900 data-[state=unchecked]:bg-slate-200 dark:focus-visible:ring-slate-300 dark:focus-visible:ring-offset-slate-950 dark:data-[state=checked]:bg-slate-50 dark:data-[state=unchecked]:bg-slate-800",
+          "focus-visible:ring-ring focus-visible:ring-offset-background data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
         danger:
-          "focus-visible:ring-red-600 focus-visible:ring-offset-white data-[state=checked]:bg-red-600 data-[state=unchecked]:bg-red-200 dark:focus-visible:ring-red-300 dark:focus-visible:ring-offset-slate-950 dark:data-[state=checked]:bg-red-400 dark:data-[state=unchecked]:bg-red-800",
+          "focus-visible:ring-destructive focus-visible:ring-offset-background data-[state=checked]:bg-destructive data-[state=unchecked]:bg-destructive/20",
       },
     },
     defaultVariants: {
@@ -21,14 +21,14 @@ const switchVariants = cva(
 );
 
 const thumbClass = cva(
-  "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
+  "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
   {
     variants: {
       variant: {
         normal:
-          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 dark:bg-slate-950",
+          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
         danger:
-          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 dark:bg-red-950",
+          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
       },
     },
     defaultVariants: {

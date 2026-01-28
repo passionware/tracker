@@ -10,7 +10,7 @@ import {
 } from "react-aria-components";
 
 const inputVariants = cva(
-  "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-base ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-slate-950 placeholder:text-slate-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:file:text-slate-50 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300",
+  "flex h-10 w-full rounded-md border border-border bg-background text-foreground px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
 );
 
 export interface InputProps
@@ -47,20 +47,20 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
   ) => {
     return (
       <NumberField className={cn("flex w-full", className)} {...props}>
-        <Group className="flex w-full rounded-md border border-slate-200 bg-white ring-offset-white focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-within:ring-slate-300">
+        <Group className="flex w-full rounded-md border border-border bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
           <AriaInput
             ref={ref}
             className={cn(
-              "flex h-10 w-full border-0 bg-transparent px-3 py-2 text-base text-slate-900 placeholder:text-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:text-slate-50 dark:placeholder:text-slate-400",
+              "flex h-10 w-full border-0 bg-transparent px-3 py-2 text-base text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
               inputClassName,
             )}
             placeholder={placeholder}
           />
-          <div className="flex shrink-0 flex-col rounded-r-md overflow-hidden border-l border-slate-200 dark:border-slate-700">
+          <div className="flex shrink-0 flex-col rounded-r-md overflow-hidden border-l border-border">
             <Button
               slot="increment"
               className={cn(
-                "flex h-5 w-10 items-center justify-center border-b border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 rounded-tr-md",
+                "flex h-5 w-10 items-center justify-center border-b border-border bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-tr-md",
                 buttonClassName,
               )}
             >
@@ -69,7 +69,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             <Button
               slot="decrement"
               className={cn(
-                "flex h-5 w-10 items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 rounded-br-md",
+                "flex h-5 w-10 items-center justify-center bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 rounded-br-md",
                 buttonClassName,
               )}
             >

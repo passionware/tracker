@@ -291,7 +291,7 @@ function DateValueInput({
       role="group"
       aria-label="Date"
     >
-      <div className="flex flex-1 items-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300">
+      <div className="flex flex-1 items-center rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
         <div
           {...fieldAria.fieldProps}
           ref={fieldRef}
@@ -302,7 +302,7 @@ function DateValueInput({
               key={i}
               segment={segment}
               state={fieldState}
-              className="outline-none placeholder:text-slate-500 focus:bg-slate-100 focus:text-slate-900 dark:placeholder:text-slate-400 dark:focus:bg-slate-800 dark:focus:text-slate-50"
+              className="outline-none placeholder:text-muted-foreground focus:bg-accent focus:text-accent-foreground"
             />
           ))}
         </div>
@@ -356,7 +356,7 @@ function DateCalendar({
       <header className="flex items-center justify-between pb-4">
         <AriaButton
           {...prevButtonProps}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <ChevronLeft className="h-4 w-4" />
         </AriaButton>
@@ -373,7 +373,7 @@ function DateCalendar({
         </div>
         <AriaButton
           {...nextButtonProps}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <ChevronRight className="h-4 w-4" />
         </AriaButton>
@@ -382,7 +382,7 @@ function DateCalendar({
         <CalendarGrid gridProps={gridProps}>
           <CalendarGridHeader headerProps={headerProps} weekDays={weekDays}>
             {(day) => (
-              <CalendarHeaderCell className="text-slate-700 text-sm font-normal dark:text-slate-300">
+              <CalendarHeaderCell className="text-muted-foreground text-sm font-normal">
                 {day}
               </CalendarHeaderCell>
             )}
@@ -421,16 +421,14 @@ const calendarCellClassName = (state: {
 }) => {
   const baseClasses = cn(
     "size-9 flex items-center justify-center cursor-pointer transition-colors rounded-md text-center text-sm font-normal",
-    "hover:bg-slate-100",
-    "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2",
+    "hover:bg-accent",
+    "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     "disabled:cursor-not-allowed disabled:opacity-50",
-    "dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300",
   );
 
   const conditionalClasses = cn(
     // Selection styling
-    state.isSelected &&
-      "bg-slate-900 text-slate-50 dark:bg-slate-50 dark:text-slate-900",
+    state.isSelected && "bg-primary text-primary-foreground",
 
     // Outside month styling
     state.isOutsideMonth && "opacity-70",
@@ -438,9 +436,7 @@ const calendarCellClassName = (state: {
     // Today styling - just the dot, no background
     isToday(state.date, getLocalTimeZone()) && [
       "relative after:content-[''] after:absolute after:top-[4px] after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:pointer-events-none",
-      state.isSelected
-        ? "after:bg-white"
-        : "after:bg-slate-900 dark:after:bg-slate-50",
+      state.isSelected ? "after:bg-primary-foreground" : "after:bg-primary",
     ],
   );
 
@@ -488,7 +484,7 @@ export function DatePicker({
                 <button
                   type="button"
                   disabled={disabled}
-                  className="ml-2 flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-300"
+                  className="ml-2 flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronDown className="h-4 w-4" />
                 </button>

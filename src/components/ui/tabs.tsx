@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 const Tabs = TabsPrimitive.Root;
 
-const tabsListVariants = cva("border-b border-slate-200 flex items-center", {
+const tabsListVariants = cva("border-b border-border flex items-center", {
   variants: {
     size: {
       sm: "gap-4",
@@ -18,7 +18,7 @@ const tabsListVariants = cva("border-b border-slate-200 flex items-center", {
 });
 
 const tabsTriggerVariants = cva(
-  "flex gap-2 items-center whitespace-nowrap border-b-2 border-transparent font-medium text-gray-500 hover:border-gray-200 hover:text-gray-700 focus-visible:bg-slate-50 outline-none rounded-t-sm data-[state=active]:border-sky-700 data-[state=active]:text-sky-900",
+  "flex gap-2 items-center whitespace-nowrap border-b-2 border-transparent font-medium text-muted-foreground hover:border-border hover:text-foreground focus-visible:bg-accent outline-none rounded-t-sm data-[state=active]:border-primary data-[state=active]:text-foreground",
   {
     variants: {
       size: {

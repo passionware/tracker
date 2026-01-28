@@ -8,7 +8,7 @@ const Table = React.forwardRef<
   <div className="isolate relative w-full max-h-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-xs", className)}
+      className={cn("w-full caption-bottom text-xs text-foreground", className)}
       {...props}
     />
   </div>
@@ -41,10 +41,10 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn(
-      "border-t bg-slate-100/50 font-medium last:[&>tr]:border-b-0 dark:bg-slate-800/50",
-      className,
-    )}
+      className={cn(
+        "border-t bg-muted/50 text-foreground font-medium last:[&>tr]:border-b-0",
+        className,
+      )}
     {...props}
   />
 ));
@@ -57,8 +57,8 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100 dark:hover:bg-slate-800/50 dark:data-[state=selected]:bg-slate-800",
-      "aria-selected:bg-slate-900/5",
+      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "aria-selected:bg-accent/50",
       className,
     )}
     {...props}
@@ -73,7 +73,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 pl-2 pr-0  text-left align-middle font-medium text-slate-600 dark:text-slate-400",
+      "h-12 pl-2 pr-0  text-left align-middle font-medium text-muted-foreground",
       className,
     )}
     {...props}
@@ -87,7 +87,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-1.5 py-2.5 align-middle ", className)}
+    className={cn("px-1.5 py-2.5 align-middle text-foreground", className)}
     {...props}
   />
 ));
@@ -99,7 +99,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-slate-500 dark:text-slate-400", className)}
+    className={cn("mt-4 text-sm text-muted-foreground", className)}
     {...props}
   />
 ));
