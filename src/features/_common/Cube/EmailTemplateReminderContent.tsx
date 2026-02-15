@@ -89,11 +89,9 @@ export function EmailTemplateReminderContent({
     return { start: dates[0], end: dates[dates.length - 1] };
   };
 
-  const explicitStart = parseDateValue(reportData.start_date);
-  const explicitEnd = parseDateValue(reportData.end_date);
   const explicitRangeFromReport =
-    explicitStart && explicitEnd
-      ? { start: explicitStart, end: explicitEnd }
+    reportData.start_date && reportData.end_date
+      ? { start: reportData.start_date, end: reportData.end_date }
       : null;
 
   const resolvedRange =

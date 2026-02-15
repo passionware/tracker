@@ -30,6 +30,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
 import { useNavigate } from "react-router-dom";
 import { promiseState } from "@passionware/platform-react";
@@ -179,9 +180,7 @@ export function CubeReportsPage(props: WithFrontServices) {
 
           // Sort reports by end date (newest first)
           const sortedReports = [...reportsList].sort((a, b) => {
-            const endDateA = a.end_date;
-            const endDateB = b.end_date;
-            return endDateB.getTime() - endDateA.getTime();
+            return b.end_date.compare(a.end_date);
           });
 
           const latestReport = sortedReports[0];
@@ -404,12 +403,12 @@ function LatestReportHero({
                   <Clock className="w-4 h-4" />
                   <span>
                     Started{" "}
-                    {formatDistanceToNow(dateRange.start, { addSuffix: true })}
+                    {formatDistanceToNow(calendarDateToJSDate(dateRange.start), { addSuffix: true })}
                   </span>
                   <span className="font-bold text-gray-400">·</span>
                   <span>
                     ended{" "}
-                    {formatDistanceToNow(dateRange.end, { addSuffix: true })}
+                    {formatDistanceToNow(calendarDateToJSDate(dateRange.end), { addSuffix: true })}
                   </span>
                 </div>
               )}
@@ -573,7 +572,7 @@ function ReportCard({
             </span>
             <Clock className="w-3 h-3" />
             <span>
-              ended {formatDistanceToNow(dateRange.end, { addSuffix: true })}
+              ended {formatDistanceToNow(calendarDateToJSDate(dateRange.end), { addSuffix: true })}
             </span>
           </div>
 

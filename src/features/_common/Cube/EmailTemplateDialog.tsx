@@ -142,16 +142,13 @@ export function EmailTemplateDialog({
   };
 
   const getDateRange = (): { from: string; to: string } => {
-    const formatDate = (date: Date | null) =>
+    const formatDate = (date: Date | CalendarDate | null) =>
       date ? formatService.temporal.date(date) : "";
 
-    const startFromReport = parseDateValue(reportData.start_date);
-    const endFromReport = parseDateValue(reportData.end_date);
-
-    if (startFromReport && endFromReport) {
+    if (reportData.start_date && reportData.end_date) {
       return {
-        from: formatDate(startFromReport),
-        to: formatDate(endFromReport),
+        from: formatDate(reportData.start_date),
+        to: formatDate(reportData.end_date),
       };
     }
 

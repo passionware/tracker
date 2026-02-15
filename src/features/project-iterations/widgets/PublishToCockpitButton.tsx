@@ -1,4 +1,5 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
+import { CalendarDate, parseDate } from "@internationalized/date";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Form,
@@ -65,17 +66,29 @@ export function PublishToCockpitButton({
   const clientName =
     rd.tryMap(clientData, (client) => client.name) || `Client ${clientId}`;
 
-  const reportDateRange = useMemo(() => getReportDateRange(report), [report]);
+  // Prefer project iteration period for explicit time range (avoids shift when no work on start day)
+  const explicitDateRange = useMemo((): { start: CalendarDate; end: CalendarDate } | undefined => {
+    const iter = rd.tryGet(projectIterationData);
+    if (iter) {
+      return { start: iter.periodStart, end: iter.periodEnd };
+    }
+    const fromEntries = getReportDateRange(report);
+    if (!fromEntries) return undefined;
+    return {
+      start: parseDate(fromEntries.start.toISOString().slice(0, 10)),
+      end: parseDate(fromEntries.end.toISOString().slice(0, 10)),
+    };
+  }, [projectIterationData, report]);
 
   const serializedDateRange = useMemo(
     () =>
-      reportDateRange
+      explicitDateRange
         ? {
-            start: reportDateRange.start.toISOString(),
-            end: reportDateRange.end.toISOString(),
+            start: explicitDateRange.start.toString(),
+            end: explicitDateRange.end.toString(),
           }
         : undefined,
-    [reportDateRange],
+    [explicitDateRange],
   );
 
   const defaultPublishValues = useMemo(() => {
@@ -155,6 +168,8 @@ export function PublishToCockpitButton({
         description,
         cubeData: cubeDataPayload,
         cubeConfig: serializableConfig.config as Record<string, unknown>,
+        startDate: explicitDateRange?.start ?? null,
+        endDate: explicitDateRange?.end ?? null,
       });
 
       // Show success toast with link to cockpit

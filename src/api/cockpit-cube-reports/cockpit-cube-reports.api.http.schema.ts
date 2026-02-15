@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { parseDate } from "@internationalized/date";
+import type { CalendarDate } from "@internationalized/date";
 
 export const cockpitCubeReport$ = z.object({
   id: z.string().uuid(),
@@ -21,20 +23,18 @@ export const cockpitCubeReport$ = z.object({
     .optional()
     .refine(
       (val) => val === null || val === undefined || !isNaN(Date.parse(val)),
-      {
-        message: "Invalid start_date format",
-      },
-    ),
+      { message: "Invalid start_date format" },
+    )
+    .transform((val): CalendarDate | null => (val ? parseDate(val) : null)),
   end_date: z
     .string()
     .nullable()
     .optional()
     .refine(
       (val) => val === null || val === undefined || !isNaN(Date.parse(val)),
-      {
-        message: "Invalid end_date format",
-      },
-    ),
+      { message: "Invalid end_date format" },
+    )
+    .transform((val): CalendarDate | null => (val ? parseDate(val) : null)),
 });
 
 export type CockpitCubeReport$ = z.infer<typeof cockpitCubeReport$>;

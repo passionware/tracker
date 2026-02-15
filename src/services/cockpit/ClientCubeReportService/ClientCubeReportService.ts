@@ -3,6 +3,7 @@ import {
   CockpitCubeReportWithCreator,
 } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api";
 import { Maybe, RemoteData } from "@passionware/monads";
+import { CalendarDate } from "@internationalized/date";
 
 export interface PublishCubeReportParams {
   tenantId: string;
@@ -12,6 +13,9 @@ export interface PublishCubeReportParams {
   description?: string;
   cubeData: Record<string, unknown>;
   cubeConfig: Record<string, unknown>;
+  /** Explicit report period (e.g. from project iteration); stored in DB and used for display */
+  startDate?: CalendarDate | null;
+  endDate?: CalendarDate | null;
 }
 
 export interface ClientCubeReportService {

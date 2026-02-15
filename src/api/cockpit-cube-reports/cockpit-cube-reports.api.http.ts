@@ -1,20 +1,29 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { parseDate } from "@internationalized/date";
+import type { CalendarDate } from "@internationalized/date";
 import { parseWithDataError } from "@/platform/zod/parseWithDataError.ts";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { cockpitCubeReport$ } from "./cockpit-cube-reports.api.http.schema";
 import { CockpitCubeReportsApi } from "./cockpit-cube-reports.api";
 
-function parseDateValue(value: unknown): Date | null {
+function parseToCalendarDate(value: unknown): CalendarDate | null {
   if (!value) return null;
-  if (value instanceof Date && !isNaN(value.getTime())) {
-    return value;
+  if (typeof value === "string") {
+    try {
+      return parseDate(value);
+    } catch {
+      return null;
+    }
   }
-  const date = new Date(value as string);
-  return isNaN(date.getTime()) ? null : date;
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return dateToCalendarDate(value);
+  }
+  return null;
 }
 
 function extractExplicitRange(
   cubeData: any,
-): { start_date: Date; end_date: Date } | null {
+): { start_date: CalendarDate; end_date: CalendarDate } | null {
   if (!cubeData) {
     return null;
   }
@@ -35,8 +44,8 @@ function extractExplicitRange(
     const startValue = candidate.start ?? candidate.from ?? candidate.begin;
     const endValue = candidate.end ?? candidate.to ?? candidate.finish;
 
-    const start = parseDateValue(startValue);
-    const end = parseDateValue(endValue);
+    const start = parseToCalendarDate(startValue);
+    const end = parseToCalendarDate(endValue);
 
     if (start && end) {
       return { start_date: start, end_date: end };
@@ -46,25 +55,49 @@ function extractExplicitRange(
   return null;
 }
 
-// Helper function to calculate date range from cube data
-function calculateDateRange(cubeData: any): {
-  start_date: Date;
-  end_date: Date;
+// Helper: get explicit date range from DB row (start_date/end_date columns)
+function getStoredDateRange(report: {
+  start_date?: string | null;
+  end_date?: string | null;
+}): { start_date: CalendarDate; end_date: CalendarDate } | null {
+  const start = parseToCalendarDate(report.start_date);
+  const end = parseToCalendarDate(report.end_date);
+  if (start && end) {
+    return { start_date: start, end_date: end };
+  }
+  return null;
+}
+
+// Helper function to calculate date range: prefer stored DB columns, then cube_data explicit range, then time entries
+function resolveDateRange(
+  report: { start_date?: string | null; end_date?: string | null; cube_data?: any },
+): { start_date: CalendarDate; end_date: CalendarDate } {
+  const stored = getStoredDateRange(report);
+  if (stored) return stored;
+
+  const cubeData = report.cube_data;
+  const explicitRange = cubeData ? extractExplicitRange(cubeData) : null;
+  if (explicitRange) return explicitRange;
+
+  // Fallback: derive from time entries in cube data (can shift if no work on start day)
+  return calculateDateRangeFromCubeData(cubeData);
+}
+
+// Derive date range from cube data only (time entries or explicit range inside cube_data)
+function calculateDateRangeFromCubeData(cubeData: any): {
+  start_date: CalendarDate;
+  end_date: CalendarDate;
 } {
   try {
     const explicitRange = extractExplicitRange(cubeData);
-    if (explicitRange) {
-      return explicitRange;
-    }
+    if (explicitRange) return explicitRange;
 
     const data = cubeData?.data;
     if (!Array.isArray(data) || data.length === 0) {
-      // Fallback to current date if no data
-      const now = new Date();
+      const now = dateToCalendarDate(new Date());
       return { start_date: now, end_date: now };
     }
 
-    // Find all valid dates from startAt fields
     const dates = data
       .map((item: any) => {
         if (item.startAt) {
@@ -76,19 +109,19 @@ function calculateDateRange(cubeData: any): {
       .filter((date): date is Date => date !== null);
 
     if (dates.length === 0) {
-      // Fallback to current date if no valid dates
-      const now = new Date();
+      const now = dateToCalendarDate(new Date());
       return { start_date: now, end_date: now };
     }
 
     const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-    return { start_date: minDate, end_date: maxDate };
+    return {
+      start_date: dateToCalendarDate(minDate),
+      end_date: dateToCalendarDate(maxDate),
+    };
   } catch (error) {
     console.warn("Failed to calculate date range from cube data:", error);
-    // Fallback to current date on error
-    const now = new Date();
+    const now = dateToCalendarDate(new Date());
     return { start_date: now, end_date: now };
   }
 }
@@ -115,7 +148,7 @@ export function createCockpitCubeReportsApi(
       }
 
       return (data || []).map((report: any) => {
-        const dateRange = calculateDateRange(report.cube_data);
+        const dateRange = resolveDateRange(report);
         return {
           ...report,
           creator_email: report.creator?.email,
@@ -143,7 +176,7 @@ export function createCockpitCubeReportsApi(
         throw error;
       }
 
-      const dateRange = calculateDateRange(data.cube_data);
+      const dateRange = resolveDateRange(data);
       return {
         ...data,
         creator_email: data.creator?.email,
@@ -163,6 +196,8 @@ export function createCockpitCubeReportsApi(
         p_description: report.description || null,
         p_cube_data: report.cube_data,
         p_cube_config: report.cube_config,
+        p_start_date: report.start_date?.toString() ?? null,
+        p_end_date: report.end_date?.toString() ?? null,
       });
 
       if (error) {
@@ -215,9 +250,14 @@ export function createCockpitCubeReportsApi(
     },
 
     updateReport: async (reportId, updates) => {
+      const dbUpdates: Record<string, unknown> = { ...updates };
+      if ("start_date" in updates)
+        dbUpdates.start_date = updates.start_date?.toString() ?? null;
+      if ("end_date" in updates)
+        dbUpdates.end_date = updates.end_date?.toString() ?? null;
       const { data, error } = await client
         .from("cube_reports")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", reportId)
         .select()
         .single();

@@ -11,6 +11,7 @@ import type {
 import type { FormatService } from "../../../services/FormatService/FormatService";
 import type { CockpitCubeReportWithCreator } from "../../../api/cockpit-cube-reports/cockpit-cube-reports.api";
 import type { CockpitTenant } from "../../../api/cockpit-tenants/cockpit-tenants.api";
+import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { Maybe } from "@passionware/monads";
 
 /**
@@ -313,8 +314,8 @@ export class PDFReportModelUtils {
       description: report.description || undefined,
       companyName: tenantData?.name || "Passionware Consulting sp. z.o.o.",
       dateRange: {
-        start: new Date(report.start_date),
-        end: new Date(report.end_date),
+        start: calendarDateToJSDate(report.start_date),
+        end: calendarDateToJSDate(report.end_date),
       },
       generatedAt: new Date(),
       logoUrl: tenantData.logo_url,
