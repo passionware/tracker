@@ -64,6 +64,10 @@ export function IterationWidget(
             }
           />
           <Route
+            path={makeRelativePath(basePath, forIteration.positions())}
+            element={<PositionList {...props} />}
+          />
+          <Route
             path={makeRelativePath(basePath, forIteration.events())}
             element={<EventsWidget {...props} />}
           />
@@ -77,7 +81,7 @@ export function IterationWidget(
           />
           <Route
             path={makeRelativePath(
-              forIteration.root(),
+              basePath,
               forIteration.generatedReports(),
             )}
             element={

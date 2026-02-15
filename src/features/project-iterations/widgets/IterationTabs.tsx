@@ -299,9 +299,7 @@ export function IterationTabs(
         <TabsTrigger
           value="generated-reports"
           onClick={() =>
-            props.services.navigationService.navigate(
-              forIteration.generatedReports(),
-            )
+            props.services.navigationService.navigate(forIteration.root())
           }
         >
           Generated reports
@@ -312,7 +310,7 @@ export function IterationTabs(
         <TabsTrigger
           value="positions"
           onClick={() =>
-            props.services.navigationService.navigate(forIteration.root())
+            props.services.navigationService.navigate(forIteration.positions())
           }
         >
           Positions
@@ -328,7 +326,7 @@ export function IterationTabs(
         >
           Events
           <Badge variant="secondary" size="sm">
-            {rd.tryMap(iteration, (iteration) => iteration.positions.length)}
+            {rd.tryMap(iteration, (iter) => iter.events.length)}
           </Badge>
         </TabsTrigger>
         <TabsTrigger
@@ -357,6 +355,21 @@ export function IterationTabs(
         <Routes>
           <Route
             path={makeRelativePath(forIteration.root(), forIteration.root())}
+            element={rd
+              .journey(iteration)
+              .wait(<Skeleton className="w-20 h-4" />)
+              .catch(renderError)
+              .map(() => (
+                <GenerateReportButton
+                  projectIterationId={props.projectIterationId}
+                  workspaceId={props.workspaceId}
+                  clientId={props.clientId}
+                  services={props.services}
+                />
+              ))}
+          />
+          <Route
+            path={makeRelativePath(forIteration.root(), forIteration.positions())}
             element={rd
               .journey(iteration)
               .wait(<Skeleton className="w-20 h-4" />)
