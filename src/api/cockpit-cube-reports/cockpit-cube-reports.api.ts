@@ -1,3 +1,5 @@
+import { CalendarDate } from "@internationalized/date";
+
 export interface CockpitCubeReport {
   id: string;
   tenant_id: string;
@@ -8,8 +10,8 @@ export interface CockpitCubeReport {
   created_by: string;
   created_at: string;
   updated_at: string;
-  start_date?: string | null;
-  end_date?: string | null;
+  start_date?: CalendarDate | null;
+  end_date?: CalendarDate | null;
   is_published: boolean;
 }
 
@@ -17,8 +19,8 @@ export interface CockpitCubeReportWithCreator
   extends Omit<CockpitCubeReport, "start_date" | "end_date"> {
   creator_email?: string;
   creator_name?: string;
-  start_date: Date;
-  end_date: Date;
+  start_date: CalendarDate;
+  end_date: CalendarDate;
 }
 
 export interface CockpitCubeReportsApi {
@@ -33,6 +35,8 @@ export interface CockpitCubeReportsApi {
       description?: string;
       cube_data: Record<string, unknown>;
       cube_config: Record<string, unknown>;
+      start_date?: CalendarDate | null;
+      end_date?: CalendarDate | null;
     },
   ) => Promise<CockpitCubeReport>;
   updateReport: (
@@ -42,6 +46,8 @@ export interface CockpitCubeReportsApi {
       description: string;
       cube_data: Record<string, unknown>;
       cube_config: Record<string, unknown>;
+      start_date: CalendarDate | null;
+      end_date: CalendarDate | null;
     }>,
   ) => Promise<CockpitCubeReport>;
   deleteReport: (reportId: string) => Promise<void>;
