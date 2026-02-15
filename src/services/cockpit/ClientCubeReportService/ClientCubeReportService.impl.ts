@@ -45,8 +45,8 @@ export function createClientCubeReportService(
           description: params.description,
           cube_data: params.cubeData,
           cube_config: params.cubeConfig,
-          start_date: params.startDate ?? undefined,
-          end_date: params.endDate ?? undefined,
+          start_date: params.startDate,
+          end_date: params.endDate,
         },
       );
 

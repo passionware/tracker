@@ -196,7 +196,7 @@ export function createLocationService(
         case !!generatedReportsMatch:
           return "generated-reports";
         case !!rootMatch:
-          return "positions";
+          return "generated-reports";
         default:
           return maybe.ofAbsent();
       }

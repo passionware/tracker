@@ -18,6 +18,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import {
   generateSmartReportName,
   getReportDateRange,
@@ -160,6 +161,10 @@ export function PublishToCockpitButton({
         cubeDataPayload.dateRange = serializedDateRange;
       }
 
+      const fallbackDay = dateToCalendarDate(report.createdAt);
+      const startDate = explicitDateRange?.start ?? fallbackDay;
+      const endDate = explicitDateRange?.end ?? fallbackDay;
+
       await services.clientCubeReportService.publishReport({
         tenantId,
         userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
@@ -168,8 +173,8 @@ export function PublishToCockpitButton({
         description,
         cubeData: cubeDataPayload,
         cubeConfig: serializableConfig.config as Record<string, unknown>,
-        startDate: explicitDateRange?.start ?? null,
-        endDate: explicitDateRange?.end ?? null,
+        startDate,
+        endDate,
       });
 
       // Show success toast with link to cockpit

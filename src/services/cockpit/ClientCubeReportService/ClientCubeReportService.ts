@@ -13,9 +13,9 @@ export interface PublishCubeReportParams {
   description?: string;
   cubeData: Record<string, unknown>;
   cubeConfig: Record<string, unknown>;
-  /** Explicit report period (e.g. from project iteration); stored in DB and used for display */
-  startDate?: CalendarDate | null;
-  endDate?: CalendarDate | null;
+  /** Explicit report period (e.g. from project iteration); stored in cube_config.dateRange in DB */
+  startDate: CalendarDate;
+  endDate: CalendarDate;
 }
 
 export interface ClientCubeReportService {

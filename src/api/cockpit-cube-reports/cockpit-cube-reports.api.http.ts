@@ -10,7 +10,8 @@ function parseToCalendarDate(value: unknown): CalendarDate | null {
   if (!value) return null;
   if (typeof value === "string") {
     try {
-      return parseDate(value);
+      const dateOnly = value.includes("T") ? value.slice(0, 10) : value;
+      return parseDate(dateOnly);
     } catch {
       return null;
     }
@@ -55,63 +56,88 @@ function extractExplicitRange(
   return null;
 }
 
-// Helper: get explicit date range from DB row (start_date/end_date columns)
-function getStoredDateRange(report: {
-  start_date?: string | null;
-  end_date?: string | null;
-}): { start_date: CalendarDate; end_date: CalendarDate } | null {
-  const start = parseToCalendarDate(report.start_date);
-  const end = parseToCalendarDate(report.end_date);
-  if (start && end) {
-    return { start_date: start, end_date: end };
+// Fallback when no range can be resolved: use metadata/report timestamps (single day), never "today"
+function fallbackRangeFromCreatedAt(report: {
+  created_at?: string;
+  updated_at?: string;
+  cube_config?: Record<string, unknown>;
+  cube_data?: Record<string, unknown>;
+}): { start_date: CalendarDate; end_date: CalendarDate } {
+  const configMeta = report.cube_config?.metadata as
+    | Record<string, unknown>
+    | undefined;
+  const dataMeta = report.cube_data?.meta as
+    | Record<string, unknown>
+    | undefined;
+  const candidates = [
+    configMeta?.createdAt,
+    dataMeta?.createdAt,
+    report.created_at,
+    dataMeta?.updatedAt,
+    report.updated_at,
+  ];
+  for (const value of candidates) {
+    const date = parseToCalendarDate(value);
+    if (date) return { start_date: date, end_date: date };
   }
-  return null;
+  // Only if no timestamp is available/parseable (should not happen for DB reports)
+  return {
+    start_date: parseDate("1970-01-01"),
+    end_date: parseDate("1970-01-01"),
+  };
 }
 
-// Helper function to calculate date range: prefer stored DB columns, then cube_data explicit range, then time entries
-function resolveDateRange(
-  report: { start_date?: string | null; end_date?: string | null; cube_data?: any },
-): { start_date: CalendarDate; end_date: CalendarDate } {
-  const stored = getStoredDateRange(report);
-  if (stored) return stored;
+// Resolve date range: prefer cube_config.dateRange (set on export), then cube_data, then time entries, then created_at
+function resolveDateRange(report: {
+  created_at?: string;
+  cube_config?: Record<string, unknown>;
+  cube_data?: Record<string, unknown>;
+}): { start_date: CalendarDate; end_date: CalendarDate } {
+  const explicitFromConfig = report.cube_config
+    ? extractExplicitRange(report.cube_config as Record<string, unknown>)
+    : null;
+  if (explicitFromConfig) return explicitFromConfig;
 
-  const cubeData = report.cube_data;
-  const explicitRange = cubeData ? extractExplicitRange(cubeData) : null;
-  if (explicitRange) return explicitRange;
+  const explicitFromData = report.cube_data
+    ? extractExplicitRange(report.cube_data as Record<string, unknown>)
+    : null;
+  if (explicitFromData) return explicitFromData;
 
-  // Fallback: derive from time entries in cube data (can shift if no work on start day)
-  return calculateDateRangeFromCubeData(cubeData);
+  const fromTimeEntries = calculateDateRangeFromCubeData(
+    report.cube_data,
+    report,
+  );
+  if (fromTimeEntries) return fromTimeEntries;
+
+  return fallbackRangeFromCreatedAt(report);
 }
 
-// Derive date range from cube data only (time entries or explicit range inside cube_data)
-function calculateDateRangeFromCubeData(cubeData: any): {
-  start_date: CalendarDate;
-  end_date: CalendarDate;
-} {
+// Derive date range from cube data only (time entries or explicit range); returns null when none
+function calculateDateRangeFromCubeData(
+  cubeData: Record<string, unknown> | undefined,
+  report?: { cube_config?: Record<string, unknown> },
+): { start_date: CalendarDate; end_date: CalendarDate } | null {
   try {
-    const explicitRange = extractExplicitRange(cubeData);
+    const explicitRange = cubeData
+      ? extractExplicitRange(cubeData as Record<string, unknown>)
+      : null;
     if (explicitRange) return explicitRange;
 
     const data = cubeData?.data;
-    if (!Array.isArray(data) || data.length === 0) {
-      const now = dateToCalendarDate(new Date());
-      return { start_date: now, end_date: now };
-    }
+    if (!Array.isArray(data) || data.length === 0) return null;
 
     const dates = data
-      .map((item: any) => {
-        if (item.startAt) {
-          const date = new Date(item.startAt);
+      .map((item: unknown) => {
+        const obj = item as Record<string, unknown>;
+        if (obj?.startAt) {
+          const date = new Date(obj.startAt as string);
           return isNaN(date.getTime()) ? null : date;
         }
         return null;
       })
       .filter((date): date is Date => date !== null);
 
-    if (dates.length === 0) {
-      const now = dateToCalendarDate(new Date());
-      return { start_date: now, end_date: now };
-    }
+    if (dates.length === 0) return null;
 
     const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
@@ -121,8 +147,18 @@ function calculateDateRangeFromCubeData(cubeData: any): {
     };
   } catch (error) {
     console.warn("Failed to calculate date range from cube data:", error);
-    const now = dateToCalendarDate(new Date());
-    return { start_date: now, end_date: now };
+    const dateRange = cubeData?.dateRange as
+      | { start?: string; end?: string }
+      | undefined;
+    const start = parseToCalendarDate(dateRange?.start);
+    const end = parseToCalendarDate(dateRange?.end);
+    if (start && end) return { start_date: start, end_date: end };
+    const createdAt = (
+      report?.cube_config?.metadata as Record<string, unknown> | undefined
+    )?.createdAt;
+    const day = parseToCalendarDate(createdAt);
+    if (day) return { start_date: day, end_date: day };
+    return null;
   }
 }
 
@@ -187,7 +223,13 @@ export function createCockpitCubeReportsApi(
     },
 
     createReport: async (tenantId, userId, clientId, report) => {
-      // Use the secure database function instead of direct table insertion
+      const cubeConfig: Record<string, unknown> = {
+        ...report.cube_config,
+        dateRange: {
+          start: report.start_date.toString(),
+          end: report.end_date.toString(),
+        },
+      };
       const { data, error } = await client.rpc("secure_insert_cube_report", {
         p_tenant_id: tenantId,
         p_user_id: userId,
@@ -195,9 +237,7 @@ export function createCockpitCubeReportsApi(
         p_name: report.name,
         p_description: report.description || null,
         p_cube_data: report.cube_data,
-        p_cube_config: report.cube_config,
-        p_start_date: report.start_date?.toString() ?? null,
-        p_end_date: report.end_date?.toString() ?? null,
+        p_cube_config: cubeConfig,
       });
 
       if (error) {
@@ -250,11 +290,27 @@ export function createCockpitCubeReportsApi(
     },
 
     updateReport: async (reportId, updates) => {
-      const dbUpdates: Record<string, unknown> = { ...updates };
-      if ("start_date" in updates)
-        dbUpdates.start_date = updates.start_date?.toString() ?? null;
-      if ("end_date" in updates)
-        dbUpdates.end_date = updates.end_date?.toString() ?? null;
+      const { start_date, end_date, ...rest } = updates;
+      let cube_config = rest.cube_config as Record<string, unknown> | undefined;
+
+      if (start_date != null && end_date != null) {
+        if (cube_config === undefined) {
+          const { data: current } = await client
+            .from("cube_reports")
+            .select("cube_config")
+            .eq("id", reportId)
+            .single();
+          cube_config = (current?.cube_config as Record<string, unknown>) ?? {};
+        }
+        cube_config = {
+          ...cube_config,
+          dateRange: { start: start_date.toString(), end: end_date.toString() },
+        };
+      }
+
+      const dbUpdates =
+        cube_config !== undefined ? { ...rest, cube_config } : rest;
+
       const { data, error } = await client
         .from("cube_reports")
         .update(dbUpdates)
