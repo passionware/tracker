@@ -118,6 +118,7 @@ export interface RoutingService {
         details: () => string;
         forIteration: (iterationId?: string | ":iterationId") => {
           root: () => string;
+          positions: () => string;
           events: () => string;
           reports: () => string;
           generatedReports: () => string;

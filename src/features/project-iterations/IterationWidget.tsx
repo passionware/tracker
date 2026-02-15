@@ -53,6 +53,18 @@ export function IterationWidget(
         <Routes>
           <Route
             path={makeRelativePath(basePath, forIteration.root())}
+            element={
+              <GeneratedReportList
+                projectIterationId={props.projectIterationId}
+                workspaceId={props.workspaceId}
+                clientId={props.clientId}
+                projectId={props.projectId}
+                services={props.services}
+              />
+            }
+          />
+          <Route
+            path={makeRelativePath(basePath, forIteration.positions())}
             element={<PositionList {...props} />}
           />
           <Route
@@ -69,7 +81,7 @@ export function IterationWidget(
           />
           <Route
             path={makeRelativePath(
-              forIteration.root(),
+              basePath,
               forIteration.generatedReports(),
             )}
             element={

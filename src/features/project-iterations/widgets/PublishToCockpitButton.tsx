@@ -1,5 +1,4 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
-import { CalendarDate, parseDate } from "@internationalized/date";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Form,
@@ -18,10 +17,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import {
-  generateSmartReportName,
-  getReportDateRange,
-} from "@/features/project-iterations/widgets/reportNameUtils.ts";
+import { generateSmartReportName } from "@/features/project-iterations/widgets/reportNameUtils.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { LogIn, Share2 } from "lucide-react";
@@ -66,31 +62,6 @@ export function PublishToCockpitButton({
   const clientName =
     rd.tryMap(clientData, (client) => client.name) || `Client ${clientId}`;
 
-  // Prefer project iteration period for explicit time range (avoids shift when no work on start day)
-  const explicitDateRange = useMemo((): { start: CalendarDate; end: CalendarDate } | undefined => {
-    const iter = rd.tryGet(projectIterationData);
-    if (iter) {
-      return { start: iter.periodStart, end: iter.periodEnd };
-    }
-    const fromEntries = getReportDateRange(report);
-    if (!fromEntries) return undefined;
-    return {
-      start: parseDate(fromEntries.start.toISOString().slice(0, 10)),
-      end: parseDate(fromEntries.end.toISOString().slice(0, 10)),
-    };
-  }, [projectIterationData, report]);
-
-  const serializedDateRange = useMemo(
-    () =>
-      explicitDateRange
-        ? {
-            start: explicitDateRange.start.toString(),
-            end: explicitDateRange.end.toString(),
-          }
-        : undefined,
-    [explicitDateRange],
-  );
-
   const defaultPublishValues = useMemo(() => {
     return {
       name: generateSmartReportName({
@@ -113,11 +84,15 @@ export function PublishToCockpitButton({
         throw new Error("No configuration available to publish");
       }
 
-      // Get tenant ID from CockpitAuthService
-      const cockpitAuthInfo = rd.tryGet(cockpitAuthState);
-      if (!cockpitAuthInfo) {
-        throw new Error("Cockpit authentication required");
-      }
+      const iteration = rd.getOrThrow(
+        projectIterationData,
+        "Project iteration data is required to publish. Please wait for the page to load.",
+      );
+
+      const cockpitAuthInfo = rd.getOrThrow(
+        cockpitAuthState,
+        "Cockpit authentication required",
+      );
 
       const tenantId = cockpitAuthInfo.tenantId;
 
@@ -156,10 +131,6 @@ export function PublishToCockpitButton({
         },
       };
 
-      if (serializedDateRange) {
-        cubeDataPayload.dateRange = serializedDateRange;
-      }
-
       await services.clientCubeReportService.publishReport({
         tenantId,
         userId: cockpitAuthInfo.id, // Use cockpit auth user ID, not main app auth ID
@@ -168,8 +139,8 @@ export function PublishToCockpitButton({
         description,
         cubeData: cubeDataPayload,
         cubeConfig: serializableConfig.config as Record<string, unknown>,
-        startDate: explicitDateRange?.start ?? null,
-        endDate: explicitDateRange?.end ?? null,
+        startDate: iteration.periodStart,
+        endDate: iteration.periodEnd,
       });
 
       // Show success toast with link to cockpit

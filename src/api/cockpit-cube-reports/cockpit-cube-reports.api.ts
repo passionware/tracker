@@ -35,8 +35,8 @@ export interface CockpitCubeReportsApi {
       description?: string;
       cube_data: Record<string, unknown>;
       cube_config: Record<string, unknown>;
-      start_date?: CalendarDate | null;
-      end_date?: CalendarDate | null;
+      start_date: CalendarDate;
+      end_date: CalendarDate;
     },
   ) => Promise<CockpitCubeReport>;
   updateReport: (
@@ -46,8 +46,8 @@ export interface CockpitCubeReportsApi {
       description: string;
       cube_data: Record<string, unknown>;
       cube_config: Record<string, unknown>;
-      start_date: CalendarDate | null;
-      end_date: CalendarDate | null;
+      start_date: CalendarDate;
+      end_date: CalendarDate;
     }>,
   ) => Promise<CockpitCubeReport>;
   deleteReport: (reportId: string) => Promise<void>;
