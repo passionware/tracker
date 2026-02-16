@@ -101,6 +101,7 @@ export interface RoutingService {
       environmentRoot: () => string;
       variables: () => string;
       potentialCosts: () => string;
+      tmetricDashboard: () => string;
       root: () => string;
       forContractor: (contractorId?: ContractorParam) => {
         root: () => string;

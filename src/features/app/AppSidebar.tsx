@@ -157,8 +157,8 @@ function useData(
       ],
       projects: [
         {
-          name: "Time tracking",
-          url: "#",
+          name: "TMetric dashboard",
+          url: routing.tmetricDashboard(),
           icon: AudioLines,
         },
         {

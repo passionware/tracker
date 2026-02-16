@@ -24,6 +24,8 @@ export function createRoutingService(): RoutingService {
               `/w/${workspaceSlot}/clients/${clientSlot}/environment/variables`,
             potentialCosts: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/flow/potentialCosts`,
+            tmetricDashboard: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,
             forContractor: (contractorId) => {
               const contractorSlot =
