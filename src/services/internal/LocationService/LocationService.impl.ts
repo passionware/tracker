@@ -25,6 +25,7 @@ export function createLocationService(
       "costs",
       "potentialCosts",
       "variables",
+      "tmetricDashboard",
       "allProjects",
       "activeProjects",
       "closedProjects",
