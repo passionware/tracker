@@ -102,6 +102,7 @@ export interface RoutingService {
       variables: () => string;
       potentialCosts: () => string;
       tmetricDashboard: () => string;
+      tmetricDashboardCube: () => string;
       root: () => string;
       forContractor: (contractorId?: ContractorParam) => {
         root: () => string;

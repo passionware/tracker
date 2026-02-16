@@ -50,11 +50,13 @@ import { idSpecUtils } from "@/platform/lang/IdSpec";
 import { maybe, rd } from "@passionware/monads";
 import {
   endOfDay,
+  endOfMonth,
   endOfWeek,
   format,
   startOfDay,
+  startOfMonth,
   startOfWeek,
-  subDays,
+  subWeeks,
 } from "date-fns";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,9 +67,9 @@ import {
   Grid3X3,
   RefreshCw,
   TrendingUp,
-  UserX,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api";
 import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
@@ -91,12 +93,12 @@ import {
   YAxis,
 } from "recharts";
 
-type DateRangePreset =
+type TimePreset =
   | "today"
-  | "week"
-  | "custom"
-  | "all"
-  | "active_iterations";
+  | "this_week"
+  | "last_week"
+  | "month"
+  | "unscoped";
 
 function getDateRangeFromIterations(
   iterations: ProjectIteration[],
@@ -211,6 +213,8 @@ function getContractorIterationBreakdown(
   report: { data: import("@/services/io/_common/GenericReport").GenericReport },
   iterations: ProjectIteration[],
   projectsMap: Map<number, { name: string }>,
+  rangeStart: Date,
+  rangeEnd: Date,
 ): ContractorIterationBreakdown[] {
   const getEntryProjectName = (projectId: string) =>
     report.data.definitions.projectTypes[projectId]?.name;
@@ -247,7 +251,14 @@ function getContractorIterationBreakdown(
     }
   >();
 
+  const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
+
   for (const entry of report.data.timeEntries) {
+    const entryStartMs = entry.startAt.getTime();
+    const entryEndMs = entry.endAt.getTime();
+    if (entryStartMs > rangeEndMs || entryEndMs < rangeStartMs) continue;
+
     const hours =
       (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
     const matchingRate = getMatchingRate(report.data, entry);
@@ -333,6 +344,8 @@ function getIterationSummary(
   report: { data: import("@/services/io/_common/GenericReport").GenericReport },
   iterations: ProjectIteration[],
   projectsMap: Map<number, { name: string }>,
+  rangeStart: Date,
+  rangeEnd: Date,
 ): IterationSummary[] {
   const getEntryProjectName = (projectId: string) =>
     report.data.definitions.projectTypes[projectId]?.name;
@@ -357,7 +370,14 @@ function getIterationSummary(
     }
   >();
 
+  const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
+
   for (const entry of report.data.timeEntries) {
+    const entryStartMs = entry.startAt.getTime();
+    const entryEndMs = entry.endAt.getTime();
+    if (entryStartMs > rangeEndMs || entryEndMs < rangeStartMs) continue;
+
     const hours =
       (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
     const matchingRate = getMatchingRate(report.data, entry);
@@ -767,25 +787,38 @@ function TmetricCubeExplorer({
 }
 
 function getDateRange(
-  preset: DateRangePreset,
+  preset: TimePreset,
   iterationRange?: { start: Date; end: Date } | null,
 ): { start: Date; end: Date } | null {
-  if (preset === "active_iterations") {
+  if (preset === "unscoped") {
     return iterationRange ?? null;
   }
   const now = new Date();
   switch (preset) {
     case "today":
       return { start: startOfDay(now), end: endOfDay(now) };
-    case "week":
+    case "this_week":
       return {
         start: startOfWeek(now, { weekStartsOn: 1 }),
         end: endOfWeek(now, { weekStartsOn: 1 }),
       };
-    case "all":
-      return { start: subDays(now, 365), end: now };
+    case "last_week": {
+      const lastWeekStart = subWeeks(
+        startOfWeek(now, { weekStartsOn: 1 }),
+        1,
+      );
+      return {
+        start: lastWeekStart,
+        end: endOfWeek(lastWeekStart, { weekStartsOn: 1 }),
+      };
+    }
+    case "month":
+      return {
+        start: startOfMonth(now),
+        end: endOfMonth(now),
+      };
     default:
-      return { start: subDays(now, 7), end: now };
+      return { start: startOfDay(now), end: endOfDay(now) };
   }
 }
 
@@ -796,7 +829,11 @@ export function TmetricDashboardPage(
   },
 ) {
   const { services, workspaceId, clientId } = props;
-  const [datePreset, setDatePreset] = useState<DateRangePreset>("today");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab: "overview" | "cube" =
+    location.pathname.includes("/tmetric-dashboard/cube") ? "cube" : "overview";
+  const [timePreset, setTimePreset] = useState<TimePreset>("today");
   const [cachedReport, setCachedReport] = useState<{
     data: import("@/services/io/_common/GenericReport").GenericReport;
   } | null>(null);
@@ -804,7 +841,6 @@ export function TmetricDashboardPage(
   const [error, setError] = useState<string | null>(null);
   const [integrationStatus, setIntegrationStatus] =
     useState<ContractorsWithIntegrationStatus | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "cube">("overview");
   const [selectedIterationIds, setSelectedIterationIds] = useState<number[]>(
     [],
   );
@@ -873,9 +909,14 @@ export function TmetricDashboardPage(
     [allIterations, selectedIterationIds],
   );
 
+  const iterationsForScope = useMemo(() => {
+    if (selectedIterationIds.length > 0) return selectedIterations;
+    return allIterations.filter((i) => i.status === "active");
+  }, [selectedIterationIds, selectedIterations, allIterations]);
+
   const iterationRange = useMemo(
-    () => getDateRangeFromIterations(selectedIterations),
-    [selectedIterations],
+    () => getDateRangeFromIterations(iterationsForScope),
+    [iterationsForScope],
   );
 
   const iterationPickerItems: SimpleItem[] = useMemo(
@@ -900,10 +941,10 @@ export function TmetricDashboardPage(
   );
 
   const { start, end } = useMemo(() => {
-    const range = getDateRange(datePreset, iterationRange);
+    const range = getDateRange(timePreset, iterationRange);
     if (!range) return { start: null as Date | null, end: null as Date | null };
     return { start: range.start, end: range.end };
-  }, [datePreset, iterationRange]);
+  }, [timePreset, iterationRange]);
 
   const scope: TmetricDashboardCacheScope = useMemo(() => {
     const s: TmetricDashboardCacheScope = {};
@@ -913,11 +954,10 @@ export function TmetricDashboardPage(
     if (maybe.isPresent(clientId) && !idSpecUtils.isAll(clientId)) {
       s.clientIds = [clientId];
     }
-    if (datePreset === "active_iterations" && selectedIterationIds.length > 0) {
-      s.projectIterationIds = selectedIterationIds;
-    }
+    s.projectIterationIds =
+      selectedIterationIds.length > 0 ? selectedIterationIds : "all_active";
     return s;
-  }, [workspaceId, clientId, datePreset, selectedIterationIds]);
+  }, [workspaceId, clientId, selectedIterationIds]);
 
   const loadIntegrationStatus = useCallback(async () => {
     const status =
@@ -961,10 +1001,10 @@ export function TmetricDashboardPage(
   useEffect(() => {
     if (canLoadOrRefresh) {
       loadCached();
-    } else if (datePreset === "active_iterations") {
+    } else if (timePreset === "unscoped") {
       setCachedReport(null);
     }
-  }, [loadCached, canLoadOrRefresh, datePreset]);
+  }, [loadCached, canLoadOrRefresh, timePreset]);
 
   useEffect(() => {
     loadIntegrationStatus();
@@ -1031,42 +1071,35 @@ export function TmetricDashboardPage(
     return map;
   }, [contractorsQuery, contractorIdsInReport]);
 
-  const hasIterationScope =
-    datePreset === "active_iterations" && selectedIterations.length > 0;
-
   const iterationsForBreakdown = useMemo((): ProjectIteration[] => {
     if (!cachedReport) return [];
-    if (hasIterationScope) return selectedIterations;
     if (start && end) {
-      return iterationsOverlappingRange(allIterations, start, end);
+      return iterationsOverlappingRange(iterationsForScope, start, end);
     }
     return [];
-  }, [
-    cachedReport,
-    hasIterationScope,
-    selectedIterations,
-    allIterations,
-    start,
-    end,
-  ]);
+  }, [cachedReport, iterationsForScope, start, end]);
 
   const contractorIterationBreakdown = useMemo(() => {
-    if (!cachedReport) return null;
+    if (!cachedReport || !start || !end) return null;
     return getContractorIterationBreakdown(
       { data: cachedReport.data },
       iterationsForBreakdown,
       projectsMap,
+      start,
+      end,
     );
-  }, [cachedReport, iterationsForBreakdown, projectsMap]);
+  }, [cachedReport, iterationsForBreakdown, projectsMap, start, end]);
 
   const iterationSummary = useMemo(() => {
-    if (!cachedReport) return null;
+    if (!cachedReport || !start || !end) return null;
     return getIterationSummary(
       { data: cachedReport.data },
       iterationsForBreakdown,
       projectsMap,
+      start,
+      end,
     );
-  }, [cachedReport, iterationsForBreakdown, projectsMap]);
+  }, [cachedReport, iterationsForBreakdown, projectsMap, start, end]);
 
   const LANE_COLORS = [
     "bg-chart-1",
@@ -1150,40 +1183,33 @@ export function TmetricDashboardPage(
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Select
-              value={datePreset}
-              onValueChange={(v) => {
-                setDatePreset(v as DateRangePreset);
-                if (v !== "active_iterations") setSelectedIterationIds([]);
-              }}
+              value={timePreset}
+              onValueChange={(v) => setTimePreset(v as TimePreset)}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Date range" />
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Time range" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This week</SelectItem>
-                <SelectItem value="custom">Last 7 days</SelectItem>
-                <SelectItem value="all">Last year</SelectItem>
-                <SelectItem value="active_iterations">
-                  Active iterations
-                </SelectItem>
+                <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="last_week">Last week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+                <SelectItem value="unscoped">Unscoped (whole iterations)</SelectItem>
               </SelectContent>
             </Select>
 
-            {datePreset === "active_iterations" && (
-              <SimpleArrayPicker
-                items={iterationPickerItems}
-                value={selectedIterationIds.map(String)}
-                onSelect={(ids) =>
-                  setSelectedIterationIds(ids.map((id) => Number(id)))
-                }
-                placeholder="Select iterations..."
-                searchPlaceholder="Search iterations..."
-                variant="outline"
-                align="start"
-                side="bottom"
-              />
-            )}
+            <SimpleArrayPicker
+              items={iterationPickerItems}
+              value={selectedIterationIds.map(String)}
+              onSelect={(ids) =>
+                setSelectedIterationIds(ids.map((id) => Number(id)))
+              }
+              placeholder="All active iterations"
+              searchPlaceholder="Search iterations..."
+              variant="outline"
+              align="start"
+              side="bottom"
+            />
 
             <Button
               onClick={handleRefresh}
@@ -1208,7 +1234,17 @@ export function TmetricDashboardPage(
         {cachedReport && (
           <Tabs
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "overview" | "cube")}
+            onValueChange={(v) => {
+              const tab = v as "overview" | "cube";
+              const routing = services.routingService
+                .forWorkspace(workspaceId)
+                .forClient(clientId);
+              if (tab === "cube") {
+                navigate(routing.tmetricDashboardCube());
+              } else {
+                navigate(routing.tmetricDashboard());
+              }
+            }}
           >
             <TabsList>
               <TabsTrigger value="overview">
@@ -1287,14 +1323,16 @@ export function TmetricDashboardPage(
           {!cachedReport && !error && (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
-                {datePreset === "active_iterations" && !canLoadOrRefresh ? (
+                {timePreset === "unscoped" && !canLoadOrRefresh ? (
                   <>
                     <CalendarRange className="mb-4 h-16 w-16 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      Select one or more active iterations to load TMetric data.
+                      No iterations in scope. Add active iterations or select
+                      specific ones.
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Choose iterations from the dropdown above.
+                      Iterations are chosen above; by default all active
+                      iterations.
                     </p>
                   </>
                 ) : (
