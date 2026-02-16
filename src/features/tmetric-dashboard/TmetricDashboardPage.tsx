@@ -134,7 +134,13 @@ function budgetToCurrencyValues(
 
 interface ContractorIterationBreakdown {
   contractorId: number;
-  total: { cost: CurrencyValue[]; billing: CurrencyValue[]; profit: CurrencyValue[]; hours: number; entries: number };
+  total: {
+    cost: CurrencyValue[];
+    billing: CurrencyValue[];
+    profit: CurrencyValue[];
+    hours: number;
+    entries: number;
+  };
   byIteration: Array<{
     iterationId: number;
     iterationLabel: string;
@@ -167,7 +173,7 @@ function findMatchingIteration(
     label: string;
   }>,
   getEntryProjectName: (projectId: string) => string | undefined,
-): typeof iterationPeriods[0] | null {
+): (typeof iterationPeriods)[0] | null {
   const entryStart = entry.startAt.getTime();
   const entryProjectName = getEntryProjectName(entry.projectId)?.toLowerCase();
 
@@ -179,9 +185,7 @@ function findMatchingIteration(
   if (matching.length === 1) return matching[0];
 
   const byProject = entryProjectName
-    ? matching.find(
-        (p) => p.projectName.toLowerCase() === entryProjectName,
-      )
+    ? matching.find((p) => p.projectName.toLowerCase() === entryProjectName)
     : null;
   if (byProject) return byProject;
 
@@ -298,8 +302,8 @@ function getContractorIterationBreakdown(
           iterationLabel:
             iterationId === -1
               ? "Other"
-              : iterationPeriods.find((p) => p.id === iterationId)?.label ??
-                `Iteration ${iterationId}`,
+              : (iterationPeriods.find((p) => p.id === iterationId)?.label ??
+                `Iteration ${iterationId}`),
           cost: budgetToCurrencyValues(iter.cost),
           billing: budgetToCurrencyValues(iter.billing),
           profit: budgetToCurrencyValues(iter.profit),
@@ -569,11 +573,7 @@ function TmetricIterationBarChart({
             ? `${iter.iterationLabel.slice(0, 20)}…`
             : iter.iterationLabel,
         cost: convertToTargetCurrency(iter.cost, rateMap, targetCurrency),
-        billing: convertToTargetCurrency(
-          iter.billing,
-          rateMap,
-          targetCurrency,
-        ),
+        billing: convertToTargetCurrency(iter.billing, rateMap, targetCurrency),
         profit: convertToTargetCurrency(iter.profit, rateMap, targetCurrency),
       }));
     }) ?? [];
@@ -623,7 +623,11 @@ function TmetricIterationBarChart({
               />
               <Legend />
               <Bar dataKey="cost" fill={CHART_COLORS.cost} name="Cost" />
-              <Bar dataKey="billing" fill={CHART_COLORS.billing} name="Billing" />
+              <Bar
+                dataKey="billing"
+                fill={CHART_COLORS.billing}
+                name="Billing"
+              />
               <Bar dataKey="profit" fill={CHART_COLORS.profit} name="Profit" />
             </BarChart>
           </ResponsiveContainer>
@@ -787,19 +791,21 @@ export function TmetricDashboardPage(
   const [integrationStatus, setIntegrationStatus] =
     useState<ContractorsWithIntegrationStatus | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "cube">("overview");
-  const [selectedIterationIds, setSelectedIterationIds] = useState<number[]>([]);
+  const [selectedIterationIds, setSelectedIterationIds] = useState<number[]>(
+    [],
+  );
 
-  const projectsQuery = projectQueryUtils
-    .withEnsureDefault({
-      workspaceId,
-      clientId,
-    })
-    (projectQueryUtils.ofDefault());
+  const projectsQuery = projectQueryUtils.withEnsureDefault({
+    workspaceId,
+    clientId,
+  })(projectQueryUtils.ofDefault());
   const projectsWithActiveFilter = useMemo(
     () =>
-      projectQueryUtils.transform(projectsQuery).build((q) => [
-        q.withFilter("status", { operator: "oneOf", value: ["active"] }),
-      ]),
+      projectQueryUtils
+        .transform(projectsQuery)
+        .build((q) => [
+          q.withFilter("status", { operator: "oneOf", value: ["active"] }),
+        ]),
     [projectsQuery],
   );
 
@@ -827,18 +833,15 @@ export function TmetricDashboardPage(
         : null,
     [projectIds],
   );
-  const iterationsData =
-    services.projectIterationService.useProjectIterations(
-      maybe.of(iterationsQuery),
-    );
+  const iterationsData = services.projectIterationService.useProjectIterations(
+    maybe.of(iterationsQuery),
+  );
   const allIterations = rd.tryMap(iterationsData, (x) => x) ?? [];
   const iterationsActiveFirst = useMemo(
     () =>
       [...allIterations].sort((a, b) => {
         const statusOrder = { active: 0, closed: 1, draft: 2 };
-        return (
-          (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2)
-        );
+        return (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
       }),
     [allIterations],
   );
@@ -852,8 +855,7 @@ export function TmetricDashboardPage(
   }, [projectsData]);
 
   const selectedIterations = useMemo(
-    () =>
-      allIterations.filter((i) => selectedIterationIds.includes(i.id)),
+    () => allIterations.filter((i) => selectedIterationIds.includes(i.id)),
     [allIterations, selectedIterationIds],
   );
 
@@ -866,14 +868,18 @@ export function TmetricDashboardPage(
     () =>
       iterationsActiveFirst.map((iter) => {
         const project = projectsMap.get(iter.projectId);
-        const projectName =
-          project?.name ?? `Project ${iter.projectId}`;
+        const projectName = project?.name ?? `Project ${iter.projectId}`;
         const periodLabel = `${format(calendarDateToJSDate(iter.periodStart), "dd MMM yyyy")} – ${format(calendarDateToJSDate(iter.periodEnd), "dd MMM yyyy")}`;
         const statusLabel =
-          iter.status === "active" ? " · Active" : iter.status === "closed" ? " · Closed" : "";
+          iter.status === "active"
+            ? " · Active"
+            : iter.status === "closed"
+              ? " · Closed"
+              : "";
         return {
           id: String(iter.id),
           label: `${projectName} #${iter.ordinalNumber}${statusLabel} (${periodLabel})`,
+          compactLabel: `${projectName} #${iter.ordinalNumber}`,
         };
       }),
     [iterationsActiveFirst, projectsMap],
@@ -893,19 +899,11 @@ export function TmetricDashboardPage(
     if (maybe.isPresent(clientId) && !idSpecUtils.isAll(clientId)) {
       s.clientIds = [clientId];
     }
-    if (
-      datePreset === "active_iterations" &&
-      selectedIterationIds.length > 0
-    ) {
+    if (datePreset === "active_iterations" && selectedIterationIds.length > 0) {
       s.projectIterationIds = selectedIterationIds;
     }
     return s;
-  }, [
-    workspaceId,
-    clientId,
-    datePreset,
-    selectedIterationIds,
-  ]);
+  }, [workspaceId, clientId, datePreset, selectedIterationIds]);
 
   const loadIntegrationStatus = useCallback(async () => {
     const status =
@@ -996,18 +994,16 @@ export function TmetricDashboardPage(
   }, [cachedReport]);
 
   const contractorsQuery = services.contractorService.useContractors(
-    contractorQueryUtils
-      .getBuilder()
-      .build((q) =>
-        contractorIdsInReport.length
-          ? [
-              q.withFilter("id", {
-                operator: "oneOf",
-                value: contractorIdsInReport,
-              }),
-            ]
-          : [],
-      ),
+    contractorQueryUtils.getBuilder().build((q) =>
+      contractorIdsInReport.length
+        ? [
+            q.withFilter("id", {
+              operator: "oneOf",
+              value: contractorIdsInReport,
+            }),
+          ]
+        : [],
+    ),
   );
 
   const contractorNameMap = useMemo(() => {
@@ -1280,7 +1276,8 @@ export function TmetricDashboardPage(
                     </p>
                     {start && end && (
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {format(start, "dd MMM yyyy")} – {format(end, "dd MMM yyyy")}
+                        {format(start, "dd MMM yyyy")} –{" "}
+                        {format(end, "dd MMM yyyy")}
                       </p>
                     )}
                   </>
@@ -1402,15 +1399,14 @@ export function TmetricDashboardPage(
                                   <CurrencyValueWidget
                                     values={iter.profit}
                                     services={services}
-                                    exchangeService={
-                                      services.exchangeService
-                                    }
+                                    exchangeService={services.exchangeService}
                                     className="text-inherit"
                                   />
                                 </Badge>
                               </div>
                               <span className="text-muted-foreground">
-                                {iter.hours.toFixed(1)}h · {iter.entries} entries
+                                {iter.hours.toFixed(1)}h · {iter.entries}{" "}
+                                entries
                               </span>
                             </div>
                           </div>
@@ -1572,57 +1568,60 @@ export function TmetricDashboardPage(
               </div>
 
               {/* By contractor with iteration breakdown (when iteration mode) */}
-              {hasIterationScope && contractorIterationBreakdown &&
-              contractorIterationBreakdown.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>By contractor</CardTitle>
-                    <CardDescription>
-                      Cost, billing, and profit per contractor with breakdown by
-                      iteration (integrated only)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {(() => {
-                      const integratedIds = new Set(
-                        integrationStatus?.integratedContractorIds ?? [],
-                      );
-                      const displayed =
-                        integratedIds.size > 0
-                          ? contractorIterationBreakdown.filter((c) =>
-                              integratedIds.has(c.contractorId),
-                            )
-                          : contractorIterationBreakdown;
-                      const excludedCount =
-                        contractorIterationBreakdown.length - displayed.length;
+              {hasIterationScope &&
+                contractorIterationBreakdown &&
+                contractorIterationBreakdown.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>By contractor</CardTitle>
+                      <CardDescription>
+                        Cost, billing, and profit per contractor with breakdown
+                        by iteration (integrated only)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const integratedIds = new Set(
+                          integrationStatus?.integratedContractorIds ?? [],
+                        );
+                        const displayed =
+                          integratedIds.size > 0
+                            ? contractorIterationBreakdown.filter((c) =>
+                                integratedIds.has(c.contractorId),
+                              )
+                            : contractorIterationBreakdown;
+                        const excludedCount =
+                          contractorIterationBreakdown.length -
+                          displayed.length;
 
-                      return (
-                        <>
-                          {excludedCount > 0 && (
-                            <p className="mb-4 text-sm text-muted-foreground">
-                              {excludedCount} contractor(s) in cached data are
-                              no longer integrated and excluded from this view.
-                            </p>
-                          )}
-                          <div className="space-y-2">
-                            {displayed.map((c) => (
-                              <ContractorWithIterationBreakdown
-                                key={c.contractorId}
-                                contractorId={c.contractorId}
-                                total={c.total}
-                                byIteration={c.byIteration}
-                                services={services}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              )}
+                        return (
+                          <>
+                            {excludedCount > 0 && (
+                              <p className="mb-4 text-sm text-muted-foreground">
+                                {excludedCount} contractor(s) in cached data are
+                                no longer integrated and excluded from this
+                                view.
+                              </p>
+                            )}
+                            <div className="space-y-2">
+                              {displayed.map((c) => (
+                                <ContractorWithIterationBreakdown
+                                  key={c.contractorId}
+                                  contractorId={c.contractorId}
+                                  total={c.total}
+                                  byIteration={c.byIteration}
+                                  services={services}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
 
-          {/* Timeline */}
+              {/* Timeline */}
               {reportAsSource && timelineItems.length > 0 && (
                 <Card>
                   <CardHeader>
