@@ -106,12 +106,26 @@ function getDateRangeFromIterations(
     calendarDateToJSDate(i.periodStart).getTime(),
   );
   const ends = iterations.map((i) =>
-    calendarDateToJSDate(i.periodEnd).getTime(),
+    endOfDay(calendarDateToJSDate(i.periodEnd)).getTime(),
   );
   return {
     start: new Date(Math.min(...starts)),
     end: new Date(Math.max(...ends)),
   };
+}
+
+function iterationsOverlappingRange(
+  iterations: ProjectIteration[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): ProjectIteration[] {
+  const startMs = rangeStart.getTime();
+  const endMs = rangeEnd.getTime();
+  return iterations.filter((i) => {
+    const iterStart = calendarDateToJSDate(i.periodStart).getTime();
+    const iterEnd = endOfDay(calendarDateToJSDate(i.periodEnd)).getTime();
+    return iterStart <= endMs && iterEnd >= startMs;
+  });
 }
 
 function addToBudget(
@@ -782,7 +796,7 @@ export function TmetricDashboardPage(
   },
 ) {
   const { services, workspaceId, clientId } = props;
-  const [datePreset, setDatePreset] = useState<DateRangePreset>("week");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("today");
   const [cachedReport, setCachedReport] = useState<{
     data: import("@/services/io/_common/GenericReport").GenericReport;
   } | null>(null);
@@ -1020,23 +1034,39 @@ export function TmetricDashboardPage(
   const hasIterationScope =
     datePreset === "active_iterations" && selectedIterations.length > 0;
 
+  const iterationsForBreakdown = useMemo((): ProjectIteration[] => {
+    if (!cachedReport) return [];
+    if (hasIterationScope) return selectedIterations;
+    if (start && end) {
+      return iterationsOverlappingRange(allIterations, start, end);
+    }
+    return [];
+  }, [
+    cachedReport,
+    hasIterationScope,
+    selectedIterations,
+    allIterations,
+    start,
+    end,
+  ]);
+
   const contractorIterationBreakdown = useMemo(() => {
-    if (!cachedReport || !hasIterationScope) return null;
+    if (!cachedReport) return null;
     return getContractorIterationBreakdown(
       { data: cachedReport.data },
-      selectedIterations,
+      iterationsForBreakdown,
       projectsMap,
     );
-  }, [cachedReport, hasIterationScope, selectedIterations, projectsMap]);
+  }, [cachedReport, iterationsForBreakdown, projectsMap]);
 
   const iterationSummary = useMemo(() => {
-    if (!cachedReport || !hasIterationScope) return null;
+    if (!cachedReport) return null;
     return getIterationSummary(
       { data: cachedReport.data },
-      selectedIterations,
+      iterationsForBreakdown,
       projectsMap,
     );
-  }, [cachedReport, hasIterationScope, selectedIterations, projectsMap]);
+  }, [cachedReport, iterationsForBreakdown, projectsMap]);
 
   const LANE_COLORS = [
     "bg-chart-1",
@@ -1205,7 +1235,7 @@ export function TmetricDashboardPage(
         </div>
       ) : (
         <div className="flex-1 overflow-auto space-y-6 mt-4">
-          {integrationStatus &&
+          {/* {integrationStatus &&
             (integrationStatus.integratedContractorIds.length > 0 ||
               integrationStatus.nonIntegratedContractorIds.length > 0) && (
               <Card>
@@ -1244,7 +1274,7 @@ export function TmetricDashboardPage(
                   </CardContent>
                 )}
               </Card>
-            )}
+            )} */}
 
           {error && (
             <Card className="border-destructive">
@@ -1287,291 +1317,286 @@ export function TmetricDashboardPage(
           )}
 
           {cachedReport && basicInfo && (
-            <>
-              {/* Stats + By iteration (when iteration mode) or By contractor */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Stats card: time entries + totals */}
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
+              }}
+            >
+              {/* Stats card: time entries + totals */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Time entries & totals
+                  </CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-2xl font-bold">
+                        {basicInfo.statistics.timeEntriesCount}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        time entries
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Total cost
+                        </p>
+                        <CurrencyValueWidget
+                          values={basicInfo.statistics.totalCostBudget}
+                          services={services}
+                          exchangeService={services.exchangeService}
+                          className="text-lg font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Total billing
+                        </p>
+                        <CurrencyValueWidget
+                          values={basicInfo.statistics.totalBillingBudget}
+                          services={services}
+                          exchangeService={services.exchangeService}
+                          className="text-lg font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Profit</p>
+                        <CurrencyValueWidget
+                          values={basicInfo.statistics.totalEarningsBudget}
+                          services={services}
+                          exchangeService={services.exchangeService}
+                          className="text-lg font-semibold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* By iteration */}
+              {iterationSummary && iterationSummary.length > 0 ? (
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Time entries & totals
-                    </CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader>
+                    <CardTitle>By iteration</CardTitle>
+                    <CardDescription>
+                      Cost, billing, and profit per iteration
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-2xl font-bold">
-                          {basicInfo.statistics.timeEntriesCount}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          time entries
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            Total cost
+                    <div className="space-y-3">
+                      {iterationSummary.map((iter) => (
+                        <div
+                          key={iter.iterationId}
+                          className="rounded-lg border p-3"
+                        >
+                          <p className="text-sm font-medium">
+                            {iter.iterationLabel}
                           </p>
-                          <CurrencyValueWidget
-                            values={basicInfo.statistics.totalCostBudget}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="text-lg font-semibold"
-                          />
+                          <div className="mt-2 flex flex-wrap gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">
+                                Cost:{" "}
+                              </span>
+                              <CurrencyValueWidget
+                                values={iter.cost}
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="font-medium"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Billing:{" "}
+                              </span>
+                              <CurrencyValueWidget
+                                values={iter.billing}
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="font-medium"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Profit:{" "}
+                              </span>
+                              <Badge variant="secondary">
+                                <CurrencyValueWidget
+                                  values={iter.profit}
+                                  services={services}
+                                  exchangeService={services.exchangeService}
+                                  className="text-inherit"
+                                />
+                              </Badge>
+                            </div>
+                            <span className="text-muted-foreground">
+                              {iter.hours.toFixed(1)}h · {iter.entries} entries
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            Total billing
-                          </p>
-                          <CurrencyValueWidget
-                            values={basicInfo.statistics.totalBillingBudget}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="text-lg font-semibold"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            Profit
-                          </p>
-                          <CurrencyValueWidget
-                            values={basicInfo.statistics.totalEarningsBudget}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="text-lg font-semibold"
-                          />
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
+              ) : contractorsSummary &&
+                contractorsSummary.contractors.length > 0 &&
+                !(
+                  contractorIterationBreakdown &&
+                  contractorIterationBreakdown.length > 0
+                ) ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>By contractor</CardTitle>
+                    <CardDescription>
+                      Cost, billing, and profit per contractor (integrated only)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const integratedIds = new Set(
+                        integrationStatus?.integratedContractorIds ?? [],
+                      );
+                      const displayedContractors =
+                        integratedIds.size > 0
+                          ? contractorsSummary.contractors.filter((c) =>
+                              integratedIds.has(c.contractorId),
+                            )
+                          : contractorsSummary.contractors;
+                      const excludedCount =
+                        contractorsSummary.contractors.length -
+                        displayedContractors.length;
 
-                {/* By iteration (when iteration mode) */}
-                {hasIterationScope &&
-                iterationSummary &&
-                iterationSummary.length > 0 ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>By iteration</CardTitle>
-                      <CardDescription>
-                        Cost, billing, and profit per iteration
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {iterationSummary.map((iter) => (
-                          <div
-                            key={iter.iterationId}
-                            className="rounded-lg border p-3"
-                          >
-                            <p className="text-sm font-medium">
-                              {iter.iterationLabel}
+                      return (
+                        <>
+                          {excludedCount > 0 && (
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              {excludedCount} contractor(s) in cached data are
+                              no longer integrated and excluded from this view.
+                              Totals above include their data.
                             </p>
-                            <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">
-                                  Cost:{" "}
-                                </span>
-                                <CurrencyValueWidget
-                                  values={iter.cost}
+                          )}
+                          <div className="space-y-4">
+                            {displayedContractors.map((c) => (
+                              <div
+                                key={c.contractorId}
+                                className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+                              >
+                                <ContractorWidget
+                                  contractorId={maybe.of(c.contractorId)}
                                   services={services}
-                                  exchangeService={services.exchangeService}
-                                  className="font-medium"
+                                  layout="full"
+                                  size="sm"
                                 />
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">
-                                  Billing:{" "}
-                                </span>
-                                <CurrencyValueWidget
-                                  values={iter.billing}
-                                  services={services}
-                                  exchangeService={services.exchangeService}
-                                  className="font-medium"
-                                />
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">
-                                  Profit:{" "}
-                                </span>
-                                <Badge variant="secondary">
-                                  <CurrencyValueWidget
-                                    values={iter.profit}
-                                    services={services}
-                                    exchangeService={services.exchangeService}
-                                    className="text-inherit"
-                                  />
-                                </Badge>
-                              </div>
-                              <span className="text-muted-foreground">
-                                {iter.hours.toFixed(1)}h · {iter.entries}{" "}
-                                entries
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : contractorsSummary &&
-                  contractorsSummary.contractors.length > 0 &&
-                  !hasIterationScope ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>By contractor</CardTitle>
-                      <CardDescription>
-                        Cost, billing, and profit per contractor (integrated
-                        only)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        const integratedIds = new Set(
-                          integrationStatus?.integratedContractorIds ?? [],
-                        );
-                        const displayedContractors =
-                          integratedIds.size > 0
-                            ? contractorsSummary.contractors.filter((c) =>
-                                integratedIds.has(c.contractorId),
-                              )
-                            : contractorsSummary.contractors;
-                        const excludedCount =
-                          contractorsSummary.contractors.length -
-                          displayedContractors.length;
-
-                        return (
-                          <>
-                            {excludedCount > 0 && (
-                              <p className="mb-4 text-sm text-muted-foreground">
-                                {excludedCount} contractor(s) in cached data are
-                                no longer integrated and excluded from this
-                                view. Totals above include their data.
-                              </p>
-                            )}
-                            <div className="space-y-4">
-                              {displayedContractors.map((c) => (
-                                <div
-                                  key={c.contractorId}
-                                  className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                  <ContractorWidget
-                                    contractorId={maybe.of(c.contractorId)}
-                                    services={services}
-                                    layout="full"
-                                    size="sm"
-                                  />
-                                  <div className="flex flex-wrap gap-4 text-sm">
-                                    <div>
-                                      <span className="text-muted-foreground">
-                                        Cost:{" "}
-                                      </span>
-                                      <CurrencyValueWidget
-                                        values={c.costBudget}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground">
-                                        Billing:{" "}
-                                      </span>
-                                      <CurrencyValueWidget
-                                        values={c.billingBudget}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground">
-                                        Profit:{" "}
-                                      </span>
-                                      <Badge variant="secondary">
-                                        <CurrencyValueWidget
-                                          values={c.earningsBudget}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="text-inherit"
-                                        />
-                                      </Badge>
-                                    </div>
+                                <div className="flex flex-wrap gap-4 text-sm">
+                                  <div>
                                     <span className="text-muted-foreground">
-                                      {c.totalHours.toFixed(1)}h ·{" "}
-                                      {c.entriesCount} entries
+                                      Cost:{" "}
                                     </span>
+                                    <CurrencyValueWidget
+                                      values={c.costBudget}
+                                      services={services}
+                                      exchangeService={services.exchangeService}
+                                      className="font-medium"
+                                    />
                                   </div>
+                                  <div>
+                                    <span className="text-muted-foreground">
+                                      Billing:{" "}
+                                    </span>
+                                    <CurrencyValueWidget
+                                      values={c.billingBudget}
+                                      services={services}
+                                      exchangeService={services.exchangeService}
+                                      className="font-medium"
+                                    />
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">
+                                      Profit:{" "}
+                                    </span>
+                                    <Badge variant="secondary">
+                                      <CurrencyValueWidget
+                                        values={c.earningsBudget}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className="text-inherit"
+                                      />
+                                    </Badge>
+                                  </div>
+                                  <span className="text-muted-foreground">
+                                    {c.totalHours.toFixed(1)}h ·{" "}
+                                    {c.entriesCount} entries
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                ) : !hasIterationScope ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>By contractor</CardTitle>
-                      <CardDescription>
-                        No contractors in cached data
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                ) : null}
-              </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              ) : !(
+                  contractorIterationBreakdown &&
+                  contractorIterationBreakdown.length > 0
+                ) ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>By contractor</CardTitle>
+                    <CardDescription>
+                      No contractors in cached data
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              ) : null}
 
-              {/* Charts row */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {hasIterationScope &&
-                  iterationSummary &&
-                  iterationSummary.length > 0 && (
-                    <TmetricIterationBarChart
-                      iterationSummary={iterationSummary}
-                      services={services}
-                    />
-                  )}
-                {contractorIterationBreakdown &&
-                  contractorIterationBreakdown.length > 0 && (
-                    <TmetricHoursPieChart
-                      contractorBreakdown={contractorIterationBreakdown}
-                      contractorNameMap={contractorNameMap}
-                    />
-                  )}
-                {!hasIterationScope &&
-                  contractorsSummary &&
-                  contractorsSummary.contractors.length > 0 && (
-                    <TmetricHoursPieChart
-                      contractorBreakdown={contractorsSummary.contractors.map(
-                        (c) => ({
-                          contractorId: c.contractorId,
-                          total: {
-                            cost: c.costBudget,
-                            billing: c.billingBudget,
-                            profit: c.earningsBudget,
-                            hours: c.totalHours,
-                            entries: c.entriesCount,
-                          },
-                          byIteration: [],
-                        }),
-                      )}
-                      contractorNameMap={contractorNameMap}
-                    />
-                  )}
-              </div>
+              {iterationSummary && iterationSummary.length > 0 && (
+                <TmetricIterationBarChart
+                  iterationSummary={iterationSummary}
+                  services={services}
+                />
+              )}
+              {contractorIterationBreakdown &&
+                contractorIterationBreakdown.length > 0 && (
+                  <TmetricHoursPieChart
+                    contractorBreakdown={contractorIterationBreakdown}
+                    contractorNameMap={contractorNameMap}
+                  />
+                )}
+              {!(
+                contractorIterationBreakdown &&
+                contractorIterationBreakdown.length > 0
+              ) &&
+                contractorsSummary &&
+                contractorsSummary.contractors.length > 0 && (
+                  <TmetricHoursPieChart
+                    contractorBreakdown={contractorsSummary.contractors.map(
+                      (c) => ({
+                        contractorId: c.contractorId,
+                        total: {
+                          cost: c.costBudget,
+                          billing: c.billingBudget,
+                          profit: c.earningsBudget,
+                          hours: c.totalHours,
+                          entries: c.entriesCount,
+                        },
+                        byIteration: [],
+                      }),
+                    )}
+                    contractorNameMap={contractorNameMap}
+                  />
+                )}
 
               {/* By contractor with iteration breakdown (when iteration mode) */}
-              {hasIterationScope &&
-                contractorIterationBreakdown &&
+              {contractorIterationBreakdown &&
                 contractorIterationBreakdown.length > 0 && (
-                  <Card>
+                  <Card className="col-span-full">
                     <CardHeader>
                       <CardTitle>By contractor</CardTitle>
                       <CardDescription>
@@ -1623,7 +1648,7 @@ export function TmetricDashboardPage(
 
               {/* Timeline */}
               {reportAsSource && timelineItems.length > 0 && (
-                <Card>
+                <Card className="col-span-full">
                   <CardHeader>
                     <CardTitle>Tasks over time</CardTitle>
                     <CardDescription>
@@ -1640,7 +1665,7 @@ export function TmetricDashboardPage(
                   </CardContent>
                 </Card>
               )}
-            </>
+            </div>
           )}
         </div>
       )}

@@ -11,7 +11,7 @@ import {
   ProjectIdResolver,
   ProjectIterationIdResolver,
 } from "@/features/app/RootWidget.idResolvers.tsx";
-import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { CockpitMainRouter } from "@/features/client-cockpit/ClientCockpitRouter.tsx";
@@ -44,7 +44,12 @@ export function RootWidget(props: WithFrontServices) {
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-                <SelectClientPage services={props.services} />
+                <Navigate
+                  to={props.services.routingService
+                    .forWorkspace(idSpecUtils.ofAll())
+                    .forClient(idSpecUtils.ofAll())
+                    .tmetricDashboard()}
+                />
               </Layout>
             </ProtectedRoute>
           }
