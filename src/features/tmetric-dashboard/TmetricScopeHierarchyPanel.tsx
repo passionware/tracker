@@ -7,11 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
@@ -23,9 +18,11 @@ import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildScopeHierarchy,
+  divideCurrencyValues,
+  getContractorIterationTotals,
   getContractorRatesForIterationProject,
   getScopeHierarchyTotals,
-  projectKey,
+  sumCurrencyValues,
   type ContractorRateInProject,
 } from "./tmetric-dashboard.utils";
 
@@ -38,10 +35,6 @@ export interface TmetricScopeHierarchyPanelProps {
   projectsMap: Map<number, { name: string }>;
   /** When present (cached report loaded), contractor rates per project are shown. */
   cachedReport?: { data: GenericReport } | null;
-}
-
-function formatRate(rate: number, currency: string): string {
-  return `${Number(rate) === Math.round(rate) ? rate : rate.toFixed(2)} ${currency}`;
 }
 
 export function TmetricScopeHierarchyPanel({
@@ -88,41 +81,64 @@ export function TmetricScopeHierarchyPanel({
       ),
     [scopeHierarchyWithRates],
   );
-  const allProjectKeys = useMemo(
-    () =>
-      scopeHierarchyWithRates.flatMap((c) =>
-        c.iterations.map((i) => projectKey(i.iteration.id, i.projectName)),
-      ),
-    [scopeHierarchyWithRates],
-  );
-
   const [expandedClients, setExpandedClients] = useState<Set<number>>(
     () => new Set(),
   );
   const [expandedIterations, setExpandedIterations] = useState<Set<number>>(
     () => new Set(),
   );
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
-    () => new Set(),
-  );
 
   useEffect(() => {
     setExpandedClients(new Set());
     setExpandedIterations(new Set());
-    setExpandedProjects(new Set());
-  }, [allClientIds, allIterationIds, allProjectKeys]);
+  }, [allClientIds, allIterationIds]);
 
   const expandAll = useCallback(() => {
     setExpandedClients(new Set(allClientIds));
     setExpandedIterations(new Set(allIterationIds));
-    setExpandedProjects(new Set(allProjectKeys));
-  }, [allClientIds, allIterationIds, allProjectKeys]);
+  }, [allClientIds, allIterationIds]);
 
   const collapseAll = useCallback(() => {
     setExpandedClients(new Set());
     setExpandedIterations(new Set());
-    setExpandedProjects(new Set());
   }, []);
+
+  const footerTotals = useMemo(() => {
+    if (!scopeHierarchyTotals) return null;
+    const iterations = scopeHierarchyWithRates.flatMap((c) => c.iterations);
+    const totalHours = iterations.reduce(
+      (sum, row) =>
+        sum + (scopeHierarchyTotals.byIteration.get(row.iteration.id)?.hours ?? 0),
+      0,
+    );
+    const allCost = sumCurrencyValues(
+      ...iterations.map(
+        (row) =>
+          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.cost ?? [],
+      ),
+    );
+    const allBilling = sumCurrencyValues(
+      ...iterations.map(
+        (row) =>
+          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.billing ?? [],
+      ),
+    );
+    const allProfit = sumCurrencyValues(
+      ...iterations.map(
+        (row) =>
+          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.profit ?? [],
+      ),
+    );
+    return {
+      iterationCount: iterations.length,
+      totalHours,
+      totalCost: allCost,
+      totalBilling: allBilling,
+      totalProfit: allProfit,
+      avgCostRate: divideCurrencyValues(allCost, totalHours),
+      avgBillingRate: divideCurrencyValues(allBilling, totalHours),
+    };
+  }, [scopeHierarchyTotals, scopeHierarchyWithRates]);
 
   return (
     <Card>
@@ -160,274 +176,477 @@ export function TmetricScopeHierarchyPanel({
         )}
       </CardHeader>
       <CardContent>
-        <div className="space-y-1">
-          {scopeHierarchyWithRates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No clients, iterations, or projects in scope.
-            </p>
-          ) : (
-            scopeHierarchyWithRates.map(({ clientId, iterations }) => (
-              <Collapsible
-                key={clientId}
-                open={expandedClients.has(clientId)}
-                onOpenChange={(open) =>
-                  setExpandedClients((prev) => {
-                    const next = new Set(prev);
-                    if (open) next.add(clientId);
-                    else next.delete(clientId);
-                    return next;
-                  })
-                }
-                className="group"
-              >
-                <div className="rounded-md border">
-                  <CollapsibleTrigger asChild>
-                    <div className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 hover:bg-muted/50">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-                        <ClientWidget
-                          clientId={maybe.of(clientId)}
-                          services={services}
-                          layout="full"
-                          size="sm"
-                        />
-                        <span className="text-muted-foreground">
-                          {iterations.length} iteration(s)
-                        </span>
+        {scopeHierarchyWithRates.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No clients, iterations, or projects in scope.
+          </p>
+        ) : (
+          <div
+            className="scope-hierarchy-grid rounded-md border"
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "auto 1fr minmax(3rem, auto) minmax(4rem, auto) minmax(4rem, auto) minmax(5rem, auto) minmax(5rem, auto) minmax(5rem, auto)",
+              gap: "0 1rem",
+              rowGap: 0,
+              alignItems: "center",
+            }}
+          >
+            {/* Header row */}
+            <div className="contents text-xs font-medium text-muted-foreground border-b bg-muted/30">
+              <span className="px-2 py-2 w-8" />
+              <span className="py-2">Scope</span>
+              <span className="py-2 text-right">Hours</span>
+              <span className="py-2 text-right">Cost rate</span>
+              <span className="py-2 text-right">Billing rate</span>
+              <span className="py-2 text-right">Cost</span>
+              <span className="py-2 text-right">Billing</span>
+              <span className="py-2 text-right pr-2">Profit</span>
+            </div>
+            {scopeHierarchyWithRates.flatMap(({ clientId, iterations }) => {
+              const clientOpen = expandedClients.has(clientId);
+              return [
+                <button
+                  key={`client-${clientId}`}
+                  type="button"
+                  onClick={() =>
+                    setExpandedClients((prev) => {
+                      const next = new Set(prev);
+                      if (clientOpen) next.delete(clientId);
+                      else next.add(clientId);
+                      return next;
+                    })
+                  }
+                  className="contents group text-left"
+                >
+                  <span className="flex items-center px-2 py-2 w-8 shrink-0">
+                    <ChevronRight
+                      className={`h-4 w-4 transition-transform ${clientOpen ? "rotate-90" : ""}`}
+                    />
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2 py-2 hover:bg-muted/50 rounded-l">
+                    <ClientWidget
+                      clientId={maybe.of(clientId)}
+                      services={services}
+                      layout="full"
+                      size="sm"
+                    />
+                    <span className="text-muted-foreground shrink-0">
+                      {iterations.length} iteration(s)
+                    </span>
+                  </span>
+                  {scopeHierarchyTotals ? (
+                    (() => {
+                      const client = scopeHierarchyTotals.byClient.get(clientId);
+                      if (!client) return <span style={{ gridColumn: "3 / 9" }} />;
+                      const hours = client.hours;
+                      const avgCost =
+                        hours > 0
+                          ? divideCurrencyValues(client.cost, hours)
+                          : [];
+                      const avgBilling =
+                        hours > 0
+                          ? divideCurrencyValues(client.billing, hours)
+                          : [];
+                      return (
+                        <>
+                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "3 / 4" }}>
+                            {hours.toFixed(1)}
+                          </span>
+                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "4 / 5" }}>
+                            <CurrencyValueWidget
+                              values={avgCost}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          </span>
+                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "5 / 6" }}>
+                            <CurrencyValueWidget
+                              values={avgBilling}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          </span>
+                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "6 / 7" }}>
+                            <CurrencyValueWidget
+                              values={client.cost}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          </span>
+                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "7 / 8" }}>
+                            <CurrencyValueWidget
+                              values={client.billing}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          </span>
+                          <span className="py-2 pr-2 text-xs text-right tabular-nums" style={{ gridColumn: "8 / 9" }}>
+                            <CurrencyValueWidget
+                              values={client.profit}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          </span>
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <span style={{ gridColumn: "3 / 9" }} />
+                  )}
+                </button>,
+                clientOpen && (
+                  <div
+                    key={`client-${clientId}-sub`}
+                    className="col-span-full grid border-t border-border/50 bg-muted/20"
+                    style={{
+                      gridTemplateColumns: "subgrid",
+                      gridColumn: "1 / -1",
+                    }}
+                  >
+                    {iterations.length === 0 ? (
+                      <div
+                        className="col-span-full px-4 py-2 pl-11 text-sm text-muted-foreground"
+                        style={{ gridColumn: "1 / -1" }}
+                      >
+                        No iterations
                       </div>
-                      {scopeHierarchyTotals && (
-                        <div className="flex flex-wrap items-center gap-x-4 text-xs">
-                          <span className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground">Cost</span>
-                            <CurrencyValueWidget
-                              values={
-                                scopeHierarchyTotals.byClient.get(clientId)
-                                  ?.cost ?? []
+                    ) : (
+                      iterations.flatMap(
+                        ({
+                          iteration,
+                          iterationLabel,
+                          projectName,
+                          contractorsWithRates,
+                        }) => {
+                          const iterOpen = expandedIterations.has(iteration.id);
+                          const hasRates =
+                            contractorsWithRates &&
+                            contractorsWithRates.length > 0;
+                          return [
+                            <button
+                              key={`iter-${iteration.id}`}
+                              type="button"
+                              onClick={() =>
+                                setExpandedIterations((prev) => {
+                                  const next = new Set(prev);
+                                  if (iterOpen) next.delete(iteration.id);
+                                  else next.add(iteration.id);
+                                  return next;
+                                })
                               }
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium tabular-nums"
-                            />
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground">Billing</span>
-                            <CurrencyValueWidget
-                              values={
-                                scopeHierarchyTotals.byClient.get(clientId)
-                                  ?.billing ?? []
-                              }
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium tabular-nums"
-                            />
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground">Profit</span>
-                            <CurrencyValueWidget
-                              values={
-                                scopeHierarchyTotals.byClient.get(clientId)
-                                  ?.profit ?? []
-                              }
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium tabular-nums"
-                            />
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="border-t bg-muted/20">
-                      {iterations.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
-                          No iterations
-                        </div>
-                      ) : (
-                        iterations.map(
-                          ({
-                            iteration,
-                            iterationLabel,
-                            projectName,
-                            contractorsWithRates,
-                          }) => {
-                            const pk = projectKey(iteration.id, projectName);
-                            const hasRates =
-                              contractorsWithRates &&
-                              contractorsWithRates.length > 0;
-                            return (
-                              <Collapsible
-                                key={iteration.id}
-                                open={expandedIterations.has(iteration.id)}
-                                onOpenChange={(open) =>
-                                  setExpandedIterations((prev) => {
-                                    const next = new Set(prev);
-                                    if (open) next.add(iteration.id);
-                                    else next.delete(iteration.id);
-                                    return next;
-                                  })
-                                }
-                                className="group"
+                              className="contents group text-left"
+                            >
+                              <span className="flex items-center px-2 py-1.5 w-8 shrink-0 pl-4">
+                                <ChevronRight
+                                  className={`h-3.5 w-3.5 transition-transform ${iterOpen ? "rotate-90" : ""}`}
+                                />
+                              </span>
+                              <span className="flex min-w-0 items-center py-1.5 pl-2 text-sm font-medium hover:bg-muted/30 rounded">
+                                {iterationLabel}
+                              </span>
+                              {scopeHierarchyTotals ? (
+                                (() => {
+                                  const iter =
+                                    scopeHierarchyTotals.byIteration.get(
+                                      iteration.id,
+                                    );
+                                  if (!iter)
+                                    return (
+                                      <span style={{ gridColumn: "3 / 9" }} />
+                                    );
+                                  const hours = iter.hours;
+                                  const avgCost =
+                                    hours > 0
+                                      ? divideCurrencyValues(iter.cost, hours)
+                                      : [];
+                                  const avgBilling =
+                                    hours > 0
+                                      ? divideCurrencyValues(
+                                          iter.billing,
+                                          hours,
+                                        )
+                                      : [];
+                                  return (
+                                    <>
+                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "3 / 4" }}>
+                                        {hours.toFixed(1)}
+                                      </span>
+                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "4 / 5" }}>
+                                        <CurrencyValueWidget
+                                          values={avgCost}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      </span>
+                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "5 / 6" }}>
+                                        <CurrencyValueWidget
+                                          values={avgBilling}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      </span>
+                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "6 / 7" }}>
+                                        <CurrencyValueWidget
+                                          values={iter.cost}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      </span>
+                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "7 / 8" }}>
+                                        <CurrencyValueWidget
+                                          values={iter.billing}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      </span>
+                                      <span className="py-1.5 pr-2 text-xs text-right tabular-nums" style={{ gridColumn: "8 / 9" }}>
+                                        <CurrencyValueWidget
+                                          values={iter.profit}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      </span>
+                                    </>
+                                  );
+                                })()
+                              ) : (
+                                <span style={{ gridColumn: "3 / 9" }} />
+                              )}
+                            </button>,
+                            iterOpen && (
+                              <div
+                                key={`iter-${iteration.id}-sub`}
+                                className="col-span-full grid bg-background border-t border-border/30"
+                                style={{
+                                  gridTemplateColumns: "subgrid",
+                                  gridColumn: "1 / -1",
+                                }}
                               >
-                                <div className="border-b border-border/50 last:border-b-0">
-                                  <CollapsibleTrigger asChild>
-                                    <div className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 pl-7 hover:bg-muted/30">
-                                      <div className="flex items-center gap-2">
-                                        <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-                                        <span className="text-sm font-medium">
-                                          {iterationLabel}
-                                        </span>
-                                      </div>
-                                      {scopeHierarchyTotals && (
-                                        <div className="flex flex-wrap items-center gap-x-4 text-xs pl-5">
-                                          <span className="flex items-center gap-1.5">
-                                            <span className="text-muted-foreground">Cost</span>
-                                            <CurrencyValueWidget
-                                              values={
-                                                scopeHierarchyTotals.byIteration.get(
-                                                  iteration.id,
-                                                )?.cost ?? []
-                                              }
-                                              services={services}
-                                              exchangeService={
-                                                services.exchangeService
-                                              }
-                                              className="font-medium tabular-nums"
-                                            />
+                                <span
+                                  className="col-start-2 col-end-3 py-1 pl-6 text-sm text-muted-foreground"
+                                  style={{ gridColumn: "2 / 3" }}
+                                >
+                                  Project: {projectName}
+                                </span>
+                                {hasRates &&
+                                  cachedReport?.data &&
+                                  (() => {
+                                    const contractorTotals =
+                                      getContractorIterationTotals(
+                                        cachedReport.data,
+                                        iteration.id,
+                                      );
+                                    return (
+                                      <>
+                                        <div className="contents border-t border-border/30">
+                                          <span
+                                            className="w-8 shrink-0"
+                                            style={{ gridColumn: "1 / 2" }}
+                                          />
+                                          <span
+                                            className="py-1.5 pl-2 text-xs font-medium text-muted-foreground"
+                                            style={{ gridColumn: "2 / 3" }}
+                                          >
+                                            Contractor
                                           </span>
-                                          <span className="flex items-center gap-1.5">
-                                            <span className="text-muted-foreground">Billing</span>
-                                            <CurrencyValueWidget
-                                              values={
-                                                scopeHierarchyTotals.byIteration.get(
-                                                  iteration.id,
-                                                )?.billing ?? []
-                                              }
-                                              services={services}
-                                              exchangeService={
-                                                services.exchangeService
-                                              }
-                                              className="font-medium tabular-nums"
-                                            />
+                                          <span
+                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "3 / 4" }}
+                                          >
+                                            Hours
                                           </span>
-                                          <span className="flex items-center gap-1.5">
-                                            <span className="text-muted-foreground">Profit</span>
-                                            <CurrencyValueWidget
-                                              values={
-                                                scopeHierarchyTotals.byIteration.get(
-                                                  iteration.id,
-                                                )?.profit ?? []
-                                              }
-                                              services={services}
-                                              exchangeService={
-                                                services.exchangeService
-                                              }
-                                              className="font-medium tabular-nums"
-                                            />
+                                          <span
+                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "4 / 5" }}
+                                          >
+                                            Cost rate
+                                          </span>
+                                          <span
+                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "5 / 6" }}
+                                          >
+                                            Billing rate
+                                          </span>
+                                          <span
+                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "6 / 7" }}
+                                          >
+                                            Cost
+                                          </span>
+                                          <span
+                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "7 / 8" }}
+                                          >
+                                            Billing
+                                          </span>
+                                          <span
+                                            className="py-1.5 pr-2 text-xs font-medium text-muted-foreground text-right"
+                                            style={{ gridColumn: "8 / 9" }}
+                                          >
+                                            Profit
                                           </span>
                                         </div>
-                                      )}
-                                    </div>
-                                  </CollapsibleTrigger>
-                                  <CollapsibleContent>
-                                    <div className="bg-background px-4 py-2 pl-11 text-sm">
-                                      <div className="text-muted-foreground">
-                                        Project: {projectName}
-                                      </div>
-                                      {hasRates && (
-                                        <Collapsible
-                                          open={expandedProjects.has(pk)}
-                                          onOpenChange={(open) =>
-                                            setExpandedProjects((prev) => {
-                                              const next = new Set(prev);
-                                              if (open) next.add(pk);
-                                              else next.delete(pk);
-                                              return next;
-                                            })
-                                          }
-                                          className="group mt-2"
-                                        >
-                                          <div className="rounded border border-border/50">
-                                            <CollapsibleTrigger asChild>
-                                              <div className="flex cursor-pointer items-center gap-2 px-3 py-1.5 hover:bg-muted/30">
-                                                <ChevronRight className="h-3 w-3 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-                                                <span className="text-xs font-medium text-muted-foreground">
-                                                  Contractors & rates (
-                                                  {contractorsWithRates.length})
-                                                </span>
-                                              </div>
-                                            </CollapsibleTrigger>
-                                            <CollapsibleContent>
-                                              <div className="border-t border-border/50 px-3 py-2">
-                                                <div
-                                                  className="grid gap-x-6 gap-y-2 text-xs"
-                                                  style={{
-                                                    gridTemplateColumns:
-                                                      "1fr auto auto",
-                                                  }}
-                                                >
-                                                  <span className="text-muted-foreground font-medium">
-                                                    Contractor
-                                                  </span>
-                                                  <span className="text-muted-foreground font-medium text-right">
-                                                    Cost
-                                                  </span>
-                                                  <span className="text-muted-foreground font-medium text-right">
-                                                    Billing
-                                                  </span>
-                                                  {contractorsWithRates.map(
-                                                    (r) => (
-                                                      <div
-                                                        key={r.contractorId}
-                                                        className="contents"
-                                                      >
-                                                        <div className="min-w-0">
-                                                          <ContractorWidget
-                                                            contractorId={maybe.of(
-                                                              r.contractorId,
-                                                            )}
-                                                            services={services}
-                                                            layout="full"
-                                                            size="sm"
-                                                            className="min-w-0"
-                                                          />
-                                                        </div>
-                                                        <span className="text-right tabular-nums">
-                                                          {formatRate(
-                                                            r.costRate,
-                                                            r.costCurrency,
-                                                          )}
-                                                        </span>
-                                                        <span className="text-right tabular-nums">
-                                                          {formatRate(
-                                                            r.billingRate,
-                                                            r.billingCurrency,
-                                                          )}
-                                                        </span>
-                                                      </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </CollapsibleContent>
+                                        {contractorTotals.map((row) => (
+                                          <div
+                                            key={row.contractorId}
+                                            className="contents text-xs"
+                                          >
+                                            <span
+                                              className="w-8 shrink-0"
+                                              style={{ gridColumn: "1 / 2" }}
+                                            />
+                                            <span
+                                              className="min-w-0 py-1 pl-2"
+                                              style={{ gridColumn: "2 / 3" }}
+                                            >
+                                              <ContractorWidget
+                                                contractorId={maybe.of(
+                                                  row.contractorId,
+                                                )}
+                                                services={services}
+                                                layout="full"
+                                                size="sm"
+                                                className="min-w-0"
+                                              />
+                                            </span>
+                                            <span
+                                              className="py-1 text-right tabular-nums"
+                                              style={{ gridColumn: "3 / 4" }}
+                                            >
+                                              {row.hours.toFixed(1)}
+                                            </span>
+                                            <span
+                                              className="py-1 text-right tabular-nums"
+                                              style={{ gridColumn: "4 / 5" }}
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.costRate,
+                                                row.costCurrency,
+                                              )}
+                                            </span>
+                                            <span
+                                              className="py-1 text-right tabular-nums"
+                                              style={{ gridColumn: "5 / 6" }}
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.billingRate,
+                                                row.billingCurrency,
+                                              )}
+                                            </span>
+                                            <span
+                                              className="py-1 text-right tabular-nums"
+                                              style={{ gridColumn: "6 / 7" }}
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.totalCost,
+                                                row.costCurrency,
+                                              )}
+                                            </span>
+                                            <span
+                                              className="py-1 text-right tabular-nums"
+                                              style={{ gridColumn: "7 / 8" }}
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.totalBilling,
+                                                row.billingCurrency,
+                                              )}
+                                            </span>
+                                            <span
+                                              className="py-1 pr-2 text-right tabular-nums"
+                                              style={{ gridColumn: "8 / 9" }}
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.totalProfit,
+                                                row.billingCurrency,
+                                              )}
+                                            </span>
                                           </div>
-                                        </Collapsible>
-                                      )}
-                                    </div>
-                                  </CollapsibleContent>
-                                </div>
-                              </Collapsible>
-                            );
-                          },
-                        )
-                      )}
-                    </div>
-                  </CollapsibleContent>
+                                        ))}
+                                      </>
+                                    );
+                                  })()}
+                              </div>
+                            ),
+                          ];
+                        },
+                      )
+                    )}
+                  </div>
+                ),
+              ];
+            })}
+            {/* Footer totals */}
+            {footerTotals != null &&
+              footerTotals.iterationCount > 0 && (
+                <div className="contents border-t bg-muted/30 text-xs font-medium">
+                  <span className="px-2 py-2 w-8" />
+                  <span className="py-2">
+                    Total: {footerTotals.iterationCount} iteration
+                    {footerTotals.iterationCount !== 1 ? "s" : ""}
+                  </span>
+                  <span className="py-2 text-right tabular-nums">
+                    {footerTotals.totalHours.toFixed(1)}
+                  </span>
+                  <span className="py-2 text-right tabular-nums">
+                    <CurrencyValueWidget
+                      values={footerTotals.avgCostRate}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                    />
+                  </span>
+                  <span className="py-2 text-right tabular-nums">
+                    <CurrencyValueWidget
+                      values={footerTotals.avgBillingRate}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                    />
+                  </span>
+                  <span className="py-2 text-right tabular-nums">
+                    <CurrencyValueWidget
+                      values={footerTotals.totalCost}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                    />
+                  </span>
+                  <span className="py-2 text-right tabular-nums">
+                    <CurrencyValueWidget
+                      values={footerTotals.totalBilling}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                    />
+                  </span>
+                  <span className="py-2 pr-2 text-right tabular-nums">
+                    <CurrencyValueWidget
+                      values={footerTotals.totalProfit}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                    />
+                  </span>
                 </div>
-              </Collapsible>
-            ))
-          )}
-        </div>
+              )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

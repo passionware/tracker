@@ -136,6 +136,34 @@ export function budgetToCurrencyValues(
   }));
 }
 
+/** Sum multiple CurrencyValue[] arrays into one (amounts summed by currency). */
+export function sumCurrencyValues(
+  ...arrays: CurrencyValue[][]
+): CurrencyValue[] {
+  const byCurrency: Record<string, number> = {};
+  for (const arr of arrays) {
+    for (const { amount, currency } of arr) {
+      byCurrency[currency] = (byCurrency[currency] ?? 0) + amount;
+    }
+  }
+  return Object.entries(byCurrency).map(([currency, amount]) => ({
+    amount,
+    currency,
+  }));
+}
+
+/** Divide each amount by divisor (e.g. for weighted average rate = total / hours). */
+export function divideCurrencyValues(
+  values: CurrencyValue[],
+  divisor: number,
+): CurrencyValue[] {
+  if (divisor <= 0) return values.map((v) => ({ ...v, amount: 0 }));
+  return values.map((v) => ({
+    ...v,
+    amount: v.amount / divisor,
+  }));
+}
+
 // --- Scope hierarchy and contractor rates (from iteration/range scope + report) ---
 
 export interface ContractorRateInProject {
@@ -144,6 +172,23 @@ export interface ContractorRateInProject {
   costCurrency: string;
   billingRate: number;
   billingCurrency: string;
+}
+
+/** Per-contractor totals and rates for an iteration (from report time entries). */
+export interface ContractorIterationTotals {
+  contractorId: number;
+  costRate: number;
+  costCurrency: string;
+  billingRate: number;
+  billingCurrency: string;
+  /** Weighted average cost rate (totalCost / hours). */
+  avgCostRate: number;
+  /** Weighted average billing rate (totalBilling / hours). */
+  avgBillingRate: number;
+  totalCost: number;
+  totalBilling: number;
+  totalProfit: number;
+  hours: number;
 }
 
 export interface ScopeHierarchyIterationRow {
@@ -274,6 +319,76 @@ export function getContractorRatesForIterationProject(
 }
 
 /**
+ * Per-contractor totals and rates for an iteration: sums time entries by contractor,
+ * returns hourly rates, weighted average rates (total/hours), and totals.
+ */
+export function getContractorIterationTotals(
+  report: GenericReport,
+  iterationId: number,
+): ContractorIterationTotals[] {
+  const byContractor = new Map<
+    number,
+    {
+      costRate: number;
+      costCurrency: string;
+      billingRate: number;
+      billingCurrency: string;
+      totalCost: number;
+      totalBilling: number;
+      hours: number;
+    }
+  >();
+
+  for (const entry of report.timeEntries) {
+    if (getIterationIdFromRoleKey(entry.roleId) !== iterationId) continue;
+    const contractorId = getContractorIdFromRoleKey(entry.roleId);
+    if (contractorId == null) continue;
+    let rate: RoleRate;
+    try {
+      rate = getMatchingRate(report, entry);
+    } catch {
+      continue;
+    }
+    const hours =
+      (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
+    const cost = hours * rate.costRate;
+    const billing = hours * rate.billingRate;
+
+    if (!byContractor.has(contractorId)) {
+      byContractor.set(contractorId, {
+        costRate: rate.costRate,
+        costCurrency: rate.costCurrency,
+        billingRate: rate.billingRate,
+        billingCurrency: rate.billingCurrency,
+        totalCost: 0,
+        totalBilling: 0,
+        hours: 0,
+      });
+    }
+    const row = byContractor.get(contractorId)!;
+    row.totalCost += cost;
+    row.totalBilling += billing;
+    row.hours += hours;
+  }
+
+  return Array.from(byContractor.entries()).map(
+    ([contractorId, row]) => ({
+      contractorId,
+      costRate: row.costRate,
+      costCurrency: row.costCurrency,
+      billingRate: row.billingRate,
+      billingCurrency: row.billingCurrency,
+      avgCostRate: row.hours > 0 ? row.totalCost / row.hours : row.costRate,
+      avgBillingRate: row.hours > 0 ? row.totalBilling / row.hours : row.billingRate,
+      totalCost: row.totalCost,
+      totalBilling: row.totalBilling,
+      totalProfit: row.totalBilling - row.totalCost,
+      hours: row.hours,
+    }),
+  );
+}
+
+/**
  * Build scope hierarchy: clients → iterations (with project name and labels).
  * Used to display scope and to attach contractor rates per project when report is loaded.
  */
@@ -324,11 +439,21 @@ export function projectKey(iterationId: number, projectName: string): string {
 export interface ScopeHierarchyTotals {
   byClient: Map<
     number,
-    { cost: CurrencyValue[]; billing: CurrencyValue[]; profit: CurrencyValue[] }
+    {
+      cost: CurrencyValue[];
+      billing: CurrencyValue[];
+      profit: CurrencyValue[];
+      hours: number;
+    }
   >;
   byIteration: Map<
     number,
-    { cost: CurrencyValue[]; billing: CurrencyValue[]; profit: CurrencyValue[] }
+    {
+      cost: CurrencyValue[];
+      billing: CurrencyValue[];
+      profit: CurrencyValue[];
+      hours: number;
+    }
   >;
 }
 
@@ -353,6 +478,7 @@ export function getScopeHierarchyTotals(
       cost: Record<string, number>;
       billing: Record<string, number>;
       profit: Record<string, number>;
+      hours: number;
     }
   >();
   const byClient = new Map<
@@ -361,15 +487,26 @@ export function getScopeHierarchyTotals(
       cost: Record<string, number>;
       billing: Record<string, number>;
       profit: Record<string, number>;
+      hours: number;
     }
   >();
 
   const ensureMaps = (iterId: number, cid: number) => {
     if (!byIteration.has(iterId)) {
-      byIteration.set(iterId, { cost: {}, billing: {}, profit: {} });
+      byIteration.set(iterId, {
+        cost: {},
+        billing: {},
+        profit: {},
+        hours: 0,
+      });
     }
     if (!byClient.has(cid)) {
-      byClient.set(cid, { cost: {}, billing: {}, profit: {} });
+      byClient.set(cid, {
+        cost: {},
+        billing: {},
+        profit: {},
+        hours: 0,
+      });
     }
   };
 
@@ -392,6 +529,8 @@ export function getScopeHierarchyTotals(
     ensureMaps(iterationId, clientId);
     const iMap = byIteration.get(iterationId)!;
     const cMap = byClient.get(clientId)!;
+    iMap.hours += hours;
+    cMap.hours += hours;
     addToBudget(iMap.cost, cost, matchingRate.costCurrency);
     addToBudget(iMap.billing, billing, matchingRate.billingCurrency);
     addToBudget(iMap.profit, billing, matchingRate.billingCurrency);
@@ -410,6 +549,7 @@ export function getScopeHierarchyTotals(
           cost: budgetToCurrencyValues(rec.cost),
           billing: budgetToCurrencyValues(rec.billing),
           profit: budgetToCurrencyValues(rec.profit),
+          hours: rec.hours,
         },
       ]),
     ),
@@ -420,6 +560,7 @@ export function getScopeHierarchyTotals(
           cost: budgetToCurrencyValues(rec.cost),
           billing: budgetToCurrencyValues(rec.billing),
           profit: budgetToCurrencyValues(rec.profit),
+          hours: rec.hours,
         },
       ]),
     ),
