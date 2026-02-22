@@ -27,7 +27,6 @@ export function createReportGenerationService(
           ]),
       );
 
-      debugger;
       const report = await maybe
         .getOrThrow(
           config.plugins[payload.sourceType],

@@ -32,7 +32,8 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService";
 import { idSpecUtils } from "@/platform/lang/IdSpec";
-import { maybe, rd } from "@passionware/monads";
+import { maybe, mt, rd } from "@passionware/monads";
+import { promiseState } from "@passionware/platform-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -79,8 +80,6 @@ export function TmetricDashboardPage(
   const [cachedReport, setCachedReport] = useState<{
     data: import("@/services/io/_common/GenericReport").GenericReport;
   } | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [integrationStatus, setIntegrationStatus] =
     useState<ContractorsWithIntegrationStatus | null>(null);
   const [selectedIterationIds, setSelectedIterationIds] = useState<number[]>(
@@ -213,7 +212,6 @@ export function TmetricDashboardPage(
 
   const loadCached = useCallback(async () => {
     if (!canLoadOrRefresh) return;
-    setError(null);
     const report = await services.tmetricDashboardService.getCached({
       scope,
       periodStart: start,
@@ -222,23 +220,18 @@ export function TmetricDashboardPage(
     setCachedReport(report ? { data: report } : null);
   }, [services.tmetricDashboardService, scope, start, end, canLoadOrRefresh]);
 
-  const handleRefresh = useCallback(async () => {
-    if (!canLoadOrRefresh) return;
-    setIsRefreshing(true);
-    setError(null);
-    try {
-      const report = await services.tmetricDashboardService.refreshAndCache({
-        scope,
-        periodStart: start,
-        periodEnd: end,
-      });
-      setCachedReport({ data: report });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [services.tmetricDashboardService, scope, start, end, canLoadOrRefresh]);
+  const refreshMutation = promiseState.useMutation(async () => {
+    if (!canLoadOrRefresh) return null;
+    const report = await services.tmetricDashboardService.refreshAndCache({
+      scope,
+      periodStart: start,
+      periodEnd: end,
+    });
+    setCachedReport({ data: report });
+    return report;
+  });
+
+  const isRefreshing = mt.isInProgress(refreshMutation.state);
 
   useEffect(() => {
     if (canLoadOrRefresh) {
@@ -402,7 +395,7 @@ export function TmetricDashboardPage(
             />
 
             <Button
-              onClick={handleRefresh}
+              onClick={refreshMutation.track}
               disabled={isRefreshing || !canLoadOrRefresh}
               variant="default"
             >
@@ -510,15 +503,16 @@ export function TmetricDashboardPage(
               </Card>
             )} */}
 
-          {error && (
+          {mt.isInError(refreshMutation.state) && (
             <Card className="border-destructive">
               <CardContent className="pt-6 text-destructive">
-                {error}
+                {refreshMutation.state.error?.message ??
+                  refreshMutation.state.error}
               </CardContent>
             </Card>
           )}
 
-          {!cachedReport && !error && (
+          {!cachedReport && !mt.isInError(refreshMutation.state) && (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 {timePreset === "unscoped" && !canLoadOrRefresh ? (
