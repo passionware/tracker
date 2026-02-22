@@ -1,5 +1,8 @@
-import { TmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
-import { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
+import {
+  TmetricDashboardCacheApi,
+  TmetricDashboardCacheEntry,
+  TmetricDashboardCacheScope,
+} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import {
   ProjectIteration,
   ProjectIterationApi,
@@ -32,6 +35,8 @@ import {
 } from "./TmetricDashboardService";
 
 const TMETRIC_DASHBOARD_CACHE_QUERY_KEY = ["tmetric_dashboard_cache"] as const;
+
+const NO_CACHED_REPORT_MESSAGE = "No cached report found for scope";
 
 function scopeToKey(scope: TmetricDashboardCacheScope): string {
   const w = (scope.workspaceIds ?? [])
@@ -340,6 +345,108 @@ async function filterContractorsByTmetricIntegration(
   };
 }
 
+/** Fetches from TMetric and creates cache entry. Used by refreshAndCache and by useCached fallback. */
+async function performRefreshAndCache(
+  config: TmetricDashboardServiceConfig,
+  params: {
+    scope: TmetricDashboardCacheScope;
+    periodStart: Date;
+    periodEnd: Date;
+  },
+): Promise<TmetricDashboardCacheEntry> {
+  const { scope, periodStart, periodEnd } = params;
+  const { cacheApi, services } = config;
+
+  const { byIteration } = await resolveContractorsInScope(config, scope);
+  const iterations = await resolveIterationsInScope(config, scope);
+
+  if (iterations.length === 0) {
+    throw new Error(
+      "No iterations in scope. Select at least one iteration.",
+    );
+  }
+
+  const perIterationIntegrated: {
+    iteration: ProjectIteration;
+    integrated: ContractorInScope[];
+    nonIntegrated: ContractorInScope[];
+  }[] = [];
+
+  for (const iter of iterations) {
+    const contractors = byIteration.get(iter.id) ?? [];
+    const { integrated, nonIntegrated } =
+      await filterContractorsByTmetricIntegration(
+        contractors,
+        services.expressionService,
+      );
+    perIterationIntegrated.push({
+      iteration: iter,
+      integrated,
+      nonIntegrated,
+    });
+  }
+
+  const reports = perIterationIntegrated.flatMap(
+    ({ iteration, integrated }) =>
+      integrated.map((c) => ({
+        contractorId: c.contractorId,
+        periodStart: iteration.periodStart,
+        periodEnd: iteration.periodEnd,
+        workspaceId: c.workspaceId,
+        clientId: c.clientId,
+        iterationId: iteration.id,
+        projectId: iteration.projectId,
+      })),
+  );
+
+  const allIntegrated = [
+    ...new Map(
+      perIterationIntegrated.flatMap(({ integrated }) =>
+        integrated.map((c) => [
+          `${c.contractorId}:${c.workspaceId}:${c.clientId}`,
+          c,
+        ]),
+      ),
+    ).values(),
+  ];
+  const totalNonIntegrated = perIterationIntegrated.reduce(
+    (sum, { nonIntegrated }) => sum + nonIntegrated.length,
+    0,
+  );
+
+  if (allIntegrated.length === 0) {
+    if (totalNonIntegrated > 0) {
+      throw new Error(
+        `No contractors with TMetric integration in scope. ${totalNonIntegrated} contractor(s) are not integrated (missing tmetric_user, new_hour_cost_rate, or new_hour_billing_rate).`,
+      );
+    }
+    throw new Error("No contractors in scope. Adjust filters.");
+  }
+
+  const tmetricPlugin = createTmetricPlugin({
+    services: { expressionService: services.expressionService },
+  });
+
+  const { reportData } = await tmetricPlugin.getReport({ reports });
+
+  const prefilledRates = await extractPrefilledRatesFromGenericReport(
+    reportData,
+    services.expressionService,
+  );
+
+  const reportWithRates = applyPrefilledRatesToReport(
+    reportData,
+    prefilledRates,
+  );
+
+  return cacheApi.create({
+    periodStart,
+    periodEnd,
+    scope,
+    data: reportWithRates,
+  });
+}
+
 export function createTmetricDashboardService(
   config: TmetricDashboardServiceConfig,
 ): TmetricDashboardService {
@@ -358,100 +465,15 @@ export function createTmetricDashboardService(
     },
 
     refreshAndCache: async ({ scope, periodStart, periodEnd }) => {
-      const { byIteration } = await resolveContractorsInScope(config, scope);
-      const iterations = await resolveIterationsInScope(config, scope);
-
-      if (iterations.length === 0) {
-        throw new Error(
-          "No iterations in scope. Select at least one iteration.",
-        );
-      }
-
-      const perIterationIntegrated: {
-        iteration: ProjectIteration;
-        integrated: ContractorInScope[];
-        nonIntegrated: ContractorInScope[];
-      }[] = [];
-
-      for (const iter of iterations) {
-        const contractors = byIteration.get(iter.id) ?? [];
-        const { integrated, nonIntegrated } =
-          await filterContractorsByTmetricIntegration(
-            contractors,
-            services.expressionService,
-          );
-        perIterationIntegrated.push({
-          iteration: iter,
-          integrated,
-          nonIntegrated,
-        });
-      }
-
-      const reports = perIterationIntegrated.flatMap(
-        ({ iteration, integrated }) =>
-          integrated.map((c) => ({
-            contractorId: c.contractorId,
-            periodStart: iteration.periodStart,
-            periodEnd: iteration.periodEnd,
-            workspaceId: c.workspaceId,
-            clientId: c.clientId,
-            iterationId: iteration.id,
-            projectId: iteration.projectId,
-          })),
-      );
-
-      const allIntegrated = [
-        ...new Map(
-          perIterationIntegrated.flatMap(({ integrated }) =>
-            integrated.map((c) => [
-              `${c.contractorId}:${c.workspaceId}:${c.clientId}`,
-              c,
-            ]),
-          ),
-        ).values(),
-      ];
-      const totalNonIntegrated = perIterationIntegrated.reduce(
-        (sum, { nonIntegrated }) => sum + nonIntegrated.length,
-        0,
-      );
-
-      if (allIntegrated.length === 0) {
-        if (totalNonIntegrated > 0) {
-          throw new Error(
-            `No contractors with TMetric integration in scope. ${totalNonIntegrated} contractor(s) are not integrated (missing tmetric_user, new_hour_cost_rate, or new_hour_billing_rate).`,
-          );
-        }
-        throw new Error("No contractors in scope. Adjust filters.");
-      }
-
-      const tmetricPlugin = createTmetricPlugin({
-        services: { expressionService: services.expressionService },
-      });
-
-      const { reportData } = await tmetricPlugin.getReport({ reports });
-
-      const prefilledRates = await extractPrefilledRatesFromGenericReport(
-        reportData,
-        services.expressionService,
-      );
-
-      const reportWithRates = applyPrefilledRatesToReport(
-        reportData,
-        prefilledRates,
-      );
-
-      const result = await cacheApi.create({
+      const result = await performRefreshAndCache(config, {
+        scope,
         periodStart,
         periodEnd,
-        scope,
-        data: reportWithRates,
       });
-
       client.setQueryData(
         getCacheQueryKey(scope, periodStart, periodEnd),
         result,
       );
-
       return result;
     },
 
@@ -469,8 +491,27 @@ export function createTmetricDashboardService(
         useQuery(
           {
             queryKey: getCacheQueryKey(scope, periodStart, periodEnd),
-            queryFn: async () =>
-              cacheApi.getLatestForScope(scope, periodStart!, periodEnd!),
+            queryFn: async () => {
+              try {
+                return await cacheApi.getLatestForScope(
+                  scope,
+                  periodStart!,
+                  periodEnd!,
+                );
+              } catch (e) {
+                if (
+                  e instanceof Error &&
+                  e.message.includes(NO_CACHED_REPORT_MESSAGE)
+                ) {
+                  return performRefreshAndCache(config, {
+                    scope,
+                    periodStart: periodStart!,
+                    periodEnd: periodEnd!,
+                  });
+                }
+                throw e;
+              }
+            },
             enabled,
           },
           client,
