@@ -1,5 +1,8 @@
-import { GenericReport } from "@/services/io/_common/GenericReport";
-import { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
+import {
+  TmetricDashboardCacheEntry,
+  TmetricDashboardCacheScope,
+} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
+import type { RemoteData } from "@passionware/monads";
 
 export interface ContractorInScope {
   contractorId: number;
@@ -44,16 +47,17 @@ export interface TmetricDashboardService {
     scope: TmetricDashboardCacheScope;
     periodStart: Date;
     periodEnd: Date;
-  }) => Promise<GenericReport>;
+  }) => Promise<TmetricDashboardCacheEntry>;
 
   /**
-   * Gets cached data for the given scope and period, if any.
+   * Hook for cached report. Fetches in the background when scope and period are set.
+   * Refetches automatically when cache is invalidated (e.g. after refreshAndCache).
    */
-  getCached: (params: {
+  useCached: (params: {
     scope: TmetricDashboardCacheScope;
-    periodStart: Date;
-    periodEnd: Date;
-  }) => Promise<GenericReport | null>;
+    periodStart: Date | null;
+    periodEnd: Date | null;
+  }) => RemoteData<TmetricDashboardCacheEntry>;
 }
 
 export interface WithTmetricDashboardService {

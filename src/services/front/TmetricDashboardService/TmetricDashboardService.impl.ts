@@ -1,6 +1,9 @@
 import { TmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { ProjectIterationApi } from "@/api/project-iteration/project-iteration.api";
+import { maybe } from "@passionware/monads";
+import { QueryClient, useQuery } from "@tanstack/react-query";
+import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery";
 import { projectQueryUtils } from "@/api/project/project.api";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api";
 import { CalendarDate } from "@internationalized/date";
@@ -25,11 +28,40 @@ import {
   TmetricDashboardService,
 } from "./TmetricDashboardService";
 
+const TMETRIC_DASHBOARD_CACHE_QUERY_KEY = ["tmetric_dashboard_cache"] as const;
+
+function scopeToKey(scope: TmetricDashboardCacheScope): string {
+  const w = (scope.workspaceIds ?? []).slice().sort((a, b) => a - b).join(",");
+  const c = (scope.clientIds ?? []).slice().sort((a, b) => a - b).join(",");
+  const p =
+    scope.projectIterationIds === "all_active"
+      ? "all_active"
+      : (scope.projectIterationIds ?? [])
+          .slice()
+          .sort((a, b) => a - b)
+          .join(",");
+  return `w:${w}|c:${c}|p:${p}`;
+}
+
+function getCacheQueryKey(
+  scope: TmetricDashboardCacheScope,
+  periodStart: Date,
+  periodEnd: Date,
+): readonly [string, string, string, string] {
+  return [
+    ...TMETRIC_DASHBOARD_CACHE_QUERY_KEY,
+    scopeToKey(scope),
+    periodStart.toISOString().slice(0, 10),
+    periodEnd.toISOString().slice(0, 10),
+  ];
+}
+
 export type TmetricDashboardServiceConfig = WithServices<
   [WithProjectService, WithProjectIterationService, WithExpressionService]
 > & {
   cacheApi: TmetricDashboardCacheApi;
   projectIterationApi: ProjectIterationApi;
+  client: QueryClient;
 };
 
 function applyPrefilledRatesToReport(
@@ -226,7 +258,7 @@ async function filterContractorsByTmetricIntegration(
 export function createTmetricDashboardService(
   config: TmetricDashboardServiceConfig,
 ): TmetricDashboardService {
-  const { cacheApi, services } = config;
+  const { cacheApi, client, services } = config;
 
   return {
     resolveContractorsInScope: (scope) =>
@@ -299,23 +331,42 @@ export function createTmetricDashboardService(
         prefilledRates,
       );
 
-      await cacheApi.create({
+      const result = await cacheApi.create({
         periodStart,
         periodEnd,
         scope,
         data: reportWithRates,
       });
 
-      return reportWithRates;
+      client.setQueryData(
+        getCacheQueryKey(scope, periodStart, periodEnd),
+        result,
+      );
+
+      return result;
     },
 
-    getCached: async ({ scope, periodStart, periodEnd }) => {
-      const entry = await cacheApi.getLatestForScope(
-        scope,
-        periodStart,
-        periodEnd,
+    useCached: ({ scope, periodStart, periodEnd }) => {
+      const enabled =
+        periodStart !== null &&
+        periodEnd !== null &&
+        periodStart.toISOString() <= periodEnd.toISOString() &&
+        scope.projectIterationIds?.length > 0;
+      const query = maybe.of(
+        enabled ? { scope, periodStart, periodEnd } : null,
       );
-      return entry?.data ?? null;
+      return ensureIdleQuery(
+        query,
+        useQuery(
+          {
+            queryKey: getCacheQueryKey(scope, periodStart!, periodEnd!),
+            queryFn: async () =>
+              cacheApi.getLatestForScope(scope, periodStart!, periodEnd!),
+            enabled,
+          },
+          client,
+        ),
+      );
     },
   };
 }

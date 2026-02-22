@@ -1,4 +1,10 @@
-import { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api";
+import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api";
+import { projectQueryUtils } from "@/api/project/project.api";
+import {
+  dashboardQueryUtils,
+  TmetricDashboardCacheScope,
+} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,27 +21,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ProjectIteration,
-  projectIterationQueryUtils,
-} from "@/api/project-iteration/project-iteration.api";
-import { projectQueryUtils } from "@/api/project/project.api";
-import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WithFrontServices } from "@/core/frontServices";
-import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
-import type { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
+import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
+import type { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
+import { idSpecUtils } from "@/platform/lang/IdSpec";
+import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { InfiniteTimeline } from "@/platform/passionware-timeline";
+import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService";
-import { idSpecUtils } from "@/platform/lang/IdSpec";
+import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { format } from "date-fns";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3,
   CalendarRange,
@@ -45,13 +49,11 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { contractorQueryUtils } from "@/api/contractor/contractor.api";
-import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { ContractorWithIterationBreakdown } from "./ContractorWithIterationBreakdown";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
-import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
+import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import {
   buildTimelineFromReport,
   getContractorIterationBreakdown,
@@ -76,15 +78,36 @@ export function TmetricDashboardPage(
   )
     ? "cube"
     : "overview";
-  const [timePreset, setTimePreset] = useState<TimePreset>("today");
-  const [cachedReport, setCachedReport] = useState<{
-    data: import("@/services/io/_common/GenericReport").GenericReport;
-  } | null>(null);
+
+  const queryParamsService = services.queryParamsService.forEntity("dashboard");
+  const rawQueryParams = queryParamsService.useQueryParams();
+  const dashboardQuery = useMemo(
+    () => dashboardQueryUtils.ensureDefault(rawQueryParams),
+    [rawQueryParams],
+  );
+  const timePreset = dashboardQuery.timePreset;
+  const selectedIterationIds = dashboardQuery.iterationIds;
+  const setTimePreset = useCallback(
+    (value: TimePreset) => {
+      queryParamsService.setQueryParams({
+        ...dashboardQuery,
+        timePreset: value,
+      });
+    },
+    [queryParamsService, dashboardQuery],
+  );
+  const setSelectedIterationIds = useCallback(
+    (ids: number[]) => {
+      queryParamsService.setQueryParams({
+        ...dashboardQuery,
+        iterationIds: ids,
+      });
+    },
+    [queryParamsService, dashboardQuery],
+  );
+
   const [integrationStatus, setIntegrationStatus] =
     useState<ContractorsWithIntegrationStatus | null>(null);
-  const [selectedIterationIds, setSelectedIterationIds] = useState<number[]>(
-    [],
-  );
 
   const projectsQuery = projectQueryUtils.withEnsureDefault({
     workspaceId,
@@ -127,7 +150,10 @@ export function TmetricDashboardPage(
   const iterationsData = services.projectIterationService.useProjectIterations(
     maybe.of(iterationsQuery),
   );
-  const allIterations = rd.tryMap(iterationsData, (x) => x) ?? [];
+  const allIterations = useMemo(
+    () => rd.tryMap(iterationsData, (x) => x) ?? [],
+    [iterationsData],
+  );
   const iterationsActiveFirst = useMemo(
     () =>
       [...allIterations].sort((a, b) => {
@@ -154,6 +180,20 @@ export function TmetricDashboardPage(
     if (selectedIterationIds.length > 0) return selectedIterations;
     return allIterations.filter((i) => i.status === "active");
   }, [selectedIterationIds, selectedIterations, allIterations]);
+
+  // Stable key for scope so callbacks/effects don’t re-run when array refs change
+  const scopeIterationIdsKey = useMemo(
+    () =>
+      (
+        selectedIterationIds.length > 0
+          ? [...selectedIterationIds].sort((a, b) => a - b)
+          : allIterations
+              .filter((i) => i.status === "active")
+              .map((i) => i.id)
+              .sort((a, b) => a - b)
+      ).join(","),
+    [selectedIterationIds, allIterations],
+  );
 
   const iterationRange = useMemo(
     () => getDateRangeFromIterations(iterationsForScope),
@@ -188,17 +228,18 @@ export function TmetricDashboardPage(
   }, [timePreset, iterationRange]);
 
   const scope: TmetricDashboardCacheScope = useMemo(() => {
-    const s: TmetricDashboardCacheScope = {};
+    const s: TmetricDashboardCacheScope = { projectIterationIds: [] };
     if (maybe.isPresent(workspaceId) && !idSpecUtils.isAll(workspaceId)) {
       s.workspaceIds = [workspaceId];
     }
     if (maybe.isPresent(clientId) && !idSpecUtils.isAll(clientId)) {
       s.clientIds = [clientId];
     }
-    // Always resolved IDs for cache (never "all_active"); iterationsForScope is selected or all active.
-    s.projectIterationIds = iterationsForScope.map((i) => i.id);
+    s.projectIterationIds = scopeIterationIdsKey
+      ? scopeIterationIdsKey.split(",").map(Number)
+      : [];
     return s;
-  }, [workspaceId, clientId, iterationsForScope]);
+  }, [workspaceId, clientId, scopeIterationIdsKey]);
 
   const loadIntegrationStatus = useCallback(async () => {
     const status =
@@ -210,140 +251,135 @@ export function TmetricDashboardPage(
 
   const canLoadOrRefresh = start !== null && end !== null;
 
-  const loadCached = useCallback(async () => {
-    if (!canLoadOrRefresh) return;
-    const report = await services.tmetricDashboardService.getCached({
-      scope,
-      periodStart: start,
-      periodEnd: end,
-    });
-    setCachedReport(report ? { data: report } : null);
-  }, [services.tmetricDashboardService, scope, start, end, canLoadOrRefresh]);
+  const cachedReportQuery = services.tmetricDashboardService.useCached({
+    scope,
+    periodStart: start,
+    periodEnd: end,
+  });
 
   const refreshMutation = promiseState.useMutation(async () => {
     if (!canLoadOrRefresh) return null;
-    const report = await services.tmetricDashboardService.refreshAndCache({
+    return services.tmetricDashboardService.refreshAndCache({
       scope,
       periodStart: start,
       periodEnd: end,
     });
-    setCachedReport({ data: report });
-    return report;
   });
 
-  const isRefreshing = mt.isInProgress(refreshMutation.state);
+  const handleRefresh = useCallback(() => {
+    if (!canLoadOrRefresh) return;
+    refreshMutation.track(undefined).catch(() => {});
+  }, [refreshMutation, canLoadOrRefresh]);
 
-  useEffect(() => {
-    if (canLoadOrRefresh) {
-      loadCached();
-    } else if (timePreset === "unscoped") {
-      setCachedReport(null);
-    }
-  }, [loadCached, canLoadOrRefresh, timePreset]);
+  const isRefreshing = mt.isInProgress(refreshMutation.state);
 
   useEffect(() => {
     loadIntegrationStatus();
   }, [loadIntegrationStatus]);
 
-  const contractorsSummary = cachedReport
-    ? services.generatedReportViewService.getContractorsSummaryView({
-        id: 0,
-        createdAt: new Date(),
-        projectIterationId: 0,
-        data: cachedReport.data,
-        originalData: null,
-      })
-    : null;
+  const contractorsSummary = rd.useMemoMap(cachedReportQuery, (cachedReport) =>
+    services.generatedReportViewService.getContractorsSummaryView({
+      id: 0,
+      createdAt: new Date(),
+      projectIterationId: 0,
+      data: cachedReport.data,
+      originalData: null,
+    }),
+  );
 
-  const basicInfo = cachedReport
-    ? services.generatedReportViewService.getBasicInformationView({
-        id: 0,
-        createdAt: new Date(),
-        projectIterationId: 0,
-        data: cachedReport.data,
-        originalData: null,
-      })
-    : null;
+  const basicInfo = rd.useMemoMap(cachedReportQuery, (cachedReport) =>
+    services.generatedReportViewService.getBasicInformationView({
+      id: 0,
+      createdAt: new Date(),
+      projectIterationId: 0,
+      data: cachedReport.data,
+      originalData: null,
+    }),
+  );
 
-  const reportAsSource = cachedReport
-    ? {
-        id: 0,
-        createdAt: new Date(),
-        projectIterationId: 0,
-        data: cachedReport.data,
-        originalData: null,
-      }
-    : null;
+  const reportAsSource = rd.useMemoMap(cachedReportQuery, (cachedReport) => ({
+    id: 0,
+    createdAt: new Date(),
+    projectIterationId: 0,
+    data: cachedReport.data,
+    originalData: null,
+  }));
 
-  const contractorIdsInReport = useMemo(() => {
-    if (!cachedReport) return [];
-    return [
-      ...new Set(cachedReport.data.timeEntries.map((e) => e.contractorId)),
-    ];
-  }, [cachedReport]);
+  const contractorIdsInReport = rd.useMemoMap(
+    cachedReportQuery,
+    (cachedReport) => {
+      return [
+        ...new Set(cachedReport.data.timeEntries.map((e) => e.contractorId)),
+      ];
+    },
+  );
 
   const contractorsQuery = services.contractorService.useContractors(
-    contractorQueryUtils.getBuilder().build((q) =>
-      contractorIdsInReport.length
-        ? [
-            q.withFilter("id", {
-              operator: "oneOf",
-              value: contractorIdsInReport,
-            }),
-          ]
-        : [],
+    rd.tryMap(contractorIdsInReport, (ids) =>
+      contractorQueryUtils.getBuilder().build((q) =>
+        ids.length
+          ? [
+              q.withFilter("id", {
+                operator: "oneOf",
+                value: ids,
+              }),
+            ]
+          : [],
+      ),
     ),
   );
 
-  const contractorNameMap = useMemo(() => {
-    const map = new Map<number, string>();
-    rd.tryMap(contractorsQuery, (contractors) => {
-      contractors.forEach((c) => map.set(c.id, c.fullName));
-    });
-    contractorIdsInReport.forEach((id) => {
-      if (!map.has(id)) map.set(id, `Contractor ${id}`);
-    });
-    return map;
-  }, [contractorsQuery, contractorIdsInReport]);
+  const contractorNameMap = rd.useMemoMap(contractorsQuery, (contractors) => {
+    return new Map(contractors.map((c) => [c.id, c.fullName]));
+  });
 
-  const iterationsForBreakdown = useMemo((): ProjectIteration[] => {
-    if (!cachedReport) return [];
-    if (start && end) {
+  const iterationsForBreakdown = rd.useMemoMap(
+    cachedReportQuery,
+    (cachedReport) => {
+      if (!cachedReport || !start || !end) return [];
       return iterationsOverlappingRange(iterationsForScope, start, end);
-    }
-    return [];
-  }, [cachedReport, iterationsForScope, start, end]);
+    },
+  );
 
-  const contractorIterationBreakdown = useMemo(() => {
-    if (!cachedReport || !start || !end) return null;
-    return getContractorIterationBreakdown(
-      { data: cachedReport.data },
-      iterationsForBreakdown,
-      projectsMap,
-      start,
-      end,
-    );
-  }, [cachedReport, iterationsForBreakdown, projectsMap, start, end]);
+  const contractorIterationBreakdown = rd.useMemoMap(
+    rd.combine({ cachedReportQuery, iterationsForBreakdown }),
+    ({ cachedReportQuery, iterationsForBreakdown }) => {
+      if (!cachedReportQuery || !start || !end) return null;
+      return getContractorIterationBreakdown(
+        { data: cachedReportQuery.data },
+        iterationsForBreakdown,
+        projectsMap,
+        start,
+        end,
+      );
+    },
+  );
 
-  const iterationSummary = useMemo(() => {
-    if (!cachedReport || !start || !end) return null;
-    return getIterationSummary(
-      { data: cachedReport.data },
-      iterationsForBreakdown,
-      projectsMap,
-      start,
-      end,
-    );
-  }, [cachedReport, iterationsForBreakdown, projectsMap, start, end]);
+  const iterationSummary = rd.useMemoMap(
+    rd.combine({ cachedReportQuery, iterationsForBreakdown }),
+    ({ cachedReportQuery, iterationsForBreakdown }) => {
+      if (!cachedReportQuery || !start || !end) return null;
+      return getIterationSummary(
+        { data: cachedReportQuery.data },
+        iterationsForBreakdown,
+        projectsMap,
+        start,
+        end,
+      );
+    },
+  );
 
-  const { timelineLanes, timelineItems } = useMemo(() => {
-    if (!cachedReport) return { timelineLanes: [], timelineItems: [] };
-    const { lanes, items } = buildTimelineFromReport(
-      { data: cachedReport.data },
-      contractorNameMap,
-    );
-    return { timelineLanes: lanes, timelineItems: items };
-  }, [cachedReport, contractorNameMap]);
+  const timeline = rd.useMemoMap(
+    rd.combine({ cachedReportQuery, contractorNameMap }),
+    ({ cachedReportQuery, contractorNameMap }) => {
+      if (!cachedReportQuery) return { timelineLanes: [], timelineItems: [] };
+      const { lanes, items } = buildTimelineFromReport(
+        { data: cachedReportQuery.data },
+        contractorNameMap,
+      );
+      return { timelineLanes: lanes, timelineItems: items };
+    },
+  );
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -395,7 +431,7 @@ export function TmetricDashboardPage(
             />
 
             <Button
-              onClick={refreshMutation.track}
+              onClick={handleRefresh}
               disabled={isRefreshing || !canLoadOrRefresh}
               variant="default"
             >
@@ -404,63 +440,150 @@ export function TmetricDashboardPage(
               />
               Refresh from TMetric
             </Button>
-            <Button
-              variant="outline"
-              onClick={loadCached}
-              disabled={!canLoadOrRefresh}
-            >
-              Load cached
-            </Button>
           </div>
         </div>
 
-        {cachedReport && (
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => {
-              const tab = v as "overview" | "cube";
-              const routing = services.routingService
-                .forWorkspace(workspaceId)
-                .forClient(clientId);
-              if (tab === "cube") {
-                navigate(routing.tmetricDashboardCube());
-              } else {
-                navigate(routing.tmetricDashboard());
-              }
-            }}
-          >
-            <TabsList>
-              <TabsTrigger value="overview">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="cube">
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Cube Explorer
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        )}
+        {rd
+          .journey(cachedReportQuery)
+          .wait(() => null)
+          .catch(() => null)
+          .map((data) =>
+            data ? (
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => {
+                  const tab = v as "overview" | "cube";
+                  const routing = services.routingService
+                    .forWorkspace(workspaceId)
+                    .forClient(clientId);
+                  if (tab === "cube") {
+                    navigate(routing.tmetricDashboardCube());
+                  } else {
+                    navigate(routing.tmetricDashboard());
+                  }
+                }}
+              >
+                <TabsList>
+                  <TabsTrigger value="overview">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="cube">
+                    <Grid3X3 className="h-4 w-4 mr-2" />
+                    Cube Explorer
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null,
+          )}
       </div>
 
       {/* Tab content */}
-      {activeTab === "cube" && reportAsSource ? (
-        <div className="flex-1 min-h-0 mt-4">
-          <TmetricCubeExplorer
-            report={reportAsSource}
-            services={services}
-            className="w-full h-full min-h-0"
-          />
-        </div>
+      {activeTab === "cube" ? (
+        rd
+          .journey(reportAsSource)
+          .wait(() => (
+            <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+              <div className="w-full max-w-md space-y-4 p-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-8 w-3/4" />
+              </div>
+            </div>
+          ))
+          .catch((error) => (
+            <div className="flex-1 min-h-0 mt-4 p-4">
+              <Card className="border-destructive">
+                <CardContent className="pt-6 text-destructive">
+                  <ErrorMessageRenderer error={error} />
+                </CardContent>
+              </Card>
+            </div>
+          ))
+          .map((report) => (
+            <div className="flex-1 min-h-0 mt-4" key="cube">
+              <TmetricCubeExplorer
+                report={report}
+                services={services}
+                className="w-full h-full min-h-0"
+              />
+            </div>
+          ))
       ) : (
         <div className="flex-1 overflow-auto space-y-6 mt-4">
-          <TmetricScopeHierarchyPanel
-            services={services}
-            projectsData={projectsData}
-            iterationsForScope={iterationsForScope}
-            projectsMap={projectsMap}
-            cachedReport={cachedReport}
-          />
+          {rd
+            .journey(cachedReportQuery)
+            .wait(() => (
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-full mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            ))
+            .catch(() => null)
+            .map((reportData) => (
+              <TmetricScopeHierarchyPanel
+                key="scope-panel"
+                services={services}
+                projectsData={projectsData}
+                iterationsForScope={iterationsForScope}
+                projectsMap={projectsMap}
+                cachedReport={reportData}
+              />
+            ))}
+
+          {rd
+            .journey(cachedReportQuery)
+            .wait(() => (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Skeleton className="h-16 w-16 rounded-full mb-4" />
+                  <Skeleton className="h-5 w-64" />
+                  <Skeleton className="h-4 w-48 mt-2" />
+                </CardContent>
+              </Card>
+            ))
+            .catch(() => null)
+            .map((data) =>
+              !data && !mt.isInError(refreshMutation.state) ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    {timePreset === "unscoped" && !canLoadOrRefresh ? (
+                      <>
+                        <CalendarRange className="mb-4 h-16 w-16 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          No iterations in scope. Add active iterations or
+                          select specific ones.
+                        </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Iterations are chosen above; by default all active
+                          iterations.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <BarChart3 className="mb-4 h-16 w-16 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          No cached data. Click &quot;Refresh from TMetric&quot;
+                          to fetch data.
+                        </p>
+                        {start && end && (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {format(start, "dd MMM yyyy")} –{" "}
+                            {format(end, "dd MMM yyyy")}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : null,
+            )}
 
           {/* {integrationStatus &&
             (integrationStatus.integratedContractorIds.length > 0 ||
@@ -512,222 +635,167 @@ export function TmetricDashboardPage(
             </Card>
           )}
 
-          {!cachedReport && !mt.isInError(refreshMutation.state) && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                {timePreset === "unscoped" && !canLoadOrRefresh ? (
-                  <>
-                    <CalendarRange className="mb-4 h-16 w-16 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      No iterations in scope. Add active iterations or select
-                      specific ones.
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Iterations are chosen above; by default all active
-                      iterations.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <BarChart3 className="mb-4 h-16 w-16 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      No cached data. Click &quot;Refresh from TMetric&quot; to
-                      fetch data.
-                    </p>
-                    {start && end && (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {format(start, "dd MMM yyyy")} –{" "}
-                        {format(end, "dd MMM yyyy")}
-                      </p>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {cachedReport && basicInfo && (
-            <div
-              className="grid gap-4"
-              style={{
-                gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
-              }}
-            >
-              {/* Stats card: time entries + totals */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Time entries & totals
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {basicInfo.statistics.timeEntriesCount}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        time entries
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          Total cost
-                        </p>
-                        <CurrencyValueWidget
-                          values={basicInfo.statistics.totalCostBudget}
-                          services={services}
-                          exchangeService={services.exchangeService}
-                          className="text-lg font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          Total billing
-                        </p>
-                        <CurrencyValueWidget
-                          values={basicInfo.statistics.totalBillingBudget}
-                          services={services}
-                          exchangeService={services.exchangeService}
-                          className="text-lg font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Profit</p>
-                        <CurrencyValueWidget
-                          values={basicInfo.statistics.totalEarningsBudget}
-                          services={services}
-                          exchangeService={services.exchangeService}
-                          className="text-lg font-semibold"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* By iteration */}
-              {iterationSummary && iterationSummary.length > 0 ? (
+          {rd
+            .journey(
+              rd.combine({
+                cachedReportQuery,
+                basicInfo,
+                contractorsSummary,
+                iterationSummary,
+                contractorIterationBreakdown,
+                contractorNameMap,
+                timeline,
+              }),
+            )
+            .wait(() => (
+              <div
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
+                }}
+              >
                 <Card>
-                  <CardHeader>
-                    <CardTitle>By iteration</CardTitle>
-                    <CardDescription>
-                      Cost, billing, and profit per iteration
-                    </CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Skeleton className="h-4 w-32" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {iterationSummary.map((iter) => (
-                        <div
-                          key={iter.iterationId}
-                          className="rounded-lg border p-3"
-                        >
-                          <p className="text-sm font-medium">
-                            {iter.iterationLabel}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">
-                                Cost:{" "}
-                              </span>
-                              <CurrencyValueWidget
-                                values={iter.cost}
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="font-medium"
-                              />
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">
-                                Billing:{" "}
-                              </span>
-                              <CurrencyValueWidget
-                                values={iter.billing}
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="font-medium"
-                              />
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">
-                                Profit:{" "}
-                              </span>
-                              <Badge variant="secondary">
-                                <CurrencyValueWidget
-                                  values={iter.profit}
-                                  services={services}
-                                  exchangeService={services.exchangeService}
-                                  className="text-inherit"
-                                />
-                              </Badge>
-                            </div>
-                            <span className="text-muted-foreground">
-                              {iter.hours.toFixed(1)}h · {iter.entries} entries
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                  <CardContent className="space-y-4">
+                    <Skeleton className="h-8 w-24" />
+                    <div className="grid grid-cols-3 gap-4 pt-4">
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
                     </div>
                   </CardContent>
                 </Card>
-              ) : contractorsSummary &&
-                contractorsSummary.contractors.length > 0 &&
-                !(
-                  contractorIterationBreakdown &&
-                  contractorIterationBreakdown.length > 0
-                ) ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>By contractor</CardTitle>
-                    <CardDescription>
-                      Cost, billing, and profit per contractor (integrated only)
-                    </CardDescription>
+                    <Skeleton className="h-5 w-28" />
+                    <Skeleton className="h-4 w-full mt-1" />
                   </CardHeader>
                   <CardContent>
-                    {(() => {
-                      const integratedIds = new Set(
-                        integrationStatus?.integratedContractorIds ?? [],
-                      );
-                      const displayedContractors =
-                        integratedIds.size > 0
-                          ? contractorsSummary.contractors.filter((c) =>
-                              integratedIds.has(c.contractorId),
-                            )
-                          : contractorsSummary.contractors;
-                      const excludedCount =
-                        contractorsSummary.contractors.length -
-                        displayedContractors.length;
-
-                      return (
-                        <>
-                          {excludedCount > 0 && (
-                            <p className="mb-4 text-sm text-muted-foreground">
-                              {excludedCount} contractor(s) in cached data are
-                              no longer integrated and excluded from this view.
-                              Totals above include their data.
+                    <Skeleton className="h-32 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            ))
+            .catch((error) => (
+              <Card className="border-destructive">
+                <CardContent className="pt-6 text-destructive">
+                  <ErrorMessageRenderer error={error} />
+                </CardContent>
+              </Card>
+            ))
+            .map(
+              ({
+                cachedReportQuery: _report,
+                basicInfo: resolvedBasicInfo,
+                contractorsSummary: resolvedContractorsSummary,
+                iterationSummary: resolvedIterationSummary,
+                contractorIterationBreakdown:
+                  resolvedContractorIterationBreakdown,
+                contractorNameMap: resolvedContractorNameMap,
+                timeline: resolvedTimeline,
+              }) =>
+                !_report ? null : (
+                  <div
+                    className="grid gap-4"
+                    style={{
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(480px, 1fr))",
+                    }}
+                  >
+                    {/* Stats card: time entries + totals */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Time entries & totals
+                        </CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="text-2xl font-bold">
+                              {resolvedBasicInfo.statistics.timeEntriesCount}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              time entries
                             </p>
-                          )}
-                          <div className="space-y-4">
-                            {displayedContractors.map((c) => (
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Total cost
+                              </p>
+                              <CurrencyValueWidget
+                                values={
+                                  resolvedBasicInfo.statistics.totalCostBudget
+                                }
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="text-lg font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Total billing
+                              </p>
+                              <CurrencyValueWidget
+                                values={
+                                  resolvedBasicInfo.statistics
+                                    .totalBillingBudget
+                                }
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="text-lg font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Profit
+                              </p>
+                              <CurrencyValueWidget
+                                values={
+                                  resolvedBasicInfo.statistics
+                                    .totalEarningsBudget
+                                }
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="text-lg font-semibold"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* By iteration */}
+                    {resolvedIterationSummary &&
+                    resolvedIterationSummary.length > 0 ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>By iteration</CardTitle>
+                          <CardDescription>
+                            Cost, billing, and profit per iteration
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {resolvedIterationSummary.map((iter) => (
                               <div
-                                key={c.contractorId}
-                                className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+                                key={iter.iterationId}
+                                className="rounded-lg border p-3"
                               >
-                                <ContractorWidget
-                                  contractorId={maybe.of(c.contractorId)}
-                                  services={services}
-                                  layout="full"
-                                  size="sm"
-                                />
-                                <div className="flex flex-wrap gap-4 text-sm">
+                                <p className="text-sm font-medium">
+                                  {iter.iterationLabel}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-4 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">
                                       Cost:{" "}
                                     </span>
                                     <CurrencyValueWidget
-                                      values={c.costBudget}
+                                      values={iter.cost}
                                       services={services}
                                       exchangeService={services.exchangeService}
                                       className="font-medium"
@@ -738,7 +806,7 @@ export function TmetricDashboardPage(
                                       Billing:{" "}
                                     </span>
                                     <CurrencyValueWidget
-                                      values={c.billingBudget}
+                                      values={iter.billing}
                                       services={services}
                                       exchangeService={services.exchangeService}
                                       className="font-medium"
@@ -750,7 +818,7 @@ export function TmetricDashboardPage(
                                     </span>
                                     <Badge variant="secondary">
                                       <CurrencyValueWidget
-                                        values={c.earningsBudget}
+                                        values={iter.profit}
                                         services={services}
                                         exchangeService={
                                           services.exchangeService
@@ -760,143 +828,250 @@ export function TmetricDashboardPage(
                                     </Badge>
                                   </div>
                                   <span className="text-muted-foreground">
-                                    {c.totalHours.toFixed(1)}h ·{" "}
-                                    {c.entriesCount} entries
+                                    {iter.hours.toFixed(1)}h · {iter.entries}{" "}
+                                    entries
                                   </span>
                                 </div>
                               </div>
                             ))}
                           </div>
-                        </>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              ) : !(
-                  contractorIterationBreakdown &&
-                  contractorIterationBreakdown.length > 0
-                ) ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>By contractor</CardTitle>
-                    <CardDescription>
-                      No contractors in cached data
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              ) : null}
+                        </CardContent>
+                      </Card>
+                    ) : resolvedContractorsSummary &&
+                      resolvedContractorsSummary.contractors.length > 0 &&
+                      !(
+                        resolvedContractorIterationBreakdown &&
+                        resolvedContractorIterationBreakdown.length > 0
+                      ) ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>By contractor</CardTitle>
+                          <CardDescription>
+                            Cost, billing, and profit per contractor (integrated
+                            only)
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          {(() => {
+                            const integratedIds = new Set(
+                              integrationStatus?.integratedContractorIds ?? [],
+                            );
+                            const displayedContractors =
+                              integratedIds.size > 0
+                                ? resolvedContractorsSummary.contractors.filter(
+                                    (c) => integratedIds.has(c.contractorId),
+                                  )
+                                : resolvedContractorsSummary.contractors;
+                            const excludedCount =
+                              resolvedContractorsSummary.contractors.length -
+                              displayedContractors.length;
 
-              {iterationSummary && iterationSummary.length > 0 && (
-                <TmetricIterationBarChart
-                  iterationSummary={iterationSummary}
-                  services={services}
-                />
-              )}
-              {contractorIterationBreakdown &&
-                contractorIterationBreakdown.length > 0 && (
-                  <TmetricHoursPieChart
-                    contractorBreakdown={contractorIterationBreakdown}
-                    contractorNameMap={contractorNameMap}
-                  />
-                )}
-              {!(
-                contractorIterationBreakdown &&
-                contractorIterationBreakdown.length > 0
-              ) &&
-                contractorsSummary &&
-                contractorsSummary.contractors.length > 0 && (
-                  <TmetricHoursPieChart
-                    contractorBreakdown={contractorsSummary.contractors.map(
-                      (c) => ({
-                        contractorId: c.contractorId,
-                        total: {
-                          cost: c.costBudget,
-                          billing: c.billingBudget,
-                          profit: c.earningsBudget,
-                          hours: c.totalHours,
-                          entries: c.entriesCount,
-                        },
-                        byIteration: [],
-                      }),
+                            return (
+                              <>
+                                {excludedCount > 0 && (
+                                  <p className="mb-4 text-sm text-muted-foreground">
+                                    {excludedCount} contractor(s) in cached data
+                                    are no longer integrated and excluded from
+                                    this view. Totals above include their data.
+                                  </p>
+                                )}
+                                <div className="space-y-4">
+                                  {displayedContractors.map((c) => (
+                                    <div
+                                      key={c.contractorId}
+                                      className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+                                    >
+                                      <ContractorWidget
+                                        contractorId={maybe.of(c.contractorId)}
+                                        services={services}
+                                        layout="full"
+                                        size="sm"
+                                      />
+                                      <div className="flex flex-wrap gap-4 text-sm">
+                                        <div>
+                                          <span className="text-muted-foreground">
+                                            Cost:{" "}
+                                          </span>
+                                          <CurrencyValueWidget
+                                            values={c.costBudget}
+                                            services={services}
+                                            exchangeService={
+                                              services.exchangeService
+                                            }
+                                            className="font-medium"
+                                          />
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">
+                                            Billing:{" "}
+                                          </span>
+                                          <CurrencyValueWidget
+                                            values={c.billingBudget}
+                                            services={services}
+                                            exchangeService={
+                                              services.exchangeService
+                                            }
+                                            className="font-medium"
+                                          />
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">
+                                            Profit:{" "}
+                                          </span>
+                                          <Badge variant="secondary">
+                                            <CurrencyValueWidget
+                                              values={c.earningsBudget}
+                                              services={services}
+                                              exchangeService={
+                                                services.exchangeService
+                                              }
+                                              className="text-inherit"
+                                            />
+                                          </Badge>
+                                        </div>
+                                        <span className="text-muted-foreground">
+                                          {c.totalHours.toFixed(1)}h ·{" "}
+                                          {c.entriesCount} entries
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    ) : !(
+                        resolvedContractorIterationBreakdown &&
+                        resolvedContractorIterationBreakdown.length > 0
+                      ) ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>By contractor</CardTitle>
+                          <CardDescription>
+                            No contractors in cached data
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    ) : null}
+
+                    {resolvedIterationSummary &&
+                      resolvedIterationSummary.length > 0 && (
+                        <TmetricIterationBarChart
+                          iterationSummary={resolvedIterationSummary}
+                          services={services}
+                        />
+                      )}
+                    {resolvedContractorIterationBreakdown &&
+                      resolvedContractorIterationBreakdown.length > 0 && (
+                        <TmetricHoursPieChart
+                          contractorBreakdown={
+                            resolvedContractorIterationBreakdown
+                          }
+                          contractorNameMap={resolvedContractorNameMap}
+                        />
+                      )}
+                    {!(
+                      resolvedContractorIterationBreakdown &&
+                      resolvedContractorIterationBreakdown.length > 0
+                    ) &&
+                      resolvedContractorsSummary &&
+                      resolvedContractorsSummary.contractors.length > 0 && (
+                        <TmetricHoursPieChart
+                          contractorBreakdown={resolvedContractorsSummary.contractors.map(
+                            (c) => ({
+                              contractorId: c.contractorId,
+                              total: {
+                                cost: c.costBudget,
+                                billing: c.billingBudget,
+                                profit: c.earningsBudget,
+                                hours: c.totalHours,
+                                entries: c.entriesCount,
+                              },
+                              byIteration: [],
+                            }),
+                          )}
+                          contractorNameMap={resolvedContractorNameMap}
+                        />
+                      )}
+
+                    {/* By contractor with iteration breakdown (when iteration mode) */}
+                    {resolvedContractorIterationBreakdown &&
+                      resolvedContractorIterationBreakdown.length > 0 && (
+                        <Card className="col-span-full">
+                          <CardHeader>
+                            <CardTitle>By contractor</CardTitle>
+                            <CardDescription>
+                              Cost, billing, and profit per contractor with
+                              breakdown by iteration (integrated only)
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            {(() => {
+                              const integratedIds = new Set(
+                                integrationStatus?.integratedContractorIds ??
+                                  [],
+                              );
+                              const displayed =
+                                integratedIds.size > 0
+                                  ? resolvedContractorIterationBreakdown.filter(
+                                      (c) => integratedIds.has(c.contractorId),
+                                    )
+                                  : resolvedContractorIterationBreakdown;
+                              const excludedCount =
+                                resolvedContractorIterationBreakdown.length -
+                                displayed.length;
+
+                              return (
+                                <>
+                                  {excludedCount > 0 && (
+                                    <p className="mb-4 text-sm text-muted-foreground">
+                                      {excludedCount} contractor(s) in cached
+                                      data are no longer integrated and excluded
+                                      from this view.
+                                    </p>
+                                  )}
+                                  <div className="space-y-2">
+                                    {displayed.map((c) => (
+                                      <ContractorWithIterationBreakdown
+                                        key={c.contractorId}
+                                        contractorId={c.contractorId}
+                                        total={c.total}
+                                        byIteration={c.byIteration}
+                                        services={services}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                    {/* Timeline */}
+                    {resolvedTimeline.timelineItems.length > 0 && (
+                      <Card className="col-span-full">
+                        <CardHeader>
+                          <CardTitle>Tasks over time</CardTitle>
+                          <CardDescription>
+                            Timeline view of time entries
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="w-full h-[400px] rounded-md overflow-hidden border border-border">
+                            <InfiniteTimeline
+                              items={resolvedTimeline.timelineItems}
+                              lanes={resolvedTimeline.timelineLanes}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
-                    contractorNameMap={contractorNameMap}
-                  />
-                )}
-
-              {/* By contractor with iteration breakdown (when iteration mode) */}
-              {contractorIterationBreakdown &&
-                contractorIterationBreakdown.length > 0 && (
-                  <Card className="col-span-full">
-                    <CardHeader>
-                      <CardTitle>By contractor</CardTitle>
-                      <CardDescription>
-                        Cost, billing, and profit per contractor with breakdown
-                        by iteration (integrated only)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        const integratedIds = new Set(
-                          integrationStatus?.integratedContractorIds ?? [],
-                        );
-                        const displayed =
-                          integratedIds.size > 0
-                            ? contractorIterationBreakdown.filter((c) =>
-                                integratedIds.has(c.contractorId),
-                              )
-                            : contractorIterationBreakdown;
-                        const excludedCount =
-                          contractorIterationBreakdown.length -
-                          displayed.length;
-
-                        return (
-                          <>
-                            {excludedCount > 0 && (
-                              <p className="mb-4 text-sm text-muted-foreground">
-                                {excludedCount} contractor(s) in cached data are
-                                no longer integrated and excluded from this
-                                view.
-                              </p>
-                            )}
-                            <div className="space-y-2">
-                              {displayed.map((c) => (
-                                <ContractorWithIterationBreakdown
-                                  key={c.contractorId}
-                                  contractorId={c.contractorId}
-                                  total={c.total}
-                                  byIteration={c.byIteration}
-                                  services={services}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                )}
-
-              {/* Timeline */}
-              {reportAsSource && timelineItems.length > 0 && (
-                <Card className="col-span-full">
-                  <CardHeader>
-                    <CardTitle>Tasks over time</CardTitle>
-                    <CardDescription>
-                      Timeline view of time entries
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="w-full h-[400px] rounded-md overflow-hidden border border-border">
-                      <InfiniteTimeline
-                        items={timelineItems}
-                        lanes={timelineLanes}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+                  </div>
+                ),
+            )}
         </div>
       )}
     </div>

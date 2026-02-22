@@ -5,9 +5,7 @@ const scope$ = z.object({
   workspaceIds: z.array(z.number()).optional(),
   clientIds: z.array(z.number()).optional(),
   contractorIds: z.array(z.number()).optional(),
-  projectIterationIds: z
-    .union([z.array(z.number()), z.literal("all_active")])
-    .optional(),
+  projectIterationIds: z.array(z.number()),
 });
 
 export const tmetricDashboardCacheEntry$ = z.object({

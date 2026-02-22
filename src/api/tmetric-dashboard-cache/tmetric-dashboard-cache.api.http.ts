@@ -37,7 +37,7 @@ export function createTmetricDashboardCacheApi(
   return {
     getLatestForScope: async (scope, periodStart, periodEnd) => {
       const { data, error } = await client
-        .from("tmetric_dashboard_cache")
+        .from("tmetric_dashboard_cache") // todo we shuold have some predictible key to search against to not have to iterate over all entries
         .select("*")
         .eq("period_start", periodStart.toISOString().slice(0, 10))
         .eq("period_end", periodEnd.toISOString().slice(0, 10))
@@ -45,7 +45,11 @@ export function createTmetricDashboardCacheApi(
         .limit(50);
 
       if (error) throw error;
-      if (!data?.length) return null;
+      if (!data?.length) {
+        throw new Error(
+          `No cached report found for scope ${scope} and period ${periodStart} - ${periodEnd}`,
+        );
+      }
 
       for (const row of data) {
         const entryScope = row.scope as TmetricDashboardCacheScope;
@@ -55,7 +59,9 @@ export function createTmetricDashboardCacheApi(
           );
         }
       }
-      return null;
+      throw new Error(
+        `No cached report found for scope ${scope} and period ${periodStart} - ${periodEnd}`,
+      );
     },
 
     create: async (payload) => {

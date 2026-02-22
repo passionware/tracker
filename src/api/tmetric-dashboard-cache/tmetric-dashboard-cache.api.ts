@@ -5,7 +5,7 @@ export interface TmetricDashboardCacheScope {
   workspaceIds?: number[];
   clientIds?: number[];
   contractorIds?: number[];
-  projectIterationIds?: number[] | "all_active";
+  projectIterationIds: number[] | "all_active";
 }
 
 export interface TmetricDashboardCacheEntry {
@@ -23,7 +23,7 @@ export interface TmetricDashboardCacheApi {
     scope: TmetricDashboardCacheScope,
     periodStart: Date,
     periodEnd: Date,
-  ) => Promise<TmetricDashboardCacheEntry | null>;
+  ) => Promise<TmetricDashboardCacheEntry>;
   create: (payload: {
     periodStart: Date;
     periodEnd: Date;
@@ -74,7 +74,12 @@ export const dashboardQuerySchema = z
       .preprocess(coerceIterationIds, z.array(z.number()))
       .default([]),
   })
-  .transform((x): DashboardQuery => ({ timePreset: x.timePreset, iterationIds: x.iterationIds }))
+  .transform(
+    (x): DashboardQuery => ({
+      timePreset: x.timePreset,
+      iterationIds: x.iterationIds,
+    }),
+  )
   .catch(() => dashboardQueryUtils.ofDefault());
 
 export const dashboardQueryUtils = {

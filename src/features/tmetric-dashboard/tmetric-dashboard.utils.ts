@@ -3,7 +3,10 @@ import type { Project } from "@/api/project/project.api";
 import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService";
-import type { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
+import type {
+  GenericReport,
+  RoleRate,
+} from "@/services/io/_common/GenericReport";
 import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { rd, type RemoteData } from "@passionware/monads";
@@ -34,7 +37,7 @@ import {
  *    - scope = { workspaceIds?, clientIds?, projectIterationIds }
  *
  * 3. LOAD REPORT (async, in TmetricDashboardService)
- *    - getCached(scope, start, end) / refreshAndCache(scope, start, end)
+ *    - useCached(scope, start, end) / refreshAndCache(scope, start, end)
  *    - Returns GenericReport: timeEntries, definitions.projectTypes, definitions.roleTypes (rates)
  *
  * 4. DERIVED FROM REPORT + SCOPE (pure, in this file)
@@ -537,10 +540,7 @@ export function getDateRangeForPreset(
         end: endOfWeek(now, { weekStartsOn: 1 }),
       };
     case "last_week": {
-      const lastWeekStart = subWeeks(
-        startOfWeek(now, { weekStartsOn: 1 }),
-        1,
-      );
+      const lastWeekStart = subWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
       return {
         start: lastWeekStart,
         end: endOfWeek(lastWeekStart, { weekStartsOn: 1 }),
@@ -589,8 +589,7 @@ export function buildTimelineFromReport(
     .sort(([a], [b]) => a - b)
     .map(([contractorId], i) => ({
       id: String(contractorId),
-      name:
-        contractorNameMap.get(contractorId) ?? `Contractor ${contractorId}`,
+      name: contractorNameMap.get(contractorId) ?? `Contractor ${contractorId}`,
       color: TIMELINE_LANE_COLORS[i % TIMELINE_LANE_COLORS.length],
     }));
 
