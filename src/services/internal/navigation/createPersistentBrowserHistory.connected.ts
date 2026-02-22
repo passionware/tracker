@@ -152,6 +152,19 @@ const tmetricDashboardCubePatternConfig = createWorkspaceClientPatternConfig(
   dashboardQuerySchema,
 );
 
+const tmetricDashboardTimelinePatternConfig = createWorkspaceClientPatternConfig(
+  `${routingService.forWorkspace().forClient().tmetricDashboardTimeline()}`,
+  "tmetric-dashboard",
+  dashboardQuerySchema,
+);
+
+const tmetricDashboardContractorPatternConfig =
+  createWorkspaceClientPatternConfig(
+    `${routingService.forWorkspace().forClient().tmetricDashboardContractor()}`,
+    "tmetric-dashboard",
+    dashboardQuerySchema,
+  );
+
 /**
  * Tracker persistent navigation configuration
  */
@@ -166,6 +179,8 @@ export const trackerPersistentNavigationConfig: PersistentNavigationConfig = {
     variablesPatternConfig,
     tmetricDashboardPatternConfig,
     tmetricDashboardCubePatternConfig,
+    tmetricDashboardTimelinePatternConfig,
+    tmetricDashboardContractorPatternConfig,
   ],
 };
 

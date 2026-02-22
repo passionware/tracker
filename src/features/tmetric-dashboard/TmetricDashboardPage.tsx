@@ -46,10 +46,12 @@ import {
   Grid3X3,
   RefreshCw,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ContractorWithIterationBreakdown } from "./ContractorWithIterationBreakdown";
+import { TmetricContractorDashboard } from "./TmetricContractorDashboard";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
@@ -73,11 +75,14 @@ export function TmetricDashboardPage(
   const { services, workspaceId, clientId } = props;
   const navigate = useNavigate();
   const location = useLocation();
-  const activeTab: "overview" | "cube" = location.pathname.includes(
-    "/tmetric-dashboard/cube",
-  )
-    ? "cube"
-    : "overview";
+  const activeTab: "overview" | "cube" | "timeline" | "contractor" =
+    location.pathname.includes("/tmetric-dashboard/contractor")
+      ? "contractor"
+      : location.pathname.includes("/tmetric-dashboard/timeline")
+        ? "timeline"
+        : location.pathname.includes("/tmetric-dashboard/cube")
+          ? "cube"
+          : "overview";
 
   const queryParamsService = services.queryParamsService.forEntity("dashboard");
   const rawQueryParams = queryParamsService.useQueryParams();
@@ -445,21 +450,30 @@ export function TmetricDashboardPage(
         <Tabs
           value={activeTab}
           onValueChange={(v) => {
-            const tab = v as "overview" | "cube";
+            const tab = v as "overview" | "cube" | "timeline" | "contractor";
             const routing = services.routingService
               .forWorkspace(workspaceId)
               .forClient(clientId);
-            if (tab === "cube") {
-              navigate(routing.tmetricDashboardCube());
-            } else {
-              navigate(routing.tmetricDashboard());
-            }
+            if (tab === "cube") navigate(routing.tmetricDashboardCube());
+            else if (tab === "timeline")
+              navigate(routing.tmetricDashboardTimeline());
+            else if (tab === "contractor")
+              navigate(routing.tmetricDashboardContractor());
+            else navigate(routing.tmetricDashboard());
           }}
         >
           <TabsList>
             <TabsTrigger value="overview">
               <TrendingUp className="h-4 w-4 mr-2" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="timeline">
+              <CalendarRange className="h-4 w-4 mr-2" />
+              Timeline
+            </TabsTrigger>
+            <TabsTrigger value="contractor">
+              <Users className="h-4 w-4 mr-2" />
+              Contractor
             </TabsTrigger>
             <TabsTrigger value="cube">
               <Grid3X3 className="h-4 w-4 mr-2" />
@@ -470,7 +484,56 @@ export function TmetricDashboardPage(
       </div>
 
       {/* Tab content */}
-      {activeTab === "cube" ? (
+      {activeTab === "timeline" ? (
+        rd
+          .journey(rd.combine({ cachedReportQuery, contractorNameMap, timeline }))
+          .wait(() => (
+            <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+              <Skeleton className="h-[400px] w-full max-w-4xl rounded-md" />
+            </div>
+          ))
+          .catch(() => null)
+          .map(({ timeline: resolvedTimeline }) =>
+            resolvedTimeline.timelineItems.length > 0 ? (
+              <div className="flex-1 min-h-0 flex flex-col mt-4" key="timeline-tab">
+                <Card className="flex-1 min-h-0 flex flex-col">
+                  <CardHeader>
+                    <CardTitle>Tasks over time</CardTitle>
+                    <CardDescription>
+                      Timeline view of time entries
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-[400px]">
+                    <div className="w-full h-full min-h-[400px] rounded-md overflow-hidden border border-border">
+                      <InfiniteTimeline
+                        items={resolvedTimeline.timelineItems}
+                        lanes={resolvedTimeline.timelineLanes}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+                <Card className="max-w-md">
+                  <CardContent className="pt-6 text-center text-muted-foreground">
+                    No time entries in the selected range. Load report and try
+                    another range.
+                  </CardContent>
+                </Card>
+              </div>
+            ),
+          )
+      ) : activeTab === "contractor" ? (
+        <div className="flex-1 overflow-auto mt-4">
+          <TmetricContractorDashboard
+            services={services}
+            contractorIterationBreakdown={contractorIterationBreakdown}
+            contractorNameMap={contractorNameMap}
+            integrationStatus={integrationStatus}
+          />
+        </div>
+      ) : activeTab === "cube" ? (
         rd
           .journey(reportAsSource)
           .wait(() => (
@@ -635,7 +698,6 @@ export function TmetricDashboardPage(
                 iterationSummary,
                 contractorIterationBreakdown,
                 contractorNameMap,
-                timeline,
               }),
             )
             .wait(() => (
@@ -684,7 +746,6 @@ export function TmetricDashboardPage(
                 contractorIterationBreakdown:
                   resolvedContractorIterationBreakdown,
                 contractorNameMap: resolvedContractorNameMap,
-                timeline: resolvedTimeline,
               }) =>
                 !_report ? null : (
                   <div
@@ -907,25 +968,6 @@ export function TmetricDashboardPage(
                         </Card>
                       )}
 
-                    {/* Timeline */}
-                    {resolvedTimeline.timelineItems.length > 0 && (
-                      <Card className="col-span-full">
-                        <CardHeader>
-                          <CardTitle>Tasks over time</CardTitle>
-                          <CardDescription>
-                            Timeline view of time entries
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="w-full h-[400px] rounded-md overflow-hidden border border-border">
-                            <InfiniteTimeline
-                              items={resolvedTimeline.timelineItems}
-                              lanes={resolvedTimeline.timelineLanes}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
                   </div>
                 ),
             )}

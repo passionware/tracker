@@ -103,6 +103,8 @@ export interface RoutingService {
       potentialCosts: () => string;
       tmetricDashboard: () => string;
       tmetricDashboardCube: () => string;
+      tmetricDashboardTimeline: () => string;
+      tmetricDashboardContractor: () => string;
       root: () => string;
       forContractor: (contractorId?: ContractorParam) => {
         root: () => string;

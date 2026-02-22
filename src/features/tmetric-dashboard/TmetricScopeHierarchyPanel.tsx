@@ -13,7 +13,7 @@ import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
-import { maybe, type RemoteData } from "@passionware/monads";
+import { maybe, rd, type RemoteData } from "@passionware/monads";
 import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -23,8 +23,10 @@ import {
   getContractorRatesForIterationProject,
   getScopeHierarchyTotals,
   sumCurrencyValues,
+  sumCurrencyValuesInTarget,
   type ContractorRateInProject,
 } from "./tmetric-dashboard.utils";
+import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 
 export type { ContractorRateInProject };
 
@@ -69,6 +71,95 @@ export function TmetricScopeHierarchyPanel({
     if (!cachedReport?.data) return null;
     return getScopeHierarchyTotals(cachedReport.data, scopeHierarchyWithRates);
   }, [cachedReport, scopeHierarchyWithRates]);
+
+  const targetCurrency = "EUR";
+  const allCurrenciesForExchange = useMemo(() => {
+    const set = new Set<string>();
+    if (scopeHierarchyTotals) {
+      for (const [, rec] of scopeHierarchyTotals.byClient)
+        for (const v of [...rec.cost, ...rec.billing])
+          set.add(v.currency.toUpperCase());
+      for (const [, rec] of scopeHierarchyTotals.byIteration)
+        for (const v of [...rec.cost, ...rec.billing])
+          set.add(v.currency.toUpperCase());
+    }
+    if (cachedReport?.data)
+      for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations)) {
+        const totals = getContractorIterationTotals(
+          cachedReport.data,
+          row.iteration.id,
+        );
+        for (const t of totals) {
+          set.add(t.costCurrency.toUpperCase());
+          set.add(t.billingCurrency.toUpperCase());
+        }
+      }
+    return set.size ? Array.from(set) : ["EUR"];
+  }, [scopeHierarchyTotals, scopeHierarchyWithRates, cachedReport]);
+
+  const exchangeRates = services.exchangeService.useExchangeRates(
+    allCurrenciesForExchange.map((from) => ({ from, to: targetCurrency })),
+  );
+
+  const rateMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const rates = rd.tryMap(exchangeRates, (x) => x) ?? [];
+    for (const r of rates)
+      map.set(
+        `${r.from.toUpperCase()}->${r.to.toUpperCase()}`,
+        r.rate,
+      );
+    return map;
+  }, [exchangeRates]);
+
+  const profitInTargetByClient = useMemo(() => {
+    if (!scopeHierarchyTotals || rateMap.size === 0) return new Map<number, { amount: number; currency: string }[]>();
+    const m = new Map<number, { amount: number; currency: string }[]>();
+    for (const [clientId, rec] of scopeHierarchyTotals.byClient) {
+      const profit =
+        sumCurrencyValuesInTarget(rec.billing, rateMap, targetCurrency) -
+        sumCurrencyValuesInTarget(rec.cost, rateMap, targetCurrency);
+      m.set(clientId, [{ amount: profit, currency: targetCurrency }]);
+    }
+    return m;
+  }, [scopeHierarchyTotals, rateMap]);
+
+  const profitInTargetByIteration = useMemo(() => {
+    if (!scopeHierarchyTotals || rateMap.size === 0) return new Map<number, { amount: number; currency: string }[]>();
+    const m = new Map<number, { amount: number; currency: string }[]>();
+    for (const [iterId, rec] of scopeHierarchyTotals.byIteration) {
+      const profit =
+        sumCurrencyValuesInTarget(rec.billing, rateMap, targetCurrency) -
+        sumCurrencyValuesInTarget(rec.cost, rateMap, targetCurrency);
+      m.set(iterId, [{ amount: profit, currency: targetCurrency }]);
+    }
+    return m;
+  }, [scopeHierarchyTotals, rateMap]);
+
+  const contractorProfitInTarget = useMemo(() => {
+    if (!cachedReport?.data || rateMap.size === 0) return new Map<string, number>();
+    const m = new Map<string, number>();
+    for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations)) {
+      const totals = getContractorIterationTotals(
+        cachedReport.data,
+        row.iteration.id,
+      );
+      for (const t of totals) {
+        const billingInTarget = sumCurrencyValuesInTarget(
+          [{ amount: t.totalBilling, currency: t.billingCurrency }],
+          rateMap,
+          targetCurrency,
+        );
+        const costInTarget = sumCurrencyValuesInTarget(
+          [{ amount: t.totalCost, currency: t.costCurrency }],
+          rateMap,
+          targetCurrency,
+        );
+        m.set(`${row.iteration.id}-${t.contractorId}`, billingInTarget - costInTarget);
+      }
+    }
+    return m;
+  }, [cachedReport, scopeHierarchyWithRates, rateMap]);
 
   const allClientIds = useMemo(
     () => scopeHierarchyWithRates.map((c) => c.clientId),
@@ -125,22 +216,31 @@ export function TmetricScopeHierarchyPanel({
           [],
       ),
     );
-    const allProfit = sumCurrencyValues(
-      ...iterations.map(
-        (row) =>
-          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.profit ?? [],
-      ),
-    );
+    const totalProfitInTarget =
+      rateMap.size > 0
+        ? sumCurrencyValuesInTarget(allBilling, rateMap, targetCurrency) -
+          sumCurrencyValuesInTarget(allCost, rateMap, targetCurrency)
+        : 0;
+    const totalProfitAsValues: { amount: number; currency: string }[] =
+      rateMap.size > 0
+        ? [{ amount: totalProfitInTarget, currency: targetCurrency }]
+        : sumCurrencyValues(
+            ...iterations.map(
+              (row) =>
+                scopeHierarchyTotals!.byIteration.get(row.iteration.id)
+                  ?.profit ?? [],
+            ),
+          );
     return {
       iterationCount: iterations.length,
       totalHours,
       totalCost: allCost,
       totalBilling: allBilling,
-      totalProfit: allProfit,
+      totalProfit: totalProfitAsValues,
       avgCostRate: divideCurrencyValues(allCost, totalHours),
       avgBillingRate: divideCurrencyValues(allBilling, totalHours),
     };
-  }, [scopeHierarchyTotals, scopeHierarchyWithRates]);
+  }, [scopeHierarchyTotals, scopeHierarchyWithRates, rateMap, targetCurrency]);
 
   return (
     <Card>
@@ -303,15 +403,31 @@ export function TmetricScopeHierarchyPanel({
                             />
                           </span>
                           <span
-                            className="py-2 pr-2 text-xs text-right tabular-nums"
+                            className={`py-2 pr-2 text-xs text-right tabular-nums ${
+                              (() => {
+                                const computed = profitInTargetByClient.get(clientId);
+                                const amount = computed?.[0]?.amount ?? client.profit.reduce((s, v) => s + v.amount, 0);
+                                return amount > 0 ? "font-medium text-green-600" : "font-medium";
+                              })()
+                            }`}
                             style={{ gridColumn: "8 / 9" }}
                           >
-                            <CurrencyValueWidget
-                              values={client.profit}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
+                            {profitInTargetByClient.get(clientId) ? (
+                              <ProfitBreakdownWidget
+                                services={services}
+                                cost={client.cost}
+                                billing={client.billing}
+                                profitInTarget={profitInTargetByClient.get(clientId)![0].amount}
+                                targetCurrency={targetCurrency}
+                              />
+                            ) : (
+                              <CurrencyValueWidget
+                                values={client.profit}
+                                services={services}
+                                exchangeService={services.exchangeService}
+                                className="font-medium"
+                              />
+                            )}
                           </span>
                         </>
                       );
@@ -453,17 +569,31 @@ export function TmetricScopeHierarchyPanel({
                                         />
                                       </span>
                                       <span
-                                        className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                                        className={`py-1.5 pr-2 text-xs text-right tabular-nums ${
+                                          (() => {
+                                            const computed = profitInTargetByIteration.get(iteration.id);
+                                            const amount = computed?.[0]?.amount ?? iter.profit.reduce((s, v) => s + v.amount, 0);
+                                            return amount > 0 ? "font-medium text-green-600" : "font-medium";
+                                          })()
+                                        }`}
                                         style={{ gridColumn: "8 / 9" }}
                                       >
-                                        <CurrencyValueWidget
-                                          values={iter.profit}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
-                                        />
+                                        {profitInTargetByIteration.get(iteration.id) ? (
+                                          <ProfitBreakdownWidget
+                                            services={services}
+                                            cost={iter.cost}
+                                            billing={iter.billing}
+                                            profitInTarget={profitInTargetByIteration.get(iteration.id)![0].amount}
+                                            targetCurrency={targetCurrency}
+                                          />
+                                        ) : (
+                                          <CurrencyValueWidget
+                                            values={iter.profit}
+                                            services={services}
+                                            exchangeService={services.exchangeService}
+                                            className="font-medium"
+                                          />
+                                        )}
                                       </span>
                                     </>
                                   );
@@ -611,13 +741,42 @@ export function TmetricScopeHierarchyPanel({
                                               )}
                                             </span>
                                             <span
-                                              className="py-1 pr-2 text-right tabular-nums"
+                                              className={`py-1 pr-2 text-right tabular-nums font-medium ${
+                                                (() => {
+                                                  const profitEur =
+                                                    contractorProfitInTarget.get(
+                                                      `${iteration.id}-${row.contractorId}`,
+                                                    );
+                                                  const value =
+                                                    profitEur ?? row.totalBilling - row.totalCost;
+                                                  return value > 0
+                                                    ? "text-green-600"
+                                                    : "";
+                                                })()
+                                              }`}
                                               style={{ gridColumn: "8 / 9" }}
                                             >
-                                              {services.formatService.financial.amount(
-                                                row.totalProfit,
-                                                row.billingCurrency,
-                                              )}
+                                              <ProfitBreakdownWidget
+                                                services={services}
+                                                cost={[
+                                                  {
+                                                    amount: row.totalCost,
+                                                    currency: row.costCurrency,
+                                                  },
+                                                ]}
+                                                billing={[
+                                                  {
+                                                    amount: row.totalBilling,
+                                                    currency: row.billingCurrency,
+                                                  },
+                                                ]}
+                                                profitInTarget={
+                                                  contractorProfitInTarget.get(
+                                                    `${iteration.id}-${row.contractorId}`,
+                                                  ) ?? row.totalBilling - row.totalCost
+                                                }
+                                                targetCurrency={targetCurrency}
+                                              />
                                             </span>
                                           </div>
                                         ))}
@@ -673,12 +832,31 @@ export function TmetricScopeHierarchyPanel({
                     exchangeService={services.exchangeService}
                   />
                 </span>
-                <span className="py-2 pr-2 text-right tabular-nums">
-                  <CurrencyValueWidget
-                    values={footerTotals.totalProfit}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                  />
+                <span
+                  className={`py-2 pr-2 text-right tabular-nums font-medium ${
+                    footerTotals.totalProfit.reduce((s, v) => s + v.amount, 0) >
+                    0
+                      ? "text-green-600"
+                      : ""
+                  }`}
+                >
+                  {footerTotals.totalProfit.length === 1 &&
+                  footerTotals.totalProfit[0].currency === targetCurrency ? (
+                    <ProfitBreakdownWidget
+                      services={services}
+                      cost={footerTotals.totalCost}
+                      billing={footerTotals.totalBilling}
+                      profitInTarget={footerTotals.totalProfit[0].amount}
+                      targetCurrency={targetCurrency}
+                    />
+                  ) : (
+                    <CurrencyValueWidget
+                      values={footerTotals.totalProfit}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                      className="font-medium"
+                    />
+                  )}
                 </span>
               </div>
             )}

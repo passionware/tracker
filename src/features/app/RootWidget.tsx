@@ -281,6 +281,48 @@ export function RootWidget(props: WithFrontServices) {
           path={props.services.routingService
             .forWorkspace()
             .forClient()
+            .tmetricDashboardTimeline()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardContractor()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
             .tmetricDashboard()}
           element={
             <ProtectedRoute services={props.services}>

@@ -28,6 +28,10 @@ export function createRoutingService(): RoutingService {
               `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard`,
             tmetricDashboardCube: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/cube`,
+            tmetricDashboardTimeline: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/timeline`,
+            tmetricDashboardContractor: () =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/contractor`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,
             forContractor: (contractorId) => {
               const contractorSlot =

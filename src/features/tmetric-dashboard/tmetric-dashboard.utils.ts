@@ -164,6 +164,25 @@ export function divideCurrencyValues(
   }));
 }
 
+/**
+ * Sum amounts in `values` after converting each to `targetCurrency` using `rateMap`.
+ * Used to compute profit in a single currency when cost and billing may be in different currencies.
+ * Rate map key format: `${fromCurrency.toUpperCase()}->${toCurrency.toUpperCase()}`.
+ */
+export function sumCurrencyValuesInTarget(
+  values: CurrencyValue[],
+  rateMap: Map<string, number>,
+  targetCurrency: string,
+): number {
+  const target = targetCurrency.toUpperCase();
+  return values.reduce((sum, v) => {
+    const from = v.currency.toUpperCase();
+    const key = `${from}->${target}`;
+    const rate = from === target ? 1 : rateMap.get(key) ?? 0;
+    return sum + v.amount * rate;
+  }, 0);
+}
+
 // --- Scope hierarchy and contractor rates (from iteration/range scope + report) ---
 
 export interface ContractorRateInProject {
