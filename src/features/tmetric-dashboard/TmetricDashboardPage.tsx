@@ -589,6 +589,7 @@ export function TmetricDashboardPage(
                 iterationsForScope={iterationsForScope}
                 projectsMap={projectsMap}
                 cachedReport={reportData}
+                persistenceKey={`${String(workspaceId)}-${String(clientId)}`}
               />
             ))}
 

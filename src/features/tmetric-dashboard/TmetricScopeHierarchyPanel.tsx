@@ -30,6 +30,8 @@ import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 
 export type { ContractorRateInProject };
 
+const SCOPE_EXPANDED_STORAGE_KEY_PREFIX = "tmetric-scope-expanded";
+
 export interface TmetricScopeHierarchyPanelProps {
   services: WithFrontServices["services"];
   projectsData: RemoteData<Project[]>;
@@ -37,6 +39,8 @@ export interface TmetricScopeHierarchyPanelProps {
   projectsMap: Map<number, { name: string }>;
   /** When present (cached report loaded), contractor rates per project are shown. */
   cachedReport?: { data: GenericReport } | null;
+  /** When set, expand/collapse state is persisted to localStorage under this key (e.g. workspaceId-clientId). */
+  persistenceKey?: string;
 }
 
 export function TmetricScopeHierarchyPanel({
@@ -45,6 +49,7 @@ export function TmetricScopeHierarchyPanel({
   iterationsForScope,
   projectsMap,
   cachedReport = null,
+  persistenceKey,
 }: TmetricScopeHierarchyPanelProps) {
   const scopeHierarchy = useMemo(
     () => buildScopeHierarchy(projectsData, iterationsForScope, projectsMap),
@@ -180,19 +185,65 @@ export function TmetricScopeHierarchyPanel({
   );
 
   useEffect(() => {
-    setExpandedClients(new Set());
-    setExpandedIterations(new Set());
-  }, [allClientIds, allIterationIds]);
+    if (!persistenceKey) {
+      setExpandedClients(new Set());
+      setExpandedIterations(new Set());
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(
+        `${SCOPE_EXPANDED_STORAGE_KEY_PREFIX}-${persistenceKey}`,
+      );
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        clientIds?: number[];
+        iterationIds?: number[];
+      };
+      const storedClients = new Set(parsed.clientIds ?? []);
+      const storedIterations = new Set(parsed.iterationIds ?? []);
+      setExpandedClients(
+        new Set(allClientIds.filter((id) => storedClients.has(id))),
+      );
+      setExpandedIterations(
+        new Set(allIterationIds.filter((id) => storedIterations.has(id))),
+      );
+    } catch {
+      // ignore invalid stored data
+    }
+  }, [persistenceKey, allClientIds, allIterationIds]);
+
+  const persistExpandedState = useCallback(
+    (clients: Set<number>, iterations: Set<number>) => {
+      if (!persistenceKey) return;
+      try {
+        localStorage.setItem(
+          `${SCOPE_EXPANDED_STORAGE_KEY_PREFIX}-${persistenceKey}`,
+          JSON.stringify({
+            clientIds: Array.from(clients),
+            iterationIds: Array.from(iterations),
+          }),
+        );
+      } catch {
+        // ignore quota etc.
+      }
+    },
+    [persistenceKey],
+  );
 
   const expandAll = useCallback(() => {
-    setExpandedClients(new Set(allClientIds));
-    setExpandedIterations(new Set(allIterationIds));
-  }, [allClientIds, allIterationIds]);
+    const clients = new Set(allClientIds);
+    const iterations = new Set(allIterationIds);
+    setExpandedClients(clients);
+    setExpandedIterations(iterations);
+    persistExpandedState(clients, iterations);
+  }, [allClientIds, allIterationIds, persistExpandedState]);
 
   const collapseAll = useCallback(() => {
-    setExpandedClients(new Set());
-    setExpandedIterations(new Set());
-  }, []);
+    const empty = new Set<number>();
+    setExpandedClients(empty);
+    setExpandedIterations(empty);
+    persistExpandedState(empty, empty);
+  }, [persistExpandedState]);
 
   const footerTotals = useMemo(() => {
     if (!scopeHierarchyTotals) return null;
@@ -314,6 +365,7 @@ export function TmetricScopeHierarchyPanel({
                       const next = new Set(prev);
                       if (clientOpen) next.delete(clientId);
                       else next.add(clientId);
+                      persistExpandedState(next, expandedIterations);
                       return next;
                     })
                   }
@@ -473,6 +525,7 @@ export function TmetricScopeHierarchyPanel({
                                   const next = new Set(prev);
                                   if (iterOpen) next.delete(iteration.id);
                                   else next.add(iteration.id);
+                                  persistExpandedState(expandedClients, next);
                                   return next;
                                 })
                               }
