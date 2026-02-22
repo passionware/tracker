@@ -184,13 +184,12 @@ export function TmetricDashboardPage(
   // Stable key for scope so callbacks/effects don’t re-run when array refs change
   const scopeIterationIdsKey = useMemo(
     () =>
-      (
-        selectedIterationIds.length > 0
-          ? [...selectedIterationIds].sort((a, b) => a - b)
-          : allIterations
-              .filter((i) => i.status === "active")
-              .map((i) => i.id)
-              .sort((a, b) => a - b)
+      (selectedIterationIds.length > 0
+        ? [...selectedIterationIds].sort((a, b) => a - b)
+        : allIterations
+            .filter((i) => i.status === "active")
+            .map((i) => i.id)
+            .sort((a, b) => a - b)
       ).join(","),
     [selectedIterationIds, allIterations],
   );
@@ -443,39 +442,31 @@ export function TmetricDashboardPage(
           </div>
         </div>
 
-        {rd
-          .journey(cachedReportQuery)
-          .wait(() => null)
-          .catch(() => null)
-          .map((data) =>
-            data ? (
-              <Tabs
-                value={activeTab}
-                onValueChange={(v) => {
-                  const tab = v as "overview" | "cube";
-                  const routing = services.routingService
-                    .forWorkspace(workspaceId)
-                    .forClient(clientId);
-                  if (tab === "cube") {
-                    navigate(routing.tmetricDashboardCube());
-                  } else {
-                    navigate(routing.tmetricDashboard());
-                  }
-                }}
-              >
-                <TabsList>
-                  <TabsTrigger value="overview">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="cube">
-                    <Grid3X3 className="h-4 w-4 mr-2" />
-                    Cube Explorer
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null,
-          )}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            const tab = v as "overview" | "cube";
+            const routing = services.routingService
+              .forWorkspace(workspaceId)
+              .forClient(clientId);
+            if (tab === "cube") {
+              navigate(routing.tmetricDashboardCube());
+            } else {
+              navigate(routing.tmetricDashboard());
+            }
+          }}
+        >
+          <TabsList>
+            <TabsTrigger value="overview">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="cube">
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Cube Explorer
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Tab content */}
