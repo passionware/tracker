@@ -110,15 +110,13 @@ export function TmetricScopeHierarchyPanel({
     const map = new Map<string, number>();
     const rates = rd.tryMap(exchangeRates, (x) => x) ?? [];
     for (const r of rates)
-      map.set(
-        `${r.from.toUpperCase()}->${r.to.toUpperCase()}`,
-        r.rate,
-      );
+      map.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate);
     return map;
   }, [exchangeRates]);
 
   const profitInTargetByClient = useMemo(() => {
-    if (!scopeHierarchyTotals || rateMap.size === 0) return new Map<number, { amount: number; currency: string }[]>();
+    if (!scopeHierarchyTotals || rateMap.size === 0)
+      return new Map<number, { amount: number; currency: string }[]>();
     const m = new Map<number, { amount: number; currency: string }[]>();
     for (const [clientId, rec] of scopeHierarchyTotals.byClient) {
       const profit =
@@ -130,7 +128,8 @@ export function TmetricScopeHierarchyPanel({
   }, [scopeHierarchyTotals, rateMap]);
 
   const profitInTargetByIteration = useMemo(() => {
-    if (!scopeHierarchyTotals || rateMap.size === 0) return new Map<number, { amount: number; currency: string }[]>();
+    if (!scopeHierarchyTotals || rateMap.size === 0)
+      return new Map<number, { amount: number; currency: string }[]>();
     const m = new Map<number, { amount: number; currency: string }[]>();
     for (const [iterId, rec] of scopeHierarchyTotals.byIteration) {
       const profit =
@@ -142,7 +141,8 @@ export function TmetricScopeHierarchyPanel({
   }, [scopeHierarchyTotals, rateMap]);
 
   const contractorProfitInTarget = useMemo(() => {
-    if (!cachedReport?.data || rateMap.size === 0) return new Map<string, number>();
+    if (!cachedReport?.data || rateMap.size === 0)
+      return new Map<string, number>();
     const m = new Map<string, number>();
     for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations)) {
       const totals = getContractorIterationTotals(
@@ -160,7 +160,10 @@ export function TmetricScopeHierarchyPanel({
           rateMap,
           targetCurrency,
         );
-        m.set(`${row.iteration.id}-${t.contractorId}`, billingInTarget - costInTarget);
+        m.set(
+          `${row.iteration.id}-${t.contractorId}`,
+          billingInTarget - costInTarget,
+        );
       }
     }
     return m;
@@ -294,628 +297,617 @@ export function TmetricScopeHierarchyPanel({
   }, [scopeHierarchyTotals, scopeHierarchyWithRates, rateMap, targetCurrency]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-        <div>
-          <CardTitle className="text-base">Scope</CardTitle>
-          <CardDescription>
-            Hierarchy of current dashboard scope; contractor rates when report
-            is loaded
-          </CardDescription>
-        </div>
-        {scopeHierarchy.length > 0 && (
-          <div className="flex shrink-0 gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={expandAll}
-              className="gap-1"
-            >
-              <ChevronDown className="h-3.5 w-3.5" />
-              Expand all
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={collapseAll}
-              className="gap-1"
-            >
-              <ChevronUp className="h-3.5 w-3.5" />
-              Collapse all
-            </Button>
+    <>
+      <div className="mt-2 flex flex-col gap-2">
+        <CardTitle>Financial overview</CardTitle>
+        <CardDescription>
+          Clients and iterations in the current selection. Expand rows to see
+          contractors and rates; load a report to show cost and billing.
+        </CardDescription>
+      </div>
+      {scopeHierarchyWithRates.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No clients, iterations, or projects in scope.
+        </p>
+      ) : (
+        <div
+          className="scope-hierarchy-grid rounded border"
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "auto 1fr minmax(3rem, auto) minmax(4rem, auto) minmax(4rem, auto) minmax(5rem, auto) minmax(5rem, auto) minmax(5rem, auto)",
+            gap: "0 1rem",
+            rowGap: 0,
+            alignItems: "center",
+          }}
+        >
+          {/* Header row */}
+          <div className="contents text-xs font-medium text-muted-foreground border-b bg-muted/30">
+            <span className="px-2 py-2 w-8" />
+            <span className="py-2">Scope</span>
+            <span className="py-2 text-right">Hours</span>
+            <span className="py-2 text-right">Cost rate</span>
+            <span className="py-2 text-right">Billing rate</span>
+            <span className="py-2 text-right">Cost</span>
+            <span className="py-2 text-right">Billing</span>
+            <span className="py-2 text-right pr-2">Profit</span>
           </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {scopeHierarchyWithRates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No clients, iterations, or projects in scope.
-          </p>
-        ) : (
-          <div
-            className="scope-hierarchy-grid rounded-md border"
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "auto 1fr minmax(3rem, auto) minmax(4rem, auto) minmax(4rem, auto) minmax(5rem, auto) minmax(5rem, auto) minmax(5rem, auto)",
-              gap: "0 1rem",
-              rowGap: 0,
-              alignItems: "center",
-            }}
-          >
-            {/* Header row */}
-            <div className="contents text-xs font-medium text-muted-foreground border-b bg-muted/30">
-              <span className="px-2 py-2 w-8" />
-              <span className="py-2">Scope</span>
-              <span className="py-2 text-right">Hours</span>
-              <span className="py-2 text-right">Cost rate</span>
-              <span className="py-2 text-right">Billing rate</span>
-              <span className="py-2 text-right">Cost</span>
-              <span className="py-2 text-right">Billing</span>
-              <span className="py-2 text-right pr-2">Profit</span>
-            </div>
-            {scopeHierarchyWithRates.flatMap(({ clientId, iterations }) => {
-              const clientOpen = expandedClients.has(clientId);
-              return [
-                <button
-                  key={`client-${clientId}`}
-                  type="button"
-                  onClick={() =>
-                    setExpandedClients((prev) => {
-                      const next = new Set(prev);
-                      if (clientOpen) next.delete(clientId);
-                      else next.add(clientId);
-                      persistExpandedState(next, expandedIterations);
-                      return next;
-                    })
-                  }
-                  className="contents group text-left"
-                >
-                  <span className="flex items-center px-2 py-2 w-8 shrink-0">
-                    <ChevronRight
-                      className={`h-4 w-4 transition-transform ${clientOpen ? "rotate-90" : ""}`}
-                    />
+          {scopeHierarchyWithRates.flatMap(({ clientId, iterations }) => {
+            const clientOpen = expandedClients.has(clientId);
+            return [
+              <button
+                key={`client-${clientId}`}
+                type="button"
+                onClick={() =>
+                  setExpandedClients((prev) => {
+                    const next = new Set(prev);
+                    if (clientOpen) next.delete(clientId);
+                    else next.add(clientId);
+                    persistExpandedState(next, expandedIterations);
+                    return next;
+                  })
+                }
+                className="contents group text-left"
+              >
+                <span className="flex items-center px-2 py-2 w-8 shrink-0">
+                  <ChevronRight
+                    className={`h-4 w-4 transition-transform ${clientOpen ? "rotate-90" : ""}`}
+                  />
+                </span>
+                <span className="flex min-w-0 items-center gap-2 py-2 hover:bg-muted/50 rounded-l">
+                  <ClientWidget
+                    clientId={maybe.of(clientId)}
+                    services={services}
+                    layout="full"
+                    size="sm"
+                  />
+                  <span className="text-muted-foreground shrink-0">
+                    {iterations.length} iteration(s)
                   </span>
-                  <span className="flex min-w-0 items-center gap-2 py-2 hover:bg-muted/50 rounded-l">
-                    <ClientWidget
-                      clientId={maybe.of(clientId)}
-                      services={services}
-                      layout="full"
-                      size="sm"
-                    />
-                    <span className="text-muted-foreground shrink-0">
-                      {iterations.length} iteration(s)
-                    </span>
-                  </span>
-                  {scopeHierarchyTotals ? (
-                    (() => {
-                      const client =
-                        scopeHierarchyTotals.byClient.get(clientId);
-                      if (!client)
-                        return <span style={{ gridColumn: "3 / 9" }} />;
-                      const hours = client.hours;
-                      const avgCost =
-                        hours > 0
-                          ? divideCurrencyValues(client.cost, hours)
-                          : [];
-                      const avgBilling =
-                        hours > 0
-                          ? divideCurrencyValues(client.billing, hours)
-                          : [];
-                      return (
-                        <>
-                          <span
-                            className="py-2 text-xs text-right tabular-nums"
-                            style={{ gridColumn: "3 / 4" }}
-                          >
-                            {hours.toFixed(1)}
-                          </span>
-                          <span
-                            className="py-2 text-xs text-right tabular-nums"
-                            style={{ gridColumn: "4 / 5" }}
-                          >
-                            <CurrencyValueWidget
-                              values={avgCost}
+                </span>
+                {scopeHierarchyTotals ? (
+                  (() => {
+                    const client = scopeHierarchyTotals.byClient.get(clientId);
+                    if (!client)
+                      return <span style={{ gridColumn: "3 / 9" }} />;
+                    const hours = client.hours;
+                    const avgCost =
+                      hours > 0 ? divideCurrencyValues(client.cost, hours) : [];
+                    const avgBilling =
+                      hours > 0
+                        ? divideCurrencyValues(client.billing, hours)
+                        : [];
+                    return (
+                      <>
+                        <span
+                          className="py-2 text-xs text-right tabular-nums"
+                          style={{ gridColumn: "3 / 4" }}
+                        >
+                          {hours.toFixed(1)}
+                        </span>
+                        <span
+                          className="py-2 text-xs text-right tabular-nums"
+                          style={{ gridColumn: "4 / 5" }}
+                        >
+                          <CurrencyValueWidget
+                            values={avgCost}
+                            services={services}
+                            exchangeService={services.exchangeService}
+                            className="font-medium"
+                          />
+                        </span>
+                        <span
+                          className="py-2 text-xs text-right tabular-nums"
+                          style={{ gridColumn: "5 / 6" }}
+                        >
+                          <CurrencyValueWidget
+                            values={avgBilling}
+                            services={services}
+                            exchangeService={services.exchangeService}
+                            className="font-medium"
+                          />
+                        </span>
+                        <span
+                          className="py-2 text-xs text-right tabular-nums"
+                          style={{ gridColumn: "6 / 7" }}
+                        >
+                          <CurrencyValueWidget
+                            values={client.cost}
+                            services={services}
+                            exchangeService={services.exchangeService}
+                            className="font-medium"
+                          />
+                        </span>
+                        <span
+                          className="py-2 text-xs text-right tabular-nums"
+                          style={{ gridColumn: "7 / 8" }}
+                        >
+                          <CurrencyValueWidget
+                            values={client.billing}
+                            services={services}
+                            exchangeService={services.exchangeService}
+                            className="font-medium"
+                          />
+                        </span>
+                        <span
+                          className={`py-2 pr-2 text-xs text-right tabular-nums ${(() => {
+                            const computed =
+                              profitInTargetByClient.get(clientId);
+                            const amount =
+                              computed?.[0]?.amount ??
+                              client.profit.reduce((s, v) => s + v.amount, 0);
+                            return amount > 0
+                              ? "font-medium text-green-600"
+                              : "font-medium";
+                          })()}`}
+                          style={{ gridColumn: "8 / 9" }}
+                        >
+                          {profitInTargetByClient.get(clientId) ? (
+                            <ProfitBreakdownWidget
                               services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
-                          </span>
-                          <span
-                            className="py-2 text-xs text-right tabular-nums"
-                            style={{ gridColumn: "5 / 6" }}
-                          >
-                            <CurrencyValueWidget
-                              values={avgBilling}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
-                          </span>
-                          <span
-                            className="py-2 text-xs text-right tabular-nums"
-                            style={{ gridColumn: "6 / 7" }}
-                          >
-                            <CurrencyValueWidget
-                              values={client.cost}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
-                          </span>
-                          <span
-                            className="py-2 text-xs text-right tabular-nums"
-                            style={{ gridColumn: "7 / 8" }}
-                          >
-                            <CurrencyValueWidget
-                              values={client.billing}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
-                          </span>
-                          <span
-                            className={`py-2 pr-2 text-xs text-right tabular-nums ${
-                              (() => {
-                                const computed = profitInTargetByClient.get(clientId);
-                                const amount = computed?.[0]?.amount ?? client.profit.reduce((s, v) => s + v.amount, 0);
-                                return amount > 0 ? "font-medium text-green-600" : "font-medium";
-                              })()
-                            }`}
-                            style={{ gridColumn: "8 / 9" }}
-                          >
-                            {profitInTargetByClient.get(clientId) ? (
-                              <ProfitBreakdownWidget
-                                services={services}
-                                cost={client.cost}
-                                billing={client.billing}
-                                profitInTarget={profitInTargetByClient.get(clientId)![0].amount}
-                                targetCurrency={targetCurrency}
-                              />
-                            ) : (
-                              <CurrencyValueWidget
-                                values={client.profit}
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="font-medium"
-                              />
-                            )}
-                          </span>
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <span style={{ gridColumn: "3 / 9" }} />
-                  )}
-                </button>,
-                clientOpen && (
-                  <div
-                    key={`client-${clientId}-sub`}
-                    className="col-span-full grid border-t border-border/50 bg-muted/20"
-                    style={{
-                      gridTemplateColumns: "subgrid",
-                      gridColumn: "1 / -1",
-                    }}
-                  >
-                    {iterations.length === 0 ? (
-                      <div
-                        className="col-span-full px-4 py-2 pl-11 text-sm text-muted-foreground"
-                        style={{ gridColumn: "1 / -1" }}
-                      >
-                        No iterations
-                      </div>
-                    ) : (
-                      iterations.flatMap(
-                        ({
-                          iteration,
-                          iterationLabel,
-                          projectName,
-                          contractorsWithRates,
-                        }) => {
-                          const iterOpen = expandedIterations.has(iteration.id);
-                          const hasRates =
-                            contractorsWithRates &&
-                            contractorsWithRates.length > 0;
-                          return [
-                            <button
-                              key={`iter-${iteration.id}`}
-                              type="button"
-                              onClick={() =>
-                                setExpandedIterations((prev) => {
-                                  const next = new Set(prev);
-                                  if (iterOpen) next.delete(iteration.id);
-                                  else next.add(iteration.id);
-                                  persistExpandedState(expandedClients, next);
-                                  return next;
-                                })
+                              cost={client.cost}
+                              billing={client.billing}
+                              profitInTarget={
+                                profitInTargetByClient.get(clientId)![0].amount
                               }
-                              className="contents group text-left"
+                              targetCurrency={targetCurrency}
+                            />
+                          ) : (
+                            <CurrencyValueWidget
+                              values={client.profit}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium"
+                            />
+                          )}
+                        </span>
+                      </>
+                    );
+                  })()
+                ) : (
+                  <span style={{ gridColumn: "3 / 9" }} />
+                )}
+              </button>,
+              clientOpen && (
+                <div
+                  key={`client-${clientId}-sub`}
+                  className="col-span-full grid border-t border-border/50 bg-muted/20"
+                  style={{
+                    gridTemplateColumns: "subgrid",
+                    gridColumn: "1 / -1",
+                  }}
+                >
+                  {iterations.length === 0 ? (
+                    <div
+                      className="col-span-full px-4 py-2 pl-11 text-sm text-muted-foreground"
+                      style={{ gridColumn: "1 / -1" }}
+                    >
+                      No iterations
+                    </div>
+                  ) : (
+                    iterations.flatMap(
+                      ({
+                        iteration,
+                        iterationLabel,
+                        projectName,
+                        contractorsWithRates,
+                      }) => {
+                        const iterOpen = expandedIterations.has(iteration.id);
+                        const hasRates =
+                          contractorsWithRates &&
+                          contractorsWithRates.length > 0;
+                        return [
+                          <button
+                            key={`iter-${iteration.id}`}
+                            type="button"
+                            onClick={() =>
+                              setExpandedIterations((prev) => {
+                                const next = new Set(prev);
+                                if (iterOpen) next.delete(iteration.id);
+                                else next.add(iteration.id);
+                                persistExpandedState(expandedClients, next);
+                                return next;
+                              })
+                            }
+                            className="contents group text-left"
+                          >
+                            <span className="flex items-center px-2 py-1.5 w-8 shrink-0 pl-4">
+                              <ChevronRight
+                                className={`h-3.5 w-3.5 shrink-0 transition-transform ${iterOpen ? "rotate-90" : ""}`}
+                              />
+                            </span>
+                            <span className="flex min-w-0 items-center py-1.5 pl-2 text-sm font-medium hover:bg-muted/30 rounded">
+                              {iterationLabel}
+                            </span>
+                            {scopeHierarchyTotals ? (
+                              (() => {
+                                const iter =
+                                  scopeHierarchyTotals.byIteration.get(
+                                    iteration.id,
+                                  );
+                                if (!iter)
+                                  return (
+                                    <span style={{ gridColumn: "3 / 9" }} />
+                                  );
+                                const hours = iter.hours;
+                                const avgCost =
+                                  hours > 0
+                                    ? divideCurrencyValues(iter.cost, hours)
+                                    : [];
+                                const avgBilling =
+                                  hours > 0
+                                    ? divideCurrencyValues(iter.billing, hours)
+                                    : [];
+                                return (
+                                  <>
+                                    <span
+                                      className="py-1.5 text-xs text-right tabular-nums"
+                                      style={{ gridColumn: "3 / 4" }}
+                                    >
+                                      {hours.toFixed(1)}
+                                    </span>
+                                    <span
+                                      className="py-1.5 text-xs text-right tabular-nums"
+                                      style={{ gridColumn: "4 / 5" }}
+                                    >
+                                      <CurrencyValueWidget
+                                        values={avgCost}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className="font-medium"
+                                      />
+                                    </span>
+                                    <span
+                                      className="py-1.5 text-xs text-right tabular-nums"
+                                      style={{ gridColumn: "5 / 6" }}
+                                    >
+                                      <CurrencyValueWidget
+                                        values={avgBilling}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className="font-medium"
+                                      />
+                                    </span>
+                                    <span
+                                      className="py-1.5 text-xs text-right tabular-nums"
+                                      style={{ gridColumn: "6 / 7" }}
+                                    >
+                                      <CurrencyValueWidget
+                                        values={iter.cost}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className="font-medium"
+                                      />
+                                    </span>
+                                    <span
+                                      className="py-1.5 text-xs text-right tabular-nums"
+                                      style={{ gridColumn: "7 / 8" }}
+                                    >
+                                      <CurrencyValueWidget
+                                        values={iter.billing}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className="font-medium"
+                                      />
+                                    </span>
+                                    <span
+                                      className={`py-1.5 pr-2 text-xs text-right tabular-nums ${(() => {
+                                        const computed =
+                                          profitInTargetByIteration.get(
+                                            iteration.id,
+                                          );
+                                        const amount =
+                                          computed?.[0]?.amount ??
+                                          iter.profit.reduce(
+                                            (s, v) => s + v.amount,
+                                            0,
+                                          );
+                                        return amount > 0
+                                          ? "font-medium text-green-600"
+                                          : "font-medium";
+                                      })()}`}
+                                      style={{ gridColumn: "8 / 9" }}
+                                    >
+                                      {profitInTargetByIteration.get(
+                                        iteration.id,
+                                      ) ? (
+                                        <ProfitBreakdownWidget
+                                          services={services}
+                                          cost={iter.cost}
+                                          billing={iter.billing}
+                                          profitInTarget={
+                                            profitInTargetByIteration.get(
+                                              iteration.id,
+                                            )![0].amount
+                                          }
+                                          targetCurrency={targetCurrency}
+                                        />
+                                      ) : (
+                                        <CurrencyValueWidget
+                                          values={iter.profit}
+                                          services={services}
+                                          exchangeService={
+                                            services.exchangeService
+                                          }
+                                          className="font-medium"
+                                        />
+                                      )}
+                                    </span>
+                                  </>
+                                );
+                              })()
+                            ) : (
+                              <span style={{ gridColumn: "3 / 9" }} />
+                            )}
+                          </button>,
+                          iterOpen && (
+                            <div
+                              key={`iter-${iteration.id}-sub`}
+                              className="col-span-full grid bg-background border-t border-border/30"
+                              style={{
+                                gridTemplateColumns: "subgrid",
+                                gridColumn: "1 / -1",
+                              }}
                             >
-                              <span className="flex items-center px-2 py-1.5 w-8 shrink-0 pl-4">
-                                <ChevronRight
-                                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${iterOpen ? "rotate-90" : ""}`}
-                                />
+                              <span
+                                className="col-start-2 col-end-3 py-1 pl-6 text-sm text-muted-foreground"
+                                style={{ gridColumn: "2 / 3" }}
+                              >
+                                Project: {projectName}
                               </span>
-                              <span className="flex min-w-0 items-center py-1.5 pl-2 text-sm font-medium hover:bg-muted/30 rounded">
-                                {iterationLabel}
-                              </span>
-                              {scopeHierarchyTotals ? (
+                              {hasRates &&
+                                cachedReport?.data &&
                                 (() => {
-                                  const iter =
-                                    scopeHierarchyTotals.byIteration.get(
+                                  const contractorTotals =
+                                    getContractorIterationTotals(
+                                      cachedReport.data,
                                       iteration.id,
                                     );
-                                  if (!iter)
-                                    return (
-                                      <span style={{ gridColumn: "3 / 9" }} />
-                                    );
-                                  const hours = iter.hours;
-                                  const avgCost =
-                                    hours > 0
-                                      ? divideCurrencyValues(iter.cost, hours)
-                                      : [];
-                                  const avgBilling =
-                                    hours > 0
-                                      ? divideCurrencyValues(
-                                          iter.billing,
-                                          hours,
-                                        )
-                                      : [];
                                   return (
                                     <>
-                                      <span
-                                        className="py-1.5 text-xs text-right tabular-nums"
-                                        style={{ gridColumn: "3 / 4" }}
-                                      >
-                                        {hours.toFixed(1)}
-                                      </span>
-                                      <span
-                                        className="py-1.5 text-xs text-right tabular-nums"
-                                        style={{ gridColumn: "4 / 5" }}
-                                      >
-                                        <CurrencyValueWidget
-                                          values={avgCost}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
+                                      <div className="contents border-t border-border/30">
+                                        <span
+                                          className="w-8 shrink-0"
+                                          style={{ gridColumn: "1 / 2" }}
                                         />
-                                      </span>
-                                      <span
-                                        className="py-1.5 text-xs text-right tabular-nums"
-                                        style={{ gridColumn: "5 / 6" }}
-                                      >
-                                        <CurrencyValueWidget
-                                          values={avgBilling}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
-                                        />
-                                      </span>
-                                      <span
-                                        className="py-1.5 text-xs text-right tabular-nums"
-                                        style={{ gridColumn: "6 / 7" }}
-                                      >
-                                        <CurrencyValueWidget
-                                          values={iter.cost}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
-                                        />
-                                      </span>
-                                      <span
-                                        className="py-1.5 text-xs text-right tabular-nums"
-                                        style={{ gridColumn: "7 / 8" }}
-                                      >
-                                        <CurrencyValueWidget
-                                          values={iter.billing}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
-                                        />
-                                      </span>
-                                      <span
-                                        className={`py-1.5 pr-2 text-xs text-right tabular-nums ${
-                                          (() => {
-                                            const computed = profitInTargetByIteration.get(iteration.id);
-                                            const amount = computed?.[0]?.amount ?? iter.profit.reduce((s, v) => s + v.amount, 0);
-                                            return amount > 0 ? "font-medium text-green-600" : "font-medium";
-                                          })()
-                                        }`}
-                                        style={{ gridColumn: "8 / 9" }}
-                                      >
-                                        {profitInTargetByIteration.get(iteration.id) ? (
-                                          <ProfitBreakdownWidget
-                                            services={services}
-                                            cost={iter.cost}
-                                            billing={iter.billing}
-                                            profitInTarget={profitInTargetByIteration.get(iteration.id)![0].amount}
-                                            targetCurrency={targetCurrency}
-                                          />
-                                        ) : (
-                                          <CurrencyValueWidget
-                                            values={iter.profit}
-                                            services={services}
-                                            exchangeService={services.exchangeService}
-                                            className="font-medium"
-                                          />
-                                        )}
-                                      </span>
-                                    </>
-                                  );
-                                })()
-                              ) : (
-                                <span style={{ gridColumn: "3 / 9" }} />
-                              )}
-                            </button>,
-                            iterOpen && (
-                              <div
-                                key={`iter-${iteration.id}-sub`}
-                                className="col-span-full grid bg-background border-t border-border/30"
-                                style={{
-                                  gridTemplateColumns: "subgrid",
-                                  gridColumn: "1 / -1",
-                                }}
-                              >
-                                <span
-                                  className="col-start-2 col-end-3 py-1 pl-6 text-sm text-muted-foreground"
-                                  style={{ gridColumn: "2 / 3" }}
-                                >
-                                  Project: {projectName}
-                                </span>
-                                {hasRates &&
-                                  cachedReport?.data &&
-                                  (() => {
-                                    const contractorTotals =
-                                      getContractorIterationTotals(
-                                        cachedReport.data,
-                                        iteration.id,
-                                      );
-                                    return (
-                                      <>
-                                        <div className="contents border-t border-border/30">
+                                        <span
+                                          className="py-1.5 pl-2 text-xs font-medium text-muted-foreground"
+                                          style={{ gridColumn: "2 / 3" }}
+                                        >
+                                          Contractor
+                                        </span>
+                                        <span
+                                          className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "3 / 4" }}
+                                        >
+                                          Hours
+                                        </span>
+                                        <span
+                                          className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "4 / 5" }}
+                                        >
+                                          Cost rate
+                                        </span>
+                                        <span
+                                          className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "5 / 6" }}
+                                        >
+                                          Billing rate
+                                        </span>
+                                        <span
+                                          className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "6 / 7" }}
+                                        >
+                                          Cost
+                                        </span>
+                                        <span
+                                          className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "7 / 8" }}
+                                        >
+                                          Billing
+                                        </span>
+                                        <span
+                                          className="py-1.5 pr-2 text-xs font-medium text-muted-foreground text-right"
+                                          style={{ gridColumn: "8 / 9" }}
+                                        >
+                                          Profit
+                                        </span>
+                                      </div>
+                                      {contractorTotals.map((row) => (
+                                        <div
+                                          key={row.contractorId}
+                                          className="contents text-xs"
+                                        >
                                           <span
                                             className="w-8 shrink-0"
                                             style={{ gridColumn: "1 / 2" }}
                                           />
                                           <span
-                                            className="py-1.5 pl-2 text-xs font-medium text-muted-foreground"
+                                            className="min-w-0 py-1 pl-2"
                                             style={{ gridColumn: "2 / 3" }}
                                           >
-                                            Contractor
+                                            <ContractorWidget
+                                              contractorId={maybe.of(
+                                                row.contractorId,
+                                              )}
+                                              services={services}
+                                              layout="full"
+                                              size="sm"
+                                              className="min-w-0"
+                                            />
                                           </span>
                                           <span
-                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            className="py-1 text-right tabular-nums"
                                             style={{ gridColumn: "3 / 4" }}
                                           >
-                                            Hours
+                                            {row.hours.toFixed(1)}
                                           </span>
                                           <span
-                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            className="py-1 text-right tabular-nums"
                                             style={{ gridColumn: "4 / 5" }}
                                           >
-                                            Cost rate
+                                            {services.formatService.financial.amount(
+                                              row.costRate,
+                                              row.costCurrency,
+                                            )}
                                           </span>
                                           <span
-                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            className="py-1 text-right tabular-nums"
                                             style={{ gridColumn: "5 / 6" }}
                                           >
-                                            Billing rate
+                                            {services.formatService.financial.amount(
+                                              row.billingRate,
+                                              row.billingCurrency,
+                                            )}
                                           </span>
                                           <span
-                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            className="py-1 text-right tabular-nums"
                                             style={{ gridColumn: "6 / 7" }}
                                           >
-                                            Cost
+                                            {services.formatService.financial.amount(
+                                              row.totalCost,
+                                              row.costCurrency,
+                                            )}
                                           </span>
                                           <span
-                                            className="py-1.5 text-xs font-medium text-muted-foreground text-right"
+                                            className="py-1 text-right tabular-nums"
                                             style={{ gridColumn: "7 / 8" }}
                                           >
-                                            Billing
+                                            {services.formatService.financial.amount(
+                                              row.totalBilling,
+                                              row.billingCurrency,
+                                            )}
                                           </span>
                                           <span
-                                            className="py-1.5 pr-2 text-xs font-medium text-muted-foreground text-right"
+                                            className={`py-1 pr-2 text-right tabular-nums font-medium ${(() => {
+                                              const profitEur =
+                                                contractorProfitInTarget.get(
+                                                  `${iteration.id}-${row.contractorId}`,
+                                                );
+                                              const value =
+                                                profitEur ??
+                                                row.totalBilling -
+                                                  row.totalCost;
+                                              return value > 0
+                                                ? "text-green-600"
+                                                : "";
+                                            })()}`}
                                             style={{ gridColumn: "8 / 9" }}
                                           >
-                                            Profit
+                                            <ProfitBreakdownWidget
+                                              services={services}
+                                              cost={[
+                                                {
+                                                  amount: row.totalCost,
+                                                  currency: row.costCurrency,
+                                                },
+                                              ]}
+                                              billing={[
+                                                {
+                                                  amount: row.totalBilling,
+                                                  currency: row.billingCurrency,
+                                                },
+                                              ]}
+                                              profitInTarget={
+                                                contractorProfitInTarget.get(
+                                                  `${iteration.id}-${row.contractorId}`,
+                                                ) ??
+                                                row.totalBilling - row.totalCost
+                                              }
+                                              targetCurrency={targetCurrency}
+                                            />
                                           </span>
                                         </div>
-                                        {contractorTotals.map((row) => (
-                                          <div
-                                            key={row.contractorId}
-                                            className="contents text-xs"
-                                          >
-                                            <span
-                                              className="w-8 shrink-0"
-                                              style={{ gridColumn: "1 / 2" }}
-                                            />
-                                            <span
-                                              className="min-w-0 py-1 pl-2"
-                                              style={{ gridColumn: "2 / 3" }}
-                                            >
-                                              <ContractorWidget
-                                                contractorId={maybe.of(
-                                                  row.contractorId,
-                                                )}
-                                                services={services}
-                                                layout="full"
-                                                size="sm"
-                                                className="min-w-0"
-                                              />
-                                            </span>
-                                            <span
-                                              className="py-1 text-right tabular-nums"
-                                              style={{ gridColumn: "3 / 4" }}
-                                            >
-                                              {row.hours.toFixed(1)}
-                                            </span>
-                                            <span
-                                              className="py-1 text-right tabular-nums"
-                                              style={{ gridColumn: "4 / 5" }}
-                                            >
-                                              {services.formatService.financial.amount(
-                                                row.costRate,
-                                                row.costCurrency,
-                                              )}
-                                            </span>
-                                            <span
-                                              className="py-1 text-right tabular-nums"
-                                              style={{ gridColumn: "5 / 6" }}
-                                            >
-                                              {services.formatService.financial.amount(
-                                                row.billingRate,
-                                                row.billingCurrency,
-                                              )}
-                                            </span>
-                                            <span
-                                              className="py-1 text-right tabular-nums"
-                                              style={{ gridColumn: "6 / 7" }}
-                                            >
-                                              {services.formatService.financial.amount(
-                                                row.totalCost,
-                                                row.costCurrency,
-                                              )}
-                                            </span>
-                                            <span
-                                              className="py-1 text-right tabular-nums"
-                                              style={{ gridColumn: "7 / 8" }}
-                                            >
-                                              {services.formatService.financial.amount(
-                                                row.totalBilling,
-                                                row.billingCurrency,
-                                              )}
-                                            </span>
-                                            <span
-                                              className={`py-1 pr-2 text-right tabular-nums font-medium ${
-                                                (() => {
-                                                  const profitEur =
-                                                    contractorProfitInTarget.get(
-                                                      `${iteration.id}-${row.contractorId}`,
-                                                    );
-                                                  const value =
-                                                    profitEur ?? row.totalBilling - row.totalCost;
-                                                  return value > 0
-                                                    ? "text-green-600"
-                                                    : "";
-                                                })()
-                                              }`}
-                                              style={{ gridColumn: "8 / 9" }}
-                                            >
-                                              <ProfitBreakdownWidget
-                                                services={services}
-                                                cost={[
-                                                  {
-                                                    amount: row.totalCost,
-                                                    currency: row.costCurrency,
-                                                  },
-                                                ]}
-                                                billing={[
-                                                  {
-                                                    amount: row.totalBilling,
-                                                    currency: row.billingCurrency,
-                                                  },
-                                                ]}
-                                                profitInTarget={
-                                                  contractorProfitInTarget.get(
-                                                    `${iteration.id}-${row.contractorId}`,
-                                                  ) ?? row.totalBilling - row.totalCost
-                                                }
-                                                targetCurrency={targetCurrency}
-                                              />
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </>
-                                    );
-                                  })()}
-                              </div>
-                            ),
-                          ];
-                        },
-                      )
-                    )}
-                  </div>
-                ),
-              ];
-            })}
-            {/* Footer totals */}
-            {footerTotals != null && footerTotals.iterationCount > 0 && (
-              <div className="contents border-t bg-muted/30 text-xs font-medium">
-                <span className="px-2 py-2 w-8" />
-                <span className="py-2">
-                  Total: {footerTotals.iterationCount} iteration
-                  {footerTotals.iterationCount !== 1 ? "s" : ""}
-                </span>
-                <span className="py-2 text-right tabular-nums">
-                  {footerTotals.totalHours.toFixed(1)}
-                </span>
-                <span className="py-2 text-right tabular-nums">
-                  <CurrencyValueWidget
-                    values={footerTotals.avgCostRate}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                  />
-                </span>
-                <span className="py-2 text-right tabular-nums">
-                  <CurrencyValueWidget
-                    values={footerTotals.avgBillingRate}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                  />
-                </span>
-                <span className="py-2 text-right tabular-nums">
-                  <CurrencyValueWidget
-                    values={footerTotals.totalCost}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                  />
-                </span>
-                <span className="py-2 text-right tabular-nums">
-                  <CurrencyValueWidget
-                    values={footerTotals.totalBilling}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                  />
-                </span>
-                <span
-                  className={`py-2 pr-2 text-right tabular-nums font-medium ${
-                    footerTotals.totalProfit.reduce((s, v) => s + v.amount, 0) >
-                    0
-                      ? "text-green-600"
-                      : ""
-                  }`}
-                >
-                  {footerTotals.totalProfit.length === 1 &&
-                  footerTotals.totalProfit[0].currency === targetCurrency ? (
-                    <ProfitBreakdownWidget
-                      services={services}
-                      cost={footerTotals.totalCost}
-                      billing={footerTotals.totalBilling}
-                      profitInTarget={footerTotals.totalProfit[0].amount}
-                      targetCurrency={targetCurrency}
-                    />
-                  ) : (
-                    <CurrencyValueWidget
-                      values={footerTotals.totalProfit}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                      className="font-medium"
-                    />
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                            </div>
+                          ),
+                        ];
+                      },
+                    )
                   )}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </div>
+              ),
+            ];
+          })}
+          {/* Footer totals */}
+          {footerTotals != null && footerTotals.iterationCount > 0 && (
+            <div className="contents border-t bg-muted/30 text-xs font-medium">
+              <span className="px-2 py-2 w-8" />
+              <span className="py-2">
+                Total: {footerTotals.iterationCount} iteration
+                {footerTotals.iterationCount !== 1 ? "s" : ""}
+              </span>
+              <span className="py-2 text-right tabular-nums">
+                {footerTotals.totalHours.toFixed(1)}
+              </span>
+              <span className="py-2 text-right tabular-nums">
+                <CurrencyValueWidget
+                  values={footerTotals.avgCostRate}
+                  services={services}
+                  exchangeService={services.exchangeService}
+                />
+              </span>
+              <span className="py-2 text-right tabular-nums">
+                <CurrencyValueWidget
+                  values={footerTotals.avgBillingRate}
+                  services={services}
+                  exchangeService={services.exchangeService}
+                />
+              </span>
+              <span className="py-2 text-right tabular-nums">
+                <CurrencyValueWidget
+                  values={footerTotals.totalCost}
+                  services={services}
+                  exchangeService={services.exchangeService}
+                />
+              </span>
+              <span className="py-2 text-right tabular-nums">
+                <CurrencyValueWidget
+                  values={footerTotals.totalBilling}
+                  services={services}
+                  exchangeService={services.exchangeService}
+                />
+              </span>
+              <span
+                className={`py-2 pr-2 text-right tabular-nums font-medium ${
+                  footerTotals.totalProfit.reduce((s, v) => s + v.amount, 0) > 0
+                    ? "text-green-600"
+                    : ""
+                }`}
+              >
+                {footerTotals.totalProfit.length === 1 &&
+                footerTotals.totalProfit[0].currency === targetCurrency ? (
+                  <ProfitBreakdownWidget
+                    services={services}
+                    cost={footerTotals.totalCost}
+                    billing={footerTotals.totalBilling}
+                    profitInTarget={footerTotals.totalProfit[0].amount}
+                    targetCurrency={targetCurrency}
+                  />
+                ) : (
+                  <CurrencyValueWidget
+                    values={footerTotals.totalProfit}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                    className="font-medium"
+                  />
+                )}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
