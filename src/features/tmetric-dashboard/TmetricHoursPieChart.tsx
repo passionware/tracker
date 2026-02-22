@@ -5,14 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { PieChart } from "@mui/x-charts/PieChart";
 import type { ContractorIterationBreakdown } from "./tmetric-dashboard.utils";
 
 const PIE_COLORS = [
@@ -45,6 +38,29 @@ export function TmetricHoursPieChart({
 
   if (data.length === 0) return null;
 
+  const total = data.reduce((s, x) => s + x.value, 0);
+  const series = [
+    {
+      data: data.map((d, i) => {
+        const pct =
+          total > 0 ? `${((d.value / total) * 100).toFixed(0)}%` : "";
+        return {
+          id: i,
+          value: d.value,
+          // Arc: only percentage to avoid overlap. Legend/tooltip: full name + percentage.
+          label: (location: "tooltip" | "legend" | "arc") =>
+            location === "arc" ? pct : `${d.name} ${pct}`.trim(),
+          color: PIE_COLORS[i % PIE_COLORS.length],
+        };
+      }),
+      innerRadius: 0,
+      outerRadius: 80,
+      paddingAngle: 2,
+      arcLabel: "label" as const,
+      arcLabelMinAngle: 35,
+    },
+  ];
+
   return (
     <Card>
       <CardHeader>
@@ -54,30 +70,17 @@ export function TmetricHoursPieChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[260px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-              <Tooltip
-                formatter={(value: number) => `${value.toFixed(1)}h`}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Legend />
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={80}
-                paddingAngle={2}
-                label={({ name, percent }) =>
-                  `${name.length > 12 ? `${name.slice(0, 12)}…` : name} ${(percent * 100).toFixed(0)}%`
-                }
-              >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <PieChart
+            series={series}
+            width={420}
+            height={220}
+            slotProps={{
+              legend: {
+                position: { vertical: "middle", horizontal: "end" },
+              },
+            }}
+          />
         </div>
       </CardContent>
     </Card>

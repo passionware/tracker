@@ -6,17 +6,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { WithFrontServices } from "@/core/frontServices";
+import { BarChart } from "@mui/x-charts/BarChart";
 import { rd } from "@passionware/monads";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService";
 import type { IterationSummary } from "./tmetric-dashboard.utils";
 
@@ -36,6 +27,13 @@ function convertToTargetCurrency(
     const rate = rateMap.get(key) ?? 0;
     return sum + v.amount * rate;
   }, 0);
+}
+
+function formatCurrency(value: number, currency: string): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency,
+  }).format(value);
 }
 
 export function TmetricIterationBarChart({
@@ -90,47 +88,50 @@ export function TmetricIterationBarChart({
       </CardHeader>
       <CardContent>
         <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 8, right: 8, left: 0, bottom: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 11 }}
-                angle={-35}
-                textAnchor="end"
-              />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                tickFormatter={(v) =>
-                  new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: targetCurrency,
-                    maximumFractionDigits: 0,
-                  }).format(Number(v))
-                }
-              />
-              <Tooltip
-                formatter={(value: number) =>
-                  new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: targetCurrency,
-                  }).format(value)
-                }
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Legend />
-              <Bar dataKey="cost" fill={CHART_COLORS.cost} name="Cost" />
-              <Bar
-                dataKey="billing"
-                fill={CHART_COLORS.billing}
-                name="Billing"
-              />
-              <Bar dataKey="profit" fill={CHART_COLORS.profit} name="Profit" />
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart
+            dataset={chartData}
+            xAxis={[
+              {
+                scaleType: "band",
+                dataKey: "name",
+                tickLabelStyle: { fontSize: 11 },
+                tickPlacement: "middle",
+              },
+            ]}
+            yAxis={[
+              {
+                tickLabelStyle: { fontSize: 11 },
+                valueFormatter: (v: unknown) =>
+                  formatCurrency(Number(v), targetCurrency),
+              },
+            ]}
+            series={[
+              {
+                dataKey: "cost",
+                label: "Cost",
+                color: CHART_COLORS.cost,
+                valueFormatter: (v: unknown) =>
+                  formatCurrency(Number(v), targetCurrency),
+              },
+              {
+                dataKey: "billing",
+                label: "Billing",
+                color: CHART_COLORS.billing,
+                valueFormatter: (v: unknown) =>
+                  formatCurrency(Number(v), targetCurrency),
+              },
+              {
+                dataKey: "profit",
+                label: "Profit",
+                color: CHART_COLORS.profit,
+                valueFormatter: (v: unknown) =>
+                  formatCurrency(Number(v), targetCurrency),
+              },
+            ]}
+            height={280}
+            margin={{ top: 8, right: 8, left: 0, bottom: 60 }}
+            grid={{ vertical: true, horizontal: true }}
+          />
         </div>
       </CardContent>
     </Card>
