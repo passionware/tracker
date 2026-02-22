@@ -31,6 +31,8 @@ import { format } from "date-fns";
 import {
   BarChart3,
   CalendarRange,
+  ChevronLeft,
+  ChevronRight,
   Grid3X3,
   RefreshCw,
   TrendingUp,
@@ -45,6 +47,107 @@ import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
 import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import { useTmetricDashboardData } from "./useTmetricDashboardData";
 import type { TimePreset } from "./tmetric-dashboard.utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { endOfDay, startOfDay } from "date-fns";
+import type { DateRange } from "react-day-picker";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
+function DashboardRangeBar({
+  start,
+  end,
+  onRangeSelect,
+}: {
+  start: Date | null;
+  end: Date | null;
+  onRangeSelect: (from: Date, to: Date) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<DateRange | undefined>(() =>
+    start && end
+      ? { from: startOfDay(start), to: endOfDay(end) }
+      : undefined,
+  );
+
+  useEffect(() => {
+    if (open && start && end) {
+      setRange({ from: startOfDay(start), to: endOfDay(end) });
+    }
+  }, [open, start, end]);
+
+  const handleSelect = (r: DateRange | undefined) => {
+    setRange(r);
+    if (r?.from && r?.to) {
+      onRangeSelect(startOfDay(r.from), endOfDay(r.to));
+      setOpen(false);
+    }
+  };
+
+  const label =
+    start && end
+      ? `${format(start, "dd MMM yyyy")} – ${format(end, "dd MMM yyyy")}`
+      : "—";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm",
+            "hover:bg-accent hover:text-accent-foreground",
+            "min-w-[200px] justify-center",
+          )}
+        >
+          <CalendarRange className="h-4 w-4 shrink-0 opacity-70" />
+          <span className="truncate">{label}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="range"
+          selected={range}
+          onSelect={handleSelect}
+          numberOfMonths={2}
+          defaultMonth={start ?? end ?? new Date()}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function DashboardNavButton({
+  direction,
+  unit,
+  onClick,
+  disabled,
+}: {
+  direction: "prev" | "next";
+  unit: "day" | "week" | "month";
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  const Icon = direction === "prev" ? ChevronLeft : ChevronRight;
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-7 w-7"
+      onClick={onClick}
+      disabled={disabled}
+      title={`${direction === "prev" ? "Previous" : "Next"} ${unit}`}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="sr-only">{`${direction} ${unit}`}</span>
+    </Button>
+  );
+}
 
 export function TmetricDashboardPage(
   props: WithFrontServices & {
@@ -73,6 +176,9 @@ export function TmetricDashboardPage(
     start,
     end,
     canLoadOrRefresh,
+    setCustomRange,
+    navigatePrev,
+    navigateNext,
     cachedReportQuery,
     handleRefresh,
     isRefreshing,
@@ -124,8 +230,56 @@ export function TmetricDashboardPage(
                 <SelectItem value="unscoped">
                   Unscoped (whole iterations)
                 </SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
+
+            <DashboardRangeBar
+              start={start}
+              end={end}
+              onRangeSelect={(from, to) => setCustomRange(from, to)}
+            />
+
+            <div className="flex items-center gap-0.5 border rounded-md p-0.5 bg-muted/50">
+              <DashboardNavButton
+                direction="prev"
+                unit="day"
+                onClick={() => navigatePrev("day")}
+                disabled={!start || !end}
+              />
+              <DashboardNavButton
+                direction="next"
+                unit="day"
+                onClick={() => navigateNext("day")}
+                disabled={!start || !end}
+              />
+              <div className="w-px h-6 bg-border" />
+              <DashboardNavButton
+                direction="prev"
+                unit="week"
+                onClick={() => navigatePrev("week")}
+                disabled={!start || !end}
+              />
+              <DashboardNavButton
+                direction="next"
+                unit="week"
+                onClick={() => navigateNext("week")}
+                disabled={!start || !end}
+              />
+              <div className="w-px h-6 bg-border" />
+              <DashboardNavButton
+                direction="prev"
+                unit="month"
+                onClick={() => navigatePrev("month")}
+                disabled={!start || !end}
+              />
+              <DashboardNavButton
+                direction="next"
+                unit="month"
+                onClick={() => navigateNext("month")}
+                disabled={!start || !end}
+              />
+            </div>
 
             <SimpleArrayPicker
               items={iterationPickerItems}

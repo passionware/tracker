@@ -38,11 +38,15 @@ export type TimePreset =
   | "this_week"
   | "last_week"
   | "month"
-  | "unscoped";
+  | "unscoped"
+  | "custom";
 
 export interface DashboardQuery {
   timePreset: TimePreset;
   iterationIds: number[];
+  /** Used when timePreset is "custom". ISO date strings (YYYY-MM-DD). */
+  customStart?: string;
+  customEnd?: string;
 }
 
 const timePresetSchema = z.enum([
@@ -51,6 +55,7 @@ const timePresetSchema = z.enum([
   "last_week",
   "month",
   "unscoped",
+  "custom",
 ]);
 
 function coerceIterationIds(value: unknown): number[] {
@@ -60,6 +65,12 @@ function coerceIterationIds(value: unknown): number[] {
       .filter((n) => Number.isInteger(n) && n > 0);
   }
   return [];
+}
+
+function coerceIsoDateString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? undefined : value.slice(0, 10);
 }
 
 export const dashboardQuerySchema = z
@@ -73,11 +84,19 @@ export const dashboardQuerySchema = z
     iterationIds: z
       .preprocess(coerceIterationIds, z.array(z.number()))
       .default([]),
+    customStart: z
+      .preprocess(coerceIsoDateString, z.string().optional())
+      .optional(),
+    customEnd: z
+      .preprocess(coerceIsoDateString, z.string().optional())
+      .optional(),
   })
   .transform(
     (x): DashboardQuery => ({
       timePreset: x.timePreset,
       iterationIds: x.iterationIds,
+      customStart: x.customStart,
+      customEnd: x.customEnd,
     }),
   )
   .catch(() => dashboardQueryUtils.ofDefault());

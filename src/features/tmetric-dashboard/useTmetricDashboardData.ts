@@ -18,7 +18,15 @@ import type {
 import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { format } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  format,
+  subDays,
+  subMonths,
+  subWeeks,
+} from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildTimelineFromReport,
@@ -51,6 +59,9 @@ export interface UseTmetricDashboardDataResult {
   start: Date | null;
   end: Date | null;
   canLoadOrRefresh: boolean;
+  setCustomRange: (start: Date, end: Date) => void;
+  navigatePrev: (unit: "day" | "week" | "month") => void;
+  navigateNext: (unit: "day" | "week" | "month") => void;
 
   // Report cache (shared TanStack cache – same key on dashboard and contractor detail)
   cachedReportQuery: ReturnType<
@@ -218,6 +229,17 @@ export function useTmetricDashboardData({
     [iterationsForScope],
   );
 
+  const customRange = useMemo((): { start: Date; end: Date } | null => {
+    if (timePreset !== "custom") return null;
+    const { customStart, customEnd } = dashboardQuery;
+    if (!customStart || !customEnd) return null;
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end)
+      return null;
+    return { start, end };
+  }, [timePreset, dashboardQuery]);
+
   const iterationPickerItems: SimpleItem[] = useMemo(
     () =>
       iterationsForPicker.map((iter) => {
@@ -240,10 +262,54 @@ export function useTmetricDashboardData({
   );
 
   const { start, end } = useMemo(() => {
-    const range = getDateRangeForPreset(timePreset, iterationRange);
+    const range = getDateRangeForPreset(
+      timePreset,
+      iterationRange,
+      customRange,
+    );
     if (!range) return { start: null as Date | null, end: null as Date | null };
     return { start: range.start, end: range.end };
-  }, [timePreset, iterationRange]);
+  }, [timePreset, iterationRange, customRange]);
+
+  const setCustomRange = useCallback(
+    (rangeStart: Date, rangeEnd: Date) => {
+      queryParamsService.setQueryParams({
+        ...dashboardQuery,
+        timePreset: "custom",
+        customStart: format(rangeStart, "yyyy-MM-dd"),
+        customEnd: format(rangeEnd, "yyyy-MM-dd"),
+      });
+    },
+    [queryParamsService, dashboardQuery],
+  );
+
+  const navigatePrev = useCallback(
+    (unit: "day" | "week" | "month") => {
+      if (start === null || end === null) return;
+      const shift =
+        unit === "day"
+          ? (d: Date) => subDays(d, 1)
+          : unit === "week"
+            ? (d: Date) => subWeeks(d, 1)
+            : (d: Date) => subMonths(d, 1);
+      setCustomRange(shift(start), shift(end));
+    },
+    [start, end, setCustomRange],
+  );
+
+  const navigateNext = useCallback(
+    (unit: "day" | "week" | "month") => {
+      if (start === null || end === null) return;
+      const shift =
+        unit === "day"
+          ? (d: Date) => addDays(d, 1)
+          : unit === "week"
+            ? (d: Date) => addWeeks(d, 1)
+            : (d: Date) => addMonths(d, 1);
+      setCustomRange(shift(start), shift(end));
+    },
+    [start, end, setCustomRange],
+  );
 
   const scope: TmetricDashboardCacheScope = useMemo(() => {
     const s: TmetricDashboardCacheScope = { projectIterationIds: [] };
@@ -407,6 +473,9 @@ export function useTmetricDashboardData({
     start,
     end,
     canLoadOrRefresh,
+    setCustomRange,
+    navigatePrev,
+    navigateNext,
     cachedReportQuery,
     handleRefresh,
     isRefreshing: mt.isInProgress(refreshMutation.state),

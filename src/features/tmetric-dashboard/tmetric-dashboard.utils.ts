@@ -56,7 +56,8 @@ export type TimePreset =
   | "this_week"
   | "last_week"
   | "month"
-  | "unscoped";
+  | "unscoped"
+  | "custom";
 
 export interface ContractorIterationBreakdown {
   contractorId: number;
@@ -933,7 +934,11 @@ export function getIterationSummary(
 export function getDateRangeForPreset(
   preset: TimePreset,
   iterationRange?: { start: Date; end: Date } | null,
+  customRange?: { start: Date; end: Date } | null,
 ): { start: Date; end: Date } | null {
+  if (preset === "custom" && customRange) {
+    return customRange;
+  }
   if (preset === "unscoped") {
     return iterationRange ?? null;
   }
