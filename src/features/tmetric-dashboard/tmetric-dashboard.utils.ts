@@ -321,6 +321,111 @@ export function projectKey(iterationId: number, projectName: string): string {
   return `${iterationId}-${projectName}`;
 }
 
+export interface ScopeHierarchyTotals {
+  byClient: Map<
+    number,
+    { cost: CurrencyValue[]; billing: CurrencyValue[]; profit: CurrencyValue[] }
+  >;
+  byIteration: Map<
+    number,
+    { cost: CurrencyValue[]; billing: CurrencyValue[]; profit: CurrencyValue[] }
+  >;
+}
+
+/**
+ * Computes total cost, billing, and profit per client and per iteration from report time entries.
+ * Uses roleId (iter_XX_contractor_YY) to assign entries to iterations; clients from scope hierarchy.
+ */
+export function getScopeHierarchyTotals(
+  report: GenericReport,
+  scopeHierarchy: ScopeHierarchyClient[],
+): ScopeHierarchyTotals {
+  const iterationIdToClientId = new Map<number, number>();
+  for (const client of scopeHierarchy) {
+    for (const row of client.iterations) {
+      iterationIdToClientId.set(row.iteration.id, client.clientId);
+    }
+  }
+
+  const byIteration = new Map<
+    number,
+    {
+      cost: Record<string, number>;
+      billing: Record<string, number>;
+      profit: Record<string, number>;
+    }
+  >();
+  const byClient = new Map<
+    number,
+    {
+      cost: Record<string, number>;
+      billing: Record<string, number>;
+      profit: Record<string, number>;
+    }
+  >();
+
+  const ensureMaps = (iterId: number, cid: number) => {
+    if (!byIteration.has(iterId)) {
+      byIteration.set(iterId, { cost: {}, billing: {}, profit: {} });
+    }
+    if (!byClient.has(cid)) {
+      byClient.set(cid, { cost: {}, billing: {}, profit: {} });
+    }
+  };
+
+  for (const entry of report.timeEntries) {
+    const iterationId = getIterationIdFromRoleKey(entry.roleId);
+    if (iterationId == null) continue;
+    const clientId = iterationIdToClientId.get(iterationId);
+    if (clientId == null) continue;
+    let matchingRate: RoleRate;
+    try {
+      matchingRate = getMatchingRate(report, entry);
+    } catch {
+      continue;
+    }
+    const hours =
+      (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
+    const cost = hours * matchingRate.costRate;
+    const billing = hours * matchingRate.billingRate;
+
+    ensureMaps(iterationId, clientId);
+    const iMap = byIteration.get(iterationId)!;
+    const cMap = byClient.get(clientId)!;
+    addToBudget(iMap.cost, cost, matchingRate.costCurrency);
+    addToBudget(iMap.billing, billing, matchingRate.billingCurrency);
+    addToBudget(iMap.profit, billing, matchingRate.billingCurrency);
+    addToBudget(iMap.profit, -cost, matchingRate.costCurrency);
+    addToBudget(cMap.cost, cost, matchingRate.costCurrency);
+    addToBudget(cMap.billing, billing, matchingRate.billingCurrency);
+    addToBudget(cMap.profit, billing, matchingRate.billingCurrency);
+    addToBudget(cMap.profit, -cost, matchingRate.costCurrency);
+  }
+
+  return {
+    byClient: new Map(
+      Array.from(byClient.entries()).map(([cid, rec]) => [
+        cid,
+        {
+          cost: budgetToCurrencyValues(rec.cost),
+          billing: budgetToCurrencyValues(rec.billing),
+          profit: budgetToCurrencyValues(rec.profit),
+        },
+      ]),
+    ),
+    byIteration: new Map(
+      Array.from(byIteration.entries()).map(([id, rec]) => [
+        id,
+        {
+          cost: budgetToCurrencyValues(rec.cost),
+          billing: budgetToCurrencyValues(rec.billing),
+          profit: budgetToCurrencyValues(rec.profit),
+        },
+      ]),
+    ),
+  };
+}
+
 // --- Entry-to-iteration matching and breakdowns ---
 
 export function findMatchingIteration(

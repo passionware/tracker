@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
+import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
@@ -23,6 +24,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildScopeHierarchy,
   getContractorRatesForIterationProject,
+  getScopeHierarchyTotals,
   projectKey,
   type ContractorRateInProject,
 } from "./tmetric-dashboard.utils";
@@ -69,6 +71,11 @@ export function TmetricScopeHierarchyPanel({
       })),
     }));
   }, [scopeHierarchy, cachedReport]);
+
+  const scopeHierarchyTotals = useMemo(() => {
+    if (!cachedReport?.data) return null;
+    return getScopeHierarchyTotals(cachedReport.data, scopeHierarchyWithRates);
+  }, [cachedReport, scopeHierarchyWithRates]);
 
   const allClientIds = useMemo(
     () => scopeHierarchyWithRates.map((c) => c.clientId),
@@ -175,17 +182,59 @@ export function TmetricScopeHierarchyPanel({
               >
                 <div className="rounded-md border">
                   <CollapsibleTrigger asChild>
-                    <div className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/50">
-                      <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-                      <ClientWidget
-                        clientId={maybe.of(clientId)}
-                        services={services}
-                        layout="full"
-                        size="sm"
-                      />
-                      <span className="text-muted-foreground">
-                        {iterations.length} iteration(s)
-                      </span>
+                    <div className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 hover:bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+                        <ClientWidget
+                          clientId={maybe.of(clientId)}
+                          services={services}
+                          layout="full"
+                          size="sm"
+                        />
+                        <span className="text-muted-foreground">
+                          {iterations.length} iteration(s)
+                        </span>
+                      </div>
+                      {scopeHierarchyTotals && (
+                        <div className="flex flex-wrap items-center gap-x-4 text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Cost</span>
+                            <CurrencyValueWidget
+                              values={
+                                scopeHierarchyTotals.byClient.get(clientId)
+                                  ?.cost ?? []
+                              }
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium tabular-nums"
+                            />
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Billing</span>
+                            <CurrencyValueWidget
+                              values={
+                                scopeHierarchyTotals.byClient.get(clientId)
+                                  ?.billing ?? []
+                              }
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium tabular-nums"
+                            />
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Profit</span>
+                            <CurrencyValueWidget
+                              values={
+                                scopeHierarchyTotals.byClient.get(clientId)
+                                  ?.profit ?? []
+                              }
+                              services={services}
+                              exchangeService={services.exchangeService}
+                              className="font-medium tabular-nums"
+                            />
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -222,11 +271,62 @@ export function TmetricScopeHierarchyPanel({
                               >
                                 <div className="border-b border-border/50 last:border-b-0">
                                   <CollapsibleTrigger asChild>
-                                    <div className="flex cursor-pointer items-center gap-2 px-4 py-2 pl-7 hover:bg-muted/30">
-                                      <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-                                      <span className="text-sm font-medium">
-                                        {iterationLabel}
-                                      </span>
+                                    <div className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 pl-7 hover:bg-muted/30">
+                                      <div className="flex items-center gap-2">
+                                        <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+                                        <span className="text-sm font-medium">
+                                          {iterationLabel}
+                                        </span>
+                                      </div>
+                                      {scopeHierarchyTotals && (
+                                        <div className="flex flex-wrap items-center gap-x-4 text-xs pl-5">
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="text-muted-foreground">Cost</span>
+                                            <CurrencyValueWidget
+                                              values={
+                                                scopeHierarchyTotals.byIteration.get(
+                                                  iteration.id,
+                                                )?.cost ?? []
+                                              }
+                                              services={services}
+                                              exchangeService={
+                                                services.exchangeService
+                                              }
+                                              className="font-medium tabular-nums"
+                                            />
+                                          </span>
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="text-muted-foreground">Billing</span>
+                                            <CurrencyValueWidget
+                                              values={
+                                                scopeHierarchyTotals.byIteration.get(
+                                                  iteration.id,
+                                                )?.billing ?? []
+                                              }
+                                              services={services}
+                                              exchangeService={
+                                                services.exchangeService
+                                              }
+                                              className="font-medium tabular-nums"
+                                            />
+                                          </span>
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="text-muted-foreground">Profit</span>
+                                            <CurrencyValueWidget
+                                              values={
+                                                scopeHierarchyTotals.byIteration.get(
+                                                  iteration.id,
+                                                )?.profit ?? []
+                                              }
+                                              services={services}
+                                              exchangeService={
+                                                services.exchangeService
+                                              }
+                                              className="font-medium tabular-nums"
+                                            />
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                   </CollapsibleTrigger>
                                   <CollapsibleContent>
