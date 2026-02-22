@@ -3,6 +3,7 @@ import { ContractorWidget } from "@/features/_common/elements/pickers/Contractor
 import { WithFrontServices } from "@/core/frontServices";
 import { maybe } from "@passionware/monads";
 import { useCallback, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
   divideCurrencyValues,
   type ContractorIterationBreakdown,
@@ -12,9 +13,12 @@ import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
 export function ByContractorHierarchyView({
   contractors,
   services,
+  getContractorDetailUrl,
 }: {
   contractors: ContractorIterationBreakdown[];
   services: WithFrontServices["services"];
+  /** When set, contractor name becomes a link to this URL (e.g. contractor detail page). */
+  getContractorDetailUrl?: (contractorId: number) => string;
 }) {
   const [expandedContractors, setExpandedContractors] = useState<Set<number>>(
     () => new Set(),
@@ -46,16 +50,6 @@ export function ByContractorHierarchyView({
           totalHours > 0
             ? divideCurrencyValues(c.total.billing, totalHours)
             : [];
-        const totalProfitAmount = c.total.profit.reduce(
-          (s, v) => s + v.amount,
-          0,
-        );
-        const profitColorClass =
-          totalProfitAmount > 0
-            ? "text-green-600"
-            : totalProfitAmount < 0
-              ? "text-red-600"
-              : "";
         const items: ReactNode[] = [
           <FinancialHierarchyGrid.ExpandableRow
             key={`row-${c.contractorId}`}
@@ -63,12 +57,27 @@ export function ByContractorHierarchyView({
             onToggle={() => toggleContractor(c.contractorId)}
             label={
               <>
-                <ContractorWidget
-                  contractorId={maybe.of(c.contractorId)}
-                  services={services}
-                  layout="full"
-                  size="sm"
-                />
+                {getContractorDetailUrl ? (
+                  <Link
+                    to={getContractorDetailUrl(c.contractorId)}
+                    className="hover:underline focus:outline-none focus:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ContractorWidget
+                      contractorId={maybe.of(c.contractorId)}
+                      services={services}
+                      layout="full"
+                      size="sm"
+                    />
+                  </Link>
+                ) : (
+                  <ContractorWidget
+                    contractorId={maybe.of(c.contractorId)}
+                    services={services}
+                    layout="full"
+                    size="sm"
+                  />
+                )}
                 {hasIterations && (
                   <span className="text-muted-foreground shrink-0">
                     {c.byIteration.length} iteration(s)
@@ -136,7 +145,8 @@ export function ByContractorHierarchyView({
                 values={c.total.profit}
                 services={services}
                 exchangeService={services.exchangeService}
-                className={`font-medium ${profitColorClass}`}
+                colorize
+                className="font-medium"
               />
             </FinancialHierarchyGrid.Cell>
           </FinancialHierarchyGrid.ExpandableRow>,
@@ -154,16 +164,6 @@ export function ByContractorHierarchyView({
                   iterHours > 0
                     ? divideCurrencyValues(iter.billing, iterHours)
                     : [];
-                const iterProfitAmount = iter.profit.reduce(
-                  (s, v) => s + v.amount,
-                  0,
-                );
-                const iterProfitColorClass =
-                  iterProfitAmount > 0
-                    ? "text-green-600"
-                    : iterProfitAmount < 0
-                      ? "text-red-600"
-                      : "";
                 return (
                   <FinancialHierarchyGrid.Row
                     key={iter.iterationId}
@@ -232,7 +232,8 @@ export function ByContractorHierarchyView({
                         values={iter.profit}
                         services={services}
                         exchangeService={services.exchangeService}
-                        className={`font-medium ${iterProfitColorClass}`}
+                        colorize
+                        className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
                   </FinancialHierarchyGrid.Row>

@@ -411,17 +411,6 @@ export function TmetricScopeHierarchyPanel({
                       className="py-2 pr-2 text-xs text-right tabular-nums"
                     >
                       {(() => {
-                        const computed =
-                          profitInTargetByClient.get(clientId);
-                        const amount =
-                          computed?.[0]?.amount ??
-                          client.profit.reduce((s, v) => s + v.amount, 0);
-                        const profitColorClass =
-                          amount > 0
-                            ? "text-green-600"
-                            : amount < 0
-                              ? "text-red-600"
-                              : "";
                         return profitInTargetByClient.get(clientId) ? (
                           <ProfitBreakdownWidget
                             services={services}
@@ -431,14 +420,16 @@ export function TmetricScopeHierarchyPanel({
                               profitInTargetByClient.get(clientId)![0].amount
                             }
                             targetCurrency={targetCurrency}
-                            className={`font-medium ${profitColorClass}`}
+                            colorize
+                            className="font-medium"
                           />
                         ) : (
                           <CurrencyValueWidget
                             values={client.profit}
                             services={services}
                             exchangeService={services.exchangeService}
-                            className={`font-medium ${profitColorClass}`}
+                            colorize
+                            className="font-medium"
                           />
                         );
                       })()}
@@ -578,22 +569,6 @@ export function TmetricScopeHierarchyPanel({
                                   className="py-1.5 pr-2 text-xs text-right tabular-nums"
                                 >
                                   {(() => {
-                                    const computed =
-                                      profitInTargetByIteration.get(
-                                        iteration.id,
-                                      );
-                                    const amount =
-                                      computed?.[0]?.amount ??
-                                      iter.profit.reduce(
-                                        (s, v) => s + v.amount,
-                                        0,
-                                      );
-                                    const iterProfitColorClass =
-                                      amount > 0
-                                        ? "text-green-600"
-                                        : amount < 0
-                                          ? "text-red-600"
-                                          : "";
                                     return profitInTargetByIteration.get(
                                       iteration.id,
                                     ) ? (
@@ -607,7 +582,8 @@ export function TmetricScopeHierarchyPanel({
                                           )![0].amount
                                         }
                                         targetCurrency={targetCurrency}
-                                        className={`font-medium ${iterProfitColorClass}`}
+                                        colorize
+                                        className="font-medium"
                                       />
                                     ) : (
                                       <CurrencyValueWidget
@@ -616,7 +592,8 @@ export function TmetricScopeHierarchyPanel({
                                         exchangeService={
                                           services.exchangeService
                                         }
-                                        className={`font-medium ${iterProfitColorClass}`}
+                                        colorize
+                                        className="font-medium"
                                       />
                                     );
                                   })()}
@@ -781,13 +758,8 @@ export function TmetricScopeHierarchyPanel({
                                                 ]}
                                                 profitInTarget={profitValue}
                                                 targetCurrency={targetCurrency}
-                                                className={`font-medium ${
-                                                  profitValue > 0
-                                                    ? "text-green-600"
-                                                    : profitValue < 0
-                                                      ? "text-red-600"
-                                                      : ""
-                                                }`}
+                                                colorize
+                                                className="font-medium"
                                               />
                                             </FinancialHierarchyGrid.Cell>
                                           </FinancialHierarchyGrid.Row>
@@ -866,17 +838,6 @@ export function TmetricScopeHierarchyPanel({
                 className="py-2 pr-2 text-right tabular-nums"
               >
                 {(() => {
-                  const footerProfitAmount =
-                    footerTotals.totalProfit.reduce(
-                      (s, v) => s + v.amount,
-                      0,
-                    );
-                  const footerProfitColorClass =
-                    footerProfitAmount > 0
-                      ? "text-green-600"
-                      : footerProfitAmount < 0
-                        ? "text-red-600"
-                        : "";
                   return footerTotals.totalProfit.length === 1 &&
                     footerTotals.totalProfit[0].currency ===
                       targetCurrency ? (
@@ -886,14 +847,16 @@ export function TmetricScopeHierarchyPanel({
                       billing={footerTotals.totalBilling}
                       profitInTarget={footerTotals.totalProfit[0].amount}
                       targetCurrency={targetCurrency}
-                      className={`font-medium ${footerProfitColorClass}`}
+                      colorize
+                      className="font-medium"
                     />
                   ) : (
                     <CurrencyValueWidget
                       values={footerTotals.totalProfit}
                       services={services}
                       exchangeService={services.exchangeService}
-                      className={`font-medium ${footerProfitColorClass}`}
+                      colorize
+                      className="font-medium"
                     />
                   );
                 })()}

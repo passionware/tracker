@@ -3,6 +3,13 @@ import { SimpleTooltip } from "@/components/ui/tooltip";
 import { WithFrontServices } from "@/core/frontServices";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService";
 
+function profitColorClass(amount: number, colorize: boolean): string {
+  if (!colorize) return "";
+  if (amount > 0) return " text-green-600";
+  if (amount < 0) return " text-red-600";
+  return "";
+}
+
 export interface ProfitBreakdownWidgetProps {
   services: WithFrontServices["services"];
   /** Cost values in their original currencies (for tooltip) */
@@ -12,6 +19,8 @@ export interface ProfitBreakdownWidgetProps {
   /** Profit already computed in target currency (e.g. from exchange conversion) */
   profitInTarget: number;
   targetCurrency: string;
+  /** When true, positive profit is green and negative is red. Default false. */
+  colorize?: boolean;
   className?: string;
 }
 
@@ -26,6 +35,7 @@ export function ProfitBreakdownWidget({
   billing,
   profitInTarget,
   targetCurrency,
+  colorize = false,
   className,
 }: ProfitBreakdownWidgetProps) {
   const target = targetCurrency.toUpperCase();
@@ -73,7 +83,9 @@ export function ProfitBreakdownWidget({
   );
 
   const displayValue = (
-    <span className={className}>
+    <span
+      className={`${className ?? ""}${profitColorClass(profitInTarget, colorize)}`.trim()}
+    >
       {hasDifferentCurrencies ? "≈ " : ""}
       {services.formatService.financial.currency({
         amount: profitInTarget,
