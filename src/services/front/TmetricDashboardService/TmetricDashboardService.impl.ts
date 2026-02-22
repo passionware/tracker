@@ -26,6 +26,7 @@ import { WithProjectIterationService } from "@/services/io/ProjectIterationServi
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService";
 import {
   ContractorInScope,
+  ContractorsInScopeResult,
   ContractorsWithIntegrationStatus,
   TmetricDashboardService,
 } from "./TmetricDashboardService";
@@ -172,7 +173,7 @@ async function resolveIterationsInScope(
 async function resolveContractorsInScope(
   config: TmetricDashboardServiceConfig,
   scope: TmetricDashboardCacheScope,
-): Promise<ContractorInScope[]> {
+): Promise<ContractorsInScopeResult> {
   const workspaceIds = scope.workspaceIds ?? [];
   const clientIds = scope.clientIds ?? [];
   const contractorIdsFilter = scope.contractorIds ?? [];
@@ -202,6 +203,7 @@ async function resolveContractorsInScope(
   const projects =
     await config.services.projectService.ensureProjects(projectQuery);
   let projectIds = projects.map((p) => p.id);
+  let iterations: ProjectIteration[] = [];
 
   if (projectIterationIds !== undefined) {
     if (projectIterationIds === "all_active") {
@@ -224,7 +226,7 @@ async function resolveContractorsInScope(
               }),
             ],
       );
-      const iterations =
+      iterations =
         await config.services.projectIterationService.ensureProjectIterations(
           iterQuery,
         );
@@ -238,39 +240,51 @@ async function resolveContractorsInScope(
         await config.projectIterationApi.getProjectIterationsByIds(
           projectIterationIds,
         );
-      projectIds = [...new Set(Object.values(byIds).map((i) => i.projectId))];
+      iterations = Object.values(byIds);
+      projectIds = [...new Set(iterations.map((i) => i.projectId))];
     } else {
       projectIds = [];
     }
   }
 
+  const byProject = new Map<number, ContractorInScope[]>();
   const seen = new Set<string>();
-  const result: ContractorInScope[] = [];
+  const all: ContractorInScope[] = [];
 
   for (const project of projects) {
     if (!projectIds.includes(project.id)) continue;
 
     const contractors =
       await config.services.projectService.ensureProjectContractors(project.id);
+    const projectList: ContractorInScope[] = [];
 
     for (const pc of contractors) {
       const cid = pc.contractor.id;
       if (contractorIdsFilter.length && !contractorIdsFilter.includes(cid))
         continue;
 
-      const key = `${cid}:${pc.workspaceId}:${project.clientId}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      result.push({
+      const entry: ContractorInScope = {
         contractorId: cid,
         workspaceId: pc.workspaceId,
         clientId: project.clientId,
-      });
+      };
+      projectList.push(entry);
+
+      const key = `${cid}:${pc.workspaceId}:${project.clientId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      all.push(entry);
     }
+
+    byProject.set(project.id, projectList);
   }
 
-  return result;
+  const byIteration = new Map<number, ContractorInScope[]>();
+  for (const iter of iterations) {
+    byIteration.set(iter.id, byProject.get(iter.projectId) ?? []);
+  }
+
+  return { byIteration, all };
 }
 
 const TMETRIC_REQUIRED_VARS = [
@@ -336,30 +350,15 @@ export function createTmetricDashboardService(
       resolveContractorsInScope(config, scope),
 
     getContractorsInScopeWithIntegrationStatus: async (scope) => {
-      const contractors = await resolveContractorsInScope(config, scope);
+      const { all } = await resolveContractorsInScope(config, scope);
       return filterContractorsByTmetricIntegration(
-        contractors,
+        all,
         services.expressionService,
       );
     },
 
     refreshAndCache: async ({ scope, periodStart, periodEnd }) => {
-      const contractors = await resolveContractorsInScope(config, scope);
-      const { integrated, nonIntegrated } =
-        await filterContractorsByTmetricIntegration(
-          contractors,
-          services.expressionService,
-        );
-
-      if (integrated.length === 0) {
-        if (nonIntegrated.length > 0) {
-          throw new Error(
-            `No contractors with TMetric integration in scope. ${nonIntegrated.length} contractor(s) are not integrated (missing tmetric_user, new_hour_cost_rate, or new_hour_billing_rate).`,
-          );
-        }
-        throw new Error("No contractors in scope. Adjust filters.");
-      }
-
+      const { byIteration } = await resolveContractorsInScope(config, scope);
       const iterations = await resolveIterationsInScope(config, scope);
 
       if (iterations.length === 0) {
@@ -368,25 +367,70 @@ export function createTmetricDashboardService(
         );
       }
 
+      const perIterationIntegrated: {
+        iteration: ProjectIteration;
+        integrated: ContractorInScope[];
+        nonIntegrated: ContractorInScope[];
+      }[] = [];
+
+      for (const iter of iterations) {
+        const contractors = byIteration.get(iter.id) ?? [];
+        const { integrated, nonIntegrated } =
+          await filterContractorsByTmetricIntegration(
+            contractors,
+            services.expressionService,
+          );
+        perIterationIntegrated.push({
+          iteration: iter,
+          integrated,
+          nonIntegrated,
+        });
+      }
+
+      const reports = perIterationIntegrated.flatMap(
+        ({ iteration, integrated }) =>
+          integrated.map((c) => ({
+            contractorId: c.contractorId,
+            periodStart: iteration.periodStart,
+            periodEnd: iteration.periodEnd,
+            workspaceId: c.workspaceId,
+            clientId: c.clientId,
+            iterationId: iteration.id,
+          })),
+      );
+
+      const allIntegrated = [
+        ...new Map(
+          perIterationIntegrated.flatMap(({ integrated }) =>
+            integrated.map((c) => [
+              `${c.contractorId}:${c.workspaceId}:${c.clientId}`,
+              c,
+            ]),
+          ),
+        ).values(),
+      ];
+      const totalNonIntegrated = perIterationIntegrated.reduce(
+        (sum, { nonIntegrated }) => sum + nonIntegrated.length,
+        0,
+      );
+
+      if (allIntegrated.length === 0) {
+        if (totalNonIntegrated > 0) {
+          throw new Error(
+            `No contractors with TMetric integration in scope. ${totalNonIntegrated} contractor(s) are not integrated (missing tmetric_user, new_hour_cost_rate, or new_hour_billing_rate).`,
+          );
+        }
+        throw new Error("No contractors in scope. Adjust filters.");
+      }
+
       const tmetricPlugin = createTmetricPlugin({
         services: { expressionService: services.expressionService },
       });
 
-      const reports = integrated.flatMap((c) =>
-        iterations.map((iter) => ({
-          contractorId: c.contractorId,
-          periodStart: iter.periodStart,
-          periodEnd: iter.periodEnd,
-          workspaceId: c.workspaceId,
-          clientId: c.clientId,
-          iterationId: iter.id,
-        })),
-      );
-
       const { reportData } = await tmetricPlugin.getReport({ reports });
 
       const contractorContexts = new Map(
-        integrated.map((c) => [
+        allIntegrated.map((c) => [
           c.contractorId,
           { workspaceId: c.workspaceId, clientId: c.clientId },
         ]),

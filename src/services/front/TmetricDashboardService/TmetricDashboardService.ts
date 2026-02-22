@@ -10,6 +10,14 @@ export interface ContractorInScope {
   clientId: number;
 }
 
+/** Result of resolving contractors in scope: flat list and per-iteration breakdown. */
+export interface ContractorsInScopeResult {
+  /** Contractors grouped by iteration id (only when scope has projectIterationIds). */
+  byIteration: Map<number, ContractorInScope[]>;
+  /** Deduplicated list of all contractors in scope (current behavior). */
+  all: ContractorInScope[];
+}
+
 export interface ContractorsWithIntegrationStatus {
   /** Full list per (contractor, workspace, client) - used by refreshAndCache */
   integrated: ContractorInScope[];
@@ -23,12 +31,11 @@ export interface ContractorsWithIntegrationStatus {
 export interface TmetricDashboardService {
   /**
    * Resolves contractors that match the given scope.
-   * Returns (contractorId, workspaceId, clientId) for each contractor
-   * so TMetric plugin can fetch their time entries.
+   * Returns byIteration (contractors per iteration id) and all (deduplicated flat list).
    */
   resolveContractorsInScope: (
     scope: TmetricDashboardCacheScope,
-  ) => Promise<ContractorInScope[]>;
+  ) => Promise<ContractorsInScopeResult>;
 
   /**
    * Resolves contractors in scope and splits them by TMetric integration status.
