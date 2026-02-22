@@ -1,12 +1,14 @@
 import { TmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
-import { ProjectIterationApi } from "@/api/project-iteration/project-iteration.api";
+import {
+  ProjectIteration,
+  ProjectIterationApi,
+} from "@/api/project-iteration/project-iteration.api";
 import { maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery";
 import { projectQueryUtils } from "@/api/project/project.api";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api";
-import { CalendarDate } from "@internationalized/date";
 import { WithServices } from "@/platform/typescript/services";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import {
@@ -31,8 +33,14 @@ import {
 const TMETRIC_DASHBOARD_CACHE_QUERY_KEY = ["tmetric_dashboard_cache"] as const;
 
 function scopeToKey(scope: TmetricDashboardCacheScope): string {
-  const w = (scope.workspaceIds ?? []).slice().sort((a, b) => a - b).join(",");
-  const c = (scope.clientIds ?? []).slice().sort((a, b) => a - b).join(",");
+  const w = (scope.workspaceIds ?? [])
+    .slice()
+    .sort((a, b) => a - b)
+    .join(",");
+  const c = (scope.clientIds ?? [])
+    .slice()
+    .sort((a, b) => a - b)
+    .join(",");
   const p =
     scope.projectIterationIds === "all_active"
       ? "all_active"
@@ -91,11 +99,77 @@ function applyPrefilledRatesToReport(
   return updated;
 }
 
-function toCalendarDate(d: Date): CalendarDate {
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  return new CalendarDate(y, m, day);
+/** Resolves iterations in scope with their date ranges (periodStart, periodEnd). */
+async function resolveIterationsInScope(
+  config: TmetricDashboardServiceConfig,
+  scope: TmetricDashboardCacheScope,
+): Promise<ProjectIteration[]> {
+  const workspaceIds = scope.workspaceIds ?? [];
+  const clientIds = scope.clientIds ?? [];
+  const projectIterationIds = scope.projectIterationIds;
+
+  const projectQuery = projectQueryUtils.getBuilder().build((q) => {
+    const filters: ReturnType<typeof q.withFilter>[] = [];
+    if (workspaceIds.length) {
+      filters.push(
+        q.withFilter("workspaceId", { operator: "oneOf", value: workspaceIds }),
+      );
+    }
+    if (clientIds.length) {
+      filters.push(
+        q.withFilter("clientId", { operator: "oneOf", value: clientIds }),
+      );
+    }
+    filters.push(
+      q.withFilter("status", {
+        operator: "oneOf",
+        value: ["active", "closed"],
+      }),
+    );
+    return filters;
+  });
+
+  const projects =
+    await config.services.projectService.ensureProjects(projectQuery);
+  const projectIds = projects.map((p) => p.id);
+
+  if (projectIterationIds === "all_active") {
+    const iterQuery = projectIterationQueryUtils.getBuilder().build((q) =>
+      projectIds.length
+        ? [
+            q.withFilter("status", {
+              operator: "oneOf",
+              value: ["active"],
+            }),
+            q.withFilter("projectId", {
+              operator: "oneOf",
+              value: projectIds,
+            }),
+          ]
+        : [
+            q.withFilter("status", {
+              operator: "oneOf",
+              value: ["active"],
+            }),
+          ],
+    );
+    return config.services.projectIterationService.ensureProjectIterations(
+      iterQuery,
+    );
+  }
+
+  if (
+    Array.isArray(projectIterationIds) &&
+    projectIterationIds.length > 0
+  ) {
+    const byIds =
+      await config.projectIterationApi.getProjectIterationsByIds(
+        projectIterationIds,
+      );
+    return Object.values(byIds);
+  }
+
+  return [];
 }
 
 async function resolveContractorsInScope(
@@ -289,29 +363,28 @@ export function createTmetricDashboardService(
         throw new Error("No contractors in scope. Adjust filters.");
       }
 
-      const periodStartCal = toCalendarDate(periodStart);
-      const periodEndCal = toCalendarDate(periodEnd);
+      const iterations = await resolveIterationsInScope(config, scope);
+
+      if (iterations.length === 0) {
+        throw new Error("No iterations in scope. Select at least one iteration.");
+      }
 
       const tmetricPlugin = createTmetricPlugin({
         services: { expressionService: services.expressionService },
       });
-      const iterationId =
-        scope.projectIterationIds !== undefined &&
-        Array.isArray(scope.projectIterationIds) &&
-        scope.projectIterationIds.length === 1
-          ? scope.projectIterationIds[0]
-          : 0;
 
-      const { reportData } = await tmetricPlugin.getReport({
-        reports: integrated.map((c) => ({
+      const reports = integrated.flatMap((c) =>
+        iterations.map((iter) => ({
           contractorId: c.contractorId,
-          periodStart: periodStartCal,
-          periodEnd: periodEndCal,
+          periodStart: iter.periodStart,
+          periodEnd: iter.periodEnd,
           workspaceId: c.workspaceId,
           clientId: c.clientId,
-          iterationId,
+          iterationId: iter.id,
         })),
-      });
+      );
+
+      const { reportData } = await tmetricPlugin.getReport({ reports });
 
       const contractorContexts = new Map(
         integrated.map((c) => [
