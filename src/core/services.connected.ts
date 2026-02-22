@@ -15,6 +15,10 @@ import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
 import { CostQuery, costQuerySchema } from "@/api/cost/cost.api";
+import {
+  DashboardQuery,
+  dashboardQuerySchema,
+} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
 import { ReportQuery, reportQuerySchema } from "@/api/reports/reports.api.ts";
 import { UserQuery, userQuerySchema } from "@/api/user/user.api";
@@ -76,6 +80,7 @@ const queryParamsService = createQueryParamsService<{
   billing: BillingQuery;
   costs: CostQuery;
   variables: VariableQuery;
+  dashboard: DashboardQuery;
 }>({
   navigationService,
   parseQueryParams: {
@@ -93,6 +98,9 @@ const queryParamsService = createQueryParamsService<{
     variables: variableQuerySchema.parse as (
       params: Record<string, unknown>,
     ) => VariableQuery,
+    dashboard: dashboardQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => DashboardQuery,
   },
 });
 const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);
@@ -265,6 +273,7 @@ export const myServices = {
   tmetricDashboardService: createTmetricDashboardService({
     cacheApi: createTmetricDashboardCacheApi(mySupabase),
     projectIterationApi: myProjectIterationApi,
+    client: myQueryClient,
     services: {
       projectService,
       projectIterationService,

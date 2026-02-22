@@ -33,6 +33,7 @@ import { WithTmetricDashboardService } from "@/services/front/TmetricDashboardSe
 import { WithDialogService } from "@/services/front/DialogService/DialogService";
 import { BillingQuery } from "@/api/billing/billing.api";
 import { CostQuery } from "@/api/cost/cost.api";
+import { DashboardQuery } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { ProjectQuery } from "@/api/project/project.api";
 import { ReportQuery } from "@/api/reports/reports.api";
 import { UserQuery } from "@/api/user/user.api";
@@ -56,6 +57,7 @@ export type FrontServices = MergeServices<
       billing: BillingQuery;
       costs: CostQuery;
       variables: VariableQuery;
+      dashboard: DashboardQuery;
     }>,
     WithRoutingService,
     WithFormatService,
@@ -89,6 +91,7 @@ export type FrontServices = MergeServices<
       billing: BillingQuery;
       costs: CostQuery;
       variables: VariableQuery;
+      dashboard: DashboardQuery;
     }>,
   ]
 >;
