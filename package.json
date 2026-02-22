@@ -18,10 +18,14 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "^9.5.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@internationalized/date": "^3.9.0",
+    "@mui/material": "^7.3.8",
+    "@mui/x-charts": "^8.27.0",
     "@nivo/core": "^0.99.0",
     "@nivo/sunburst": "^0.99.0",
     "@passionware/entities": "^0.0.0-dev-20250822161245",

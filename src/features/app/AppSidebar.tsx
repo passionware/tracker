@@ -31,6 +31,7 @@ import {
   AudioLines,
   BriefcaseBusiness,
   Frame,
+  Grid3X3,
   HandCoins,
   HardHat,
   Leaf,
@@ -157,9 +158,14 @@ function useData(
       ],
       projects: [
         {
-          name: "Time tracking",
-          url: "#",
+          name: "TMetric dashboard",
+          url: routing.tmetricDashboard(),
           icon: AudioLines,
+        },
+        {
+          name: "Cube explorer",
+          url: routing.tmetricDashboardCube(),
+          icon: Grid3X3,
         },
         {
           name: "Client cockpit",

@@ -11,7 +11,7 @@ import {
   ProjectIdResolver,
   ProjectIterationIdResolver,
 } from "@/features/app/RootWidget.idResolvers.tsx";
-import { SelectClientPage } from "@/features/app/SelectClientPage.tsx";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { BillingEditModalWidget } from "@/features/billing/BillingEditModalWidget.tsx";
 import { BillingWidget } from "@/features/billing/BillingWidget.tsx";
 import { CockpitMainRouter } from "@/features/client-cockpit/ClientCockpitRouter.tsx";
@@ -27,6 +27,8 @@ import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
+import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
+import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
@@ -43,7 +45,12 @@ export function RootWidget(props: WithFrontServices) {
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
-                <SelectClientPage services={props.services} />
+                <Navigate
+                  to={props.services.routingService
+                    .forWorkspace(idSpecUtils.ofAll())
+                    .forClient(idSpecUtils.ofAll())
+                    .tmetricDashboard()}
+                />
               </Layout>
             </ProtectedRoute>
           }
@@ -240,6 +247,111 @@ export function RootWidget(props: WithFrontServices) {
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <PotentialCostWidget
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardCube()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardTimeline()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardContractorFor()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricContractorDetailPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardContractor()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboard()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricDashboardPage
                       workspaceId={workspaceId}
                       clientId={clientId}
                       services={props.services}

@@ -8,6 +8,13 @@ import {
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { rd } from "@passionware/monads";
 
+function colorClassForAmount(amount: number, colorize: boolean): string {
+  if (!colorize) return "";
+  if (amount > 0) return " text-green-600";
+  if (amount < 0) return " text-red-600";
+  return "";
+}
+
 export interface CurrencyValueWidgetProps
   extends WithServices<[WithFormatService]> {
   exchangeService: ExchangeService;
@@ -15,6 +22,8 @@ export interface CurrencyValueWidgetProps
   targetCurrency?: string;
   showApproximation?: boolean;
   showSumInOriginalCurrencies?: boolean;
+  /** When true, positive amounts are green and negative amounts are red. Default false. */
+  colorize?: boolean;
   className?: string;
 }
 
@@ -23,6 +32,7 @@ export function CurrencyValueWidget({
   targetCurrency = "EUR",
   showApproximation = true,
   showSumInOriginalCurrencies = true,
+  colorize = false,
   services,
   exchangeService,
   className,
@@ -101,7 +111,9 @@ export function CurrencyValueWidget({
 
     if (!showApproximation || isTargetCurrency) {
       return (
-        <span className={className}>
+        <span
+          className={`${className ?? ""}${colorClassForAmount(value.amount, colorize)}`.trim()}
+        >
           {services.formatService.financial.currency(value)}
         </span>
       );
@@ -136,7 +148,9 @@ export function CurrencyValueWidget({
           </div>
         }
       >
-        <span className={className}>
+        <span
+          className={`${className ?? ""}${colorClassForAmount(value.amount, colorize)}`.trim()}
+        >
           {services.formatService.financial.currency(value)}
         </span>
       </SimpleTooltip>
@@ -291,7 +305,9 @@ export function CurrencyValueWidget({
         </div>
       }
     >
-      <span className={className}>
+      <span
+        className={`${className ?? ""}${colorClassForAmount(approximateTotal, colorize)}`.trim()}
+      >
         ≈ {services.formatService.financial.currency(approximateValue)}
       </span>
     </SimpleTooltip>

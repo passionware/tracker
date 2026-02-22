@@ -64,10 +64,11 @@ function getSerializableCubeConfig(
   const getCurrencyFromReport = (): string => {
     const currencies = new Set<string>();
 
-    // Collect all billing currencies from all role types
+    // Collect all billing currencies from all role types (normalize case for comparison)
     for (const roleType of Object.values(report.data.definitions.roleTypes)) {
       for (const rate of roleType.rates) {
-        if (rate.billingCurrency) currencies.add(rate.billingCurrency);
+        if (rate.billingCurrency)
+          currencies.add(rate.billingCurrency.toUpperCase());
       }
     }
 

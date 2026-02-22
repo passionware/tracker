@@ -80,7 +80,7 @@ const roleType$ = z.object({
   ),
 });
 
-const genericReport$ = z.object({
+export const genericReport$ = z.object({
   definitions: z.object({
     taskTypes: z.record(taskType$),
     activityTypes: z.record(activityType$),

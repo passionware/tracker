@@ -6,6 +6,7 @@ import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createGeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.http";
+import { createTmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api.http";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
@@ -14,6 +15,10 @@ import { createVariableApi } from "@/api/variable/variable.api.http.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
 import { CostQuery, costQuerySchema } from "@/api/cost/cost.api";
+import {
+  DashboardQuery,
+  dashboardQuerySchema,
+} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
 import { ReportQuery, reportQuerySchema } from "@/api/reports/reports.api.ts";
 import { UserQuery, userQuerySchema } from "@/api/user/user.api";
@@ -30,6 +35,7 @@ import { createFormatService } from "@/services/FormatService/FormatService.impl
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
+import { createTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.impl.ts";
 import { createReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.impl.tsx";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
@@ -74,6 +80,7 @@ const queryParamsService = createQueryParamsService<{
   billing: BillingQuery;
   costs: CostQuery;
   variables: VariableQuery;
+  dashboard: DashboardQuery;
 }>({
   navigationService,
   parseQueryParams: {
@@ -91,6 +98,9 @@ const queryParamsService = createQueryParamsService<{
     variables: variableQuerySchema.parse as (
       params: Record<string, unknown>,
     ) => VariableQuery,
+    dashboard: dashboardQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => DashboardQuery,
   },
 });
 const generatedReportSourceApi = createGeneratedReportSourceApi(mySupabase);
@@ -158,6 +168,13 @@ const mutationService = createMutationService(
   createMutationApi(mySupabase),
 );
 
+const projectService = createProjectService({
+  api: myProjectApi,
+  client: myQueryClient,
+  services: {
+    messageService,
+  },
+});
 export const myServices = {
   authService: createAuthService(mySupabase),
   cockpitAuthService: createCockpitAuthService(clientCockpitSupabase),
@@ -233,15 +250,9 @@ export const myServices = {
   variableService,
   billingService,
   expressionService,
-  projectService: createProjectService({
-    api: myProjectApi,
-    client: myQueryClient,
-    services: {
-      messageService,
-    },
-  }),
   projectIterationService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
+  projectService,
   reportGenerationService: createReportGenerationService({
     services: {
       reportService,
@@ -259,6 +270,16 @@ export const myServices = {
   exchangeService,
   generatedReportViewService: createGeneratedReportViewService(),
   dialogService: myDialogService,
+  tmetricDashboardService: createTmetricDashboardService({
+    cacheApi: createTmetricDashboardCacheApi(mySupabase),
+    projectIterationApi: myProjectIterationApi,
+    client: myQueryClient,
+    services: {
+      projectService,
+      projectIterationService,
+      expressionService,
+    },
+  }),
 } satisfies FrontServices;
 
 export function NavigationServiceInject() {

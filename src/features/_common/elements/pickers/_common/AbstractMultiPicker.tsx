@@ -60,6 +60,10 @@ export type AbstractMultiPickerProps<Id, Data> = Overwrite<
     align?: PopoverContentProps["align"];
     side?: PopoverContentProps["side"];
     layout?: "full" | "avatar";
+    /** When set, only this many selected items are shown in the trigger; overflow is summarized by itemOverflowMessage. */
+    maxValueItems?: number;
+    /** When maxValueItems is set and there is overflow, this is called with the full value and rendered instead of the extra items. */
+    itemOverflowMessage?: (value: Array<Unassigned | Id>) => ReactNode;
   }
 >;
 
@@ -90,6 +94,8 @@ export function AbstractMultiPicker<Id, Data>(
     allowUnassigned,
     align = "end",
     side = "top",
+    maxValueItems,
+    itemOverflowMessage,
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -163,42 +169,55 @@ export function AbstractMultiPicker<Id, Data>(
         .map((optionItems) => {
           const unassigned = optionItems.filter(unassignedUtils.isUnassigned);
           const rest = optionItems.filter(unassignedUtils.isAssigned);
-          return [...unassigned, ...rest].map((data) => (
-            <Fragment
-              key={unassignedUtils.mapOrElse(
-                data as Unassigned | Data,
-                config.getKey,
-                "@@unassigned@@",
-              )}
-            >
-              <SimpleTooltip title="Unassigned">
-                {unassignedUtils.mapOrElse(
-                  data as Unassigned | Data,
-                  partialRight(config.renderItem, _props),
-                  value.length > 1 ? (
-                    <div
-                      className={cn(
-                        "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-accent",
-                        "text-accent-foreground",
-                      )}
-                    >
-                      <Unlink2 />
-                    </div>
-                  ) : (
-                    <div
-                      className={cn(
-                        "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
-                        "text-accent-foreground",
-                      )}
-                    >
-                      <Unlink2 />
-                      Unassigned
-                    </div>
-                  ),
-                )}
-              </SimpleTooltip>
-            </Fragment>
-          ));
+          const all = [...unassigned, ...rest];
+          const hasOverflow =
+            maxValueItems != null && all.length > maxValueItems;
+          const toShow = hasOverflow ? [] : all;
+          return (
+            <>
+              {toShow.map((data) => (
+                <Fragment
+                  key={unassignedUtils.mapOrElse(
+                    data as Unassigned | Data,
+                    config.getKey,
+                    "@@unassigned@@",
+                  )}
+                >
+                  <SimpleTooltip title="Unassigned">
+                    {unassignedUtils.mapOrElse(
+                      data as Unassigned | Data,
+                      partialRight(config.renderItem, _props),
+                      value.length > 1 ? (
+                        <div
+                          className={cn(
+                            "truncate min-w-0 flex-row flex gap-2 items-center justify-center size-7 rounded-full bg-accent",
+                            "text-accent-foreground",
+                          )}
+                        >
+                          <Unlink2 />
+                        </div>
+                      ) : (
+                        <div
+                          className={cn(
+                            "ml-2 truncate min-w-0 flex-row flex gap-2 items-center",
+                            "text-accent-foreground",
+                          )}
+                        >
+                          <Unlink2 />
+                          Unassigned
+                        </div>
+                      ),
+                    )}
+                  </SimpleTooltip>
+                </Fragment>
+              ))}
+              {hasOverflow && itemOverflowMessage ? (
+                <div className="ml-2 truncate min-w-0 text-muted-foreground text-sm">
+                  {itemOverflowMessage(value)}
+                </div>
+              ) : null}
+            </>
+          );
         })}
       <ChevronsUpDown className="opacity-50 ml-auto" />
     </Button>
@@ -275,10 +294,17 @@ export function AbstractMultiPicker<Id, Data>(
                   }
                   return options.map((data) => {
                     const itemId = config.getItemId(data);
+                    const isSelected = value.some(
+                      (v) => String(v) === String(itemId),
+                    );
                     return (
                       <CommandItem
                         key={config.getKey(data)}
                         value={config.getKey(data)}
+                        className={cn(
+                          isSelected &&
+                            "bg-accent text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground",
+                        )}
                         onSelect={() => {
                           handleSelect(xor(value, [itemId]), itemId, "toggle");
                           // setOpen(false);
@@ -291,9 +317,7 @@ export function AbstractMultiPicker<Id, Data>(
                         <Check
                           className={cn(
                             "ml-auto",
-                            value.includes(itemId)
-                              ? "opacity-100"
-                              : "opacity-0",
+                            isSelected ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>

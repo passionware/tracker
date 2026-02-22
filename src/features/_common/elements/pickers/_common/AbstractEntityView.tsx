@@ -43,12 +43,17 @@ const entityViewVariants = cva("", {
 
 export function AbstractEntityView({
   entity,
-  layout,
+  layout = "full",
   className,
   size,
 }: AbstractEntityViewProps) {
   const avatar = (
-    <Avatar className={cn(entityViewVariants({ size }), className)}>
+    <Avatar
+      className={cn(
+        entityViewVariants({ size }),
+        layout !== "avatar" ? "" : className,
+      )}
+    >
       {rd
         .fullJourney(entity)
         .initially(

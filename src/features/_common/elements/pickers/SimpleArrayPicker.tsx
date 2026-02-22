@@ -11,12 +11,16 @@ import { rd } from "@passionware/monads";
 import { ComponentProps } from "react";
 import { AbstractEntityViewProps } from "./_common/AbstractEntityView";
 
+export interface SimpleItemWithCompactLabel extends SimpleItem {
+  compactLabel?: string;
+}
+
 interface SimpleArrayPickerProps
   extends Omit<
     ComponentProps<typeof AbstractMultiPicker>,
     "value" | "onSelect" | "config"
   > {
-  items: SimpleItem[];
+  items: SimpleItemWithCompactLabel[];
   value: string[];
   onSelect: (value: string[]) => void;
   searchPlaceholder?: string;
@@ -53,15 +57,25 @@ export function SimpleArrayPicker({
       onSelect={handleSelect}
       config={{
         renderItem: (item, pickerProps) => {
+          const resolvedItem = unassignedUtils.mapOrElse(
+            item,
+            rd.of,
+            rd.ofIdle(),
+          );
+          const displayItem = rd.map(resolvedItem, (i) =>
+            i.compactLabel != null ? { ...i, label: i.compactLabel } : i,
+          );
           return (
             <SimpleView
               layout={pickerProps.layout}
               size={itemSize}
-              item={unassignedUtils.mapOrElse(item, rd.of, rd.ofIdle())}
+              item={displayItem}
             />
           );
         },
-        renderOption: (item: SimpleItem) => <SimpleView item={rd.of(item)} />,
+        renderOption: (item: SimpleItem) => (
+          <SimpleView item={rd.of(item)} className="min-w-0 w-full" />
+        ),
         getKey: (item: SimpleItem) => item.id,
         getItemId: (item: SimpleItem) => item.id,
         useSelectedItems: (ids: Array<Unassigned | string>) =>
