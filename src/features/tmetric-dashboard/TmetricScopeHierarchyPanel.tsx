@@ -108,7 +108,8 @@ export function TmetricScopeHierarchyPanel({
     const iterations = scopeHierarchyWithRates.flatMap((c) => c.iterations);
     const totalHours = iterations.reduce(
       (sum, row) =>
-        sum + (scopeHierarchyTotals.byIteration.get(row.iteration.id)?.hours ?? 0),
+        sum +
+        (scopeHierarchyTotals.byIteration.get(row.iteration.id)?.hours ?? 0),
       0,
     );
     const allCost = sumCurrencyValues(
@@ -120,7 +121,8 @@ export function TmetricScopeHierarchyPanel({
     const allBilling = sumCurrencyValues(
       ...iterations.map(
         (row) =>
-          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.billing ?? [],
+          scopeHierarchyTotals!.byIteration.get(row.iteration.id)?.billing ??
+          [],
       ),
     );
     const allProfit = sumCurrencyValues(
@@ -146,8 +148,8 @@ export function TmetricScopeHierarchyPanel({
         <div>
           <CardTitle className="text-base">Scope</CardTitle>
           <CardDescription>
-            Hierarchy of current dashboard scope; contractor rates when report is
-            loaded
+            Hierarchy of current dashboard scope; contractor rates when report
+            is loaded
           </CardDescription>
         </div>
         {scopeHierarchy.length > 0 && (
@@ -235,8 +237,10 @@ export function TmetricScopeHierarchyPanel({
                   </span>
                   {scopeHierarchyTotals ? (
                     (() => {
-                      const client = scopeHierarchyTotals.byClient.get(clientId);
-                      if (!client) return <span style={{ gridColumn: "3 / 9" }} />;
+                      const client =
+                        scopeHierarchyTotals.byClient.get(clientId);
+                      if (!client)
+                        return <span style={{ gridColumn: "3 / 9" }} />;
                       const hours = client.hours;
                       const avgCost =
                         hours > 0
@@ -248,10 +252,16 @@ export function TmetricScopeHierarchyPanel({
                           : [];
                       return (
                         <>
-                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "3 / 4" }}>
+                          <span
+                            className="py-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "3 / 4" }}
+                          >
                             {hours.toFixed(1)}
                           </span>
-                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "4 / 5" }}>
+                          <span
+                            className="py-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "4 / 5" }}
+                          >
                             <CurrencyValueWidget
                               values={avgCost}
                               services={services}
@@ -259,7 +269,10 @@ export function TmetricScopeHierarchyPanel({
                               className="font-medium"
                             />
                           </span>
-                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "5 / 6" }}>
+                          <span
+                            className="py-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "5 / 6" }}
+                          >
                             <CurrencyValueWidget
                               values={avgBilling}
                               services={services}
@@ -267,7 +280,10 @@ export function TmetricScopeHierarchyPanel({
                               className="font-medium"
                             />
                           </span>
-                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "6 / 7" }}>
+                          <span
+                            className="py-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "6 / 7" }}
+                          >
                             <CurrencyValueWidget
                               values={client.cost}
                               services={services}
@@ -275,7 +291,10 @@ export function TmetricScopeHierarchyPanel({
                               className="font-medium"
                             />
                           </span>
-                          <span className="py-2 text-xs text-right tabular-nums" style={{ gridColumn: "7 / 8" }}>
+                          <span
+                            className="py-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "7 / 8" }}
+                          >
                             <CurrencyValueWidget
                               values={client.billing}
                               services={services}
@@ -283,7 +302,10 @@ export function TmetricScopeHierarchyPanel({
                               className="font-medium"
                             />
                           </span>
-                          <span className="py-2 pr-2 text-xs text-right tabular-nums" style={{ gridColumn: "8 / 9" }}>
+                          <span
+                            className="py-2 pr-2 text-xs text-right tabular-nums"
+                            style={{ gridColumn: "8 / 9" }}
+                          >
                             <CurrencyValueWidget
                               values={client.profit}
                               services={services}
@@ -342,7 +364,7 @@ export function TmetricScopeHierarchyPanel({
                             >
                               <span className="flex items-center px-2 py-1.5 w-8 shrink-0 pl-4">
                                 <ChevronRight
-                                  className={`h-3.5 w-3.5 transition-transform ${iterOpen ? "rotate-90" : ""}`}
+                                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${iterOpen ? "rotate-90" : ""}`}
                                 />
                               </span>
                               <span className="flex min-w-0 items-center py-1.5 pl-2 text-sm font-medium hover:bg-muted/30 rounded">
@@ -372,10 +394,16 @@ export function TmetricScopeHierarchyPanel({
                                       : [];
                                   return (
                                     <>
-                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "3 / 4" }}>
+                                      <span
+                                        className="py-1.5 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "3 / 4" }}
+                                      >
                                         {hours.toFixed(1)}
                                       </span>
-                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "4 / 5" }}>
+                                      <span
+                                        className="py-1.5 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "4 / 5" }}
+                                      >
                                         <CurrencyValueWidget
                                           values={avgCost}
                                           services={services}
@@ -385,7 +413,10 @@ export function TmetricScopeHierarchyPanel({
                                           className="font-medium"
                                         />
                                       </span>
-                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "5 / 6" }}>
+                                      <span
+                                        className="py-1.5 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "5 / 6" }}
+                                      >
                                         <CurrencyValueWidget
                                           values={avgBilling}
                                           services={services}
@@ -395,7 +426,10 @@ export function TmetricScopeHierarchyPanel({
                                           className="font-medium"
                                         />
                                       </span>
-                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "6 / 7" }}>
+                                      <span
+                                        className="py-1.5 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "6 / 7" }}
+                                      >
                                         <CurrencyValueWidget
                                           values={iter.cost}
                                           services={services}
@@ -405,7 +439,10 @@ export function TmetricScopeHierarchyPanel({
                                           className="font-medium"
                                         />
                                       </span>
-                                      <span className="py-1.5 text-xs text-right tabular-nums" style={{ gridColumn: "7 / 8" }}>
+                                      <span
+                                        className="py-1.5 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "7 / 8" }}
+                                      >
                                         <CurrencyValueWidget
                                           values={iter.billing}
                                           services={services}
@@ -415,7 +452,10 @@ export function TmetricScopeHierarchyPanel({
                                           className="font-medium"
                                         />
                                       </span>
-                                      <span className="py-1.5 pr-2 text-xs text-right tabular-nums" style={{ gridColumn: "8 / 9" }}>
+                                      <span
+                                        className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                                        style={{ gridColumn: "8 / 9" }}
+                                      >
                                         <CurrencyValueWidget
                                           values={iter.profit}
                                           services={services}
@@ -595,54 +635,53 @@ export function TmetricScopeHierarchyPanel({
               ];
             })}
             {/* Footer totals */}
-            {footerTotals != null &&
-              footerTotals.iterationCount > 0 && (
-                <div className="contents border-t bg-muted/30 text-xs font-medium">
-                  <span className="px-2 py-2 w-8" />
-                  <span className="py-2">
-                    Total: {footerTotals.iterationCount} iteration
-                    {footerTotals.iterationCount !== 1 ? "s" : ""}
-                  </span>
-                  <span className="py-2 text-right tabular-nums">
-                    {footerTotals.totalHours.toFixed(1)}
-                  </span>
-                  <span className="py-2 text-right tabular-nums">
-                    <CurrencyValueWidget
-                      values={footerTotals.avgCostRate}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                    />
-                  </span>
-                  <span className="py-2 text-right tabular-nums">
-                    <CurrencyValueWidget
-                      values={footerTotals.avgBillingRate}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                    />
-                  </span>
-                  <span className="py-2 text-right tabular-nums">
-                    <CurrencyValueWidget
-                      values={footerTotals.totalCost}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                    />
-                  </span>
-                  <span className="py-2 text-right tabular-nums">
-                    <CurrencyValueWidget
-                      values={footerTotals.totalBilling}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                    />
-                  </span>
-                  <span className="py-2 pr-2 text-right tabular-nums">
-                    <CurrencyValueWidget
-                      values={footerTotals.totalProfit}
-                      services={services}
-                      exchangeService={services.exchangeService}
-                    />
-                  </span>
-                </div>
-              )}
+            {footerTotals != null && footerTotals.iterationCount > 0 && (
+              <div className="contents border-t bg-muted/30 text-xs font-medium">
+                <span className="px-2 py-2 w-8" />
+                <span className="py-2">
+                  Total: {footerTotals.iterationCount} iteration
+                  {footerTotals.iterationCount !== 1 ? "s" : ""}
+                </span>
+                <span className="py-2 text-right tabular-nums">
+                  {footerTotals.totalHours.toFixed(1)}
+                </span>
+                <span className="py-2 text-right tabular-nums">
+                  <CurrencyValueWidget
+                    values={footerTotals.avgCostRate}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                  />
+                </span>
+                <span className="py-2 text-right tabular-nums">
+                  <CurrencyValueWidget
+                    values={footerTotals.avgBillingRate}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                  />
+                </span>
+                <span className="py-2 text-right tabular-nums">
+                  <CurrencyValueWidget
+                    values={footerTotals.totalCost}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                  />
+                </span>
+                <span className="py-2 text-right tabular-nums">
+                  <CurrencyValueWidget
+                    values={footerTotals.totalBilling}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                  />
+                </span>
+                <span className="py-2 pr-2 text-right tabular-nums">
+                  <CurrencyValueWidget
+                    values={footerTotals.totalProfit}
+                    services={services}
+                    exchangeService={services.exchangeService}
+                  />
+                </span>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
