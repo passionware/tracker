@@ -33,10 +33,34 @@ import {
   ContractorsWithIntegrationStatus,
   TmetricDashboardService,
 } from "./TmetricDashboardService";
+import {
+  calendarDateToJSDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date";
+import { endOfDay, startOfDay } from "date-fns";
+import type { CalendarDate } from "@internationalized/date";
 
 const TMETRIC_DASHBOARD_CACHE_QUERY_KEY = ["tmetric_dashboard_cache"] as const;
 
 const NO_CACHED_REPORT_MESSAGE = "No cached report found for scope";
+
+/** Intersection of requested period with iteration period. Returns null if no overlap. */
+function intersectRequestedWithIteration(
+  requestedStart: Date,
+  requestedEnd: Date,
+  iterPeriodStart: CalendarDate,
+  iterPeriodEnd: CalendarDate,
+): { start: CalendarDate; end: CalendarDate } | null {
+  const iterStart = startOfDay(calendarDateToJSDate(iterPeriodStart));
+  const iterEnd = endOfDay(calendarDateToJSDate(iterPeriodEnd));
+  const startMs = Math.max(requestedStart.getTime(), iterStart.getTime());
+  const endMs = Math.min(requestedEnd.getTime(), iterEnd.getTime());
+  if (startMs > endMs) return null;
+  return {
+    start: dateToCalendarDate(new Date(startMs)),
+    end: dateToCalendarDate(new Date(endMs)),
+  };
+}
 
 function scopeToKey(scope: TmetricDashboardCacheScope): string {
   const w = (scope.workspaceIds ?? [])
@@ -386,18 +410,35 @@ async function performRefreshAndCache(
     });
   }
 
+  const requestedStart = periodStart;
+  const requestedEnd = periodEnd;
+
   const reports = perIterationIntegrated.flatMap(
-    ({ iteration, integrated }) =>
-      integrated.map((c) => ({
+    ({ iteration, integrated }) => {
+      const period = intersectRequestedWithIteration(
+        requestedStart,
+        requestedEnd,
+        iteration.periodStart,
+        iteration.periodEnd,
+      );
+      if (!period) return [];
+      return integrated.map((c) => ({
         contractorId: c.contractorId,
-        periodStart: iteration.periodStart,
-        periodEnd: iteration.periodEnd,
+        periodStart: period.start,
+        periodEnd: period.end,
         workspaceId: c.workspaceId,
         clientId: c.clientId,
         iterationId: iteration.id,
         projectId: iteration.projectId,
-      })),
+      }));
+    },
   );
+
+  if (reports.length === 0) {
+    throw new Error(
+      "Requested period does not overlap any iteration in scope. Adjust the date range or iterations.",
+    );
+  }
 
   const allIntegrated = [
     ...new Map(

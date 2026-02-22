@@ -35,6 +35,7 @@ import {
   getDateRangeForPreset,
   getDateRangeFromIterations,
   getIterationSummary,
+  intersectDateRanges,
   iterationsOverlappingRange,
   type ContractorIterationBreakdown,
   type ContractorsSummaryScoped,
@@ -262,13 +263,20 @@ export function useTmetricDashboardData({
   );
 
   const { start, end } = useMemo(() => {
-    const range = getDateRangeForPreset(
+    const requestedRange = getDateRangeForPreset(
       timePreset,
       iterationRange,
       customRange,
     );
-    if (!range) return { start: null as Date | null, end: null as Date | null };
-    return { start: range.start, end: range.end };
+    if (!requestedRange)
+      return { start: null as Date | null, end: null as Date | null };
+    const effectiveRange =
+      iterationRange != null
+        ? intersectDateRanges(requestedRange, iterationRange)
+        : requestedRange;
+    if (!effectiveRange)
+      return { start: null as Date | null, end: null as Date | null };
+    return { start: effectiveRange.start, end: effectiveRange.end };
   }, [timePreset, iterationRange, customRange]);
 
   const setCustomRange = useCallback(

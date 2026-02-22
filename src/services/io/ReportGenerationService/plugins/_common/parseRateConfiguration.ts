@@ -31,7 +31,7 @@ export function parseSimpleRate(rateString: string): ParsedRate {
 /**
  * Parses rate configuration that can be a simple string or a JSON array keyed by TMetric project ID.
  * @param rateConfig - Raw value from expression (e.g. "100 EUR" or '[{"projectIds":["123"],"rate":"100 EUR"}]')
- * @param tmetricProjectId - TMetric project ID used to look up the rate in JSON format
+ * @param tmetricProjectId - TMetric project ID used to look up the rate in JSON format. Use "__default__" when there are no projects (e.g. no time entries in period).
  */
 export function parseRateConfiguration(
   rateConfig: string,
@@ -41,6 +41,17 @@ export function parseRateConfiguration(
     const parsed = JSON.parse(rateConfig);
     if (Array.isArray(parsed)) {
       type ConfigItem = { projectIds?: Array<string | number>; rate?: string };
+      const fallbackConfig = parsed.find(
+        (config: ConfigItem) => !config.projectIds || config.projectIds.length === 0,
+      );
+
+      if (tmetricProjectId === "__default__") {
+        if (fallbackConfig?.rate) {
+          return parseSimpleRate(fallbackConfig.rate);
+        }
+        return { rate: 0, currency: "EUR" };
+      }
+
       const matchingConfig = parsed.find((config: ConfigItem) => {
         if (!config.projectIds || config.projectIds.length === 0) {
           return false;
@@ -54,9 +65,6 @@ export function parseRateConfiguration(
       if (matchingConfig?.rate) {
         return parseSimpleRate(matchingConfig.rate);
       }
-      const fallbackConfig = parsed.find(
-        (config: ConfigItem) => !config.projectIds || config.projectIds.length === 0,
-      );
       if (fallbackConfig?.rate) {
         return parseSimpleRate(fallbackConfig.rate);
       }

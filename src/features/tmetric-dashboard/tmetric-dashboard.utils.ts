@@ -105,6 +105,19 @@ export function getDateRangeFromIterations(
   };
 }
 
+/**
+ * Intersection of two date ranges (common range). Returns null if they do not overlap.
+ */
+export function intersectDateRanges(
+  a: { start: Date; end: Date },
+  b: { start: Date; end: Date },
+): { start: Date; end: Date } | null {
+  const start = Math.max(a.start.getTime(), b.start.getTime());
+  const end = Math.min(a.end.getTime(), b.end.getTime());
+  if (start > end) return null;
+  return { start: new Date(start), end: new Date(end) };
+}
+
 export function iterationsOverlappingRange(
   iterations: ProjectIteration[],
   rangeStart: Date,
