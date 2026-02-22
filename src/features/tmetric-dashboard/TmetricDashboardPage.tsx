@@ -49,6 +49,7 @@ import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricD
 import { ContractorWithIterationBreakdown } from "./ContractorWithIterationBreakdown";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
+import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
 import {
   buildTimelineFromReport,
@@ -357,9 +358,12 @@ export function TmetricDashboardPage(
       <div className="flex-shrink-0 space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              TMetric Dashboard
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">
+                TMetric Dashboard
+              </h1>
+              <Badge variant="secondary">BETA</Badge>
+            </div>
             <p className="text-muted-foreground">
               Cross-workspace time tracking insights. Click Refresh to fetch
               from TMetric.
@@ -457,6 +461,13 @@ export function TmetricDashboardPage(
         </div>
       ) : (
         <div className="flex-1 overflow-auto space-y-6 mt-4">
+          <TmetricScopeHierarchyPanel
+            services={services}
+            projectsData={projectsData}
+            iterationsForScope={iterationsForScope}
+            projectsMap={projectsMap}
+          />
+
           {/* {integrationStatus &&
             (integrationStatus.integratedContractorIds.length > 0 ||
               integrationStatus.nonIntegratedContractorIds.length > 0) && (
