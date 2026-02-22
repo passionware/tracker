@@ -1,13 +1,7 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import type { Project } from "@/api/project/project.api";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CardDescription, CardTitle } from "@/components/ui/card";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
@@ -299,11 +293,25 @@ export function TmetricScopeHierarchyPanel({
   return (
     <>
       <div className="mt-2 flex flex-col gap-2">
-        <CardTitle>Financial overview</CardTitle>
-        <CardDescription>
-          Clients and iterations in the current selection. Expand rows to see
-          contractors and rates; load a report to show cost and billing.
-        </CardDescription>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle>Financial overview</CardTitle>
+            <CardDescription>
+              Clients and iterations in the current selection. Expand rows to
+              see contractors and rates; load a report to show cost and billing.
+            </CardDescription>
+          </div>
+          {scopeHierarchyWithRates.length > 0 && (
+            <div className="flex gap-1 shrink-0">
+              <Button variant="outline" size="sm" onClick={expandAll}>
+                Expand all
+              </Button>
+              <Button variant="outline" size="sm" onClick={collapseAll}>
+                Collapse all
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
       {scopeHierarchyWithRates.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -373,10 +381,7 @@ export function TmetricScopeHierarchyPanel({
                       <CurrencyValueWidget
                         values={
                           client.hours > 0
-                            ? divideCurrencyValues(
-                                client.billing,
-                                client.hours,
-                              )
+                            ? divideCurrencyValues(client.billing, client.hours)
                             : []
                         }
                         services={services}
@@ -440,9 +445,7 @@ export function TmetricScopeHierarchyPanel({
                 )}
               </FinancialHierarchyGrid.ExpandableRow>,
               clientOpen && (
-                <FinancialHierarchyGrid.Subgrid
-                  key={`client-${clientId}-sub`}
-                >
+                <FinancialHierarchyGrid.Subgrid key={`client-${clientId}-sub`}>
                   {iterations.length === 0 ? (
                     <div
                       className="col-span-full px-4 py-2 pl-11 text-sm text-muted-foreground"
@@ -458,15 +461,13 @@ export function TmetricScopeHierarchyPanel({
                         projectName,
                         contractorsWithRates,
                       }) => {
-                        const iterOpen =
-                          expandedIterations.has(iteration.id);
+                        const iterOpen = expandedIterations.has(iteration.id);
                         const hasRates =
                           contractorsWithRates &&
                           contractorsWithRates.length > 0;
-                        const iter =
-                          scopeHierarchyTotals?.byIteration.get(
-                            iteration.id,
-                          );
+                        const iter = scopeHierarchyTotals?.byIteration.get(
+                          iteration.id,
+                        );
                         return [
                           <FinancialHierarchyGrid.ExpandableRow
                             key={`iter-${iteration.id}`}
@@ -476,10 +477,7 @@ export function TmetricScopeHierarchyPanel({
                                 const next = new Set(prev);
                                 if (iterOpen) next.delete(iteration.id);
                                 else next.add(iteration.id);
-                                persistExpandedState(
-                                  expandedClients,
-                                  next,
-                                );
+                                persistExpandedState(expandedClients, next);
                                 return next;
                               })
                             }
@@ -512,9 +510,7 @@ export function TmetricScopeHierarchyPanel({
                                         : []
                                     }
                                     services={services}
-                                    exchangeService={
-                                      services.exchangeService
-                                    }
+                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -532,9 +528,7 @@ export function TmetricScopeHierarchyPanel({
                                         : []
                                     }
                                     services={services}
-                                    exchangeService={
-                                      services.exchangeService
-                                    }
+                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -545,9 +539,7 @@ export function TmetricScopeHierarchyPanel({
                                   <CurrencyValueWidget
                                     values={iter.cost}
                                     services={services}
-                                    exchangeService={
-                                      services.exchangeService
-                                    }
+                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -558,9 +550,7 @@ export function TmetricScopeHierarchyPanel({
                                   <CurrencyValueWidget
                                     values={iter.billing}
                                     services={services}
-                                    exchangeService={
-                                      services.exchangeService
-                                    }
+                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -753,7 +743,8 @@ export function TmetricScopeHierarchyPanel({
                                                 billing={[
                                                   {
                                                     amount: row.totalBilling,
-                                                    currency: row.billingCurrency,
+                                                    currency:
+                                                      row.billingCurrency,
                                                   },
                                                 ]}
                                                 profitInTarget={profitValue}
@@ -839,8 +830,7 @@ export function TmetricScopeHierarchyPanel({
               >
                 {(() => {
                   return footerTotals.totalProfit.length === 1 &&
-                    footerTotals.totalProfit[0].currency ===
-                      targetCurrency ? (
+                    footerTotals.totalProfit[0].currency === targetCurrency ? (
                     <ProfitBreakdownWidget
                       services={services}
                       cost={footerTotals.totalCost}

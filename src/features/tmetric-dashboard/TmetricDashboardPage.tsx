@@ -1,10 +1,3 @@
-import { contractorQueryUtils } from "@/api/contractor/contractor.api";
-import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api";
-import { projectQueryUtils } from "@/api/project/project.api";
-import {
-  dashboardQueryUtils,
-  TmetricDashboardCacheScope,
-} from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,18 +20,13 @@ import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
-import type { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
-import { idSpecUtils } from "@/platform/lang/IdSpec";
-import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { InfiniteTimeline } from "@/platform/passionware-timeline";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService";
-import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { maybe, mt, rd } from "@passionware/monads";
-import { promiseState } from "@passionware/platform-react";
 import { format } from "date-fns";
 import {
   BarChart3,
@@ -48,7 +36,6 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ByContractorHierarchyView } from "./ByContractorHierarchyView";
 import { TmetricContractorDashboard } from "./TmetricContractorDashboard";
@@ -56,16 +43,8 @@ import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
 import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
-import {
-  buildTimelineFromReport,
-  getContractorIterationBreakdown,
-  getContractorsSummaryScopedToIterations,
-  getDateRangeForPreset,
-  getDateRangeFromIterations,
-  getIterationSummary,
-  iterationsOverlappingRange,
-  type TimePreset,
-} from "./tmetric-dashboard.utils";
+import { useTmetricDashboardData } from "./useTmetricDashboardData";
+import type { TimePreset } from "./tmetric-dashboard.utils";
 
 export function TmetricDashboardPage(
   props: WithFrontServices & {
@@ -85,308 +64,32 @@ export function TmetricDashboardPage(
           ? "cube"
           : "overview";
 
-  const queryParamsService = services.queryParamsService.forEntity("dashboard");
-  const rawQueryParams = queryParamsService.useQueryParams();
-  const dashboardQuery = useMemo(
-    () => dashboardQueryUtils.ensureDefault(rawQueryParams),
-    [rawQueryParams],
-  );
-  const timePreset = dashboardQuery.timePreset;
-  const selectedIterationIds = dashboardQuery.iterationIds;
-  const setTimePreset = useCallback(
-    (value: TimePreset) => {
-      queryParamsService.setQueryParams({
-        ...dashboardQuery,
-        timePreset: value,
-      });
-    },
-    [queryParamsService, dashboardQuery],
-  );
-  const setSelectedIterationIds = useCallback(
-    (ids: number[]) => {
-      queryParamsService.setQueryParams({
-        ...dashboardQuery,
-        iterationIds: ids,
-      });
-    },
-    [queryParamsService, dashboardQuery],
-  );
-
-  const [integrationStatus, setIntegrationStatus] =
-    useState<ContractorsWithIntegrationStatus | null>(null);
-
-  const projectsQuery = projectQueryUtils.withEnsureDefault({
-    workspaceId,
-    clientId,
-  })(projectQueryUtils.ofDefault());
-  const projectsWithActiveFilter = useMemo(
-    () =>
-      projectQueryUtils
-        .transform(projectsQuery)
-        .build((q) => [
-          q.withFilter("status", { operator: "oneOf", value: ["active"] }),
-        ]),
-    [projectsQuery],
-  );
-
-  const projectsData = services.projectService.useProjects(
-    maybe.of(projectsWithActiveFilter),
-  );
-  const projectIds = useMemo(
-    () => rd.tryMap(projectsData, (p) => p.map((x) => x.id)) ?? [],
-    [projectsData],
-  );
-
-  const iterationsQuery = useMemo(
-    () =>
-      projectIds.length > 0
-        ? projectIterationQueryUtils.getBuilder().build((q) => [
-            q.withFilter("projectId", {
-              operator: "oneOf",
-              value: projectIds,
-            }),
-            q.withFilter("status", {
-              operator: "oneOf",
-              value: ["active", "closed"],
-            }),
-          ])
-        : null,
-    [projectIds],
-  );
-  const iterationsData = services.projectIterationService.useProjectIterations(
-    maybe.of(iterationsQuery),
-  );
-  const allIterations = useMemo(
-    () => rd.tryMap(iterationsData, (x) => x) ?? [],
-    [iterationsData],
-  );
-  const iterationsForPicker = useMemo(
-    () =>
-      [...allIterations].sort((a, b) => {
-        const endA = calendarDateToJSDate(a.periodEnd).getTime();
-        const endB = calendarDateToJSDate(b.periodEnd).getTime();
-        return endB - endA; // period end desc
-      }),
-    [allIterations],
-  );
-
-  const projectsMap = useMemo(() => {
-    const map = new Map<number, { name: string }>();
-    rd.tryMap(projectsData, (projects) => {
-      projects.forEach((p) => map.set(p.id, { name: p.name }));
-    });
-    return map;
-  }, [projectsData]);
-
-  const selectedIterations = useMemo(
-    () => allIterations.filter((i) => selectedIterationIds.includes(i.id)),
-    [allIterations, selectedIterationIds],
-  );
-
-  const iterationsForScope = useMemo(() => {
-    if (selectedIterationIds.length > 0) return selectedIterations;
-    return allIterations.filter((i) => i.status === "active");
-  }, [selectedIterationIds, selectedIterations, allIterations]);
-
-  // Stable key for scope so callbacks/effects don’t re-run when array refs change
-  const scopeIterationIdsKey = useMemo(
-    () =>
-      (selectedIterationIds.length > 0
-        ? [...selectedIterationIds].sort((a, b) => a - b)
-        : allIterations
-            .filter((i) => i.status === "active")
-            .map((i) => i.id)
-            .sort((a, b) => a - b)
-      ).join(","),
-    [selectedIterationIds, allIterations],
-  );
-
-  const iterationRange = useMemo(
-    () => getDateRangeFromIterations(iterationsForScope),
-    [iterationsForScope],
-  );
-
-  const iterationPickerItems: SimpleItem[] = useMemo(
-    () =>
-      iterationsForPicker.map((iter) => {
-        const project = projectsMap.get(iter.projectId);
-        const projectName = project?.name ?? `Project ${iter.projectId}`;
-        const periodLabel = `${format(calendarDateToJSDate(iter.periodStart), "dd MMM yyyy")} – ${format(calendarDateToJSDate(iter.periodEnd), "dd MMM yyyy")}`;
-        const statusLabel =
-          iter.status === "active"
-            ? " · Active"
-            : iter.status === "closed"
-              ? " · Closed"
-              : "";
-        return {
-          id: String(iter.id),
-          label: `${projectName} #${iter.ordinalNumber}${statusLabel} (${periodLabel})`,
-          compactLabel: `${projectName} #${iter.ordinalNumber}`,
-        };
-      }),
-    [iterationsForPicker, projectsMap],
-  );
-
-  const { start, end } = useMemo(() => {
-    const range = getDateRangeForPreset(timePreset, iterationRange);
-    if (!range) return { start: null as Date | null, end: null as Date | null };
-    return { start: range.start, end: range.end };
-  }, [timePreset, iterationRange]);
-
-  const scope: TmetricDashboardCacheScope = useMemo(() => {
-    const s: TmetricDashboardCacheScope = { projectIterationIds: [] };
-    if (maybe.isPresent(workspaceId) && !idSpecUtils.isAll(workspaceId)) {
-      s.workspaceIds = [workspaceId];
-    }
-    if (maybe.isPresent(clientId) && !idSpecUtils.isAll(clientId)) {
-      s.clientIds = [clientId];
-    }
-    s.projectIterationIds = scopeIterationIdsKey
-      ? scopeIterationIdsKey.split(",").map(Number)
-      : [];
-    return s;
-  }, [workspaceId, clientId, scopeIterationIdsKey]);
-
-  const loadIntegrationStatus = useCallback(async () => {
-    const status =
-      await services.tmetricDashboardService.getContractorsInScopeWithIntegrationStatus(
-        scope,
-      );
-    setIntegrationStatus(status);
-  }, [services.tmetricDashboardService, scope]);
-
-  const canLoadOrRefresh = start !== null && end !== null;
-
-  const cachedReportQuery = services.tmetricDashboardService.useCached({
-    scope,
-    periodStart: start,
-    periodEnd: end,
-  });
-
-  const refreshMutation = promiseState.useMutation(async () => {
-    if (!canLoadOrRefresh) return null;
-    return services.tmetricDashboardService.refreshAndCache({
-      scope,
-      periodStart: start,
-      periodEnd: end,
-    });
-  });
-
-  const handleRefresh = useCallback(() => {
-    if (!canLoadOrRefresh) return;
-    refreshMutation.track(undefined).catch(() => {});
-  }, [refreshMutation, canLoadOrRefresh]);
-
-  const isRefreshing = mt.isInProgress(refreshMutation.state);
-
-  useEffect(() => {
-    loadIntegrationStatus();
-  }, [loadIntegrationStatus]);
-
-  const contractorsSummary = useMemo(
-    () =>
-      rd.map(cachedReportQuery, (cachedReport) =>
-        getContractorsSummaryScopedToIterations(
-          cachedReport.data,
-          iterationsForScope.map((i) => i.id),
-        ),
-      ),
-    [cachedReportQuery, iterationsForScope],
-  );
-
-  const basicInfo = rd.useMemoMap(cachedReportQuery, (cachedReport) =>
-    services.generatedReportViewService.getBasicInformationView({
-      id: 0,
-      createdAt: new Date(),
-      projectIterationId: 0,
-      data: cachedReport.data,
-      originalData: null,
-    }),
-  );
-
-  const reportAsSource = rd.useMemoMap(cachedReportQuery, (cachedReport) => ({
-    id: 0,
-    createdAt: new Date(),
-    projectIterationId: 0,
-    data: cachedReport.data,
-    originalData: null,
-  }));
-
-  const contractorIdsInReport = rd.useMemoMap(
+  const data = useTmetricDashboardData({ services, workspaceId, clientId });
+  const {
+    timePreset,
+    selectedIterationIds,
+    setTimePreset,
+    setSelectedIterationIds,
+    start,
+    end,
+    canLoadOrRefresh,
     cachedReportQuery,
-    (cachedReport) => {
-      return [
-        ...new Set(cachedReport.data.timeEntries.map((e) => e.contractorId)),
-      ];
-    },
-  );
-
-  const contractorsQuery = services.contractorService.useContractors(
-    rd.tryMap(contractorIdsInReport, (ids) =>
-      contractorQueryUtils.getBuilder().build((q) =>
-        ids.length
-          ? [
-              q.withFilter("id", {
-                operator: "oneOf",
-                value: ids,
-              }),
-            ]
-          : [],
-      ),
-    ),
-  );
-
-  const contractorNameMap = rd.useMemoMap(contractorsQuery, (contractors) => {
-    return new Map(contractors.map((c) => [c.id, c.fullName]));
-  });
-
-  const iterationsForBreakdown = rd.useMemoMap(
-    cachedReportQuery,
-    (cachedReport) => {
-      if (!cachedReport || !start || !end) return [];
-      return iterationsOverlappingRange(iterationsForScope, start, end);
-    },
-  );
-
-  const contractorIterationBreakdown = rd.useMemoMap(
-    rd.combine({ cachedReportQuery, iterationsForBreakdown }),
-    ({ cachedReportQuery, iterationsForBreakdown }) => {
-      if (!cachedReportQuery || !start || !end) return null;
-      return getContractorIterationBreakdown(
-        { data: cachedReportQuery.data },
-        iterationsForBreakdown,
-        projectsMap,
-        start,
-        end,
-      );
-    },
-  );
-
-  const iterationSummary = rd.useMemoMap(
-    rd.combine({ cachedReportQuery, iterationsForBreakdown }),
-    ({ cachedReportQuery, iterationsForBreakdown }) => {
-      if (!cachedReportQuery || !start || !end) return null;
-      return getIterationSummary(
-        { data: cachedReportQuery.data },
-        iterationsForBreakdown,
-        projectsMap,
-        start,
-        end,
-      );
-    },
-  );
-
-  const timeline = rd.useMemoMap(
-    rd.combine({ cachedReportQuery, contractorNameMap }),
-    ({ cachedReportQuery, contractorNameMap }) => {
-      if (!cachedReportQuery) return { timelineLanes: [], timelineItems: [] };
-      const { lanes, items } = buildTimelineFromReport(
-        { data: cachedReportQuery.data },
-        contractorNameMap,
-      );
-      return { timelineLanes: lanes, timelineItems: items };
-    },
-  );
+    handleRefresh,
+    isRefreshing,
+    refreshMutation,
+    projectsData,
+    iterationsForScope,
+    projectsMap,
+    iterationPickerItems,
+    contractorIterationBreakdown,
+    contractorNameMap,
+    integrationStatus,
+    contractorsSummary,
+    iterationSummary,
+    basicInfo,
+    reportAsSource,
+    timeline,
+  } = data;
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -489,7 +192,9 @@ export function TmetricDashboardPage(
       {/* Tab content */}
       {activeTab === "timeline" ? (
         rd
-          .journey(rd.combine({ cachedReportQuery, contractorNameMap, timeline }))
+          .journey(
+            rd.combine({ cachedReportQuery, contractorNameMap, timeline }),
+          )
           .wait(() => (
             <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
               <Skeleton className="h-[400px] w-full max-w-4xl rounded-md" />
@@ -498,7 +203,10 @@ export function TmetricDashboardPage(
           .catch(() => null)
           .map(({ timeline: resolvedTimeline }) =>
             resolvedTimeline.timelineItems.length > 0 ? (
-              <div className="flex-1 min-h-0 flex flex-col mt-4" key="timeline-tab">
+              <div
+                className="flex-1 min-h-0 flex flex-col mt-4"
+                key="timeline-tab"
+              >
                 <Card className="flex-1 min-h-0 flex flex-col">
                   <CardHeader>
                     <CardTitle>Tasks over time</CardTitle>
@@ -534,6 +242,15 @@ export function TmetricDashboardPage(
             contractorIterationBreakdown={contractorIterationBreakdown}
             contractorNameMap={contractorNameMap}
             integrationStatus={integrationStatus}
+            getContractorDetailUrl={(id) =>
+              services.routingService
+                .forWorkspace(workspaceId)
+                .forClient(clientId)
+                .tmetricDashboardContractorFor(id)
+            }
+            onRefresh={handleRefresh}
+            canLoadOrRefresh={canLoadOrRefresh}
+            isRefreshing={isRefreshing}
           />
         </div>
       ) : activeTab === "cube" ? (
@@ -760,11 +477,11 @@ export function TmetricDashboardPage(
                     }}
                   >
                     {resolvedContractorsSummary &&
-                      resolvedContractorsSummary.contractors.length > 0 &&
-                      !(
-                        resolvedContractorIterationBreakdown &&
-                        resolvedContractorIterationBreakdown.length > 0
-                      ) ? (
+                    resolvedContractorsSummary.contractors.length > 0 &&
+                    !(
+                      resolvedContractorIterationBreakdown &&
+                      resolvedContractorIterationBreakdown.length > 0
+                    ) ? (
                       <Card>
                         <CardHeader>
                           <CardTitle>By contractor</CardTitle>
@@ -957,6 +674,12 @@ export function TmetricDashboardPage(
                                   <ByContractorHierarchyView
                                     contractors={displayed}
                                     services={services}
+                                    getContractorDetailUrl={(id) =>
+                                      services.routingService
+                                        .forWorkspace(workspaceId)
+                                        .forClient(clientId)
+                                        .tmetricDashboardContractorFor(id)
+                                    }
                                   />
                                 </>
                               );
@@ -964,7 +687,6 @@ export function TmetricDashboardPage(
                           </CardContent>
                         </Card>
                       )}
-
                   </div>
                 ),
             )}

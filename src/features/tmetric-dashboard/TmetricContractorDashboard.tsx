@@ -5,12 +5,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WithFrontServices } from "@/core/frontServices";
 import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import type { ContractorIterationBreakdown } from "./tmetric-dashboard.utils";
 import type { RemoteData } from "@passionware/monads";
 import { rd } from "@passionware/monads";
+import { RefreshCw } from "lucide-react";
 import { ByContractorHierarchyView } from "./ByContractorHierarchyView";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 
@@ -19,11 +21,23 @@ export function TmetricContractorDashboard({
   contractorIterationBreakdown,
   contractorNameMap,
   integrationStatus,
+  getContractorDetailUrl,
+  onRefresh,
+  canLoadOrRefresh,
+  isRefreshing,
 }: {
   services: WithFrontServices["services"];
-  contractorIterationBreakdown: RemoteData<ContractorIterationBreakdown[] | null>;
+  contractorIterationBreakdown: RemoteData<
+    ContractorIterationBreakdown[] | null
+  >;
   contractorNameMap: RemoteData<Map<number, string>>;
   integrationStatus: ContractorsWithIntegrationStatus | null;
+  /** When set, contractor names link to the contractor detail page. */
+  getContractorDetailUrl?: (contractorId: number) => string;
+  /** When set, .catch() shows a Refresh button to load report data. */
+  onRefresh?: () => void;
+  canLoadOrRefresh?: boolean;
+  isRefreshing?: boolean;
 }) {
   return rd
     .journey(
@@ -46,8 +60,22 @@ export function TmetricContractorDashboard({
     ))
     .catch(() => (
       <Card>
-        <CardContent className="pt-6 text-muted-foreground">
-          Load report data first (Overview tab, then Refresh from TMetric).
+        <CardContent className="pt-6 flex flex-col items-center gap-4 text-muted-foreground">
+          <p>
+            Report data is not loaded yet. Click below to fetch from TMetric.
+          </p>
+          {canLoadOrRefresh && onRefresh && (
+            <Button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              variant="default"
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh from TMetric
+            </Button>
+          )}
         </CardContent>
       </Card>
     ))
@@ -69,8 +97,8 @@ export function TmetricContractorDashboard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-muted-foreground">
-                No contractor data in the selected range. Load report and
-                choose a time range that includes time entries.
+                No contractor data in the selected range. Load report and choose
+                a time range that includes time entries.
               </CardContent>
             </Card>
           );
@@ -105,6 +133,7 @@ export function TmetricContractorDashboard({
                 <ByContractorHierarchyView
                   contractors={displayed}
                   services={services}
+                  getContractorDetailUrl={getContractorDetailUrl}
                 />
               </CardContent>
             </Card>
@@ -115,5 +144,6 @@ export function TmetricContractorDashboard({
             />
           </div>
         );
-    });
+      },
+    );
 }

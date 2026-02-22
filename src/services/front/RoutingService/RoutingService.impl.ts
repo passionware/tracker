@@ -32,6 +32,8 @@ export function createRoutingService(): RoutingService {
               `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/timeline`,
             tmetricDashboardContractor: () =>
               `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/contractor`,
+            tmetricDashboardContractorFor: (contractorId) =>
+              `/w/${workspaceSlot}/clients/${clientSlot}/tmetric-dashboard/contractor/${routingUtils.contractor.toString(contractorId)}`,
             root: () => `/w/${workspaceSlot}/clients/${clientSlot}`,
             forContractor: (contractorId) => {
               const contractorSlot =

@@ -27,6 +27,7 @@ import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
 import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
+import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
@@ -288,6 +289,27 @@ export function RootWidget(props: WithFrontServices) {
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <TmetricDashboardPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService
+            .forWorkspace()
+            .forClient()
+            .tmetricDashboardContractorFor()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TmetricContractorDetailPage
                       workspaceId={workspaceId}
                       clientId={clientId}
                       services={props.services}
