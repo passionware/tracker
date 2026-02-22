@@ -102,7 +102,7 @@ export function AbstractEntityView({
   return (
     <div
       className={cn(
-        "flex items-center flex-row gap-2 text-xs whitespace-pre text-foreground",
+        "flex items-center flex-row gap-2 text-xs whitespace-pre text-foreground w-full",
         className,
       )}
     >
