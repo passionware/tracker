@@ -881,6 +881,7 @@ export function TmetricScopeHierarchyPanel({
           >
             {scopeHierarchyWithRates.map(({ clientId, iterations }) => {
               const clientTotals = scopeHierarchyTotals!.byClient.get(clientId);
+              const reportData = cachedReport?.data ?? null;
               return (
                 <Card key={`by-client-${clientId}`}>
                   <CardHeader className="pb-2">
@@ -900,18 +901,25 @@ export function TmetricScopeHierarchyPanel({
                   <CardContent>
                     <FinancialHierarchyGrid variant="billingOnly">
                       <FinancialHierarchyGrid.Header />
-                      {iterations.map(({ iteration, projectName }) => {
+                      {iterations.flatMap(({ iteration, projectName }) => {
                         const iter = scopeHierarchyTotals!.byIteration.get(
                           iteration.id,
                         );
-                        if (!iter) return null;
+                        if (!iter) return [];
                         const startDate = calendarDateToJSDate(
                           iteration.periodStart,
                         );
                         const endDate = calendarDateToJSDate(
                           iteration.periodEnd,
                         );
-                        return (
+                        const contractorTotals =
+                          reportData != null
+                            ? getContractorIterationTotals(
+                                reportData,
+                                iteration.id,
+                              )
+                            : [];
+                        return [
                           <FinancialHierarchyGrid.Row
                             key={`by-client-${clientId}-iter-${iteration.id}`}
                             label={
@@ -962,8 +970,75 @@ export function TmetricScopeHierarchyPanel({
                                 exchangeService={services.exchangeService}
                               />
                             </FinancialHierarchyGrid.Cell>
-                          </FinancialHierarchyGrid.Row>
-                        );
+                          </FinancialHierarchyGrid.Row>,
+                          contractorTotals.length > 0 ? (
+                            <FinancialHierarchyGrid.Subgrid
+                              key={`by-client-${clientId}-iter-${iteration.id}-contractors`}
+                              variant="nested"
+                            >
+                              {contractorTotals.map((row) => (
+                                <FinancialHierarchyGrid.Row
+                                  key={`by-client-${clientId}-iter-${iteration.id}-c-${row.contractorId}`}
+                                  label={
+                                    <ContractorWidget
+                                      contractorId={maybe.of(row.contractorId)}
+                                      services={services}
+                                      layout="full"
+                                      size="sm"
+                                    />
+                                  }
+                                >
+                                  <FinancialHierarchyGrid.Cell
+                                    col={1}
+                                    className="py-1 text-muted-foreground"
+                                  >
+                                    {null}
+                                  </FinancialHierarchyGrid.Cell>
+                                  <FinancialHierarchyGrid.Cell
+                                    col={2}
+                                    className="py-1 text-xs text-right tabular-nums"
+                                  >
+                                    {row.hours.toFixed(1)}
+                                  </FinancialHierarchyGrid.Cell>
+                                  <FinancialHierarchyGrid.Cell
+                                    col={3}
+                                    className="py-1 text-xs text-right tabular-nums"
+                                  >
+                                    <CurrencyValueWidget
+                                      values={[
+                                        {
+                                          amount: row.avgBillingRate,
+                                          currency: row.billingCurrency,
+                                        },
+                                      ]}
+                                      services={services}
+                                      exchangeService={
+                                        services.exchangeService
+                                      }
+                                    />
+                                  </FinancialHierarchyGrid.Cell>
+                                  <FinancialHierarchyGrid.Cell
+                                    col={4}
+                                    className="py-1 pr-2 text-xs text-right tabular-nums"
+                                  >
+                                    <CurrencyValueWidget
+                                      values={[
+                                        {
+                                          amount: row.totalBilling,
+                                          currency: row.billingCurrency,
+                                        },
+                                      ]}
+                                      services={services}
+                                      exchangeService={
+                                        services.exchangeService
+                                      }
+                                    />
+                                  </FinancialHierarchyGrid.Cell>
+                                </FinancialHierarchyGrid.Row>
+                              ))}
+                            </FinancialHierarchyGrid.Subgrid>
+                          ) : null,
+                        ].filter(Boolean);
                       })}
                       {clientTotals != null && (
                         <FinancialHierarchyGrid.Footer label="Total">
