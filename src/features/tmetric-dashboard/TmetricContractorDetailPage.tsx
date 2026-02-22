@@ -58,6 +58,9 @@ export function TmetricContractorDetailPage(
   );
   const contractorDataForJourney =
     contractorId != null ? contractorData : rd.ofIdle();
+  /** Raw breakdown: null when there is no date range in scope (no report scope); array when we have scope. */
+  const rawBreakdownForJourney =
+    contractorId != null ? contractorIterationBreakdown : rd.ofIdle();
 
   const timelineFiltered = rd.useMemoMap(timeline, (t) => {
     if (contractorId == null) return { timelineLanes: [], timelineItems: [] };
@@ -117,6 +120,7 @@ export function TmetricContractorDetailPage(
         .journey(
           rd.combine({
             contractorData: contractorDataForJourney,
+            rawBreakdown: rawBreakdownForJourney,
             timelineFiltered,
             contractorNameMap,
           }),
@@ -157,20 +161,55 @@ export function TmetricContractorDetailPage(
             </CardContent>
           </Card>
         ))
-        .map(({ contractorData: data, timelineFiltered: tFiltered }) => {
-          if (!data) {
-            return (
-              <Card className="mt-4">
-                <CardContent className="pt-6 text-muted-foreground">
-                  No data for this contractor in the current scope. Try another
-                  time range or iterations.{" "}
-                  <Link to={backUrl} className="text-primary underline">
-                    Back to contractors
-                  </Link>
-                </CardContent>
-              </Card>
-            );
-          }
+        .map(
+          ({
+            contractorData: data,
+            rawBreakdown,
+            timelineFiltered: tFiltered,
+          }) => {
+            if (rawBreakdown === null) {
+              return (
+                <Card className="mt-4">
+                  <CardContent className="pt-6 flex flex-col items-center gap-4 text-muted-foreground">
+                    <p>
+                      No date range in scope. Select iterations or a time preset
+                      on the dashboard, then load the report.
+                    </p>
+                    {canLoadOrRefresh && (
+                      <Button
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        variant="default"
+                      >
+                        <RefreshCw
+                          className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                        />
+                        Refresh from TMetric
+                      </Button>
+                    )}
+                    <Link
+                      to={backUrl}
+                      className="text-primary underline text-sm"
+                    >
+                      Back to contractors
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            }
+            if (!data) {
+              return (
+                <Card className="mt-4">
+                  <CardContent className="pt-6 text-muted-foreground">
+                    No data for this contractor in the current scope. Try another
+                    time range or iterations.{" "}
+                    <Link to={backUrl} className="text-primary underline">
+                      Back to contractors
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            }
           const totalProfitAmount = data.total.profit.reduce(
             (s: number, v: { amount: number }) => s + v.amount,
             0,
