@@ -53,14 +53,14 @@ function scopeToKey(scope: TmetricDashboardCacheScope): string {
 
 function getCacheQueryKey(
   scope: TmetricDashboardCacheScope,
-  periodStart: Date,
-  periodEnd: Date,
+  periodStart: Date | null,
+  periodEnd: Date | null,
 ): readonly [string, string, string, string] {
   return [
     ...TMETRIC_DASHBOARD_CACHE_QUERY_KEY,
     scopeToKey(scope),
-    periodStart.toISOString().slice(0, 10),
-    periodEnd.toISOString().slice(0, 10),
+    periodStart?.toISOString().slice(0, 10) ?? "",
+    periodEnd?.toISOString().slice(0, 10) ?? "",
   ];
 }
 
@@ -158,10 +158,7 @@ async function resolveIterationsInScope(
     );
   }
 
-  if (
-    Array.isArray(projectIterationIds) &&
-    projectIterationIds.length > 0
-  ) {
+  if (Array.isArray(projectIterationIds) && projectIterationIds.length > 0) {
     const byIds =
       await config.projectIterationApi.getProjectIterationsByIds(
         projectIterationIds,
@@ -366,7 +363,9 @@ export function createTmetricDashboardService(
       const iterations = await resolveIterationsInScope(config, scope);
 
       if (iterations.length === 0) {
-        throw new Error("No iterations in scope. Select at least one iteration.");
+        throw new Error(
+          "No iterations in scope. Select at least one iteration.",
+        );
       }
 
       const tmetricPlugin = createTmetricPlugin({
@@ -432,7 +431,7 @@ export function createTmetricDashboardService(
         query,
         useQuery(
           {
-            queryKey: getCacheQueryKey(scope, periodStart!, periodEnd!),
+            queryKey: getCacheQueryKey(scope, periodStart, periodEnd),
             queryFn: async () =>
               cacheApi.getLatestForScope(scope, periodStart!, periodEnd!),
             enabled,
