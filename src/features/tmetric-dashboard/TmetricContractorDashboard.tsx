@@ -11,7 +11,7 @@ import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricD
 import type { ContractorIterationBreakdown } from "./tmetric-dashboard.utils";
 import type { RemoteData } from "@passionware/monads";
 import { rd } from "@passionware/monads";
-import { ContractorWithIterationBreakdown } from "./ContractorWithIterationBreakdown";
+import { ByContractorHierarchyView } from "./ByContractorHierarchyView";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 
 export function TmetricContractorDashboard({
@@ -95,22 +95,17 @@ export function TmetricContractorDashboard({
                   to see breakdown by iteration.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent>
                 {excludedCount > 0 && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="mb-4 text-sm text-muted-foreground">
                     {excludedCount} contractor(s) in cached data are no longer
                     integrated and excluded from this view.
                   </p>
                 )}
-                {displayed.map((c) => (
-                  <ContractorWithIterationBreakdown
-                    key={c.contractorId}
-                    contractorId={c.contractorId}
-                    total={c.total}
-                    byIteration={c.byIteration}
-                    services={services}
-                  />
-                ))}
+                <ByContractorHierarchyView
+                  contractors={displayed}
+                  services={services}
+                />
               </CardContent>
             </Card>
 

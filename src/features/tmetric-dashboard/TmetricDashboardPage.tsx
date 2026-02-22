@@ -50,7 +50,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ContractorWithIterationBreakdown } from "./ContractorWithIterationBreakdown";
+import { ByContractorHierarchyView } from "./ByContractorHierarchyView";
 import { TmetricContractorDashboard } from "./TmetricContractorDashboard";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
@@ -954,17 +954,10 @@ export function TmetricDashboardPage(
                                       from this view.
                                     </p>
                                   )}
-                                  <div className="space-y-2">
-                                    {displayed.map((c) => (
-                                      <ContractorWithIterationBreakdown
-                                        key={c.contractorId}
-                                        contractorId={c.contractorId}
-                                        total={c.total}
-                                        byIteration={c.byIteration}
-                                        services={services}
-                                      />
-                                    ))}
-                                  </div>
+                                  <ByContractorHierarchyView
+                                    contractors={displayed}
+                                    services={services}
+                                  />
                                 </>
                               );
                             })()}

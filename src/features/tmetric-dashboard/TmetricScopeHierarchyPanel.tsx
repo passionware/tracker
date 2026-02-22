@@ -14,8 +14,9 @@ import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
 import { maybe, rd, type RemoteData } from "@passionware/monads";
-import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
+import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 import {
   buildScopeHierarchy,
   divideCurrencyValues,
@@ -26,7 +27,6 @@ import {
   sumCurrencyValuesInTarget,
   type ContractorRateInProject,
 } from "./tmetric-dashboard.utils";
-import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 
 export type { ContractorRateInProject };
 
@@ -310,35 +310,16 @@ export function TmetricScopeHierarchyPanel({
           No clients, iterations, or projects in scope.
         </p>
       ) : (
-        <div
-          className="scope-hierarchy-grid rounded border"
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "auto 1fr minmax(3rem, auto) minmax(4rem, auto) minmax(4rem, auto) minmax(5rem, auto) minmax(5rem, auto) minmax(5rem, auto)",
-            gap: "0 1rem",
-            rowGap: 0,
-            alignItems: "center",
-          }}
-        >
-          {/* Header row */}
-          <div className="contents text-xs font-medium text-muted-foreground border-b bg-muted/30">
-            <span className="px-2 py-2 w-8" />
-            <span className="py-2">Scope</span>
-            <span className="py-2 text-right">Hours</span>
-            <span className="py-2 text-right">Cost rate</span>
-            <span className="py-2 text-right">Billing rate</span>
-            <span className="py-2 text-right">Cost</span>
-            <span className="py-2 text-right">Billing</span>
-            <span className="py-2 text-right pr-2">Profit</span>
-          </div>
+        <FinancialHierarchyGrid variant="withRates">
+          <FinancialHierarchyGrid.Header />
           {scopeHierarchyWithRates.flatMap(({ clientId, iterations }) => {
             const clientOpen = expandedClients.has(clientId);
+            const client = scopeHierarchyTotals?.byClient.get(clientId);
             return [
-              <button
+              <FinancialHierarchyGrid.ExpandableRow
                 key={`client-${clientId}`}
-                type="button"
-                onClick={() =>
+                open={clientOpen}
+                onToggle={() =>
                   setExpandedClients((prev) => {
                     const next = new Set(prev);
                     if (clientOpen) next.delete(clientId);
@@ -347,135 +328,129 @@ export function TmetricScopeHierarchyPanel({
                     return next;
                   })
                 }
-                className="contents group text-left"
+                label={
+                  <>
+                    <ClientWidget
+                      clientId={maybe.of(clientId)}
+                      services={services}
+                      layout="full"
+                      size="sm"
+                    />
+                    <span className="text-muted-foreground shrink-0">
+                      {iterations.length} iteration(s)
+                    </span>
+                  </>
+                }
+                size="md"
               >
-                <span className="flex items-center px-2 py-2 w-8 shrink-0">
-                  <ChevronRight
-                    className={`h-4 w-4 transition-transform ${clientOpen ? "rotate-90" : ""}`}
-                  />
-                </span>
-                <span className="flex min-w-0 items-center gap-2 py-2 hover:bg-muted/50 rounded-l">
-                  <ClientWidget
-                    clientId={maybe.of(clientId)}
-                    services={services}
-                    layout="full"
-                    size="sm"
-                  />
-                  <span className="text-muted-foreground shrink-0">
-                    {iterations.length} iteration(s)
-                  </span>
-                </span>
-                {scopeHierarchyTotals ? (
-                  (() => {
-                    const client = scopeHierarchyTotals.byClient.get(clientId);
-                    if (!client)
-                      return <span style={{ gridColumn: "3 / 9" }} />;
-                    const hours = client.hours;
-                    const avgCost =
-                      hours > 0 ? divideCurrencyValues(client.cost, hours) : [];
-                    const avgBilling =
-                      hours > 0
-                        ? divideCurrencyValues(client.billing, hours)
-                        : [];
-                    return (
-                      <>
-                        <span
-                          className="py-2 text-xs text-right tabular-nums"
-                          style={{ gridColumn: "3 / 4" }}
-                        >
-                          {hours.toFixed(1)}
-                        </span>
-                        <span
-                          className="py-2 text-xs text-right tabular-nums"
-                          style={{ gridColumn: "4 / 5" }}
-                        >
+                {client ? (
+                  <>
+                    <FinancialHierarchyGrid.Cell
+                      col={1}
+                      className="py-2 text-xs text-right tabular-nums"
+                    >
+                      {client.hours.toFixed(1)}
+                    </FinancialHierarchyGrid.Cell>
+                    <FinancialHierarchyGrid.Cell
+                      col={2}
+                      className="py-2 text-xs text-right tabular-nums"
+                    >
+                      <CurrencyValueWidget
+                        values={
+                          client.hours > 0
+                            ? divideCurrencyValues(client.cost, client.hours)
+                            : []
+                        }
+                        services={services}
+                        exchangeService={services.exchangeService}
+                        className="font-medium"
+                      />
+                    </FinancialHierarchyGrid.Cell>
+                    <FinancialHierarchyGrid.Cell
+                      col={3}
+                      className="py-2 text-xs text-right tabular-nums"
+                    >
+                      <CurrencyValueWidget
+                        values={
+                          client.hours > 0
+                            ? divideCurrencyValues(
+                                client.billing,
+                                client.hours,
+                              )
+                            : []
+                        }
+                        services={services}
+                        exchangeService={services.exchangeService}
+                        className="font-medium"
+                      />
+                    </FinancialHierarchyGrid.Cell>
+                    <FinancialHierarchyGrid.Cell
+                      col={4}
+                      className="py-2 text-xs text-right tabular-nums"
+                    >
+                      <CurrencyValueWidget
+                        values={client.cost}
+                        services={services}
+                        exchangeService={services.exchangeService}
+                        className="font-medium"
+                      />
+                    </FinancialHierarchyGrid.Cell>
+                    <FinancialHierarchyGrid.Cell
+                      col={5}
+                      className="py-2 text-xs text-right tabular-nums"
+                    >
+                      <CurrencyValueWidget
+                        values={client.billing}
+                        services={services}
+                        exchangeService={services.exchangeService}
+                        className="font-medium"
+                      />
+                    </FinancialHierarchyGrid.Cell>
+                    <FinancialHierarchyGrid.Cell
+                      col={6}
+                      className="py-2 pr-2 text-xs text-right tabular-nums"
+                    >
+                      {(() => {
+                        const computed =
+                          profitInTargetByClient.get(clientId);
+                        const amount =
+                          computed?.[0]?.amount ??
+                          client.profit.reduce((s, v) => s + v.amount, 0);
+                        const profitColorClass =
+                          amount > 0
+                            ? "text-green-600"
+                            : amount < 0
+                              ? "text-red-600"
+                              : "";
+                        return profitInTargetByClient.get(clientId) ? (
+                          <ProfitBreakdownWidget
+                            services={services}
+                            cost={client.cost}
+                            billing={client.billing}
+                            profitInTarget={
+                              profitInTargetByClient.get(clientId)![0].amount
+                            }
+                            targetCurrency={targetCurrency}
+                            className={`font-medium ${profitColorClass}`}
+                          />
+                        ) : (
                           <CurrencyValueWidget
-                            values={avgCost}
+                            values={client.profit}
                             services={services}
                             exchangeService={services.exchangeService}
-                            className="font-medium"
+                            className={`font-medium ${profitColorClass}`}
                           />
-                        </span>
-                        <span
-                          className="py-2 text-xs text-right tabular-nums"
-                          style={{ gridColumn: "5 / 6" }}
-                        >
-                          <CurrencyValueWidget
-                            values={avgBilling}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="font-medium"
-                          />
-                        </span>
-                        <span
-                          className="py-2 text-xs text-right tabular-nums"
-                          style={{ gridColumn: "6 / 7" }}
-                        >
-                          <CurrencyValueWidget
-                            values={client.cost}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="font-medium"
-                          />
-                        </span>
-                        <span
-                          className="py-2 text-xs text-right tabular-nums"
-                          style={{ gridColumn: "7 / 8" }}
-                        >
-                          <CurrencyValueWidget
-                            values={client.billing}
-                            services={services}
-                            exchangeService={services.exchangeService}
-                            className="font-medium"
-                          />
-                        </span>
-                        <span
-                          className={`py-2 pr-2 text-xs text-right tabular-nums ${(() => {
-                            const computed =
-                              profitInTargetByClient.get(clientId);
-                            const amount =
-                              computed?.[0]?.amount ??
-                              client.profit.reduce((s, v) => s + v.amount, 0);
-                            return amount > 0
-                              ? "font-medium text-green-600"
-                              : "font-medium";
-                          })()}`}
-                          style={{ gridColumn: "8 / 9" }}
-                        >
-                          {profitInTargetByClient.get(clientId) ? (
-                            <ProfitBreakdownWidget
-                              services={services}
-                              cost={client.cost}
-                              billing={client.billing}
-                              profitInTarget={
-                                profitInTargetByClient.get(clientId)![0].amount
-                              }
-                              targetCurrency={targetCurrency}
-                            />
-                          ) : (
-                            <CurrencyValueWidget
-                              values={client.profit}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                              className="font-medium"
-                            />
-                          )}
-                        </span>
-                      </>
-                    );
-                  })()
+                        );
+                      })()}
+                    </FinancialHierarchyGrid.Cell>
+                  </>
                 ) : (
                   <span style={{ gridColumn: "3 / 9" }} />
                 )}
-              </button>,
+              </FinancialHierarchyGrid.ExpandableRow>,
               clientOpen && (
-                <div
+                <FinancialHierarchyGrid.Subgrid
                   key={`client-${clientId}-sub`}
-                  className="col-span-full grid border-t border-border/50 bg-muted/20"
-                  style={{
-                    gridTemplateColumns: "subgrid",
-                    gridColumn: "1 / -1",
-                  }}
                 >
                   {iterations.length === 0 ? (
                     <div
@@ -492,170 +467,169 @@ export function TmetricScopeHierarchyPanel({
                         projectName,
                         contractorsWithRates,
                       }) => {
-                        const iterOpen = expandedIterations.has(iteration.id);
+                        const iterOpen =
+                          expandedIterations.has(iteration.id);
                         const hasRates =
                           contractorsWithRates &&
                           contractorsWithRates.length > 0;
+                        const iter =
+                          scopeHierarchyTotals?.byIteration.get(
+                            iteration.id,
+                          );
                         return [
-                          <button
+                          <FinancialHierarchyGrid.ExpandableRow
                             key={`iter-${iteration.id}`}
-                            type="button"
-                            onClick={() =>
+                            open={iterOpen}
+                            onToggle={() =>
                               setExpandedIterations((prev) => {
                                 const next = new Set(prev);
                                 if (iterOpen) next.delete(iteration.id);
                                 else next.add(iteration.id);
-                                persistExpandedState(expandedClients, next);
+                                persistExpandedState(
+                                  expandedClients,
+                                  next,
+                                );
                                 return next;
                               })
                             }
-                            className="contents group text-left"
+                            label={
+                              <span className="text-sm font-medium">
+                                {iterationLabel}
+                              </span>
+                            }
+                            size="sm"
                           >
-                            <span className="flex items-center px-2 py-1.5 w-8 shrink-0 pl-4">
-                              <ChevronRight
-                                className={`h-3.5 w-3.5 shrink-0 transition-transform ${iterOpen ? "rotate-90" : ""}`}
-                              />
-                            </span>
-                            <span className="flex min-w-0 items-center py-1.5 pl-2 text-sm font-medium hover:bg-muted/30 rounded">
-                              {iterationLabel}
-                            </span>
-                            {scopeHierarchyTotals ? (
-                              (() => {
-                                const iter =
-                                  scopeHierarchyTotals.byIteration.get(
-                                    iteration.id,
-                                  );
-                                if (!iter)
-                                  return (
-                                    <span style={{ gridColumn: "3 / 9" }} />
-                                  );
-                                const hours = iter.hours;
-                                const avgCost =
-                                  hours > 0
-                                    ? divideCurrencyValues(iter.cost, hours)
-                                    : [];
-                                const avgBilling =
-                                  hours > 0
-                                    ? divideCurrencyValues(iter.billing, hours)
-                                    : [];
-                                return (
-                                  <>
-                                    <span
-                                      className="py-1.5 text-xs text-right tabular-nums"
-                                      style={{ gridColumn: "3 / 4" }}
-                                    >
-                                      {hours.toFixed(1)}
-                                    </span>
-                                    <span
-                                      className="py-1.5 text-xs text-right tabular-nums"
-                                      style={{ gridColumn: "4 / 5" }}
-                                    >
-                                      <CurrencyValueWidget
-                                        values={avgCost}
+                            {iter ? (
+                              <>
+                                <FinancialHierarchyGrid.Cell
+                                  col={1}
+                                  className="py-1.5 text-xs text-right tabular-nums"
+                                >
+                                  {iter.hours.toFixed(1)}
+                                </FinancialHierarchyGrid.Cell>
+                                <FinancialHierarchyGrid.Cell
+                                  col={2}
+                                  className="py-1.5 text-xs text-right tabular-nums"
+                                >
+                                  <CurrencyValueWidget
+                                    values={
+                                      iter.hours > 0
+                                        ? divideCurrencyValues(
+                                            iter.cost,
+                                            iter.hours,
+                                          )
+                                        : []
+                                    }
+                                    services={services}
+                                    exchangeService={
+                                      services.exchangeService
+                                    }
+                                    className="font-medium"
+                                  />
+                                </FinancialHierarchyGrid.Cell>
+                                <FinancialHierarchyGrid.Cell
+                                  col={3}
+                                  className="py-1.5 text-xs text-right tabular-nums"
+                                >
+                                  <CurrencyValueWidget
+                                    values={
+                                      iter.hours > 0
+                                        ? divideCurrencyValues(
+                                            iter.billing,
+                                            iter.hours,
+                                          )
+                                        : []
+                                    }
+                                    services={services}
+                                    exchangeService={
+                                      services.exchangeService
+                                    }
+                                    className="font-medium"
+                                  />
+                                </FinancialHierarchyGrid.Cell>
+                                <FinancialHierarchyGrid.Cell
+                                  col={4}
+                                  className="py-1.5 text-xs text-right tabular-nums"
+                                >
+                                  <CurrencyValueWidget
+                                    values={iter.cost}
+                                    services={services}
+                                    exchangeService={
+                                      services.exchangeService
+                                    }
+                                    className="font-medium"
+                                  />
+                                </FinancialHierarchyGrid.Cell>
+                                <FinancialHierarchyGrid.Cell
+                                  col={5}
+                                  className="py-1.5 text-xs text-right tabular-nums"
+                                >
+                                  <CurrencyValueWidget
+                                    values={iter.billing}
+                                    services={services}
+                                    exchangeService={
+                                      services.exchangeService
+                                    }
+                                    className="font-medium"
+                                  />
+                                </FinancialHierarchyGrid.Cell>
+                                <FinancialHierarchyGrid.Cell
+                                  col={6}
+                                  className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                                >
+                                  {(() => {
+                                    const computed =
+                                      profitInTargetByIteration.get(
+                                        iteration.id,
+                                      );
+                                    const amount =
+                                      computed?.[0]?.amount ??
+                                      iter.profit.reduce(
+                                        (s, v) => s + v.amount,
+                                        0,
+                                      );
+                                    const iterProfitColorClass =
+                                      amount > 0
+                                        ? "text-green-600"
+                                        : amount < 0
+                                          ? "text-red-600"
+                                          : "";
+                                    return profitInTargetByIteration.get(
+                                      iteration.id,
+                                    ) ? (
+                                      <ProfitBreakdownWidget
                                         services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </span>
-                                    <span
-                                      className="py-1.5 text-xs text-right tabular-nums"
-                                      style={{ gridColumn: "5 / 6" }}
-                                    >
-                                      <CurrencyValueWidget
-                                        values={avgBilling}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </span>
-                                    <span
-                                      className="py-1.5 text-xs text-right tabular-nums"
-                                      style={{ gridColumn: "6 / 7" }}
-                                    >
-                                      <CurrencyValueWidget
-                                        values={iter.cost}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </span>
-                                    <span
-                                      className="py-1.5 text-xs text-right tabular-nums"
-                                      style={{ gridColumn: "7 / 8" }}
-                                    >
-                                      <CurrencyValueWidget
-                                        values={iter.billing}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="font-medium"
-                                      />
-                                    </span>
-                                    <span
-                                      className={`py-1.5 pr-2 text-xs text-right tabular-nums ${(() => {
-                                        const computed =
+                                        cost={iter.cost}
+                                        billing={iter.billing}
+                                        profitInTarget={
                                           profitInTargetByIteration.get(
                                             iteration.id,
-                                          );
-                                        const amount =
-                                          computed?.[0]?.amount ??
-                                          iter.profit.reduce(
-                                            (s, v) => s + v.amount,
-                                            0,
-                                          );
-                                        return amount > 0
-                                          ? "font-medium text-green-600"
-                                          : "font-medium";
-                                      })()}`}
-                                      style={{ gridColumn: "8 / 9" }}
-                                    >
-                                      {profitInTargetByIteration.get(
-                                        iteration.id,
-                                      ) ? (
-                                        <ProfitBreakdownWidget
-                                          services={services}
-                                          cost={iter.cost}
-                                          billing={iter.billing}
-                                          profitInTarget={
-                                            profitInTargetByIteration.get(
-                                              iteration.id,
-                                            )![0].amount
-                                          }
-                                          targetCurrency={targetCurrency}
-                                        />
-                                      ) : (
-                                        <CurrencyValueWidget
-                                          values={iter.profit}
-                                          services={services}
-                                          exchangeService={
-                                            services.exchangeService
-                                          }
-                                          className="font-medium"
-                                        />
-                                      )}
-                                    </span>
-                                  </>
-                                );
-                              })()
+                                          )![0].amount
+                                        }
+                                        targetCurrency={targetCurrency}
+                                        className={`font-medium ${iterProfitColorClass}`}
+                                      />
+                                    ) : (
+                                      <CurrencyValueWidget
+                                        values={iter.profit}
+                                        services={services}
+                                        exchangeService={
+                                          services.exchangeService
+                                        }
+                                        className={`font-medium ${iterProfitColorClass}`}
+                                      />
+                                    );
+                                  })()}
+                                </FinancialHierarchyGrid.Cell>
+                              </>
                             ) : (
                               <span style={{ gridColumn: "3 / 9" }} />
                             )}
-                          </button>,
+                          </FinancialHierarchyGrid.ExpandableRow>,
                           iterOpen && (
-                            <div
+                            <FinancialHierarchyGrid.Subgrid
                               key={`iter-${iteration.id}-sub`}
-                              className="col-span-full grid bg-background border-t border-border/30"
-                              style={{
-                                gridTemplateColumns: "subgrid",
-                                gridColumn: "1 / -1",
-                              }}
+                              variant="nested"
                             >
                               <span
                                 className="col-start-2 col-end-3 py-1 pl-6 text-sm text-muted-foreground"
@@ -721,192 +695,212 @@ export function TmetricScopeHierarchyPanel({
                                           Profit
                                         </span>
                                       </div>
-                                      {contractorTotals.map((row) => (
-                                        <div
-                                          key={row.contractorId}
-                                          className="contents text-xs"
-                                        >
-                                          <span
-                                            className="w-8 shrink-0"
-                                            style={{ gridColumn: "1 / 2" }}
-                                          />
-                                          <span
-                                            className="min-w-0 py-1 pl-2"
-                                            style={{ gridColumn: "2 / 3" }}
+                                      {contractorTotals.map((row) => {
+                                        const profitEur =
+                                          contractorProfitInTarget.get(
+                                            `${iteration.id}-${row.contractorId}`,
+                                          );
+                                        const profitValue =
+                                          profitEur ??
+                                          row.totalBilling - row.totalCost;
+                                        return (
+                                          <FinancialHierarchyGrid.Row
+                                            key={row.contractorId}
+                                            label={
+                                              <ContractorWidget
+                                                contractorId={maybe.of(
+                                                  row.contractorId,
+                                                )}
+                                                services={services}
+                                                layout="full"
+                                                size="sm"
+                                                className="min-w-0"
+                                              />
+                                            }
+                                            size="sm"
                                           >
-                                            <ContractorWidget
-                                              contractorId={maybe.of(
-                                                row.contractorId,
+                                            <FinancialHierarchyGrid.Cell
+                                              col={1}
+                                              className="py-1 text-xs text-right tabular-nums"
+                                            >
+                                              {row.hours.toFixed(1)}
+                                            </FinancialHierarchyGrid.Cell>
+                                            <FinancialHierarchyGrid.Cell
+                                              col={2}
+                                              className="py-1 text-xs text-right tabular-nums"
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.costRate,
+                                                row.costCurrency,
                                               )}
-                                              services={services}
-                                              layout="full"
-                                              size="sm"
-                                              className="min-w-0"
-                                            />
-                                          </span>
-                                          <span
-                                            className="py-1 text-right tabular-nums"
-                                            style={{ gridColumn: "3 / 4" }}
-                                          >
-                                            {row.hours.toFixed(1)}
-                                          </span>
-                                          <span
-                                            className="py-1 text-right tabular-nums"
-                                            style={{ gridColumn: "4 / 5" }}
-                                          >
-                                            {services.formatService.financial.amount(
-                                              row.costRate,
-                                              row.costCurrency,
-                                            )}
-                                          </span>
-                                          <span
-                                            className="py-1 text-right tabular-nums"
-                                            style={{ gridColumn: "5 / 6" }}
-                                          >
-                                            {services.formatService.financial.amount(
-                                              row.billingRate,
-                                              row.billingCurrency,
-                                            )}
-                                          </span>
-                                          <span
-                                            className="py-1 text-right tabular-nums"
-                                            style={{ gridColumn: "6 / 7" }}
-                                          >
-                                            {services.formatService.financial.amount(
-                                              row.totalCost,
-                                              row.costCurrency,
-                                            )}
-                                          </span>
-                                          <span
-                                            className="py-1 text-right tabular-nums"
-                                            style={{ gridColumn: "7 / 8" }}
-                                          >
-                                            {services.formatService.financial.amount(
-                                              row.totalBilling,
-                                              row.billingCurrency,
-                                            )}
-                                          </span>
-                                          <span
-                                            className={`py-1 pr-2 text-right tabular-nums font-medium ${(() => {
-                                              const profitEur =
-                                                contractorProfitInTarget.get(
-                                                  `${iteration.id}-${row.contractorId}`,
-                                                );
-                                              const value =
-                                                profitEur ??
-                                                row.totalBilling -
-                                                  row.totalCost;
-                                              return value > 0
-                                                ? "text-green-600"
-                                                : "";
-                                            })()}`}
-                                            style={{ gridColumn: "8 / 9" }}
-                                          >
-                                            <ProfitBreakdownWidget
-                                              services={services}
-                                              cost={[
-                                                {
-                                                  amount: row.totalCost,
-                                                  currency: row.costCurrency,
-                                                },
-                                              ]}
-                                              billing={[
-                                                {
-                                                  amount: row.totalBilling,
-                                                  currency: row.billingCurrency,
-                                                },
-                                              ]}
-                                              profitInTarget={
-                                                contractorProfitInTarget.get(
-                                                  `${iteration.id}-${row.contractorId}`,
-                                                ) ??
-                                                row.totalBilling - row.totalCost
-                                              }
-                                              targetCurrency={targetCurrency}
-                                            />
-                                          </span>
-                                        </div>
-                                      ))}
+                                            </FinancialHierarchyGrid.Cell>
+                                            <FinancialHierarchyGrid.Cell
+                                              col={3}
+                                              className="py-1 text-xs text-right tabular-nums"
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.billingRate,
+                                                row.billingCurrency,
+                                              )}
+                                            </FinancialHierarchyGrid.Cell>
+                                            <FinancialHierarchyGrid.Cell
+                                              col={4}
+                                              className="py-1 text-xs text-right tabular-nums"
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.totalCost,
+                                                row.costCurrency,
+                                              )}
+                                            </FinancialHierarchyGrid.Cell>
+                                            <FinancialHierarchyGrid.Cell
+                                              col={5}
+                                              className="py-1 text-xs text-right tabular-nums"
+                                            >
+                                              {services.formatService.financial.amount(
+                                                row.totalBilling,
+                                                row.billingCurrency,
+                                              )}
+                                            </FinancialHierarchyGrid.Cell>
+                                            <FinancialHierarchyGrid.Cell
+                                              col={6}
+                                              className="py-1 pr-2 text-xs text-right tabular-nums"
+                                            >
+                                              <ProfitBreakdownWidget
+                                                services={services}
+                                                cost={[
+                                                  {
+                                                    amount: row.totalCost,
+                                                    currency: row.costCurrency,
+                                                  },
+                                                ]}
+                                                billing={[
+                                                  {
+                                                    amount: row.totalBilling,
+                                                    currency: row.billingCurrency,
+                                                  },
+                                                ]}
+                                                profitInTarget={profitValue}
+                                                targetCurrency={targetCurrency}
+                                                className={`font-medium ${
+                                                  profitValue > 0
+                                                    ? "text-green-600"
+                                                    : profitValue < 0
+                                                      ? "text-red-600"
+                                                      : ""
+                                                }`}
+                                              />
+                                            </FinancialHierarchyGrid.Cell>
+                                          </FinancialHierarchyGrid.Row>
+                                        );
+                                      })}
                                     </>
                                   );
                                 })()}
-                            </div>
+                            </FinancialHierarchyGrid.Subgrid>
                           ),
                         ];
                       },
                     )
                   )}
-                </div>
+                </FinancialHierarchyGrid.Subgrid>
               ),
             ];
           })}
-          {/* Footer totals */}
           {footerTotals != null && footerTotals.iterationCount > 0 && (
-            <div className="contents border-t bg-muted/30 text-xs font-medium">
-              <span className="px-2 py-2 w-8" />
-              <span className="py-2">
-                Total: {footerTotals.iterationCount} iteration
-                {footerTotals.iterationCount !== 1 ? "s" : ""}
-              </span>
-              <span className="py-2 text-right tabular-nums">
+            <FinancialHierarchyGrid.Footer
+              label={
+                <>
+                  Total: {footerTotals.iterationCount} iteration
+                  {footerTotals.iterationCount !== 1 ? "s" : ""}
+                </>
+              }
+            >
+              <FinancialHierarchyGrid.Cell
+                col={1}
+                className="py-2 text-right tabular-nums"
+              >
                 {footerTotals.totalHours.toFixed(1)}
-              </span>
-              <span className="py-2 text-right tabular-nums">
+              </FinancialHierarchyGrid.Cell>
+              <FinancialHierarchyGrid.Cell
+                col={2}
+                className="py-2 text-right tabular-nums"
+              >
                 <CurrencyValueWidget
                   values={footerTotals.avgCostRate}
                   services={services}
                   exchangeService={services.exchangeService}
                 />
-              </span>
-              <span className="py-2 text-right tabular-nums">
+              </FinancialHierarchyGrid.Cell>
+              <FinancialHierarchyGrid.Cell
+                col={3}
+                className="py-2 text-right tabular-nums"
+              >
                 <CurrencyValueWidget
                   values={footerTotals.avgBillingRate}
                   services={services}
                   exchangeService={services.exchangeService}
                 />
-              </span>
-              <span className="py-2 text-right tabular-nums">
+              </FinancialHierarchyGrid.Cell>
+              <FinancialHierarchyGrid.Cell
+                col={4}
+                className="py-2 text-right tabular-nums"
+              >
                 <CurrencyValueWidget
                   values={footerTotals.totalCost}
                   services={services}
                   exchangeService={services.exchangeService}
                 />
-              </span>
-              <span className="py-2 text-right tabular-nums">
+              </FinancialHierarchyGrid.Cell>
+              <FinancialHierarchyGrid.Cell
+                col={5}
+                className="py-2 text-right tabular-nums"
+              >
                 <CurrencyValueWidget
                   values={footerTotals.totalBilling}
                   services={services}
                   exchangeService={services.exchangeService}
                 />
-              </span>
-              <span
-                className={`py-2 pr-2 text-right tabular-nums font-medium ${
-                  footerTotals.totalProfit.reduce((s, v) => s + v.amount, 0) > 0
-                    ? "text-green-600"
-                    : ""
-                }`}
+              </FinancialHierarchyGrid.Cell>
+              <FinancialHierarchyGrid.Cell
+                col={6}
+                className="py-2 pr-2 text-right tabular-nums"
               >
-                {footerTotals.totalProfit.length === 1 &&
-                footerTotals.totalProfit[0].currency === targetCurrency ? (
-                  <ProfitBreakdownWidget
-                    services={services}
-                    cost={footerTotals.totalCost}
-                    billing={footerTotals.totalBilling}
-                    profitInTarget={footerTotals.totalProfit[0].amount}
-                    targetCurrency={targetCurrency}
-                  />
-                ) : (
-                  <CurrencyValueWidget
-                    values={footerTotals.totalProfit}
-                    services={services}
-                    exchangeService={services.exchangeService}
-                    className="font-medium"
-                  />
-                )}
-              </span>
-            </div>
+                {(() => {
+                  const footerProfitAmount =
+                    footerTotals.totalProfit.reduce(
+                      (s, v) => s + v.amount,
+                      0,
+                    );
+                  const footerProfitColorClass =
+                    footerProfitAmount > 0
+                      ? "text-green-600"
+                      : footerProfitAmount < 0
+                        ? "text-red-600"
+                        : "";
+                  return footerTotals.totalProfit.length === 1 &&
+                    footerTotals.totalProfit[0].currency ===
+                      targetCurrency ? (
+                    <ProfitBreakdownWidget
+                      services={services}
+                      cost={footerTotals.totalCost}
+                      billing={footerTotals.totalBilling}
+                      profitInTarget={footerTotals.totalProfit[0].amount}
+                      targetCurrency={targetCurrency}
+                      className={`font-medium ${footerProfitColorClass}`}
+                    />
+                  ) : (
+                    <CurrencyValueWidget
+                      values={footerTotals.totalProfit}
+                      services={services}
+                      exchangeService={services.exchangeService}
+                      className={`font-medium ${footerProfitColorClass}`}
+                    />
+                  );
+                })()}
+              </FinancialHierarchyGrid.Cell>
+            </FinancialHierarchyGrid.Footer>
           )}
-        </div>
+        </FinancialHierarchyGrid>
       )}
     </>
   );
