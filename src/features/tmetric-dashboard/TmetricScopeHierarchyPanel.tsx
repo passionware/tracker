@@ -144,9 +144,7 @@ export function TmetricScopeHierarchyPanel({
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
         <div>
-          <CardTitle className="text-base">
-            Scope: Clients → Iterations → Projects → Contractors & rates
-          </CardTitle>
+          <CardTitle className="text-base">Scope</CardTitle>
           <CardDescription>
             Hierarchy of current dashboard scope; contractor rates when report is
             loaded

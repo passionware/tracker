@@ -679,7 +679,6 @@ export function TmetricDashboardPage(
             .map(
               ({
                 cachedReportQuery: _report,
-                basicInfo: resolvedBasicInfo,
                 contractorsSummary: resolvedContractorsSummary,
                 iterationSummary: resolvedIterationSummary,
                 contractorIterationBreakdown:
@@ -695,140 +694,7 @@ export function TmetricDashboardPage(
                         "repeat(auto-fit, minmax(480px, 1fr))",
                     }}
                   >
-                    {/* Stats card: time entries + totals */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Time entries & totals
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="text-2xl font-bold">
-                              {resolvedBasicInfo.statistics.timeEntriesCount}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              time entries
-                            </p>
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Total cost
-                              </p>
-                              <CurrencyValueWidget
-                                values={
-                                  resolvedBasicInfo.statistics.totalCostBudget
-                                }
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="text-lg font-semibold"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Total billing
-                              </p>
-                              <CurrencyValueWidget
-                                values={
-                                  resolvedBasicInfo.statistics
-                                    .totalBillingBudget
-                                }
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="text-lg font-semibold"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Profit
-                              </p>
-                              <CurrencyValueWidget
-                                values={
-                                  resolvedBasicInfo.statistics
-                                    .totalEarningsBudget
-                                }
-                                services={services}
-                                exchangeService={services.exchangeService}
-                                className="text-lg font-semibold"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* By iteration */}
-                    {resolvedIterationSummary &&
-                    resolvedIterationSummary.length > 0 ? (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>By iteration</CardTitle>
-                          <CardDescription>
-                            Cost, billing, and profit per iteration
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {resolvedIterationSummary.map((iter) => (
-                              <div
-                                key={iter.iterationId}
-                                className="rounded-lg border p-3"
-                              >
-                                <p className="text-sm font-medium">
-                                  {iter.iterationLabel}
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                                  <div>
-                                    <span className="text-muted-foreground">
-                                      Cost:{" "}
-                                    </span>
-                                    <CurrencyValueWidget
-                                      values={iter.cost}
-                                      services={services}
-                                      exchangeService={services.exchangeService}
-                                      className="font-medium"
-                                    />
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">
-                                      Billing:{" "}
-                                    </span>
-                                    <CurrencyValueWidget
-                                      values={iter.billing}
-                                      services={services}
-                                      exchangeService={services.exchangeService}
-                                      className="font-medium"
-                                    />
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">
-                                      Profit:{" "}
-                                    </span>
-                                    <Badge variant="secondary">
-                                      <CurrencyValueWidget
-                                        values={iter.profit}
-                                        services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
-                                        className="text-inherit"
-                                      />
-                                    </Badge>
-                                  </div>
-                                  <span className="text-muted-foreground">
-                                    {iter.hours.toFixed(1)}h · {iter.entries}{" "}
-                                    entries
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : resolvedContractorsSummary &&
+                    {resolvedContractorsSummary &&
                       resolvedContractorsSummary.contractors.length > 0 &&
                       !(
                         resolvedContractorIterationBreakdown &&
