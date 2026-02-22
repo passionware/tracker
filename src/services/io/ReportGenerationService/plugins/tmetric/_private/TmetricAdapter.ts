@@ -174,18 +174,21 @@ export function adaptTMetricToGeneric(
     string,
     { name: string; description: string; parameters: Record<string, unknown> }
   > = {};
+  const contractorIdStr = String(input.contractorId);
   for (const [
     projectDisplayName,
     shortProjectId,
   ] of projectDisplayNameToShortId.entries()) {
-    const originalProjectId =
+    const tmetricProjectId =
       projectDisplayNameToOriginalId.get(projectDisplayName) || "default";
     projectTypes[shortProjectId] = {
       name: projectDisplayName,
       description: projectDisplayName,
       parameters: {
-        // Store original TMetric project ID for rate matching
-        originalProjectId: originalProjectId,
+        // Per-contractor TMetric project ID (each contractor can have own TMetric instance)
+        tmetricProjectIdByContractor: {
+          [contractorIdStr]: tmetricProjectId,
+        },
       },
     };
   }
@@ -218,7 +221,7 @@ export function adaptTMetricToGeneric(
     // Find the first activity name that maps to this display name for description
     const activityName =
       Array.from(activityNameToShortId.entries()).find(
-        ([_, id]) => id === shortActivityId,
+        ([, id]) => id === shortActivityId,
       )?.[0] || "development";
 
     activityTypes[shortActivityId] = {

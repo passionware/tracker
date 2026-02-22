@@ -166,26 +166,10 @@ export function ReportGenerationWidget({
         name: projectType.name,
       }));
 
-      // For prefilled rates, we need Report-like objects with workspaceId and clientId
-      // The extractPrefilledRatesFromGenericReport only uses these fields
-      // For prefilled rates, we only need workspaceId and clientId for expression context
-      const contractorContexts = new Map(
-        contractors.map((contractor) => {
-          const wsId = contractorWorkspaceIds.get(contractor.id) ?? 0;
-          return [
-            contractor.id,
-            {
-              workspaceId: wsId,
-              clientId: projData.clientId,
-            },
-          ];
-        }),
-      );
-
+      // workspaceId/clientId for rate resolution come from project type parameters (set by plugin from iteration->project)
       const prefilledRates = await extractPrefilledRatesFromGenericReport(
         result.reportData,
         services.expressionService,
-        contractorContexts,
       );
 
       return {

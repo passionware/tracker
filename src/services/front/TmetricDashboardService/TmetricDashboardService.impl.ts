@@ -429,17 +429,9 @@ export function createTmetricDashboardService(
 
       const { reportData } = await tmetricPlugin.getReport({ reports });
 
-      const contractorContexts = new Map(
-        allIntegrated.map((c) => [
-          c.contractorId,
-          { workspaceId: c.workspaceId, clientId: c.clientId },
-        ]),
-      );
-
       const prefilledRates = await extractPrefilledRatesFromGenericReport(
         reportData,
         services.expressionService,
-        contractorContexts,
       );
 
       const reportWithRates = applyPrefilledRatesToReport(

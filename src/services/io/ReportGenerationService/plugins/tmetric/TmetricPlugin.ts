@@ -2,6 +2,8 @@ import { WithServices } from "@/platform/typescript/services";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport } from "@/services/io/_common/GenericReport.ts";
 import { maybe } from "@passionware/monads";
+import { parseRateConfiguration } from "../_common/parseRateConfiguration";
+import { getTmetricProjectIdForContractor } from "../_common/tmetricProjectIdFromParams";
 import { AbstractPlugin, GetReportPayload } from "../AbstractPlugin";
 import { resolveTmetricReportPayload } from "./_private/config-resolver.ts";
 import { adaptTMetricToGeneric } from "./_private/TmetricAdapter.ts";
@@ -41,41 +43,6 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             reportConfig.fetchParams,
           );
 
-          // Helper function to parse rate with currency from environment variable
-          // Rate expressions must include currency (e.g., "100 EUR")
-          const parseRateWithCurrency = (
-            rateString: string,
-          ): { rate: number; currency: string } => {
-            const trimmed = rateString.toString().trim();
-            const parts = trimmed.split(/\s+/);
-
-            if (parts.length >= 2) {
-              // Format: "100 EUR" or "100 eur"
-              const rate = Number(parts[0]);
-              const currency = parts[1].toUpperCase();
-              return { rate, currency };
-            } else {
-              // Format: "100" (no currency specified) - not allowed
-              throw new Error(
-                `Rate expression must include currency: "${rateString}". Expected format: "100 EUR"`,
-              );
-            }
-          };
-
-          // Get cost rate (what we pay the contractor)
-          const costRateString =
-            await config.services.expressionService.ensureExpressionValue(
-              {
-                workspaceId: trackerReport.workspaceId,
-                clientId: trackerReport.clientId,
-                contractorId: trackerReport.contractorId,
-              },
-              `vars.new_hour_cost_rate`,
-              {},
-            );
-          const { rate: costRate, currency: costCurrency } =
-            parseRateWithCurrency(String(costRateString));
-
           const iterationId = trackerReport.iterationId ?? 0;
           const contractorRoleId = `iter_${iterationId}_contractor_${trackerReport.contractorId}`;
           const adapted = adaptTMetricToGeneric({
@@ -85,30 +52,91 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             idMaps: sharedIdMaps, // Share the ID maps across contractors
           });
 
-          // Get billing rate (what we charge the client) - with markup/interest
+          // Attach iteration/project context to each project type so rate resolution uses project scope, not contractor definition
+          const projectContext = {
+            workspaceId: trackerReport.workspaceId,
+            clientId: trackerReport.clientId,
+          };
+          for (const projectType of Object.values(adapted.definitions.projectTypes)) {
+            Object.assign(projectType.parameters, projectContext);
+          }
+
+          const expressionContext = {
+            //todo: the context and projectType does not match?
+            workspaceId: trackerReport.workspaceId,
+            clientId: trackerReport.clientId,
+            contractorId: trackerReport.contractorId,
+          };
+
+          // Get cost and billing rate configs (supports simple "100 EUR" or JSON per-project map)
+          const costRateString =
+            await config.services.expressionService.ensureExpressionValue(
+              expressionContext,
+              `vars.new_hour_cost_rate`,
+              {},
+            );
           const billingRateString =
             await config.services.expressionService.ensureExpressionValue(
-              {
-                workspaceId: trackerReport.workspaceId,
-                clientId: trackerReport.clientId,
-                contractorId: trackerReport.contractorId,
-              },
+              expressionContext,
               `vars.new_hour_billing_rate`,
-              { fallback: `${costRate} ${costCurrency}` }, // fallback to cost rate if billing rate not set
+              { fallback: costRateString },
             );
-          const { rate: billingRate, currency: billingCurrency } =
-            parseRateWithCurrency(String(billingRateString));
 
-          adapted.definitions.roleTypes[contractorRoleId].rates.push({
-            billing: "hourly",
-            activityTypes: [],
-            taskTypes: [],
-            projectIds: [],
-            costRate,
-            costCurrency,
-            billingRate,
-            billingCurrency,
-          });
+          const contractorId = trackerReport.contractorId;
+          const projects = Object.entries(adapted.definitions.projectTypes).map(
+            ([id, projectType]) => ({
+              id,
+              tmetricProjectId: getTmetricProjectIdForContractor(
+                projectType.parameters,
+                contractorId,
+                id,
+              ),
+            }),
+          );
+
+          if (projects.length > 0) {
+            for (const project of projects) {
+              const tmetricProjectId = project.tmetricProjectId;
+              const cost = parseRateConfiguration(
+                String(costRateString),
+                tmetricProjectId,
+              );
+              const billing = parseRateConfiguration(
+                String(billingRateString),
+                tmetricProjectId,
+              );
+              adapted.definitions.roleTypes[contractorRoleId].rates.push({
+                billing: "hourly",
+                activityTypes: [],
+                taskTypes: [],
+                projectIds: [project.id],
+                costRate: cost.rate,
+                costCurrency: cost.currency,
+                billingRate: billing.rate,
+                billingCurrency: billing.currency,
+              });
+            }
+          } else {
+            // No projects in report: use fallback from JSON or simple string
+            const cost = parseRateConfiguration(
+              String(costRateString),
+              "__default__",
+            );
+            const billing = parseRateConfiguration(
+              String(billingRateString),
+              "__default__",
+            );
+            adapted.definitions.roleTypes[contractorRoleId].rates.push({
+              billing: "hourly",
+              activityTypes: [],
+              taskTypes: [],
+              projectIds: [],
+              costRate: cost.rate,
+              costCurrency: cost.currency,
+              billingRate: billing.rate,
+              billingCurrency: billing.currency,
+            });
+          }
           return {
             reportData: adapted,
             originalData: timeEntries,
@@ -168,11 +196,33 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
       report.definitions.activityTypes,
     );
 
-    // Merge project types (IDs are already shared via SharedIdMap, so no remapping needed)
-    Object.assign(
-      merged.definitions.projectTypes,
+    // Merge project types: combine tmetricProjectIdByContractor so all contractors are represented
+    for (const [projectId, incomingType] of Object.entries(
       report.definitions.projectTypes,
-    );
+    )) {
+      const existing = merged.definitions.projectTypes[projectId];
+      const existingMap =
+        (existing?.parameters?.tmetricProjectIdByContractor as
+          | Record<string, string>
+          | undefined) ?? {};
+      const incomingMap =
+        (incomingType.parameters?.tmetricProjectIdByContractor as
+          | Record<string, string>
+          | undefined) ?? {};
+      merged.definitions.projectTypes[projectId] = {
+        ...(existing ?? incomingType),
+        name: existing?.name ?? incomingType.name,
+        description: existing?.description ?? incomingType.description,
+        parameters: {
+          ...existing?.parameters,
+          ...incomingType.parameters,
+          tmetricProjectIdByContractor: {
+            ...existingMap,
+            ...incomingMap,
+          },
+        },
+      };
+    }
 
     // Keep role types separate - each contractor has their own role
     Object.assign(merged.definitions.roleTypes, report.definitions.roleTypes);
