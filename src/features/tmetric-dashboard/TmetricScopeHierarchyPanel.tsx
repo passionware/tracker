@@ -22,7 +22,7 @@ import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildScopeHierarchy,
-  getContractorRatesForProject,
+  getContractorRatesForIterationProject,
   projectKey,
   type ContractorRateInProject,
 } from "./tmetric-dashboard.utils";
@@ -50,12 +50,7 @@ export function TmetricScopeHierarchyPanel({
   cachedReport = null,
 }: TmetricScopeHierarchyPanelProps) {
   const scopeHierarchy = useMemo(
-    () =>
-      buildScopeHierarchy(
-        projectsData,
-        iterationsForScope,
-        projectsMap,
-      ),
+    () => buildScopeHierarchy(projectsData, iterationsForScope, projectsMap),
     [projectsData, iterationsForScope, projectsMap],
   );
 
@@ -65,9 +60,10 @@ export function TmetricScopeHierarchyPanel({
       iterations: client.iterations.map((row) => ({
         ...row,
         contractorsWithRates: cachedReport?.data
-          ? getContractorRatesForProject(
+          ? getContractorRatesForIterationProject(
               cachedReport.data,
-              row.projectName,
+              row.iteration.id,
+              row.iteration.projectId,
             )
           : [],
       })),

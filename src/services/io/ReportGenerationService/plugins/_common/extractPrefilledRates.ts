@@ -111,7 +111,5 @@ export async function extractPrefilledRatesFromGenericReport(
     }
   }
 
-  debugger;
-
   return prefilled;
 }

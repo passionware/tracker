@@ -7,7 +7,10 @@ import type {
   GenericReport,
   RoleRate,
 } from "@/services/io/_common/GenericReport";
-import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
+import {
+  getContractorIdFromRoleKey,
+  getIterationIdFromRoleKey,
+} from "@/services/io/_common/roleKeyUtils";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { rd, type RemoteData } from "@passionware/monads";
 import {
@@ -45,7 +48,7 @@ import {
  *    - iterationSummary = getIterationSummary(report, iterationsForBreakdown, projectsMap, start, end)
  *    - contractorIterationBreakdown = getContractorIterationBreakdown(...)
  *    - scopeHierarchy = buildScopeHierarchy(projectsData, iterationsForScope, projectsMap)
- *    - scopeHierarchyWithRates = scopeHierarchy + getContractorRatesForProject(report, projectName) per row
+ *    - scopeHierarchyWithRates = scopeHierarchy + getContractorRatesForIterationProject(report, iterationId, projectId) per row
  *    - entries: filtered timeEntries in [start,end]; rates from report.definitions.roleTypes
  */
 export type TimePreset =
@@ -166,6 +169,29 @@ export function findReportProjectIdByName(
   return entry ? entry[0] : null;
 }
 
+/**
+ * Resolve report project type id by iteration + project (from project type parameters).
+ * Uses parameters.iterationId/iterationIds and parameters.projectId so lookup does not rely on project name.
+ */
+export function findReportProjectIdByIterationAndProject(
+  report: GenericReport,
+  iterationId: number,
+  projectId: number,
+): string | null {
+  const entry = Object.entries(report.definitions.projectTypes).find(
+    ([, pt]) => {
+      const params = pt.parameters ?? {};
+      const matchesProject =
+        (params.projectId as number | undefined) === projectId;
+      const matchesIteration =
+        (params.iterationIds as number[] | undefined)?.includes(iterationId) ||
+        (params.iterationId as number | undefined) === iterationId;
+      return matchesProject && matchesIteration;
+    },
+  );
+  return entry ? entry[0] : null;
+}
+
 /** Get the best matching rate for a project: project-specific first, then default (empty projectIds). */
 export function getBestRateForProject(
   rates: RoleRate[],
@@ -183,8 +209,8 @@ export function getBestRateForProject(
 }
 
 /**
- * Returns contractor rates applicable to the given project in the report.
- * Report role types are keyed by contractor_<id>; each has rates (optionally per project).
+ * Returns contractor rates applicable to the given project in the report (by project name).
+ * Prefer getContractorRatesForIterationProject when iterationId and projectId are available.
  */
 export function getContractorRatesForProject(
   report: GenericReport,
@@ -195,6 +221,43 @@ export function getContractorRatesForProject(
   for (const [roleKey, roleType] of Object.entries(
     report.definitions.roleTypes,
   )) {
+    const contractorId = getContractorIdFromRoleKey(roleKey);
+    if (contractorId == null) continue;
+    const rate = getBestRateForProject(roleType.rates, reportProjectId);
+    if (!rate) continue;
+    result.push({
+      contractorId,
+      costRate: rate.costRate,
+      costCurrency: rate.costCurrency,
+      billingRate: rate.billingRate,
+      billingCurrency: rate.billingCurrency,
+    });
+  }
+  return result;
+}
+
+/**
+ * Returns contractor rates for a specific iteration+project using report structure:
+ * - Finds report project by parameters.iterationId/iterationIds and parameters.projectId
+ * - Only considers role keys iter_${iterationId}_contractor_* for that iteration
+ * Does not rely on project name.
+ */
+export function getContractorRatesForIterationProject(
+  report: GenericReport,
+  iterationId: number,
+  projectId: number,
+): ContractorRateInProject[] {
+  const reportProjectId = findReportProjectIdByIterationAndProject(
+    report,
+    iterationId,
+    projectId,
+  );
+  if (reportProjectId == null) return [];
+  const result: ContractorRateInProject[] = [];
+  for (const [roleKey, roleType] of Object.entries(
+    report.definitions.roleTypes,
+  )) {
+    if (getIterationIdFromRoleKey(roleKey) !== iterationId) continue;
     const contractorId = getContractorIdFromRoleKey(roleKey);
     if (contractorId == null) continue;
     const rate = getBestRateForProject(roleType.rates, reportProjectId);

@@ -396,6 +396,7 @@ export function createTmetricDashboardService(
             workspaceId: c.workspaceId,
             clientId: c.clientId,
             iterationId: iteration.id,
+            projectId: iteration.projectId,
           })),
       );
 

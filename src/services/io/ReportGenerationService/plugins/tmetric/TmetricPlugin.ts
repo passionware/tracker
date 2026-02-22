@@ -52,11 +52,17 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
             idMaps: sharedIdMaps, // Share the ID maps across contractors
           });
 
-          // Attach iteration/project context to each project type so rate resolution uses project scope, not contractor definition
-          const projectContext = {
+          // Attach iteration/project context to each project type for rate resolution and lookup by iteration+project
+          const projectContext: Record<string, unknown> = {
             workspaceId: trackerReport.workspaceId,
             clientId: trackerReport.clientId,
           };
+          if (trackerReport.iterationId != null) {
+            projectContext.iterationId = trackerReport.iterationId;
+          }
+          if (trackerReport.projectId != null) {
+            projectContext.projectId = trackerReport.projectId;
+          }
           for (const projectType of Object.values(adapted.definitions.projectTypes)) {
             Object.assign(projectType.parameters, projectContext);
           }
@@ -196,7 +202,7 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
       report.definitions.activityTypes,
     );
 
-    // Merge project types: combine tmetricProjectIdByContractor so all contractors are represented
+    // Merge project types: combine tmetricProjectIdByContractor and iterationIds
     for (const [projectId, incomingType] of Object.entries(
       report.definitions.projectTypes,
     )) {
@@ -209,6 +215,18 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
         (incomingType.parameters?.tmetricProjectIdByContractor as
           | Record<string, string>
           | undefined) ?? {};
+      const existingIterationIds = new Set<number>(
+        (existing?.parameters?.iterationIds as number[] | undefined) ??
+          (existing?.parameters?.iterationId != null
+            ? [existing.parameters.iterationId as number]
+            : []),
+      );
+      const incomingIterationId = incomingType.parameters?.iterationId as
+        | number
+        | undefined;
+      if (incomingIterationId != null) {
+        existingIterationIds.add(incomingIterationId);
+      }
       merged.definitions.projectTypes[projectId] = {
         ...(existing ?? incomingType),
         name: existing?.name ?? incomingType.name,
@@ -220,6 +238,7 @@ function mergeGenericReports(reports: GenericReport[]): GenericReport {
             ...existingMap,
             ...incomingMap,
           },
+          iterationIds: [...existingIterationIds],
         },
       };
     }

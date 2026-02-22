@@ -27,6 +27,8 @@ export type GetReportPayload = {
     clientId: Client["id"];
     /** When set, role keys are scoped as iter_${iterationId}_contractor_${contractorId}. Use 0 when not iteration-scoped. */
     iterationId?: number;
+    /** When set with iterationId, stored on project type parameters for lookup without project name. */
+    projectId?: number;
   }>;
 };
 
