@@ -69,9 +69,7 @@ function DashboardRangeBar({
 }) {
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>(() =>
-    start && end
-      ? { from: startOfDay(start), to: endOfDay(end) }
-      : undefined,
+    start && end ? { from: startOfDay(start), to: endOfDay(end) } : undefined,
   );
 
   useEffect(() => {
@@ -292,6 +290,8 @@ export function TmetricDashboardPage(
               variant="outline"
               align="start"
               side="bottom"
+              maxValueItems={1}
+              itemOverflowMessage={(value) => `${value.length} iterations`}
             />
 
             <Button
