@@ -16,20 +16,18 @@ import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
-import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
-import type { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
-import { maybe, rd, type RemoteData } from "@passionware/monads";
-import { format } from "date-fns";
+import type { GenericReport } from "@/services/io/_common/GenericReport";
+import { maybe, type RemoteData } from "@passionware/monads";
 import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  buildScopeHierarchy,
+  getContractorRatesForProject,
+  projectKey,
+  type ContractorRateInProject,
+} from "./tmetric-dashboard.utils";
 
-export interface ContractorRateInProject {
-  contractorId: number;
-  costRate: number;
-  costCurrency: string;
-  billingRate: number;
-  billingCurrency: string;
-}
+export type { ContractorRateInProject };
 
 export interface TmetricScopeHierarchyPanelProps {
   services: WithFrontServices["services"];
@@ -38,107 +36,6 @@ export interface TmetricScopeHierarchyPanelProps {
   projectsMap: Map<number, { name: string }>;
   /** When present (cached report loaded), contractor rates per project are shown. */
   cachedReport?: { data: GenericReport } | null;
-}
-
-/** Resolve report project type id by project name (e.g. for matching rates). */
-function findReportProjectIdByName(
-  report: GenericReport,
-  projectName: string,
-): string | null {
-  const normalized = projectName.trim().toLowerCase();
-  const entry = Object.entries(report.definitions.projectTypes).find(
-    ([, pt]) => pt.name.trim().toLowerCase() === normalized,
-  );
-  return entry ? entry[0] : null;
-}
-
-/** Get the best matching rate for a project: project-specific first, then default (empty projectIds). */
-function getBestRateForProject(
-  rates: RoleRate[],
-  reportProjectId: string | null,
-): RoleRate | null {
-  if (rates.length === 0) return null;
-  const withProject = rates.filter(
-    (r) =>
-      r.projectIds.length > 0 &&
-      reportProjectId != null &&
-      r.projectIds.includes(reportProjectId),
-  );
-  const fallback = rates.filter((r) => r.projectIds.length === 0);
-  return withProject[0] ?? fallback[0] ?? null;
-}
-
-/**
- * Returns contractor rates applicable to the given project in the report.
- * Report role types are keyed by contractor_<id>; each has rates (optionally per project).
- */
-function getContractorRatesForProject(
-  report: GenericReport,
-  projectName: string,
-): ContractorRateInProject[] {
-  const reportProjectId = findReportProjectIdByName(report, projectName);
-  const result: ContractorRateInProject[] = [];
-  for (const [roleKey, roleType] of Object.entries(
-    report.definitions.roleTypes,
-  )) {
-    const match = /^contractor_(\d+)$/.exec(roleKey);
-    if (!match) continue;
-    const contractorId = Number(match[1]);
-    const rate = getBestRateForProject(roleType.rates, reportProjectId);
-    if (!rate) continue;
-    result.push({
-      contractorId,
-      costRate: rate.costRate,
-      costCurrency: rate.costCurrency,
-      billingRate: rate.billingRate,
-      billingCurrency: rate.billingCurrency,
-    });
-  }
-  return result;
-}
-
-function buildScopeHierarchy(
-  projectsData: RemoteData<Project[]>,
-  iterationsForScope: ProjectIteration[],
-  projectsMap: Map<number, { name: string }>,
-) {
-  const projects: Project[] = rd.tryMap(projectsData, (x) => x) ?? [];
-  const clientIds = [
-    ...new Set(
-      iterationsForScope.flatMap((i) => {
-        const p = projects.find((proj) => proj.id === i.projectId);
-        return p ? [p.clientId] : [];
-      }),
-    ),
-  ];
-  return clientIds.map((cid) => {
-    const clientProjects = projects.filter((p) => p.clientId === cid);
-    const projectIds = new Set(clientProjects.map((p) => p.id));
-    const iters = iterationsForScope.filter((i) => projectIds.has(i.projectId));
-    return {
-      clientId: cid,
-      iterations: iters.map((iter) => {
-        const project = projectsMap.get(iter.projectId);
-        const projectName = project?.name ?? `Project ${iter.projectId}`;
-        const periodLabel = `${format(calendarDateToJSDate(iter.periodStart), "dd MMM yyyy")} – ${format(calendarDateToJSDate(iter.periodEnd), "dd MMM yyyy")}`;
-        const statusLabel =
-          iter.status === "active"
-            ? " · Active"
-            : iter.status === "closed"
-              ? " · Closed"
-              : "";
-        return {
-          iteration: iter,
-          iterationLabel: `${projectName} #${iter.ordinalNumber}${statusLabel} (${periodLabel})`,
-          projectName,
-        };
-      }),
-    };
-  });
-}
-
-function projectKey(iterationId: number, projectName: string): string {
-  return `${iterationId}-${projectName}`;
 }
 
 function formatRate(rate: number, currency: string): string {

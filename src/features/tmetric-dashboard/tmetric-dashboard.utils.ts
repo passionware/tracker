@@ -1,8 +1,11 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
+import type { Project } from "@/api/project/project.api";
 import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService";
+import type { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
+import { rd, type RemoteData } from "@passionware/monads";
 import {
   endOfDay,
   endOfMonth,
@@ -14,6 +17,33 @@ import {
   subWeeks,
 } from "date-fns";
 
+/**
+ * TMetric Dashboard: process from iteration/range scope to data
+ * ============================================================
+ *
+ * 1. INPUTS (from page/API)
+ *    - workspaceId, clientId, selectedIterationIds, timePreset
+ *    - projectsData (RemoteData<Project[]>), iterationsData (ProjectIteration[])
+ *
+ * 2. SCOPE RESOLUTION (pure, in this file)
+ *    - projectsMap = from projectsData (id → name)
+ *    - iterationsForScope = selectedIterationIds.length ? selected : all active
+ *    - iterationRange = getDateRangeFromIterations(iterationsForScope)
+ *    - { start, end } = getDateRangeForPreset(timePreset, iterationRange)
+ *    - scope = { workspaceIds?, clientIds?, projectIterationIds }
+ *
+ * 3. LOAD REPORT (async, in TmetricDashboardService)
+ *    - getCached(scope, start, end) / refreshAndCache(scope, start, end)
+ *    - Returns GenericReport: timeEntries, definitions.projectTypes, definitions.roleTypes (rates)
+ *
+ * 4. DERIVED FROM REPORT + SCOPE (pure, in this file)
+ *    - iterationsForBreakdown = iterationsOverlappingRange(iterationsForScope, start, end)
+ *    - iterationSummary = getIterationSummary(report, iterationsForBreakdown, projectsMap, start, end)
+ *    - contractorIterationBreakdown = getContractorIterationBreakdown(...)
+ *    - scopeHierarchy = buildScopeHierarchy(projectsData, iterationsForScope, projectsMap)
+ *    - scopeHierarchyWithRates = scopeHierarchy + getContractorRatesForProject(report, projectName) per row
+ *    - entries: filtered timeEntries in [start,end]; rates from report.definitions.roleTypes
+ */
 export type TimePreset =
   | "today"
   | "this_week"
@@ -98,6 +128,134 @@ export function budgetToCurrencyValues(
     currency,
   }));
 }
+
+// --- Scope hierarchy and contractor rates (from iteration/range scope + report) ---
+
+export interface ContractorRateInProject {
+  contractorId: number;
+  costRate: number;
+  costCurrency: string;
+  billingRate: number;
+  billingCurrency: string;
+}
+
+export interface ScopeHierarchyIterationRow {
+  iteration: ProjectIteration;
+  iterationLabel: string;
+  projectName: string;
+}
+
+export interface ScopeHierarchyClient {
+  clientId: number;
+  iterations: ScopeHierarchyIterationRow[];
+}
+
+/** Resolve report project type id by project name (e.g. for matching rates). */
+export function findReportProjectIdByName(
+  report: GenericReport,
+  projectName: string,
+): string | null {
+  const normalized = projectName.trim().toLowerCase();
+  const entry = Object.entries(report.definitions.projectTypes).find(
+    ([, pt]) => pt.name.trim().toLowerCase() === normalized,
+  );
+  return entry ? entry[0] : null;
+}
+
+/** Get the best matching rate for a project: project-specific first, then default (empty projectIds). */
+export function getBestRateForProject(
+  rates: RoleRate[],
+  reportProjectId: string | null,
+): RoleRate | null {
+  if (rates.length === 0) return null;
+  const withProject = rates.filter(
+    (r) =>
+      r.projectIds.length > 0 &&
+      reportProjectId != null &&
+      r.projectIds.includes(reportProjectId),
+  );
+  const fallback = rates.filter((r) => r.projectIds.length === 0);
+  return withProject[0] ?? fallback[0] ?? null;
+}
+
+/**
+ * Returns contractor rates applicable to the given project in the report.
+ * Report role types are keyed by contractor_<id>; each has rates (optionally per project).
+ */
+export function getContractorRatesForProject(
+  report: GenericReport,
+  projectName: string,
+): ContractorRateInProject[] {
+  const reportProjectId = findReportProjectIdByName(report, projectName);
+  const result: ContractorRateInProject[] = [];
+  for (const [roleKey, roleType] of Object.entries(
+    report.definitions.roleTypes,
+  )) {
+    const match = /^contractor_(\d+)$/.exec(roleKey);
+    if (!match) continue;
+    const contractorId = Number(match[1]);
+    const rate = getBestRateForProject(roleType.rates, reportProjectId);
+    if (!rate) continue;
+    result.push({
+      contractorId,
+      costRate: rate.costRate,
+      costCurrency: rate.costCurrency,
+      billingRate: rate.billingRate,
+      billingCurrency: rate.billingCurrency,
+    });
+  }
+  return result;
+}
+
+/**
+ * Build scope hierarchy: clients → iterations (with project name and labels).
+ * Used to display scope and to attach contractor rates per project when report is loaded.
+ */
+export function buildScopeHierarchy(
+  projectsData: RemoteData<Project[]>,
+  iterationsForScope: ProjectIteration[],
+  projectsMap: Map<number, { name: string }>,
+): ScopeHierarchyClient[] {
+  const projects: Project[] = rd.tryMap(projectsData, (x) => x) ?? [];
+  const clientIds = [
+    ...new Set(
+      iterationsForScope.flatMap((i) => {
+        const p = projects.find((proj) => proj.id === i.projectId);
+        return p ? [p.clientId] : [];
+      }),
+    ),
+  ];
+  return clientIds.map((cid) => {
+    const clientProjects = projects.filter((p) => p.clientId === cid);
+    const projectIds = new Set(clientProjects.map((p) => p.id));
+    const iters = iterationsForScope.filter((i) => projectIds.has(i.projectId));
+    return {
+      clientId: cid,
+      iterations: iters.map((iter) => {
+        const project = projectsMap.get(iter.projectId);
+        const projectName = project?.name ?? `Project ${iter.projectId}`;
+        const periodLabel = `${format(calendarDateToJSDate(iter.periodStart), "dd MMM yyyy")} – ${format(calendarDateToJSDate(iter.periodEnd), "dd MMM yyyy")}`;
+        const statusLabel =
+          iter.status === "active"
+            ? " · Active"
+            : iter.status === "closed"
+              ? " · Closed"
+              : "";
+        return {
+          iteration: iter,
+          iterationLabel: `${projectName} #${iter.ordinalNumber}${statusLabel} (${periodLabel})`,
+          projectName,
+        };
+      }),
+    };
+  });
+}
+
+export function projectKey(iterationId: number, projectName: string): string {
+  return `${iterationId}-${projectName}`;
+}
+
+// --- Entry-to-iteration matching and breakdowns ---
 
 export function findMatchingIteration(
   entry: { startAt: Date; projectId: string },
