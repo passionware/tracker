@@ -258,37 +258,56 @@ export function TmetricScopeHierarchyPanel({
                                               </div>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent>
-                                              <div className="border-t border-border/50 px-3 py-2 space-y-2">
-                                                {contractorsWithRates.map(
-                                                  (r) => (
-                                                    <div
-                                                      key={r.contractorId}
-                                                      className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
-                                                    >
-                                                      <ContractorWidget
-                                                        contractorId={maybe.of(
-                                                          r.contractorId,
-                                                        )}
-                                                        services={services}
-                                                        layout="full"
-                                                        size="sm"
-                                                        className="min-w-0"
-                                                      />
-                                                      <span className="text-muted-foreground shrink-0">
-                                                        Cost:{" "}
-                                                        {formatRate(
-                                                          r.costRate,
-                                                          r.costCurrency,
-                                                        )}{" "}
-                                                        · Billing:{" "}
-                                                        {formatRate(
-                                                          r.billingRate,
-                                                          r.billingCurrency,
-                                                        )}
-                                                      </span>
-                                                    </div>
-                                                  ),
-                                                )}
+                                              <div className="border-t border-border/50 px-3 py-2">
+                                                <div
+                                                  className="grid gap-x-6 gap-y-2 text-xs"
+                                                  style={{
+                                                    gridTemplateColumns:
+                                                      "1fr auto auto",
+                                                  }}
+                                                >
+                                                  <span className="text-muted-foreground font-medium">
+                                                    Contractor
+                                                  </span>
+                                                  <span className="text-muted-foreground font-medium text-right">
+                                                    Cost
+                                                  </span>
+                                                  <span className="text-muted-foreground font-medium text-right">
+                                                    Billing
+                                                  </span>
+                                                  {contractorsWithRates.map(
+                                                    (r) => (
+                                                      <div
+                                                        key={r.contractorId}
+                                                        className="contents"
+                                                      >
+                                                        <div className="min-w-0">
+                                                          <ContractorWidget
+                                                            contractorId={maybe.of(
+                                                              r.contractorId,
+                                                            )}
+                                                            services={services}
+                                                            layout="full"
+                                                            size="sm"
+                                                            className="min-w-0"
+                                                          />
+                                                        </div>
+                                                        <span className="text-right tabular-nums">
+                                                          {formatRate(
+                                                            r.costRate,
+                                                            r.costCurrency,
+                                                          )}
+                                                        </span>
+                                                        <span className="text-right tabular-nums">
+                                                          {formatRate(
+                                                            r.billingRate,
+                                                            r.billingCurrency,
+                                                          )}
+                                                        </span>
+                                                      </div>
+                                                    ),
+                                                  )}
+                                                </div>
                                               </div>
                                             </CollapsibleContent>
                                           </div>
