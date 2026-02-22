@@ -73,7 +73,9 @@ export function SimpleArrayPicker({
             />
           );
         },
-        renderOption: (item: SimpleItem) => <SimpleView item={rd.of(item)} />,
+        renderOption: (item: SimpleItem) => (
+          <SimpleView item={rd.of(item)} className="min-w-0 w-full" />
+        ),
         getKey: (item: SimpleItem) => item.id,
         getItemId: (item: SimpleItem) => item.id,
         useSelectedItems: (ids: Array<Unassigned | string>) =>

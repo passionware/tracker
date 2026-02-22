@@ -48,7 +48,12 @@ export function AbstractEntityView({
   size,
 }: AbstractEntityViewProps) {
   const avatar = (
-    <Avatar className={cn(entityViewVariants({ size }), className)}>
+    <Avatar
+      className={cn(
+        entityViewVariants({ size }),
+        layout !== "full" ? "" : className,
+      )}
+    >
       {rd
         .fullJourney(entity)
         .initially(
@@ -102,7 +107,7 @@ export function AbstractEntityView({
   return (
     <div
       className={cn(
-        "flex items-center flex-row gap-2 text-xs whitespace-pre text-foreground w-full",
+        "flex items-center flex-row gap-2 text-xs whitespace-pre text-foreground",
         className,
       )}
     >
