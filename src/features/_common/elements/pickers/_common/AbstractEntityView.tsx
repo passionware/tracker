@@ -43,7 +43,7 @@ const entityViewVariants = cva("", {
 
 export function AbstractEntityView({
   entity,
-  layout,
+  layout = "full",
   className,
   size,
 }: AbstractEntityViewProps) {
@@ -51,7 +51,7 @@ export function AbstractEntityView({
     <Avatar
       className={cn(
         entityViewVariants({ size }),
-        layout !== "full" ? "" : className,
+        layout !== "avatar" ? "" : className,
       )}
     >
       {rd
