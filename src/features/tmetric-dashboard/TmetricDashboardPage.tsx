@@ -466,6 +466,7 @@ export function TmetricDashboardPage(
             projectsData={projectsData}
             iterationsForScope={iterationsForScope}
             projectsMap={projectsMap}
+            cachedReport={cachedReport}
           />
 
           {/* {integrationStatus &&
