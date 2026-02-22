@@ -96,14 +96,16 @@ export function FinancialHierarchyGridHeader({
     <div
       className={`contents text-xs font-medium text-muted-foreground border-b bg-muted/30 ${className}`.trim()}
     >
-      <span className="px-2 py-2 w-8" />
+      <span className="py-2 w-8 shrink-0 flex items-center justify-center" style={{ gridColumn: "1 / 2" }} />
       {labels.map((label, i) => {
         const leftAlign =
           i === 0 || (variant === "billingOnly" && i === 1);
         return (
           <span
             key={i}
-            className={leftAlign ? "py-2" : "py-2 text-right"}
+            className={
+              leftAlign ? "py-2 pl-2" : "py-2 text-right"
+            }
             style={{ gridColumn: `${i + 2} / ${i + 3}` }}
           >
             {label}
@@ -178,7 +180,7 @@ export function FinancialHierarchyGridExpandableRow({
         />
       </span>
       <span
-        className={`flex min-w-0 items-center gap-2 ${py} hover:bg-muted/50 rounded-l ${size === "sm" ? "pl-2" : ""}`}
+        className={`flex min-w-0 items-center gap-2 ${py} pl-2 hover:bg-muted/50 rounded-l`}
         style={{ gridColumn: "2 / 3" }}
       >
         {label}
@@ -268,8 +270,13 @@ export function FinancialHierarchyGridFooter({
     <div
       className={`contents border-t bg-muted/30 text-xs font-medium ${className}`.trim()}
     >
-      <span className="px-2 py-2 w-8" />
-      <span className="py-2">{label}</span>
+      <span
+        className="py-2 w-8 shrink-0 flex items-center"
+        style={{ gridColumn: "1 / 2" }}
+      />
+      <span className="py-2 pl-2 min-w-0" style={{ gridColumn: "2 / 3" }}>
+        {label}
+      </span>
       {children}
     </div>
   );

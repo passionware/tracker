@@ -922,9 +922,9 @@ export function TmetricScopeHierarchyPanel({
                           >
                             <FinancialHierarchyGrid.Cell
                               col={1}
-                              className="py-1.5 text-xs text-left text-muted-foreground tabular-nums"
+                              className="py-1.5 px-2 text-xs text-left text-muted-foreground tabular-nums"
                             >
-                              {services.formatService.temporal.range.compact(
+                              {services.formatService.temporal.range.long(
                                 startDate,
                                 endDate,
                               )}
