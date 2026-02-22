@@ -4,6 +4,7 @@ import { getMatchingRate } from "@/services/io/_common/getMatchingRate";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService";
 import type { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
+import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { rd, type RemoteData } from "@passionware/monads";
 import {
@@ -191,9 +192,8 @@ export function getContractorRatesForProject(
   for (const [roleKey, roleType] of Object.entries(
     report.definitions.roleTypes,
   )) {
-    const match = /^contractor_(\d+)$/.exec(roleKey);
-    if (!match) continue;
-    const contractorId = Number(match[1]);
+    const contractorId = getContractorIdFromRoleKey(roleKey);
+    if (contractorId == null) continue;
     const rate = getBestRateForProject(roleType.rates, reportProjectId);
     if (!rate) continue;
     result.push({

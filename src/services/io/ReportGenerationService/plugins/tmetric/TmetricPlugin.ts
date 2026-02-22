@@ -76,8 +76,8 @@ export function createTmetricPlugin(config: TmetricConfig): AbstractPlugin {
           const { rate: costRate, currency: costCurrency } =
             parseRateWithCurrency(String(costRateString));
 
-          // Use contractor name as role ID to keep rates separate
-          const contractorRoleId = `contractor_${trackerReport.contractorId}`;
+          const iterationId = trackerReport.iterationId ?? 0;
+          const contractorRoleId = `iter_${iterationId}_contractor_${trackerReport.contractorId}`;
           const adapted = adaptTMetricToGeneric({
             entries: timeEntries,
             defaultRoleId: contractorRoleId,

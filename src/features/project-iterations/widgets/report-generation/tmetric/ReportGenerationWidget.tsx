@@ -23,6 +23,7 @@ import {
   TableHeader,
 } from "@/components/ui/table";
 import { GenericReport } from "@/services/io/_common/GenericReport";
+import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import { ContractorProjectRateConfiguration } from "../ContractorProjectRateConfiguration";
 import {
   extractPrefilledRatesFromGenericReport,
@@ -38,13 +39,12 @@ import { determineContractorWorkspaces } from "@/services/front/ReconciliationSe
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
- * The roleId for each contractor is `contractor_${contractorId}`.
+ * Role keys are scoped as iter_${iterationId}_contractor_${contractorId}; we apply rates to every role key that matches the contractor.
  */
 function applyConfiguredRatesToReport(
   report: GenericReport,
   configuredRates: PrefilledRateResult,
 ): GenericReport {
-  // Create a deep copy of the report to avoid mutating the original
   const updatedReport: GenericReport = {
     ...report,
     definitions: {
@@ -53,23 +53,24 @@ function applyConfiguredRatesToReport(
     },
   };
 
-  // Apply configured rates for each contractor
   for (const contractorRate of configuredRates) {
-    const roleId = `contractor_${contractorRate.contractorId}`;
-    const roleType = updatedReport.definitions.roleTypes[roleId];
-
-    if (!roleType) {
-      console.warn(
-        `Role type '${roleId}' not found in report definitions. Skipping rates for contractor ${contractorRate.contractorId}.`,
-      );
-      continue;
+    let applied = false;
+    for (const [roleId, roleType] of Object.entries(
+      updatedReport.definitions.roleTypes,
+    )) {
+      if (getContractorIdFromRoleKey(roleId) === contractorRate.contractorId) {
+        updatedReport.definitions.roleTypes[roleId] = {
+          ...roleType,
+          rates: contractorRate.rates,
+        };
+        applied = true;
+      }
     }
-
-    // Rates are already in RoleRate format, use them directly
-    updatedReport.definitions.roleTypes[roleId] = {
-      ...roleType,
-      rates: contractorRate.rates,
-    };
+    if (!applied) {
+      console.warn(
+        `No role type found for contractor ${contractorRate.contractorId} in report definitions. Skipping rates.`,
+      );
+    }
   }
 
   return updatedReport;
@@ -154,6 +155,7 @@ export function ReportGenerationWidget({
           periodEnd,
           workspaceId: contractorWorkspaceIds.get(contractor.id) ?? 0,
           clientId: projData.clientId,
+          iterationId: projectIterationId,
         })),
       });
 

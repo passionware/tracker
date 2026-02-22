@@ -11,6 +11,7 @@ import {
   PrefilledRateResult,
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { GenericReport } from "@/services/io/_common/GenericReport";
+import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import {
   ExpressionContext,
   ExpressionService,
@@ -43,13 +44,16 @@ function applyPrefilledRatesToReport(
     },
   };
   for (const contractorRate of prefilledRates) {
-    const roleId = `contractor_${contractorRate.contractorId}`;
-    const roleType = updated.definitions.roleTypes[roleId];
-    if (roleType) {
-      updated.definitions.roleTypes[roleId] = {
-        ...roleType,
-        rates: contractorRate.rates,
-      };
+    // Apply rates to every role type key that belongs to this contractor (scoped keys)
+    for (const [roleId, roleType] of Object.entries(
+      updated.definitions.roleTypes,
+    )) {
+      if (getContractorIdFromRoleKey(roleId) === contractorRate.contractorId) {
+        updated.definitions.roleTypes[roleId] = {
+          ...roleType,
+          rates: contractorRate.rates,
+        };
+      }
     }
   }
   return updated;
@@ -259,6 +263,13 @@ export function createTmetricDashboardService(
       const tmetricPlugin = createTmetricPlugin({
         services: { expressionService: services.expressionService },
       });
+      const iterationId =
+        scope.projectIterationIds !== undefined &&
+        Array.isArray(scope.projectIterationIds) &&
+        scope.projectIterationIds.length === 1
+          ? scope.projectIterationIds[0]
+          : 0;
+
       const { reportData } = await tmetricPlugin.getReport({
         reports: integrated.map((c) => ({
           contractorId: c.contractorId,
@@ -266,6 +277,7 @@ export function createTmetricDashboardService(
           periodEnd: periodEndCal,
           workspaceId: c.workspaceId,
           clientId: c.clientId,
+          iterationId,
         })),
       });
 

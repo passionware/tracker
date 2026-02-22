@@ -196,10 +196,10 @@ export function TmetricDashboardPage(
     if (maybe.isPresent(clientId) && !idSpecUtils.isAll(clientId)) {
       s.clientIds = [clientId];
     }
-    s.projectIterationIds =
-      selectedIterationIds.length > 0 ? selectedIterationIds : "all_active";
+    // Always resolved IDs for cache (never "all_active"); iterationsForScope is selected or all active.
+    s.projectIterationIds = iterationsForScope.map((i) => i.id);
     return s;
-  }, [workspaceId, clientId, selectedIterationIds]);
+  }, [workspaceId, clientId, iterationsForScope]);
 
   const loadIntegrationStatus = useCallback(async () => {
     const status =

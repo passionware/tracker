@@ -25,6 +25,8 @@ export type GetReportPayload = {
     periodEnd: CalendarDate;
     workspaceId: Workspace["id"];
     clientId: Client["id"];
+    /** When set, role keys are scoped as iter_${iterationId}_contractor_${contractorId}. Use 0 when not iteration-scoped. */
+    iterationId?: number;
   }>;
 };
 

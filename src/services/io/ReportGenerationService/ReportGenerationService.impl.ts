@@ -26,6 +26,8 @@ export function createReportGenerationService(
             q.withFilter("id", { operator: "oneOf", value: payload.reportIds }),
           ]),
       );
+
+      debugger;
       const report = await maybe
         .getOrThrow(
           config.plugins[payload.sourceType],
@@ -38,6 +40,7 @@ export function createReportGenerationService(
             periodEnd: trackerReport.periodEnd,
             workspaceId: trackerReport.workspaceId,
             clientId: trackerReport.clientId,
+            iterationId: payload.projectIterationId,
           })),
         });
 
