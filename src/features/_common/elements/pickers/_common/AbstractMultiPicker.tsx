@@ -275,10 +275,17 @@ export function AbstractMultiPicker<Id, Data>(
                   }
                   return options.map((data) => {
                     const itemId = config.getItemId(data);
+                    const isSelected = value.some(
+                      (v) => String(v) === String(itemId),
+                    );
                     return (
                       <CommandItem
                         key={config.getKey(data)}
                         value={config.getKey(data)}
+                        className={cn(
+                          isSelected &&
+                            "bg-accent text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground",
+                        )}
                         onSelect={() => {
                           handleSelect(xor(value, [itemId]), itemId, "toggle");
                           // setOpen(false);
@@ -291,9 +298,7 @@ export function AbstractMultiPicker<Id, Data>(
                         <Check
                           className={cn(
                             "ml-auto",
-                            value.includes(itemId)
-                              ? "opacity-100"
-                              : "opacity-0",
+                            isSelected ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>

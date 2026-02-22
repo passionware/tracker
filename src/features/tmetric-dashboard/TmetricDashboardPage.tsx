@@ -159,11 +159,12 @@ export function TmetricDashboardPage(
     () => rd.tryMap(iterationsData, (x) => x) ?? [],
     [iterationsData],
   );
-  const iterationsActiveFirst = useMemo(
+  const iterationsForPicker = useMemo(
     () =>
       [...allIterations].sort((a, b) => {
-        const statusOrder = { active: 0, closed: 1, draft: 2 };
-        return (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
+        const endA = calendarDateToJSDate(a.periodEnd).getTime();
+        const endB = calendarDateToJSDate(b.periodEnd).getTime();
+        return endB - endA; // period end desc
       }),
     [allIterations],
   );
@@ -206,7 +207,7 @@ export function TmetricDashboardPage(
 
   const iterationPickerItems: SimpleItem[] = useMemo(
     () =>
-      iterationsActiveFirst.map((iter) => {
+      iterationsForPicker.map((iter) => {
         const project = projectsMap.get(iter.projectId);
         const projectName = project?.name ?? `Project ${iter.projectId}`;
         const periodLabel = `${format(calendarDateToJSDate(iter.periodStart), "dd MMM yyyy")} – ${format(calendarDateToJSDate(iter.periodEnd), "dd MMM yyyy")}`;
@@ -222,7 +223,7 @@ export function TmetricDashboardPage(
           compactLabel: `${projectName} #${iter.ordinalNumber}`,
         };
       }),
-    [iterationsActiveFirst, projectsMap],
+    [iterationsForPicker, projectsMap],
   );
 
   const { start, end } = useMemo(() => {
