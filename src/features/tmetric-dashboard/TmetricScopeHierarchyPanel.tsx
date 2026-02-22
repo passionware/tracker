@@ -1,12 +1,19 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import type { Project } from "@/api/project/project.api";
 import { Button } from "@/components/ui/button";
-import { CardDescription, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
+import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd, type RemoteData } from "@passionware/monads";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
@@ -413,7 +420,7 @@ export function TmetricScopeHierarchyPanel({
                     </FinancialHierarchyGrid.Cell>
                     <FinancialHierarchyGrid.Cell
                       col={6}
-                      className="py-2 pr-2 text-xs text-right tabular-nums"
+                      className="py-2 text-xs text-right tabular-nums"
                     >
                       {(() => {
                         return profitInTargetByClient.get(clientId) ? (
@@ -854,6 +861,160 @@ export function TmetricScopeHierarchyPanel({
             </FinancialHierarchyGrid.Footer>
           )}
         </FinancialHierarchyGrid>
+      )}
+
+      {scopeHierarchyTotals != null && scopeHierarchyWithRates.length > 0 && (
+        <div className="mt-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold">By client</h3>
+            <p className="text-sm text-muted-foreground">
+              Billing breakdown per client: iterations and totals (hours,
+              billing rate, billing).
+            </p>
+          </div>
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns:
+                "repeat(auto-fill, minmax(min(100%, 620px), 1fr))",
+            }}
+          >
+            {scopeHierarchyWithRates.map(({ clientId, iterations }) => {
+              const clientTotals = scopeHierarchyTotals!.byClient.get(clientId);
+              return (
+                <Card key={`by-client-${clientId}`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">
+                      <ClientWidget
+                        clientId={maybe.of(clientId)}
+                        services={services}
+                        layout="full"
+                        size="sm"
+                      />
+                    </CardTitle>
+                    <CardDescription>
+                      {iterations.length} iteration
+                      {iterations.length !== 1 ? "s" : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FinancialHierarchyGrid variant="billingOnly">
+                      <FinancialHierarchyGrid.Header />
+                      {iterations.map(({ iteration, projectName }) => {
+                        const iter = scopeHierarchyTotals!.byIteration.get(
+                          iteration.id,
+                        );
+                        if (!iter) return null;
+                        const startDate = calendarDateToJSDate(
+                          iteration.periodStart,
+                        );
+                        const endDate = calendarDateToJSDate(
+                          iteration.periodEnd,
+                        );
+                        return (
+                          <FinancialHierarchyGrid.Row
+                            key={`by-client-${clientId}-iter-${iteration.id}`}
+                            label={
+                              <span className="text-sm font-medium whitespace-nowrap">
+                                {projectName} #{iteration.ordinalNumber}
+                              </span>
+                            }
+                          >
+                            <FinancialHierarchyGrid.Cell
+                              col={1}
+                              className="py-1.5 text-xs text-left text-muted-foreground tabular-nums"
+                            >
+                              {services.formatService.temporal.range.compact(
+                                startDate,
+                                endDate,
+                              )}
+                            </FinancialHierarchyGrid.Cell>
+                            <FinancialHierarchyGrid.Cell
+                              col={2}
+                              className="py-1.5 text-xs text-right tabular-nums"
+                            >
+                              {iter.hours.toFixed(1)}
+                            </FinancialHierarchyGrid.Cell>
+                            <FinancialHierarchyGrid.Cell
+                              col={3}
+                              className="py-1.5 text-xs text-right tabular-nums"
+                            >
+                              <CurrencyValueWidget
+                                values={
+                                  iter.hours > 0
+                                    ? divideCurrencyValues(
+                                        iter.billing,
+                                        iter.hours,
+                                      )
+                                    : []
+                                }
+                                services={services}
+                                exchangeService={services.exchangeService}
+                              />
+                            </FinancialHierarchyGrid.Cell>
+                            <FinancialHierarchyGrid.Cell
+                              col={4}
+                              className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                            >
+                              <CurrencyValueWidget
+                                values={iter.billing}
+                                services={services}
+                                exchangeService={services.exchangeService}
+                              />
+                            </FinancialHierarchyGrid.Cell>
+                          </FinancialHierarchyGrid.Row>
+                        );
+                      })}
+                      {clientTotals != null && (
+                        <FinancialHierarchyGrid.Footer label="Total">
+                          <FinancialHierarchyGrid.Cell
+                            col={1}
+                            className="py-2 text-muted-foreground"
+                          >
+                            {null}
+                          </FinancialHierarchyGrid.Cell>
+                          <FinancialHierarchyGrid.Cell
+                            col={2}
+                            className="py-2 text-right tabular-nums"
+                          >
+                            {clientTotals.hours.toFixed(1)}
+                          </FinancialHierarchyGrid.Cell>
+                          <FinancialHierarchyGrid.Cell
+                            col={3}
+                            className="py-2 text-right tabular-nums"
+                          >
+                            <CurrencyValueWidget
+                              values={
+                                clientTotals.hours > 0
+                                  ? divideCurrencyValues(
+                                      clientTotals.billing,
+                                      clientTotals.hours,
+                                    )
+                                  : []
+                              }
+                              services={services}
+                              exchangeService={services.exchangeService}
+                            />
+                          </FinancialHierarchyGrid.Cell>
+                          <FinancialHierarchyGrid.Cell
+                            col={4}
+                            className="py-2 pr-2 text-right tabular-nums"
+                          >
+                            <CurrencyValueWidget
+                              values={clientTotals.billing}
+                              services={services}
+                              exchangeService={services.exchangeService}
+                            />
+                          </FinancialHierarchyGrid.Cell>
+                        </FinancialHierarchyGrid.Footer>
+                      )}
+                    </FinancialHierarchyGrid>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       )}
     </>
   );

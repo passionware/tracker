@@ -43,9 +43,7 @@ export function ByContractorHierarchyView({
         const hasIterations = c.byIteration.length > 0;
         const totalHours = c.total.hours;
         const avgCostRate =
-          totalHours > 0
-            ? divideCurrencyValues(c.total.cost, totalHours)
-            : [];
+          totalHours > 0 ? divideCurrencyValues(c.total.cost, totalHours) : [];
         const avgBillingRate =
           totalHours > 0
             ? divideCurrencyValues(c.total.billing, totalHours)
@@ -139,7 +137,7 @@ export function ByContractorHierarchyView({
             </FinancialHierarchyGrid.Cell>
             <FinancialHierarchyGrid.Cell
               col={6}
-              className="py-2 pr-2 text-xs text-right tabular-nums"
+              className="py-2 text-xs text-right tabular-nums"
             >
               <CurrencyValueWidget
                 values={c.total.profit}

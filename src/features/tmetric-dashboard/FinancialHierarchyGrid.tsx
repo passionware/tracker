@@ -1,7 +1,10 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
-export type FinancialHierarchyGridVariant = "withRates" | "amountsOnly";
+export type FinancialHierarchyGridVariant =
+  | "withRates"
+  | "amountsOnly"
+  | "billingOnly";
 
 const GRID_SPEC = {
   withRates: {
@@ -24,6 +27,12 @@ const GRID_SPEC = {
     columnsCount: 6,
     headerLabels: ["Scope", "Hours", "Cost", "Billing", "Profit"],
   },
+  billingOnly: {
+    gridTemplateColumns:
+      "auto 1fr minmax(7rem, auto) minmax(3rem, auto) minmax(4rem, auto) minmax(5rem, auto)",
+    columnsCount: 5,
+    headerLabels: ["Scope", "Range", "Hours", "Billing rate", "Billing"],
+  },
 } as const;
 
 const FinancialHierarchyGridContext = createContext<{
@@ -33,7 +42,10 @@ const FinancialHierarchyGridContext = createContext<{
 
 function useGridContext() {
   const ctx = useContext(FinancialHierarchyGridContext);
-  if (!ctx) throw new Error("FinancialHierarchyGrid.* must be used inside FinancialHierarchyGrid");
+  if (!ctx)
+    throw new Error(
+      "FinancialHierarchyGrid.* must be used inside FinancialHierarchyGrid",
+    );
   return ctx;
 }
 
@@ -49,14 +61,11 @@ export function FinancialHierarchyGrid({
   className = "",
 }: FinancialHierarchyGridProps) {
   const spec = GRID_SPEC[variant];
-  const value = useMemo(
-    () => ({ variant, spec }),
-    [variant, spec],
-  );
+  const value = useMemo(() => ({ variant, spec }), [variant, spec]);
   return (
     <FinancialHierarchyGridContext.Provider value={value}>
       <div
-        className={`rounded border ${className}`.trim()}
+        className={`rounded border pr-2 ${className}`.trim()}
         style={{
           display: "grid",
           gridTemplateColumns: spec.gridTemplateColumns,
@@ -81,22 +90,26 @@ export function FinancialHierarchyGridHeader({
   columnLabels,
   className = "",
 }: FinancialHierarchyGridHeaderProps) {
-  const { spec } = useGridContext();
+  const { spec, variant } = useGridContext();
   const labels = columnLabels ?? spec.headerLabels;
   return (
     <div
       className={`contents text-xs font-medium text-muted-foreground border-b bg-muted/30 ${className}`.trim()}
     >
       <span className="px-2 py-2 w-8" />
-      {labels.map((label, i) => (
-        <span
-          key={i}
-          className={i === 0 ? "py-2" : "py-2 text-right"}
-          style={{ gridColumn: `${i + 2} / ${i + 3}` }}
-        >
-          {label}
-        </span>
-      ))}
+      {labels.map((label, i) => {
+        const leftAlign =
+          i === 0 || (variant === "billingOnly" && i === 1);
+        return (
+          <span
+            key={i}
+            className={leftAlign ? "py-2" : "py-2 text-right"}
+            style={{ gridColumn: `${i + 2} / ${i + 3}` }}
+          >
+            {label}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -157,7 +170,11 @@ export function FinancialHierarchyGridExpandableRow({
       >
         <ChevronRight
           className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
-          style={size === "sm" ? { width: "0.875rem", height: "0.875rem" } : undefined}
+          style={
+            size === "sm"
+              ? { width: "0.875rem", height: "0.875rem" }
+              : undefined
+          }
         />
       </span>
       <span
@@ -199,10 +216,7 @@ export function FinancialHierarchyGridRow({
           </span>
         </>
       ) : (
-        <span
-          className={`min-w-0 ${py} pl-2`}
-          style={{ gridColumn: "1 / 3" }}
-        >
+        <span className={`min-w-0 ${py} pl-2`} style={{ gridColumn: "1 / 3" }}>
           {label}
         </span>
       )}
