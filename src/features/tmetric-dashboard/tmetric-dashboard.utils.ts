@@ -208,6 +208,7 @@ export interface ContractorIterationTotals {
   totalBilling: number;
   totalProfit: number;
   hours: number;
+  entriesCount: number;
 }
 
 export interface ScopeHierarchyIterationRow {
@@ -355,6 +356,7 @@ export function getContractorIterationTotals(
       totalCost: number;
       totalBilling: number;
       hours: number;
+      entriesCount: number;
     }
   >();
 
@@ -382,12 +384,14 @@ export function getContractorIterationTotals(
         totalCost: 0,
         totalBilling: 0,
         hours: 0,
+        entriesCount: 0,
       });
     }
     const row = byContractor.get(contractorId)!;
     row.totalCost += cost;
     row.totalBilling += billing;
     row.hours += hours;
+    row.entriesCount += 1;
   }
 
   return Array.from(byContractor.entries()).map(
@@ -403,8 +407,79 @@ export function getContractorIterationTotals(
       totalBilling: row.totalBilling,
       totalProfit: row.totalBilling - row.totalCost,
       hours: row.hours,
+      entriesCount: row.entriesCount,
     }),
   );
+}
+
+/**
+ * Contractor summary compatible with ContractorsSummaryView.contractors,
+ * scoped to the given iterations (same roleId-based logic as TmetricScopeHierarchyPanel).
+ */
+export interface ContractorsSummaryScoped {
+  contractors: Array<{
+    contractorId: number;
+    entriesCount: number;
+    totalHours: number;
+    costBudget: CurrencyValue[];
+    billingBudget: CurrencyValue[];
+    earningsBudget: CurrencyValue[];
+  }>;
+}
+
+/**
+ * Build contractor summary from report using only entries whose roleId encodes
+ * an iteration in the given list. Matches TmetricScopeHierarchyPanel / getScopeHierarchyTotals logic.
+ */
+export function getContractorsSummaryScopedToIterations(
+  report: GenericReport,
+  iterationIds: number[],
+): ContractorsSummaryScoped {
+  const byContractor = new Map<
+    number,
+    {
+      cost: Record<string, number>;
+      billing: Record<string, number>;
+      profit: Record<string, number>;
+      hours: number;
+      entriesCount: number;
+    }
+  >();
+
+  for (const iterId of iterationIds) {
+    const totals = getContractorIterationTotals(report, iterId);
+    for (const row of totals) {
+      if (!byContractor.has(row.contractorId)) {
+        byContractor.set(row.contractorId, {
+          cost: {},
+          billing: {},
+          profit: {},
+          hours: 0,
+          entriesCount: 0,
+        });
+      }
+      const c = byContractor.get(row.contractorId)!;
+      addToBudget(c.cost, row.totalCost, row.costCurrency);
+      addToBudget(c.billing, row.totalBilling, row.billingCurrency);
+      addToBudget(c.profit, row.totalBilling, row.billingCurrency);
+      addToBudget(c.profit, -row.totalCost, row.costCurrency);
+      c.hours += row.hours;
+      c.entriesCount += row.entriesCount;
+    }
+  }
+
+  const contractors = Array.from(byContractor.entries()).map(
+    ([contractorId, row]) => ({
+      contractorId,
+      entriesCount: row.entriesCount,
+      totalHours: row.hours,
+      costBudget: budgetToCurrencyValues(row.cost),
+      billingBudget: budgetToCurrencyValues(row.billing),
+      earningsBudget: budgetToCurrencyValues(row.profit),
+    }),
+  );
+
+  return { contractors };
 }
 
 /**
@@ -619,6 +694,12 @@ export function findMatchingIteration(
   return matching[0];
 }
 
+/**
+ * Contractor breakdown by iteration using roleId for assignment (same as
+ * TmetricScopeHierarchyPanel / getContractorIterationTotals). Only entries whose
+ * roleId encodes an iteration in the given scope are included; date range filters
+ * which entries count.
+ */
 export function getContractorIterationBreakdown(
   report: { data: import("@/services/io/_common/GenericReport").GenericReport },
   iterations: ProjectIteration[],
@@ -626,17 +707,13 @@ export function getContractorIterationBreakdown(
   rangeStart: Date,
   rangeEnd: Date,
 ): ContractorIterationBreakdown[] {
-  const getEntryProjectName = (projectId: string) =>
-    report.data.definitions.projectTypes[projectId]?.name;
-
-  const iterationPeriods = iterations.map((i) => ({
-    id: i.id,
-    projectId: i.projectId,
-    projectName: projectsMap.get(i.projectId)?.name ?? `Project ${i.projectId}`,
-    start: calendarDateToJSDate(i.periodStart).getTime(),
-    end: endOfDay(calendarDateToJSDate(i.periodEnd)).getTime(),
-    label: `${projectsMap.get(i.projectId)?.name ?? `Project ${i.projectId}`} #${i.ordinalNumber}`,
-  }));
+  const scopeIterationIds = new Set(iterations.map((i) => i.id));
+  const iterationLabels = new Map(
+    iterations.map((i) => [
+      i.id,
+      `${projectsMap.get(i.projectId)?.name ?? `Project ${i.projectId}`} #${i.ordinalNumber}`,
+    ]),
+  );
 
   const byContractor = new Map<
     number,
@@ -665,24 +742,30 @@ export function getContractorIterationBreakdown(
   const rangeEndMs = rangeEnd.getTime();
 
   for (const entry of report.data.timeEntries) {
+    const iterationId = getIterationIdFromRoleKey(entry.roleId);
+    if (iterationId == null || !scopeIterationIds.has(iterationId)) continue;
+
     const entryStartMs = entry.startAt.getTime();
     const entryEndMs = entry.endAt.getTime();
     if (entryStartMs > rangeEndMs || entryEndMs < rangeStartMs) continue;
 
+    const contractorId = getContractorIdFromRoleKey(entry.roleId);
+    if (contractorId == null) continue;
+
+    let matchingRate: RoleRate;
+    try {
+      matchingRate = getMatchingRate(report.data, entry);
+    } catch {
+      continue;
+    }
+
     const hours =
       (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
-    const matchingRate = getMatchingRate(report.data, entry);
     const cost = hours * matchingRate.costRate;
     const billing = hours * matchingRate.billingRate;
 
-    const matchingIteration = findMatchingIteration(
-      entry,
-      iterationPeriods,
-      getEntryProjectName,
-    );
-
-    if (!byContractor.has(entry.contractorId)) {
-      byContractor.set(entry.contractorId, {
+    if (!byContractor.has(contractorId)) {
+      byContractor.set(contractorId, {
         total: {
           cost: {},
           billing: {},
@@ -693,7 +776,7 @@ export function getContractorIterationBreakdown(
         byIteration: new Map(),
       });
     }
-    const c = byContractor.get(entry.contractorId)!;
+    const c = byContractor.get(contractorId)!;
 
     addToBudget(c.total.cost, cost, matchingRate.costCurrency);
     addToBudget(c.total.billing, billing, matchingRate.billingCurrency);
@@ -702,9 +785,8 @@ export function getContractorIterationBreakdown(
     c.total.hours += hours;
     c.total.entries += 1;
 
-    const iterId = matchingIteration?.id ?? -1;
-    if (!c.byIteration.has(iterId)) {
-      c.byIteration.set(iterId, {
+    if (!c.byIteration.has(iterationId)) {
+      c.byIteration.set(iterationId, {
         cost: {},
         billing: {},
         profit: {},
@@ -712,7 +794,7 @@ export function getContractorIterationBreakdown(
         entries: 0,
       });
     }
-    const iter = c.byIteration.get(iterId)!;
+    const iter = c.byIteration.get(iterationId)!;
     addToBudget(iter.cost, cost, matchingRate.costCurrency);
     addToBudget(iter.billing, billing, matchingRate.billingCurrency);
     addToBudget(iter.profit, billing, matchingRate.billingCurrency);
@@ -735,10 +817,7 @@ export function getContractorIterationBreakdown(
         ([iterationId, iter]) => ({
           iterationId,
           iterationLabel:
-            iterationId === -1
-              ? "Other"
-              : (iterationPeriods.find((p) => p.id === iterationId)?.label ??
-                `Iteration ${iterationId}`),
+            iterationLabels.get(iterationId) ?? `Iteration ${iterationId}`,
           cost: budgetToCurrencyValues(iter.cost),
           billing: budgetToCurrencyValues(iter.billing),
           profit: budgetToCurrencyValues(iter.profit),

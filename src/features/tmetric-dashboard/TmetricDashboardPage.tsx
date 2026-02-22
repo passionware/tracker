@@ -59,6 +59,7 @@ import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import {
   buildTimelineFromReport,
   getContractorIterationBreakdown,
+  getContractorsSummaryScopedToIterations,
   getDateRangeForPreset,
   getDateRangeFromIterations,
   getIterationSummary,
@@ -282,14 +283,15 @@ export function TmetricDashboardPage(
     loadIntegrationStatus();
   }, [loadIntegrationStatus]);
 
-  const contractorsSummary = rd.useMemoMap(cachedReportQuery, (cachedReport) =>
-    services.generatedReportViewService.getContractorsSummaryView({
-      id: 0,
-      createdAt: new Date(),
-      projectIterationId: 0,
-      data: cachedReport.data,
-      originalData: null,
-    }),
+  const contractorsSummary = useMemo(
+    () =>
+      rd.map(cachedReportQuery, (cachedReport) =>
+        getContractorsSummaryScopedToIterations(
+          cachedReport.data,
+          iterationsForScope.map((i) => i.id),
+        ),
+      ),
+    [cachedReportQuery, iterationsForScope],
   );
 
   const basicInfo = rd.useMemoMap(cachedReportQuery, (cachedReport) =>
