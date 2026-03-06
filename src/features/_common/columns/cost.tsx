@@ -106,16 +106,14 @@ export const costColumns = {
         >,
         clientId: ClientSpec,
         workspaceId: ClientSpec,
+        _options?: {
+          onOpenCostDetails?: (costId: number) => void;
+        },
       ) =>
         getColumnHelper<CostEntry>().accessor("status", {
           header: "Status",
-          cell: (info) => (
-            <CostInfoPopover
-              costEntry={info.row.original}
-              services={services}
-              clientId={clientId}
-              workspaceId={workspaceId}
-            >
+          cell: (info) => {
+            const badge = (
               <RollingBadge
                 className="max-w-24"
                 variant={
@@ -131,8 +129,20 @@ export const costColumns = {
               >
                 {startCase(info.getValue())}
               </RollingBadge>
-            </CostInfoPopover>
-          ),
+            );
+            return (
+              <div data-no-row-open>
+                <CostInfoPopover
+                  costEntry={info.row.original}
+                  services={services}
+                  clientId={clientId}
+                  workspaceId={workspaceId}
+                >
+                  {badge}
+                </CostInfoPopover>
+              </div>
+            );
+          },
         }),
     },
     linkedValue: (

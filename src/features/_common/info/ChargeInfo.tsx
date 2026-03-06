@@ -74,11 +74,16 @@ export interface ChargeInfoProps
     ]
   > {
   billing: BillingViewEntry;
+  onOpenReportDetails?: (reportId: number) => void;
 }
 
 const columnHelper = createColumnHelper<Billing["linkBillingReport"][number]>();
 
-export function ChargeInfo({ billing, services }: ChargeInfoProps) {
+export function ChargeInfo({
+  billing,
+  services,
+  onOpenReportDetails,
+}: ChargeInfoProps) {
   const clarifyState = promiseState.useRemoteData();
   const linkingState = promiseState.useRemoteData();
 
@@ -338,6 +343,11 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row: Billing["linkBillingReport"][number]) => row.link.id}
+        onRowClick={(row) => {
+          if (row.report) {
+            onOpenReportDetails?.(row.report.id);
+          }
+        }}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -408,7 +418,11 @@ export function ChargeInfo({ billing, services }: ChargeInfoProps) {
                         )
                       }
                     >
-                      <Button variant="headless" size="headless">
+                      <Button
+                        variant="headless"
+                        size="headless"
+                        data-no-row-open
+                      >
                         <Badge variant="positive">Report</Badge>
                       </Button>
                     </LinkPopover>

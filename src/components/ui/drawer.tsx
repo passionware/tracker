@@ -14,6 +14,7 @@ const Drawer = ({
 Drawer.displayName = "Drawer";
 
 const DrawerTrigger = DrawerPrimitive.Trigger;
+const DrawerNestedRoot = DrawerPrimitive.NestedRoot;
 
 const DrawerPortal = DrawerPrimitive.Portal;
 
@@ -33,10 +34,12 @@ DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
+    withOverlay?: boolean;
+  }
+>(({ className, children, withOverlay = true, ...props }, ref) => (
   <DrawerPortal>
-    <DrawerOverlay />
+    {withOverlay ? <DrawerOverlay /> : null}
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
@@ -103,6 +106,7 @@ DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
 
 export {
   Drawer,
+  DrawerNestedRoot,
   DrawerPortal,
   DrawerOverlay,
   DrawerTrigger,

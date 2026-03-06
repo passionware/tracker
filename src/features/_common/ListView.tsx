@@ -284,7 +284,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
                     )}
                     onClick={(e) => {
                       if (e.target instanceof Element) {
-                        if (e.target.closest("a, button")) {
+                        if (e.target.closest("a, button, [data-no-row-open]")) {
                           return;
                         }
                         // check if the click was physically inside, not via react portal:
@@ -297,7 +297,7 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
                     }}
                     onDoubleClick={(e) => {
                       if (e.target instanceof Element) {
-                        if (e.target.closest("a, button")) {
+                        if (e.target.closest("a, button, [data-no-row-open]")) {
                           return;
                         }
                         // check if the click was physically inside, not via react portal:

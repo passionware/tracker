@@ -199,19 +199,17 @@ export const reportColumns = {
         >,
         clientId: ClientSpec,
         workspaceId: WorkspaceSpec,
+        _options?: {
+          onOpenReportDetails?: (reportId: number) => void;
+        },
       ) =>
         columnHelper.accessor("status", {
           header: "Charge",
           meta: {
             tooltip: headers.chargeStatus,
           },
-          cell: (info) => (
-            <ReportInfoPopover
-              workspaceId={workspaceId}
-              clientId={clientId}
-              report={info.row.original}
-              services={services}
-            >
+          cell: (info) => {
+            const badge = (
               <RollingBadge
                 className="max-w-20"
                 variant={
@@ -241,8 +239,20 @@ export const reportColumns = {
                   }[info.getValue()]
                 }
               </RollingBadge>
-            </ReportInfoPopover>
-          ),
+            );
+            return (
+              <div data-no-row-open>
+                <ReportInfoPopover
+                  workspaceId={workspaceId}
+                  clientId={clientId}
+                  report={info.row.original}
+                  services={services}
+                >
+                  {badge}
+                </ReportInfoPopover>
+              </div>
+            );
+          },
         }),
       read: (services: MergeServices<[WithFormatService]>) =>
         baseColumnHelper.accessor("status", {
@@ -319,17 +329,17 @@ export const reportColumns = {
           WithExpressionService &
           WithWorkspaceService &
           WithContractorService,
+        _options?: {
+          onOpenReportDetails?: (reportId: number) => void;
+        },
       ) =>
         getColumnHelper<ReportViewEntry>().accessor("instantEarnings", {
           header: "Instant earn",
           meta: {
             tooltip: headers.compensationStatus,
           },
-          cell: (info) => (
-            <ReportCostInfoPopover
-              report={info.row.original}
-              services={services}
-            >
+          cell: (info) => {
+            const badge = (
               <RollingBadge
                 className="max-w-20"
                 tone="solid"
@@ -362,8 +372,18 @@ export const reportColumns = {
                   )[info.getValue()]
                 }
               </RollingBadge>
-            </ReportCostInfoPopover>
-          ),
+            );
+            return (
+              <div data-no-row-open>
+                <ReportCostInfoPopover
+                  report={info.row.original}
+                  services={services}
+                >
+                  {badge}
+                </ReportCostInfoPopover>
+              </div>
+            );
+          },
         }),
       read: (services: WithFormatService) =>
         getColumnHelper<ReportViewEntry>().accessor("instantEarnings", {

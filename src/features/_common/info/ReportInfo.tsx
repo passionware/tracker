@@ -77,6 +77,7 @@ export interface ReportInfoProps
   report: ReportViewEntry;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
+  onOpenBillingDetails?: (billingId: number) => void;
 }
 
 const columnHelper = createColumnHelper<Report["linkBillingReport"][number]>();
@@ -86,6 +87,7 @@ export function ReportInfo({
   clientId,
   workspaceId,
   report,
+  onOpenBillingDetails,
 }: ReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
@@ -322,6 +324,11 @@ export function ReportInfo({
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row: Report["linkBillingReport"][number]) => row.link.id}
+        onRowClick={(row) => {
+          if (row.billing) {
+            onOpenBillingDetails?.(row.billing.id);
+          }
+        }}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -392,7 +399,11 @@ export function ReportInfo({
                     )
                   }
                 >
-                  <Button variant="headless" size="headless">
+                  <Button
+                    variant="headless"
+                    size="headless"
+                    data-no-row-open
+                  >
                     {(() => {
                       if (link.link.reportAmount < link.link.billingAmount) {
                         return (

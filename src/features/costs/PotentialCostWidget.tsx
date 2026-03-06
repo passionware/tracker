@@ -1,9 +1,14 @@
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
+import { billingQueryUtils } from "@/api/billing/billing.api.ts";
+import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
+import { createEntityDrawerNodeFactory } from "@/features/_common/drawers/createEntityDrawerNodeFactory.tsx";
+import { EntityDetailDrawers } from "@/features/_common/drawers/EntityDetailDrawers.tsx";
+import { useEntityDrawerState } from "@/features/_common/drawers/useEntityDrawerState.ts";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
@@ -20,12 +25,13 @@ import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function PotentialCostWidget(props: PotentialCostWidgetProps) {
   const [_query, setQuery] = useState(
     costQueryUtils.ofDefault(props.workspaceId, idSpecUtils.ofAll()),
   );
+  const drawerState = useEntityDrawerState();
   /**
    * TODO: we can have a special place in the app, where we can see all unmatched costs that couldn't be even potentially matched
    * Now, when we go to potential costs for all companies, we simply show all unmatched costs
@@ -62,6 +68,62 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
   const costs = props.services.reportDisplayService.useCostView(query);
   const addCostState = promiseState.useRemoteData<void>();
   const columns = useColumns(props);
+  const drawerReports = props.services.reportDisplayService.useReportView(
+    reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
+  );
+  const drawerBillings = props.services.reportDisplayService.useBillingView(
+    billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
+  );
+  const reportById = useMemo(
+    () =>
+      new Map(
+        (rd.tryGet(drawerReports)?.entries ?? []).map((report) => [
+          report.id,
+          report,
+        ]),
+      ),
+    [drawerReports],
+  );
+  const costById = useMemo(
+    () =>
+      new Map(
+        (rd.tryGet(costs)?.entries ?? []).map((cost) => [cost.id, cost]),
+      ),
+    [costs],
+  );
+  const billingById = useMemo(
+    () =>
+      new Map(
+        (rd.tryGet(drawerBillings)?.entries ?? []).map((billing) => [
+          billing.id,
+          billing,
+        ]),
+      ),
+    [drawerBillings],
+  );
+  const createEntityDrawerNode = useMemo(
+    () =>
+      createEntityDrawerNodeFactory({
+        reportById,
+        costById,
+        billingById,
+        context: {
+          clientId: props.clientId,
+          workspaceId: props.workspaceId,
+        },
+        services: props.services,
+        pushEntityDrawer: drawerState.pushEntityDrawer,
+      }),
+    [
+      billingById,
+      costById,
+      drawerState.pushEntityDrawer,
+      props.clientId,
+      props.services,
+      props.workspaceId,
+      reportById,
+    ],
+  );
 
   return (
     <CommonPageContainer
@@ -157,6 +219,11 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
               break;
           }
         }}
+        onRowClick={(row) => {
+          drawerState.openEntityDrawer(
+            createEntityDrawerNode({ type: "cost", id: row.id }),
+          );
+        }}
         caption={
           <>
             <div className="mb-2 font-semibold text-gray-700">
@@ -201,6 +268,15 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
             )}
           </>
         }
+      />
+      <EntityDetailDrawers
+        entityStack={drawerState.entityStack}
+        onOpenChange={(open) => {
+          if (!open) {
+            drawerState.closeEntityDrawer();
+          }
+        }}
+        onBreadcrumbSelect={drawerState.jumpToEntityStackIndex}
       />
     </CommonPageContainer>
   );

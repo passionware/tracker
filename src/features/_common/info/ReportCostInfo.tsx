@@ -68,11 +68,16 @@ export interface ReportCostInfoProps
     ]
   > {
   report: ReportViewEntry;
+  onOpenCostDetails?: (costId: number) => void;
 }
 
 const columnHelper = createColumnHelper<ReportViewEntry["costLinks"][number]>();
 
-export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
+export function ReportCostInfo({
+  services,
+  report,
+  onOpenCostDetails,
+}: ReportCostInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
 
@@ -234,6 +239,11 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row: ReportViewEntry["costLinks"][number]) => row.link.id}
+        onRowClick={(row) => {
+          if (row.cost) {
+            onOpenCostDetails?.(row.cost.id);
+          }
+        }}
         columns={[
           columnHelper.accessor("cost", {
             header: "Type",
@@ -305,7 +315,11 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                     )
                   }
                 >
-                  <Button variant="headless" size="headless">
+                  <Button
+                    variant="headless"
+                    size="headless"
+                    data-no-row-open
+                  >
                     {(() => {
                       if (link.link.reportAmount < link.link.costAmount) {
                         return (

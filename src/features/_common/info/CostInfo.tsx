@@ -70,6 +70,7 @@ export interface CostInfoProps
   costEntry: CostEntry;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
+  onOpenReportDetails?: (reportId: number) => void;
 }
 
 const columnHelper = createColumnHelper<Cost["linkReports"][number]>();
@@ -79,6 +80,7 @@ export function CostInfo({
   services,
   clientId,
   workspaceId,
+  onOpenReportDetails,
 }: CostInfoProps) {
   const linkingState = promiseState.useRemoteData();
 
@@ -263,6 +265,11 @@ export function CostInfo({
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row) => row.link.id}
+        onRowClick={(row) => {
+          if (row.report) {
+            onOpenReportDetails?.(row.report.id);
+          }
+        }}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -327,7 +334,11 @@ export function CostInfo({
                       )
                     }
                   >
-                    <Button variant="headless" size="headless">
+                    <Button
+                      variant="headless"
+                      size="headless"
+                      data-no-row-open
+                    >
                       <Badge variant="positive">Report</Badge>
                     </Button>
                   </LinkPopover>
