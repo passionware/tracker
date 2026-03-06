@@ -1,4 +1,4 @@
-import { CostQuery } from "@/api/cost/cost.api.ts";
+import { Cost, CostPayload, CostQuery } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { NumberInput } from "@/components/ui/input.tsx";
 import {
@@ -22,6 +22,7 @@ import { ContractorView } from "@/features/_common/elements/pickers/ContractorVi
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { InlineSearchLayout } from "@/features/_common/inline-search/_common/InlineSearchLayout.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { CostForm } from "@/features/costs/CostForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 
 import { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
@@ -32,7 +33,7 @@ import { WithContractorService } from "@/services/io/ContractorService/Contracto
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { Maybe, rd } from "@passionware/monads";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { useState, useId } from "react";
 import { useForm, Controller } from "react-hook-form";
 
@@ -52,27 +53,56 @@ export interface InlineCostSearchProps
   maxSourceAmount: Maybe<CurrencyValue>;
   showDescription: boolean;
   showTargetValue: boolean;
+  initialNewCostValues?: Partial<CostPayload>;
+  onCostCreated?: (cost: Pick<Cost, "id">) => void;
   className?: string;
 }
 
 export function InlineCostSearch(props: InlineCostSearchProps) {
   const [_query, setQuery] = useState<CostQuery>(props.query);
+  const [isCreatePopoverOpen, setIsCreatePopoverOpen] = useState(false);
   const costs = props.services.reportDisplayService.useCostView(_query);
 
   return (
     <InlineSearchLayout
       className={props.className}
       filters={
-        <CostQueryBar
-          query={_query}
-          onQueryChange={setQuery}
-          spec={{
-            workspace: "show",
-            client: "show",
-            contractor: "show",
-          }}
-          services={props.services}
-        />
+        <>
+          <CostQueryBar
+            query={_query}
+            onQueryChange={setQuery}
+            spec={{
+              workspace: "show",
+              client: "show",
+              contractor: "show",
+            }}
+            services={props.services}
+          />
+          <Popover
+            open={isCreatePopoverOpen}
+            onOpenChange={setIsCreatePopoverOpen}
+          >
+            <PopoverTrigger asChild>
+              <Button variant="secondary" size="icon-sm">
+                <Plus strokeWidth={3} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-fit" align="end">
+              <div className="text-sm font-medium mb-2">Add cost</div>
+              <CostForm
+                onCancel={() => setIsCreatePopoverOpen(false)}
+                defaultValues={props.initialNewCostValues}
+                services={props.services}
+                onSubmit={(data) =>
+                  props.services.mutationService
+                    .createCost(data)
+                    .then((x) => props.onCostCreated?.(x))
+                    .then(() => setIsCreatePopoverOpen(false))
+                }
+              />
+            </PopoverContent>
+          </Popover>
+        </>
       }
     >
       {rd

@@ -1,4 +1,5 @@
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
+import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -10,6 +11,7 @@ import {
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import {
   InfoLayout,
   InfoPopoverContent,
@@ -24,6 +26,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { assert } from "@/platform/lang/assert.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { todayCalendarDate } from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -144,7 +147,43 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                   <PopoverHeader>
                     Match the report with a cost entry
                   </PopoverHeader>
-                  {/*todo inline searc*/}
+                  <InlineCostSearch
+                    query={costQueryUtils
+                      .getBuilder(report.workspace.id, idSpecUtils.ofAll())
+                      .build((q) => [
+                        q.withFilter("contractorId", {
+                          operator: "oneOf",
+                          value: [report.contractor.id],
+                        }),
+                        q.withFilter("linkedRemainder", {
+                          operator: "greaterThan",
+                          value: 0,
+                        }),
+                      ])}
+                    maxSourceAmount={maybe.of(report.remainingCompensationAmount)}
+                    showDescription={true}
+                    showTargetValue={true}
+                    initialNewCostValues={{
+                      workspaceId: report.workspace.id,
+                      contractorId: report.contractor.id,
+                      currency: report.remainingCompensationAmount.currency,
+                      netValue: report.remainingCompensationAmount.amount,
+                      invoiceDate: todayCalendarDate(),
+                    }}
+                    className="overflow-y-auto h-full"
+                    services={services}
+                    onSelect={(data) => {
+                      void linkingState.track(
+                        services.mutationService.linkCostAndReport({
+                          costId: data.costId,
+                          reportId: report.id,
+                          costAmount: data.value.target,
+                          reportAmount: data.value.source,
+                          description: data.value.description,
+                        }),
+                      );
+                    }}
+                  />
                 </PopoverContent>
               </Popover>
               <Popover>
