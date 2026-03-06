@@ -113,6 +113,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const [timelineGroupBy, setTimelineGroupBy] = useState<
     "contractor" | "client" | "workspace" | "projectIteration"
   >(savedPreferences.groupBy);
+  const [timelineColorBy, setTimelineColorBy] = useState<
+    "group" | "billing-status" | "cost-status"
+  >("billing-status");
 
   // Load preferences on mount
   useEffect(() => {
@@ -182,6 +185,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       label: "Project",
       icon: <GitBranch className="h-4 w-4" />,
     },
+  ];
+  const colorByItems = [
+    { id: "group", label: "Group color" },
+    { id: "billing-status", label: "Billing status" },
+    { id: "cost-status", label: "Cost status" },
   ];
 
   // Get reports - we'll calculate selected IDs from the reports data
@@ -454,6 +462,45 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         );
 
         // Convert reports to timeline items
+        const getReportStatusColor = (
+          status: ReportViewEntry["status"],
+        ): string => {
+          switch (status) {
+            case "uncovered":
+              return "bg-rose-500";
+            case "partially-billed":
+              return "bg-amber-500";
+            case "clarified":
+              return "bg-sky-500";
+            case "billed":
+              return "bg-emerald-500";
+          }
+        };
+        const getReportCostStatusColor = (
+          status: ReportViewEntry["instantEarnings"],
+        ): string => {
+          switch (status) {
+            case "uncompensated":
+              return "bg-rose-500";
+            case "partially-compensated":
+              return "bg-amber-500";
+            case "clarified":
+              return "bg-sky-500";
+            case "compensated":
+              return "bg-emerald-500";
+          }
+        };
+        const getTimelineItemColor = (report: ReportViewEntry, lane?: Lane) => {
+          switch (timelineColorBy) {
+            case "group":
+              return lane?.color;
+            case "billing-status":
+              return getReportStatusColor(report.status);
+            case "cost-status":
+              return getReportCostStatusColor(report.instantEarnings);
+          }
+        };
+
         const items: TimelineItem<ReportViewEntry>[] = reports.map(
           (report: ReportViewEntry) => {
             const endDate = calendarDateToJSDate(report.periodEnd);
@@ -471,7 +518,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 days: 1,
               }),
               label: report.description || `Report #${report.id}`,
-              color: lane?.color,
+              color: getTimelineItemColor(report, lane) || lane?.color,
               data: report,
             } satisfies TimelineItem<ReportViewEntry>;
           },
@@ -538,6 +585,22 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 }}
                 placeholder="Group by"
                 searchPlaceholder="Search group by"
+                size="sm"
+                variant="outline"
+                searchable={false}
+              />
+              <SimpleSinglePicker
+                items={colorByItems}
+                value={timelineColorBy}
+                onSelect={(value) => {
+                  if (value) {
+                    setTimelineColorBy(
+                      value as "group" | "billing-status" | "cost-status",
+                    );
+                  }
+                }}
+                placeholder="Color by"
+                searchPlaceholder="Search color mode"
                 size="sm"
                 variant="outline"
                 searchable={false}

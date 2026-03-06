@@ -236,6 +236,23 @@ export function BillingWidget(props: BillingWidgetProps) {
 
   const timelineData = rd.map(finalBillings, (billingView) => {
     const timeZone = getLocalTimeZone();
+    const getBillingStatusColor = (
+      status: BillingViewEntry["status"],
+    ): string => {
+      switch (status) {
+        case "unmatched":
+          return "bg-rose-500";
+        case "partially-matched":
+          return "bg-amber-500";
+        case "clarified":
+          return "bg-sky-500";
+        case "overmatched":
+          return "bg-violet-500";
+        case "matched":
+          return "bg-emerald-500";
+      }
+    };
+
     const entriesWithBounds = billingView.entries
       .map((billing) => {
         const linkedReports = billing.links.flatMap((link) =>
@@ -310,7 +327,7 @@ export function BillingWidget(props: BillingWidgetProps) {
           start,
           end,
           label: billing.invoiceNumber || `Billing #${billing.id}`,
-          color: laneMap.get(laneId)?.color,
+          color: getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
           data: billing,
         };
       },
