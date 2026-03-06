@@ -34,7 +34,7 @@ export function EntityDetailDrawers({
       }}
       direction="right"
     >
-      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-none border-l border-border mt-0">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
         <DrawerHeader>
           <div className="flex items-start justify-between gap-2">
             <DrawerTitle>{activeNode?.title ?? "Details"}</DrawerTitle>

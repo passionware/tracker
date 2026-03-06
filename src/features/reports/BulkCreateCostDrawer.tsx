@@ -327,7 +327,7 @@ export function BulkCreateCostDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-none border-l border-border mt-0">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
         <DrawerHeader>
           <DrawerTitle>Create cost for selected invoices</DrawerTitle>
           <DrawerDescription>

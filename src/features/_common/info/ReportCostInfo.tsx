@@ -3,9 +3,16 @@ import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer.tsx";
+import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
@@ -50,8 +57,7 @@ import { maybe, mt, rd, truthy } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, ChevronUp, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
+import { Check, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
 import { ReactElement, useState } from "react";
 import { toast } from "sonner";
 
@@ -82,7 +88,7 @@ export function ReportCostInfo({
 }: ReportCostInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
-  const [isFindCostExpanded, setIsFindCostExpanded] = useState(false);
+  const [isFindCostDrawerOpen, setIsFindCostDrawerOpen] = useState(false);
 
   const isDangerMode = services.preferenceService.useIsDangerMode();
 
@@ -140,26 +146,79 @@ export function ReportCostInfo({
           actions={
             report.remainingCompensationAmount.amount > 0 ? (
               <>
-                <Button
-                  variant="default"
-                  size="xs"
-                  onClick={() => setIsFindCostExpanded((x) => !x)}
+                <DrawerNestedRoot
+                  open={isFindCostDrawerOpen}
+                  onOpenChange={setIsFindCostDrawerOpen}
+                  direction="right"
                 >
-                  {rd
-                    .fullJourney(linkingState.state)
-                    .initially(<Link2 />)
-                    .wait(<Loader2 />)
-                    .catch(renderSmallError("w-6 h-4"))
-                    .map(() => (
-                      <Check />
-                    ))}
-                  Find & link cost
-                  {isFindCostExpanded ? (
-                    <ChevronUp className="ml-1 h-3 w-3" />
-                  ) : (
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  )}
-                </Button>
+                  <DrawerTrigger asChild>
+                    <Button variant="default" size="xs">
+                      {rd
+                        .fullJourney(linkingState.state)
+                        .initially(<Link2 />)
+                        .wait(<Loader2 />)
+                        .catch(renderSmallError("w-6 h-4"))
+                        .map(() => (
+                          <Check />
+                        ))}
+                      Find & link cost
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent
+                    withOverlay={false}
+                    className="inset-y-0 right-0 left-auto h-full w-[min(88vw,860px)] rounded-l-2xl border-l border-border mt-0"
+                  >
+                    <DrawerHeader>
+                      <DrawerTitle>Find & link cost</DrawerTitle>
+                      <DrawerDescription>
+                        Match this report with an existing cost entry.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4 overflow-y-auto flex-1">
+                      <InlineCostSearch
+                        query={costQueryUtils
+                          .getBuilder(report.workspace.id, idSpecUtils.ofAll())
+                          .build((q) => [
+                            q.withFilter("contractorId", {
+                              operator: "oneOf",
+                              value: [report.contractor.id],
+                            }),
+                            q.withFilter("linkedRemainder", {
+                              operator: "greaterThan",
+                              value: 0,
+                            }),
+                          ])}
+                        maxSourceAmount={maybe.of(report.remainingCompensationAmount)}
+                        showDescription={true}
+                        showTargetValue={true}
+                        initialNewCostValues={{
+                          workspaceId: report.workspace.id,
+                          contractorId: report.contractor.id,
+                          currency: report.remainingCompensationAmount.currency,
+                          netValue: report.remainingCompensationAmount.amount,
+                          invoiceDate: todayCalendarDate(),
+                        }}
+                        className="overflow-y-auto h-full"
+                        services={services}
+                        onSelect={(data) => {
+                          void linkingState
+                            .track(
+                              services.mutationService.linkCostAndReport({
+                                costId: data.costId,
+                                reportId: report.id,
+                                costAmount: data.value.target,
+                                reportAmount: data.value.source,
+                                description: data.value.description,
+                              }),
+                            )
+                            .then(() => {
+                              setIsFindCostDrawerOpen(false);
+                            });
+                        }}
+                      />
+                    </div>
+                  </DrawerContent>
+                </DrawerNestedRoot>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="warning" size="xs">
@@ -202,59 +261,6 @@ export function ReportCostInfo({
         />
       }
     >
-      <AnimatePresence initial={false}>
-        {isFindCostExpanded && report.remainingCompensationAmount.amount > 0 && (
-          <motion.div
-            key="find-link-cost-panel"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="rounded-md border bg-card p-3">
-              <PopoverHeader>Match the report with a cost entry</PopoverHeader>
-              <InlineCostSearch
-                query={costQueryUtils
-                  .getBuilder(report.workspace.id, idSpecUtils.ofAll())
-                  .build((q) => [
-                    q.withFilter("contractorId", {
-                      operator: "oneOf",
-                      value: [report.contractor.id],
-                    }),
-                    q.withFilter("linkedRemainder", {
-                      operator: "greaterThan",
-                      value: 0,
-                    }),
-                  ])}
-                maxSourceAmount={maybe.of(report.remainingCompensationAmount)}
-                showDescription={true}
-                showTargetValue={true}
-                initialNewCostValues={{
-                  workspaceId: report.workspace.id,
-                  contractorId: report.contractor.id,
-                  currency: report.remainingCompensationAmount.currency,
-                  netValue: report.remainingCompensationAmount.amount,
-                  invoiceDate: todayCalendarDate(),
-                }}
-                className="overflow-y-auto max-h-[48vh]"
-                services={services}
-                onSelect={(data) => {
-                  void linkingState.track(
-                    services.mutationService.linkCostAndReport({
-                      costId: data.costId,
-                      reportId: report.id,
-                      costAmount: data.value.target,
-                      reportAmount: data.value.source,
-                      description: data.value.description,
-                    }),
-                  );
-                }}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <ListView
         query={{ page: paginationUtils.ofDefault(), sort: null }}
         onQueryChange={() => {}}
