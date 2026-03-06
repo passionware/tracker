@@ -36,7 +36,10 @@ export function EntityDetailDrawers({
     >
       <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-none border-l border-border mt-0">
         <DrawerHeader>
-          <DrawerTitle>{activeNode?.title ?? "Details"}</DrawerTitle>
+          <div className="flex items-start justify-between gap-2">
+            <DrawerTitle>{activeNode?.title ?? "Details"}</DrawerTitle>
+            <div>{activeNode?.renderHeaderActions?.()}</div>
+          </div>
           <DrawerDescription>
             Review links, amounts, and related associations.
           </DrawerDescription>

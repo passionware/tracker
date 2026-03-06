@@ -1,4 +1,5 @@
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
+import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import {
   ReportCostInfo,
@@ -87,6 +88,50 @@ export function createEntityDrawerNodeFactory({
       entity,
       label: getEntityLabel(entity),
       title: getEntityTitle(entity),
+      renderHeaderActions: () => {
+        if (entity.type === "report") {
+          const report = reportById.get(entity.id);
+          if (!report) {
+            return null;
+          }
+          return (
+            <CommitStatusBadge
+              id={report.id}
+              isCommitted={report.originalReport.isCommitted}
+              entityType="report"
+              services={services}
+            />
+          );
+        }
+
+        if (entity.type === "cost") {
+          const cost = costById.get(entity.id);
+          if (!cost) {
+            return null;
+          }
+          return (
+            <CommitStatusBadge
+              id={cost.id}
+              isCommitted={cost.originalCost.isCommitted}
+              entityType="cost"
+              services={services}
+            />
+          );
+        }
+
+        const billing = billingById.get(entity.id);
+        if (!billing) {
+          return null;
+        }
+        return (
+          <CommitStatusBadge
+            id={billing.id}
+            isCommitted={billing.originalBilling.isCommitted}
+            entityType="billing"
+            services={services}
+          />
+        );
+      },
       renderMainInfo: () => {
         if (entity.type === "report") {
           const report = reportById.get(entity.id);

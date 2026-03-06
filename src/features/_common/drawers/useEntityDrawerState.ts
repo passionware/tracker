@@ -9,6 +9,7 @@ export interface EntityDrawerNode {
   key: string;
   label: string;
   title: string;
+  renderHeaderActions?: () => ReactNode;
   renderMainInfo?: () => ReactNode;
   render: () => ReactNode;
   entity?: EntityDrawerTarget;

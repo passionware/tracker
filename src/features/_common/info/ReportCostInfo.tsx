@@ -16,6 +16,7 @@ import {
   InfoLayout,
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
+import { InfoHeaderSection } from "@/features/_common/info/_common/InfoHeaderSection.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import {
   ListToolbar,
@@ -121,19 +122,22 @@ export function ReportCostInfo({
   return (
     <InfoLayout
       header={
-        <>
-          Linked costs
-          <TransferView
-            fromAmount={report.remainingCompensationAmount}
-            toAmount={report.compensatedAmount}
-            // extraAmount={report.remainingFullCompensationAmount}
-            fromLabel="Remaining"
-            toLabel="Paid"
-            // extraLabel="Compensated"
-            services={services}
-          />
-          {report.remainingCompensationAmount.amount > 0 && (
-            <div className="flex gap-2 flex-row self-end">
+        <InfoHeaderSection
+          title="Linked costs"
+          transfer={
+            <TransferView
+              fromAmount={report.remainingCompensationAmount}
+              toAmount={report.compensatedAmount}
+              // extraAmount={report.remainingFullCompensationAmount}
+              fromLabel="Remaining"
+              toLabel="Paid"
+              // extraLabel="Compensated"
+              services={services}
+            />
+          }
+          actions={
+            report.remainingCompensationAmount.amount > 0 ? (
+              <>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="default" size="xs">
@@ -227,9 +231,10 @@ export function ReportCostInfo({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-          )}
-        </>
+              </>
+            ) : undefined
+          }
+        />
       }
     >
       <ListView
