@@ -34,6 +34,7 @@ import {
 } from "@/features/_common/SplitViewLayout.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import { BulkCreateCostDrawer } from "@/features/reports/BulkCreateCostDrawer.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
@@ -95,6 +96,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
+  const [isBulkCreateCostOpen, setIsBulkCreateCostOpen] = useState(false);
 
   // Load preferences from service
   const savedPreferences = props.services.preferenceService.useTimelineView();
@@ -118,7 +120,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     })();
   }, [props.services.preferenceService]);
 
-  const scrollEvent = useMemo(createSimpleEvent<number>, []);
+  const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
 
   // Save preferences when they change
   useEffect(() => {
@@ -235,6 +237,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   }
 
   const columns = useColumns(props);
+  const selectedReports = useMemo(() => {
+    const entries = rd.tryGet(finalReports)?.entries ?? [];
+    const ids = new Set(selectedReportIds);
+    return entries.filter((entry) => ids.has(entry.id));
+  }, [finalReports, selectedReportIds]);
 
   // Extract project iteration IDs from reports when grouping by project iteration
   const projectIterationIds = useMemo(() => {
@@ -677,142 +684,159 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
   function renderTableView() {
     return (
-      <ListView
-        scrollEvent={scrollEvent}
-        query={query}
-        onQueryChange={queryParamsService.setQueryParams}
-        data={rd.map(finalReports, (r) => r.entries)}
-        selection={selection}
-        onSelectionChange={setSelection}
-        getRowId={(x) => x.id}
-        onRowDoubleClick={async (row) => {
-          const result =
-            await props.services.messageService.editReport.sendRequest({
-              defaultValues: row.originalReport,
-              operatingMode: "edit",
-            });
-          switch (result.action) {
-            case "confirm": {
-              await props.services.mutationService.editReport(
-                row.id,
-                result.changes,
-              );
+      <>
+        <ListView
+          scrollEvent={scrollEvent}
+          query={query}
+          onQueryChange={queryParamsService.setQueryParams}
+          data={rd.map(finalReports, (r) => r.entries)}
+          selection={selection}
+          onSelectionChange={setSelection}
+          getRowId={(x) => x.id}
+          onRowDoubleClick={async (row) => {
+            const result =
+              await props.services.messageService.editReport.sendRequest({
+                defaultValues: row.originalReport,
+                operatingMode: "edit",
+              });
+            switch (result.action) {
+              case "confirm": {
+                await props.services.mutationService.editReport(
+                  row.id,
+                  result.changes,
+                );
+              }
             }
+          }}
+          columns={columns}
+          toolbar={
+            selectionState.getTotalSelected(
+              selection,
+              rd.tryGet(reports)?.entries.length ?? 0,
+            ) > 0 ? (
+              <ListToolbar>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {selectionState.getTotalSelected(
+                      selection,
+                      rd.tryGet(finalReports)?.entries.length ?? 0,
+                    )}{" "}
+                    selected
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <ListToolbarButton
+                    variant="default"
+                    onClick={() => setIsBulkCreateCostOpen(true)}
+                  >
+                    Create cost for selected invoices
+                  </ListToolbarButton>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div>
+                        <ListToolbarButton variant="destructive">
+                          Delete
+                        </ListToolbarButton>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-4" align="start">
+                      <div className="space-y-3">
+                        <div className="text-sm text-slate-700">
+                          Are you sure you want to delete{" "}
+                          {selectedReportIds.length} selected report(s)? This
+                          action cannot be undone.
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm">
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBatchDelete}
+                            disabled={mt.isInProgress(deleteMutation.state)}
+                          >
+                            {mt.isInProgress(deleteMutation.state)
+                              ? "Deleting..."
+                              : "Confirm"}
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </ListToolbar>
+            ) : undefined
           }
-        }}
-        columns={columns}
-        toolbar={
-          selectionState.getTotalSelected(
-            selection,
-            rd.tryGet(reports)?.entries.length ?? 0,
-          ) > 0 ? (
-            <ListToolbar>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {selectionState.getTotalSelected(
-                    selection,
-                    rd.tryGet(finalReports)?.entries.length ?? 0,
-                  )}{" "}
-                  selected
-                </span>
-              </div>
+          caption={
+            <>
+              A list of all reported work for given client, matched with billing
+              or clarifications.
+              {rd.tryMap(finalReports, (view) => {
+                const totals = view.totalSelected ?? view.total;
+                const selectedCount = view.totalSelected
+                  ? selectedReportIds.length
+                  : view.entries.length;
 
-              <div className="flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div>
-                      <ListToolbarButton variant="destructive">
-                        Delete
-                      </ListToolbarButton>
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4" align="start">
-                    <div className="space-y-3">
-                      <div className="text-sm text-slate-700">
-                        Are you sure you want to delete{" "}
-                        {selectedReportIds.length} selected report(s)? This
-                        action cannot be undone.
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm">
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={handleBatchDelete}
-                          disabled={mt.isInProgress(deleteMutation.state)}
-                        >
-                          {mt.isInProgress(deleteMutation.state)
-                            ? "Deleting..."
-                            : "Confirm"}
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </ListToolbar>
-          ) : undefined
-        }
-        caption={
-          <>
-            A list of all reported work for given client, matched with billing
-            or clarifications.
-            {rd.tryMap(finalReports, (view) => {
-              const totals = view.totalSelected ?? view.total;
-              const selectedCount = view.totalSelected
-                ? selectedReportIds.length
-                : view.entries.length;
+                const billingDetails = [
+                  {
+                    label: "Reported",
+                    description: "Total value of reported work",
+                    value: totals.netAmount,
+                  },
+                  {
+                    label: "Billed",
+                    description: "How much billed value is linked to reports",
+                    value: totals.chargedAmount,
+                  },
+                  {
+                    label: "To link",
+                    description:
+                      "Report amount that is not yet linked to any billing",
+                    value: totals.toChargeAmount,
+                  },
+                  { label: "To pay", value: totals.toCompensateAmount },
+                  { label: "Paid", value: totals.compensatedAmount },
+                  {
+                    label: "To compensate",
+                    value: totals.toFullyCompensateAmount,
+                  },
+                ];
 
-              const billingDetails = [
-                {
-                  label: "Reported",
-                  description: "Total value of reported work",
-                  value: totals.netAmount,
-                },
-                {
-                  label: "Billed",
-                  description: "How much billed value is linked to reports",
-                  value: totals.chargedAmount,
-                },
-                {
-                  label: "To link",
-                  description:
-                    "Report amount that is not yet linked to any billing",
-                  value: totals.toChargeAmount,
-                },
-                { label: "To pay", value: totals.toCompensateAmount },
-                { label: "Paid", value: totals.compensatedAmount },
-                {
-                  label: "To compensate",
-                  value: totals.toFullyCompensateAmount,
-                },
-              ];
-
-              return (
-                <>
-                  <h3 className="my-3 text-base font-semibold ">
-                    Summary ({selectedCount}{" "}
-                    {selectedCount === 1 ? "report" : "reports"})
-                  </h3>
-                  <Summary>
-                    {billingDetails.map((item) => (
-                      <SummaryCurrencyGroup
-                        key={item.label}
-                        label={item.label}
-                        description={item.description}
-                        group={item.value}
-                        services={props.services}
-                      />
-                    ))}
-                  </Summary>
-                </>
-              );
-            })}
-          </>
-        }
-      />
+                return (
+                  <>
+                    <h3 className="my-3 text-base font-semibold ">
+                      Summary ({selectedCount}{" "}
+                      {selectedCount === 1 ? "report" : "reports"})
+                    </h3>
+                    <Summary>
+                      {billingDetails.map((item) => (
+                        <SummaryCurrencyGroup
+                          key={item.label}
+                          label={item.label}
+                          description={item.description}
+                          group={item.value}
+                          services={props.services}
+                        />
+                      ))}
+                    </Summary>
+                  </>
+                );
+              })}
+            </>
+          }
+        />
+        <BulkCreateCostDrawer
+          open={isBulkCreateCostOpen}
+          onOpenChange={setIsBulkCreateCostOpen}
+          selectedReports={selectedReports}
+          services={props.services}
+          onCompleted={() => {
+            setSelection(selectionState.selectNone());
+          }}
+        />
+      </>
     );
   }
 }
