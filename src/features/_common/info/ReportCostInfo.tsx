@@ -122,7 +122,7 @@ export function ReportCostInfo({
     <InfoLayout
       header={
         <>
-          Report's linking to costs
+          Linked costs
           <TransferView
             fromAmount={report.remainingCompensationAmount}
             toAmount={report.compensatedAmount}

@@ -40,6 +40,7 @@ export function EntityDetailDrawers({
           <DrawerDescription>
             Review links, amounts, and related associations.
           </DrawerDescription>
+          {activeNode?.renderMainInfo?.()}
           {breadcrumbItems.length > 1 && (
             <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
               {breadcrumbItems.map((item, itemIndex) => (

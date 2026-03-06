@@ -136,7 +136,7 @@ export function ReportInfo({
       header={
         <>
           <div className="flex items-center gap-2">
-            <span>Report's linking to billing</span>
+            <span>Linked billing</span>
             <CommitStatusBadge
               id={report.id}
               isCommitted={report.originalReport.isCommitted}

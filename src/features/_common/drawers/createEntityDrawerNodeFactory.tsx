@@ -24,6 +24,7 @@ import { WithClientService } from "@/services/io/ClientService/ClientService.ts"
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
+import { DrawerMainInfoGrid } from "./DrawerMainInfoGrid.tsx";
 import { EntityDrawerNode, EntityDrawerTarget } from "./useEntityDrawerState.ts";
 
 type DrawerServices = WithServices<
@@ -86,6 +87,89 @@ export function createEntityDrawerNodeFactory({
       entity,
       label: getEntityLabel(entity),
       title: getEntityTitle(entity),
+      renderMainInfo: () => {
+        if (entity.type === "report") {
+          const report = reportById.get(entity.id);
+          if (!report) {
+            return null;
+          }
+          return (
+            <DrawerMainInfoGrid
+              items={[
+                {
+                  label: "Client",
+                  value: report.client.name || `#${report.client.id}`,
+                },
+                {
+                  label: "Workspace",
+                  value: report.workspace.name || `#${report.workspace.id}`,
+                },
+                {
+                  label: "Contractor",
+                  value: report.contractor.fullName || `#${report.contractor.id}`,
+                },
+                {
+                  label: "Period",
+                  value: services.formatService.temporal.range.long(
+                    report.periodStart,
+                    report.periodEnd,
+                  ),
+                },
+              ]}
+            />
+          );
+        }
+
+        if (entity.type === "cost") {
+          const cost = costById.get(entity.id);
+          if (!cost) {
+            return null;
+          }
+          return (
+            <DrawerMainInfoGrid
+              items={[
+                {
+                  label: "Workspace",
+                  value: cost.workspace.name || `#${cost.workspace.id}`,
+                },
+                {
+                  label: "Contractor",
+                  value: cost.contractor?.fullName || "-",
+                },
+                {
+                  label: "Invoice date",
+                  value: services.formatService.temporal.single.compact(cost.invoiceDate),
+                },
+                { label: "Status", value: cost.status },
+              ]}
+            />
+          );
+        }
+
+        const billing = billingById.get(entity.id);
+        if (!billing) {
+          return null;
+        }
+        return (
+          <DrawerMainInfoGrid
+            items={[
+              {
+                label: "Client",
+                value: billing.client.name || `#${billing.client.id}`,
+              },
+              {
+                label: "Workspace",
+                value: billing.workspace.name || `#${billing.workspace.id}`,
+              },
+              { label: "Invoice #", value: billing.invoiceNumber },
+              {
+                label: "Invoice date",
+                value: services.formatService.temporal.single.compact(billing.invoiceDate),
+              },
+            ]}
+          />
+        );
+      },
       render: () => {
         if (entity.type === "report") {
           const report = reportById.get(entity.id);
