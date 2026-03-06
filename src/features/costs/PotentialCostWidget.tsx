@@ -3,7 +3,6 @@ import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { createEntityDrawerNodeFactory } from "@/features/_common/drawers/createEntityDrawerNodeFactory.tsx";
@@ -163,34 +162,31 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
               </Button>
             }
             content={(bag) => (
-              <>
-                <PopoverHeader>Add new cost</PopoverHeader>
-                <CostForm
-                  onCancel={bag.close}
-                  defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(
-                      props.workspaceId,
-                      undefined,
-                    ),
-                    currency: rd.tryMap(
-                      costs,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.netAmount
-                          .currency,
-                    ),
-                    invoiceDate: dateToCalendarDate(new Date()),
-                    contractorId: query.filters.contractorId?.value[0],
-                  }}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    addCostState.track(
-                      props.services.mutationService
-                        .createCost(data)
-                        .then(bag.close),
-                    )
-                  }
-                />
-              </>
+              <CostForm
+                onCancel={bag.close}
+                defaultValues={{
+                  workspaceId: idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  ),
+                  currency: rd.tryMap(
+                    costs,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  ),
+                  invoiceDate: dateToCalendarDate(new Date()),
+                  contractorId: query.filters.contractorId?.value[0],
+                }}
+                services={props.services}
+                onSubmit={(data) =>
+                  addCostState.track(
+                    props.services.mutationService
+                      .createCost(data)
+                      .then(bag.close),
+                  )
+                }
+              />
             )}
           />
         </>

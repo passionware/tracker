@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -204,34 +203,31 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               </Button>
             }
             content={(bag) => (
-              <>
-                <PopoverHeader>Add new cost</PopoverHeader>
-                <CostForm
-                  onCancel={bag.close}
-                  defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(
-                      props.workspaceId,
-                      undefined,
-                    ),
-                    currency: rd.tryMap(
-                      finalCosts,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.netAmount
-                          .currency,
-                    ),
-                    invoiceDate: dateToCalendarDate(new Date()),
-                    contractorId: query.filters.contractorId?.value[0],
-                  }}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    addCostState.track(
-                      props.services.mutationService
-                        .createCost(data)
-                        .then(bag.close),
-                    )
-                  }
-                />
-              </>
+              <CostForm
+                onCancel={bag.close}
+                defaultValues={{
+                  workspaceId: idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  ),
+                  currency: rd.tryMap(
+                    finalCosts,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  ),
+                  invoiceDate: dateToCalendarDate(new Date()),
+                  contractorId: query.filters.contractorId?.value[0],
+                }}
+                services={props.services}
+                onSubmit={(data) =>
+                  addCostState.track(
+                    props.services.mutationService
+                      .createCost(data)
+                      .then(bag.close),
+                  )
+                }
+              />
             )}
           />
         </>

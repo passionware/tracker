@@ -1,11 +1,9 @@
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+} from "@/components/ui/drawer.tsx";
 import { OpenState } from "@/features/_common/OpenState.tsx";
-import { cn } from "@/lib/utils";
-import { Portal } from "@radix-ui/react-popover";
 import { ReactNode } from "react";
 
 export interface InlinePopoverForm {
@@ -17,25 +15,14 @@ export const InlinePopoverForm = ({ trigger, content }: InlinePopoverForm) => {
   return (
     <OpenState>
       {(bag) => (
-        <Popover modal {...bag}>
-          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-          <Portal forceMount>
-            <div
-              className={cn(
-                "isolate transition-opacity duration-200 fixed  inset-0 backdrop-brightness-[0.7] backdrop-saturate-[0.3]",
-                bag.open ? "opacity-100" : "opacity-0 pointer-events-none",
-              )}
-            />
-          </Portal>
-          <PopoverContent
-            className="w-fit relative"
-            align="end"
-            onEscapeKeyDown={bag.close}
-            onInteractOutside={(event) => event.preventDefault()} // Prevent closing on outside click
-          >
-            {content(bag)}
-          </PopoverContent>
-        </Popover>
+        <Drawer {...bag} direction="right">
+          <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+          <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+            <div className="px-4 pb-4 overflow-y-auto flex-1 min-h-0">
+              {content(bag)}
+            </div>
+          </DrawerContent>
+        </Drawer>
       )}
     </OpenState>
   );

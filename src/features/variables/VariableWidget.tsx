@@ -1,7 +1,6 @@
 import { Variable, variableQueryUtils } from "@/api/variable/variable.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import {
   ActionMenu,
@@ -109,31 +108,28 @@ export function VariableWidget(props: VariableWidgetProps) {
               </Button>
             }
             content={(bag) => (
-              <>
-                <PopoverHeader>Add new variable</PopoverHeader>
-                <VariableForm
-                  services={props.services}
-                  defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(props.workspaceId, null),
-                    contractorId:
-                      query.filters.contractorId?.operator === "oneOf"
-                        ? idSpecUtils.switchAll(
-                            query.filters.contractorId.value[0],
-                            null,
-                          )
-                        : null,
-                    clientId: idSpecUtils.switchAll(props.clientId, null),
-                  }}
-                  onCancel={() => addVariableState.reset()}
-                  onSubmit={(data) =>
-                    addVariableState.track(
-                      props.services.variableService
-                        .createVariable(data)
-                        .then(() => void bag.close()),
-                    )
-                  }
-                />
-              </>
+              <VariableForm
+                services={props.services}
+                defaultValues={{
+                  workspaceId: idSpecUtils.switchAll(props.workspaceId, null),
+                  contractorId:
+                    query.filters.contractorId?.operator === "oneOf"
+                      ? idSpecUtils.switchAll(
+                          query.filters.contractorId.value[0],
+                          null,
+                        )
+                      : null,
+                  clientId: idSpecUtils.switchAll(props.clientId, null),
+                }}
+                onCancel={() => addVariableState.reset()}
+                onSubmit={(data) =>
+                  addVariableState.track(
+                    props.services.variableService
+                      .createVariable(data)
+                      .then(() => void bag.close()),
+                  )
+                }
+              />
             )}
           />
         </>

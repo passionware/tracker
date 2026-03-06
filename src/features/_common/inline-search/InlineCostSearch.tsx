@@ -1,5 +1,13 @@
 import { Cost, CostPayload, CostQuery } from "@/api/cost/cost.api.ts";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer.tsx";
 import { NumberInput } from "@/components/ui/input.tsx";
 import {
   Popover,
@@ -60,7 +68,7 @@ export interface InlineCostSearchProps
 
 export function InlineCostSearch(props: InlineCostSearchProps) {
   const [_query, setQuery] = useState<CostQuery>(props.query);
-  const [isCreatePopoverOpen, setIsCreatePopoverOpen] = useState(false);
+  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const costs = props.services.reportDisplayService.useCostView(_query);
 
   return (
@@ -78,30 +86,36 @@ export function InlineCostSearch(props: InlineCostSearchProps) {
             }}
             services={props.services}
           />
-          <Popover
-            open={isCreatePopoverOpen}
-            onOpenChange={setIsCreatePopoverOpen}
+          <DrawerNestedRoot
+            open={isCreateDrawerOpen}
+            onOpenChange={setIsCreateDrawerOpen}
+            direction="right"
           >
-            <PopoverTrigger asChild>
+            <DrawerTrigger asChild>
               <Button variant="secondary" size="icon-sm">
                 <Plus strokeWidth={3} />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-fit" align="end">
-              <div className="text-sm font-medium mb-2">Add cost</div>
-              <CostForm
-                onCancel={() => setIsCreatePopoverOpen(false)}
-                defaultValues={props.initialNewCostValues}
-                services={props.services}
-                onSubmit={(data) =>
-                  props.services.mutationService
-                    .createCost(data)
-                    .then((x) => props.onCostCreated?.(x))
-                    .then(() => setIsCreatePopoverOpen(false))
-                }
-              />
-            </PopoverContent>
-          </Popover>
+            </DrawerTrigger>
+            <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+              <DrawerHeader>
+                <DrawerTitle>Add cost</DrawerTitle>
+                <DrawerDescription className="sr-only" />
+              </DrawerHeader>
+              <div className="px-4 pb-4 overflow-y-auto flex-1">
+                <CostForm
+                  onCancel={() => setIsCreateDrawerOpen(false)}
+                  defaultValues={props.initialNewCostValues}
+                  services={props.services}
+                  onSubmit={(data) =>
+                    props.services.mutationService
+                      .createCost(data)
+                      .then((x) => props.onCostCreated?.(x))
+                      .then(() => setIsCreateDrawerOpen(false))
+                  }
+                />
+              </div>
+            </DrawerContent>
+          </DrawerNestedRoot>
         </>
       }
     >

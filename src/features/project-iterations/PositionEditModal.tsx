@@ -1,10 +1,11 @@
 import { ProjectIterationPositionPayload } from "@/api/project-iteration/project-iteration.api.ts";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { ProjectIterationPositionForm } from "@/features/project-iterations/PositionForm.tsx";
 import { useSubscribedMessage } from "@passionware/messaging-react";
@@ -22,30 +23,34 @@ export function PositionEditModal(props: PositionEditModalProps) {
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (
-    <Dialog open={!!message} onOpenChange={handleCancel}>
-      <DialogContent>
-        <DialogTitle>
-          {message &&
-            (
-              {
-                create: "Create position",
-                edit: "Edit position",
-                duplicate: "Duplicate position",
-              } as const
-            )[message?.request.operatingMode]}
-        </DialogTitle>
-        <DialogDescription></DialogDescription>
-        {message && (
-          <ProjectIterationPositionForm
-            currency={message.request.currency}
-            mode={message.request.operatingMode}
-            onCancel={handleCancel}
-            defaultValues={message.request.defaultValues}
-            services={props.services}
-            onSubmit={handleConfirm}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <Drawer open={!!message} onOpenChange={handleCancel} direction="right">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+        <DrawerHeader>
+          <DrawerTitle>
+            {message &&
+              (
+                {
+                  create: "Create position",
+                  edit: "Edit position",
+                  duplicate: "Duplicate position",
+                } as const
+              )[message?.request.operatingMode]}
+          </DrawerTitle>
+          <DrawerDescription />
+        </DrawerHeader>
+        <div className="px-4 pb-4 overflow-y-auto flex-1">
+          {message && (
+            <ProjectIterationPositionForm
+              currency={message.request.currency}
+              mode={message.request.operatingMode}
+              onCancel={handleCancel}
+              defaultValues={message.request.defaultValues}
+              services={props.services}
+              onSubmit={handleConfirm}
+            />
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

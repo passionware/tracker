@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
@@ -202,34 +201,31 @@ export function BillingWidget(props: BillingWidgetProps) {
               </Button>
             }
             content={(bag) => (
-              <>
-                <PopoverHeader>Add new billing</PopoverHeader>
-                <BillingForm
-                  onCancel={bag.close}
-                  defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(
-                      props.workspaceId,
-                      undefined,
-                    ),
-                    currency: rd.tryMap(
-                      finalBillings,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.netAmount
-                          .currency,
-                    ),
-                    invoiceDate: dateToCalendarDate(new Date()),
-                    clientId: idSpecUtils.switchAll(props.clientId, undefined),
-                  }}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    addBillingState.track(
-                      props.services.mutationService
-                        .createBilling(data)
-                        .then(bag.close),
-                    )
-                  }
-                />
-              </>
+              <BillingForm
+                onCancel={bag.close}
+                defaultValues={{
+                  workspaceId: idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  ),
+                  currency: rd.tryMap(
+                    finalBillings,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  ),
+                  invoiceDate: dateToCalendarDate(new Date()),
+                  clientId: idSpecUtils.switchAll(props.clientId, undefined),
+                }}
+                services={props.services}
+                onSubmit={(data) =>
+                  addBillingState.track(
+                    props.services.mutationService
+                      .createBilling(data)
+                      .then(bag.close),
+                  )
+                }
+              />
             )}
           />
         </>

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
@@ -584,46 +583,42 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               </Button>
             }
             content={(bag) => (
-              <>
-                <PopoverHeader>Add new contractor report</PopoverHeader>
-                <ReportForm
-                  onCancel={bag.close}
-                  defaultValues={{
-                    workspaceId: idSpecUtils.switchAll(
-                      props.workspaceId,
-                      undefined,
+              <ReportForm
+                onCancel={bag.close}
+                defaultValues={{
+                  workspaceId: idSpecUtils.switchAll(
+                    props.workspaceId,
+                    undefined,
+                  ),
+                  currency: rd.tryMap(
+                    finalReports,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.netAmount
+                        .currency,
+                  ),
+                  contractorId: rd.tryMap(
+                    finalReports,
+                    (reports) =>
+                      reports.entries[reports.entries.length - 1]?.contractor.id,
+                  ),
+                  periodStart: rd.tryMap(finalReports, (reports) =>
+                    maybe.map(
+                      reports.entries[reports.entries.length - 1]?.periodEnd,
+                      partialRight(addDaysToCalendarDate, 1),
                     ),
-                    currency: rd.tryMap(
-                      finalReports,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.netAmount
-                          .currency,
-                    ),
-                    contractorId: rd.tryMap(
-                      finalReports,
-                      (reports) =>
-                        reports.entries[reports.entries.length - 1]?.contractor
-                          .id,
-                    ),
-                    periodStart: rd.tryMap(finalReports, (reports) =>
-                      maybe.map(
-                        reports.entries[reports.entries.length - 1]?.periodEnd,
-                        partialRight(addDaysToCalendarDate, 1),
-                      ),
-                    ),
-                    periodEnd: dateToCalendarDate(new Date()),
-                    clientId: idSpecUtils.switchAll(props.clientId, undefined),
-                  }}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    addReportState.track(
-                      props.services.mutationService
-                        .createReport(data)
-                        .then(bag.close),
-                    )
-                  }
-                />
-              </>
+                  ),
+                  periodEnd: dateToCalendarDate(new Date()),
+                  clientId: idSpecUtils.switchAll(props.clientId, undefined),
+                }}
+                services={props.services}
+                onSubmit={(data) =>
+                  addReportState.track(
+                    props.services.mutationService
+                      .createReport(data)
+                      .then(bag.close),
+                  )
+                }
+              />
             )}
           />
         </>
