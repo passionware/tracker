@@ -96,11 +96,14 @@ export const billingColumns = {
           WithContractorService &
           WithWorkspaceService &
           WithExpressionService,
+        _options?: {
+          onOpenBillingDetails?: (billingId: number) => void;
+        },
       ) =>
         getColumnHelper<BillingViewEntry>().accessor("status", {
           header: "Status",
-          cell: (info) => (
-            <ChargeInfoPopover billing={info.row.original} services={services}>
+          cell: (info) => {
+            const badge = (
               <RollingBadge
                 className="max-w-24"
                 tone="solid"
@@ -128,8 +131,15 @@ export const billingColumns = {
                   )[info.getValue()]
                 }
               </RollingBadge>
-            </ChargeInfoPopover>
-          ),
+            );
+            return (
+              <div data-no-row-open>
+                <ChargeInfoPopover billing={info.row.original} services={services}>
+                  {badge}
+                </ChargeInfoPopover>
+              </div>
+            );
+          },
         }),
       read: getColumnHelper<BillingViewEntry>().accessor("status", {
         header: "Status",

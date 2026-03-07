@@ -1,10 +1,11 @@
 import { VariablePayload } from "@/api/variable/variable.api.ts";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer.tsx";
 import { VariableForm } from "@/features/variables/VariableForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
@@ -34,27 +35,30 @@ export function VariableEditModalWidget(props: VariableEditModalWidgetProps) {
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (
-    <Dialog open={!!message} onOpenChange={handleCancel}>
-      <DialogContent>
-        <DialogTitle>
-          {" "}
-          {message &&
-            (
-              {
-                create: "Create variable",
-                edit: "Edit variable",
-                duplicate: "Duplicate variable",
-              } as const
-            )[message?.request.operatingMode]}
-        </DialogTitle>
-        <DialogDescription></DialogDescription>
-        <VariableForm
-          onCancel={handleCancel}
-          defaultValues={message?.request.defaultValues}
-          services={props.services}
-          onSubmit={handleConfirm}
-        />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={!!message} onOpenChange={handleCancel} direction="right">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+        <DrawerHeader>
+          <DrawerTitle>
+            {message &&
+              (
+                {
+                  create: "Create variable",
+                  edit: "Edit variable",
+                  duplicate: "Duplicate variable",
+                } as const
+              )[message?.request.operatingMode]}
+          </DrawerTitle>
+          <DrawerDescription />
+        </DrawerHeader>
+        <div className="px-4 pb-4 overflow-y-auto flex-1">
+          <VariableForm
+            onCancel={handleCancel}
+            defaultValues={message?.request.defaultValues}
+            services={props.services}
+            onSubmit={handleConfirm}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

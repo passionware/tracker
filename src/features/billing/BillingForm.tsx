@@ -76,158 +76,167 @@ export function BillingForm(props: BillingFormProps) {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="grid grid-cols-2 gap-4 min-w-[20rem]"
+        className="h-full flex flex-col"
       >
-        <FormField
-          control={form.control}
-          name="workspaceId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Workspace</FormLabel>
-              <FormControl>
-                <WorkspacePicker
-                  value={field.value}
-                  onSelect={field.onChange}
-                  services={props.services}
-                />
-              </FormControl>
-              <FormDescription>Select workspace</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="clientId"
-          rules={{ required: "Client is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Client</FormLabel>
-              <FormControl>
-                <ClientPicker
-                  value={field.value}
-                  onSelect={field.onChange}
-                  services={props.services}
-                />
-              </FormControl>
-              <FormDescription>Select client</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="currency"
-          rules={{ required: "Currency is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Currency</FormLabel>
-              <FormControl>
-                <CurrencyPicker value={field.value} onSelect={field.onChange} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="totalNet"
-          rules={{ required: "Total net is required" }}
-          render={({ field }) => (
-            <FormItem className="col-start-1">
-              <FormLabel>Total Net</FormLabel>
-              <FormControl>
-                <NumberInputAsString
-                  {...field}
-                  step={0.01}
-                  formatOptions={{
-                    ...maybe.map(form.watch("currency"), (currency) => ({
-                      style: "currency" as const,
-                      currency,
-                    })),
-                  }}
-                />
-              </FormControl>
-              <FormDescription>Enter total net value</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="totalGross"
-          rules={{ required: "Total gross is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Total Gross</FormLabel>
-              <FormControl>
-                <NumberInputAsString
-                  {...field}
-                  step={0.01}
-                  formatOptions={{
-                    ...maybe.map(form.watch("currency"), (currency) => ({
-                      style: "currency" as const,
-                      currency,
-                    })),
-                  }}
-                />
-              </FormControl>
-              <FormDescription>Enter total gross value</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="invoiceNumber"
-          rules={{ required: "Invoice number is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Invoice Number</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormDescription>Enter invoice number</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="invoiceDate"
-          rules={{ required: "Invoice date is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Invoice Date</FormLabel>
-              <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Pick a date"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem className="col-span-2">
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormDescription>Enter description</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="button" variant="outline" onClick={props.onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">Submit</Button>
+        <div className="grid grid-cols-2 gap-4 min-w-[20rem]">
+          <FormField
+            control={form.control}
+            name="workspaceId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Workspace</FormLabel>
+                <FormControl>
+                  <WorkspacePicker
+                    value={field.value}
+                    onSelect={field.onChange}
+                    services={props.services}
+                  />
+                </FormControl>
+                <FormDescription>Select workspace</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="clientId"
+            rules={{ required: "Client is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Client</FormLabel>
+                <FormControl>
+                  <ClientPicker
+                    value={field.value}
+                    onSelect={field.onChange}
+                    services={props.services}
+                  />
+                </FormControl>
+                <FormDescription>Select client</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="currency"
+            rules={{ required: "Currency is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <FormControl>
+                  <CurrencyPicker
+                    value={field.value}
+                    onSelect={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="totalNet"
+            rules={{ required: "Total net is required" }}
+            render={({ field }) => (
+              <FormItem className="col-start-1">
+                <FormLabel>Total Net</FormLabel>
+                <FormControl>
+                  <NumberInputAsString
+                    {...field}
+                    step={0.01}
+                    formatOptions={{
+                      ...maybe.map(form.watch("currency"), (currency) => ({
+                        style: "currency" as const,
+                        currency,
+                      })),
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>Enter total net value</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="totalGross"
+            rules={{ required: "Total gross is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Total Gross</FormLabel>
+                <FormControl>
+                  <NumberInputAsString
+                    {...field}
+                    step={0.01}
+                    formatOptions={{
+                      ...maybe.map(form.watch("currency"), (currency) => ({
+                        style: "currency" as const,
+                        currency,
+                      })),
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>Enter total gross value</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="invoiceNumber"
+            rules={{ required: "Invoice number is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Invoice Number</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormDescription>Enter invoice number</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="invoiceDate"
+            rules={{ required: "Invoice date is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Invoice Date</FormLabel>
+                <FormControl>
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Pick a date"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} />
+                </FormControl>
+                <FormDescription>Enter description</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="col-span-2 -mx-1 mt-auto border-t pt-3 bg-background">
+          <div className="flex justify-end gap-2 px-1">
+            <Button type="button" variant="outline" onClick={props.onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit">Submit</Button>
+          </div>
+        </div>
       </form>
     </Form>
   );

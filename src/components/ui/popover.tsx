@@ -19,7 +19,7 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "w-72 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-hidden",
+        "z-[60] w-72 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-hidden",
         "max-h-[calc(var(--radix-popover-content-available-height)-2rem)] overflow-y-auto",
         "max-w-[calc(var(--radix-popover-content-available-width)-2rem)] overflow-x-auto",
         contentAnimations.popover,

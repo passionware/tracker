@@ -1,19 +1,29 @@
 import { paginationUtils } from "@/api/_common/query/pagination.ts";
+import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer.tsx";
+import {
   Popover,
   PopoverContent,
-  PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { costColumns } from "@/features/_common/columns/cost.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
+import { InlineCostSearch } from "@/features/_common/inline-search/InlineCostSearch.tsx";
 import {
   InfoLayout,
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
+import { InfoHeaderSection } from "@/features/_common/info/_common/InfoHeaderSection.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
 import {
   ListToolbar,
@@ -24,6 +34,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { assert } from "@/platform/lang/assert.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { todayCalendarDate } from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -65,13 +76,19 @@ export interface ReportCostInfoProps
     ]
   > {
   report: ReportViewEntry;
+  onOpenCostDetails?: (costId: number) => void;
 }
 
 const columnHelper = createColumnHelper<ReportViewEntry["costLinks"][number]>();
 
-export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
+export function ReportCostInfo({
+  services,
+  report,
+  onOpenCostDetails,
+}: ReportCostInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
+  const [isFindCostDrawerOpen, setIsFindCostDrawerOpen] = useState(false);
 
   const isDangerMode = services.preferenceService.useIsDangerMode();
 
@@ -113,40 +130,95 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
   return (
     <InfoLayout
       header={
-        <>
-          Report's linking to costs
-          <TransferView
-            fromAmount={report.remainingCompensationAmount}
-            toAmount={report.compensatedAmount}
-            // extraAmount={report.remainingFullCompensationAmount}
-            fromLabel="Remaining"
-            toLabel="Paid"
-            // extraLabel="Compensated"
-            services={services}
-          />
-          {report.remainingCompensationAmount.amount > 0 && (
-            <div className="flex gap-2 flex-row self-end">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="default" size="xs">
-                    {rd
-                      .fullJourney(linkingState.state)
-                      .initially(<Link2 />)
-                      .wait(<Loader2 />)
-                      .catch(renderSmallError("w-6 h-4"))
-                      .map(() => (
-                        <Check />
-                      ))}
-                    Find & link cost
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit flex flex-col max-h-[calc(-1rem+var(--radix-popover-content-available-height))]">
-                  <PopoverHeader>
-                    Match the report with a cost entry
-                  </PopoverHeader>
-                  {/*todo inline searc*/}
-                </PopoverContent>
-              </Popover>
+        <InfoHeaderSection
+          title="Linked costs"
+          transfer={
+            <TransferView
+              fromAmount={report.remainingCompensationAmount}
+              toAmount={report.compensatedAmount}
+              // extraAmount={report.remainingFullCompensationAmount}
+              fromLabel="Remaining"
+              toLabel="Paid"
+              // extraLabel="Compensated"
+              services={services}
+            />
+          }
+          actions={
+            report.remainingCompensationAmount.amount > 0 ? (
+              <>
+                <DrawerNestedRoot
+                  open={isFindCostDrawerOpen}
+                  onOpenChange={setIsFindCostDrawerOpen}
+                  direction="right"
+                >
+                  <DrawerTrigger asChild>
+                    <Button variant="default" size="xs">
+                      {rd
+                        .fullJourney(linkingState.state)
+                        .initially(<Link2 />)
+                        .wait(<Loader2 />)
+                        .catch(renderSmallError("w-6 h-4"))
+                        .map(() => (
+                          <Check />
+                        ))}
+                      Find & link cost
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent
+                    withOverlay={false}
+                    className="inset-y-0 right-0 left-auto h-full w-[min(88vw,860px)] rounded-l-2xl border-l border-border mt-0"
+                  >
+                    <DrawerHeader>
+                      <DrawerTitle>Find & link cost</DrawerTitle>
+                      <DrawerDescription>
+                        Match this report with an existing cost entry.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4 overflow-y-auto flex-1">
+                      <InlineCostSearch
+                        query={costQueryUtils
+                          .getBuilder(report.workspace.id, idSpecUtils.ofAll())
+                          .build((q) => [
+                            q.withFilter("contractorId", {
+                              operator: "oneOf",
+                              value: [report.contractor.id],
+                            }),
+                            q.withFilter("linkedRemainder", {
+                              operator: "greaterThan",
+                              value: 0,
+                            }),
+                          ])}
+                        maxSourceAmount={maybe.of(report.remainingCompensationAmount)}
+                        showDescription={true}
+                        showTargetValue={true}
+                        initialNewCostValues={{
+                          workspaceId: report.workspace.id,
+                          contractorId: report.contractor.id,
+                          currency: report.remainingCompensationAmount.currency,
+                          netValue: report.remainingCompensationAmount.amount,
+                          invoiceDate: todayCalendarDate(),
+                        }}
+                        className="overflow-y-auto h-full"
+                        services={services}
+                        onSelect={(data) => {
+                          void linkingState
+                            .track(
+                              services.mutationService.linkCostAndReport({
+                                costId: data.costId,
+                                reportId: report.id,
+                                costAmount: data.value.target,
+                                reportAmount: data.value.source,
+                                description: data.value.description,
+                              }),
+                            )
+                            .then(() => {
+                              setIsFindCostDrawerOpen(false);
+                            });
+                        }}
+                      />
+                    </div>
+                  </DrawerContent>
+                </DrawerNestedRoot>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="warning" size="xs">
@@ -183,9 +255,10 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-          )}
-        </>
+              </>
+            ) : undefined
+          }
+        />
       }
     >
       <ListView
@@ -195,6 +268,11 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row: ReportViewEntry["costLinks"][number]) => row.link.id}
+        onRowClick={(row) => {
+          if (row.cost) {
+            onOpenCostDetails?.(row.cost.id);
+          }
+        }}
         columns={[
           columnHelper.accessor("cost", {
             header: "Type",
@@ -266,7 +344,11 @@ export function ReportCostInfo({ services, report }: ReportCostInfoProps) {
                     )
                   }
                 >
-                  <Button variant="headless" size="headless">
+                  <Button
+                    variant="headless"
+                    size="headless"
+                    data-no-row-open
+                  >
                     {(() => {
                       if (link.link.reportAmount < link.link.costAmount) {
                         return (

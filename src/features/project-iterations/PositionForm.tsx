@@ -61,8 +61,9 @@ export function ProjectIterationPositionForm(
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="grid grid-cols-3 gap-4 min-w-[20rem]"
+        className="h-full flex flex-col"
       >
+        <div className="grid grid-cols-3 gap-4 min-w-[20rem]">
         <FormField
           control={form.control}
           name="description"
@@ -129,25 +130,30 @@ export function ProjectIterationPositionForm(
             props.currency,
           )}
         </div>
-        <Button type="button" variant="outline" onClick={props.onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={
-            rd.isPending(processingPromise.state) || !form.formState.isDirty
-          }
-        >
-          {rd
-            .fullJourney(processingPromise.state)
-            .initially(null)
-            .wait(<LoaderCircle className="w-5 animate-spin" />)
-            .catch(() => <span>Error</span>)
-            .map(() => (
-              <CheckCircle2 />
-            ))}
-          Submit
-        </Button>
+        </div>
+        <div className="-mx-1 mt-auto border-t pt-3 bg-background">
+          <div className="flex justify-end gap-2 px-1">
+            <Button type="button" variant="outline" onClick={props.onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                rd.isPending(processingPromise.state) || !form.formState.isDirty
+              }
+            >
+              {rd
+                .fullJourney(processingPromise.state)
+                .initially(null)
+                .wait(<LoaderCircle className="w-5 animate-spin" />)
+                .catch(() => <span>Error</span>)
+                .map(() => (
+                  <CheckCircle2 />
+                ))}
+              Submit
+            </Button>
+          </div>
+        </div>
       </form>
     </Form>
   );

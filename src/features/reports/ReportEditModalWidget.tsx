@@ -1,10 +1,11 @@
 import { ReportPayload } from "@/api/reports/reports.api.ts";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -38,26 +39,30 @@ export function ReportEditModalWidget(props: ReportEditModalWidgetProps) {
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (
-    <Dialog open={!!message} onOpenChange={handleCancel}>
-      <DialogContent>
-        <DialogTitle>
-          {message &&
-            (
-              {
-                create: "Create report",
-                edit: "Edit report",
-                duplicate: "Duplicate report",
-              } as const
-            )[message?.request.operatingMode]}
-        </DialogTitle>
-        <DialogDescription></DialogDescription>
-        <ReportForm
-          onCancel={handleCancel}
-          defaultValues={message?.request.defaultValues}
-          services={props.services}
-          onSubmit={handleConfirm}
-        />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={!!message} onOpenChange={handleCancel} direction="right">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+        <DrawerHeader>
+          <DrawerTitle>
+            {message &&
+              (
+                {
+                  create: "Create report",
+                  edit: "Edit report",
+                  duplicate: "Duplicate report",
+                } as const
+              )[message?.request.operatingMode]}
+          </DrawerTitle>
+          <DrawerDescription />
+        </DrawerHeader>
+        <div className="px-4 pb-4 overflow-y-auto flex-1">
+          <ReportForm
+            onCancel={handleCancel}
+            defaultValues={message?.request.defaultValues}
+            services={props.services}
+            onSubmit={handleConfirm}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

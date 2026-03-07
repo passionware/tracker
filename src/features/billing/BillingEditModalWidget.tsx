@@ -1,10 +1,11 @@
 import { BillingPayload } from "@/api/billing/billing.api.ts";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
@@ -34,26 +35,30 @@ export function BillingEditModalWidget(props: BillingEditModalWidgetProps) {
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (
-    <Dialog open={!!message} onOpenChange={handleCancel}>
-      <DialogContent>
-        <DialogTitle>
-          {message &&
-            (
-              {
-                create: "Create billing",
-                edit: "Edit billing",
-                duplicate: "Duplicate billing",
-              } as const
-            )[message?.request.operatingMode]}
-        </DialogTitle>
-        <DialogDescription></DialogDescription>
-        <BillingForm
-          onCancel={handleCancel}
-          defaultValues={message?.request.defaultValues}
-          services={props.services}
-          onSubmit={handleConfirm}
-        />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={!!message} onOpenChange={handleCancel} direction="right">
+      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+        <DrawerHeader>
+          <DrawerTitle>
+            {message &&
+              (
+                {
+                  create: "Create billing",
+                  edit: "Edit billing",
+                  duplicate: "Duplicate billing",
+                } as const
+              )[message?.request.operatingMode]}
+          </DrawerTitle>
+          <DrawerDescription />
+        </DrawerHeader>
+        <div className="px-4 pb-4 overflow-y-auto flex-1">
+          <BillingForm
+            onCancel={handleCancel}
+            defaultValues={message?.request.defaultValues}
+            services={props.services}
+            onSubmit={handleConfirm}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

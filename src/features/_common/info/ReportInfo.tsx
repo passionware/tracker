@@ -10,12 +10,12 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { CenteredBar } from "@/features/_common/info/_common/CenteredBar.tsx";
+import { InfoHeaderSection } from "@/features/_common/info/_common/InfoHeaderSection.tsx";
 import {
   InfoLayout,
   InfoPopoverContent,
@@ -77,6 +77,7 @@ export interface ReportInfoProps
   report: ReportViewEntry;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
+  onOpenBillingDetails?: (billingId: number) => void;
 }
 
 const columnHelper = createColumnHelper<Report["linkBillingReport"][number]>();
@@ -86,6 +87,7 @@ export function ReportInfo({
   clientId,
   workspaceId,
   report,
+  onOpenBillingDetails,
 }: ReportInfoProps) {
   const linkingState = promiseState.useRemoteData();
   const clarifyState = promiseState.useRemoteData();
@@ -132,25 +134,20 @@ export function ReportInfo({
   return (
     <InfoLayout
       header={
-        <>
-          <div className="flex items-center gap-2">
-            <span>Report's linking to billing</span>
-            <CommitStatusBadge
-              id={report.id}
-              isCommitted={report.originalReport.isCommitted}
-              entityType="report"
+        <InfoHeaderSection
+          title="Linked billing"
+          transfer={
+            <TransferView
+              fromAmount={report.remainingAmount}
+              toAmount={report.linkedReportAmount}
               services={services}
+              fromLabel="Unlinked to billing"
+              toLabel="Linked to billing"
             />
-          </div>
-          <TransferView
-            fromAmount={report.remainingAmount}
-            toAmount={report.linkedReportAmount}
-            services={services}
-            fromLabel="Unlinked to billing"
-            toLabel="Linked to billing"
-          />
-          {report.remainingAmount.amount !== 0 && (
-            <div className="flex gap-2 flex-row self-end">
+          }
+          actions={
+            report.remainingAmount.amount !== 0 ? (
+              <>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="default" size="xs">
@@ -310,9 +307,10 @@ export function ReportInfo({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-          )}
-        </>
+              </>
+            ) : undefined
+          }
+        />
       }
     >
       <ListView
@@ -322,6 +320,11 @@ export function ReportInfo({
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row: Report["linkBillingReport"][number]) => row.link.id}
+        onRowClick={(row) => {
+          if (row.billing) {
+            onOpenBillingDetails?.(row.billing.id);
+          }
+        }}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -392,7 +395,11 @@ export function ReportInfo({
                     )
                   }
                 >
-                  <Button variant="headless" size="headless">
+                  <Button
+                    variant="headless"
+                    size="headless"
+                    data-no-row-open
+                  >
                     {(() => {
                       if (link.link.reportAmount < link.link.billingAmount) {
                         return (

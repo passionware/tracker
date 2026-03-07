@@ -7,12 +7,13 @@ import {
 } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog.tsx";
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer.tsx";
 import {
   BillingList,
   BillingListProps,
@@ -89,28 +90,32 @@ export function InlineBillingSearch(props: InlineBillingSearchWidgetProps) {
               }}
               services={props.services}
             />
-            <Dialog {...editModalState.dialogProps}>
-              <DialogTrigger asChild>
+            <DrawerNestedRoot {...editModalState.dialogProps} direction="right">
+              <DrawerTrigger asChild>
                 <Button variant="secondary" size="icon-sm" className="">
                   <Plus strokeWidth={3} />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogTitle>Edit billing</DialogTitle>
-                <DialogDescription className="sr-only" />
-                <BillingForm
-                  onCancel={editModalState.close}
-                  defaultValues={props.initialNewBillingValues}
-                  services={props.services}
-                  onSubmit={(data) =>
-                    props.services.mutationService
-                      .createBilling(data)
-                      .then((x) => props.onBillingCreated?.(x))
-                      .then(editModalState.close)
-                  }
-                />
-              </DialogContent>
-            </Dialog>
+              </DrawerTrigger>
+              <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+                <DrawerHeader>
+                  <DrawerTitle>Create billing</DrawerTitle>
+                  <DrawerDescription className="sr-only" />
+                </DrawerHeader>
+                <div className="px-4 pb-4 overflow-y-auto flex-1">
+                  <BillingForm
+                    onCancel={editModalState.close}
+                    defaultValues={props.initialNewBillingValues}
+                    services={props.services}
+                    onSubmit={(data) =>
+                      props.services.mutationService
+                        .createBilling(data)
+                        .then((x) => props.onBillingCreated?.(x))
+                        .then(editModalState.close)
+                    }
+                  />
+                </div>
+              </DrawerContent>
+            </DrawerNestedRoot>
           </>
         }
       >

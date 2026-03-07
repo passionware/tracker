@@ -8,7 +8,6 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import { InlineReportSearch } from "@/features/_common/elements/inline-search/InlineReportSearch.tsx";
@@ -70,6 +69,7 @@ export interface CostInfoProps
   costEntry: CostEntry;
   clientId: ClientSpec;
   workspaceId: WorkspaceSpec;
+  onOpenReportDetails?: (reportId: number) => void;
 }
 
 const columnHelper = createColumnHelper<Cost["linkReports"][number]>();
@@ -79,6 +79,7 @@ export function CostInfo({
   services,
   clientId,
   workspaceId,
+  onOpenReportDetails,
 }: CostInfoProps) {
   const linkingState = promiseState.useRemoteData();
 
@@ -125,12 +126,6 @@ export function CostInfo({
         <>
           <div className="flex items-center gap-2">
             <span>Cost linking to reports</span>
-            <CommitStatusBadge
-              id={costEntry.id}
-              isCommitted={costEntry.originalCost.isCommitted}
-              entityType="cost"
-              services={services}
-            />
           </div>
           <TransferView
             services={services}
@@ -263,6 +258,11 @@ export function CostInfo({
         selection={selection}
         onSelectionChange={setSelection}
         getRowId={(row) => row.link.id}
+        onRowClick={(row) => {
+          if (row.report) {
+            onOpenReportDetails?.(row.report.id);
+          }
+        }}
         columns={[
           columnHelper.accessor((x) => x, {
             header: "Link",
@@ -327,7 +327,11 @@ export function CostInfo({
                       )
                     }
                   >
-                    <Button variant="headless" size="headless">
+                    <Button
+                      variant="headless"
+                      size="headless"
+                      data-no-row-open
+                    >
                       <Badge variant="positive">Report</Badge>
                     </Button>
                   </LinkPopover>
