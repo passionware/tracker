@@ -5,3 +5,6 @@ Do not include the body if the topic is clear.
 
 For few files change, please avoid body, just headline
 
+
+# Database migration files
+Our migration files shuold never scope to specific workspace, for example "public".
