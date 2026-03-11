@@ -8,6 +8,7 @@ import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createGeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.http";
 import { createTmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api.http";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
+import { myIterationTriggerApi } from "@/api/iteration-trigger/iteration-trigger.api.connected.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
@@ -55,6 +56,7 @@ import { createCockpitTenantService } from "@/services/cockpit/CockpitTenantServ
 import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
 import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
+import { createIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
@@ -151,6 +153,13 @@ const projectIterationService = createProjectIterationService({
     messageService,
   },
   api: myProjectIterationApi,
+  client: myQueryClient,
+});
+const iterationTriggerService = createIterationTriggerService({
+  services: {
+    messageService,
+  },
+  api: myIterationTriggerApi,
   client: myQueryClient,
 });
 const expressionService = createExpressionService({
@@ -251,6 +260,7 @@ export const myServices = {
   billingService,
   expressionService,
   projectIterationService,
+  iterationTriggerService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
   projectService,
   reportGenerationService: createReportGenerationService({
@@ -278,6 +288,7 @@ export const myServices = {
       projectService,
       projectIterationService,
       expressionService,
+      mutationService,
     },
   }),
 } satisfies FrontServices;

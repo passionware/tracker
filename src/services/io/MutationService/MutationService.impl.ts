@@ -234,6 +234,38 @@ export function createMutationService(
         scope: "Editing project iteration",
       });
     },
+    logBudgetTargetChange: async (
+      iterationId,
+      newTargetAmount,
+      billingSnapshot,
+    ) => {
+      await api.logBudgetTargetChange(
+        iterationId,
+        newTargetAmount,
+        billingSnapshot,
+      );
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Logging budget target change",
+      });
+    },
+    updateBudgetTargetLogEntry: async (entryId, payload) => {
+      await api.updateBudgetTargetLogEntry(entryId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating budget target log entry",
+      });
+    },
+    deleteBudgetTargetLogEntry: async (entryId) => {
+      await api.deleteBudgetTargetLogEntry(entryId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Deleting budget target log entry",
+      });
+    },
+    insertBudgetTargetLogEntry: async (iterationId, payload) => {
+      await api.insertBudgetTargetLogEntry(iterationId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Inserting budget target log entry",
+      });
+    },
     bulkEditProjectIteration: async (iterationIds, payload) => {
       await api.bulkEditProjectIteration(iterationIds, payload);
       await config.services.messageService.reportSystemEffect.sendRequest({

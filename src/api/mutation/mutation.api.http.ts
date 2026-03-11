@@ -546,6 +546,76 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw response.error;
       }
     },
+    logBudgetTargetChange: async (
+      iterationId,
+      newTargetAmount,
+      billingSnapshot,
+    ) => {
+      const { error } = await client
+        .from("project_iteration_budget_target_log")
+        .insert({
+          project_iteration_id: iterationId,
+          new_target_amount: newTargetAmount,
+          billing_snapshot_amount:
+            billingSnapshot?.amount ?? null,
+          billing_snapshot_currency:
+            billingSnapshot?.currency ?? null,
+        });
+      if (error) {
+        throw error;
+      }
+    },
+    updateBudgetTargetLogEntry: async (entryId, payload) => {
+      const updates: Record<string, unknown> = {};
+      if (payload.createdAt !== undefined) {
+        updates.created_at =
+          payload.createdAt == null
+            ? null
+            : typeof payload.createdAt === "string"
+              ? payload.createdAt
+              : payload.createdAt.toISOString();
+      }
+      if (payload.newTargetAmount !== undefined) {
+        updates.new_target_amount = payload.newTargetAmount;
+      }
+      if (payload.billingSnapshotAmount !== undefined) {
+        updates.billing_snapshot_amount = payload.billingSnapshotAmount;
+      }
+      if (payload.billingSnapshotCurrency !== undefined) {
+        updates.billing_snapshot_currency = payload.billingSnapshotCurrency;
+      }
+      if (Object.keys(updates).length === 0) return;
+      const { error } = await client
+        .from("project_iteration_budget_target_log")
+        .update(updates)
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    deleteBudgetTargetLogEntry: async (entryId) => {
+      const { error } = await client
+        .from("project_iteration_budget_target_log")
+        .delete()
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    insertBudgetTargetLogEntry: async (iterationId, payload) => {
+      const created_at =
+        payload.createdAt != null
+          ? typeof payload.createdAt === "string"
+            ? payload.createdAt
+            : payload.createdAt.toISOString()
+          : new Date().toISOString();
+      const { error } = await client
+        .from("project_iteration_budget_target_log")
+        .insert({
+          project_iteration_id: iterationId,
+          created_at,
+          new_target_amount: payload.newTargetAmount ?? null,
+          billing_snapshot_amount: payload.billingSnapshotAmount ?? null,
+          billing_snapshot_currency: payload.billingSnapshotCurrency ?? null,
+        });
+      if (error) throw error;
+    },
     bulkEditProjectIteration: async (iterationIds, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;

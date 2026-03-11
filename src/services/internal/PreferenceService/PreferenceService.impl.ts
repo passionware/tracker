@@ -1,10 +1,25 @@
 import {
+  BudgetLogSyncState,
   PreferenceService,
   TimelineViewPreferences,
 } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createLocalStorageApi } from "@/services/internal/PreferenceService/createLocalStorageApi.ts";
 import { z } from "zod";
 import { create } from "zustand";
+
+const budgetLogSyncStateSchema = z.object({
+  lastSyncAt: z.number(),
+  iterationIds: z.array(z.number()),
+});
+
+const budgetLogSyncApi = createLocalStorageApi<BudgetLogSyncState | null>(
+  "tmetric_budget_log_sync",
+  (data) => {
+    const result = budgetLogSyncStateSchema.safeParse(data);
+    return result.success ? result.data : null;
+  },
+  null,
+);
 
 type Preferences = {
   dangerMode: boolean;
@@ -114,6 +129,13 @@ export function createPreferenceService(): PreferenceService {
     },
     setTimelineView: async (partialPrefs: Partial<TimelineViewPreferences>) => {
       await useTimelineViewStore.getState().setPreferences(partialPrefs);
+    },
+    getBudgetLogSyncState: async () => {
+      const v = await budgetLogSyncApi.read();
+      return v ?? null;
+    },
+    setBudgetLogSyncState: async (state: BudgetLogSyncState) => {
+      await budgetLogSyncApi.write(state);
     },
   };
 }

@@ -30,5 +30,7 @@ export function createPreferenceService(config: {
     setTimelineView: async () => {
       return;
     },
+    getBudgetLogSyncState: async () => null,
+    setBudgetLogSyncState: async () => {},
   };
 }
