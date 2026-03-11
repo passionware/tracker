@@ -1,45 +1,48 @@
+import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
 import { createBillingApi } from "@/api/billing/billing.api.http.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createCockpitCubeReportsApi } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.http.ts";
 import { createCockpitTenantsApi } from "@/api/cockpit-tenants/cockpit-tenants.api.http.ts";
 import { createContractorApi } from "@/api/contractor/contractor.api.http.ts";
+import { CostQuery, costQuerySchema } from "@/api/cost/cost.api";
 import { createCostApi } from "@/api/cost/cost.api.http.ts";
 import { myExchangeApi } from "@/api/exchange/exchange.api.connected.ts";
 import { createGeneratedReportSourceApi } from "@/api/generated-report-source/generated-report-source.api.http";
-import { createTmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api.http";
-import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myIterationTriggerApi } from "@/api/iteration-trigger/iteration-trigger.api.connected.ts";
+import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
+import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
-import { createVariableApi } from "@/api/variable/variable.api.http.ts";
-import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
-import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
-import { CostQuery, costQuerySchema } from "@/api/cost/cost.api";
+import { ReportQuery, reportQuerySchema } from "@/api/reports/reports.api.ts";
 import {
   DashboardQuery,
   dashboardQuerySchema,
 } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
-import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
-import { ReportQuery, reportQuerySchema } from "@/api/reports/reports.api.ts";
+import { createTmetricDashboardCacheApi } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api.http";
 import { UserQuery, userQuerySchema } from "@/api/user/user.api";
 import {
   VariableQuery,
   variableQuerySchema,
 } from "@/api/variable/variable.api";
+import { createVariableApi } from "@/api/variable/variable.api.http.ts";
+import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
+import { clientCockpitSupabase } from "@/core/clientSupabase.connected.ts";
 import { FrontServices } from "@/core/frontServices.ts";
 import { myQueryClient } from "@/core/query.connected.ts";
 import { mySupabase } from "@/core/supabase.connected.ts";
-import { clientCockpitSupabase } from "@/core/clientSupabase.connected.ts";
+import { createClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.impl.ts";
+import { createCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.impl.ts";
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { myDialogService } from "@/services/front/DialogService/DialogService.impl.connected";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
-import { createTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.impl.ts";
 import { createReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.impl.tsx";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
+import { createTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.impl.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
 import { createMessageService } from "@/services/internal/MessageService/MessageService.impl.ts";
 import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.impl.ts";
@@ -51,12 +54,10 @@ import { createClientService } from "@/services/io/ClientService/ClientService.i
 import { createCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.impl.ts";
 import { createContractorService } from "@/services/io/ContractorService/ContractorService.impl.ts";
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
-import { createClientCubeReportService } from "@/services/cockpit/ClientCubeReportService/ClientCubeReportService.impl.ts";
-import { createCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.impl.ts";
 import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
 import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
-import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.impl.ts";
+import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
@@ -68,7 +69,6 @@ import { maybe } from "@passionware/monads";
 import { createSimpleEvent } from "@passionware/simple-event";
 import { useRef } from "react";
 import { NavigateFunction, useNavigate } from "react-router-dom";
-import { myDialogService } from "@/services/front/DialogService/DialogService.impl.connected";
 
 const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
@@ -288,7 +288,6 @@ export const myServices = {
       projectService,
       projectIterationService,
       expressionService,
-      mutationService,
     },
   }),
 } satisfies FrontServices;
