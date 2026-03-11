@@ -63,6 +63,34 @@ export interface MutationApi {
     iterationId: number,
     payload: Partial<ProjectIterationPayload>,
   ) => Promise<void>;
+  /** Log a budget target change (call after updating target). Billing snapshot optional when not available. */
+  logBudgetTargetChange: (
+    iterationId: number,
+    newTargetAmount: number | null,
+    billingSnapshot?: { amount: number; currency: string } | null,
+  ) => Promise<void>;
+  /** Update a single budget target log entry (date, target and/or billing snapshot). */
+  updateBudgetTargetLogEntry: (
+    entryId: number,
+    payload: {
+      createdAt?: Date | string | null;
+      newTargetAmount?: number | null;
+      billingSnapshotAmount?: number | null;
+      billingSnapshotCurrency?: string | null;
+    },
+  ) => Promise<void>;
+  /** Delete a budget target log entry. */
+  deleteBudgetTargetLogEntry: (entryId: number) => Promise<void>;
+  /** Insert a budget target log entry (e.g. for manual history entry). */
+  insertBudgetTargetLogEntry: (
+    iterationId: number,
+    payload: {
+      createdAt?: Date | string | null;
+      newTargetAmount?: number | null;
+      billingSnapshotAmount?: number | null;
+      billingSnapshotCurrency?: string | null;
+    },
+  ) => Promise<void>;
   bulkEditProjectIteration: (
     iterationIds: number[],
     payload: Partial<ProjectIterationPayload>,

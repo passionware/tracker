@@ -131,6 +131,22 @@ export function createMutationService(
       onActionAccessor.get()("Editing project iteration");
       await wait();
     },
+    logBudgetTargetChange: async () => {
+      onActionAccessor.get()("Logging budget trigger change");
+      await wait();
+    },
+    updateBudgetTargetLogEntry: async () => {
+      onActionAccessor.get()("Updating budget target log entry");
+      await wait();
+    },
+    deleteBudgetTargetLogEntry: async () => {
+      onActionAccessor.get()("Deleting budget target log entry");
+      await wait();
+    },
+    insertBudgetTargetLogEntry: async () => {
+      onActionAccessor.get()("Inserting budget target log entry");
+      await wait();
+    },
     createProjectIterationPosition: async () => {
       onActionAccessor.get()("Creating project iteration position");
       await wait();
