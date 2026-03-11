@@ -5,6 +5,12 @@ export interface TimelineViewPreferences {
   groupBy: "contractor" | "client" | "workspace" | "projectIteration";
 }
 
+/** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
+export interface BudgetLogSyncState {
+  lastSyncAt: number;
+  iterationIds: number[];
+}
+
 export interface PreferenceService {
   useIsDangerMode: () => boolean;
   getIsDangerMode: () => boolean;
@@ -14,6 +20,8 @@ export interface PreferenceService {
   setTimelineView: (
     preferences: Partial<TimelineViewPreferences>,
   ) => Promise<void>;
+  getBudgetLogSyncState: () => Promise<BudgetLogSyncState | null>;
+  setBudgetLogSyncState: (state: BudgetLogSyncState) => Promise<void>;
 }
 
 export interface WithPreferenceService {
