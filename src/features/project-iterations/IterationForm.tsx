@@ -28,10 +28,14 @@ import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 export interface ProjectIterationFormProps {
-  defaultValues?: Partial<ProjectIterationPayload>;
+  /** budgetTriggerAmount is form-only (not part of iteration payload); used for "update trigger" log. */
+  defaultValues?: Partial<ProjectIterationPayload> & {
+    budgetTriggerAmount?: number | null;
+  };
   onSubmit: (
     data: ProjectIterationPayload,
     changes: Partial<ProjectIterationPayload>,
+    extra?: { budgetTriggerAmount: number | null },
   ) => Promise<void>;
   onCancel: () => void;
   mode: "create" | "edit";
@@ -45,6 +49,7 @@ type FormModel = {
   projectId: number;
   ordinalNumber: number;
   currency: string;
+  budgetTriggerAmount: string;
 };
 
 export function ProjectIterationForm(props: ProjectIterationFormProps) {
@@ -59,12 +64,32 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
       projectId: props.defaultValues?.projectId ?? 0,
       ordinalNumber: props.defaultValues?.ordinalNumber ?? 0,
       currency: props.defaultValues?.currency ?? "eur",
+      budgetTriggerAmount:
+        props.defaultValues?.budgetTriggerAmount != null
+          ? String(props.defaultValues.budgetTriggerAmount)
+          : "",
     },
   });
 
   const processingPromise = promiseState.useRemoteData<void>();
 
   function handleSubmit(data: FormModel) {
+    const rawBudget =
+      props.mode === "create"
+        ? data.budgetTriggerAmount.trim() === ""
+          ? null
+          : Number(data.budgetTriggerAmount)
+        : null;
+    if (
+      props.mode === "create" &&
+      rawBudget !== null &&
+      (Number.isNaN(rawBudget) || rawBudget < 0)
+    ) {
+      form.setError("budgetTriggerAmount", {
+        message: "Budget target must be a non-negative number",
+      });
+      return;
+    }
     const allData: ProjectIterationPayload = {
       ordinalNumber: data.ordinalNumber || 1,
       periodStart: maybe.getOrThrow(
@@ -77,8 +102,12 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
       projectId: maybe.getOrThrow(data.projectId, "Project is required"),
       currency: data.currency,
     };
+    const extra =
+      props.mode === "create"
+        ? { budgetTriggerAmount: rawBudget ?? null }
+        : undefined;
     void processingPromise.track(
-      props.onSubmit(allData, getDirtyFields(allData, form)),
+      props.onSubmit(allData, getDirtyFields(allData, form), extra),
     );
   }
 
@@ -177,6 +206,33 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
             </FormItem>
           )}
         />
+        {props.mode === "create" && (
+          <FormField
+            control={form.control}
+            name="budgetTriggerAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Budget target (billing target)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="Optional"
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Billing budget target for this iteration (in iteration
+                  currency). Update from dashboard or iteration detail after
+                  create if needed.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="description"

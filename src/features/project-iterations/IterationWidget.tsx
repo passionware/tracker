@@ -6,6 +6,7 @@ import { ProjectBreadcrumbView } from "@/features/_common/elements/breadcrumbs/P
 import { ProjectIterationBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectIterationBreadcrumb.tsx";
 import { ProjectListBreadcrumb } from "@/features/_common/elements/breadcrumbs/ProjectListBreadcrumb.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
+import { BudgetTriggerWidget } from "@/features/project-iterations/widgets/BudgetTriggerWidget.tsx";
 import { Details } from "@/features/project-iterations/widgets/Details.tsx";
 import { EventsWidget } from "@/features/project-iterations/widgets/EventsWidget.tsx";
 import { GeneratedReportDetail } from "@/features/project-iterations/widgets/GeneratedReportDetail.tsx";
@@ -49,6 +50,10 @@ export function IterationWidget(
     >
       <div className="space-y-4 w-full">
         <Details {...props} />
+        <BudgetTriggerWidget
+          projectIterationId={props.projectIterationId}
+          services={props.services}
+        />
         <IterationTabs {...props} />
         <Routes>
           <Route
