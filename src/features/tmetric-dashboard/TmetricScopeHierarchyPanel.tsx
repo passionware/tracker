@@ -16,7 +16,12 @@ import type { GenericReport } from "@/services/io/_common/GenericReport";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd, type RemoteData } from "@passionware/monads";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import type { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
+import { IterationBudgetDetail } from "./IterationBudgetMeter";
 import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 import {
   buildScopeHierarchy,
@@ -42,6 +47,8 @@ export interface TmetricScopeHierarchyPanelProps {
   cachedReport?: { data: GenericReport } | null;
   /** When set, expand/collapse state is persisted to localStorage under this key (e.g. workspaceId-clientId). */
   persistenceKey?: string;
+  /** When set, iteration labels become nav links to the iteration detail page (clientId comes from each by-client card). */
+  workspaceId?: WorkspaceSpec;
 }
 
 export function TmetricScopeHierarchyPanel({
@@ -51,6 +58,7 @@ export function TmetricScopeHierarchyPanel({
   projectsMap,
   cachedReport = null,
   persistenceKey,
+  workspaceId,
 }: TmetricScopeHierarchyPanelProps) {
   const scopeHierarchy = useMemo(
     () => buildScopeHierarchy(projectsData, iterationsForScope, projectsMap),
@@ -100,6 +108,8 @@ export function TmetricScopeHierarchyPanel({
           set.add(t.billingCurrency.toUpperCase());
         }
       }
+    for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations))
+      set.add(row.iteration.currency.toUpperCase());
     return set.size ? Array.from(set) : ["EUR"];
   }, [scopeHierarchyTotals, scopeHierarchyWithRates, cachedReport]);
 
@@ -187,6 +197,8 @@ export function TmetricScopeHierarchyPanel({
   const [expandedIterations, setExpandedIterations] = useState<Set<number>>(
     () => new Set(),
   );
+  /** When true, budget widget shows "set new target" (popover + form in inline detail). */
+  const [byClientEditMode, setByClientEditMode] = useState(false);
 
   useEffect(() => {
     if (!persistenceKey) {
@@ -865,12 +877,27 @@ export function TmetricScopeHierarchyPanel({
 
       {scopeHierarchyTotals != null && scopeHierarchyWithRates.length > 0 && (
         <div className="mt-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold">By client</h3>
-            <p className="text-sm text-muted-foreground">
-              Billing breakdown per client: iterations and totals (hours,
-              billing rate, billing).
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold">By client</h3>
+              <p className="text-sm text-muted-foreground">
+                Billing breakdown per client: iterations and totals (hours,
+                billing rate, billing).
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="by-client-edit-mode"
+                checked={byClientEditMode}
+                onCheckedChange={setByClientEditMode}
+              />
+              <Label
+                htmlFor="by-client-edit-mode"
+                className="text-sm cursor-pointer"
+              >
+                Edit mode
+              </Label>
+            </div>
           </div>
           <div
             className="grid gap-4"
@@ -884,8 +911,8 @@ export function TmetricScopeHierarchyPanel({
               const reportData = cachedReport?.data ?? null;
               return (
                 <Card key={`by-client-${clientId}`}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
+                  <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
+                    <CardTitle className="text-base shrink min-w-0">
                       <ClientWidget
                         clientId={maybe.of(clientId)}
                         services={services}
@@ -893,10 +920,10 @@ export function TmetricScopeHierarchyPanel({
                         size="sm"
                       />
                     </CardTitle>
-                    <CardDescription>
+                    <span className="text-xs text-muted-foreground shrink-0">
                       {iterations.length} iteration
                       {iterations.length !== 1 ? "s" : ""}
-                    </CardDescription>
+                    </span>
                   </CardHeader>
                   <CardContent>
                     <FinancialHierarchyGrid variant="billingOnly">
@@ -905,7 +932,12 @@ export function TmetricScopeHierarchyPanel({
                         const iter = scopeHierarchyTotals!.byIteration.get(
                           iteration.id,
                         );
-                        if (!iter) return [];
+                        const totals = iter ?? {
+                          billing: [],
+                          cost: [],
+                          profit: [],
+                          hours: 0,
+                        };
                         const startDate = calendarDateToJSDate(
                           iteration.periodStart,
                         );
@@ -919,13 +951,32 @@ export function TmetricScopeHierarchyPanel({
                                 iteration.id,
                               )
                             : [];
+                        const rowKey = `by-client-${clientId}-iter-${iteration.id}`;
                         return [
                           <FinancialHierarchyGrid.Row
-                            key={`by-client-${clientId}-iter-${iteration.id}`}
+                            key={`${rowKey}-row`}
                             label={
-                              <span className="text-sm font-medium whitespace-nowrap">
-                                {projectName} #{iteration.ordinalNumber}
-                              </span>
+                              <div className="flex flex-col gap-1 min-w-0">
+                                {workspaceId != null ? (
+                                  <Link
+                                    to={services.routingService
+                                      .forWorkspace(workspaceId)
+                                      .forClient(clientId)
+                                      .forProject(
+                                        iteration.projectId.toString(),
+                                      )
+                                      .forIteration(iteration.id.toString())
+                                      .root()}
+                                    className="text-sm font-medium whitespace-nowrap shrink-0 text-primary hover:underline underline-offset-2"
+                                  >
+                                    {projectName} #{iteration.ordinalNumber}
+                                  </Link>
+                                ) : (
+                                  <span className="text-sm font-medium whitespace-nowrap shrink-0">
+                                    {projectName} #{iteration.ordinalNumber}
+                                  </span>
+                                )}
+                              </div>
                             }
                           >
                             <FinancialHierarchyGrid.Cell
@@ -941,7 +992,7 @@ export function TmetricScopeHierarchyPanel({
                               col={2}
                               className="py-1.5 text-xs text-right tabular-nums"
                             >
-                              {iter.hours.toFixed(1)}
+                              {totals.hours.toFixed(1)}
                             </FinancialHierarchyGrid.Cell>
                             <FinancialHierarchyGrid.Cell
                               col={3}
@@ -949,10 +1000,10 @@ export function TmetricScopeHierarchyPanel({
                             >
                               <CurrencyValueWidget
                                 values={
-                                  iter.hours > 0
+                                  totals.hours > 0
                                     ? divideCurrencyValues(
-                                        iter.billing,
-                                        iter.hours,
+                                        totals.billing,
+                                        totals.hours,
                                       )
                                     : []
                                 }
@@ -965,7 +1016,7 @@ export function TmetricScopeHierarchyPanel({
                               className="py-1.5 pr-2 text-xs text-right tabular-nums"
                             >
                               <CurrencyValueWidget
-                                values={iter.billing}
+                                values={totals.billing}
                                 services={services}
                                 exchangeService={services.exchangeService}
                               />
@@ -1012,9 +1063,7 @@ export function TmetricScopeHierarchyPanel({
                                         },
                                       ]}
                                       services={services}
-                                      exchangeService={
-                                        services.exchangeService
-                                      }
+                                      exchangeService={services.exchangeService}
                                     />
                                   </FinancialHierarchyGrid.Cell>
                                   <FinancialHierarchyGrid.Cell
@@ -1029,15 +1078,30 @@ export function TmetricScopeHierarchyPanel({
                                         },
                                       ]}
                                       services={services}
-                                      exchangeService={
-                                        services.exchangeService
-                                      }
+                                      exchangeService={services.exchangeService}
                                     />
                                   </FinancialHierarchyGrid.Cell>
                                 </FinancialHierarchyGrid.Row>
                               ))}
                             </FinancialHierarchyGrid.Subgrid>
                           ) : null,
+                          <div
+                            key={`${rowKey}-detail`}
+                            className="border-t border-border/30 p-3"
+                            style={{ gridColumn: "2 / -1" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <IterationBudgetDetail
+                              iteration={iteration}
+                              billingValues={totals.billing}
+                              rateMap={rateMap}
+                              targetCurrency={targetCurrency}
+                              iterationLabel={`${projectName} #${iteration.ordinalNumber}`}
+                              projectName={projectName}
+                              services={services}
+                              editMode={byClientEditMode}
+                            />
+                          </div>,
                         ].filter(Boolean);
                       })}
                       {clientTotals != null && (

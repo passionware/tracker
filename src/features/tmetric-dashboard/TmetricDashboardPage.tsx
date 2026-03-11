@@ -33,6 +33,7 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
+  Database,
   Grid3X3,
   RefreshCw,
   TrendingUp,
@@ -45,6 +46,7 @@ import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
 import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
+import { useBudgetLogSync } from "./useBudgetLogSync";
 import { useTmetricDashboardData } from "./useTmetricDashboardData";
 import type { TimePreset } from "./tmetric-dashboard.utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -193,7 +195,11 @@ export function TmetricDashboardPage(
     basicInfo,
     reportAsSource,
     timeline,
+    scope,
   } = data;
+
+  const { syncBudgetLogNow, isSyncing: isSyncingBudgetLog } =
+    useBudgetLogSync({ services, iterations: iterationsForScope, scope });
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -294,6 +300,21 @@ export function TmetricDashboardPage(
               itemOverflowMessage={(value) => `${value.length} iterations`}
             />
 
+            <Button
+              onClick={() => syncBudgetLogNow()}
+              disabled={
+                isSyncingBudgetLog ||
+                !canLoadOrRefresh ||
+                iterationsForScope.length === 0
+              }
+              variant="outline"
+              title="Sync budget target log from TMetric (today and missing days)"
+            >
+              <Database
+                className={`mr-2 h-4 w-4 ${isSyncingBudgetLog ? "animate-pulse" : ""}`}
+              />
+              Sync budget log
+            </Button>
             <Button
               onClick={handleRefresh}
               disabled={isRefreshing || !canLoadOrRefresh}
@@ -463,6 +484,7 @@ export function TmetricDashboardPage(
                 projectsMap={projectsMap}
                 cachedReport={reportData}
                 persistenceKey={`${String(workspaceId)}-${String(clientId)}`}
+                workspaceId={workspaceId}
               />
             ))}
 

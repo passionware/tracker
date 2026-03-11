@@ -566,6 +566,108 @@ export interface ScopeHierarchyTotals {
 }
 
 /**
+ * Cumulative billing per calendar day for one iteration from report time entries.
+ * Returns one row per day in [periodStart, periodEnd] with cumulative sum (in iteration currency) up to end of that day.
+ * Used to regenerate budget target log with daily snapshots from TMetric data.
+ */
+export function getCumulativeBillingByDay(
+  report: GenericReport,
+  iterationId: number,
+  periodStart: Date,
+  periodEnd: Date,
+  iterationCurrency: string,
+  rateMap: Map<string, number>,
+): Array<{ date: Date; cumulativeBilling: number }> {
+  const dayBuckets = new Map<number, number>();
+  for (const entry of report.timeEntries) {
+    if (getIterationIdFromRoleKey(entry.roleId) !== iterationId) continue;
+    let rate: RoleRate;
+    try {
+      rate = getMatchingRate(report, entry);
+    } catch {
+      continue;
+    }
+    const hours =
+      (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
+    const billing = hours * rate.billingRate;
+    const inIter = sumCurrencyValuesInTarget(
+      [{ amount: billing, currency: rate.billingCurrency }],
+      rateMap,
+      iterationCurrency,
+    );
+    const dayStart = startOfDay(entry.startAt).getTime();
+    dayBuckets.set(dayStart, (dayBuckets.get(dayStart) ?? 0) + inIter);
+  }
+  const startTs = startOfDay(periodStart).getTime();
+  const endTs = endOfDay(periodEnd).getTime();
+  const days: number[] = [];
+  for (let t = startTs; t <= endTs; t += 24 * 60 * 60 * 1000) {
+    days.push(t);
+  }
+  let cumulative = 0;
+  return days.map((dayStart) => {
+    cumulative += dayBuckets.get(dayStart) ?? 0;
+    return {
+      date: endOfDay(new Date(dayStart)),
+      cumulativeBilling: cumulative,
+    };
+  });
+}
+
+/** Collect all billing currencies from report role types. */
+export function getReportBillingCurrencies(
+  report: GenericReport,
+): Set<string> {
+  const set = new Set<string>();
+  for (const role of Object.values(report.definitions.roleTypes)) {
+    for (const r of role.rates) {
+      set.add(r.billingCurrency);
+    }
+  }
+  return set;
+}
+
+/**
+ * Billing totals per iteration from report time entries (by iteration id only).
+ * Used e.g. to log billing-only budget trigger snapshots after TMetric refresh.
+ */
+export function getBillingByIteration(
+  report: GenericReport,
+  iterationIds: Set<number>,
+): Map<number, CurrencyValue[]> {
+  const byIteration = new Map<
+    number,
+    { billing: Record<string, number> }
+  >();
+  const ensureMap = (iterId: number) => {
+    if (!byIteration.has(iterId)) {
+      byIteration.set(iterId, { billing: {} });
+    }
+  };
+  for (const entry of report.timeEntries) {
+    const iterationId = getIterationIdFromRoleKey(entry.roleId);
+    if (iterationId == null || !iterationIds.has(iterationId)) continue;
+    let matchingRate: RoleRate;
+    try {
+      matchingRate = getMatchingRate(report, entry);
+    } catch {
+      continue;
+    }
+    const hours =
+      (entry.endAt.getTime() - entry.startAt.getTime()) / (1000 * 60 * 60);
+    const billing = hours * matchingRate.billingRate;
+    ensureMap(iterationId);
+    addToBudget(byIteration.get(iterationId)!.billing, billing, matchingRate.billingCurrency);
+  }
+  return new Map(
+    Array.from(byIteration.entries()).map(([id, rec]) => [
+      id,
+      budgetToCurrencyValues(rec.billing),
+    ]),
+  );
+}
+
+/**
  * Computes total cost, billing, and profit per client and per iteration from report time entries.
  * Uses roleId (iter_XX_contractor_YY) to assign entries to iterations; clients from scope hierarchy.
  */

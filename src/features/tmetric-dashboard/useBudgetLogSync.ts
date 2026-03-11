@@ -1,7 +1,10 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import type { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { WithFrontServices } from "@/core/frontServices";
-import { getCumulativeBillingByDay } from "@/features/tmetric-dashboard/tmetric-dashboard.utils";
+import {
+  getCumulativeBillingByDay,
+  getReportBillingCurrencies,
+} from "@/features/tmetric-dashboard/tmetric-dashboard.utils";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { rd } from "@passionware/monads";
 import { endOfDay, format, startOfDay } from "date-fns";
@@ -13,19 +16,6 @@ const SKIP_SYNC_IF_DONE_WITHIN_MS = 60 * 60 * 1000; // 1 hour
 /** Build rate map key. */
 function rateKey(from: string, to: string): string {
   return `${from.toUpperCase()}->${to.toUpperCase()}`;
-}
-
-/** Collect all billing currencies from report role types. */
-function getReportBillingCurrencies(
-  report: { definitions: { roleTypes: Record<string, { rates: Array<{ billingCurrency: string }> }> } },
-): Set<string> {
-  const set = new Set<string>();
-  for (const role of Object.values(report.definitions.roleTypes)) {
-    for (const r of role.rates) {
-      set.add(r.billingCurrency);
-    }
-  }
-  return set;
 }
 
 export interface UseBudgetLogSyncParams {
