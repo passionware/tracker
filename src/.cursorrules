@@ -8,3 +8,24 @@ For few files change, please avoid body, just headline
 
 # Database migration files
 Our migration files shuold never scope to specific workspace, for example "public".
+When you have several related unstaged migrations (e.g. table + policies), merge them into one migration file.
+
+# Preferences / persisted state
+Use PreferenceService for any localStorage-backed setting: define a type, zod schema, createLocalStorageApi(key, parse, defaultValue), and expose only get/set (read/write). Keep business logic (e.g. "should we skip?") in the consumer (hook/component), not in the preference service.
+Use Zod to parse stored JSON (safeParse); avoid manual type guards.
+
+# Async actions in UI
+Use promiseState.useMutation for submit/save/delete: no manual isSaving state or .then()/.catch(); use mutation.track(...) and mt.isInProgress(mutation.state) for disabled/loading. Disable submit button while in progress to avoid double-submit.
+
+# Forms
+Use react-hook-form so Enter submits: wrap inputs in <form onSubmit={form.handleSubmit(...)}>, use form.register(), and type="submit" on the button. Extract form + validation into a subwidget when it has clear boundaries and is reused or makes the parent simpler.
+
+# Schema and API boundaries
+Put schema and types next to the API that owns them (e.g. budget target log entry schema in iteration-trigger API, not project-iteration). Use Zod for parsing HTTP/storage payloads; expose a single domain type (e.g. BudgetTargetLogEntry) from the API layer.
+
+# Dead code and unused options
+Remove unused exports, components, and parameters (e.g. a component never imported, or a param always passed false). Prefer deleting over commenting out.
+
+# Avoid hardcoded lists when data-driven is possible
+Don't hardcode currency lists or similar; derive from actual data (e.g. iteration currencies) and use on-demand loading (e.g. ensureExchange) for the rest when you don't have the full set up front.
+
