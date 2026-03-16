@@ -110,6 +110,18 @@ export function useCostView(
   });
 }
 
+/**
+ * Builds a single CostEntry from cost + workspaces RDs (for useCostEntry).
+ */
+export function useCostEntryFromData(
+  cost: RemoteData<Cost>,
+  workspaces: RemoteData<Workspace[]>,
+): RemoteData<CostEntry> {
+  return rd.useMemoMap(rd.combine({ cost, workspaces }), ({ cost, workspaces }) =>
+    calculateCost(cost, workspaces),
+  );
+}
+
 function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
   const sumOfLinkedAmounts = sumBy(
     cost.linkReports,

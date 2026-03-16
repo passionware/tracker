@@ -1,6 +1,4 @@
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
-import { billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -12,9 +10,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { createEntityDrawerNodeFactory } from "@/features/_common/drawers/createEntityDrawerNodeFactory.tsx";
-import { EntityDetailDrawers } from "@/features/_common/drawers/EntityDetailDrawers.tsx";
-import { useEntityDrawerState } from "@/features/_common/drawers/useEntityDrawerState.ts";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
@@ -25,7 +21,10 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { renderError, renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import {
   SplitViewLayout,
   ViewMode,
@@ -89,7 +88,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   const [timelineGroupBy, setTimelineGroupBy] = useState<
     "contractor" | "workspace"
   >("contractor");
-  const drawerState = useEntityDrawerState();
+  const { openEntityDrawer } = useEntityDrawerContext();
   const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
 
   const viewModeItems = [
@@ -123,7 +122,10 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   ];
 
   // Get costs - we'll calculate selected IDs from the costs data
-  const costs = props.services.reportDisplayService.useCostView(query, undefined);
+  const costs = props.services.reportDisplayService.useCostView(
+    query,
+    undefined,
+  );
 
   // Calculate selected IDs from selection state and available costs
   const selectedCostIds = useMemo(() => {
@@ -171,62 +173,6 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   }
 
   const columns = useColumns(props);
-  const drawerReports = props.services.reportDisplayService.useReportView(
-    reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const drawerBillings = props.services.reportDisplayService.useBillingView(
-    billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const costById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(finalCosts)?.entries ?? []).map((cost) => [cost.id, cost]),
-      ),
-    [finalCosts],
-  );
-  const reportById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerReports)?.entries ?? []).map((report) => [
-          report.id,
-          report,
-        ]),
-      ),
-    [drawerReports],
-  );
-  const billingById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerBillings)?.entries ?? []).map((billing) => [
-          billing.id,
-          billing,
-        ]),
-      ),
-    [drawerBillings],
-  );
-  const createEntityDrawerNode = useMemo(
-    () =>
-      createEntityDrawerNodeFactory({
-        reportById,
-        costById,
-        billingById,
-        context: {
-          clientId: props.clientId,
-          workspaceId: props.workspaceId,
-        },
-        services: props.services,
-        pushEntityDrawer: drawerState.pushEntityDrawer,
-      }),
-    [
-      billingById,
-      costById,
-      drawerState.pushEntityDrawer,
-      props.clientId,
-      props.services,
-      props.workspaceId,
-      reportById,
-    ],
-  );
 
   const timelineData = rd.map(finalCosts, (costView) => {
     const timeZone = getLocalTimeZone();
@@ -276,7 +222,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         return {
           cost,
           start: toZoned(earliestReport.report.periodStart, timeZone),
-          end: toZoned(latestReport.report.periodEnd, timeZone).add({ days: 1 }),
+          end: toZoned(latestReport.report.periodEnd, timeZone).add({
+            days: 1,
+          }),
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -377,7 +325,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                 <Sun
                   className={cn(
                     "h-4 w-4",
-                    timelineDarkMode ? "text-muted-foreground" : "text-foreground",
+                    timelineDarkMode
+                      ? "text-muted-foreground"
+                      : "text-foreground",
                   )}
                 />
                 <Switch
@@ -388,7 +338,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                 <Moon
                   className={cn(
                     "h-4 w-4",
-                    timelineDarkMode ? "text-foreground" : "text-muted-foreground",
+                    timelineDarkMode
+                      ? "text-foreground"
+                      : "text-muted-foreground",
                   )}
                 />
               </div>
@@ -512,9 +464,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             }
           }}
           onRowClick={(row) => {
-            drawerState.openEntityDrawer(
-              createEntityDrawerNode({ type: "cost", id: row.id }),
-            );
+            openEntityDrawer({ type: "cost", id: row.id });
           }}
           toolbar={
             selectionState.getTotalSelected(
@@ -544,8 +494,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                     <PopoverContent className="w-80 p-4" align="start">
                       <div className="space-y-3">
                         <div className="text-sm text-slate-700">
-                          Are you sure you want to delete {selectedCostIds.length}{" "}
-                          selected cost(s)? This action cannot be undone.
+                          Are you sure you want to delete{" "}
+                          {selectedCostIds.length} selected cost(s)? This action
+                          cannot be undone.
                         </div>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm">
@@ -618,15 +569,6 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               )}
             </>
           }
-        />
-        <EntityDetailDrawers
-          entityStack={drawerState.entityStack}
-          onOpenChange={(open) => {
-            if (!open) {
-              drawerState.closeEntityDrawer();
-            }
-          }}
-          onBreadcrumbSelect={drawerState.jumpToEntityStackIndex}
         />
       </>
     );

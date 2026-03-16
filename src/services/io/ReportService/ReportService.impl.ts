@@ -32,12 +32,16 @@ export function createReportService(
       );
     },
     useReport: (id) => {
-      return useQuery(
-        {
-          queryKey: ["contractor_report", "item", id],
-          queryFn: () => api.getReport(id),
-        },
-        client,
+      return ensureIdleQuery(
+        id,
+        useQuery(
+          {
+            enabled: maybe.isPresent(id),
+            queryKey: ["contractor_report", "item", id],
+            queryFn: () => api.getReport(id!),
+          },
+          client,
+        ),
       );
     },
     ensureReport: (id) => {

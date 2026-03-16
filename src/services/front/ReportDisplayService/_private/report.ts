@@ -153,6 +153,18 @@ export function useReportView(
   });
 }
 
+/**
+ * Builds a single ReportViewEntry from report + workspaces RDs (for useReportEntry).
+ */
+export function useReportEntryFromData(
+  report: RemoteData<Report>,
+  workspaces: RemoteData<Workspace[]>,
+): RemoteData<ReportViewEntry> {
+  return rd.useMemoMap(rd.combine({ report, workspaces }), ({ report, workspaces }) =>
+    calculateReportEntry(report, workspaces),
+  );
+}
+
 function calculateReportEntry(
   report: Report,
   workspaces: Workspace[],

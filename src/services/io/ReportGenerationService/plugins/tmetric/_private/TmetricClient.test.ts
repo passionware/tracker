@@ -2,7 +2,7 @@ import { parseDate } from "@internationalized/date";
 import { describe, expect, it } from "vitest";
 import { createTMetricClient } from "./TmetricClient.ts";
 
-describe("TmetricClient", () => {
+describe.skip("TmetricClient", () => {
   it("should be able to fetch projects", async () => {
     const client = createTMetricClient({
       baseUrl: "https://app.tmetric.com/api",

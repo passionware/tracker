@@ -4,6 +4,7 @@ import { WithExpressionService } from "@/services/front/ExpressionService/Expres
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import {
   ClientSpec,
+  WithRoutingService,
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
@@ -27,6 +28,7 @@ export type BillingWidgetProps = {
     WithWorkspaceService,
     WithContractorService,
     WithMessageService,
+    WithRoutingService,
     WithExpressionService,
     WithQueryParamsService<{
       billing: import("@/api/billing/billing.api").BillingQuery;

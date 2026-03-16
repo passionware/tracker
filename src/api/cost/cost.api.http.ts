@@ -203,13 +203,14 @@ export function createCostApi(client: SupabaseClient): CostApi {
     },
     getCost: async (id) => {
       const { data, error } = await client
-        .from("cost")
-        .select("*")
-        .eq("id", id);
+        .from("cost_with_details")
+        .select("*,contractor(*), workspace(*)")
+        .eq("id", id)
+        .single();
       if (error) {
         throw error;
       }
-      return costFromHttp(parseWithDataError(cost$, data[0]));
+      return costFromHttp(parseWithDataError(cost$, data));
     },
   };
 }

@@ -239,9 +239,9 @@ describe("getMatchingRate", () => {
     const report = createMockReport(rates);
     const entry = createMockEntry("role1", "activity1", "task1", "project1");
 
-    const result = getMatchingRate(report, entry);
-
-    expect(result).toBeUndefined();
+    expect(() => getMatchingRate(report, entry)).toThrow(
+      "No matching rate found for entry",
+    );
   });
 
   it("should not match rate with non-matching activity type", () => {
@@ -260,9 +260,9 @@ describe("getMatchingRate", () => {
     const report = createMockReport(rates);
     const entry = createMockEntry("role1", "activity1", "task1", "project1");
 
-    const result = getMatchingRate(report, entry);
-
-    expect(result).toBeUndefined();
+    expect(() => getMatchingRate(report, entry)).toThrow(
+      "No matching rate found for entry",
+    );
   });
 
   it("should not match rate with non-matching task type", () => {
@@ -281,9 +281,9 @@ describe("getMatchingRate", () => {
     const report = createMockReport(rates);
     const entry = createMockEntry("role1", "activity1", "task1", "project1");
 
-    const result = getMatchingRate(report, entry);
-
-    expect(result).toBeUndefined();
+    expect(() => getMatchingRate(report, entry)).toThrow(
+      "No matching rate found for entry",
+    );
   });
 
   it("should handle multiple matching rates with same specificity", () => {

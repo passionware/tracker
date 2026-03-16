@@ -6,76 +6,108 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer.tsx";
+import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { EntityDrawerNode } from "./useEntityDrawerState.ts";
+import { entityDrawerDescriptor, getEntityStackKey } from "./descriptors";
+import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
+import { ChevronRight } from "lucide-react";
 
-export interface EntityDetailDrawersProps {
-  entityStack: EntityDrawerNode[];
-  onOpenChange: (open: boolean) => void;
-  onBreadcrumbSelect: (index: number) => void;
-}
-
-export function EntityDetailDrawers({
-  entityStack,
-  onOpenChange,
-  onBreadcrumbSelect,
-}: EntityDetailDrawersProps) {
+export function EntityDetailDrawers() {
+  const { services, entityStack, closeEntityDrawer, jumpToEntityStackIndex } =
+    useEntityDrawerContext();
   const open = entityStack.length > 0;
-  const activeNode = entityStack[entityStack.length - 1];
-  const breadcrumbItems = entityStack;
+  const activeEntity = entityStack[entityStack.length - 1] ?? null;
+
+  const breadcrumbItems = entityStack.map((entity) => ({
+    key: getEntityStackKey(entity),
+    label: entityDrawerDescriptor.getLabel(entity),
+    title: entityDrawerDescriptor.getTitle(entity),
+    tooltip: entityDrawerDescriptor.renderSmallPreview(entity, services),
+  }));
 
   return (
     <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          onOpenChange(false);
+          closeEntityDrawer();
         }
       }}
       direction="right"
     >
       <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
         <DrawerHeader>
-          <div className="flex items-start justify-between gap-2">
-            <DrawerTitle>{activeNode?.title ?? "Details"}</DrawerTitle>
-            <div>{activeNode?.renderHeaderActions?.()}</div>
-          </div>
-          <DrawerDescription>
-            Review links, amounts, and related associations.
-          </DrawerDescription>
-          {activeNode?.renderMainInfo?.()}
           {breadcrumbItems.length > 1 && (
-            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground -ml-2 -mt-2">
               {breadcrumbItems.map((item, itemIndex) => (
-                <div key={`${item.key}-${itemIndex}`} className="flex items-center gap-1">
-                  <Button
-                    size="xs"
-                    variant={
-                      itemIndex === breadcrumbItems.length - 1 ? "secondary" : "ghost"
-                    }
-                    data-no-row-open
-                    onClick={() => onBreadcrumbSelect(itemIndex)}
-                    className="h-6 px-2"
+                <div
+                  key={`${item.key}-${itemIndex}`}
+                  className="flex items-center gap-1"
+                >
+                  <SimpleTooltip
+                    light
+                    side="bottom"
+                    align="start"
+                    title={item.tooltip}
+                    contentClassName="max-w-none p-0 border-none"
                   >
-                    {item.label}
-                  </Button>
-                  {itemIndex < breadcrumbItems.length - 1 && <span>/</span>}
+                    <Button
+                      size="xs"
+                      variant={
+                        itemIndex === breadcrumbItems.length - 1
+                          ? "secondary"
+                          : "ghost"
+                      }
+                      data-no-row-open
+                      onClick={() => jumpToEntityStackIndex(itemIndex)}
+                      className="h-6 px-2"
+                    >
+                      {item.label}
+                    </Button>
+                  </SimpleTooltip>
+                  {itemIndex < breadcrumbItems.length - 1 && (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
                 </div>
               ))}
             </div>
           )}
+          <div className="flex items-start justify-between gap-2">
+            <DrawerTitle>
+              {activeEntity
+                ? entityDrawerDescriptor.getTitle(activeEntity)
+                : "Details"}
+            </DrawerTitle>
+            <div>
+              {activeEntity
+                ? entityDrawerDescriptor.renderHeaderActions?.(
+                    activeEntity,
+                    services,
+                  )
+                : null}
+            </div>
+          </div>
+          <DrawerDescription>
+            Review links, amounts, and related associations.
+          </DrawerDescription>
+          {activeEntity
+            ? entityDrawerDescriptor.renderSmallPreview(activeEntity, services)
+            : null}
         </DrawerHeader>
         <div className="px-4 pb-4 overflow-y-auto flex-1">
           <AnimatePresence mode="wait" initial={false}>
-            {activeNode ? (
+            {activeEntity ? (
               <motion.div
-                key={activeNode.key}
+                key={getEntityStackKey(activeEntity)}
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
               >
-                {activeNode.render()}
+                {entityDrawerDescriptor.renderDrawerContent(
+                  activeEntity,
+                  services,
+                )}
               </motion.div>
             ) : null}
           </AnimatePresence>

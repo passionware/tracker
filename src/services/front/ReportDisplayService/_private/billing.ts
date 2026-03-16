@@ -117,6 +117,18 @@ export function useBillingView(
   });
 }
 
+/**
+ * Builds a single BillingViewEntry from billing + workspaces RDs (for useBillingEntry).
+ */
+export function useBillingEntryFromData(
+  billing: RemoteData<Billing>,
+  workspaces: RemoteData<Workspace[]>,
+): RemoteData<BillingViewEntry> {
+  return rd.useMemoMap(rd.combine({ billing, workspaces }), ({ billing, workspaces }) =>
+    calculateBilling(billing, workspaces),
+  );
+}
+
 export function calculateBilling(
   billing: Billing,
   workspaces: Workspace[],

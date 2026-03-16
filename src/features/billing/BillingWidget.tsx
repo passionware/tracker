@@ -1,6 +1,4 @@
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { costQueryUtils } from "@/api/cost/cost.api.ts";
-import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -11,9 +9,7 @@ import {
 import { Separator } from "@/components/ui/separator.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
-import { createEntityDrawerNodeFactory } from "@/features/_common/drawers/createEntityDrawerNodeFactory.tsx";
-import { EntityDetailDrawers } from "@/features/_common/drawers/EntityDetailDrawers.tsx";
-import { useEntityDrawerState } from "@/features/_common/drawers/useEntityDrawerState.ts";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
@@ -24,7 +20,10 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { renderError, renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import {
   SplitViewLayout,
   ViewMode,
@@ -91,7 +90,7 @@ export function BillingWidget(props: BillingWidgetProps) {
   const [timelineGroupBy, setTimelineGroupBy] = useState<
     "client" | "workspace"
   >("workspace");
-  const drawerState = useEntityDrawerState();
+  const { openEntityDrawer } = useEntityDrawerContext();
   const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
 
   const viewModeItems = [
@@ -139,10 +138,11 @@ export function BillingWidget(props: BillingWidgetProps) {
   }, [selection, billings]);
 
   // Get billings with selection totals if any items are selected
-  const billingsWithSelection = props.services.reportDisplayService.useBillingView(
-    query,
-    selectedBillingIds.length > 0 ? selectedBillingIds : undefined,
-  );
+  const billingsWithSelection =
+    props.services.reportDisplayService.useBillingView(
+      query,
+      selectedBillingIds.length > 0 ? selectedBillingIds : undefined,
+    );
 
   // Use billings with selection totals if available, otherwise use regular billings
   const finalBillings =
@@ -160,7 +160,9 @@ export function BillingWidget(props: BillingWidgetProps) {
     }
 
     try {
-      await props.services.mutationService.bulkDeleteBilling(selectedBillingIds);
+      await props.services.mutationService.bulkDeleteBilling(
+        selectedBillingIds,
+      );
       setSelection(selectionState.selectNone());
       toast.success(
         `Successfully deleted ${selectedBillingIds.length} billing(s)`,
@@ -177,62 +179,6 @@ export function BillingWidget(props: BillingWidgetProps) {
   }
 
   const columns = useColumns(props);
-  const drawerReports = props.services.reportDisplayService.useReportView(
-    reportQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const drawerCosts = props.services.reportDisplayService.useCostView(
-    costQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const reportById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerReports)?.entries ?? []).map((report) => [
-          report.id,
-          report,
-        ]),
-      ),
-    [drawerReports],
-  );
-  const costById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerCosts)?.entries ?? []).map((cost) => [cost.id, cost]),
-      ),
-    [drawerCosts],
-  );
-  const billingById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(finalBillings)?.entries ?? []).map((billing) => [
-          billing.id,
-          billing,
-        ]),
-      ),
-    [finalBillings],
-  );
-  const createEntityDrawerNode = useMemo(
-    () =>
-      createEntityDrawerNodeFactory({
-        reportById,
-        costById,
-        billingById,
-        context: {
-          clientId: props.clientId,
-          workspaceId: props.workspaceId,
-        },
-        services: props.services,
-        pushEntityDrawer: drawerState.pushEntityDrawer,
-      }),
-    [
-      billingById,
-      costById,
-      drawerState.pushEntityDrawer,
-      props.clientId,
-      props.services,
-      props.workspaceId,
-      reportById,
-    ],
-  );
 
   const timelineData = rd.map(finalBillings, (billingView) => {
     const timeZone = getLocalTimeZone();
@@ -327,7 +273,8 @@ export function BillingWidget(props: BillingWidgetProps) {
           start,
           end,
           label: billing.invoiceNumber || `Billing #${billing.id}`,
-          color: getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
+          color:
+            getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
           data: billing,
         };
       },
@@ -532,9 +479,7 @@ export function BillingWidget(props: BillingWidgetProps) {
             }
           }}
           onRowClick={(row) => {
-            drawerState.openEntityDrawer(
-              createEntityDrawerNode({ type: "billing", id: row.id }),
-            );
+            openEntityDrawer({ type: "billing", id: row.id });
           }}
           toolbar={
             selectionState.getTotalSelected(
@@ -628,15 +573,6 @@ export function BillingWidget(props: BillingWidgetProps) {
               })}
             </>
           }
-        />
-        <EntityDetailDrawers
-          entityStack={drawerState.entityStack}
-          onOpenChange={(open) => {
-            if (!open) {
-              drawerState.closeEntityDrawer();
-            }
-          }}
-          onBreadcrumbSelect={drawerState.jumpToEntityStackIndex}
         />
       </>
     );
