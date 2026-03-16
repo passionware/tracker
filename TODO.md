@@ -130,11 +130,13 @@ TODO:
 
 Każdy raport ma projectIterationId, więc wiemy jakie raporty powinny być uwzględnione w danej iteracji
 Mamy iteration rules (json kolumna iteration, kopiowana z project default rules), która mówi co dodać do danej iteracji
-* np weź wszystkie raporty, i przemnóż przez env flat_rate, i dodaj jako charge do iteracji
-* np weź wszystkie raporty, i przemnóż przez env hour_rate, i dodaj jako wynagrodzenie do iteracji
-* * następnie każdy raport próbuj polinkować z wynagrodzeniem wg ustalonej strategii (np min flat rate, a reszta to jak się da)
-* * * jeśli nie da się polinkować, to zostaje jako unmatched kawałek
+
+- np weź wszystkie raporty, i przemnóż przez env flat_rate, i dodaj jako charge do iteracji
+- np weź wszystkie raporty, i przemnóż przez env hour_rate, i dodaj jako wynagrodzenie do iteracji
+- - następnie każdy raport próbuj polinkować z wynagrodzeniem wg ustalonej strategii (np min flat rate, a reszta to jak się da)
+- - - jeśli nie da się polinkować, to zostaje jako unmatched kawałek
       TODO:
       routing for 3 tabs
       linked reports + find report&link option with our existing report search component
-            
+
+            AdamW nie ma dostepu do mojego workspace, ale w jego dashboardzie aplikacja idzie przez iteracje i widzi contractora AdamBOrowski który pracuje przez workspace do którego nie ma dostępu, a wted dostaje ze tmetric_project nie jest zdefiniowany (bo RLS mu nie zwraca)
