@@ -245,7 +245,7 @@ export function BillingWidget(props: BillingWidgetProps) {
         case "partially-matched":
           return "bg-amber-500";
         case "clarified":
-          return "bg-sky-500";
+          return "bg-emerald-500";
         case "overmatched":
           return "bg-violet-500";
         case "matched":
