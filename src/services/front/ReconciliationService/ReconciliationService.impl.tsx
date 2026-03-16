@@ -1,5 +1,5 @@
 import { Billing, billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { Cost, costQueryUtils } from "@/api/cost/cost.api.ts";
+import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Report, reportQueryUtils } from "@/api/reports/reports.api.ts";
@@ -21,10 +21,8 @@ import {
 } from "./ReconciliationService.ts";
 import {
   BillingFact,
-  CostFact,
   Fact,
   LinkBillingReportFact,
-  LinkCostReportFact,
   ReportFact,
 } from "./ReconciliationService.types.ts";
 
@@ -74,20 +72,6 @@ function matchesBilling(
     billing.invoiceDate.compare(iteration.periodEnd) <= 0;
   return matchesWorkspace && matchesCurrency && matchesPeriod;
 }
-
-/**
- * Helper: Check if a cost matches a fact
- */
-function matchesCost(cost: Cost, fact: CostFact, iteration: ProjectIteration): boolean {
-  const matchesContractor =
-    cost.contractor?.id === fact.payload.contractorId ||
-    (cost.contractor === null && fact.payload.contractorId === null);
-  const matchesPeriod =
-    iteration.periodStart.compare(cost.invoiceDate) <= 0 &&
-    cost.invoiceDate.compare(iteration.periodEnd) <= 0;
-  return matchesContractor && matchesPeriod;
-}
-
 
 export function createReconciliationService(
   config: WithServices<
@@ -156,17 +140,6 @@ export function createReconciliationService(
     const reportIdToFact = new Map<number, string>(); // existingReport.id -> factUUID
     const iterationReportIds = new Set(existingReports.map((r) => r.id));
 
-    // Find costs that are already linked to reports in this iteration
-    const linkedCosts = input.costs.filter((cost) => {
-      if (!cost.linkReports || cost.linkReports.length === 0) {
-        return false;
-      }
-      return cost.linkReports.some(
-        (linkReport) =>
-          linkReport.report && iterationReportIds.has(linkReport.report.id),
-      );
-    });
-
     // Find billings that are eligible for reconciliation:
     // - Not linked to anything, OR
     // - Linked only to reports in this iteration
@@ -183,19 +156,7 @@ export function createReconciliationService(
       );
     });
 
-    // Build sets of existing links for quick lookup
-    const existingCostReportLinks = new Set<string>();
-    for (const cost of input.costs) {
-      if (cost.linkReports) {
-        for (const linkEntry of cost.linkReports) {
-          if (linkEntry.report && linkEntry.link.costId !== null) {
-            const key = `${cost.id}-${linkEntry.report.id}`;
-            existingCostReportLinks.add(key);
-          }
-        }
-      }
-    }
-
+    // Build set of existing billing-report links for quick lookup
     const existingBillingReportLinks = new Set<string>();
     for (const billing of input.billings) {
       if (billing.linkBillingReport) {
@@ -250,33 +211,9 @@ export function createReconciliationService(
         draftUuidToFact.set(f.uuid, f);
       }
 
-      // Second pass: Match cost and billing facts, and update link facts
+      // Second pass: Match billing facts and update link facts (no cost/linkCostReport)
       for (const fact of draft) {
         switch (fact.type) {
-          case "cost": {
-            const costFact = fact as CostFact;
-            if (!costFact.payload.workspaceId) {
-              continue; // Skip if no workspaceId
-            }
-            const existingCost = linkedCosts.find((c) =>
-              matchesCost(c, costFact, input.iteration),
-            );
-
-            if (existingCost) {
-              fact.action = {
-                type: "update",
-                id: existingCost.id,
-                oldValues: {
-                  netValue: existingCost.netValue,
-                  grossValue: existingCost.grossValue ?? null,
-                  currency: existingCost.currency,
-                },
-              };
-            } else {
-              fact.action = { type: "create" };
-            }
-            break;
-          }
           case "billing": {
             const billingFact = fact as BillingFact;
             const existingBilling = eligibleBillings.find((b) =>
@@ -295,52 +232,6 @@ export function createReconciliationService(
               };
             } else {
               fact.action = { type: "create" };
-            }
-            break;
-          }
-          case "linkCostReport": {
-            const linkFact = fact as LinkCostReportFact;
-            let costFact: CostFact | undefined;
-            let reportFact: ReportFact | undefined;
-
-            // Find linked cost and report facts from draft (to get updated actions)
-            for (const factUuid of linkFact.linkedFacts) {
-              const linkedFact = draftUuidToFact.get(factUuid);
-              if (!linkedFact) continue;
-              switch (linkedFact.type) {
-                case "cost":
-                  costFact = linkedFact as CostFact;
-                  break;
-                case "report":
-                  reportFact = linkedFact as ReportFact;
-                  break;
-              }
-            }
-
-            if (reportFact && costFact) {
-              const costId =
-                costFact.action.type === "update" ? costFact.action.id : null;
-              const reportId =
-                reportFact.action.type === "update" ? reportFact.action.id : null;
-
-              // Update payload with resolved IDs
-              linkFact.payload.costId = costId;
-              linkFact.payload.reportId = reportId;
-
-              // Check if link already exists (only if both IDs are available)
-              if (costId !== null && reportId !== null) {
-                const linkKey = `${costId}-${reportId}`;
-                if (existingCostReportLinks.has(linkKey)) {
-                  fact.action = { type: "ignore" };
-                  continue;
-                }
-              }
-
-              // Create new link (even if IDs are null, they'll be resolved during execution)
-              fact.action = { type: "create" };
-            } else {
-              // If linked facts not found, keep as ignore
-              fact.action = { type: "ignore" };
             }
             break;
           }
@@ -507,11 +398,9 @@ export function createReconciliationService(
         uuidToFact.set(fact.uuid, fact);
       }
 
-      // Separate facts by type for topological sorting
+      // Separate facts by type for topological sorting (report, billing, and links only; no costs)
       const reportFacts: ReportFact[] = [];
-      const costFacts: CostFact[] = [];
       const billingFacts: BillingFact[] = [];
-      const linkCostReportFacts: LinkCostReportFact[] = [];
       const linkBillingReportFacts: LinkBillingReportFact[] = [];
 
       for (const fact of facts) {
@@ -522,29 +411,23 @@ export function createReconciliationService(
           case "report":
             reportFacts.push(fact);
             break;
-          case "cost":
-            costFacts.push(fact);
-            break;
           case "billing":
             billingFacts.push(fact);
-            break;
-          case "linkCostReport":
-            linkCostReportFacts.push(fact);
             break;
           case "linkBillingReport":
             linkBillingReportFacts.push(fact);
             break;
+          case "cost":
+          case "linkCostReport":
+            // Reconciliation no longer creates costs or cost-report links; skip
+            break;
         }
       }
 
-      // Topologically sort facts:
-      // Level 1: ReportFact, CostFact, BillingFact (independent)
-      // Level 2: LinkCostReportFact, LinkBillingReportFact (depend on Level 1)
+      // Topologically sort facts: reports and billings first, then billing-report links
       const sortedFacts: Fact[] = [
         ...reportFacts,
-        ...costFacts,
         ...billingFacts,
-        ...linkCostReportFacts,
         ...linkBillingReportFacts,
       ];
 
@@ -623,72 +506,6 @@ export function createReconciliationService(
             break;
           }
 
-          case "cost": {
-            switch (fact.action.type) {
-              case "create": {
-                onLog?.({
-                  type: "create",
-                  entityType: "cost",
-                  description: `Create cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
-                  payload: JSON.parse(JSON.stringify(fact.payload)),
-                  factUuid: fact.uuid,
-                });
-                if (!dryRun) {
-                  const result =
-                    await config.services.mutationService.createCost(
-                      fact.payload,
-                    );
-                  uuidToId.set(fact.uuid, result.id);
-                  onLog?.({
-                    type: "create",
-                    entityType: "cost",
-                    description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
-                    id: result.id,
-                    payload: JSON.parse(JSON.stringify(fact.payload)),
-                    factUuid: fact.uuid,
-                  });
-                } else {
-                  dryRunCounter++;
-                  const dryRunId = `dry-${dryRunCounter}`;
-                  uuidToId.set(fact.uuid, dryRunId);
-                  onLog?.({
-                    type: "create",
-                    entityType: "cost",
-                    description: `Created cost for contractor ${fact.payload.contractorId ?? "N/A"}`,
-                    id: dryRunCounter,
-                    payload: JSON.parse(JSON.stringify(fact.payload)),
-                    factUuid: fact.uuid,
-                  });
-                }
-                break;
-              }
-              case "update": {
-                onLog?.({
-                  type: "update",
-                  entityType: "cost",
-                  description: `Update cost ${fact.action.id}`,
-                  id: fact.action.id,
-                  payload: JSON.parse(JSON.stringify(fact.payload)),
-                  oldValues: fact.action.oldValues
-                    ? JSON.parse(JSON.stringify(fact.action.oldValues))
-                    : undefined,
-                  factUuid: fact.uuid,
-                });
-                if (!dryRun) {
-                  await config.services.mutationService.editCost(
-                    fact.action.id,
-                    fact.payload,
-                  );
-                }
-                uuidToId.set(fact.uuid, fact.action.id);
-                break;
-              }
-              case "ignore":
-                break;
-            }
-            break;
-          }
-
           case "billing": {
             switch (fact.action.type) {
               case "create": {
@@ -751,92 +568,6 @@ export function createReconciliationService(
               }
               case "ignore":
                 break;
-            }
-            break;
-          }
-
-          case "linkCostReport": {
-            // Resolve IDs from linked facts
-            // In dry run, IDs can be strings like "dry-1", "dry-2", etc.
-            let costId: number | string | null = null;
-            let reportId: number | string | null = null;
-
-            for (const linkedUuid of fact.linkedFacts) {
-              const linkedFact = uuidToFact.get(linkedUuid);
-              if (!linkedFact) continue;
-
-              switch (linkedFact.type) {
-                case "cost": {
-                  switch (linkedFact.action.type) {
-                    case "update":
-                      costId = linkedFact.action.id;
-                      break;
-                    case "create": {
-                      const createdId = uuidToId.get(linkedUuid);
-                      if (createdId !== undefined) {
-                        costId = createdId;
-                      }
-                      break;
-                    }
-                    case "ignore":
-                      break;
-                  }
-                  break;
-                }
-                case "report": {
-                  switch (linkedFact.action.type) {
-                    case "update":
-                      reportId = linkedFact.action.id;
-                      break;
-                    case "create": {
-                      const createdId = uuidToId.get(linkedUuid);
-                      if (createdId !== undefined) {
-                        reportId = createdId;
-                      }
-                      break;
-                    }
-                    case "ignore":
-                      break;
-                  }
-                  break;
-                }
-                case "billing":
-                case "linkCostReport":
-                case "linkBillingReport":
-                  // Not relevant for cost-report links
-                  break;
-              }
-            }
-
-            // Only create link if both IDs are resolved
-            if (costId !== null && reportId !== null) {
-              // For logging, include the actual IDs (strings in dry run)
-              const logPayload = {
-                ...fact.payload,
-                costId,
-                reportId,
-              };
-              onLog?.({
-                type: "create",
-                entityType: "linkCostReport",
-                description: `Link cost ${costId} to report ${reportId}`,
-                payload: JSON.parse(JSON.stringify(logPayload)),
-                factUuid: fact.uuid,
-              });
-              if (!dryRun) {
-                // For actual API call, ensure IDs are numbers
-                const linkPayload = {
-                  ...fact.payload,
-                  costId: typeof costId === "string" ? 0 : costId,
-                  reportId: typeof reportId === "string" ? 0 : reportId,
-                };
-                await config.services.mutationService.linkCostAndReport(
-                  linkPayload as typeof fact.payload & {
-                    costId: number;
-                    reportId: number;
-                  },
-                );
-              }
             }
             break;
           }

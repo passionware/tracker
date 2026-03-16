@@ -723,15 +723,6 @@ export function ReconciliationView(
                 };
 
                 // Navigation handlers for header buttons
-                const handleCostHeaderClick = () => {
-                  props.services.navigationService.navigate(
-                    props.services.routingService
-                      .forWorkspace(props.workspaceId)
-                      .forClient(props.clientId)
-                      .costs(),
-                  );
-                };
-
                 const handleReportHeaderClick = () => {
                   props.services.navigationService.navigate(
                     props.services.routingService
@@ -1319,28 +1310,18 @@ export function ReconciliationView(
                   );
                 };
 
-                // Build rows for 5-column layout: (cost)(costLink)(report)(billingLink)(billing)
-                // Display facts 1:1 - each fact gets its own row
+                // Build rows for 3-column layout: (report)(billingLink)(billing) — no costs or cost-report links
                 interface ReconciliationRow {
-                  cost: CostFact | null;
-                  costLink: LinkCostReportFact | null;
                   report: ReportFact | null;
                   billingLink: LinkBillingReportFact | null;
                   billing: BillingFact | null;
                 }
 
-                // Separate facts by type
-                const costFacts = activeFacts.filter(
-                  (f): f is CostFact => f.type === "cost",
-                );
                 const reportFacts = activeFacts.filter(
                   (f): f is ReportFact => f.type === "report",
                 );
                 const billingFacts = activeFacts.filter(
                   (f): f is BillingFact => f.type === "billing",
-                );
-                const costLinkFacts = activeFacts.filter(
-                  (f): f is LinkCostReportFact => f.type === "linkCostReport",
                 );
                 const billingLinkFacts = activeFacts.filter(
                   (f): f is LinkBillingReportFact =>
@@ -1348,107 +1329,48 @@ export function ReconciliationView(
                 );
 
                 const rows: ReconciliationRow[] = [];
+                const shownBillingLinks = new Set<string>();
 
-                // Track which links have been shown to avoid duplicates
-                const shownCostLinks = new Set<string>(); // fact UUID
-                const shownBillingLinks = new Set<string>(); // fact UUID
-
-                // Step 1: Add all costs (each cost gets its own row)
-                for (const cost of costFacts) {
-                  // Find cost-report link for this cost
-                  const costLink = costLinkFacts.find(
-                    (cl) =>
-                      cl.linkedFacts.includes(cost.uuid) &&
-                      !shownCostLinks.has(cl.uuid),
-                  );
-
-                  if (costLink) {
-                    shownCostLinks.add(costLink.uuid);
-                  }
-
-                  rows.push({
-                    cost,
-                    costLink: costLink || null,
-                    report: null,
-                    billingLink: null,
-                    billing: null,
-                  });
-                }
-
-                // Step 2: Add all reports (each report gets its own row)
+                // Add all reports (each report gets its own row with its billing link)
                 for (const report of reportFacts) {
-                  // Find links for this report (only unshown ones)
-                  const costLink = costLinkFacts.find(
-                    (cl) =>
-                      cl.linkedFacts.includes(report.uuid) &&
-                      !shownCostLinks.has(cl.uuid),
-                  );
-
                   const billingLink = billingLinkFacts.find(
                     (bl) =>
                       bl.linkedFacts.includes(report.uuid) &&
                       !shownBillingLinks.has(bl.uuid),
                   );
-
-                  if (costLink) {
-                    shownCostLinks.add(costLink.uuid);
-                  }
                   if (billingLink) {
                     shownBillingLinks.add(billingLink.uuid);
                   }
-
                   rows.push({
-                    cost: null,
-                    costLink: costLink || null,
                     report,
                     billingLink: billingLink || null,
                     billing: null,
                   });
                 }
 
-                // Step 3: Add all billings (each billing gets its own row)
+                // Add all billings (each billing gets its own row)
                 for (const billing of billingFacts) {
-                  // Find first unshown billing-report link for this billing
                   const billingLink = billingLinkFacts.find(
                     (bl) =>
                       bl.linkedFacts.includes(billing.uuid) &&
                       !shownBillingLinks.has(bl.uuid),
                   );
-
                   if (billingLink) {
                     shownBillingLinks.add(billingLink.uuid);
                   }
-
                   rows.push({
-                    cost: null,
-                    costLink: null,
                     report: null,
                     billingLink: billingLink || null,
                     billing,
                   });
                 }
 
-                // Step 4: Add remaining billing-report links that weren't shown
+                // Add remaining billing-report links that weren't shown
                 for (const billingLink of billingLinkFacts) {
                   if (!shownBillingLinks.has(billingLink.uuid)) {
                     rows.push({
-                      cost: null,
-                      costLink: null,
                       report: null,
                       billingLink,
-                      billing: null,
-                    });
-                  }
-                }
-
-                // Step 5: Add remaining cost-report links that weren't shown
-                for (const costLink of costLinkFacts) {
-                  if (!shownCostLinks.has(costLink.uuid)) {
-                    rows.push({
-                      cost: null,
-                      costLink,
-                      report: null,
-                      billingLink: null,
                       billing: null,
                     });
                   }
@@ -1684,24 +1606,12 @@ export function ReconciliationView(
                 };
 
                 // Separate items by column type (only actual items, no placeholders)
-                const costItems: CostFact[] = [];
-                const costLinkItems: LinkCostReportFact[] = [];
                 const reportItems: ReportFact[] = [];
                 const billingLinkItems: LinkBillingReportFact[] = [];
                 const billingItems: BillingFact[] = [];
-
-                // Track which links have been added to avoid duplicates
-                const addedCostLinks = new Set<string>();
                 const addedBillingLinks = new Set<string>();
 
                 rows.forEach((row) => {
-                  if (row.cost) {
-                    costItems.push(row.cost);
-                  }
-                  if (row.costLink && !addedCostLinks.has(row.costLink.uuid)) {
-                    costLinkItems.push(row.costLink);
-                    addedCostLinks.add(row.costLink.uuid);
-                  }
                   if (row.report) {
                     reportItems.push(row.report);
                   }
@@ -1717,25 +1627,9 @@ export function ReconciliationView(
                   }
                 });
 
-                // Create order maps for sorting links by their target facts
-                const costOrderMap = new Map<string, number>();
-                costFacts.forEach((cost, index) => {
-                  costOrderMap.set(cost.uuid, index);
-                });
-
                 const reportOrderMap = new Map<string, number>();
                 reportFacts.forEach((report, index) => {
                   reportOrderMap.set(report.uuid, index);
-                });
-
-                // Sort cost-report links by the order of the cost they link to
-                // linkedFacts[0] is the cost UUID, linkedFacts[1] is the report UUID
-                costLinkItems.sort((a, b) => {
-                  const costUuidA = a.linkedFacts[0];
-                  const costUuidB = b.linkedFacts[0];
-                  const orderA = costOrderMap.get(costUuidA) ?? Infinity;
-                  const orderB = costOrderMap.get(costUuidB) ?? Infinity;
-                  return orderA - orderB;
                 });
 
                 // Sort report-billing links by the order of the report they link to
@@ -1750,27 +1644,8 @@ export function ReconciliationView(
 
                 return (
                   <div className="flex flex-col flex-1 min-h-0">
-                    {/* Column Headers */}
+                    {/* Column Headers: Report | Report→Billing Link | Billing */}
                     <div className="flex flex-row gap-4 pb-2 border-b border-slate-200 shrink-0">
-                      <div className="flex-1 min-w-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleCostHeaderClick();
-                          }}
-                          className="text-sm font-semibold text-slate-700 hover:text-indigo-600 active:text-indigo-700 cursor-pointer text-left transition-colors underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded relative z-10"
-                          style={{ pointerEvents: "auto" }}
-                        >
-                          Cost
-                        </button>
-                      </div>
-                      <div className="flex-1 min-w-0 text-center">
-                        <div className="text-sm font-semibold text-slate-700">
-                          Cost→Report Link
-                        </div>
-                      </div>
                       <div className="flex-1 min-w-0">
                         <button
                           type="button"
@@ -1809,28 +1684,6 @@ export function ReconciliationView(
                     {/* Columns */}
                     {rows.length > 0 ? (
                       <div className="flex flex-row gap-4 flex-1 min-h-0">
-                        {/* Cost Column */}
-                        <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
-                          <div className="space-y-3">
-                            {costItems.map((item, index) => (
-                              <div key={`cost-${item.uuid}-${index}`}>
-                                {renderItemCard("cost", item)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Cost Link Column */}
-                        <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
-                          <div className="space-y-3">
-                            {costLinkItems.map((item, index) => (
-                              <div key={`costLink-${item.uuid}-${index}`}>
-                                {renderLink(item)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
                         {/* Report Column */}
                         <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-2">
                           <div className="space-y-3">
