@@ -121,10 +121,11 @@
   .slide-out-to-right-2 {
     animation: slide-out-to-right 0.2s ease-in;
   }
+}
 
-  .list-view-row-highlight {
-    animation: list-view-row-highlight 2.5s ease-out forwards;
-  }
+/* Not in @layer utilities so it is never purged (class is added via classList in JS). */
+.list-view-row-highlight {
+  animation: list-view-row-highlight 2.5s ease-out forwards;
 }
 
 @keyframes animate-in {
