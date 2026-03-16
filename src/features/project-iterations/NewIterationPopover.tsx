@@ -71,7 +71,10 @@ export function NewIterationPopover(
             onCancel={bag.close}
             defaultValues={{
               projectId: props.projectId,
-              status: "draft",
+              status: "active",
+              ordinalNumber:
+                (rd.getOrElse(lastIteration, () => null)?.ordinalNumber ?? 0) +
+                1,
               budgetTriggerAmount: initialTarget,
             }}
             onSubmit={async (data, _changes, extra) => {
