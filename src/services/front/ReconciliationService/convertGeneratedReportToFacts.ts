@@ -7,9 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   Fact,
   ReportFact,
-  CostFact,
   BillingFact,
-  LinkCostReportFact,
   LinkBillingReportFact,
 } from "./ReconciliationService.types";
 
@@ -132,26 +130,6 @@ function createBillingDescription(
 }
 
 /**
- * Creates a descriptive cost description
- */
-function createCostDescription(
-  projectName: string,
-  contractorName: string,
-  hours: number,
-  internalRate: number,
-  currency: string,
-  costValue: number,
-): string {
-  return [
-    `Project: ${projectName}`,
-    `Contractor: ${contractorName}`,
-    `Hours: ${hours.toFixed(2)}h`,
-    `Internal Rate: ${formatRate(internalRate, currency)}`,
-    `Cost Value: ${formatCurrency(costValue, currency)}`,
-  ].join("\n");
-}
-
-/**
  * Converts a generated report to an array of facts that should exist in the system.
  * This function describes what should be in the system without checking if items already exist.
  *
@@ -210,7 +188,7 @@ export function convertGeneratedReportToFacts(
     }
   }
 
-  // Create report facts and cost facts for each contractor + rate group
+  // Create report facts for each contractor + rate group (no costs or cost-report links)
   const reportFacts: Array<
     ReportFact & {
       billingAmount: number;
@@ -218,21 +196,6 @@ export function convertGeneratedReportToFacts(
       billingUnitPrice: number;
     }
   > = [];
-  // Store temporary cost facts with their associated report UUIDs for grouping
-  const tempCostFacts: Array<{
-    costFact: CostFact;
-    reportUuid: string;
-    reportNetValue: number;
-    reportQuantity: number;
-    reportUnitPrice: number;
-    reportCurrency: string;
-  }> = [];
-  const linkCostReportFacts: Array<{
-    linkFact: LinkCostReportFact;
-    costUuid: string;
-    contractorId: number;
-    currency: string;
-  }> = [];
 
   for (const [, group] of groupedByContractorRate) {
     // Calculate total hours and cost for this group
@@ -305,174 +268,6 @@ export function convertGeneratedReportToFacts(
     };
     reportFacts.push(reportFact);
     facts.push(reportFact);
-
-    // Create temporary CostFact (will be merged later by contractor + currency)
-    const costUuid = uuidFactory();
-    const contractorName =
-      contractorNameMap.get(group.contractorId) ??
-      `Contractor #${group.contractorId}`;
-    const costDescription = createCostDescription(
-      project.name,
-      contractorName,
-      quantity,
-      unitPrice,
-      group.rate.costCurrency,
-      netValue,
-    );
-    const costFact: CostFact = {
-      uuid: costUuid,
-      type: "cost",
-      action: { type: "ignore" },
-      payload: {
-        contractorId: group.contractorId,
-        netValue,
-        grossValue: netValue, // For now, gross = net
-        currency: group.rate.costCurrency,
-        invoiceNumber: `DRAFT-COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
-        counterparty: null,
-        invoiceDate: projectIteration.periodEnd,
-        description: costDescription,
-        workspaceId: contractorWorkspaceId,
-      },
-    };
-    tempCostFacts.push({
-      costFact,
-      reportUuid,
-      reportNetValue: netValue,
-      reportQuantity: quantity,
-      reportUnitPrice: unitPrice,
-      reportCurrency: group.rate.costCurrency,
-    });
-
-    // Create LinkCostReportFact (will be updated with merged cost UUID later)
-    const linkCostReportFact: LinkCostReportFact = {
-      uuid: uuidFactory(),
-      type: "linkCostReport",
-      action: { type: "ignore" },
-      payload: {
-        costId: null, // Will be resolved during reconciliation
-        reportId: null, // Will be resolved during reconciliation
-        costAmount: netValue,
-        reportAmount: netValue,
-        description: `Link between cost and report for contractor ${group.contractorId}`,
-        breakdown: {
-          quantity,
-          unit: "h",
-          reportUnitPrice: unitPrice,
-          costUnitPrice: unitPrice,
-          exchangeRate: 1, // Same currency, so exchange rate is 1
-          reportCurrency: group.rate.costCurrency,
-          costCurrency: group.rate.costCurrency,
-        },
-      },
-      linkedFacts: [costUuid, reportUuid],
-    };
-    linkCostReportFacts.push({
-      linkFact: linkCostReportFact,
-      costUuid,
-      contractorId: group.contractorId,
-      currency: group.rate.costCurrency,
-    });
-  }
-
-  // Group cost facts by contractor + currency and merge them
-  const groupedCostsByContractorCurrency = new Map<
-    string,
-    {
-      contractorId: number;
-      currency: string;
-      workspaceId: number;
-      costFacts: typeof tempCostFacts;
-      totalNetValue: number;
-      totalGrossValue: number;
-    }
-  >();
-
-  for (const tempCost of tempCostFacts) {
-    const contractorId = tempCost.costFact.payload.contractorId;
-    if (!contractorId) {
-      // Skip costs without contractor ID
-      continue;
-    }
-    const key = `${contractorId}-${tempCost.costFact.payload.currency}`;
-
-    if (!groupedCostsByContractorCurrency.has(key)) {
-      groupedCostsByContractorCurrency.set(key, {
-        contractorId,
-        currency: tempCost.costFact.payload.currency,
-        workspaceId: tempCost.costFact.payload.workspaceId,
-        costFacts: [],
-        totalNetValue: 0,
-        totalGrossValue: 0,
-      });
-    }
-
-    const group = groupedCostsByContractorCurrency.get(key)!;
-    group.costFacts.push(tempCost);
-    group.totalNetValue += tempCost.costFact.payload.netValue;
-    group.totalGrossValue +=
-      tempCost.costFact.payload.grossValue ??
-      tempCost.costFact.payload.netValue;
-  }
-
-  // Create merged cost facts and update link facts
-  const costUuidMap = new Map<string, string>(); // old cost UUID -> new merged cost UUID
-
-  for (const [, group] of groupedCostsByContractorCurrency) {
-    const totalNet = Math.round(group.totalNetValue * 100) / 100;
-    const totalGross = Math.round(group.totalGrossValue * 100) / 100;
-
-    // Create merged cost description
-    const contractorName =
-      contractorNameMap.get(group.contractorId) ??
-      `Contractor #${group.contractorId}`;
-    const costDescriptions = group.costFacts.map(
-      (temp) => temp.costFact.payload.description,
-    );
-    const mergedCostDescription = [
-      `Contractor: ${contractorName}`,
-      `Currency: ${group.currency}`,
-      `Total Cost: ${formatCurrency(totalNet, group.currency)}`,
-      ``,
-      `Breakdown:`,
-      ...costDescriptions.map((desc, idx) => `  ${idx + 1}. ${desc}`),
-    ].join("\n");
-
-    // Create merged CostFact
-    const mergedCostUuid = uuidFactory();
-    const mergedCostFact: CostFact = {
-      uuid: mergedCostUuid,
-      type: "cost",
-      action: { type: "ignore" },
-      payload: {
-        contractorId: group.contractorId,
-        netValue: totalNet,
-        grossValue: totalGross,
-        currency: group.currency,
-        invoiceNumber: `DRAFT-COST-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-${group.contractorId}`,
-        counterparty: null,
-        invoiceDate: projectIteration.periodEnd,
-        description: mergedCostDescription,
-        workspaceId: group.workspaceId,
-      },
-    };
-    facts.push(mergedCostFact);
-
-    // Map all old cost UUIDs to the new merged cost UUID
-    for (const tempCost of group.costFacts) {
-      costUuidMap.set(tempCost.costFact.uuid, mergedCostUuid);
-    }
-  }
-
-  // Update linkCostReportFacts to use merged cost UUIDs
-  for (const linkInfo of linkCostReportFacts) {
-    const mergedCostUuid =
-      costUuidMap.get(linkInfo.costUuid) ?? linkInfo.costUuid;
-    linkInfo.linkFact.linkedFacts = [
-      mergedCostUuid,
-      linkInfo.linkFact.linkedFacts[1], // report UUID
-    ];
-    facts.push(linkInfo.linkFact);
   }
 
   // Group reports by workspace and billing currency for billing facts

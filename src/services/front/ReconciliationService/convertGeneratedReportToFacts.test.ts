@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from "vitest";
 import { convertGeneratedReportToFacts } from "./convertGeneratedReportToFacts";
 import {
   BillingFact,
-  CostFact,
   ReportFact,
 } from "./ReconciliationService.types";
 
@@ -89,7 +88,7 @@ describe("convertGeneratedReportToFacts", () => {
     originalData: {},
   });
 
-  it("should create report, cost, and link facts for real contractors with real rates", () => {
+  it("should create report, billing, and link facts for real contractors with real rates", () => {
     // Test contractors with anonymized names and adjusted rates:
     // 1: Contractor A - Cost: 40.00 EUR, Billing: 40.00 EUR
     // 2: Contractor B - Cost: 50.00 EUR, Billing: 50.00 EUR
@@ -244,6 +243,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(facts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 320,
           "billingCurrency": "EUR",
           "billingUnitPrice": 40,
@@ -272,49 +274,9 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-1",
         },
         {
-          "payload": {
-            "contractorId": 1,
-            "counterparty": null,
-            "currency": "EUR",
-            "description": "Project: Atellio - development
-      Contractor: Contractor A
-      Hours: 8.00h
-      Internal Rate: 40.00 EUR/h
-      Cost Value: 320.00 EUR",
-            "grossValue": 320,
-            "invoiceDate": [Date:2024-01-01],
-            "invoiceNumber": "DRAFT-COST-2024-01-1",
-            "netValue": 320,
-            "workspaceId": 1,
+          "action": {
+            "type": "ignore",
           },
-          "type": "cost",
-          "uuid": "uuid-2",
-        },
-        {
-          "linkedFacts": [
-            "uuid-2",
-            "uuid-1",
-          ],
-          "payload": {
-            "breakdown": {
-              "costCurrency": "EUR",
-              "costUnitPrice": 40,
-              "exchangeRate": 1,
-              "quantity": 8,
-              "reportCurrency": "EUR",
-              "reportUnitPrice": 40,
-              "unit": "h",
-            },
-            "costAmount": 320,
-            "costId": null,
-            "description": "Link between cost and report for contractor 1",
-            "reportAmount": 320,
-            "reportId": null,
-          },
-          "type": "linkCostReport",
-          "uuid": "uuid-3",
-        },
-        {
           "billingAmount": 400,
           "billingCurrency": "EUR",
           "billingUnitPrice": 50,
@@ -340,52 +302,12 @@ describe("convertGeneratedReportToFacts", () => {
             "workspaceId": 1,
           },
           "type": "report",
-          "uuid": "uuid-4",
+          "uuid": "uuid-2",
         },
         {
-          "payload": {
-            "contractorId": 2,
-            "counterparty": null,
-            "currency": "EUR",
-            "description": "Project: Atellio - development
-      Contractor: Contractor B
-      Hours: 8.00h
-      Internal Rate: 50.00 EUR/h
-      Cost Value: 400.00 EUR",
-            "grossValue": 400,
-            "invoiceDate": [Date:2024-01-01],
-            "invoiceNumber": "DRAFT-COST-2024-01-2",
-            "netValue": 400,
-            "workspaceId": 1,
+          "action": {
+            "type": "ignore",
           },
-          "type": "cost",
-          "uuid": "uuid-5",
-        },
-        {
-          "linkedFacts": [
-            "uuid-5",
-            "uuid-4",
-          ],
-          "payload": {
-            "breakdown": {
-              "costCurrency": "EUR",
-              "costUnitPrice": 50,
-              "exchangeRate": 1,
-              "quantity": 8,
-              "reportCurrency": "EUR",
-              "reportUnitPrice": 50,
-              "unit": "h",
-            },
-            "costAmount": 400,
-            "costId": null,
-            "description": "Link between cost and report for contractor 2",
-            "reportAmount": 400,
-            "reportId": null,
-          },
-          "type": "linkCostReport",
-          "uuid": "uuid-6",
-        },
-        {
           "billingAmount": 320,
           "billingCurrency": "EUR",
           "billingUnitPrice": 40,
@@ -411,52 +333,12 @@ describe("convertGeneratedReportToFacts", () => {
             "workspaceId": 1,
           },
           "type": "report",
-          "uuid": "uuid-7",
+          "uuid": "uuid-3",
         },
         {
-          "payload": {
-            "contractorId": 4,
-            "counterparty": null,
-            "currency": "PLN",
-            "description": "Project: Atellio - development
-      Contractor: Contractor C
-      Hours: 8.00h
-      Internal Rate: 150.00 PLN/h
-      Cost Value: 1200.00 PLN",
-            "grossValue": 1200,
-            "invoiceDate": [Date:2024-01-01],
-            "invoiceNumber": "DRAFT-COST-2024-01-4",
-            "netValue": 1200,
-            "workspaceId": 1,
+          "action": {
+            "type": "ignore",
           },
-          "type": "cost",
-          "uuid": "uuid-8",
-        },
-        {
-          "linkedFacts": [
-            "uuid-8",
-            "uuid-7",
-          ],
-          "payload": {
-            "breakdown": {
-              "costCurrency": "PLN",
-              "costUnitPrice": 150,
-              "exchangeRate": 1,
-              "quantity": 8,
-              "reportCurrency": "PLN",
-              "reportUnitPrice": 150,
-              "unit": "h",
-            },
-            "costAmount": 1200,
-            "costId": null,
-            "description": "Link between cost and report for contractor 4",
-            "reportAmount": 1200,
-            "reportId": null,
-          },
-          "type": "linkCostReport",
-          "uuid": "uuid-9",
-        },
-        {
           "billingAmount": 240,
           "billingCurrency": "EUR",
           "billingUnitPrice": 30,
@@ -482,52 +364,12 @@ describe("convertGeneratedReportToFacts", () => {
             "workspaceId": 1,
           },
           "type": "report",
-          "uuid": "uuid-10",
+          "uuid": "uuid-4",
         },
         {
-          "payload": {
-            "contractorId": 5,
-            "counterparty": null,
-            "currency": "PLN",
-            "description": "Project: Atellio - development
-      Contractor: Contractor D
-      Hours: 8.00h
-      Internal Rate: 120.00 PLN/h
-      Cost Value: 960.00 PLN",
-            "grossValue": 960,
-            "invoiceDate": [Date:2024-01-01],
-            "invoiceNumber": "DRAFT-COST-2024-01-5",
-            "netValue": 960,
-            "workspaceId": 1,
+          "action": {
+            "type": "ignore",
           },
-          "type": "cost",
-          "uuid": "uuid-11",
-        },
-        {
-          "linkedFacts": [
-            "uuid-11",
-            "uuid-10",
-          ],
-          "payload": {
-            "breakdown": {
-              "costCurrency": "PLN",
-              "costUnitPrice": 120,
-              "exchangeRate": 1,
-              "quantity": 8,
-              "reportCurrency": "PLN",
-              "reportUnitPrice": 120,
-              "unit": "h",
-            },
-            "costAmount": 960,
-            "costId": null,
-            "description": "Link between cost and report for contractor 5",
-            "reportAmount": 960,
-            "reportId": null,
-          },
-          "type": "linkCostReport",
-          "uuid": "uuid-12",
-        },
-        {
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -552,19 +394,22 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 240.00 EUR
 
       Total: 1280.00 EUR",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 1280,
             "totalNet": 1280,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-13",
+          "uuid": "uuid-5",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "linkedFacts": [
             "uuid-1",
-            "uuid-13",
+            "uuid-5",
           ],
           "payload": {
             "billingAmount": 320,
@@ -583,12 +428,15 @@ describe("convertGeneratedReportToFacts", () => {
             "reportId": 0,
           },
           "type": "linkBillingReport",
-          "uuid": "uuid-14",
+          "uuid": "uuid-6",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "linkedFacts": [
-            "uuid-4",
-            "uuid-13",
+            "uuid-2",
+            "uuid-5",
           ],
           "payload": {
             "billingAmount": 400,
@@ -607,12 +455,15 @@ describe("convertGeneratedReportToFacts", () => {
             "reportId": 0,
           },
           "type": "linkBillingReport",
-          "uuid": "uuid-15",
+          "uuid": "uuid-7",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "linkedFacts": [
-            "uuid-7",
-            "uuid-13",
+            "uuid-3",
+            "uuid-5",
           ],
           "payload": {
             "billingAmount": 320,
@@ -631,12 +482,15 @@ describe("convertGeneratedReportToFacts", () => {
             "reportId": 0,
           },
           "type": "linkBillingReport",
-          "uuid": "uuid-16",
+          "uuid": "uuid-8",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "linkedFacts": [
-            "uuid-10",
-            "uuid-13",
+            "uuid-4",
+            "uuid-5",
           ],
           "payload": {
             "billingAmount": 240,
@@ -655,7 +509,7 @@ describe("convertGeneratedReportToFacts", () => {
             "reportId": 0,
           },
           "type": "linkBillingReport",
-          "uuid": "uuid-17",
+          "uuid": "uuid-9",
         },
       ]
     `);
@@ -710,6 +564,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect([reportFact]).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -797,6 +654,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(reportFacts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -825,6 +685,9 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-1",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -850,7 +713,7 @@ describe("convertGeneratedReportToFacts", () => {
             "workspaceId": 1,
           },
           "type": "report",
-          "uuid": "uuid-4",
+          "uuid": "uuid-2",
         },
       ]
     `);
@@ -920,6 +783,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(reportFacts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -948,6 +814,9 @@ describe("convertGeneratedReportToFacts", () => {
           "uuid": "uuid-1",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 720,
           "billingCurrency": "EUR",
           "billingUnitPrice": 90,
@@ -973,7 +842,7 @@ describe("convertGeneratedReportToFacts", () => {
             "workspaceId": 1,
           },
           "type": "report",
-          "uuid": "uuid-4",
+          "uuid": "uuid-2",
         },
       ]
     `);
@@ -1033,6 +902,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1049,14 +921,14 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 1200.00 EUR",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 1200,
             "totalNet": 1200,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-7",
+          "uuid": "uuid-3",
         },
       ]
     `);
@@ -1116,6 +988,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1128,16 +1003,19 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 600,
             "totalNet": 600,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-7",
+          "uuid": "uuid-3",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1150,14 +1028,14 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS2",
             "totalGross": 600,
             "totalNet": 600,
             "workspaceId": 2,
           },
           "type": "billing",
-          "uuid": "uuid-9",
+          "uuid": "uuid-5",
         },
       ]
     `);
@@ -1231,6 +1109,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect(billingFacts).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1243,16 +1124,19 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 600,
             "totalNet": 600,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-7",
+          "uuid": "uuid-3",
         },
         {
+          "action": {
+            "type": "ignore",
+          },
           "payload": {
             "clientId": 10,
             "currency": "USD",
@@ -1265,14 +1149,14 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 800.00 USD
 
       Total: 800.00 USD",
-            "invoiceDate": [Date:2024-01-01],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 800,
             "totalNet": 800,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-9",
+          "uuid": "uuid-5",
         },
       ]
     `);
@@ -1314,6 +1198,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect([reportFact]).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -1388,6 +1275,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect([reportFact]).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 33.33,
           "billingCurrency": "EUR",
           "billingUnitPrice": 66.67,
@@ -1479,6 +1369,9 @@ describe("convertGeneratedReportToFacts", () => {
     expect([reportFact]).toMatchInlineSnapshot(`
       [
         {
+          "action": {
+            "type": "ignore",
+          },
           "billingAmount": 600,
           "billingCurrency": "EUR",
           "billingUnitPrice": 75,
@@ -1551,33 +1444,12 @@ describe("convertGeneratedReportToFacts", () => {
     expect(linkFacts).toMatchInlineSnapshot(`
       [
         {
-          "linkedFacts": [
-            "uuid-2",
-            "uuid-1",
-          ],
-          "payload": {
-            "breakdown": {
-              "costCurrency": "EUR",
-              "costUnitPrice": 50,
-              "exchangeRate": 1,
-              "quantity": 8,
-              "reportCurrency": "EUR",
-              "reportUnitPrice": 50,
-              "unit": "h",
-            },
-            "costAmount": 400,
-            "costId": null,
-            "description": "Link between cost and report for contractor 1",
-            "reportAmount": 400,
-            "reportId": null,
+          "action": {
+            "type": "ignore",
           },
-          "type": "linkCostReport",
-          "uuid": "uuid-3",
-        },
-        {
           "linkedFacts": [
             "uuid-1",
-            "uuid-4",
+            "uuid-2",
           ],
           "payload": {
             "billingAmount": 600,
@@ -1596,7 +1468,7 @@ describe("convertGeneratedReportToFacts", () => {
             "reportId": 0,
           },
           "type": "linkBillingReport",
-          "uuid": "uuid-5",
+          "uuid": "uuid-3",
         },
       ]
     `);
@@ -1636,30 +1508,15 @@ describe("convertGeneratedReportToFacts", () => {
       uuidFactory,
     );
 
-    const costFact = facts.find((f) => f.type === "cost") as CostFact;
     const billingFact = facts.find((f) => f.type === "billing") as BillingFact;
-    expect([costFact, billingFact]).toMatchInlineSnapshot(`
+    expect(facts.some((f) => f.type === "cost")).toBe(false);
+    expect([undefined, billingFact]).toMatchInlineSnapshot(`
       [
+        undefined,
         {
-          "payload": {
-            "contractorId": 1,
-            "counterparty": null,
-            "currency": "EUR",
-            "description": "Project: Test Project
-      Contractor: Contractor #1
-      Hours: 8.00h
-      Internal Rate: 50.00 EUR/h
-      Cost Value: 400.00 EUR",
-            "grossValue": 400,
-            "invoiceDate": [Date:2024-03-15],
-            "invoiceNumber": "DRAFT-COST-2024-03-1",
-            "netValue": 400,
-            "workspaceId": 1,
+          "action": {
+            "type": "ignore",
           },
-          "type": "cost",
-          "uuid": "uuid-2",
-        },
-        {
           "payload": {
             "clientId": 10,
             "currency": "EUR",
@@ -1672,14 +1529,14 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
-            "invoiceDate": [Date:2024-03-15],
+            "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-03-WS1",
             "totalGross": 600,
             "totalNet": 600,
             "workspaceId": 1,
           },
           "type": "billing",
-          "uuid": "uuid-4",
+          "uuid": "uuid-2",
         },
       ]
     `);

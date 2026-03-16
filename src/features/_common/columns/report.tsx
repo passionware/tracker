@@ -218,7 +218,7 @@ export const reportColumns = {
                       billed: "positive",
                       "partially-billed": "warning",
                       uncovered: "destructive",
-                      clarified: "secondary",
+                      clarified: "positive",
                     } as const
                   )[info.getValue()]
                 }
@@ -269,7 +269,7 @@ export const reportColumns = {
                     billed: "positive",
                     "partially-billed": "warning",
                     uncovered: "destructive",
-                    clarified: "secondary",
+                    clarified: "positive",
                   } as const
                 )[info.getValue()]
               }
@@ -349,7 +349,7 @@ export const reportColumns = {
                       compensated: "positive",
                       "partially-compensated": "warning",
                       uncompensated: "destructive",
-                      clarified: "secondary",
+                      clarified: "positive",
                     } as const
                   )[info.getValue()]
                 }
@@ -401,7 +401,7 @@ export const reportColumns = {
                     compensated: "positive",
                     "partially-compensated": "warning",
                     uncompensated: "destructive",
-                    clarified: "secondary",
+                    clarified: "positive",
                   } as const
                 )[info.getValue()]
               }

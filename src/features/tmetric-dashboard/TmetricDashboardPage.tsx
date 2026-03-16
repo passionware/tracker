@@ -45,6 +45,7 @@ import { TmetricContractorDashboard } from "./TmetricContractorDashboard";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
 import { TmetricIterationBarChart } from "./TmetricIterationBarChart";
+import { TmetricNoOverlapMessage } from "./TmetricNoOverlapMessage";
 import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import { useBudgetLogSync } from "./useBudgetLogSync";
 import { useTmetricDashboardData } from "./useTmetricDashboardData";
@@ -185,6 +186,7 @@ export function TmetricDashboardPage(
     refreshMutation,
     projectsData,
     iterationsForScope,
+    iterationRange,
     projectsMap,
     iterationPickerItems,
     contractorIterationBreakdown,
@@ -198,8 +200,17 @@ export function TmetricDashboardPage(
     scope,
   } = data;
 
-  const { syncBudgetLogNow, isSyncing: isSyncingBudgetLog } =
-    useBudgetLogSync({ services, iterations: iterationsForScope, scope });
+  const { syncBudgetLogNow, isSyncing: isSyncingBudgetLog } = useBudgetLogSync({
+    services,
+    iterations: iterationsForScope,
+    scope,
+  });
+
+  const periodDoesNotOverlapIterations =
+    iterationsForScope.length > 0 &&
+    iterationRange &&
+    start === null &&
+    end === null;
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -370,11 +381,17 @@ export function TmetricDashboardPage(
           .journey(
             rd.combine({ cachedReportQuery, contractorNameMap, timeline }),
           )
-          .wait(() => (
-            <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
-              <Skeleton className="h-[400px] w-full max-w-4xl rounded-md" />
-            </div>
-          ))
+          .wait(() =>
+            periodDoesNotOverlapIterations ? (
+              <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+                <TmetricNoOverlapMessage />
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+                <Skeleton className="h-[400px] w-full max-w-4xl rounded-md" />
+              </div>
+            ),
+          )
           .catch(() => null)
           .map(({ timeline: resolvedTimeline }) =>
             resolvedTimeline.timelineItems.length > 0 ? (
@@ -412,34 +429,44 @@ export function TmetricDashboardPage(
           )
       ) : activeTab === "contractor" ? (
         <div className="flex-1 overflow-auto mt-4">
-          <TmetricContractorDashboard
-            services={services}
-            contractorIterationBreakdown={contractorIterationBreakdown}
-            contractorNameMap={contractorNameMap}
-            integrationStatus={integrationStatus}
-            getContractorDetailUrl={(id) =>
-              services.routingService
-                .forWorkspace(workspaceId)
-                .forClient(clientId)
-                .tmetricDashboardContractorFor(id)
-            }
-            onRefresh={handleRefresh}
-            canLoadOrRefresh={canLoadOrRefresh}
-            isRefreshing={isRefreshing}
-          />
+          {periodDoesNotOverlapIterations ? (
+            <TmetricNoOverlapMessage className="mx-auto" />
+          ) : (
+            <TmetricContractorDashboard
+              services={services}
+              contractorIterationBreakdown={contractorIterationBreakdown}
+              contractorNameMap={contractorNameMap}
+              integrationStatus={integrationStatus}
+              getContractorDetailUrl={(id) =>
+                services.routingService
+                  .forWorkspace(workspaceId)
+                  .forClient(clientId)
+                  .tmetricDashboardContractorFor(id)
+              }
+              onRefresh={handleRefresh}
+              canLoadOrRefresh={canLoadOrRefresh}
+              isRefreshing={isRefreshing}
+            />
+          )}
         </div>
       ) : activeTab === "cube" ? (
         rd
           .journey(reportAsSource)
-          .wait(() => (
-            <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
-              <div className="w-full max-w-md space-y-4 p-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-8 w-3/4" />
+          .wait(() =>
+            periodDoesNotOverlapIterations ? (
+              <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+                <TmetricNoOverlapMessage />
               </div>
-            </div>
-          ))
+            ) : (
+              <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+                <div className="w-full max-w-md space-y-4 p-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-8 w-3/4" />
+                </div>
+              </div>
+            ),
+          )
           .catch((error) => (
             <div className="flex-1 min-h-0 mt-4 p-4">
               <Card className="border-destructive">
@@ -462,18 +489,20 @@ export function TmetricDashboardPage(
         <div className="flex-1 overflow-auto space-y-6 mt-4">
           {rd
             .journey(cachedReportQuery)
-            .wait(() => (
-              <Card>
-                <CardHeader>
-                  <Skeleton className="h-5 w-48" />
-                  <Skeleton className="h-4 w-full mt-2" />
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Skeleton className="h-20 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
-            ))
+            .wait(() =>
+              periodDoesNotOverlapIterations ? null : (
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-full mt-2" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              ),
+            )
             .catch(() => null)
             .map((reportData) => (
               <TmetricScopeHierarchyPanel
@@ -490,15 +519,19 @@ export function TmetricDashboardPage(
 
           {rd
             .journey(cachedReportQuery)
-            .wait(() => (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Skeleton className="h-16 w-16 rounded-full mb-4" />
-                  <Skeleton className="h-5 w-64" />
-                  <Skeleton className="h-4 w-48 mt-2" />
-                </CardContent>
-              </Card>
-            ))
+            .wait(() =>
+              periodDoesNotOverlapIterations ? (
+                <TmetricNoOverlapMessage variant="full" />
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <Skeleton className="h-16 w-16 rounded-full mb-4" />
+                    <Skeleton className="h-5 w-64" />
+                    <Skeleton className="h-4 w-48 mt-2" />
+                  </CardContent>
+                </Card>
+              ),
+            )
             .catch(() => null)
             .map((data) =>
               !data && !mt.isInError(refreshMutation.state) ? (
@@ -597,37 +630,39 @@ export function TmetricDashboardPage(
                 contractorNameMap,
               }),
             )
-            .wait(() => (
-              <div
-                className="grid gap-4"
-                style={{
-                  gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
-                }}
-              >
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <Skeleton className="h-4 w-32" />
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Skeleton className="h-8 w-24" />
-                    <div className="grid grid-cols-3 gap-4 pt-4">
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <Skeleton className="h-5 w-28" />
-                    <Skeleton className="h-4 w-full mt-1" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-32 w-full" />
-                  </CardContent>
-                </Card>
-              </div>
-            ))
+            .wait(() =>
+              periodDoesNotOverlapIterations ? null : (
+                <div
+                  className="grid gap-4"
+                  style={{
+                    gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
+                  }}
+                >
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <Skeleton className="h-4 w-32" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Skeleton className="h-8 w-24" />
+                      <div className="grid grid-cols-3 gap-4 pt-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <Skeleton className="h-5 w-28" />
+                      <Skeleton className="h-4 w-full mt-1" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-32 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              ),
+            )
             .catch((error) => (
               <Card className="border-destructive">
                 <CardContent className="pt-6 text-destructive">

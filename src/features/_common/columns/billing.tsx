@@ -113,7 +113,7 @@ export const billingColumns = {
                       matched: "positive",
                       unmatched: "destructive",
                       "partially-matched": "warning",
-                      clarified: "secondary",
+                      clarified: "positive",
                       overmatched: "accent1",
                     } as const
                   )[info.getValue()]
@@ -153,7 +153,7 @@ export const billingColumns = {
                   matched: "positive",
                   unmatched: "destructive",
                   "partially-matched": "warning",
-                  clarified: "secondary",
+                  clarified: "positive",
                   overmatched: "accent1",
                 } as const
               )[info.getValue()]

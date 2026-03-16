@@ -471,7 +471,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             case "partially-billed":
               return "bg-amber-500";
             case "clarified":
-              return "bg-sky-500";
+              return "bg-emerald-500";
             case "billed":
               return "bg-emerald-500";
           }
@@ -485,7 +485,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             case "partially-compensated":
               return "bg-amber-500";
             case "clarified":
-              return "bg-sky-500";
+              return "bg-emerald-500";
             case "compensated":
               return "bg-emerald-500";
           }

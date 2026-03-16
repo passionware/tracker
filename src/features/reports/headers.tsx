@@ -19,7 +19,7 @@ export const headers = {
         client for any work reported by the contractor yet.
       </div>
       <div>
-        <Badge variant="secondary">Clarified</Badge> - We charged for some work,
+        <Badge variant="positive">Clarified</Badge> - We charged for some work,
         and for the rest of work we didn't charge the client, but we clarified
         the difference, no more charges due to this report is expected.
       </div>
