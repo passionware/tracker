@@ -185,6 +185,18 @@ export interface ReportDisplayService {
     query: Maybe<CostQuery>,
     selectedIds?: number[],
   ) => RemoteData<CostView>;
+  /**
+   * Returns a single report view entry by id (for detail views).
+   */
+  useReportEntry: (id: Maybe<Report["id"]>) => RemoteData<ReportViewEntry>;
+  /**
+   * Returns a single billing view entry by id (for detail views).
+   */
+  useBillingEntry: (id: Maybe<Billing["id"]>) => RemoteData<BillingViewEntry>;
+  /**
+   * Returns a single cost view entry by id (for detail views).
+   */
+  useCostEntry: (id: Maybe<Cost["id"]>) => RemoteData<CostEntry>;
 }
 
 export interface WithReportDisplayService {
