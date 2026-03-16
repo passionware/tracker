@@ -1,7 +1,5 @@
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import { Project } from "@/api/project/project.api";
-import { billingQueryUtils } from "@/api/billing/billing.api.ts";
-import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -24,9 +22,7 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { createEntityDrawerNodeFactory } from "@/features/_common/drawers/createEntityDrawerNodeFactory.tsx";
-import { EntityDetailDrawers } from "@/features/_common/drawers/EntityDetailDrawers.tsx";
-import { useEntityDrawerState } from "@/features/_common/drawers/useEntityDrawerState.ts";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
 import {
   renderError,
@@ -101,7 +97,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     selectionState.selectNone(),
   );
   const [isBulkCreateCostOpen, setIsBulkCreateCostOpen] = useState(false);
-  const drawerState = useEntityDrawerState();
+  const { openEntityDrawer } = useEntityDrawerContext();
 
   // Load preferences from service
   const savedPreferences = props.services.preferenceService.useTimelineView();
@@ -255,65 +251,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     const ids = new Set(selectedReportIds);
     return entries.filter((entry) => ids.has(entry.id));
   }, [finalReports, selectedReportIds]);
-  const drawerCosts = props.services.reportDisplayService.useCostView(
-    costQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const drawerBillings = props.services.reportDisplayService.useBillingView(
-    billingQueryUtils.ofDefault(props.workspaceId, props.clientId),
-  );
-  const reportById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(finalReports)?.entries ?? []).map((report) => [
-          report.id,
-          report,
-        ]),
-      ),
-    [finalReports],
-  );
-  const costById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerCosts)?.entries ?? []).map((cost) => [cost.id, cost]),
-      ),
-    [drawerCosts],
-  );
-  const billingById = useMemo(
-    () =>
-      new Map(
-        (rd.tryGet(drawerBillings)?.entries ?? []).map((billing) => [
-          billing.id,
-          billing,
-        ]),
-      ),
-    [drawerBillings],
-  );
-  const createEntityDrawerNode = useMemo(
-    () =>
-      createEntityDrawerNodeFactory({
-        reportById,
-        costById,
-        billingById,
-        context: {
-          clientId: props.clientId,
-          workspaceId: props.workspaceId,
-        },
-        services: props.services,
-        pushEntityDrawer: drawerState.pushEntityDrawer,
-        popEntityDrawer: drawerState.popEntityDrawer,
-      }),
-    [
-      billingById,
-      costById,
-      drawerState.popEntityDrawer,
-      drawerState.pushEntityDrawer,
-      props.clientId,
-      props.services,
-      props.workspaceId,
-      reportById,
-    ],
-  );
-
   // Extract project iteration IDs from reports when grouping by project iteration
   const projectIterationIds = useMemo(() => {
     if (timelineGroupBy !== "projectIteration") {
@@ -832,9 +769,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             }
           }}
           onRowClick={(row) => {
-            drawerState.openEntityDrawer(
-              createEntityDrawerNode({ type: "report", id: row.id }),
-            );
+            openEntityDrawer({ type: "report", id: row.id });
           }}
           columns={columns}
           toolbar={
@@ -963,15 +898,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           onCompleted={() => {
             setSelection(selectionState.selectNone());
           }}
-        />
-        <EntityDetailDrawers
-          entityStack={drawerState.entityStack}
-          onOpenChange={(open) => {
-            if (!open) {
-              drawerState.closeEntityDrawer();
-            }
-          }}
-          onBreadcrumbSelect={drawerState.jumpToEntityStackIndex}
         />
       </>
     );

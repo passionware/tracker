@@ -1,4 +1,5 @@
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { EntityDrawerRouteLayout } from "@/features/_common/drawers/EntityDrawerRouteLayout.tsx";
 import {
   ProtectedRoute,
   RenderIfAuthenticated,
@@ -183,11 +184,17 @@ export function RootWidget(props: WithFrontServices) {
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <ReportsWidget
+                    <EntityDrawerRouteLayout
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}
-                    />
+                    >
+                      <ReportsWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
               </Layout>
@@ -204,11 +211,17 @@ export function RootWidget(props: WithFrontServices) {
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <BillingWidget
+                    <EntityDrawerRouteLayout
                       clientId={clientId}
                       workspaceId={workspaceId}
                       services={props.services}
-                    />
+                    >
+                      <BillingWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
               </Layout>
@@ -225,11 +238,17 @@ export function RootWidget(props: WithFrontServices) {
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <CostWidget
-                      workspaceId={workspaceId}
+                    <EntityDrawerRouteLayout
                       clientId={clientId}
+                      workspaceId={workspaceId}
                       services={props.services}
-                    />
+                    >
+                      <CostWidget
+                        workspaceId={workspaceId}
+                        clientId={clientId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
               </Layout>
@@ -246,11 +265,17 @@ export function RootWidget(props: WithFrontServices) {
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
-                    <PotentialCostWidget
-                      workspaceId={workspaceId}
+                    <EntityDrawerRouteLayout
                       clientId={clientId}
+                      workspaceId={workspaceId}
                       services={props.services}
-                    />
+                    >
+                      <PotentialCostWidget
+                        workspaceId={workspaceId}
+                        clientId={clientId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
               </Layout>

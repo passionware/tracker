@@ -8,29 +8,35 @@ import {
 } from "@/components/ui/drawer.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { EntityDrawerNode } from "./useEntityDrawerState.ts";
+import {
+  entityDrawerDescriptor,
+  getEntityStackKey,
+} from "./descriptors";
+import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
 
-export interface EntityDetailDrawersProps {
-  entityStack: EntityDrawerNode[];
-  onOpenChange: (open: boolean) => void;
-  onBreadcrumbSelect: (index: number) => void;
-}
-
-export function EntityDetailDrawers({
-  entityStack,
-  onOpenChange,
-  onBreadcrumbSelect,
-}: EntityDetailDrawersProps) {
+export function EntityDetailDrawers() {
+  const {
+    services,
+    entityStack,
+    closeEntityDrawer,
+    jumpToEntityStackIndex,
+  } = useEntityDrawerContext();
   const open = entityStack.length > 0;
-  const activeNode = entityStack[entityStack.length - 1];
-  const breadcrumbItems = entityStack;
+  const activeEntity = entityStack[entityStack.length - 1] ?? null;
+
+  const breadcrumbItems = entityStack.map((entity) => ({
+    key: getEntityStackKey(entity),
+    label: entityDrawerDescriptor.getLabel(entity),
+    title: entityDrawerDescriptor.getTitle(entity),
+    tooltip: entityDrawerDescriptor.renderSmallPreview(entity, services),
+  }));
 
   return (
     <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          onOpenChange(false);
+          closeEntityDrawer();
         }
       }}
       direction="right"
@@ -45,9 +51,9 @@ export function EntityDetailDrawers({
                     light
                     delayDuration={400}
                     title={
-                      item.renderMainInfo ? (
-                        <div className="max-w-72 py-0.5">
-                          {item.renderMainInfo()}
+                      item.tooltip != null ? (
+                        <div key={item.key} className="max-w-72 py-0.5">
+                          {item.tooltip}
                         </div>
                       ) : (
                         item.title
@@ -60,7 +66,7 @@ export function EntityDetailDrawers({
                         itemIndex === breadcrumbItems.length - 1 ? "secondary" : "ghost"
                       }
                       data-no-row-open
-                      onClick={() => onBreadcrumbSelect(itemIndex)}
+                      onClick={() => jumpToEntityStackIndex(itemIndex)}
                       className="h-6 px-2"
                     >
                       {item.label}
@@ -72,25 +78,38 @@ export function EntityDetailDrawers({
             </div>
           )}
           <div className="flex items-start justify-between gap-2">
-            <DrawerTitle>{activeNode?.title ?? "Details"}</DrawerTitle>
-            <div>{activeNode?.renderHeaderActions?.()}</div>
+            <DrawerTitle>
+              {activeEntity
+                ? entityDrawerDescriptor.getTitle(activeEntity)
+                : "Details"}
+            </DrawerTitle>
+            <div>
+              {activeEntity
+                ? entityDrawerDescriptor.renderHeaderActions?.(activeEntity, services)
+                : null}
+            </div>
           </div>
           <DrawerDescription>
             Review links, amounts, and related associations.
           </DrawerDescription>
-          {activeNode?.renderMainInfo?.()}
+          {activeEntity
+            ? entityDrawerDescriptor.renderSmallPreview(activeEntity, services)
+            : null}
         </DrawerHeader>
         <div className="px-4 pb-4 overflow-y-auto flex-1">
           <AnimatePresence mode="wait" initial={false}>
-            {activeNode ? (
+            {activeEntity ? (
               <motion.div
-                key={activeNode.key}
+                key={getEntityStackKey(activeEntity)}
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
               >
-                {activeNode.render()}
+                {entityDrawerDescriptor.renderDrawerContent(
+                  activeEntity,
+                  services,
+                )}
               </motion.div>
             ) : null}
           </AnimatePresence>
