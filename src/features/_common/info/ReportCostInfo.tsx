@@ -275,6 +275,7 @@ export function ReportCostInfo({
         }}
         columns={[
           columnHelper.accessor("cost", {
+            id: "cost-type",
             header: "Type",
             cell: (info) => {
               const link = info.row.original;
@@ -432,6 +433,7 @@ export function ReportCostInfo({
             },
           }),
           columnHelper.accessor("cost", {
+            id: "cost-net",
             header: "Cost net",
             cell: (info) =>
               maybe.mapOrElse(
