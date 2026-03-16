@@ -1,3 +1,4 @@
+import { clientQueryUtils } from "@/api/clients/clients.api";
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api";
@@ -196,12 +197,41 @@ export function useTmetricDashboardData({
   );
 
   const projectsMap = useMemo(() => {
-    const map = new Map<number, { name: string }>();
+    const map = new Map<number, { name: string; clientId: number }>();
     rd.tryMap(projectsData, (projects) => {
-      projects.forEach((p) => map.set(p.id, { name: p.name }));
+      projects.forEach((p) => map.set(p.id, { name: p.name, clientId: p.clientId }));
     });
     return map;
   }, [projectsData]);
+
+  const uniqueClientIds = useMemo(
+    () =>
+      rd.tryMap(projectsData, (projects) => [
+        ...new Set(projects.map((p) => p.clientId)),
+      ]) ?? [],
+    [projectsData],
+  );
+
+  const clientsQuery = useMemo(
+    () =>
+      clientQueryUtils.getBuilder().build((q) => [
+        q.withFilter("id", {
+          operator: "oneOf",
+          value: uniqueClientIds.length > 0 ? uniqueClientIds : [],
+        }),
+      ]),
+    [uniqueClientIds],
+  );
+  const clientsData = services.clientService.useClients(clientsQuery);
+  const clientsMap = useMemo(() => {
+    const map = new Map<number, { avatarUrl: string | null }>();
+    rd.tryMap(clientsData, (clients) => {
+      clients.forEach((c) =>
+        map.set(c.id, { avatarUrl: c.avatarUrl ?? null }),
+      );
+    });
+    return map;
+  }, [clientsData]);
 
   const selectedIterations = useMemo(
     () => allIterations.filter((i) => selectedIterationIds.includes(i.id)),
@@ -253,13 +283,16 @@ export function useTmetricDashboardData({
             : iter.status === "closed"
               ? " · Closed"
               : "";
+        const clientAvatarUrl =
+          project != null ? clientsMap.get(project.clientId)?.avatarUrl ?? null : null;
         return {
           id: String(iter.id),
           label: `${projectName} #${iter.ordinalNumber}${statusLabel} (${periodLabel})`,
           compactLabel: `${projectName} #${iter.ordinalNumber}`,
+          avatarUrl: clientAvatarUrl ?? undefined,
         };
       }),
-    [iterationsForPicker, projectsMap],
+    [iterationsForPicker, projectsMap, clientsMap],
   );
 
   const { start, end } = useMemo(() => {
