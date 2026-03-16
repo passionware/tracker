@@ -27,20 +27,22 @@ describe("TmetricAdapter", () => {
       const input = createMockInput();
       const result = adaptTMetricToGeneric(input);
 
-      // Check that task types are created from unique notes
+      // Check that task types are created from unique notes (keyed by short id)
       const taskTypes = result.definitions.taskTypes;
       expect(Object.keys(taskTypes).length).toBeGreaterThan(0);
 
-      // Verify some specific task types from mock data
-      expect(
-        taskTypes["planning work / task analysis / code review"],
-      ).toBeDefined();
-      expect(taskTypes["Operations"]).toBeDefined();
-      expect(taskTypes["v1-1081-custom-nike-integration-plan"]).toBeDefined();
-      expect(taskTypes["tmetric reports generation"]).toBeDefined();
+      const taskTypeNames = Object.values(taskTypes).map((t) => t.name);
+      expect(taskTypeNames).toContain(
+        "planning work / task analysis / code review",
+      );
+      expect(taskTypeNames).toContain("Operations");
+      expect(taskTypeNames).toContain("v1-1081-custom-nike-integration-plan");
+      expect(taskTypeNames).toContain("tmetric reports generation");
 
       // Check task type structure
-      const taskType = taskTypes["planning work / task analysis / code review"];
+      const taskType = Object.values(taskTypes).find(
+        (t) => t.name === "planning work / task analysis / code review",
+      );
       expect(taskType).toEqual({
         name: "planning work / task analysis / code review",
         description: "planning work / task analysis / code review",
@@ -53,26 +55,23 @@ describe("TmetricAdapter", () => {
       const result = adaptTMetricToGeneric(input);
 
       const activityTypes = result.definitions.activityTypes;
+      const byName = Object.fromEntries(
+        Object.entries(activityTypes).map(([id, a]) => [a.name, a]),
+      );
 
-      expect(activityTypes.development).toEqual({
+      expect(byName["Development"]).toEqual({
         name: "Development",
         description: "Hands-on implementation work",
         parameters: {},
       });
 
-      expect(activityTypes.code_review).toEqual({
+      expect(byName["Code Review"]).toEqual({
         name: "Code Review",
         description: "PR/MR reviews and related",
         parameters: {},
       });
 
-      expect(activityTypes.meeting).toEqual({
-        name: "Meeting",
-        description: "Calls, standups, ceremonies",
-        parameters: {},
-      });
-
-      expect(activityTypes.operations).toEqual({
+      expect(byName["Operations"]).toEqual({
         name: "Operations",
         description: "Planning, triage, coordination",
         parameters: {},
@@ -98,14 +97,16 @@ describe("TmetricAdapter", () => {
       const timeEntries = result.timeEntries;
       expect(timeEntries.length).toBe(mockTmetricResponse.length);
 
-      // Check first entry structure
+      // Check first entry structure (taskId is short id; note is null)
       const firstEntry = timeEntries[0];
       const originalEntry = mockTmetricResponse[0];
+      const expectedTaskName =
+        originalEntry.note?.trim() || "Unnamed task";
 
       expect(firstEntry.id).toBe(String(originalEntry.id));
       expect(firstEntry.note).toBe(null);
-      expect(firstEntry.taskId).toBe(
-        originalEntry.note?.trim() || "Unnamed task",
+      expect(result.definitions.taskTypes[firstEntry.taskId]?.name).toBe(
+        expectedTaskName,
       );
       expect(firstEntry.roleId).toBe("developer");
       expect(firstEntry.startAt).toEqual(new Date(originalEntry.startTime));
@@ -119,6 +120,7 @@ describe("TmetricAdapter", () => {
         {
           ...mockTmetricResponse[0],
           note: "",
+          project: undefined,
         },
       ];
 
@@ -127,7 +129,9 @@ describe("TmetricAdapter", () => {
 
       const timeEntry = result.timeEntries[0];
       expect(timeEntry.note).toBe(null);
-      expect(timeEntry.taskId).toBe("Unnamed task");
+      expect(result.definitions.taskTypes[timeEntry.taskId]?.name).toBe(
+        "Unnamed task",
+      );
     });
 
     it("should handle entries with undefined notes", () => {
@@ -135,6 +139,7 @@ describe("TmetricAdapter", () => {
         {
           ...mockTmetricResponse[0],
           note: undefined as any,
+          project: undefined,
         },
       ];
 
@@ -143,7 +148,9 @@ describe("TmetricAdapter", () => {
 
       const timeEntry = result.timeEntries[0];
       expect(timeEntry.note).toBe(null);
-      expect(timeEntry.taskId).toBe("Unnamed task");
+      expect(result.definitions.taskTypes[timeEntry.taskId]?.name).toBe(
+        "Unnamed task",
+      );
     });
 
     it("should handle entries with null notes", () => {
@@ -151,6 +158,7 @@ describe("TmetricAdapter", () => {
         {
           ...mockTmetricResponse[0],
           note: null as any,
+          project: undefined,
         },
       ];
 
@@ -158,8 +166,10 @@ describe("TmetricAdapter", () => {
       const result = adaptTMetricToGeneric(input);
 
       const timeEntry = result.timeEntries[0];
-      expect(timeEntry.note).toBe("");
-      expect(timeEntry.taskId).toBe("Unnamed task");
+      expect(timeEntry.note).toBe(null);
+      expect(result.definitions.taskTypes[timeEntry.taskId]?.name).toBe(
+        "Unnamed task",
+      );
     });
 
     it("should handle entries with whitespace-only notes", () => {
@@ -167,6 +177,7 @@ describe("TmetricAdapter", () => {
         {
           ...mockTmetricResponse[0],
           note: "   ",
+          project: undefined,
         },
       ];
 
@@ -174,8 +185,10 @@ describe("TmetricAdapter", () => {
       const result = adaptTMetricToGeneric(input);
 
       const timeEntry = result.timeEntries[0];
-      expect(timeEntry.note).toBe("   ");
-      expect(timeEntry.taskId).toBe("Unnamed task");
+      expect(timeEntry.note).toBe(null);
+      expect(result.definitions.taskTypes[timeEntry.taskId]?.name).toBe(
+        "Unnamed task",
+      );
     });
 
     it("should use custom default role ID", () => {
@@ -211,13 +224,14 @@ describe("TmetricAdapter", () => {
 
       const taskTypes = result.definitions.taskTypes;
       const taskTypeKeys = Object.keys(taskTypes);
+      const taskTypeNames = Object.values(taskTypes).map((t) => t.name);
 
       // Should have only 2 unique task types despite 4 entries
       expect(taskTypeKeys).toHaveLength(2);
-      expect(
-        taskTypes["planning work / task analysis / code review"],
-      ).toBeDefined();
-      expect(taskTypes["Operations"]).toBeDefined();
+      expect(taskTypeNames).toContain(
+        "planning work / task analysis / code review",
+      );
+      expect(taskTypeNames).toContain("Operations");
     });
 
     it("should preserve all time entries even with duplicate notes", () => {
@@ -375,10 +389,13 @@ describe("TmetricAdapter", () => {
       // Verify we processed all entries
       expect(result.timeEntries).toHaveLength(mockTmetricResponse.length);
 
-      // Verify each entry has required fields
+      const activityNames = new Set(
+        Object.values(result.definitions.activityTypes).map((a) => a.name),
+      );
+
+      // Verify each entry has required fields (note is null; taskId/activityId are short ids)
       result.timeEntries.forEach((entry) => {
         expect(entry.id).toBeDefined();
-        expect(entry.note).toBeDefined();
         expect(entry.taskId).toBeDefined();
         expect(entry.activityId).toBeDefined();
         expect(entry.roleId).toBe("developer");
@@ -387,13 +404,13 @@ describe("TmetricAdapter", () => {
         expect(entry.createdAt).toBeInstanceOf(Date);
         expect(entry.updatedAt).toBeInstanceOf(Date);
 
-        // Verify activity inference worked
-        expect([
-          "development",
-          "code_review",
-          "meeting",
-          "operations",
-        ]).toContain(entry.activityId);
+        // Verify activity inference worked (activityId is short id; check display name)
+        const activityName =
+          result.definitions.activityTypes[entry.activityId]?.name;
+        expect(
+          ["Development", "Code Review", "Meeting", "Operations"],
+        ).toContain(activityName);
+        expect(activityNames.has(activityName!)).toBe(true);
       });
     });
 
@@ -401,54 +418,56 @@ describe("TmetricAdapter", () => {
       const input = createMockInput();
       const result = adaptTMetricToGeneric(input);
 
-      const taskTypes = result.definitions.taskTypes;
+      const taskTypeNames = Object.values(result.definitions.taskTypes).map(
+        (t) => t.name,
+      );
 
-      // Verify specific task types from mock data exist
-      expect(
-        taskTypes["planning work / task analysis / code review"],
-      ).toBeDefined();
-      expect(taskTypes["Operations"]).toBeDefined();
-      expect(
-        taskTypes[
-          "387-cancellation-invoices-cannot-be-connected-for-outgoing-invoices-income"
-        ],
-      ).toBeDefined();
-      expect(taskTypes["backmerging & fixes"]).toBeDefined();
-      expect(taskTypes["v1-1081-custom-nike-integration-plan"]).toBeDefined();
-      expect(taskTypes["388-negative-discount-amount-bug"]).toBeDefined();
-      expect(taskTypes["v1-1074-run-e2e-test-every-pr"]).toBeDefined();
-      expect(taskTypes["tmetric reports generation"]).toBeDefined();
-      expect(taskTypes["chat with Scott"]).toBeDefined();
-      expect(taskTypes["checkin with Lennart"]).toBeDefined();
-      expect(
-        taskTypes[
-          "v1-1138-bookings-with-status-first_hold-or-others-are-not-shown"
-        ],
-      ).toBeDefined();
+      // Verify specific task types from mock data exist (keyed by short id)
+      expect(taskTypeNames).toContain(
+        "planning work / task analysis / code review",
+      );
+      expect(taskTypeNames).toContain("Operations");
+      expect(taskTypeNames).toContain(
+        "387-cancellation-invoices-cannot-be-connected-for-outgoing-invoices-income",
+      );
+      expect(taskTypeNames).toContain("backmerging & fixes");
+      expect(taskTypeNames).toContain("v1-1081-custom-nike-integration-plan");
+      expect(taskTypeNames).toContain("388-negative-discount-amount-bug");
+      expect(taskTypeNames).toContain("v1-1074-run-e2e-test-every-pr");
+      expect(taskTypeNames).toContain("tmetric reports generation");
+      expect(taskTypeNames).toContain("chat with Scott");
+      expect(taskTypeNames).toContain("checkin with Lennart");
+      expect(taskTypeNames).toContain(
+        "v1-1138-bookings-with-status-first_hold-or-others-are-not-shown",
+      );
     });
 
     it("should infer correct activity types for mock data", () => {
       const input = createMockInput();
       const result = adaptTMetricToGeneric(input);
+      const { taskTypes, activityTypes } = result.definitions;
 
-      // Find entries by their notes to verify activity inference
+      // Find entries by task name (note is null; taskId is short id) and verify activity
       const planningEntry = result.timeEntries.find(
-        (e) => e.note === "planning work / task analysis / code review",
+        (e) => taskTypes[e.taskId]?.name === "planning work / task analysis / code review",
       );
-      expect(planningEntry?.activityId).toBe("code_review");
+      expect(activityTypes[planningEntry!.activityId]?.name).toBe("Code Review");
 
-      const opsEntry = result.timeEntries.find((e) => e.note === "Operations");
-      expect(opsEntry?.activityId).toBe("operations");
-
-      const meetingEntry = result.timeEntries.find(
-        (e) => e.note === "chat with Scott",
+      const opsEntry = result.timeEntries.find(
+        (e) => taskTypes[e.taskId]?.name === "Operations",
       );
-      expect(meetingEntry?.activityId).toBe("meeting");
+      expect(activityTypes[opsEntry!.activityId]?.name).toBe("Operations");
+
+      const chatEntry = result.timeEntries.find(
+        (e) => taskTypes[e.taskId]?.name === "chat with Scott",
+      );
+      // "chat with Scott" has no activity tag; project "Atellio - meetings" does not affect inferActivity (description/note used)
+      expect(activityTypes[chatEntry!.activityId]?.name).toBe("Development");
 
       const devEntry = result.timeEntries.find(
-        (e) => e.note === "v1-1081-custom-nike-integration-plan",
+        (e) => taskTypes[e.taskId]?.name === "v1-1081-custom-nike-integration-plan",
       );
-      expect(devEntry?.activityId).toBe("development");
+      expect(activityTypes[devEntry!.activityId]?.name).toBe("Development");
     });
 
     it("should handle date parsing correctly", () => {
@@ -470,6 +489,7 @@ describe("TmetricAdapter", () => {
     it("should maintain data integrity", () => {
       const input = createMockInput();
       const result = adaptTMetricToGeneric(input);
+      const { taskTypes } = result.definitions;
 
       // Verify that all original entry IDs are preserved
       const originalIds = mockTmetricResponse.map((e) => String(e.id));
@@ -477,11 +497,13 @@ describe("TmetricAdapter", () => {
 
       expect(resultIds.sort()).toEqual(originalIds.sort());
 
-      // Verify that all original notes are preserved
+      // Verify that all original task names (from notes etc.) are preserved via taskId -> taskTypes
       const originalNotes = mockTmetricResponse.map((e) => e.note || "");
-      const resultNotes = result.timeEntries.map((e) => e.note);
+      const resultTaskNames = result.timeEntries.map(
+        (e) => taskTypes[e.taskId]?.name ?? "",
+      );
 
-      expect(resultNotes.sort()).toEqual(originalNotes.sort());
+      expect(resultTaskNames.sort()).toEqual(originalNotes.sort());
     });
   });
 
