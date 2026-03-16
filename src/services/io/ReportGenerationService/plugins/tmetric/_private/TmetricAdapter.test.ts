@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { mockTmetricResponse } from "./__test__/mock-tmetric-response.ts";
 import type { TMetricAdapterInput } from "./TmetricAdapter.ts";
 import { adaptTMetricToGeneric, inferActivity } from "./TmetricAdapter.ts";
-import type { TMetricTag } from "./TmetricSchemas.ts";
+import type { TMetricTag, TMetricTimeEntry } from "./TmetricSchemas.ts";
 
 describe("TmetricAdapter", () => {
   const createMockInput = (
-    entries = mockTmetricResponse,
+    entries: TMetricTimeEntry[] = mockTmetricResponse,
   ): TMetricAdapterInput => ({
     entries,
     defaultRoleId: "developer",
@@ -56,7 +56,7 @@ describe("TmetricAdapter", () => {
 
       const activityTypes = result.definitions.activityTypes;
       const byName = Object.fromEntries(
-        Object.entries(activityTypes).map(([id, a]) => [a.name, a]),
+        Object.entries(activityTypes).map(([, a]) => [a.name, a]),
       );
 
       expect(byName["Development"]).toEqual({
@@ -100,8 +100,7 @@ describe("TmetricAdapter", () => {
       // Check first entry structure (taskId is short id; note is null)
       const firstEntry = timeEntries[0];
       const originalEntry = mockTmetricResponse[0];
-      const expectedTaskName =
-        originalEntry.note?.trim() || "Unnamed task";
+      const expectedTaskName = originalEntry.note?.trim() || "Unnamed task";
 
       expect(firstEntry.id).toBe(String(originalEntry.id));
       expect(firstEntry.note).toBe(null);
@@ -116,7 +115,7 @@ describe("TmetricAdapter", () => {
     });
 
     it("should handle entries with empty notes", () => {
-      const entriesWithEmptyNote = [
+      const entriesWithEmptyNote: TMetricTimeEntry[] = [
         {
           ...mockTmetricResponse[0],
           note: "",
@@ -135,7 +134,7 @@ describe("TmetricAdapter", () => {
     });
 
     it("should handle entries with undefined notes", () => {
-      const entriesWithUndefinedNote = [
+      const entriesWithUndefinedNote: TMetricTimeEntry[] = [
         {
           ...mockTmetricResponse[0],
           note: undefined as any,
@@ -154,7 +153,7 @@ describe("TmetricAdapter", () => {
     });
 
     it("should handle entries with null notes", () => {
-      const entriesWithNullNote = [
+      const entriesWithNullNote: TMetricTimeEntry[] = [
         {
           ...mockTmetricResponse[0],
           note: null as any,
@@ -173,7 +172,7 @@ describe("TmetricAdapter", () => {
     });
 
     it("should handle entries with whitespace-only notes", () => {
-      const entriesWithWhitespaceNote = [
+      const entriesWithWhitespaceNote: TMetricTimeEntry[] = [
         {
           ...mockTmetricResponse[0],
           note: "   ",
@@ -407,9 +406,12 @@ describe("TmetricAdapter", () => {
         // Verify activity inference worked (activityId is short id; check display name)
         const activityName =
           result.definitions.activityTypes[entry.activityId]?.name;
-        expect(
-          ["Development", "Code Review", "Meeting", "Operations"],
-        ).toContain(activityName);
+        expect([
+          "Development",
+          "Code Review",
+          "Meeting",
+          "Operations",
+        ]).toContain(activityName);
         expect(activityNames.has(activityName!)).toBe(true);
       });
     });
@@ -449,9 +451,13 @@ describe("TmetricAdapter", () => {
 
       // Find entries by task name (note is null; taskId is short id) and verify activity
       const planningEntry = result.timeEntries.find(
-        (e) => taskTypes[e.taskId]?.name === "planning work / task analysis / code review",
+        (e) =>
+          taskTypes[e.taskId]?.name ===
+          "planning work / task analysis / code review",
       );
-      expect(activityTypes[planningEntry!.activityId]?.name).toBe("Code Review");
+      expect(activityTypes[planningEntry!.activityId]?.name).toBe(
+        "Code Review",
+      );
 
       const opsEntry = result.timeEntries.find(
         (e) => taskTypes[e.taskId]?.name === "Operations",
@@ -465,7 +471,8 @@ describe("TmetricAdapter", () => {
       expect(activityTypes[chatEntry!.activityId]?.name).toBe("Development");
 
       const devEntry = result.timeEntries.find(
-        (e) => taskTypes[e.taskId]?.name === "v1-1081-custom-nike-integration-plan",
+        (e) =>
+          taskTypes[e.taskId]?.name === "v1-1081-custom-nike-integration-plan",
       );
       expect(activityTypes[devEntry!.activityId]?.name).toBe("Development");
     });
