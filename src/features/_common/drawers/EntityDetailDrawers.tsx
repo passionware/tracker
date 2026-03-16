@@ -8,19 +8,13 @@ import {
 } from "@/components/ui/drawer.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  entityDrawerDescriptor,
-  getEntityStackKey,
-} from "./descriptors";
+import { entityDrawerDescriptor, getEntityStackKey } from "./descriptors";
 import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
+import { ChevronRight } from "lucide-react";
 
 export function EntityDetailDrawers() {
-  const {
-    services,
-    entityStack,
-    closeEntityDrawer,
-    jumpToEntityStackIndex,
-  } = useEntityDrawerContext();
+  const { services, entityStack, closeEntityDrawer, jumpToEntityStackIndex } =
+    useEntityDrawerContext();
   const open = entityStack.length > 0;
   const activeEntity = entityStack[entityStack.length - 1] ?? null;
 
@@ -44,26 +38,25 @@ export function EntityDetailDrawers() {
       <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
         <DrawerHeader>
           {breadcrumbItems.length > 1 && (
-            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground -ml-2 -mt-2">
               {breadcrumbItems.map((item, itemIndex) => (
-                <div key={`${item.key}-${itemIndex}`} className="flex items-center gap-1">
+                <div
+                  key={`${item.key}-${itemIndex}`}
+                  className="flex items-center gap-1"
+                >
                   <SimpleTooltip
                     light
-                    delayDuration={400}
-                    title={
-                      item.tooltip != null ? (
-                        <div key={item.key} className="max-w-72 py-0.5">
-                          {item.tooltip}
-                        </div>
-                      ) : (
-                        item.title
-                      )
-                    }
+                    side="bottom"
+                    align="start"
+                    title={item.tooltip}
+                    contentClassName="max-w-none p-0 border-none"
                   >
                     <Button
                       size="xs"
                       variant={
-                        itemIndex === breadcrumbItems.length - 1 ? "secondary" : "ghost"
+                        itemIndex === breadcrumbItems.length - 1
+                          ? "secondary"
+                          : "ghost"
                       }
                       data-no-row-open
                       onClick={() => jumpToEntityStackIndex(itemIndex)}
@@ -72,7 +65,9 @@ export function EntityDetailDrawers() {
                       {item.label}
                     </Button>
                   </SimpleTooltip>
-                  {itemIndex < breadcrumbItems.length - 1 && <span>/</span>}
+                  {itemIndex < breadcrumbItems.length - 1 && (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
                 </div>
               ))}
             </div>
@@ -85,7 +80,10 @@ export function EntityDetailDrawers() {
             </DrawerTitle>
             <div>
               {activeEntity
-                ? entityDrawerDescriptor.renderHeaderActions?.(activeEntity, services)
+                ? entityDrawerDescriptor.renderHeaderActions?.(
+                    activeEntity,
+                    services,
+                  )
                 : null}
             </div>
           </div>

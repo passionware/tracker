@@ -28,7 +28,11 @@ export type EntityStackItem =
 export type { ReportSpec, CostSpec, BillingSpec };
 export type { ReportFormSpec, CostFormSpec, BillingFormSpec };
 
-export { reportDrawerDescriptor, costDrawerDescriptor, billingDrawerDescriptor };
+export {
+  reportDrawerDescriptor,
+  costDrawerDescriptor,
+  billingDrawerDescriptor,
+};
 export {
   reportFormDrawerDescriptor,
   costFormDrawerDescriptor,
@@ -105,10 +109,7 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "cost":
         return costDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "cost-form":
-        return costFormDrawerDescriptor.renderBreadcrumbLabel(
-          entity,
-          services,
-        );
+        return costFormDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "billing":
         return billingDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "billing-form":
@@ -153,7 +154,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "billing":
         return billingDrawerDescriptor.renderDrawerContent(entity, services);
       case "billing-form":
-        return billingFormDrawerDescriptor.renderDrawerContent(entity, services);
+        return billingFormDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
     }
   },
   renderHeaderActions: (

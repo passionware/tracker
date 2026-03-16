@@ -15,8 +15,8 @@ export function DrawerMainInfoGrid({ items }: DrawerMainInfoGridProps) {
   }
 
   return (
-    <div className="mt-2 rounded-md border bg-muted/40 p-2">
-      <div className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
+    <div className="rounded-md border bg-muted/40 p-2">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-1 text-xs">
         {items.map((item) => (
           <div
             key={item.label}

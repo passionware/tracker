@@ -39,6 +39,9 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
 export type SimpleTooltipProps = TooltipProps & {
   title: ReactNode;
   light?: boolean;
+  contentClassName?: string;
+  side?: TooltipPrimitive.TooltipContentProps["side"];
+  align?: TooltipPrimitive.TooltipContentProps["align"];
 };
 
 export function SimpleTooltip({
@@ -47,6 +50,9 @@ export function SimpleTooltip({
   title,
   delayDuration = 1000,
   light,
+  contentClassName,
+  side,
+  align,
   ...rest
 }: SimpleTooltipProps) {
   return (
@@ -57,7 +63,12 @@ export function SimpleTooltip({
     >
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPrimitive.Portal>
-        <TooltipContent light={light} className="max-w-96 break-words">
+        <TooltipContent
+          light={light}
+          className={cn("max-w-96 break-words", contentClassName)}
+          side={side}
+          align={align}
+        >
           {title}
         </TooltipContent>
       </TooltipPrimitive.Portal>

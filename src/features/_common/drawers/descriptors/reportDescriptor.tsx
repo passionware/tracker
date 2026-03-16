@@ -192,24 +192,24 @@ function ReportDrawerContent({
             report.client.id,
           )}
           services={services}
-        onOpenBillingDetails={(billingId) =>
-          pushEntityDrawer({ type: "billing", id: billingId })
-        }
+          onOpenBillingDetails={(billingId) =>
+            pushEntityDrawer({ type: "billing", id: billingId })
+          }
         />
         <div className="mt-4">
           <ReportCostInfo
             report={report}
             services={services}
-              onOpenCostDetails={(costId) =>
-                pushEntityDrawer({ type: "cost", id: costId })
-              }
+            onOpenCostDetails={(costId) =>
+              pushEntityDrawer({ type: "cost", id: costId })
+            }
           />
         </div>
       </>
     ));
 }
 
-export const reportDrawerDescriptor: DrawerDescriptor<ReportSpec> = {
+export const reportDrawerDescriptor = {
   getKey: (entity) => `report-${entity.id}`,
   getLabel: (entity) => `Report #${entity.id}`,
   getTitle: () => "Report details",
@@ -225,4 +225,4 @@ export const reportDrawerDescriptor: DrawerDescriptor<ReportSpec> = {
   renderHeaderActions: (entity, services) => (
     <ReportHeaderActions entity={entity} services={services} />
   ),
-};
+} satisfies DrawerDescriptor<ReportSpec>;
