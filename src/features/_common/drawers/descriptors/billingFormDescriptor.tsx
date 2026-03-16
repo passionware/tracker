@@ -42,7 +42,7 @@ function BillingFormDrawerContent({
   );
 }
 
-export const billingFormDrawerDescriptor: DrawerDescriptor<BillingFormSpec> = {
+export const billingFormDrawerDescriptor = {
   getKey: (entity) => `billing-form-${entity.id}-${entity.mode}`,
   getLabel: (entity) =>
     entity.mode === "edit" ? "Edit billing" : "Duplicate billing",
@@ -54,4 +54,4 @@ export const billingFormDrawerDescriptor: DrawerDescriptor<BillingFormSpec> = {
   renderDrawerContent: (entity, services) => (
     <BillingFormDrawerContent entity={entity} services={services} />
   ),
-};
+} satisfies DrawerDescriptor<BillingFormSpec>;

@@ -81,11 +81,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
   getTitle: (entity) => {
     switch (entity.type) {
       case "report":
-        return reportDrawerDescriptor.getTitle(entity);
+        return reportDrawerDescriptor.getTitle();
       case "report-form":
         return reportFormDrawerDescriptor.getTitle(entity);
       case "cost":
-        return costDrawerDescriptor.getTitle(entity);
+        return costDrawerDescriptor.getTitle();
       case "cost-form":
         return costFormDrawerDescriptor.getTitle(entity);
       case "billing":
@@ -102,21 +102,15 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "report":
         return reportDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "report-form":
-        return reportFormDrawerDescriptor.renderBreadcrumbLabel(
-          entity,
-          services,
-        );
+        return reportFormDrawerDescriptor.renderBreadcrumbLabel(entity);
       case "cost":
         return costDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "cost-form":
-        return costFormDrawerDescriptor.renderBreadcrumbLabel(entity, services);
+        return costFormDrawerDescriptor.renderBreadcrumbLabel(entity);
       case "billing":
         return billingDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "billing-form":
-        return billingFormDrawerDescriptor.renderBreadcrumbLabel(
-          entity,
-          services,
-        );
+        return billingFormDrawerDescriptor.renderBreadcrumbLabel(entity);
     }
   },
   renderSmallPreview: (
@@ -127,15 +121,15 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "report":
         return reportDrawerDescriptor.renderSmallPreview(entity, services);
       case "report-form":
-        return reportFormDrawerDescriptor.renderSmallPreview(entity, services);
+        return reportFormDrawerDescriptor.renderSmallPreview();
       case "cost":
         return costDrawerDescriptor.renderSmallPreview(entity, services);
       case "cost-form":
-        return costFormDrawerDescriptor.renderSmallPreview(entity, services);
+        return costFormDrawerDescriptor.renderSmallPreview();
       case "billing":
         return billingDrawerDescriptor.renderSmallPreview(entity, services);
       case "billing-form":
-        return billingFormDrawerDescriptor.renderSmallPreview(entity, services);
+        return billingFormDrawerDescriptor.renderSmallPreview();
     }
   },
   renderDrawerContent: (

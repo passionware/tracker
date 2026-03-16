@@ -171,7 +171,7 @@ function CostDrawerContent({
     ));
 }
 
-export const costDrawerDescriptor: DrawerDescriptor<CostSpec> = {
+export const costDrawerDescriptor = {
   getKey: (entity) => `cost-${entity.id}`,
   getLabel: (entity) => `Cost #${entity.id}`,
   getTitle: () => "Cost details",
@@ -187,4 +187,4 @@ export const costDrawerDescriptor: DrawerDescriptor<CostSpec> = {
   renderHeaderActions: (entity, services) => (
     <CostHeaderActions entity={entity} services={services} />
   ),
-};
+} satisfies DrawerDescriptor<CostSpec>;

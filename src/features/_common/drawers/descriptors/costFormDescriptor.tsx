@@ -27,10 +27,7 @@ function CostFormDrawerContent({
       defaultValues={entity.defaultValues}
       services={services}
       onCancel={handleCancel}
-      onSubmit={async (
-        payload: CostPayload,
-        changes: Partial<CostPayload>,
-      ) => {
+      onSubmit={async (payload: CostPayload, changes: Partial<CostPayload>) => {
         if (entity.mode === "edit") {
           await services.mutationService.editCost(entity.id, changes);
         } else {
@@ -42,7 +39,7 @@ function CostFormDrawerContent({
   );
 }
 
-export const costFormDrawerDescriptor: DrawerDescriptor<CostFormSpec> = {
+export const costFormDrawerDescriptor = {
   getKey: (entity) => `cost-form-${entity.id}-${entity.mode}`,
   getLabel: (entity) =>
     entity.mode === "edit" ? "Edit cost" : "Duplicate cost",
@@ -54,4 +51,4 @@ export const costFormDrawerDescriptor: DrawerDescriptor<CostFormSpec> = {
   renderDrawerContent: (entity, services) => (
     <CostFormDrawerContent entity={entity} services={services} />
   ),
-};
+} satisfies DrawerDescriptor<CostFormSpec>;

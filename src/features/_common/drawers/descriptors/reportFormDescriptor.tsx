@@ -42,7 +42,7 @@ function ReportFormDrawerContent({
   );
 }
 
-export const reportFormDrawerDescriptor: DrawerDescriptor<ReportFormSpec> = {
+export const reportFormDrawerDescriptor = {
   getKey: (entity) => `report-form-${entity.id}-${entity.mode}`,
   getLabel: (entity) =>
     entity.mode === "edit" ? "Edit report" : "Duplicate report",
@@ -54,4 +54,4 @@ export const reportFormDrawerDescriptor: DrawerDescriptor<ReportFormSpec> = {
   renderDrawerContent: (entity, services) => (
     <ReportFormDrawerContent entity={entity} services={services} />
   ),
-};
+} satisfies DrawerDescriptor<ReportFormSpec>;
