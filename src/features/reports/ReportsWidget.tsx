@@ -300,10 +300,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
         },
         services: props.services,
         pushEntityDrawer: drawerState.pushEntityDrawer,
+        popEntityDrawer: drawerState.popEntityDrawer,
       }),
     [
       billingById,
       costById,
+      drawerState.popEntityDrawer,
       drawerState.pushEntityDrawer,
       props.clientId,
       props.services,
@@ -662,7 +664,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                   contractorId: rd.tryMap(
                     finalReports,
                     (reports) =>
-                      reports.entries[reports.entries.length - 1]?.contractor.id,
+                      reports.entries[reports.entries.length - 1]?.contractor
+                        .id,
                   ),
                   periodStart: rd.tryMap(finalReports, (reports) =>
                     maybe.map(

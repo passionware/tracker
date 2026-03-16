@@ -1,300 +1,128 @@
-import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
-import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
-import { CostInfo } from "@/features/_common/info/CostInfo.tsx";
 import {
-  ReportCostInfo,
-  ReportCostInfoProps,
-} from "@/features/_common/info/ReportCostInfo.tsx";
-import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
-import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { WithServices } from "@/platform/typescript/services.ts";
-import { WithFormatService } from "@/services/FormatService/FormatService.ts";
-import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
+  createBillingDetailDrawerNodeFactory,
+  createBillingFormDrawerNodeFactory,
+} from "./billingDrawerNodeFactory";
+import type { BillingFormEntity } from "./billingDrawerNodeFactory";
 import {
+  createCostDetailDrawerNodeFactory,
+  createCostFormDrawerNodeFactory,
+} from "./costDrawerNodeFactory";
+import type { CostFormEntity } from "./costDrawerNodeFactory";
+import type {
+  DrawerContext,
+  DrawerServices,
+} from "./entityDrawerNodeFactory.types";
+import {
+  createReportDetailDrawerNodeFactory,
+  createReportFormDrawerNodeFactory,
+} from "./reportDrawerNodeFactory";
+import type { ReportFormEntity } from "./reportDrawerNodeFactory";
+import { setCurrentCreateNode } from "./entityDrawerCreateNode";
+import type {
+  EntityDrawerNode,
+  EntityDrawerTarget,
+} from "./useEntityDrawerState";
+import type {
   BillingViewEntry,
   CostEntry,
   ReportViewEntry,
-  WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
-import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { DrawerMainInfoGrid } from "./DrawerMainInfoGrid.tsx";
-import { EntityDrawerNode, EntityDrawerTarget } from "./useEntityDrawerState.ts";
 
-type DrawerServices = WithServices<
-  [
-    WithFormatService,
-    WithMutationService,
-    WithPreferenceService,
-    WithReportDisplayService,
-    WithClientService,
-    WithContractorService,
-    WithWorkspaceService,
-    WithExpressionService,
-  ]
->;
+/** Union of all form targets (edit/duplicate) for the entity drawer. */
+export type EntityFormTarget =
+  | ReportFormEntity
+  | CostFormEntity
+  | BillingFormEntity;
 
 export interface CreateEntityDrawerNodeFactoryProps extends DrawerServices {
   reportById: Map<number, ReportViewEntry>;
   costById: Map<number, CostEntry>;
   billingById: Map<number, BillingViewEntry>;
-  context: {
-    clientId: ClientSpec;
-    workspaceId: WorkspaceSpec;
-  };
+  context: DrawerContext;
   pushEntityDrawer: (node: EntityDrawerNode) => void;
+  popEntityDrawer?: () => void;
 }
 
-function getEntityLabel(entity: EntityDrawerTarget) {
-  return `${entity.type === "report" ? "Report" : entity.type === "cost" ? "Cost" : "Billing"} #${entity.id}`;
-}
+type CreateNodeFn = (entity: unknown) => EntityDrawerNode;
 
-function getEntityTitle(entity: EntityDrawerTarget) {
-  if (entity.type === "report") {
-    return "Report details";
-  }
-  if (entity.type === "cost") {
-    return "Cost details";
-  }
-  return "Billing details";
-}
-
-function renderUnavailableEntity() {
+function isEntityDrawerEntity(
+  entity: unknown,
+): entity is EntityDrawerTarget | EntityFormTarget {
   return (
-    <div className="text-sm text-muted-foreground">
-      Selected entity is not available in current list scope.
-    </div>
+    typeof entity === "object" && entity !== null && "type" in entity
   );
 }
 
-export function createEntityDrawerNodeFactory({
-  reportById,
-  costById,
-  billingById,
-  context,
-  services,
-  pushEntityDrawer,
-}: CreateEntityDrawerNodeFactoryProps) {
-  function createNode(entity: EntityDrawerTarget): EntityDrawerNode {
-    return {
-      key: `${entity.type}-${entity.id}`,
-      entity,
-      label: getEntityLabel(entity),
-      title: getEntityTitle(entity),
-      renderHeaderActions: () => {
-        if (entity.type === "report") {
-          const report = reportById.get(entity.id);
-          if (!report) {
-            return null;
-          }
-          return (
-            <CommitStatusBadge
-              id={report.id}
-              isCommitted={report.originalReport.isCommitted}
-              entityType="report"
-              services={services}
-            />
-          );
-        }
+export function createEntityDrawerNodeFactory(
+  props: CreateEntityDrawerNodeFactoryProps,
+) {
+  const {
+    reportById,
+    costById,
+    billingById,
+    context,
+    services,
+    pushEntityDrawer,
+    popEntityDrawer,
+  } = props;
 
-        if (entity.type === "cost") {
-          const cost = costById.get(entity.id);
-          if (!cost) {
-            return null;
-          }
-          return (
-            <CommitStatusBadge
-              id={cost.id}
-              isCommitted={cost.originalCost.isCommitted}
-              entityType="cost"
-              services={services}
-            />
-          );
-        }
+  const createNode: CreateNodeFn = (entity) => {
+    if (!isEntityDrawerEntity(entity)) {
+      throw new Error("Invalid entity for entity drawer");
+    }
+    const f = factories;
+    switch (entity.type) {
+      case "report":
+        return f.reportDetail(entity);
+      case "report-form":
+        return f.reportForm(entity);
+      case "cost":
+        return f.costDetail(entity);
+      case "cost-form":
+        return f.costForm(entity);
+      case "billing":
+        return f.billingDetail(entity);
+      case "billing-form":
+        return f.billingForm(entity);
+    }
+  };
 
-        const billing = billingById.get(entity.id);
-        if (!billing) {
-          return null;
-        }
-        return (
-          <CommitStatusBadge
-            id={billing.id}
-            isCommitted={billing.originalBilling.isCommitted}
-            entityType="billing"
-            services={services}
-          />
-        );
-      },
-      renderMainInfo: () => {
-        if (entity.type === "report") {
-          const report = reportById.get(entity.id);
-          if (!report) {
-            return null;
-          }
-          return (
-            <DrawerMainInfoGrid
-              items={[
-                {
-                  label: "Client",
-                  value: report.client.name || `#${report.client.id}`,
-                },
-                {
-                  label: "Workspace",
-                  value: report.workspace.name || `#${report.workspace.id}`,
-                },
-                {
-                  label: "Contractor",
-                  value: report.contractor.fullName || `#${report.contractor.id}`,
-                },
-                {
-                  label: "Period",
-                  value: services.formatService.temporal.range.long(
-                    report.periodStart,
-                    report.periodEnd,
-                  ),
-                },
-              ]}
-            />
-          );
-        }
+  setCurrentCreateNode(createNode);
 
-        if (entity.type === "cost") {
-          const cost = costById.get(entity.id);
-          if (!cost) {
-            return null;
-          }
-          return (
-            <DrawerMainInfoGrid
-              items={[
-                {
-                  label: "Workspace",
-                  value: cost.workspace.name || `#${cost.workspace.id}`,
-                },
-                {
-                  label: "Contractor",
-                  value: cost.contractor?.fullName || "-",
-                },
-                {
-                  label: "Invoice date",
-                  value: services.formatService.temporal.single.compact(cost.invoiceDate),
-                },
-                { label: "Status", value: cost.status },
-              ]}
-            />
-          );
-        }
-
-        const billing = billingById.get(entity.id);
-        if (!billing) {
-          return null;
-        }
-        return (
-          <DrawerMainInfoGrid
-            items={[
-              {
-                label: "Client",
-                value: billing.client.name || `#${billing.client.id}`,
-              },
-              {
-                label: "Workspace",
-                value: billing.workspace.name || `#${billing.workspace.id}`,
-              },
-              { label: "Invoice #", value: billing.invoiceNumber },
-              {
-                label: "Invoice date",
-                value: services.formatService.temporal.single.compact(billing.invoiceDate),
-              },
-            ]}
-          />
-        );
-      },
-      render: () => {
-        if (entity.type === "report") {
-          const report = reportById.get(entity.id);
-          if (!report) {
-            return renderUnavailableEntity();
-          }
-          return (
-            <>
-              <ReportInfo
-                report={report}
-                workspaceId={idSpecUtils.mapSpecificOrElse(
-                  context.workspaceId,
-                  (x) => x,
-                  report.workspace.id,
-                )}
-                clientId={idSpecUtils.mapSpecificOrElse(
-                  context.clientId,
-                  (x) => x,
-                  report.client.id,
-                )}
-                services={services}
-                onOpenBillingDetails={(billingId) =>
-                  pushEntityDrawer(createNode({ type: "billing", id: billingId }))
-                }
-              />
-              <div className="mt-4">
-                <ReportCostInfo
-                  report={report}
-                  services={services as unknown as ReportCostInfoProps["services"]}
-                  onOpenCostDetails={(costId) =>
-                    pushEntityDrawer(createNode({ type: "cost", id: costId }))
-                  }
-                />
-              </div>
-            </>
-          );
-        }
-
-        if (entity.type === "cost") {
-          const cost = costById.get(entity.id);
-          if (!cost) {
-            return renderUnavailableEntity();
-          }
-          return (
-            <CostInfo
-              costEntry={cost}
-              clientId={idSpecUtils.mapSpecificOrElse(
-                context.clientId,
-                (x) => x,
-                idSpecUtils.ofAll(),
-              )}
-              workspaceId={idSpecUtils.mapSpecificOrElse(
-                context.workspaceId,
-                (x) => x,
-                idSpecUtils.ofAll(),
-              )}
-              services={services}
-              onOpenReportDetails={(reportId) =>
-                pushEntityDrawer(createNode({ type: "report", id: reportId }))
-              }
-            />
-          );
-        }
-
-        const billing = billingById.get(entity.id);
-        if (!billing) {
-          return renderUnavailableEntity();
-        }
-        return (
-          <ChargeInfo
-            billing={billing}
-            services={services}
-            onOpenReportDetails={(reportId) =>
-              pushEntityDrawer(createNode({ type: "report", id: reportId }))
-            }
-          />
-        );
-      },
-    };
-  }
+  const factories = {
+    reportDetail: createReportDetailDrawerNodeFactory({
+      reportById,
+      context,
+      services,
+      pushEntityDrawer,
+      popEntityDrawer,
+    }),
+    reportForm: createReportFormDrawerNodeFactory({
+      services,
+      popEntityDrawer,
+    }),
+    costDetail: createCostDetailDrawerNodeFactory({
+      costById,
+      context,
+      services,
+      pushEntityDrawer,
+      popEntityDrawer,
+    }),
+    costForm: createCostFormDrawerNodeFactory({
+      services,
+      popEntityDrawer,
+    }),
+    billingDetail: createBillingDetailDrawerNodeFactory({
+      billingById,
+      services,
+      pushEntityDrawer,
+      popEntityDrawer,
+    }),
+    billingForm: createBillingFormDrawerNodeFactory({
+      services,
+      popEntityDrawer,
+    }),
+  };
 
   return createNode;
 }

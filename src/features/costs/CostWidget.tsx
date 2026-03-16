@@ -25,7 +25,10 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { renderError, renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import {
   SplitViewLayout,
   ViewMode,
@@ -123,7 +126,10 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   ];
 
   // Get costs - we'll calculate selected IDs from the costs data
-  const costs = props.services.reportDisplayService.useCostView(query, undefined);
+  const costs = props.services.reportDisplayService.useCostView(
+    query,
+    undefined,
+  );
 
   // Calculate selected IDs from selection state and available costs
   const selectedCostIds = useMemo(() => {
@@ -216,10 +222,12 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         },
         services: props.services,
         pushEntityDrawer: drawerState.pushEntityDrawer,
+        popEntityDrawer: drawerState.popEntityDrawer,
       }),
     [
       billingById,
       costById,
+      drawerState.popEntityDrawer,
       drawerState.pushEntityDrawer,
       props.clientId,
       props.services,
@@ -276,7 +284,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         return {
           cost,
           start: toZoned(earliestReport.report.periodStart, timeZone),
-          end: toZoned(latestReport.report.periodEnd, timeZone).add({ days: 1 }),
+          end: toZoned(latestReport.report.periodEnd, timeZone).add({
+            days: 1,
+          }),
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -377,7 +387,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                 <Sun
                   className={cn(
                     "h-4 w-4",
-                    timelineDarkMode ? "text-muted-foreground" : "text-foreground",
+                    timelineDarkMode
+                      ? "text-muted-foreground"
+                      : "text-foreground",
                   )}
                 />
                 <Switch
@@ -388,7 +400,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                 <Moon
                   className={cn(
                     "h-4 w-4",
-                    timelineDarkMode ? "text-foreground" : "text-muted-foreground",
+                    timelineDarkMode
+                      ? "text-foreground"
+                      : "text-muted-foreground",
                   )}
                 />
               </div>
@@ -544,8 +558,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
                     <PopoverContent className="w-80 p-4" align="start">
                       <div className="space-y-3">
                         <div className="text-sm text-slate-700">
-                          Are you sure you want to delete {selectedCostIds.length}{" "}
-                          selected cost(s)? This action cannot be undone.
+                          Are you sure you want to delete{" "}
+                          {selectedCostIds.length} selected cost(s)? This action
+                          cannot be undone.
                         </div>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm">

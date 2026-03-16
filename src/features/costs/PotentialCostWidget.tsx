@@ -85,9 +85,7 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
   );
   const costById = useMemo(
     () =>
-      new Map(
-        (rd.tryGet(costs)?.entries ?? []).map((cost) => [cost.id, cost]),
-      ),
+      new Map((rd.tryGet(costs)?.entries ?? []).map((cost) => [cost.id, cost])),
     [costs],
   );
   const billingById = useMemo(
@@ -112,10 +110,12 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
         },
         services: props.services,
         pushEntityDrawer: drawerState.pushEntityDrawer,
+        popEntityDrawer: drawerState.popEntityDrawer,
       }),
     [
       billingById,
       costById,
+      drawerState.popEntityDrawer,
       drawerState.pushEntityDrawer,
       props.clientId,
       props.services,

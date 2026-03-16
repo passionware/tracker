@@ -24,7 +24,10 @@ import {
   ListToolbarButton,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import { renderError, renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  renderError,
+  renderSmallError,
+} from "@/features/_common/renderError.tsx";
 import {
   SplitViewLayout,
   ViewMode,
@@ -139,10 +142,11 @@ export function BillingWidget(props: BillingWidgetProps) {
   }, [selection, billings]);
 
   // Get billings with selection totals if any items are selected
-  const billingsWithSelection = props.services.reportDisplayService.useBillingView(
-    query,
-    selectedBillingIds.length > 0 ? selectedBillingIds : undefined,
-  );
+  const billingsWithSelection =
+    props.services.reportDisplayService.useBillingView(
+      query,
+      selectedBillingIds.length > 0 ? selectedBillingIds : undefined,
+    );
 
   // Use billings with selection totals if available, otherwise use regular billings
   const finalBillings =
@@ -160,7 +164,9 @@ export function BillingWidget(props: BillingWidgetProps) {
     }
 
     try {
-      await props.services.mutationService.bulkDeleteBilling(selectedBillingIds);
+      await props.services.mutationService.bulkDeleteBilling(
+        selectedBillingIds,
+      );
       setSelection(selectionState.selectNone());
       toast.success(
         `Successfully deleted ${selectedBillingIds.length} billing(s)`,
@@ -222,10 +228,12 @@ export function BillingWidget(props: BillingWidgetProps) {
         },
         services: props.services,
         pushEntityDrawer: drawerState.pushEntityDrawer,
+        popEntityDrawer: drawerState.popEntityDrawer,
       }),
     [
       billingById,
       costById,
+      drawerState.popEntityDrawer,
       drawerState.pushEntityDrawer,
       props.clientId,
       props.services,
@@ -327,7 +335,8 @@ export function BillingWidget(props: BillingWidgetProps) {
           start,
           end,
           label: billing.invoiceNumber || `Billing #${billing.id}`,
-          color: getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
+          color:
+            getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
           data: billing,
         };
       },
