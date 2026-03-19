@@ -23,12 +23,11 @@ const tmpFixDate = (date: Date | CalendarDate): Date => {
 };
 
 export function createFormatService(clock: () => Date): FormatService {
-  const amount = (
+  const amountText = (
     value: number,
     currency: "EUR" | "USD" | string,
     fullPrecision = false,
-  ) => {
-    // Fallback to EUR if currency is undefined or empty
+  ): string => {
     const safeCurrency = currency || "EUR";
 
     const formatter = new Intl.NumberFormat("de-DE", {
@@ -40,7 +39,6 @@ export function createFormatService(clock: () => Date): FormatService {
     });
 
     const clearedValue = Math.abs(value);
-
     let formattedValue = formatter.format(clearedValue);
 
     if (fullPrecision && clearedValue > 0 && clearedValue < 0.01) {
@@ -48,13 +46,21 @@ export function createFormatService(clock: () => Date): FormatService {
     }
 
     const result = formattedValue.split(" ");
-    const currencySymbol = result[1];
-    const currencyValue = result[0];
+    const currencySymbol = result[1] ?? safeCurrency;
+    const currencyValue = result[0] ?? formattedValue;
+    const separator = currencySymbol.match(/^[A-z]+$/) ? " " : "";
 
-    const text =
-      value < 0
-        ? `-${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`
-        : `${currencySymbol}${currencySymbol.match(/^[A-z]+$/) ? " " : ""}${currencyValue}`;
+    return value < 0
+      ? `-${currencySymbol}${separator}${currencyValue}`
+      : `${currencySymbol}${separator}${currencyValue}`;
+  };
+
+  const amount = (
+    value: number,
+    currency: "EUR" | "USD" | string,
+    fullPrecision = false,
+  ) => {
+    const text = amountText(value, currency, fullPrecision);
 
     return (
       <span className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
@@ -73,7 +79,7 @@ export function createFormatService(clock: () => Date): FormatService {
     // return formattedValue.replace("€", "") + "€";
     // } else if (currency === "PLN") {
     //   // Handle PLN by moving the currency to the end and adding a space
-    //   return formattedValue.replace("PLN", "").trim() + " PLN";
+    //   return formattedValue.replace("PLN", "").trim() + " PLN";
     // }
     //
     // // USD format remains unchanged as it matches the desired output
@@ -327,6 +333,7 @@ export function createFormatService(clock: () => Date): FormatService {
     },
     financial: {
       amount,
+      amountText,
       currency: (value) => {
         return amount(value.amount, value.currency);
       },
