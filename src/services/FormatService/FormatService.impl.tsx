@@ -63,7 +63,10 @@ export function createFormatService(clock: () => Date): FormatService {
     const text = amountText(value, currency, fullPrecision);
 
     return (
-      <span className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
+      <span
+        className={cn("font-mono", value < 0 ? "text-rose-900" : "")}
+        data-vaul-no-drag
+      >
         {text}
       </span>
     );
@@ -351,7 +354,10 @@ export function createFormatService(clock: () => Date): FormatService {
         }
 
         return (
-          <span className={cn("font-mono", value < 0 ? "text-rose-900" : "")}>
+          <span
+            className={cn("font-mono", value < 0 ? "text-rose-900" : "")}
+            data-vaul-no-drag
+          >
             {formattedValue}
           </span>
         );

@@ -140,7 +140,10 @@ export function CostInfo({
     <InfoLayout
       header={
         <div className="w-full flex flex-col gap-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-xs">
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-xs"
+            data-vaul-no-drag
+          >
             <div>
               <div className="text-muted-foreground">Invoice number</div>
               <div className="font-medium text-foreground">

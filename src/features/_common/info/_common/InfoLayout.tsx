@@ -9,8 +9,11 @@ export interface InfoLayoutProps {
 
 export function InfoLayout({ header, children }: InfoLayoutProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-row items-center gap-4 p-0 text-lg text-slate-700 pm-4 font-light">
+    <div className="flex flex-col gap-3" data-vaul-no-drag>
+      <div
+        className="flex flex-row items-center gap-4 p-0 text-lg text-slate-700 pm-4 font-light"
+        data-vaul-no-drag
+      >
         {header}
       </div>
       {children}
