@@ -3,6 +3,7 @@ export interface TimelineViewPreferences {
   darkMode: boolean;
   splitRatio: number; // Percentage for timeline panel (0-100)
   groupBy: "contractor" | "client" | "workspace" | "projectIteration";
+  colorBy: "group" | "billing-status" | "cost-status";
 }
 
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */

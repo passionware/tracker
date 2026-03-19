@@ -17,6 +17,7 @@ export function createPreferenceService(config: {
         darkMode: false,
         splitRatio: 40,
         groupBy: "contractor",
+        colorBy: "billing-status",
       };
     },
     getTimelineView: async () => {
@@ -25,6 +26,7 @@ export function createPreferenceService(config: {
         darkMode: false,
         splitRatio: 40,
         groupBy: "contractor",
+        colorBy: "billing-status",
       };
     },
     setTimelineView: async () => {

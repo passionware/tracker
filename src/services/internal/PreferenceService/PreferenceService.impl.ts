@@ -37,6 +37,7 @@ const timelineViewPreferencesSchema = z.object({
   darkMode: z.boolean(),
   splitRatio: z.number().min(0).max(100),
   groupBy: z.enum(["contractor", "client", "workspace", "projectIteration"]),
+  colorBy: z.enum(["group", "billing-status", "cost-status"]),
 });
 
 const defaultTimelineViewPreferences: TimelineViewPreferences = {
@@ -44,6 +45,7 @@ const defaultTimelineViewPreferences: TimelineViewPreferences = {
   darkMode: false,
   splitRatio: 40,
   groupBy: "contractor",
+  colorBy: "billing-status",
 };
 
 const timelineViewApi = createLocalStorageApi<TimelineViewPreferences>(

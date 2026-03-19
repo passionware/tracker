@@ -111,7 +111,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   >(savedPreferences.groupBy);
   const [timelineColorBy, setTimelineColorBy] = useState<
     "group" | "billing-status" | "cost-status"
-  >("billing-status");
+  >(savedPreferences.colorBy);
 
   // Load preferences on mount
   useEffect(() => {
@@ -121,6 +121,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       setTimelineDarkMode(prefs.darkMode);
       setSplitRatio(prefs.splitRatio);
       setTimelineGroupBy(prefs.groupBy);
+      setTimelineColorBy(prefs.colorBy);
     })();
   }, [props.services.preferenceService]);
 
@@ -133,12 +134,14 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       darkMode: timelineDarkMode,
       splitRatio,
       groupBy: timelineGroupBy,
+      colorBy: timelineColorBy,
     });
   }, [
     viewMode,
     timelineDarkMode,
     splitRatio,
     timelineGroupBy,
+    timelineColorBy,
     props.services.preferenceService,
   ]);
 
