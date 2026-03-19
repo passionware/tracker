@@ -8,6 +8,7 @@ const Popover = (props: React.ComponentProps<typeof PopoverPrimitive.Root>) => (
 );
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
+const PopoverAnchor = PopoverPrimitive.Anchor;
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
@@ -45,4 +46,4 @@ function PopoverHeader({
   );
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverHeader };
+export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent, PopoverHeader };

@@ -111,7 +111,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   >(savedPreferences.groupBy);
   const [timelineColorBy, setTimelineColorBy] = useState<
     "group" | "billing-status" | "cost-status"
-  >("billing-status");
+  >(savedPreferences.colorBy);
 
   // Load preferences on mount
   useEffect(() => {
@@ -121,6 +121,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       setTimelineDarkMode(prefs.darkMode);
       setSplitRatio(prefs.splitRatio);
       setTimelineGroupBy(prefs.groupBy);
+      setTimelineColorBy(prefs.colorBy);
     })();
   }, [props.services.preferenceService]);
 
@@ -133,12 +134,14 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       darkMode: timelineDarkMode,
       splitRatio,
       groupBy: timelineGroupBy,
+      colorBy: timelineColorBy,
     });
   }, [
     viewMode,
     timelineDarkMode,
     splitRatio,
     timelineGroupBy,
+    timelineColorBy,
     props.services.preferenceService,
   ]);
 
@@ -705,6 +708,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimeline
+              isEventSelected={(item) =>
+                selectionState.isSelected(selection, item.data.id)
+              }
+              onEventSelect={(item) => {
+                setSelection((s) => selectionState.toggle(s, item.data.id));
+              }}
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}
@@ -895,8 +904,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           onOpenChange={setIsBulkCreateCostOpen}
           selectedReports={selectedReports}
           services={props.services}
-          onCompleted={() => {
+          onCompleted={(createdCostId) => {
             setSelection(selectionState.selectNone());
+            openEntityDrawer({ type: "cost", id: createdCostId });
           }}
         />
       </>

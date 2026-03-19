@@ -222,6 +222,8 @@ interface DefaultTimelineItemProps<Data = unknown> {
   left: number;
   width: number;
   isSelected: boolean;
+  /** Synced list selection; extra emphasis when true. */
+  selected: boolean;
   isHovered: boolean;
   isMinWidth: boolean;
   onMouseDown: (
@@ -240,6 +242,7 @@ export function DefaultTimelineItem<Data = unknown>({
   left,
   width,
   isSelected,
+  selected = isSelected,
   isHovered,
   isMinWidth,
   onMouseDown,
@@ -289,7 +292,9 @@ export function DefaultTimelineItem<Data = unknown>({
         item.color || "bg-primary",
         isSelected &&
           "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-        isHovered && !isSelected && "ring-1 ring-foreground/50",
+        selected &&
+          "z-[1] ring-2 ring-primary ring-offset-2 ring-offset-background shadow-md",
+        isHovered && !isSelected && !selected && "ring-1 ring-foreground/50",
       )}
       style={{
         left,
@@ -309,7 +314,12 @@ export function DefaultTimelineItem<Data = unknown>({
       />
 
       {/* Item content */}
-      <div className="absolute inset-x-2 inset-y-0 flex items-center overflow-hidden">
+      <div
+        className={cn(
+          "absolute inset-x-2 inset-y-0 flex items-center overflow-hidden",
+          isMinWidth && "inset-x-1",
+        )}
+      >
         <span className="text-xs font-medium text-primary-foreground truncate">
           {item.label}
         </span>
@@ -339,6 +349,7 @@ interface InfiniteTimelineProps<Data = unknown> {
     left: number;
     width: number;
     isSelected: boolean;
+    selected: boolean;
     isHovered: boolean;
     isMinWidth: boolean;
     onMouseDown: (
@@ -352,7 +363,11 @@ interface InfiniteTimelineProps<Data = unknown> {
   }) => React.ReactNode;
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
+  /** Shift+click when the item does not overlap another in the same lane (time collision). */
+  onEventSelect?: (item: TimelineItem<Data>) => void;
   onItemHover?: (item: TimelineItem<Data>) => void;
+  /** Predicate used to mark selected events. */
+  isEventSelected?: (item: TimelineItem<Data>) => boolean;
 }
 
 export function InfiniteTimeline<Data = unknown>({
@@ -362,7 +377,9 @@ export function InfiniteTimeline<Data = unknown>({
   renderItem,
   onItemsChange,
   onItemClick,
+  onEventSelect,
   onItemHover,
+  isEventSelected,
 }: InfiniteTimelineProps<Data>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<{
@@ -454,11 +471,6 @@ export function InfiniteTimeline<Data = unknown>({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [snapOption, setSnapOption] = useState<SnapOption>("15min");
-  // @ts-expect-error - TODO: fix this
-  const [previewRow, setPreviewRow] = useState<{
-    laneId: string;
-    row: number;
-  } | null>(null);
   const [currentMouseX, setCurrentMouseX] = useState<number | null>(null);
 
   const pixelsPerMinute = PIXELS_PER_MINUTE * zoom;
@@ -477,6 +489,7 @@ export function InfiniteTimeline<Data = unknown>({
   const [dragModifications, setDragModifications] = useState<
     Map<string, Partial<TimelineItemInternal<Data>>>
   >(new Map());
+  const lastAutoFitSignatureRef = useRef<string | null>(null);
 
   // Merge items with drag modifications for rendering
   const mergedItems = useMemo(() => {
@@ -486,10 +499,18 @@ export function InfiniteTimeline<Data = unknown>({
     });
   }, [items, dragModifications]);
 
-  // Update zoom and scroll when items change to fit all items
+  const autoFitSignature = useMemo(() => {
+    if (!items.length) return "";
+    return items
+      .map((item) => `${item.id}|${item.laneId}|${item.start}|${item.end}`)
+      .join(";");
+  }, [items]);
+
+  // Update zoom and scroll only when timeline geometry changes.
   useEffect(() => {
     const allItems = items;
     if (!allItems || allItems.length === 0) return;
+    if (lastAutoFitSignatureRef.current === autoFitSignature) return;
 
     const minStart = Math.min(...allItems.map((item) => item.start));
     const maxEnd = Math.max(...allItems.map((item) => item.end));
@@ -514,7 +535,8 @@ export function InfiniteTimeline<Data = unknown>({
     const newScrollOffset =
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
     setScrollOffset(newScrollOffset);
-  }, [items]);
+    lastAutoFitSignatureRef.current = autoFitSignature;
+  }, [items, autoFitSignature]);
 
   // Note: onItemsChange is now called directly when items are modified (drag, draw, delete)
   // No need for a useEffect since items is derived from externalItems via useMemo
@@ -786,6 +808,28 @@ export function InfiniteTimeline<Data = unknown>({
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  const beginItemDrag = useCallback(
+    (
+      clientX: number,
+      item: TimelineItemInternal<Data>,
+      type: "move" | "resize-start" | "resize-end",
+    ) => {
+      const containerX = screenXToContainerX(clientX);
+      setSelectedItemId(item.id);
+      setDragState({
+        type,
+        itemId: item.id,
+        startX: clientX,
+        startTime: pixelToTime(containerX),
+        originalItem: { ...item },
+        hasCrossedThreshold: false,
+      });
+      const externalItem = toExternalItem(item, baseDateZoned);
+      onItemClick?.(externalItem);
+    },
+    [screenXToContainerX, pixelToTime, baseDateZoned, onItemClick],
+  );
+
   // Handle mouse down on item (start drag) - uses internal format
   const handleItemMouseDown = (
     e: ReactMouseEvent,
@@ -794,20 +838,25 @@ export function InfiniteTimeline<Data = unknown>({
   ) => {
     // Ignore middle mouse button and cmd+left (used for drawing)
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) return;
+
+    const laneSiblings = getItemsWithRows(item.laneId).filter(
+      (i) => i.row === (item.row ?? 0),
+    );
+    const hasTimeCollision = laneSiblings.some(
+      (other) =>
+        other.id !== item.id &&
+        !(item.end <= other.start || item.start >= other.end),
+    );
+
+    if (type === "move" && e.shiftKey && onEventSelect && !hasTimeCollision) {
+      e.stopPropagation();
+      setSelectedItemId(item.id);
+      onEventSelect(toExternalItem(item, baseDateZoned));
+      return;
+    }
+
     e.stopPropagation();
-    const containerX = screenXToContainerX(e.clientX);
-    setSelectedItemId(item.id);
-    setDragState({
-      type,
-      itemId: item.id,
-      startX: e.clientX,
-      startTime: pixelToTime(containerX),
-      originalItem: { ...item },
-      hasCrossedThreshold: false,
-    });
-    // Convert to external format for callback
-    const externalItem = toExternalItem(item, baseDateZoned);
-    onItemClick?.(externalItem);
+    beginItemDrag(e.clientX, item, type);
   };
 
   // Handle mouse down on lane (start drawing or allow panning)
@@ -954,7 +1003,6 @@ export function InfiniteTimeline<Data = unknown>({
       // This ensures calculatedPreviewItem becomes null before we add the new item
       previewItemRef.current = null;
       setDragState(null);
-      setPreviewRow(null);
       setCurrentMouseX(null);
 
       // Apply drag modifications and notify parent
@@ -1973,16 +2021,18 @@ export function InfiniteTimeline<Data = unknown>({
                     const MIN_VISIBLE_WIDTH = 3;
                     const isMinWidth = naturalWidth < MIN_VISIBLE_WIDTH;
                     const width = Math.max(naturalWidth, MIN_VISIBLE_WIDTH);
-                    const isSelected = selectedItemId === item.id;
+                    const externalItem = toExternalItem(item, baseDateZoned);
+                    const selected = isEventSelected?.(externalItem) ?? false;
+                    const isSelected = selected || selectedItemId === item.id;
                     const isHovered = hoveredItemId === item.id;
 
                     // Convert internal item to external format for renderItem callback
-                    const externalItem = toExternalItem(item, baseDateZoned);
                     const itemProps = {
                       item: externalItem,
                       left,
                       width,
                       isSelected,
+                      selected,
                       isHovered,
                       isMinWidth,
                       onMouseDown: (
@@ -2029,9 +2079,6 @@ export function InfiniteTimeline<Data = unknown>({
                         previewForLane ? previewForLane.row : undefined
                       }
                       existingItems={itemsWithRows}
-                      onPreviewUpdate={(_start, _end, row) => {
-                        setPreviewRow({ laneId: lane.id, row });
-                      }}
                     />
                   )}
                 </div>
@@ -2101,7 +2148,6 @@ function DrawingPreview({
   snapTime,
   previewRow: previewRowProp,
   existingItems,
-  onPreviewUpdate,
 }: {
   startTime: number;
   timeToPixel: (time: number) => number;
@@ -2112,7 +2158,6 @@ function DrawingPreview({
   snapTime: (time: number) => number;
   previewRow?: number;
   existingItems: (TimelineItemInternal<unknown> & { row: number })[];
-  onPreviewUpdate: (start: number, end: number, row: number) => void;
 }) {
   // Initialize with the start position so it doesn't flash from -infinity
   const initialRect = containerRef.current?.getBoundingClientRect();
@@ -2163,32 +2208,6 @@ function DrawingPreview({
   };
 
   const row = calculateRow();
-
-  // Report preview position for parent to use in collision calculations
-  const prevValuesRef = useRef<{
-    start: number;
-    end: number;
-    row: number;
-  } | null>(null);
-  const onPreviewUpdateRef = useRef(onPreviewUpdate);
-
-  // Keep the ref updated
-  useEffect(() => {
-    onPreviewUpdateRef.current = onPreviewUpdate;
-  }, [onPreviewUpdate]);
-
-  useEffect(() => {
-    // Only update if values actually changed
-    if (
-      !prevValuesRef.current ||
-      prevValuesRef.current.start !== previewStart ||
-      prevValuesRef.current.end !== previewEnd ||
-      prevValuesRef.current.row !== row
-    ) {
-      prevValuesRef.current = { start: previewStart, end: previewEnd, row };
-      onPreviewUpdateRef.current(previewStart, previewEnd, row);
-    }
-  }, [previewStart, previewEnd, row]);
 
   const left = timeToPixel(previewStart);
   const right = timeToPixel(previewEnd);

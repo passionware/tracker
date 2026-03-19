@@ -28,6 +28,7 @@ import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { assert } from "@/platform/lang/assert.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { money } from "@/platform/lang/money.ts";
 import {
   calendarDateToJSDate,
   dateToCalendarDate,
@@ -173,7 +174,7 @@ export function ChargeInfo({
             fromAmount={billing.remainingAmount}
             toAmount={billing.matchedAmount}
           />
-          {billing.remainingAmount.amount !== 0 && (
+          {!money.isZero(billing.remainingAmount.amount) && (
             <div className="flex gap-2 flex-row self-end">
               <Popover>
                 <PopoverTrigger asChild>
@@ -223,6 +224,7 @@ export function ChargeInfo({
                           targetLabel="Report value"
                           targetCurrency={report.remainingAmount.currency}
                           showBreakdown={true}
+                          showExchangeRate={false}
                           initialValues={{
                             // billing
                             source: isSameCurrency
@@ -366,6 +368,7 @@ export function ChargeInfo({
                       targetCurrency={link.report.currency}
                       title="Update linked report"
                       showBreakdown={true}
+                      showExchangeRate={false}
                       initialValues={{
                         source: link.link.billingAmount ?? undefined,
                         target: link.link.reportAmount ?? undefined,

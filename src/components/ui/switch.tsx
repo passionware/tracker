@@ -48,6 +48,7 @@ const Switch = React.forwardRef<
 >(({ className, variant, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(switchVariants({ variant }), className)}
+    data-vaul-no-drag=""
     {...props}
     ref={ref}
   >

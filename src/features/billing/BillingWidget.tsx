@@ -442,6 +442,12 @@ export function BillingWidget(props: BillingWidgetProps) {
             <InfiniteTimeline
               items={timeline.items}
               lanes={timeline.lanes}
+              isEventSelected={(item) =>
+                selectionState.isSelected(selection, item.data.id)
+              }
+              onEventSelect={(item) => {
+                setSelection((s) => selectionState.toggle(s, item.data.id));
+              }}
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}

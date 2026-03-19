@@ -10,6 +10,11 @@ export interface FormatService {
       fullPrecision?: boolean,
     ) => ReactNode;
     currency: (value: CurrencyValue) => ReactNode;
+    amountText: (
+      value: number,
+      currency: "EUR" | "USD" | string,
+      fullPrecision?: boolean,
+    ) => string;
     currencySymbol: (currency: string) => string;
     amountWithoutCurrency: (
       value: number,

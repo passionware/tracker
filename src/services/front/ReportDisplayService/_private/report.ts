@@ -4,6 +4,7 @@ import {
   addDaysToCalendarDate,
   isSameCalendarDate,
 } from "@/platform/lang/internationalized-date";
+import { money } from "@/platform/lang/money.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { prepareValues } from "@/services/front/ReportDisplayService/_private/prepareValues.ts";
@@ -181,7 +182,7 @@ function calculateReportEntry(
   // }
 
   function getBillingStatus() {
-    if (report.reportBillingBalance === 0) {
+    if (money.compare(report.reportBillingBalance, 0) === 0) {
       if (
         report.linkBillingReport?.some(
           (link) => link.link.linkType === "clarify",
@@ -192,8 +193,8 @@ function calculateReportEntry(
         return "billed";
       }
     } else if (
-      report.reportBillingBalance > 0 &&
-      report.reportBillingValue > 0
+      money.compare(report.reportBillingBalance, 0) > 0 &&
+      money.compare(report.reportBillingValue, 0) > 0
     ) {
       return "partially-billed";
     } else {
@@ -204,17 +205,17 @@ function calculateReportEntry(
   ////
 
   function getInstantEarningsStatus() {
-    if (report.netValue === 0) {
+    if (money.compare(report.netValue, 0) === 0) {
       // If the report's net value is 0, there is nothing to process; status is "compensated"
       return "compensated";
     }
 
-    if (report.reportCostValue === 0) {
+    if (money.compare(report.reportCostValue, 0) === 0) {
       // If no costs have been paid, the status is "uncompensated"
       return "uncompensated";
     }
 
-    if (report.immediatePaymentDue > 0) {
+    if (money.compare(report.immediatePaymentDue, 0) > 0) {
       // If a partial payment is still due, the status is "partially-compensated"
       return "partially-compensated";
     }
@@ -233,13 +234,15 @@ function calculateReportEntry(
   }
 
   function getDeferredEarningStatus() {
-    if (report.reportCostBalance <= 0) {
+    if (money.compare(report.reportCostBalance, 0) <= 0) {
       return "compensated";
     }
 
     if (
-      report.reportCostBalance >=
-      report.netValue - report.reportBillingValue
+      money.compare(
+        report.reportCostBalance,
+        report.netValue - report.reportBillingValue,
+      ) >= 0
     ) {
       return "uncompensated";
     }
@@ -285,7 +288,7 @@ function calculateReportEntry(
       currency: report.currency,
     },
     remainingCompensationAmount: {
-      amount: Math.max(0, report.immediatePaymentDue),
+      amount: Math.max(0, money.round(report.immediatePaymentDue)),
       currency: report.currency,
     },
     remainingFullCompensationAmount: {

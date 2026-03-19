@@ -17,6 +17,7 @@ export function createPreferenceService(config: {
         darkMode: false,
         splitRatio: 40,
         groupBy: "contractor",
+        colorBy: "billing-status",
       };
     },
     getTimelineView: async () => {
@@ -25,6 +26,7 @@ export function createPreferenceService(config: {
         darkMode: false,
         splitRatio: 40,
         groupBy: "contractor",
+        colorBy: "billing-status",
       };
     },
     setTimelineView: async () => {
@@ -32,5 +34,14 @@ export function createPreferenceService(config: {
     },
     getBudgetLogSyncState: async () => null,
     setBudgetLogSyncState: async () => {},
+    getBulkCreateCostPreferences: async () => ({
+      paymentDeductionPercent: 0,
+      vatPercent: 23,
+    }),
+    setBulkCreateCostPreferences: async () => {},
+    useBulkCreateCostPreferences: () => ({
+      paymentDeductionPercent: 0,
+      vatPercent: 23,
+    }),
   };
 }

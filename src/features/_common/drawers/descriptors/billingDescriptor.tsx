@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import {
   ActionMenu,
   ActionMenuCopyItem,
@@ -18,6 +19,40 @@ import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
 
 export type BillingSpec = { type: "billing"; id: number };
+
+function renderBillingStatusBadge(
+  status:
+    | "matched"
+    | "unmatched"
+    | "partially-matched"
+    | "clarified"
+    | "overmatched",
+) {
+  const variant = (
+    {
+      matched: "positive",
+      unmatched: "destructive",
+      "partially-matched": "warning",
+      clarified: "positive",
+      overmatched: "accent1",
+    } as const
+  )[status];
+  const label = (
+    {
+      matched: "Matched",
+      unmatched: "Unmatched",
+      "partially-matched": "Partially Matched",
+      clarified: "Clarified",
+      overmatched: "Overmatched",
+    } as const
+  )[status];
+
+  return (
+    <Badge variant={variant} tone="secondary" size="sm">
+      {label}
+    </Badge>
+  );
+}
 
 function BillingBreadcrumbLabel({
   entity,
@@ -66,6 +101,7 @@ function BillingSmallPreview({
             { label: "Workspace", value: workspaceLabel },
             { label: "Invoice #", value: invoiceNumberLabel },
             { label: "Invoice date", value: invoiceDateLabel },
+            { label: "Status", value: renderBillingStatusBadge(billing.status) },
           ]}
         />
       );

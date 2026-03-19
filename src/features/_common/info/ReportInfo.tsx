@@ -30,6 +30,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { cn } from "@/lib/utils.ts";
 import { assert } from "@/platform/lang/assert.ts";
+import { money } from "@/platform/lang/money.ts";
 import { todayCalendarDate } from "@/platform/lang/internationalized-date";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
@@ -146,7 +147,7 @@ export function ReportInfo({
             />
           }
           actions={
-            report.remainingAmount.amount !== 0 ? (
+            !money.isZero(report.remainingAmount.amount) ? (
               <>
               <Popover>
                 <PopoverTrigger asChild>
@@ -208,6 +209,7 @@ export function ReportInfo({
                           sourceLabel="Report value"
                           targetLabel="Billing value"
                           showBreakdown={true}
+                          showExchangeRate={false}
                           initialValues={{
                             // billing
                             source: isSameCurrency
@@ -354,6 +356,7 @@ export function ReportInfo({
                   targetCurrency={link.billing.currency}
                   title="Update linked billing"
                   showBreakdown={true}
+                  showExchangeRate={false}
                   initialValues={{
                     source: link.link.reportAmount,
                     target: link.link.billingAmount,
@@ -401,14 +404,24 @@ export function ReportInfo({
                     data-no-row-open
                   >
                     {(() => {
-                      if (link.link.reportAmount < link.link.billingAmount) {
+                      if (
+                        money.compare(
+                          link.link.reportAmount,
+                          link.link.billingAmount,
+                        ) < 0
+                      ) {
                         return (
                           <Badge variant="warning" size="sm">
                             Overbilling
                           </Badge>
                         );
                       }
-                      if (link.link.reportAmount > link.link.billingAmount) {
+                      if (
+                        money.compare(
+                          link.link.reportAmount,
+                          link.link.billingAmount,
+                        ) > 0
+                      ) {
                         return (
                           <Badge variant="destructive">Underbilling</Badge>
                         );

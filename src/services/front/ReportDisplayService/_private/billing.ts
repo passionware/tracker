@@ -1,6 +1,7 @@
 import { Billing } from "@/api/billing/billing.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { money } from "@/platform/lang/money.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { prepareValues } from "@/services/front/ReportDisplayService/_private/prepareValues.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -137,7 +138,7 @@ export function calculateBilling(
   const remainingAmount = billing.remainingBalance;
 
   function getStatus() {
-    if (remainingAmount === 0) {
+    if (money.compare(remainingAmount, 0) === 0) {
       const hasAtLeastOneClarification = billing.linkBillingReport?.some(
         (link) => link.link.linkType === "clarify",
       );
@@ -145,10 +146,13 @@ export function calculateBilling(
         return "clarified";
       }
       return "matched";
-    } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
+    } else if (
+      money.compare(remainingAmount, 0) > 0 &&
+      money.compare(sumOfLinkedAmounts, 0) > 0
+    ) {
       return "partially-matched";
     } else {
-      if (remainingAmount < 0) {
+      if (money.compare(remainingAmount, 0) < 0) {
         return "overmatched";
       }
       return "unmatched";

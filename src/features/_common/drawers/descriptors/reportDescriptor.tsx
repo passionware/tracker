@@ -1,5 +1,6 @@
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import {
   ActionMenu,
   ActionMenuCopyItem,
@@ -22,6 +23,33 @@ import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
 
 export type ReportSpec = { type: "report"; id: number };
+
+function renderReportStatusBadge(
+  status: "billed" | "partially-billed" | "clarified" | "uncovered",
+) {
+  const variant = (
+    {
+      billed: "positive",
+      "partially-billed": "warning",
+      clarified: "positive",
+      uncovered: "destructive",
+    } as const
+  )[status];
+  const label = (
+    {
+      billed: "Billed",
+      "partially-billed": "Partially Billed",
+      clarified: "Clarified",
+      uncovered: "Uncovered",
+    } as const
+  )[status];
+
+  return (
+    <Badge variant={variant} tone="secondary" size="sm">
+      {label}
+    </Badge>
+  );
+}
 
 function ReportBreadcrumbLabel({
   entity,
@@ -73,6 +101,7 @@ function ReportSmallPreview({
             { label: "Workspace", value: workspaceLabel },
             { label: "Contractor", value: contractorLabel },
             { label: "Period", value: periodLabel },
+            { label: "Status", value: renderReportStatusBadge(report.status) },
           ]}
         />
       );
