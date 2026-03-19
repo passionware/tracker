@@ -42,6 +42,7 @@ const ToggleGroupItem = React.forwardRef<
   return (
     <ToggleGroupPrimitive.Item
       ref={ref}
+      data-vaul-no-drag=""
       className={cn(
         toggleVariants({
           variant: context.variant || variant,

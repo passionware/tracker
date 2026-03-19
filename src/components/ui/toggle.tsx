@@ -32,6 +32,7 @@ const Toggle = React.forwardRef<
 >(({ className, variant, size, ...props }, ref) => (
   <TogglePrimitive.Root
     ref={ref}
+    data-vaul-no-drag=""
     className={cn(toggleVariants({ variant, size, className }))}
     {...props}
   />
