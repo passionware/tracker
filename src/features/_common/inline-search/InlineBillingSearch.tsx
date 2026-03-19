@@ -161,6 +161,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                           target: billing.remainingAmount.amount,
                           description: "",
                         }}
+                        showExchangeRate={false}
                         services={props.services}
                         onValueChange={(value) =>
                           props.onSelect({

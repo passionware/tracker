@@ -904,8 +904,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           onOpenChange={setIsBulkCreateCostOpen}
           selectedReports={selectedReports}
           services={props.services}
-          onCompleted={() => {
+          onCompleted={(createdCostId) => {
             setSelection(selectionState.selectNone());
+            openEntityDrawer({ type: "cost", id: createdCostId });
           }}
         />
       </>
