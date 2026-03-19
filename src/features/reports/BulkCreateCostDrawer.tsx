@@ -108,16 +108,29 @@ const toRateKey = (from: string, to: string) =>
   `${String(from).toUpperCase()}->${String(to).toUpperCase()}`;
 
 function buildLinkBreakdownPayload(link: LinkDraft, costCurrency: string) {
-  const quantity =
-    link.unitPrice && link.unitPrice > 0
-      ? round2(link.reportAmount / link.unitPrice)
+  if (link.unitPrice && link.unitPrice > 0) {
+    // Keep unit prices stable from the source report and exchange rate.
+    const reportUnitPrice = round2(link.unitPrice);
+    const costUnitPrice = round2(reportUnitPrice * link.exchangeRate);
+    const quantity = reportUnitPrice > 0
+      ? round2(link.reportAmount / reportUnitPrice)
       : 1;
-  const safeQuantity = quantity > 0 ? quantity : 1;
-  const reportUnitPrice =
-    link.unitPrice && link.unitPrice > 0
-      ? round2(link.unitPrice)
-      : round2(link.reportAmount / safeQuantity);
-  const costUnitPrice = round2(link.costAmount / safeQuantity);
+    const safeQuantity = quantity > 0 ? quantity : 1;
+
+    return {
+      quantity: safeQuantity,
+      unit: link.unit ?? "pc",
+      reportUnitPrice,
+      costUnitPrice,
+      exchangeRate: link.exchangeRate,
+      reportCurrency: link.reportCurrency,
+      costCurrency,
+    };
+  }
+
+  const safeQuantity = 1;
+  const reportUnitPrice = round2(link.reportAmount);
+  const costUnitPrice = round2(link.costAmount);
 
   return {
     quantity: safeQuantity,
