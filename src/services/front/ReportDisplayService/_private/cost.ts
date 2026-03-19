@@ -1,6 +1,7 @@
 import { Cost } from "@/api/cost/cost.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { money } from "@/platform/lang/money.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { prepareValues } from "@/services/front/ReportDisplayService/_private/prepareValues.ts";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
@@ -123,19 +124,21 @@ export function useCostEntryFromData(
 }
 
 function calculateCost(cost: Cost, workspaces: Workspace[]): CostEntry {
-  const sumOfLinkedAmounts = sumBy(
-    cost.linkReports,
-    (link) => link.link.costAmount,
+  const sumOfLinkedAmounts = money.sum(
+    cost.linkReports.map((link) => link.link.costAmount),
   );
-  const remainingAmount = cost.netValue - sumOfLinkedAmounts;
+  const remainingAmount = money.subtract(cost.netValue, sumOfLinkedAmounts);
 
   function getStatus() {
-    if (remainingAmount === 0) {
+    if (money.compare(remainingAmount, 0) === 0) {
       return "matched";
-    } else if (remainingAmount > 0 && sumOfLinkedAmounts > 0) {
+    } else if (
+      money.compare(remainingAmount, 0) > 0 &&
+      money.compare(sumOfLinkedAmounts, 0) > 0
+    ) {
       return "partially-matched";
     } else {
-      if (sumOfLinkedAmounts > cost.netValue) {
+      if (money.compare(sumOfLinkedAmounts, cost.netValue) > 0) {
         return "overmatched";
       }
       return "unmatched";

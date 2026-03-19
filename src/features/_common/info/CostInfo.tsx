@@ -24,6 +24,7 @@ import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { TransferView } from "@/features/_common/TransferView.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { money } from "@/platform/lang/money.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -132,7 +133,8 @@ export function CostInfo({
             fromAmount={costEntry.remainingAmount}
             toAmount={costEntry.matchedAmount}
           />
-          {costEntry.status !== "matched" && (
+          {costEntry.status !== "matched" &&
+            !money.isZero(costEntry.remainingAmount.amount) && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="default" size="xs">
