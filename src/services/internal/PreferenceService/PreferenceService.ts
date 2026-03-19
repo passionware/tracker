@@ -12,6 +12,13 @@ export interface BudgetLogSyncState {
   iterationIds: number[];
 }
 
+/** Preferences for bulk create cost drawer (e.g. payment deduction % for Umowa o dzieło). */
+export interface BulkCreateCostPreferences {
+  paymentDeductionPercent: number;
+  /** VAT % used to derive gross from net (default 23). */
+  vatPercent: number;
+}
+
 export interface PreferenceService {
   useIsDangerMode: () => boolean;
   getIsDangerMode: () => boolean;
@@ -23,6 +30,11 @@ export interface PreferenceService {
   ) => Promise<void>;
   getBudgetLogSyncState: () => Promise<BudgetLogSyncState | null>;
   setBudgetLogSyncState: (state: BudgetLogSyncState) => Promise<void>;
+  getBulkCreateCostPreferences: () => Promise<BulkCreateCostPreferences>;
+  setBulkCreateCostPreferences: (
+    preferences: Partial<BulkCreateCostPreferences>,
+  ) => Promise<void>;
+  useBulkCreateCostPreferences: () => BulkCreateCostPreferences;
 }
 
 export interface WithPreferenceService {

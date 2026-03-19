@@ -34,5 +34,14 @@ export function createPreferenceService(config: {
     },
     getBudgetLogSyncState: async () => null,
     setBudgetLogSyncState: async () => {},
+    getBulkCreateCostPreferences: async () => ({
+      paymentDeductionPercent: 0,
+      vatPercent: 23,
+    }),
+    setBulkCreateCostPreferences: async () => {},
+    useBulkCreateCostPreferences: () => ({
+      paymentDeductionPercent: 0,
+      vatPercent: 23,
+    }),
   };
 }

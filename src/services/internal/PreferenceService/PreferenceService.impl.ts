@@ -1,5 +1,6 @@
 import {
   BudgetLogSyncState,
+  BulkCreateCostPreferences,
   PreferenceService,
   TimelineViewPreferences,
 } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -19,6 +20,33 @@ const budgetLogSyncApi = createLocalStorageApi<BudgetLogSyncState | null>(
     return result.success ? result.data : null;
   },
   null,
+);
+
+const bulkCreateCostPreferencesSchema = z.object({
+  paymentDeductionPercent: z.number().min(0).max(100),
+  vatPercent: z.number().min(0).max(100).optional(),
+});
+
+const defaultBulkCreateCostPreferences: BulkCreateCostPreferences = {
+  paymentDeductionPercent: 0,
+  vatPercent: 23,
+};
+
+const bulkCreateCostApi = createLocalStorageApi<BulkCreateCostPreferences>(
+  "bulk-create-cost-preferences",
+  (data) => {
+    try {
+      const parsed = bulkCreateCostPreferencesSchema.parse(data);
+      return {
+        ...defaultBulkCreateCostPreferences,
+        ...parsed,
+        vatPercent: parsed.vatPercent ?? defaultBulkCreateCostPreferences.vatPercent,
+      };
+    } catch {
+      return defaultBulkCreateCostPreferences;
+    }
+  },
+  defaultBulkCreateCostPreferences,
 );
 
 type Preferences = {
@@ -111,6 +139,34 @@ export function createPreferenceService(): PreferenceService {
     }
   });
 
+  const useBulkCreateCostStore = create<{
+    preferences: BulkCreateCostPreferences;
+    setPreferences: (
+      partial: Partial<BulkCreateCostPreferences>,
+    ) => Promise<void>;
+    initialized: boolean;
+  }>((set, get) => ({
+    preferences: defaultBulkCreateCostPreferences,
+    initialized: false,
+    setPreferences: async (partial) => {
+      const current = get().preferences;
+      const next = { ...current, ...partial };
+      set({ preferences: next });
+      await bulkCreateCostApi.write(next);
+    },
+  }));
+
+  void bulkCreateCostApi.read().then((prefs) => {
+    if (prefs) {
+      useBulkCreateCostStore.setState({
+        preferences: prefs,
+        initialized: true,
+      });
+    } else {
+      useBulkCreateCostStore.setState({ initialized: true });
+    }
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -138,6 +194,21 @@ export function createPreferenceService(): PreferenceService {
     },
     setBudgetLogSyncState: async (state: BudgetLogSyncState) => {
       await budgetLogSyncApi.write(state);
+    },
+    getBulkCreateCostPreferences: async () => {
+      return (await bulkCreateCostApi.read()) ?? defaultBulkCreateCostPreferences;
+    },
+    setBulkCreateCostPreferences: async (
+      partial: Partial<BulkCreateCostPreferences>,
+    ) => {
+      await useBulkCreateCostStore.getState().setPreferences(partial);
+    },
+    useBulkCreateCostPreferences: () => {
+      const store = useBulkCreateCostStore();
+      if (!store.initialized) {
+        return defaultBulkCreateCostPreferences;
+      }
+      return store.preferences;
     },
   };
 }

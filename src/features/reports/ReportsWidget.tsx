@@ -708,6 +708,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimeline
+              isEventSelected={(item) =>
+                selectionState.isSelected(selection, item.data.id)
+              }
+              onEventSelect={(item) => {
+                setSelection((s) => selectionState.toggle(s, item.data.id));
+              }}
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}
