@@ -51,6 +51,9 @@ export interface BillingPayload {
   invoiceDate: CalendarDate;
   description: string | null;
   workspaceId: Workspace["id"];
+  /** Settlement / bank date when the client paid this invoice. */
+  paidAt: CalendarDate | null;
+  paidAtJustification: string | null;
 }
 
 export interface BillingBase extends BillingPayload {

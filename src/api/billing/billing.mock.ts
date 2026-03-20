@@ -20,6 +20,8 @@ export const billingMock = createMockFactory<BillingBase>(
       workspaceMock.static.list.map((w) => w.id),
     ),
     isCommitted: false,
+    paidAt: null,
+    paidAtJustification: null,
   }),
   [
     {
@@ -34,6 +36,8 @@ export const billingMock = createMockFactory<BillingBase>(
       totalNet: 12000,
       totalGross: 14760,
       isCommitted: false,
+      paidAt: null,
+      paidAtJustification: null,
     },
   ],
 );

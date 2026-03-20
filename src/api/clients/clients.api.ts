@@ -15,6 +15,8 @@ export interface Client {
   id: number;
   name: string;
   avatarUrl: Maybe<string>;
+  /** Optional expected bank transfer sender label for payment matching. */
+  senderName: Maybe<string>;
 }
 
 export type ClientQuery = WithSearch &

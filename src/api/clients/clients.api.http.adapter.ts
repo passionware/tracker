@@ -6,5 +6,6 @@ export function clientFromHttp(client: Client$): Client {
     id: client.id,
     name: client.name,
     avatarUrl: client.avatar_url,
+    senderName: client.sender_name,
   };
 }
