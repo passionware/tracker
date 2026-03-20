@@ -175,12 +175,33 @@ export function AbstractPicker<Id, Data>(
               placeholder={config.searchPlaceholder || "Search item"}
               value={query}
               onValueChange={setQuery}
+              endAdornment={
+                allowClear ? (
+                  <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
+                    {maybe.isPresent(value) ? (
+                      <button
+                        type="button"
+                        aria-label="Clear selection"
+                        className={cn(
+                          "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
+                          "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
+                        )}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelect(null)}
+                      >
+                        <X className="size-3.5 shrink-0" />
+                        Clear
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null
+              }
             />
           )}
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
-                {allowClear && maybe.isPresent(value) && (
+                {allowClear && maybe.isPresent(value) && !searchable && (
                   <CommandItem
                     value={undefined}
                     onSelect={() => {
