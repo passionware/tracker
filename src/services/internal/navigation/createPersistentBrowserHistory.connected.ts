@@ -11,9 +11,11 @@ import {
   PersistentNavigationConfig,
 } from "./createPersistentBrowserHistory";
 import { costQuerySchema } from "@/api/cost/cost.api";
+import { clientQuerySchema } from "@/api/clients/clients.api.ts";
 import { variableQuerySchema } from "@/api/variable/variable.api";
 import { billingQuerySchema } from "@/api/billing/billing.api";
 import { projectQuerySchema } from "@/api/project/project.api";
+import { workspaceQuerySchema } from "@/api/workspace/workspace.api.ts";
 
 const routingService = createRoutingService();
 
@@ -70,6 +72,52 @@ function createWorkspaceClientPatternConfig<T extends object>(
         const clientId = scopeIds.clientId;
         return `tracker-persistedQueries-${workspaceId}-${clientId}-${storageKeySuffix}`;
       },
+    ),
+  };
+}
+
+/**
+ * Top-level routes with no :workspaceId/:clientId in the path; one localStorage bucket per page.
+ */
+function createSingletonPathPatternConfig<T extends object>(
+  pattern: string,
+  storageKey: string,
+  querySchema: { parse: (data: unknown) => T },
+): PatternConfig<T> {
+  const keyForScope = (_scopeIds: Record<string, string>) => storageKey;
+  return {
+    pattern,
+    scopeParamNames: [],
+    parseQueryParams: (search: string) => {
+      const searchWithoutPrefix = search.startsWith("?")
+        ? search.slice(1)
+        : search;
+      const params = qs.parse(searchWithoutPrefix, {
+        allowDots: true,
+        plainObjects: true,
+        ignoreQueryPrefix: true,
+        allowEmptyArrays: true,
+        strictNullHandling: true,
+      });
+      return querySchema.parse(params);
+    },
+    serializeQueryParams: (params: T) => {
+      return qs.stringify(params, {
+        allowDots: true,
+        encode: true,
+        allowEmptyArrays: true,
+        strictNullHandling: true,
+      });
+    },
+    getStorageKey: keyForScope,
+    readPersisted: createReadPersisted<T>(
+      localStorageAdapter,
+      keyForScope,
+      (data: unknown) => querySchema.parse(data),
+    ),
+    storePersisted: createStorePersisted<T>(
+      localStorageAdapter,
+      keyForScope,
     ),
   };
 }
@@ -137,6 +185,18 @@ const variablesPatternConfig = createWorkspaceClientPatternConfig(
   variableQuerySchema,
 );
 
+const clientsManagePatternConfig = createSingletonPathPatternConfig(
+  routingService.forGlobal().manageClients(),
+  "tracker-persistedQueries-manage-clients",
+  clientQuerySchema,
+);
+
+const workspacesManagePatternConfig = createSingletonPathPatternConfig(
+  routingService.forGlobal().manageWorkspaces(),
+  "tracker-persistedQueries-manage-workspaces",
+  workspaceQuerySchema,
+);
+
 /**
  * Configuration for TMetric Dashboard route persistent navigation (overview and cube share the same query)
  */
@@ -177,6 +237,8 @@ export const trackerPersistentNavigationConfig: PersistentNavigationConfig = {
     billingPatternConfig,
     costsPatternConfig,
     variablesPatternConfig,
+    clientsManagePatternConfig,
+    workspacesManagePatternConfig,
     tmetricDashboardPatternConfig,
     tmetricDashboardCubePatternConfig,
     tmetricDashboardTimelinePatternConfig,

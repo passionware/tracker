@@ -107,6 +107,9 @@ export function createRoutingService(): RoutingService {
     },
     forGlobal: () => ({
       root: () => "/",
+      configuration: () => "/configuration",
+      manageClients: () => "/configuration/clients",
+      manageWorkspaces: () => "/configuration/workspaces",
     }),
 
     forClientCockpit: () => ({

@@ -144,6 +144,11 @@ export interface RoutingService {
 
   forGlobal: () => {
     root: () => string;
+    /** Prefix for app-wide admin UI (`/configuration/clients`, `/configuration/workspaces`, …). */
+    configuration: () => string;
+    /** App-wide admin list; scope comes from last workspace/client (session) or "all". */
+    manageClients: () => string;
+    manageWorkspaces: () => string;
   };
 
   forClientCockpit: () => {
