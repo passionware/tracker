@@ -19,6 +19,7 @@ import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { ClientForm } from "@/features/clients/ClientForm.tsx";
+import { ClientHiddenBadge } from "@/features/clients/ClientHiddenBadge.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { useDebouncedUrlSyncedSearch } from "@/platform/react/useDebouncedUrlSyncedSearch.ts";
@@ -105,7 +106,10 @@ export function ClientsManageWidget(props: ClientsManageWidgetProps) {
         header: "Name",
         meta: { sortKey: "name" },
         cell: (info) => (
-          <span className="font-medium">{info.getValue()}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-medium">{info.getValue()}</span>
+            <ClientHiddenBadge hidden={info.row.original.hidden} />
+          </span>
         ),
       }),
       columnHelper.accessor("senderName", {

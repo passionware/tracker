@@ -1,4 +1,9 @@
 import {
+  BooleanFilter,
+  booleanFilter,
+  booleanFilterSchema,
+} from "@/api/_common/query/filters/BooleanFilter.ts";
+import {
   enumFilterSchema,
   EnumFilter,
 } from "@/api/_common/query/filters/EnumFilter.ts";
@@ -27,6 +32,8 @@ export interface Client {
   avatarUrl: Maybe<string>;
   /** Optional expected bank transfer sender label for payment matching. */
   senderName: Maybe<string>;
+  /** When true, omitted from client switchers and pickers (listing only). */
+  hidden: boolean;
 }
 
 export type ClientListSortField = "name" | "id" | "senderName";
@@ -36,6 +43,8 @@ export type ClientQuery = WithSearch &
   WithSorter<ClientListSortField> &
   WithFilters<{
     id: EnumFilter<Nullable<Client["id"]>>;
+    /** When set, only clients whose `hidden` flag matches the filter value. */
+    hidden: Nullable<BooleanFilter>;
   }>;
 
 export const clientQueryUtils = withBuilderUtils({
@@ -47,9 +56,17 @@ export const clientQueryUtils = withBuilderUtils({
     sort: { field: "name", order: "asc" },
     filters: {
       id: null,
+      hidden: null,
     },
     page: paginationUtils.ofDefault(),
   }),
+  /** Switchers and pickers: non-hidden clients only. */
+  ofDefault: (): ClientQuery =>
+    clientQueryUtils.setFilter(
+      clientQueryUtils.ofEmpty(),
+      "hidden",
+      booleanFilter.createDefault(false),
+    ),
   ensureDefault: (query: ClientQuery): ClientQuery => {
     const empty = clientQueryUtils.ofEmpty();
     return {
@@ -61,6 +78,7 @@ export const clientQueryUtils = withBuilderUtils({
       },
       filters: {
         id: query.filters?.id ?? empty.filters.id,
+        hidden: query.filters?.hidden ?? empty.filters.hidden,
       },
     };
   },
@@ -80,6 +98,9 @@ export const clientQuerySchema = z
             z.preprocess(strToNull, z.coerce.number().nullable()),
           ).nullable(),
         )
+        .default(null),
+      hidden: z
+        .preprocess(strToNull, booleanFilterSchema.nullable())
         .default(null),
     }),
     page: paginationSchema,

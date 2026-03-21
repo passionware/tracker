@@ -11,7 +11,7 @@ export type ClientFormSpec = {
   clientId: number;
   defaultValues: Pick<
     ClientFormValues,
-    "name" | "senderName" | "avatarUrl"
+    "name" | "senderName" | "avatarUrl" | "hidden"
   >;
 };
 

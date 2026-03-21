@@ -205,7 +205,7 @@ export function AppSidebar({
 > &
   ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
-  const clients = services.clientService.useClients(clientQueryUtils.ofEmpty());
+  const clients = services.clientService.useClients(clientQueryUtils.ofDefault());
   const workspaces = services.workspaceService.useWorkspaces(
     workspaceQueryUtils.ofDefault(),
   );

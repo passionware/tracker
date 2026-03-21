@@ -768,6 +768,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           name: payload.name,
           avatar_url: payload.avatarUrl,
           sender_name: payload.senderName,
+          hidden: payload.hidden,
         },
         (v) => v !== undefined,
       );
