@@ -14,9 +14,10 @@ export function createCostApi(client: SupabaseClient): CostApi {
         .from("cost_with_details")
         .select("*,contractor(*), workspace(*)");
       if (query.search) {
-        request = request
-          .ilike("invoice_number", `%${query.search}%`)
-          .or(`counterparty.ilike('%${query.search}%')`);
+        const term = query.search.replace(/"/g, '""');
+        request = request.or(
+          `invoice_number.ilike."%${term}%",counterparty.ilike."%${term}%"`,
+        );
       }
       if (query.filters.workspaceId) {
         switch (query.filters.workspaceId.operator) {
