@@ -1,4 +1,5 @@
 import {
+  BillingTimelineViewPreferences,
   BudgetLogSyncState,
   BulkCreateCostPreferences,
   PreferenceService,
@@ -88,6 +89,26 @@ const timelineViewApi = createLocalStorageApi<TimelineViewPreferences>(
   defaultTimelineViewPreferences,
 );
 
+const billingTimelineViewPreferencesSchema = z.object({
+  colorBy: z.enum(["group", "linking-status", "payment-status"]),
+});
+
+const defaultBillingTimelineViewPreferences: BillingTimelineViewPreferences = {
+  colorBy: "payment-status",
+};
+
+const billingTimelineViewApi = createLocalStorageApi<BillingTimelineViewPreferences>(
+  "billing-timeline-view-preferences",
+  (data) => {
+    try {
+      return billingTimelineViewPreferencesSchema.parse(data);
+    } catch {
+      return defaultBillingTimelineViewPreferences;
+    }
+  },
+  defaultBillingTimelineViewPreferences,
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -139,6 +160,37 @@ export function createPreferenceService(): PreferenceService {
     }
   });
 
+  const useBillingTimelineViewStore = create<{
+    preferences: BillingTimelineViewPreferences;
+    setPreferences: (
+      prefs: Partial<BillingTimelineViewPreferences>,
+    ) => Promise<void>;
+    initialized: boolean;
+  }>((set, get) => ({
+    preferences: defaultBillingTimelineViewPreferences,
+    initialized: false,
+    setPreferences: async (partialPrefs) => {
+      const current = get().preferences;
+      const newPrefs: BillingTimelineViewPreferences = {
+        ...current,
+        ...partialPrefs,
+      };
+      set({ preferences: newPrefs });
+      await billingTimelineViewApi.write(newPrefs);
+    },
+  }));
+
+  void billingTimelineViewApi.read().then((prefs) => {
+    if (prefs) {
+      useBillingTimelineViewStore.setState({
+        preferences: prefs,
+        initialized: true,
+      });
+    } else {
+      useBillingTimelineViewStore.setState({ initialized: true });
+    }
+  });
+
   const useBulkCreateCostStore = create<{
     preferences: BulkCreateCostPreferences;
     setPreferences: (
@@ -187,6 +239,22 @@ export function createPreferenceService(): PreferenceService {
     },
     setTimelineView: async (partialPrefs: Partial<TimelineViewPreferences>) => {
       await useTimelineViewStore.getState().setPreferences(partialPrefs);
+    },
+    useBillingTimelineView: () => {
+      const store = useBillingTimelineViewStore();
+      if (!store.initialized) {
+        return defaultBillingTimelineViewPreferences;
+      }
+      return store.preferences;
+    },
+    getBillingTimelineView: async () => {
+      const prefs = await billingTimelineViewApi.read();
+      return prefs ?? defaultBillingTimelineViewPreferences;
+    },
+    setBillingTimelineView: async (
+      partialPrefs: Partial<BillingTimelineViewPreferences>,
+    ) => {
+      await useBillingTimelineViewStore.getState().setPreferences(partialPrefs);
     },
     getBudgetLogSyncState: async () => {
       const v = await budgetLogSyncApi.read();
