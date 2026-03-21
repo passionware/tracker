@@ -36,6 +36,7 @@ import { createCockpitTenantService } from "@/services/cockpit/CockpitTenantServ
 import { createExchangeService } from "@/services/ExchangeService/ExchangeService.impl.ts";
 import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
 import { myDialogService } from "@/services/front/DialogService/DialogService.impl.connected";
+import { createAiMatchingService } from "@/services/front/AiMatchingService/AiMatchingService.impl.ts";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { createGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.impl.ts";
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
@@ -144,6 +145,7 @@ const variableService = createVariableService({
   client: myQueryClient,
   api: createVariableApi(mySupabase),
 });
+const aiMatchingService = createAiMatchingService({ variableService });
 
 const exchangeService = createExchangeService(myExchangeApi, myQueryClient);
 const formatService = createFormatService(() => new Date());
@@ -185,6 +187,7 @@ const projectService = createProjectService({
   },
 });
 export const myServices = {
+  aiMatchingService,
   authService: createAuthService(mySupabase),
   cockpitAuthService: createCockpitAuthService(clientCockpitSupabase),
   clientService: createClientService(
