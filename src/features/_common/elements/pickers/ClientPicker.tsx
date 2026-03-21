@@ -27,7 +27,7 @@ export const ClientPicker = injectConfig(AbstractPicker<Client["id"], Client>)
     useItems: (query) => {
       const props = api.useProps();
       return props.services.clientService.useClients(
-        clientQueryUtils.setSearch(clientQueryUtils.ofEmpty(), query),
+        clientQueryUtils.setSearch(clientQueryUtils.ofDefault(), query),
       );
     },
     searchPlaceholder: "Search for a client",
@@ -62,7 +62,7 @@ export const ClientMultiPicker = injectConfig(
     useItems: (query) => {
       const props = api.useProps();
       return props.services.clientService.useClients(
-        clientQueryUtils.setSearch(clientQueryUtils.ofEmpty(), query),
+        clientQueryUtils.setSearch(clientQueryUtils.ofDefault(), query),
       );
     },
     searchPlaceholder: "Search for a client",

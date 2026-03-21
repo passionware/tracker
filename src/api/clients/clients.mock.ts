@@ -7,6 +7,7 @@ export const clientsMock = createMockFactory<Client>(
     name: "Test client",
     avatarUrl: null,
     senderName: null,
+    hidden: false,
   }),
   [
     {
@@ -14,12 +15,14 @@ export const clientsMock = createMockFactory<Client>(
       name: "Test client",
       avatarUrl: null,
       senderName: null,
+      hidden: false,
     },
     {
       id: 2,
       name: "Very important client",
       avatarUrl: null,
       senderName: null,
+      hidden: false,
     },
   ],
 );

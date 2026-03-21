@@ -29,10 +29,11 @@ import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel
 import { MutedInsetRow } from "@/features/_common/patterns/MutedInsetRow.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
 import { renderSmallError } from "@/features/_common/renderError";
+import { ClientHiddenBadge } from "@/features/clients/ClientHiddenBadge.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { Building2, Link2, Loader2, Unlink2 } from "lucide-react";
+import { Building2, Link2, Loader2, Unlink2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export type ClientDrawerSpec = { type: "client"; id: number };
@@ -68,7 +69,17 @@ export function ClientDrawerHeaderPreview({
         <div className="min-w-0 flex-1">
           <DrawerMainInfoGrid
             items={[
-              { label: "Name", value: client.name },
+              {
+                label: "Name",
+                value: (
+                  <span className="flex w-full min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate">
+                      {client.name}
+                    </span>
+                    <ClientHiddenBadge hidden={client.hidden} />
+                  </span>
+                ),
+              },
               { label: "Client ID", value: client.id.toString() },
               { label: "Bank sender", value: client.senderName ?? "—" },
             ]}
@@ -128,6 +139,7 @@ export function ClientDrawerHeaderActions({
                 name: client.name,
                 senderName: client.senderName ?? "",
                 avatarUrl: client.avatarUrl ?? null,
+                hidden: client.hidden,
               },
             })
           }
@@ -191,8 +203,29 @@ export function ClientDrawerBody({
       </div>,
     )
     .catch(renderSmallError("min-h-24 w-full"))
-    .map(() => (
-      <>
+    .map((client) => (
+      <div className="space-y-4">
+        <SurfaceCard className="space-y-3">
+          <PanelSectionLabel icon={Users}>Client</PanelSectionLabel>
+          <DrawerMainInfoGrid
+            items={[
+              {
+                label: "Name",
+                value: (
+                  <span className="flex w-full min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate">
+                      {client.name}
+                    </span>
+                    <ClientHiddenBadge hidden={client.hidden} />
+                  </span>
+                ),
+              },
+              { label: "Client ID", value: client.id.toString() },
+              { label: "Bank sender", value: client.senderName ?? "—" },
+            ]}
+          />
+        </SurfaceCard>
+
         <SurfaceCard className="space-y-6 p-4 shadow-none">
           <section className="space-y-3">
             <PanelSectionLabel icon={Building2}>
@@ -337,6 +370,6 @@ export function ClientDrawerBody({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </>
+      </div>
     ));
 }

@@ -7,5 +7,6 @@ export function clientFromHttp(client: Client$): Client {
     name: client.name,
     avatarUrl: client.avatar_url,
     senderName: client.sender_name,
+    hidden: client.hidden,
   };
 }

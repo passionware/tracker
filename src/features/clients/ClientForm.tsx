@@ -7,12 +7,14 @@ import { DrawerFooter } from "@/components/ui/drawer.tsx";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { ClientLogoField } from "@/features/clients/ClientLogoField.tsx";
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -28,6 +30,7 @@ export interface ClientFormValues {
   senderName: string;
   avatarUrl: string | null;
   workspaceId: number | null;
+  hidden: boolean;
 }
 
 type ClientFormProps = WithServices<[WithWorkspaceService]> & {
@@ -69,6 +72,7 @@ export function ClientForm(props: ClientFormProps) {
         props.mode === "create"
           ? (props.defaultValues?.workspaceId ?? null)
           : null,
+      hidden: props.defaultValues?.hidden ?? false,
     },
   });
 
@@ -97,6 +101,7 @@ export function ClientForm(props: ClientFormProps) {
           name: data.name.trim(),
           avatarUrl: data.avatarUrl,
           senderName,
+          hidden: data.hidden,
         }),
       );
     }
@@ -187,6 +192,37 @@ export function ClientForm(props: ClientFormProps) {
     />
   );
 
+  const hiddenField =
+    props.mode === "edit" ? (
+      <FormField
+        control={form.control}
+        name="hidden"
+        render={({ field }) => (
+          <FormItem
+            className={cn(
+              "flex flex-row items-center justify-between rounded-lg border p-4",
+              isBulk && "col-span-2",
+            )}
+          >
+            <div className="space-y-1">
+              <FormLabel className="text-base">Hide from selectors</FormLabel>
+              <FormDescription>
+                When enabled, this client does not appear in the client switcher
+                or client pickers. You can still open it from Manage clients.
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                aria-label="Hide client from selectors"
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+    ) : null;
+
   const actions = (
     <div className="flex justify-end gap-2">
       <Button type="button" variant="outline" onClick={props.onCancel}>
@@ -219,6 +255,7 @@ export function ClientForm(props: ClientFormProps) {
                 {nameField}
                 {senderField}
                 {avatarField}
+                {hiddenField}
               </div>
             </div>
             <DrawerFooter className="shrink-0 border-t border-border">
@@ -231,6 +268,7 @@ export function ClientForm(props: ClientFormProps) {
             {nameField}
             {senderField}
             {avatarField}
+            {hiddenField}
             <div className="flex justify-end gap-2 pt-2">{actions}</div>
           </>
         )}

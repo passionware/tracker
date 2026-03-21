@@ -1,3 +1,4 @@
+import { booleanFilterSupabaseUtils } from "@/api/_common/query/filters/BooleanFilter.supabase.ts";
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
@@ -23,6 +24,13 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
           request,
           query.filters.id,
           "id",
+        );
+      }
+      if (query.filters.hidden) {
+        request = booleanFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.hidden,
+          "hidden",
         );
       }
       if (query.sort) {

@@ -13,6 +13,7 @@ export const client$ = z.object({
     .union([z.string(), z.null()])
     .optional()
     .transform((v) => (v === undefined ? null : v)),
+  hidden: z.boolean().default(false),
 });
 
 export type Client$ = z.infer<typeof client$>;

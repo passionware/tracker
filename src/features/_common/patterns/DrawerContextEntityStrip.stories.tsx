@@ -1,3 +1,4 @@
+import type { Client } from "@/api/clients/clients.api.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createClientServiceForEntityStripStory } from "@/services/io/ClientService/ClientService.mock.ts";
 
@@ -8,7 +9,8 @@ const demoClient = {
   name: "Northwind LLC",
   avatarUrl: null as string | null,
   senderName: "NORTHWIND PAY" as string | null,
-};
+  hidden: false,
+} satisfies Client;
 
 const services = {
   clientService: createClientServiceForEntityStripStory(demoClient.id, demoClient),

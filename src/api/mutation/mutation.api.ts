@@ -29,6 +29,7 @@ export type ClientUpdatePayload = Partial<{
   name: string;
   avatarUrl: string | null;
   senderName: string | null;
+  hidden: boolean;
 }>;
 
 export type WorkspaceUpdatePayload = Partial<{
