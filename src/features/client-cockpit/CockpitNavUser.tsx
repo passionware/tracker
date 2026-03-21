@@ -29,14 +29,13 @@ import {
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { maybe } from "@passionware/monads";
 import { ChevronsUpDown, LogOut } from "lucide-react";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { PortalAccessSection } from "@/features/_common/PortalAccessSection.tsx";
 
 export function CockpitNavUser({
   info,
   services,
 }: { info: CockpitAuthInfo } & WithServices<
-  [WithCockpitAuthService, WithAuthService, WithRoutingService]
+  [WithCockpitAuthService, WithAuthService]
 >) {
   const { isMobile } = useSidebar();
 

@@ -1,9 +1,10 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { Link } from "react-router-dom";
 
 export function ProjectListBreadcrumb(
@@ -15,7 +16,7 @@ export function ProjectListBreadcrumb(
   return (
     <BreadcrumbLink asChild>
       <Link
-        to={props.services.routingService
+        to={myRouting
           .forWorkspace(props.workspaceId)
           .forClient(props.clientId)
           .allProjects()}

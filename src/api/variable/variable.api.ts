@@ -22,7 +22,7 @@ import { Nullable } from "@/platform/typescript/Nullable.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { chain } from "lodash";
 import { z } from "zod";
 

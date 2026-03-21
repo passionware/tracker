@@ -23,7 +23,7 @@ import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { ClientSpec } from "@/routing/routingUtils.ts";
 import { ChevronsUpDown, Plus, Users } from "lucide-react";
 
 export type ClientSwitcherProps = {

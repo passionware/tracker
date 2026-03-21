@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -15,7 +16,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { generateSmartReportName } from "@/features/project-iterations/widgets/reportNameUtils.ts";
 import { mt, rd } from "@passionware/monads";
@@ -96,7 +97,7 @@ export function PublishToCockpitButton({
 
       const tenantId = cockpitAuthInfo.tenantId;
 
-      const fallbackRoute = services.routingService
+      const fallbackRoute = myRouting
         .forWorkspace(workspaceSpec)
         .forClient(clientSpec)
         .forProject(projectId.toString())
@@ -144,7 +145,7 @@ export function PublishToCockpitButton({
       });
 
       // Show success toast with link to cockpit
-      const cockpitUrl = services.routingService
+      const cockpitUrl = myRouting
         .forClientCockpit()
         .forClient(tenantId)
         .reports();

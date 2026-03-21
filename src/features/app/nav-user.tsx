@@ -30,7 +30,6 @@ import {
   WithAuthService,
 } from "@/services/io/AuthService/AuthService.ts";
 import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import {
   BadgeCheck,
   ChevronsUpDown,
@@ -49,7 +48,6 @@ export function NavUser({
     WithAuthService,
     WithPreferenceService,
     WithCockpitAuthService,
-    WithRoutingService,
   ]
 >) {
   const { isMobile } = useSidebar();

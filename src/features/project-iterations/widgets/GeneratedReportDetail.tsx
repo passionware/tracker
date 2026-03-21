@@ -32,7 +32,7 @@ import { renderError } from "@/features/_common/renderError.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, rd, RemoteData } from "@passionware/monads";
 import { ArrowRight, Database, FileText } from "lucide-react";
 import { Route, Routes } from "react-router-dom";

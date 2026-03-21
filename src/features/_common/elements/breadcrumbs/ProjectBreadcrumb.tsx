@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -8,7 +9,7 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 import { Link } from "react-router-dom";
 
@@ -24,7 +25,7 @@ export function ProjectBreadcrumbView(props: ProjectBreadcrumbProps) {
     <BreadcrumbLink asChild>
       <Link
         className="flex flex-row gap-2"
-        to={props.services.routingService
+        to={myRouting
           .forWorkspace(props.workspaceId)
           .forClient(props.clientId)
           .forProject(props.projectId.toString())

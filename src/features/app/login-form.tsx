@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -5,7 +6,6 @@ import { Label } from "@/components/ui/label.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { mt } from "@passionware/monads";
@@ -20,7 +20,7 @@ export function LoginForm({
   className,
   ...props
 }: ComponentProps<"div"> &
-  WithServices<[WithAuthService, WithNavigationService, WithRoutingService]>) {
+  WithServices<[WithAuthService, WithNavigationService]>) {
   const form = useForm({
     defaultValues: {
       email: "",
@@ -35,7 +35,7 @@ export function LoginForm({
     // todo: below should go to user flow service
     await props.services.authService.loginWithEmail(x);
     props.services.navigationService.navigate(
-      props.services.routingService.forGlobal().root(),
+      myRouting.forGlobal().root(),
     );
   });
 

@@ -1,24 +1,21 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { getColumnHelper } from "@/features/_common/columns/_common/columnHelper.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   ClientSpec,
-  WithRoutingService,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { Link } from "react-router-dom";
 
 export const columnHelper = getColumnHelper<Project>();
 
 export const project = {
-  name: (
-    services: WithRoutingService,
-    spec: {
-      workspaceId: WorkspaceSpec;
-      clientId: ClientSpec;
-    },
-  ) =>
+  name: (spec: {
+    workspaceId: WorkspaceSpec;
+    clientId: ClientSpec;
+  }) =>
     columnHelper.accessor("name", {
       header: "Name",
       cell: (info) => {
@@ -27,7 +24,7 @@ export const project = {
         return (
           <Link
             className="text-sky-800 hover:underline"
-            to={services.routingService
+            to={myRouting
               .forWorkspace(spec.workspaceId)
               .forClient(spec.clientId)
               .forProject(id.toString())

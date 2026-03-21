@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import React, { useState } from "react";
@@ -155,7 +156,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   const handleBack = () => {
     if (tenantId && reportId) {
       navigate(
-        props.services.routingService
+        myRouting
           .forClientCockpit()
           .forClient(tenantId?.toString())
           .forReport(reportId)
@@ -351,7 +352,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                     reportData={reportData}
                     reportLink={
                       window.location.origin +
-                      props.services.routingService
+                      myRouting
                         .forClientCockpit()
                         .forClient(tenantId?.toString())
                         .forReport(reportId)

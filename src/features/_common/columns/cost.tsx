@@ -12,7 +12,7 @@ import {
   CostEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { ClientSpec } from "@/routing/routingUtils.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";

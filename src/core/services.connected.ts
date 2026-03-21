@@ -47,7 +47,6 @@ import { createGeneratedReportViewService } from "@/services/front/GeneratedRepo
 import { createProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.impl.ts";
 import { createReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.impl.tsx";
 import { createReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.impl.ts";
-import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { createTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.impl.ts";
 import { createLocationService } from "@/services/internal/LocationService/LocationService.impl.ts";
 import { createMessageService } from "@/services/internal/MessageService/MessageService.impl.ts";
@@ -80,7 +79,6 @@ const navigationInjectEvent = createSimpleEvent<NavigateFunction>();
 
 const messageService = createMessageService();
 const navigationService = createNavigationService(navigationInjectEvent);
-const routingService = createRoutingService();
 const queryParamsService = createQueryParamsService<{
   projects: ProjectQuery;
   users: UserQuery;
@@ -217,13 +215,11 @@ export const myServices = {
     myQueryClient,
   ),
   reportService: reportService,
-  routingService,
   navigationService,
   queryParamsService,
   locationService: createLocationService({
     services: {
       navigationService,
-      routingService,
     },
   }),
   reportDisplayService: createReportDisplayService({

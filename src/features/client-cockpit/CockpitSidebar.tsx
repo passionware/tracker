@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
 import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantService/CockpitTenantService.ts";
@@ -29,7 +29,6 @@ export function CockpitSidebar({
   [
     WithCockpitAuthService,
     WithAuthService,
-    WithRoutingService,
     WithCockpitTenantService,
   ]
 > &
@@ -81,7 +80,7 @@ export function CockpitSidebar({
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <SidebarMenu>
                 {maybe.map(authInfo.tenantId, (tenantId) => {
-                  const reportsUrl = services.routingService
+                  const reportsUrl = myRouting
                     .forClientCockpit()
                     .forClient(tenantId)
                     .reports();
@@ -114,7 +113,7 @@ export function CockpitSidebar({
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <Link to={services.routingService.forGlobal().root()}>
+                      <Link to={myRouting.forGlobal().root()}>
                         <Home />
                         <span>Main App</span>
                       </Link>

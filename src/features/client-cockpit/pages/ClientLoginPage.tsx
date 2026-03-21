@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +22,6 @@ interface LoginFormData {
 export function ClientLoginPage(props: WithFrontServices) {
   const navigate = useNavigate();
   const cockpitAuthService = props.services.cockpitAuthService;
-  const routingService = props.services.routingService;
 
   const form = useForm<LoginFormData>({
     mode: "onBlur",
@@ -42,7 +42,7 @@ export function ClientLoginPage(props: WithFrontServices) {
       await cockpitAuthService.loginWithEmail(data);
 
       // After successful login, redirect to /c which will handle client selection
-      navigate(routingService.forClientCockpit().root());
+      navigate(myRouting.forClientCockpit().root());
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -53,7 +53,7 @@ export function ClientLoginPage(props: WithFrontServices) {
       await cockpitAuthService.loginWithGoogle();
 
       // After successful login, redirect to /c which will handle client selection
-      navigate(routingService.forClientCockpit().root());
+      navigate(myRouting.forClientCockpit().root());
     } catch (error) {
       console.error("Google sign in error:", error);
     }

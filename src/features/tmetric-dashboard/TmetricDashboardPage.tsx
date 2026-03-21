@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService";
+} from "@/routing/routingUtils.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { format } from "date-fns";
 import {
@@ -343,7 +344,7 @@ export function TmetricDashboardPage(
           value={activeTab}
           onValueChange={(v) => {
             const tab = v as "overview" | "cube" | "timeline" | "contractor";
-            const routing = services.routingService
+            const routing = myRouting
               .forWorkspace(workspaceId)
               .forClient(clientId);
             if (tab === "cube") navigate(routing.tmetricDashboardCube());
@@ -438,7 +439,7 @@ export function TmetricDashboardPage(
               contractorNameMap={contractorNameMap}
               integrationStatus={integrationStatus}
               getContractorDetailUrl={(id) =>
-                services.routingService
+                myRouting
                   .forWorkspace(workspaceId)
                   .forClient(clientId)
                   .tmetricDashboardContractorFor(id)
@@ -886,7 +887,7 @@ export function TmetricDashboardPage(
                                     contractors={displayed}
                                     services={services}
                                     getContractorDetailUrl={(id) =>
-                                      services.routingService
+                                      myRouting
                                         .forWorkspace(workspaceId)
                                         .forClient(clientId)
                                         .tmetricDashboardContractorFor(id)

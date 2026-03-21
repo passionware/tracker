@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,7 +35,7 @@ import { CalendarDate } from "@internationalized/date";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { ContractorBase } from "@/api/contractor/contractor.api.ts";
-import { ClientSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { ClientSpec } from "@/routing/routingUtils.ts";
 import { determineContractorWorkspaces } from "@/services/front/ReconciliationService/determineContractorWorkspace.ts";
 
 /**
@@ -251,7 +252,7 @@ export function ReportGenerationWidget({
 
       if (wsId && clId && projectId) {
         // Generate link to view the report
-        const reportUrl = services.routingService
+        const reportUrl = myRouting
           .forWorkspace(wsId)
           .forClient(clId)
           .forProject(projectId.toString())

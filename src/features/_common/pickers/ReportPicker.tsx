@@ -16,7 +16,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { rd } from "@passionware/monads";

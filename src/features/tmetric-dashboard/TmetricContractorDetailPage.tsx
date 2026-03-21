@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import {
   Card,
   CardContent,
@@ -13,7 +14,7 @@ import { InfiniteTimeline } from "@/platform/passionware-timeline";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService";
+} from "@/routing/routingUtils.ts";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd } from "@passionware/monads";
 import { ArrowLeft, RefreshCw } from "lucide-react";
@@ -74,7 +75,7 @@ export function TmetricContractorDetailPage(
     };
   });
 
-  const routing = services.routingService
+  const routing = myRouting
     .forWorkspace(workspaceId)
     .forClient(clientId);
   const backUrl = routing.tmetricDashboardContractor();

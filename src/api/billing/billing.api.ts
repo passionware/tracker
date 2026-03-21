@@ -36,7 +36,7 @@ import { ExpressionContext } from "@/services/front/ExpressionService/Expression
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { CalendarDate } from "@internationalized/date";
 import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";

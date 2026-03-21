@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Project } from "@/api/project/project.api.ts";
 import {
   Card,
@@ -21,7 +22,7 @@ import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 import { ChevronRight } from "lucide-react";
 
@@ -91,7 +92,7 @@ export function ProjectDetails(
                       );
                       // navigate to the list
                       props.services.navigationService.navigate(
-                        props.services.routingService
+                        myRouting
                           .forWorkspace(props.workspaceId)
                           .forClient(props.clientId)
                           .projectsRoot(),

@@ -30,7 +30,7 @@ import {
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { mt, rd } from "@passionware/monads";
 import { FileText, Unlink } from "lucide-react";
 import { promiseState } from "@passionware/platform-react";

@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import {
@@ -20,7 +21,7 @@ import { ProjectIterationForm } from "@/features/project-iterations/IterationFor
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 
 export function Details(
@@ -50,7 +51,7 @@ export function Details(
                     );
                     // navigate to the list
                     props.services.navigationService.navigate(
-                      props.services.routingService
+                      myRouting
                         .forWorkspace(props.workspaceId)
                         .forClient(props.clientId)
                         .forProject(props.projectId.toString())

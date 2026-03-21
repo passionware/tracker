@@ -27,7 +27,7 @@ import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithQueryParamsService } from "@/services/internal/QueryParamsService/QueryParamsService.ts";

@@ -3,7 +3,7 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { z } from "zod";
 
 const STORAGE_KEY = "billing-payment-matcher-ai-draft";

@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -59,7 +60,7 @@ export function ProtectedCockpitRoute({
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
               size="lg"
             >
-              <Link to={services.routingService.forClientCockpit().login()}>
+              <Link to={myRouting.forClientCockpit().login()}>
                 <LogIn className="h-5 w-5 mr-2" />
                 Sign In to Cockpit
               </Link>

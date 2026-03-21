@@ -26,7 +26,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithQueryParamsService } from "@/services/internal/QueryParamsService/QueryParamsService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";

@@ -7,7 +7,6 @@ import { WithGeneratedReportViewService } from "@/services/front/GeneratedReport
 import { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { WithReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
@@ -65,7 +64,6 @@ export type FrontServices = MergeServices<
       variables: VariableQuery;
       dashboard: DashboardQuery;
     }>,
-    WithRoutingService,
     WithFormatService,
     WithReportDisplayService,
     WithReconciliationService,

@@ -10,7 +10,6 @@ import { createGuardedAccessor } from "@/platform/lang/guardedAccessor.ts";
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import { createStaticAccessor } from "@/services/_common/createStaticAccessor.ts";
 import { createFormatServiceForStory } from "@/services/FormatService/FormatService.mock.tsx";
-import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.mock.ts";
@@ -47,7 +46,6 @@ const meta = {
   args: {
     services: createGuardedAccessor(
       {
-        routingService: createRoutingService(),
         projectService: createProjectService({
           listAccessor: createArgsAccessor(args).forArg("projects"),
           itemAccessor: createStaticAccessor(testQuery.of(rd.ofIdle())),

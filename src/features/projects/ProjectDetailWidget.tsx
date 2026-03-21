@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
@@ -13,7 +14,7 @@ import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 export interface ProjectDetailWidgetProps extends WithFrontServices {
@@ -23,7 +24,7 @@ export interface ProjectDetailWidgetProps extends WithFrontServices {
 }
 
 export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
-  const basePath = props.services.routingService
+  const basePath = myRouting
     .forWorkspace()
     .forClient()
     .forProject()
@@ -44,7 +45,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         <Route
           path={makeRelativePath(
             basePath,
-            props.services.routingService
+            myRouting
               .forWorkspace()
               .forClient()
               .forProject()
@@ -53,7 +54,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
           element={
             <Navigate
               replace
-              to={props.services.routingService
+              to={myRouting
                 .forWorkspace(props.workspaceId)
                 .forClient(props.clientId)
                 .forProject(props.projectId.toString())
@@ -64,7 +65,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         <Route
           path={makeRelativePath(
             basePath,
-            props.services.routingService
+            myRouting
               .forWorkspace()
               .forClient()
               .forProject()
@@ -82,7 +83,7 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
         <Route
           path={makeRelativePath(
             basePath,
-            props.services.routingService
+            myRouting
               .forWorkspace()
               .forClient()
               .forProject()

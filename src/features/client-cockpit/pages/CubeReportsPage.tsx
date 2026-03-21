@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { rd } from "@passionware/monads";
 import {
@@ -48,7 +49,7 @@ export function CubeReportsPage(props: WithFrontServices) {
   const handleReportClick = (reportId: string) => {
     // Navigate to cube viewer with the report data
     navigate(
-      props.services.routingService
+      myRouting
         .forClientCockpit()
         .forClient(rd.tryMap(authState, (auth) => auth.tenantId))
         .forReport(reportId)

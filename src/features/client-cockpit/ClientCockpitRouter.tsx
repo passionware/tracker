@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { CockpitLoginPage } from "./CockpitLoginPage";
@@ -15,7 +16,7 @@ import { CockpitSidebar } from "./CockpitSidebar";
  */
 export function CockpitMainRouter(props: WithFrontServices) {
   const authState = props.services.cockpitAuthService.useAuth();
-  const basePath = props.services.routingService.forClientCockpit().root();
+  const basePath = myRouting.forClientCockpit().root();
 
   console.log("authState", authState);
 
@@ -25,7 +26,7 @@ export function CockpitMainRouter(props: WithFrontServices) {
       <Route
         path={makeRelativePath(
           basePath,
-          props.services.routingService.forClientCockpit().login(),
+          myRouting.forClientCockpit().login(),
         )}
         element={<CockpitLoginPage services={props.services} />}
       />
@@ -33,7 +34,7 @@ export function CockpitMainRouter(props: WithFrontServices) {
       <Route
         path={makeRelativePath(
           basePath,
-          props.services.routingService
+          myRouting
             .forClientCockpit()
             .forClient()
             .reports(),
@@ -51,7 +52,7 @@ export function CockpitMainRouter(props: WithFrontServices) {
       <Route
         path={makeRelativePath(
           basePath,
-          props.services.routingService
+          myRouting
             .forClientCockpit()
             .forClient()
             .forReport()
@@ -70,7 +71,7 @@ export function CockpitMainRouter(props: WithFrontServices) {
       <Route
         path={makeRelativePath(
           basePath,
-          props.services.routingService
+          myRouting
             .forClientCockpit()
             .forClient()
             .forReport()
@@ -105,7 +106,7 @@ function RedirectFromRoot(props: WithFrontServices) {
     return (
       <Navigate
         replace
-        to={props.services.routingService
+        to={myRouting
           .forClientCockpit()
           .forClient(authInfo.tenantId!)
           .reports()}

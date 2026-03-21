@@ -1,6 +1,6 @@
 import { dashboardQuerySchema } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { reportQuerySchema } from "@/api/reports/reports.api.ts";
-import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl";
+import { myRouting } from "@/routing/myRouting.ts";
 import qs from "qs";
 import {
   createPersistentBrowserHistory,
@@ -17,7 +17,6 @@ import { billingQuerySchema } from "@/api/billing/billing.api";
 import { projectQuerySchema } from "@/api/project/project.api";
 import { workspaceQuerySchema } from "@/api/workspace/workspace.api.ts";
 
-const routingService = createRoutingService();
 
 /**
  * Factory function to create a pattern config for workspace-client scoped routes
@@ -126,7 +125,7 @@ function createSingletonPathPatternConfig<T extends object>(
  * Configuration for all projects route persistent navigation
  */
 const allProjectsPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().allProjects()}`,
+  `${myRouting.forWorkspace().forClient().allProjects()}`,
   "projects-all",
   projectQuerySchema,
 );
@@ -135,7 +134,7 @@ const allProjectsPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for active projects route persistent navigation
  */
 const activeProjectsPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().activeProjects()}`,
+  `${myRouting.forWorkspace().forClient().activeProjects()}`,
   "projects-active",
   projectQuerySchema,
 );
@@ -144,7 +143,7 @@ const activeProjectsPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for closed projects route persistent navigation
  */
 const closedProjectsPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().closedProjects()}`,
+  `${myRouting.forWorkspace().forClient().closedProjects()}`,
   "projects-closed",
   projectQuerySchema,
 );
@@ -153,7 +152,7 @@ const closedProjectsPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for reports route persistent navigation
  */
 const reportsPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().reports()}`,
+  `${myRouting.forWorkspace().forClient().reports()}`,
   "reports",
   reportQuerySchema,
 );
@@ -162,7 +161,7 @@ const reportsPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for billing route persistent navigation
  */
 const billingPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().charges()}`,
+  `${myRouting.forWorkspace().forClient().charges()}`,
   "billing",
   billingQuerySchema,
 );
@@ -171,7 +170,7 @@ const billingPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for costs route persistent navigation
  */
 const costsPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().costs()}`,
+  `${myRouting.forWorkspace().forClient().costs()}`,
   "costs",
   costQuerySchema,
 );
@@ -180,19 +179,19 @@ const costsPatternConfig = createWorkspaceClientPatternConfig(
  * Configuration for variables route persistent navigation
  */
 const variablesPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().variables()}`,
+  `${myRouting.forWorkspace().forClient().variables()}`,
   "variables",
   variableQuerySchema,
 );
 
 const clientsManagePatternConfig = createSingletonPathPatternConfig(
-  routingService.forGlobal().manageClients(),
+  myRouting.forGlobal().manageClients(),
   "tracker-persistedQueries-manage-clients",
   clientQuerySchema,
 );
 
 const workspacesManagePatternConfig = createSingletonPathPatternConfig(
-  routingService.forGlobal().manageWorkspaces(),
+  myRouting.forGlobal().manageWorkspaces(),
   "tracker-persistedQueries-manage-workspaces",
   workspaceQuerySchema,
 );
@@ -201,26 +200,26 @@ const workspacesManagePatternConfig = createSingletonPathPatternConfig(
  * Configuration for TMetric Dashboard route persistent navigation (overview and cube share the same query)
  */
 const tmetricDashboardPatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().tmetricDashboard()}`,
+  `${myRouting.forWorkspace().forClient().tmetricDashboard()}`,
   "tmetric-dashboard",
   dashboardQuerySchema,
 );
 
 const tmetricDashboardCubePatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().tmetricDashboardCube()}`,
+  `${myRouting.forWorkspace().forClient().tmetricDashboardCube()}`,
   "tmetric-dashboard",
   dashboardQuerySchema,
 );
 
 const tmetricDashboardTimelinePatternConfig = createWorkspaceClientPatternConfig(
-  `${routingService.forWorkspace().forClient().tmetricDashboardTimeline()}`,
+  `${myRouting.forWorkspace().forClient().tmetricDashboardTimeline()}`,
   "tmetric-dashboard",
   dashboardQuerySchema,
 );
 
 const tmetricDashboardContractorPatternConfig =
   createWorkspaceClientPatternConfig(
-    `${routingService.forWorkspace().forClient().tmetricDashboardContractor()}`,
+    `${myRouting.forWorkspace().forClient().tmetricDashboardContractor()}`,
     "tmetric-dashboard",
     dashboardQuerySchema,
   );

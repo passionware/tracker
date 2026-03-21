@@ -54,7 +54,7 @@ import type { ExpressionContext } from "@/services/front/ExpressionService/Expre
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { mt } from "@passionware/monads";

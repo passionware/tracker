@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -12,7 +13,7 @@ import { renderError } from "@/features/_common/renderError.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
 import { FileText, Maximize } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +29,7 @@ export function GeneratedReportHeader(
 ) {
   const navigate = useNavigate();
 
-  const forIteration = props.services.routingService
+  const forIteration = myRouting
     .forWorkspace(props.workspaceId)
     .forClient(props.clientId)
     .forProject(props.projectId.toString())
@@ -110,7 +111,7 @@ export function GeneratedReportTabs(
 ) {
   const navigate = useNavigate();
 
-  const forIteration = props.services.routingService
+  const forIteration = myRouting
     .forWorkspace(props.workspaceId)
     .forClient(props.clientId)
     .forProject(props.projectId.toString())

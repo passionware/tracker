@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import {
@@ -35,7 +36,7 @@ import {
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { Download, Eye, Trash2 } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -130,7 +131,7 @@ export function GeneratedReportList(
       onRowDoubleClick={(report) => {
         if (props.projectId) {
           props.services.navigationService.navigate(
-            props.services.routingService
+            myRouting
               .forWorkspace(props.workspaceId)
               .forClient(props.clientId)
               .forProject(props.projectId.toString())
@@ -199,7 +200,7 @@ export function GeneratedReportList(
                   // Navigate to detail page for editing
                   if (props.projectId) {
                     props.services.navigationService.navigate(
-                      props.services.routingService
+                      myRouting
                         .forWorkspace(props.workspaceId)
                         .forClient(props.clientId)
                         .forProject(props.projectId.toString())

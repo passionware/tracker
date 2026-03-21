@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { clientQueryUtils } from "@/api/clients/clients.api.ts";
 import { workspaceQueryUtils } from "@/api/workspace/workspace.api.ts";
 import {
@@ -18,7 +19,6 @@ import { NavUser } from "@/features/app/nav-user.tsx";
 import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
@@ -41,13 +41,13 @@ import { ComponentProps, useMemo } from "react";
 
 // This is sample data.
 function useData(
-  services: MergeServices<[WithLocationService, WithRoutingService]>,
+  services: MergeServices<[WithLocationService]>,
 ) {
   const currentClientId = services.locationService.useCurrentClientId();
   const currentWorkspaceId = services.locationService.useCurrentWorkspaceId();
 
   return useMemo(() => {
-    const routing = services.routingService
+    const routing = myRouting
       .forWorkspace(currentWorkspaceId ?? idSpecUtils.ofAll())
       .forClient(currentClientId ?? idSpecUtils.ofAll());
     return {
@@ -120,11 +120,11 @@ function useData(
             },
             {
               title: "Clients",
-              url: services.routingService.forGlobal().manageClients(),
+              url: myRouting.forGlobal().manageClients(),
             },
             {
               title: "Workspaces",
-              url: services.routingService.forGlobal().manageWorkspaces(),
+              url: myRouting.forGlobal().manageWorkspaces(),
             },
             // {
             //   title: "Get Started",
@@ -177,7 +177,7 @@ function useData(
         },
         {
           name: "Client cockpit",
-          url: services.routingService.forClientCockpit().root(),
+          url: myRouting.forClientCockpit().root(),
           icon: PieChart,
         },
         {
@@ -199,7 +199,6 @@ export function AppSidebar({
     WithCockpitAuthService,
     WithClientService,
     WithLocationService,
-    WithRoutingService,
     WithPreferenceService,
     WithWorkspaceService,
   ]
