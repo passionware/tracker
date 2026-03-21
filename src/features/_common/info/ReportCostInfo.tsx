@@ -470,22 +470,21 @@ export function ReportCostInfo({
           selectionState.getTotalSelected(selection, report.costLinks.length) >
           0 ? (
             <ListToolbar>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {selectionState.getTotalSelected(
-                    selection,
-                    report.costLinks.length,
-                  )}{" "}
-                  selected
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <div>
                       <ListToolbarButton variant="destructive">
                         Delete
+                        {selectedLinkIds.length > 0 && (
+                          <Badge
+                            variant="secondary"
+                            size="sm"
+                            className="ml-1 min-w-5 px-1"
+                          >
+                            {selectedLinkIds.length}
+                          </Badge>
+                        )}
                       </ListToolbarButton>
                     </div>
                   </PopoverTrigger>
