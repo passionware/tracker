@@ -1,0 +1,10 @@
+---
+description: Conventional commit message style for this repo
+alwaysApply: true
+---
+
+# Commit messages
+
+Use conventional commits. Make the subject short and explain the purpose (why). If the topic really requires clarification, add a short body—ideally max one sentence / ~100 characters. Do not include a body if the topic is clear.
+
+For small changes (few files), avoid a body; use only the headline.

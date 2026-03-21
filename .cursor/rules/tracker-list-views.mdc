@@ -1,0 +1,10 @@
+---
+description: ListView + TanStack Table for tabular domain lists
+globs:
+  - "**/*.tsx"
+alwaysApply: false
+---
+
+# List views (tables)
+
+For tabular lists of domain data (loading/error states, sortable columns, consistent table chrome), use `@/features/_common/ListView.tsx` with `@tanstack/react-table` column definitions (`createColumnHelper`). Put `meta.sortKey` on headers that should sort; the list query type must satisfy `SortableQueryBase` (include `WithSorter` + `WithPagination`, wire `query` / `onQueryChange`, and apply sort in the API or data layer). Avoid ad-hoc `<Table>` + manual skeleton/error blocks when `ListView` already covers that flow.

@@ -1,0 +1,14 @@
+---
+description: Async mutations in UI and react-hook-form patterns
+globs:
+  - "**/*.tsx"
+alwaysApply: false
+---
+
+# Async actions in UI
+
+Use promiseState.useMutation for submit/save/delete: no manual isSaving state or `.then()` / `.catch()`; use `mutation.track(...)` and `mt.isInProgress(mutation.state)` for disabled/loading. Disable submit button while in progress to avoid double-submit.
+
+# Forms
+
+Use react-hook-form so Enter submits: wrap inputs in `<form onSubmit={form.handleSubmit(...)}>`, use `form.register()`, and `type="submit"` on the button. Extract form + validation into a subwidget when it has clear boundaries and is reused or makes the parent simpler.

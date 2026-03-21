@@ -1,0 +1,12 @@
+---
+description: Storybook colocation, path-based titles, and service-backed story mocks
+globs:
+  - "**/*.stories.tsx"
+alwaysApply: false
+---
+
+# Storybook
+
+Colocate `*.stories.tsx` with the component; **do not** set a hardcoded `title` in story `meta`—let the file path define the title.
+
+**Service-backed stories** (widgets that take `services` or a `WithFooService` slice): **do not** build ad-hoc mock objects inside the story file. Import a factory from the matching **`*.mock.ts`** next to the real service (e.g. `createClientService()` from `@/services/io/ClientService/ClientService.mock.ts`). Reuse existing mocks under `src/services/**/**/*.mock.ts` and `src/api/**/**/*.mock.ts` when possible. If no mock exists for that service, **add** `FooService.mock.ts` (or `foo.api.mock.ts` for API-shaped modules) beside the implementation and export `createFooService()` returning a full implementation of the interface. **Presentational-only** stories (no `services` prop) do not need service mocks.
