@@ -176,6 +176,8 @@ export function calculateBilling(
     invoiceNumber: billing.invoiceNumber,
     invoiceDate: billing.invoiceDate,
     description: billing.description,
+    paidAt: billing.paidAt,
+    paidAtJustification: billing.paidAtJustification,
     links: billing.linkBillingReport,
     matchedAmount: {
       amount: sumOfLinkedAmounts,
