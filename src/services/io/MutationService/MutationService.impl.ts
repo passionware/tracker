@@ -316,5 +316,36 @@ export function createMutationService(
         scope: "Updating contractor workspace for project",
       });
     },
+    createClient: async (payload) => {
+      const response = await api.createClient(payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Creating client",
+      });
+      return response;
+    },
+    updateClient: async (clientId, payload) => {
+      await api.updateClient(clientId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating client",
+      });
+    },
+    removeClientFromWorkspace: async (workspaceId, clientId) => {
+      await api.removeClientFromWorkspace(workspaceId, clientId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Removing client from workspace",
+      });
+    },
+    linkClientToWorkspace: async (workspaceId, clientId) => {
+      await api.linkClientToWorkspace(workspaceId, clientId);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Linking client to workspace",
+      });
+    },
+    updateWorkspace: async (workspaceId, payload) => {
+      await api.updateWorkspace(workspaceId, payload);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Updating workspace",
+      });
+    },
   };
 }

@@ -177,5 +177,26 @@ export function createMutationService(
       onActionAccessor.get()("Unassigning contractor from project");
       await wait();
     },
+    createClient: async () => {
+      onActionAccessor.get()("Creating client");
+      await wait();
+      return { id: 1 };
+    },
+    updateClient: async () => {
+      onActionAccessor.get()("Updating client");
+      await wait();
+    },
+    removeClientFromWorkspace: async () => {
+      onActionAccessor.get()("Removing client from workspace");
+      await wait();
+    },
+    linkClientToWorkspace: async () => {
+      onActionAccessor.get()("Linking client to workspace");
+      await wait();
+    },
+    updateWorkspace: async () => {
+      onActionAccessor.get()("Updating workspace");
+      await wait();
+    },
   };
 }

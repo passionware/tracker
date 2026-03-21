@@ -62,5 +62,18 @@ export function createClientService(
         ),
       );
     },
+    useClientLinkedWorkspaces: (clientId) => {
+      return ensureIdleQuery(
+        clientId,
+        useQuery(
+          {
+            queryKey: ["client", "linkedWorkspaces", clientId],
+            enabled: maybe.isPresent(clientId),
+            queryFn: () => api.getLinkedWorkspacesForClient(clientId!),
+          },
+          client,
+        ),
+      );
+    },
   };
 }
