@@ -2,10 +2,22 @@ import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -16,10 +28,7 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import {
-  ListToolbar,
-  ListToolbarButton,
-} from "@/features/_common/ListToolbar.tsx";
+import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   renderError,
@@ -54,9 +63,11 @@ import { promiseState } from "@passionware/platform-react";
 import { createSimpleEvent } from "@passionware/simple-event";
 import {
   Check,
+  ChevronDown,
   Frame,
   HardHat,
   LayoutGrid,
+  Layers,
   Loader2,
   Moon,
   PlusCircle,
@@ -84,6 +95,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
     selectionState.selectNone(),
   );
   const [viewMode, setViewMode] = useState<ViewMode>("both");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [timelineDarkMode, setTimelineDarkMode] = useState(false);
   const [timelineGroupBy, setTimelineGroupBy] = useState<
     "contractor" | "workspace"
@@ -397,6 +409,29 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         bottomSlot={renderTableView()}
         viewMode={viewMode}
       />
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete selected costs?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedCostIds.length} selected
+              cost(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={mt.isInProgress(deleteMutation.state)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {mt.isInProgress(deleteMutation.state)
+                ? "Deleting..."
+                : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CommonPageContainer>
   );
 
@@ -473,108 +508,85 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             openEntityDrawer({ type: "cost", id: row.id });
           }}
           toolbar={
-            selectionState.getTotalSelected(
-              selection,
-              rd.tryGet(costs)?.entries.length ?? 0,
-            ) > 0 ? (
-              <ListToolbar>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectionState.getTotalSelected(
-                      selection,
-                      rd.tryGet(finalCosts)?.entries.length ?? 0,
-                    )}{" "}
-                    selected
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div>
-                        <ListToolbarButton variant="destructive">
-                          Delete
-                        </ListToolbarButton>
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-4" align="start">
-                      <div className="space-y-3">
-                        <div className="text-sm text-slate-700">
-                          Are you sure you want to delete{" "}
-                          {selectedCostIds.length} selected cost(s)? This action
-                          cannot be undone.
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleBatchDelete}
-                            disabled={mt.isInProgress(deleteMutation.state)}
-                          >
-                            {mt.isInProgress(deleteMutation.state)
-                              ? "Deleting..."
-                              : "Confirm"}
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </ListToolbar>
-            ) : undefined
-          }
-          caption={
-            <>
-              <div className="mb-2 font-semibold text-gray-700">
-                A list of all costs associated with the selected workspace.
+            <ListToolbar>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1.5 px-2.5"
+                      disabled={selectedCostIds.length === 0}
+                      title={
+                        selectedCostIds.length === 0
+                          ? "Select one or more rows"
+                          : undefined
+                      }
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    Actions
+                    {selectedCostIds.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        size="sm"
+                        className="ml-1 min-w-5 px-1"
+                      >
+                        {selectedCostIds.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[10rem]">
+                    <DropdownMenuItem
+                      variant="destructrive"
+                      disabled={selectedCostIds.length === 0}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              {rd.mapOrElse(
-                finalCosts,
-                (view) => {
-                  const totals = view.totalSelected ?? view.total;
-                  const selectedCount = view.totalSelected
-                    ? selectedCostIds.length
-                    : view.entries.length;
-
-                  const billingDetails = [
-                    { label: "Net total", value: totals.netAmount },
-                    { label: "Total matched", value: totals.matchedAmount },
-                    {
-                      label: "Total remaining",
-                      value: totals.remainingAmount,
-                    },
-                  ];
-
-                  return (
-                    <>
-                      <h3 className="my-3 text-base font-semibold">
-                        Summary ({selectedCount}{" "}
-                        {selectedCount === 1 ? "cost" : "costs"})
-                      </h3>
-                      <Summary>
-                        {billingDetails.map((item) => (
-                          <SummaryCurrencyGroup
-                            key={item.label}
-                            label={item.label}
-                            group={item.value}
-                            services={props.services}
-                          />
-                        ))}
-                      </Summary>
-                    </>
-                  );
-                },
-                <div className="grid grid-flow-col gap-3">
-                  <Skeleton className="w-full h-10" />
-                  <Skeleton className="w-full h-10" />
-                  <Skeleton className="w-full h-10" />
-                </div>,
-              )}
-            </>
+            </ListToolbar>
           }
+          caption={rd.mapOrElse(
+            finalCosts,
+            (view) => {
+              const totals = view.totalSelected ?? view.total;
+
+              const billingDetails = [
+                { label: "Net total", value: totals.netAmount },
+                { label: "Total matched", value: totals.matchedAmount },
+                {
+                  label: "Total remaining",
+                  value: totals.remainingAmount,
+                },
+              ];
+
+              return (
+                <Summary variant="strip" className="w-full">
+                  {billingDetails.map((item) => (
+                    <SummaryCurrencyGroup
+                      key={item.label}
+                      label={item.label}
+                      group={item.value}
+                      services={props.services}
+                      variant="strip"
+                    />
+                  ))}
+                </Summary>
+              );
+            },
+            <div className="grid grid-flow-col gap-3">
+              <Skeleton className="w-full h-10" />
+              <Skeleton className="w-full h-10" />
+              <Skeleton className="w-full h-10" />
+            </div>,
+          )}
         />
       </>
     );

@@ -58,14 +58,14 @@ export const StatsOnly = {
 export const WithBulkActions = {
   args: {
     leftSlot: (
-      <>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Button size="sm" variant="outline">
           Archive
         </Button>
         <Button size="sm" variant="secondary">
           Export
         </Button>
-      </>
+      </div>
     ),
     children: (
       <div className="flex flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">

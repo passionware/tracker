@@ -1,9 +1,20 @@
 import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
@@ -14,10 +25,7 @@ import {
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
-import {
-  ListToolbar,
-  ListToolbarButton,
-} from "@/features/_common/ListToolbar.tsx";
+import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   selectionState,
@@ -29,16 +37,13 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, mt, rd } from "@passionware/monads";
+import { ChevronDown, Layers } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useState } from "react";
 import { promiseState } from "@passionware/platform-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 
 const columnHelper = createColumnHelper<any>();
 
@@ -60,6 +65,7 @@ export function GeneratedReportList(
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const generatedReports =
     props.services.generatedReportSourceService.useGeneratedReportSources(
@@ -114,6 +120,7 @@ export function GeneratedReportList(
   }
 
   return (
+    <>
     <ListView
       data={generatedReports}
       className="w-full overflow-x-auto"
@@ -228,87 +235,97 @@ export function GeneratedReportList(
         </>
       }
       toolbar={
-        selectionState.getTotalSelected(
-          selection,
-          rd.tryGet(generatedReports)?.length ?? 0,
-        ) > 0 ? (
-          <ListToolbar>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {selectionState.getTotalSelected(
-                  selection,
-                  rd.tryGet(generatedReports)?.length ?? 0,
-                )}{" "}
-                selected
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div>
-                    <ListToolbarButton
-                      variant="destructive"
-                      disabled={mt.isInProgress(deleteMutation.state)}
+        <ListToolbar>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 px-2.5"
+                  disabled={selectedReportIds.length === 0}
+                  title={
+                    selectedReportIds.length === 0
+                      ? "Select one or more rows"
+                      : undefined
+                  }
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Actions
+                  {selectedReportIds.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      size="sm"
+                      className="ml-1 min-w-5 px-1"
                     >
-                      Delete
-                    </ListToolbarButton>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" align="start">
-                  <div className="space-y-3">
-                    <div className="text-sm text-slate-700">
-                      Are you sure you want to delete {selectedReportIds.length}{" "}
-                      selected report(s)? This action cannot be undone.
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBatchDelete}
-                        disabled={mt.isInProgress(deleteMutation.state)}
-                      >
-                        {mt.isInProgress(deleteMutation.state)
-                          ? "Deleting..."
-                          : "Confirm"}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <ListToolbarButton variant="default">
-                    Actions
-                  </ListToolbarButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      // TODO: Implement view report details
-                      console.log("View report details");
-                    }}
-                  >
-                    View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      // TODO: Implement export report
-                      console.log("Export report");
-                    }}
-                  >
-                    Export Report
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </ListToolbar>
-        ) : null
+                      {selectedReportIds.length}
+                    </Badge>
+                  )}
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[10rem]">
+                <DropdownMenuItem
+                  disabled={selectedReportIds.length === 0}
+                  onSelect={() => {
+                    // TODO: Implement view report details
+                    console.log("View report details");
+                  }}
+                >
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={selectedReportIds.length === 0}
+                  onSelect={() => {
+                    // TODO: Implement export report
+                    console.log("Export report");
+                  }}
+                >
+                  Export Report
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructrive"
+                  disabled={
+                    selectedReportIds.length === 0 ||
+                    mt.isInProgress(deleteMutation.state)
+                  }
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setDeleteConfirmOpen(true);
+                  }}
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </ListToolbar>
       }
     />
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete selected reports?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedReportIds.length}{" "}
+              selected report(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={mt.isInProgress(deleteMutation.state)}
+            >
+              {mt.isInProgress(deleteMutation.state) ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

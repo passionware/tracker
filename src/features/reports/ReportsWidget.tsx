@@ -4,10 +4,28 @@ import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -17,10 +35,7 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import {
-  ListToolbar,
-  ListToolbarButton,
-} from "@/features/_common/ListToolbar.tsx";
+import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
@@ -65,10 +80,12 @@ import { chain, groupBy, partialRight } from "lodash";
 import {
   BriefcaseBusiness,
   Check,
+  ChevronDown,
   Frame,
   GitBranch,
   HardHat,
   LayoutGrid,
+  Layers,
   Loader2,
   Moon,
   PlusCircle,
@@ -97,6 +114,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
     selectionState.selectNone(),
   );
   const [isBulkCreateCostOpen, setIsBulkCreateCostOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { openEntityDrawer } = useEntityDrawerContext();
 
   // Load preferences from service
@@ -782,122 +800,101 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           }}
           columns={columns}
           toolbar={
-            selectionState.getTotalSelected(
-              selection,
-              rd.tryGet(reports)?.entries.length ?? 0,
-            ) > 0 ? (
-              <ListToolbar>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectionState.getTotalSelected(
-                      selection,
-                      rd.tryGet(finalReports)?.entries.length ?? 0,
-                    )}{" "}
-                    selected
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <ListToolbarButton
-                    variant="default"
-                    onClick={() => setIsBulkCreateCostOpen(true)}
+            <ListToolbar>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1.5 px-2.5"
+                      disabled={selectedReportIds.length === 0}
+                      title={
+                        selectedReportIds.length === 0
+                          ? "Select one or more rows"
+                          : undefined
+                      }
                   >
-                    Create cost for selected invoices
-                  </ListToolbarButton>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div>
-                        <ListToolbarButton variant="destructive">
-                          Delete
-                        </ListToolbarButton>
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-4" align="start">
-                      <div className="space-y-3">
-                        <div className="text-sm text-slate-700">
-                          Are you sure you want to delete{" "}
-                          {selectedReportIds.length} selected report(s)? This
-                          action cannot be undone.
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleBatchDelete}
-                            disabled={mt.isInProgress(deleteMutation.state)}
-                          >
-                            {mt.isInProgress(deleteMutation.state)
-                              ? "Deleting..."
-                              : "Confirm"}
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </ListToolbar>
-            ) : undefined
+                    <Layers className="h-3.5 w-3.5" />
+                    Actions
+                    {selectedReportIds.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        size="sm"
+                        className="ml-1 min-w-5 px-1"
+                      >
+                        {selectedReportIds.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[11rem]">
+                    <DropdownMenuItem
+                      disabled={selectedReportIds.length === 0}
+                      onSelect={() => setIsBulkCreateCostOpen(true)}
+                    >
+                      Create cost for selected
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructrive"
+                      disabled={selectedReportIds.length === 0}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </ListToolbar>
           }
-          caption={
-            <>
-              A list of all reported work for given client, matched with billing
-              or clarifications.
-              {rd.tryMap(finalReports, (view) => {
-                const totals = view.totalSelected ?? view.total;
-                const selectedCount = view.totalSelected
-                  ? selectedReportIds.length
-                  : view.entries.length;
+          caption={rd.tryMap(finalReports, (view) => {
+            const totals = view.totalSelected ?? view.total;
 
-                const billingDetails = [
-                  {
-                    label: "Reported",
-                    description: "Total value of reported work",
-                    value: totals.netAmount,
-                  },
-                  {
-                    label: "Billed",
-                    description: "How much billed value is linked to reports",
-                    value: totals.chargedAmount,
-                  },
-                  {
-                    label: "To link",
-                    description:
-                      "Report amount that is not yet linked to any billing",
-                    value: totals.toChargeAmount,
-                  },
-                  { label: "To pay", value: totals.toCompensateAmount },
-                  { label: "Paid", value: totals.compensatedAmount },
-                  {
-                    label: "To compensate",
-                    value: totals.toFullyCompensateAmount,
-                  },
-                ];
+            const billingDetails = [
+              {
+                label: "Reported",
+                description: "Total value of reported work",
+                value: totals.netAmount,
+              },
+              {
+                label: "Billed",
+                description: "How much billed value is linked to reports",
+                value: totals.chargedAmount,
+              },
+              {
+                label: "To link",
+                description:
+                  "Report amount that is not yet linked to any billing",
+                value: totals.toChargeAmount,
+              },
+              { label: "To pay", value: totals.toCompensateAmount },
+              { label: "Paid", value: totals.compensatedAmount },
+              {
+                label: "To compensate",
+                value: totals.toFullyCompensateAmount,
+              },
+            ];
 
-                return (
-                  <>
-                    <h3 className="my-3 text-base font-semibold ">
-                      Summary ({selectedCount}{" "}
-                      {selectedCount === 1 ? "report" : "reports"})
-                    </h3>
-                    <Summary>
-                      {billingDetails.map((item) => (
-                        <SummaryCurrencyGroup
-                          key={item.label}
-                          label={item.label}
-                          description={item.description}
-                          group={item.value}
-                          services={props.services}
-                        />
-                      ))}
-                    </Summary>
-                  </>
-                );
-              })}
-            </>
-          }
+            return (
+              <Summary variant="strip" className="w-full gap-x-2 sm:gap-x-3 md:gap-x-4">
+                {billingDetails.map((item) => (
+                  <SummaryCurrencyGroup
+                    key={item.label}
+                    label={item.label}
+                    description={item.description}
+                    group={item.value}
+                    services={props.services}
+                    variant="strip"
+                  />
+                ))}
+              </Summary>
+            );
+          })}
         />
         <BulkCreateCostDrawer
           open={isBulkCreateCostOpen}
@@ -909,6 +906,32 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             openEntityDrawer({ type: "cost", id: createdCostId });
           }}
         />
+        <AlertDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete selected reports?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {selectedReportIds.length}{" "}
+                selected report(s)? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBatchDelete}
+                disabled={mt.isInProgress(deleteMutation.state)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {mt.isInProgress(deleteMutation.state)
+                  ? "Deleting..."
+                  : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </>
     );
   }

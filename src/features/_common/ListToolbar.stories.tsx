@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge.tsx";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Download, Trash2 } from "lucide-react";
 
@@ -10,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Sticky bottom toolbar wrapped in a `Card`. Pair primary actions with `ListToolbarButton` (small size by default).",
+          "Sticky bottom toolbar wrapped in a `Card`. Put bulk actions first; show selection count in a badge on the Actions dropdown.",
       },
     },
   },
@@ -38,18 +39,18 @@ type Story = StoryObj<typeof meta>;
 export const Default = {
   args: {
     children: (
-      <div className="flex w-full flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-muted-foreground">2 items selected</span>
-        <div className="flex flex-wrap gap-2">
-          <ListToolbarButton variant="default">
-            <Download className="mr-1.5 size-4" />
-            Export
-          </ListToolbarButton>
-          <ListToolbarButton variant="destructive">
-            <Trash2 className="mr-1.5 size-4" />
-            Delete
-          </ListToolbarButton>
-        </div>
+      <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
+        <ListToolbarButton variant="default">
+          <Download className="mr-1.5 size-4" />
+          Export
+          <Badge variant="secondary" size="sm" className="ml-1 min-w-5 px-1">
+            2
+          </Badge>
+        </ListToolbarButton>
+        <ListToolbarButton variant="destructive">
+          <Trash2 className="mr-1.5 size-4" />
+          Delete
+        </ListToolbarButton>
       </div>
     ),
   },
