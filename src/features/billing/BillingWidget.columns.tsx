@@ -4,6 +4,7 @@ import {
   ActionMenuDeleteItem,
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
+  ActionMenuMarkPaidMenuItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
@@ -25,6 +26,7 @@ export function useColumns(props: BillingWidgetProps) {
     billingColumns.grossAmount(props.services),
     billingColumns.report.linkedValue(props.services),
     billingColumns.report.remainingValue(props.services),
+    billingColumns.paidStatus(props.services),
     sharedColumns.description,
     billingColumns.commitStatus(props.services),
     columnHelper.display({
@@ -40,6 +42,11 @@ export function useColumns(props: BillingWidgetProps) {
           >
             Delete Billing
           </ActionMenuDeleteItem>
+          <ActionMenuMarkPaidMenuItem
+            billingId={info.row.original.id}
+            paidAt={info.row.original.paidAt}
+            services={props.services}
+          />
           <ActionMenuEditItem
             onClick={async () => {
               const result =

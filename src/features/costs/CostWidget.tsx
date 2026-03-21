@@ -11,13 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -28,7 +22,10 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
+import {
+  ListToolbar,
+  ListToolbarActionsMenu,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   renderError,
@@ -63,17 +60,16 @@ import { promiseState } from "@passionware/platform-react";
 import { createSimpleEvent } from "@passionware/simple-event";
 import {
   Check,
-  ChevronDown,
   Frame,
   HardHat,
   LayoutGrid,
-  Layers,
   Loader2,
   Moon,
   PlusCircle,
   SplitSquareHorizontal,
   Sun,
   Table,
+  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -510,46 +506,19 @@ export function CostWidget(props: PotentialCostWidgetProps) {
           toolbar={
             <ListToolbar>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1.5 px-2.5"
-                      disabled={selectedCostIds.length === 0}
-                      title={
-                        selectedCostIds.length === 0
-                          ? "Select one or more rows"
-                          : undefined
-                      }
+                <ListToolbarActionsMenu selectedCount={selectedCostIds.length}>
+                  <DropdownMenuItem
+                    variant="destructrive"
+                    disabled={selectedCostIds.length === 0}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setDeleteConfirmOpen(true);
+                    }}
                   >
-                    <Layers className="h-3.5 w-3.5" />
-                    Actions
-                    {selectedCostIds.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        size="sm"
-                        className="ml-1 min-w-5 px-1"
-                      >
-                        {selectedCostIds.length}
-                      </Badge>
-                    )}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                  </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-[10rem]">
-                    <DropdownMenuItem
-                      variant="destructrive"
-                      disabled={selectedCostIds.length === 0}
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        setDeleteConfirmOpen(true);
-                      }}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </ListToolbarActionsMenu>
               </div>
             </ListToolbar>
           }

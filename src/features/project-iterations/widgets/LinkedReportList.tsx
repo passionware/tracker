@@ -10,19 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
-import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
+import {
+  ListToolbar,
+  ListToolbarActionsMenu,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   selectionState,
@@ -34,7 +32,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { mt, rd } from "@passionware/monads";
-import { ChevronDown, Layers } from "lucide-react";
+import { FileText, Unlink } from "lucide-react";
 import { promiseState } from "@passionware/platform-react";
 import { useState } from "react";
 import { ReportGenerationWidget } from "./report-generation/tmetric/ReportGenerationWidget";
@@ -130,82 +128,56 @@ export function LinkedReportList(
       toolbar={
         <ListToolbar>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 px-2.5"
-                  disabled={selectedReportIds.length === 0}
-                  title={
-                    selectedReportIds.length === 0
-                      ? "Select one or more rows"
-                      : undefined
-                  }
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  Actions
-                  {selectedReportIds.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      size="sm"
-                      className="ml-1 min-w-5 px-1"
-                    >
-                      {selectedReportIds.length}
-                    </Badge>
-                  )}
-                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[10rem]">
-                <DropdownMenuItem
-                  disabled={selectedReportIds.length === 0}
-                  onSelect={() => {
-                    if (!rd.isSuccess(reports)) return;
-                    if (!rd.isSuccess(iteration)) return;
+            <ListToolbarActionsMenu selectedCount={selectedReportIds.length}>
+              <DropdownMenuItem
+                disabled={selectedReportIds.length === 0}
+                onSelect={() => {
+                  if (!rd.isSuccess(reports)) return;
+                  if (!rd.isSuccess(iteration)) return;
 
-                    const selectedReports = reports.data.entries.filter((e) =>
-                      selectionState.isSelected(selection, e.id),
+                  const selectedReports = reports.data.entries.filter((e) =>
+                    selectionState.isSelected(selection, e.id),
+                  );
+
+                  const contractors = uniqBy(
+                    selectedReports.map((e) => e.originalReport.contractor),
+                    (c) => c.id,
+                  );
+
+                  props.services.dialogService.show((api) => {
+                    return (
+                      <ReportGenerationWidget
+                        {...api}
+                        contractors={contractors}
+                        periodStart={iteration.data.periodStart}
+                        periodEnd={iteration.data.periodEnd}
+                        projectIterationId={props.projectIterationId}
+                        clientId={props.clientId}
+                        services={props.services}
+                      />
                     );
-
-                    const contractors = uniqBy(
-                      selectedReports.map((e) => e.originalReport.contractor),
-                      (c) => c.id,
-                    );
-
-                    props.services.dialogService.show((api) => {
-                      return (
-                        <ReportGenerationWidget
-                          {...api}
-                          contractors={contractors}
-                          periodStart={iteration.data.periodStart}
-                          periodEnd={iteration.data.periodEnd}
-                          projectIterationId={props.projectIterationId}
-                          clientId={props.clientId}
-                          services={props.services}
-                        />
-                      );
-                    });
-                  }}
-                >
-                  Generate Detailed Report
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructrive"
-                  disabled={
-                    selectedReportIds.length === 0 ||
-                    mt.isInProgress(unlinkMutation.state)
-                  }
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setUnlinkConfirmOpen(true);
-                  }}
-                >
-                  Unlink from iteration
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  });
+                }}
+              >
+                <FileText className="h-4 w-4" />
+                Generate Detailed Report
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructrive"
+                disabled={
+                  selectedReportIds.length === 0 ||
+                  mt.isInProgress(unlinkMutation.state)
+                }
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setUnlinkConfirmOpen(true);
+                }}
+              >
+                <Unlink className="h-4 w-4" />
+                Unlink from iteration
+              </DropdownMenuItem>
+            </ListToolbarActionsMenu>
           </div>
         </ListToolbar>
       }

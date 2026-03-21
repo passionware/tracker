@@ -14,18 +14,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -35,7 +31,10 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { ReportQueryBar } from "@/features/_common/elements/query/ReportQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
+import {
+  ListToolbar,
+  ListToolbarActionsMenu,
+} from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ReportPreview } from "@/features/_common/previews/ReportPreview.tsx";
@@ -80,18 +79,18 @@ import { chain, groupBy, partialRight } from "lodash";
 import {
   BriefcaseBusiness,
   Check,
-  ChevronDown,
   Frame,
   GitBranch,
   HardHat,
   LayoutGrid,
-  Layers,
   Loader2,
   Moon,
   PlusCircle,
   SplitSquareHorizontal,
   Sun,
   Table,
+  Trash2,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -802,53 +801,30 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           toolbar={
             <ListToolbar>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1.5 px-2.5"
-                      disabled={selectedReportIds.length === 0}
-                      title={
-                        selectedReportIds.length === 0
-                          ? "Select one or more rows"
-                          : undefined
-                      }
+                <ListToolbarActionsMenu
+                  selectedCount={selectedReportIds.length}
+                  contentClassName="min-w-[11rem]"
+                >
+                  <DropdownMenuItem
+                    disabled={selectedReportIds.length === 0}
+                    onSelect={() => setIsBulkCreateCostOpen(true)}
                   >
-                    <Layers className="h-3.5 w-3.5" />
-                    Actions
-                    {selectedReportIds.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        size="sm"
-                        className="ml-1 min-w-5 px-1"
-                      >
-                        {selectedReportIds.length}
-                      </Badge>
-                    )}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                  </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-[11rem]">
-                    <DropdownMenuItem
-                      disabled={selectedReportIds.length === 0}
-                      onSelect={() => setIsBulkCreateCostOpen(true)}
-                    >
-                      Create cost for selected
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructrive"
-                      disabled={selectedReportIds.length === 0}
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        setDeleteConfirmOpen(true);
-                      }}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <Wallet className="h-4 w-4" />
+                    Create cost for selected
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructrive"
+                    disabled={selectedReportIds.length === 0}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setDeleteConfirmOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </ListToolbarActionsMenu>
               </div>
             </ListToolbar>
           }
