@@ -123,8 +123,13 @@
   }
 }
 
-/* Not in @layer utilities so it is never purged (class is added via classList in JS). */
+/* Not in @layer utilities (class added via classList). Initial bg is on the rule, not in
+   @keyframes 0% — Lightning CSS strips complex 0% keyframes in production builds. */
 .list-view-row-highlight {
+  background-color: var(
+    --highlight-color,
+    color-mix(in oklch, var(--primary) 35%, transparent)
+  );
   animation: list-view-row-highlight 2.5s ease-out forwards;
 }
 
@@ -279,13 +284,7 @@
 }
 
 @keyframes list-view-row-highlight {
-  0% {
-    background-color: var(
-      --highlight-color,
-      color-mix(in oklch, var(--primary) 35%, transparent)
-    );
-  }
-  100% {
+  to {
     background-color: transparent;
   }
 }
