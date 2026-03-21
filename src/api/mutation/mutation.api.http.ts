@@ -349,16 +349,13 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
       if (entries.length === 0) {
         return;
       }
-      const response = await client
-        .from("billing")
-        .upsert(
-          entries.map((e) => ({
-            id: e.billingId,
-            paid_at: formatDateForSupabase(e.paidAt),
-            paid_at_justification: e.paidAtJustification,
-          })),
-          { onConflict: "id" },
-        );
+      const response = await client.rpc("bulk_mark_billing_paid", {
+        p_entries: entries.map((e) => ({
+          billing_id: e.billingId,
+          paid_at: formatDateForSupabase(e.paidAt),
+          paid_at_justification: e.paidAtJustification,
+        })),
+      });
       if (response.error) {
         throw response.error;
       }
