@@ -1,4 +1,9 @@
 import {
+  BooleanFilter,
+  booleanFilter,
+  booleanFilterSchema,
+} from "@/api/_common/query/filters/BooleanFilter.ts";
+import {
   enumFilterSchema,
   EnumFilter,
 } from "@/api/_common/query/filters/EnumFilter.ts";
@@ -25,6 +30,8 @@ export interface Workspace {
   name: string;
   slug: string;
   avatarUrl: Maybe<string>;
+  /** When true, omitted from switchers and pickers (listing only). */
+  hidden: boolean;
 }
 
 export type WorkspaceListSortField = "name" | "id" | "slug";
@@ -34,6 +41,8 @@ export type WorkspaceQuery = WithSearch &
   WithSorter<WorkspaceListSortField> &
   WithFilters<{
     id: EnumFilter<Nullable<Workspace["id"]>>;
+    /** When set, only workspaces whose `hidden` flag matches the filter value. */
+    hidden: Nullable<BooleanFilter>;
   }>;
 
 export const workspaceQueryUtils = withBuilderUtils({
@@ -45,9 +54,17 @@ export const workspaceQueryUtils = withBuilderUtils({
     sort: { field: "name", order: "asc" },
     filters: {
       id: null,
+      hidden: null,
     },
     page: paginationUtils.ofDefault(),
   }),
+  /** Switchers and pickers: non-hidden workspaces only. */
+  ofDefault: (): WorkspaceQuery =>
+    workspaceQueryUtils.setFilter(
+      workspaceQueryUtils.ofEmpty(),
+      "hidden",
+      booleanFilter.createDefault(false),
+    ),
   ensureDefault: (query: WorkspaceQuery): WorkspaceQuery => {
     const empty = workspaceQueryUtils.ofEmpty();
     return {
@@ -59,10 +76,12 @@ export const workspaceQueryUtils = withBuilderUtils({
       },
       filters: {
         id: query.filters?.id ?? empty.filters.id,
+        hidden: query.filters?.hidden ?? empty.filters.hidden,
       },
     };
   },
-}).setInitialQueryFactory((x) => x.ofEmpty);
+})
+  .setInitialQueryFactory((x) => x.ofEmpty);
 
 const strToNull = (str: unknown) => (str === "" ? null : str);
 
@@ -77,6 +96,9 @@ export const workspaceQuerySchema = z
             z.preprocess(strToNull, z.coerce.number().nullable()),
           ).nullable(),
         )
+        .default(null),
+      hidden: z
+        .preprocess(strToNull, booleanFilterSchema.nullable())
         .default(null),
     }),
     page: paginationSchema,

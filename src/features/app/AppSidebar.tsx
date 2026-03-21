@@ -207,7 +207,7 @@ export function AppSidebar({
   const auth = services.authService.useAuth();
   const clients = services.clientService.useClients(clientQueryUtils.ofEmpty());
   const workspaces = services.workspaceService.useWorkspaces(
-    workspaceQueryUtils.ofEmpty(),
+    workspaceQueryUtils.ofDefault(),
   );
   const currentClientId =
     services.locationService.useCurrentClientId() ?? idSpecUtils.ofAll();

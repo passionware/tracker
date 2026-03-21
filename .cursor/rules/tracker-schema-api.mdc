@@ -1,0 +1,10 @@
+---
+description: Zod schemas and domain types owned by the API layer
+globs:
+  - "src/api/**/*.ts"
+alwaysApply: false
+---
+
+# Schema and API boundaries
+
+Put schema and types next to the API that owns them (e.g. budget target log entry schema in iteration-trigger API, not project-iteration). Use Zod for parsing HTTP/storage payloads; expose a single domain type (e.g. `BudgetTargetLogEntry`) from the API layer.

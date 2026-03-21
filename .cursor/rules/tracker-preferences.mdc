@@ -1,0 +1,10 @@
+---
+description: PreferenceService and localStorage-backed settings
+alwaysApply: true
+---
+
+# Preferences / persisted state
+
+Use PreferenceService for any localStorage-backed setting: define a type, zod schema, createLocalStorageApi(key, parse, defaultValue), and expose only get/set (read/write). Keep business logic (e.g. "should we skip?") in the consumer (hook/component), not in the preference service.
+
+Use Zod to parse stored JSON (safeParse); avoid manual type guards.

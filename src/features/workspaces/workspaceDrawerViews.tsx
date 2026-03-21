@@ -13,6 +13,7 @@ import { DrawerMainInfoGrid } from "@/features/_common/drawers/DrawerMainInfoGri
 import type { DrawerDescriptorServices } from "@/features/_common/drawers/DrawerDescriptor";
 import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
+import { WorkspaceHiddenBadge } from "@/features/workspaces/WorkspaceHiddenBadge.tsx";
 import { renderSmallError } from "@/features/_common/renderError";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { rd } from "@passionware/monads";
@@ -50,7 +51,17 @@ export function WorkspaceDrawerHeaderPreview({
         <div className="min-w-0 flex-1">
           <DrawerMainInfoGrid
             items={[
-              { label: "Name", value: workspace.name },
+              {
+                label: "Name",
+                value: (
+                  <span className="flex w-full min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate">
+                      {workspace.name}
+                    </span>
+                    <WorkspaceHiddenBadge hidden={workspace.hidden} />
+                  </span>
+                ),
+              },
               { label: "Slug", value: workspace.slug },
               { label: "Workspace ID", value: workspace.id.toString() },
             ]}
@@ -115,6 +126,7 @@ export function WorkspaceDrawerHeaderActions({
                 name: workspace.name,
                 slug: workspace.slug,
                 avatarUrl: workspace.avatarUrl ?? null,
+                hidden: workspace.hidden,
               },
             })
           }
@@ -148,7 +160,17 @@ export function WorkspaceDrawerBody({
         <PanelSectionLabel icon={Building2}>Workspace</PanelSectionLabel>
         <DrawerMainInfoGrid
           items={[
-            { label: "Name", value: workspace.name },
+            {
+              label: "Name",
+              value: (
+                <span className="flex w-full min-w-0 items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate">
+                    {workspace.name}
+                  </span>
+                  <WorkspaceHiddenBadge hidden={workspace.hidden} />
+                </span>
+              ),
+            },
             {
               label: "Slug",
               value: <span className="font-mono">{workspace.slug}</span>,

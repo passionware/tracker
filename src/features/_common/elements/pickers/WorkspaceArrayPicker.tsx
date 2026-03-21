@@ -38,7 +38,7 @@ export const WorkspaceArrayPicker = injectConfig(
     useItems: (query) => {
       const props = api.useProps();
       return props.services.workspaceService.useWorkspaces(
-        workspaceQueryUtils.setSearch(workspaceQueryUtils.ofEmpty(), query),
+        workspaceQueryUtils.setSearch(workspaceQueryUtils.ofDefault(), query),
       );
     },
     searchPlaceholder: "Search for a workspace",

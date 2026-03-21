@@ -4,12 +4,14 @@ import { DrawerFooter } from "@/components/ui/drawer.tsx";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { ClientLogoField } from "@/features/clients/ClientLogoField.tsx";
 import { cn } from "@/lib/utils.ts";
 import { promiseState } from "@passionware/platform-react";
@@ -21,11 +23,15 @@ export interface WorkspaceFormValues {
   name: string;
   slug: string;
   avatarUrl: string | null;
+  hidden: boolean;
 }
 
 export interface WorkspaceFormProps {
   workspaceId: number;
-  defaultValues: Pick<WorkspaceFormValues, "name" | "slug" | "avatarUrl">;
+  defaultValues: Pick<
+    WorkspaceFormValues,
+    "name" | "slug" | "avatarUrl" | "hidden"
+  >;
   onCancel: () => void;
   onSubmit: (
     workspaceId: number,
@@ -47,6 +53,7 @@ export function WorkspaceForm(props: WorkspaceFormProps) {
       name: props.defaultValues.name,
       slug: props.defaultValues.slug,
       avatarUrl: props.defaultValues.avatarUrl,
+      hidden: props.defaultValues.hidden,
     },
   });
 
@@ -66,6 +73,7 @@ export function WorkspaceForm(props: WorkspaceFormProps) {
         name,
         slug,
         avatarUrl: data.avatarUrl,
+        hidden: data.hidden,
       }),
     );
   }
@@ -116,6 +124,29 @@ export function WorkspaceForm(props: WorkspaceFormProps) {
               />
             </FormControl>
             <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="hidden"
+        render={({ field }) => (
+          <FormItem className="col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-1">
+              <FormLabel className="text-base">Hide from selectors</FormLabel>
+              <FormDescription>
+                When enabled, this workspace does not appear in workspace and
+                client switchers or workspace pickers. You can still open it from
+                Manage workspaces.
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                aria-label="Hide workspace from selectors"
+              />
+            </FormControl>
           </FormItem>
         )}
       />

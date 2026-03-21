@@ -1,0 +1,20 @@
+---
+description: Reuse patterns, shared UI locations, and where domain code belongs
+alwaysApply: true
+---
+
+# Reuse, patterns, and where code lives
+
+**Reuse before inventing.** Prefer existing shared UI—`@/components/ui`, `@/features/_common/patterns/`, and established widgets (e.g. `ListView` for tables, drawer primitives below)—and the **same components and layout patterns** as sibling features in the same surface (drawer, page, form). Do **not** grow orchestration files with large inline JSX: **routes, thin descriptors, and layout shells should stay wire-up only**; put **domain-specific UI** next to its feature module (e.g. client drawer body next to `ClientForm`).
+
+**New reusable building blocks** (clickable regions, context strips, row chrome, cards, section labels—anything that could appear in more than one feature) belong in **`@/features/_common/patterns/`** for app-level patterns, or **`@/components/ui`** for generic controls. Add a **colocated Storybook** story; never use a hardcoded `title` in story meta—let the path define the title. Keep component props **generic**; specialize at the call site if needed.
+
+When a pattern becomes the **standard** way to build a part of the app, **add a short entry** under the relevant rule in `.cursor/rules/` so future work stays consistent.
+
+# Dead code and unused options
+
+Remove unused exports, components, and parameters (e.g. a component never imported, or a param always passed false). Prefer deleting over commenting out.
+
+# Avoid hardcoded lists when data-driven is possible
+
+Don't hardcode currency lists or similar; derive from actual data (e.g. iteration currencies) and use on-demand loading (e.g. ensureExchange) for the rest when you don't have the full set up front.

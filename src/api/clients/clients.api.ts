@@ -64,7 +64,8 @@ export const clientQueryUtils = withBuilderUtils({
       },
     };
   },
-}).setInitialQueryFactory((x) => x.ofEmpty);
+})
+  .setInitialQueryFactory((x) => x.ofEmpty);
 
 const strToNull = (str: unknown) => (str === "" ? null : str);
 

@@ -1,0 +1,12 @@
+---
+description: Schema-agnostic SQL and migration file hygiene for Supabase
+globs:
+  - "supabase/migrations/**/*.sql"
+alwaysApply: false
+---
+
+# Database migration files
+
+**Schema-agnostic SQL (critical):** Do **not** qualify objects with a hardcoded schema (e.g. `public.table`). Use unqualified names (`table`, `policy … ON table`) so migrations follow the session `search_path` and work across environments that do not use `public` or use multiple schemas. Never write `public.` in new migrations. Same idea for `auth.uid()` etc.—use Supabase-provided schemas only where required (`auth`, `storage`), not `public` for app tables.
+
+When you have several related unstaged migrations (e.g. table + policies), merge them into one migration file.
