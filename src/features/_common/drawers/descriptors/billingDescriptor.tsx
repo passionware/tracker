@@ -6,6 +6,7 @@ import {
   ActionMenuDeleteItem,
   ActionMenuDuplicateItem,
   ActionMenuEditItem,
+  ActionMenuMarkPaidMenuItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
 import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
@@ -94,6 +95,10 @@ function BillingSmallPreview({
       const invoiceDateLabel = services.formatService.temporal.single.compact(
         billing.invoiceDate,
       );
+      const paidLabel =
+        billing.paidAt == null
+          ? "Unpaid"
+          : services.formatService.temporal.single.compact(billing.paidAt);
       return (
         <DrawerMainInfoGrid
           items={[
@@ -101,6 +106,15 @@ function BillingSmallPreview({
             { label: "Workspace", value: workspaceLabel },
             { label: "Invoice #", value: invoiceNumberLabel },
             { label: "Invoice date", value: invoiceDateLabel },
+            { label: "Paid", value: paidLabel },
+            ...(billing.paidAtJustification
+              ? [
+                  {
+                    label: "Payment note",
+                    value: billing.paidAtJustification,
+                  },
+                ]
+              : []),
             { label: "Status", value: renderBillingStatusBadge(billing.status) },
           ]}
         />
@@ -128,6 +142,11 @@ function BillingHeaderActions({
         services={services}
       />
       <ActionMenu services={services}>
+        <ActionMenuMarkPaidMenuItem
+          billingId={entity.id}
+          paidAt={billing.paidAt}
+          services={services}
+        />
         <ActionMenuDeleteItem
           onClick={() => {
             void services.mutationService.deleteBilling(entity.id);
