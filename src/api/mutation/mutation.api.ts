@@ -1,4 +1,8 @@
-import { Billing, BillingPayload } from "@/api/billing/billing.api.ts";
+import {
+  Billing,
+  BillingInvoicePayload,
+  BillingPatchPayload,
+} from "@/api/billing/billing.api.ts";
 import { CalendarDate } from "@internationalized/date";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.ts";
@@ -16,7 +20,7 @@ export interface MutationApi {
   linkReportAndBilling: (payload: LinkBillingReportPayload) => Promise<void>;
   linkCostAndReport: (payload: LinkCostReportPayload) => Promise<void>;
   createReport: (report: ReportPayload) => Promise<{ id: Report["id"] }>;
-  createBilling: (billing: BillingPayload) => Promise<{ id: Billing["id"] }>;
+  createBilling: (billing: BillingInvoicePayload) => Promise<{ id: Billing["id"] }>;
   createProject: (project: ProjectPayload) => Promise<{ id: Project["id"] }>;
   createProjectIteration: (
     iteration: ProjectIterationPayload,
@@ -48,10 +52,7 @@ export interface MutationApi {
   ) => Promise<void>;
 
   editCost: (costId: number, payload: Partial<CostPayload>) => Promise<void>;
-  editBilling: (
-    billingId: number,
-    payload: Partial<BillingPayload>,
-  ) => Promise<void>;
+  editBilling: (billingId: number, payload: BillingPatchPayload) => Promise<void>;
   bulkMarkBillingPaid: (
     entries: Array<{
       billingId: number;

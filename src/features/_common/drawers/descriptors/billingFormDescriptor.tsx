@@ -1,4 +1,4 @@
-import type { BillingPayload } from "@/api/billing/billing.api.ts";
+import type { BillingInvoicePayload } from "@/api/billing/billing.api.ts";
 import type {
   DrawerDescriptor,
   DrawerDescriptorServices,
@@ -10,7 +10,7 @@ export type BillingFormSpec = {
   type: "billing-form";
   id: number;
   mode: "edit" | "duplicate";
-  defaultValues: BillingPayload;
+  defaultValues: Partial<BillingInvoicePayload>;
 };
 
 function BillingFormDrawerContent({
@@ -28,8 +28,8 @@ function BillingFormDrawerContent({
       services={services}
       onCancel={handleCancel}
       onSubmit={async (
-        payload: BillingPayload,
-        changes: Partial<BillingPayload>,
+        payload: BillingInvoicePayload,
+        changes: Partial<BillingInvoicePayload>,
       ) => {
         if (entity.mode === "edit") {
           await services.mutationService.editBilling(entity.id, changes);

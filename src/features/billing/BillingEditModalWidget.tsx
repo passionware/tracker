@@ -1,4 +1,4 @@
-import { BillingPayload } from "@/api/billing/billing.api.ts";
+import { BillingInvoicePayload } from "@/api/billing/billing.api.ts";
 import {
   Drawer,
   DrawerContent,
@@ -30,8 +30,8 @@ export function BillingEditModalWidget(props: BillingEditModalWidgetProps) {
   );
   const handleCancel = () => message?.sendResponse({ action: "cancel" });
   const handleConfirm = (
-    payload: BillingPayload,
-    changes: Partial<BillingPayload>,
+    payload: BillingInvoicePayload,
+    changes: Partial<BillingInvoicePayload>,
   ) => message?.sendResponse({ action: "confirm", payload, changes });
 
   return (

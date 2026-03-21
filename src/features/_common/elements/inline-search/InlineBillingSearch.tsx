@@ -1,7 +1,7 @@
 import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   Billing,
-  BillingPayload,
+  BillingInvoicePayload,
   BillingQuery,
   billingQueryUtils,
 } from "@/api/billing/billing.api.ts";
@@ -52,7 +52,7 @@ export interface InlineBillingSearchWidgetProps
     ]
   > {
   query: BillingQuery;
-  initialNewBillingValues?: Partial<BillingPayload>;
+  initialNewBillingValues?: Partial<BillingInvoicePayload>;
   renderSelect: BillingListProps["renderSelect"];
   className?: string;
   context: Omit<ExpressionContext, "contractorId">;

@@ -343,8 +343,6 @@ export function convertGeneratedReportToFacts(
         invoiceDate: projectIteration.periodEnd,
         description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,
-        paidAt: null,
-        paidAtJustification: null,
       },
     };
     facts.push(billingFact);

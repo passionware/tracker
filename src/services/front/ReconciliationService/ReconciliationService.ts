@@ -1,4 +1,4 @@
-import { Billing, BillingPayload } from "@/api/billing/billing.api.ts";
+import { Billing, BillingInvoicePayload } from "@/api/billing/billing.api.ts";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import {
@@ -123,7 +123,7 @@ interface BillingReconciliationPreviewBase {
  */
 export type BillingToCreate = ToCreate<
   BillingReconciliationPreviewBase,
-  BillingPayload
+  BillingInvoicePayload
 >;
 
 /**
@@ -131,7 +131,7 @@ export type BillingToCreate = ToCreate<
  */
 export type BillingToUpdate = ToUpdate<
   BillingReconciliationPreviewBase,
-  BillingPayload,
+  BillingInvoicePayload,
   Billing["id"]
 >;
 
