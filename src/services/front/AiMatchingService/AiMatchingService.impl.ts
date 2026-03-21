@@ -14,11 +14,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const MAX_RETRIES_429 = 5;
 
-function trimBillingsForPrompt(billings: BillingMatchInput[]): BillingMatchInput[] {
+function trimBillingsForPrompt(
+  billings: BillingMatchInput[],
+): BillingMatchInput[] {
   return billings.map((b) => ({
     ...b,
     clientName:
-      b.clientName.length > 100 ? `${b.clientName.slice(0, 100)}…` : b.clientName,
+      b.clientName.length > 100
+        ? `${b.clientName.slice(0, 100)}…`
+        : b.clientName,
   }));
 }
 
@@ -27,19 +31,22 @@ function buildDocumentPrompt(
   defaultCurrency: string,
   fileName?: string,
 ): string {
-  const billingsCompact = trimBillingsForPrompt(billings).map((b) => ({
-    id: b.id,
-    client: b.clientName,
-    net: b.totalNet,
-    gross: b.totalGross,
-    currency: b.currency,
-    issuedDate: b.invoiceDate,
-  }));
-  const bJson = JSON.stringify(billingsCompact);
+  const invoiceRows = trimBillingsForPrompt(billings).map(
+    (b) =>
+      [
+        b.id,
+        b.clientName,
+        b.totalNet,
+        b.totalGross,
+        b.currency,
+        b.invoiceDate,
+      ] as const,
+  );
+  const bJson = JSON.stringify(invoiceRows);
   const nameHint = fileName ? `File name: ${fileName}\n` : "";
   return `You are given an attached bank statement or export (${nameHint}PDF, CSV, or plain text). Below is a JSON array of unpaid client invoices for the same business.
 
-INVOICES (unpaid) — each item is { id, client, net, gross, currency, issuedDate }:
+INVOICES (unpaid) — each element is a row in column order [id, client, net, gross, currency, issuedDate] (same order for every row). Use the first value (id) for **billingId** and **unmatchedBillingIds** in your JSON output.
 ${bJson}
 
 Default currency hint when comparing: "${defaultCurrency}"
@@ -127,10 +134,7 @@ function retryDelayMsFromError(err: unknown): number {
         ) {
           const delay = (d as { retryDelay?: string }).retryDelay;
           if (delay && /^\d+s$/.test(delay)) {
-            return Math.min(
-              120_000,
-              (parseInt(delay, 10) || 32) * 1000 + 500,
-            );
+            return Math.min(120_000, (parseInt(delay, 10) || 32) * 1000 + 500);
           }
         }
       }
@@ -142,8 +146,7 @@ function retryDelayMsFromError(err: unknown): number {
 }
 
 function isRateLimitError(err: unknown): boolean {
-  const text =
-    err instanceof Error ? err.message : JSON.stringify(err ?? "");
+  const text = err instanceof Error ? err.message : JSON.stringify(err ?? "");
   return (
     text.includes("429") ||
     text.includes("RESOURCE_EXHAUSTED") ||
@@ -154,7 +157,9 @@ function isRateLimitError(err: unknown): boolean {
 
 async function generateContentWithRetry(
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
-  parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>,
+  parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  >,
 ): Promise<string> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < MAX_RETRIES_429; attempt++) {
@@ -249,7 +254,10 @@ function reconcileBankMatchResponse(
     return true;
   });
 
-  const onePerInvoice = new Map<number, BankMatchAiResponse["matches"][number]>();
+  const onePerInvoice = new Map<
+    number,
+    BankMatchAiResponse["matches"][number]
+  >();
   for (const m of grounded) {
     if (!onePerInvoice.has(m.billingId)) {
       onePerInvoice.set(m.billingId, m);
