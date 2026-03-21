@@ -6,6 +6,16 @@ export interface TimelineViewPreferences {
   colorBy: "group" | "billing-status" | "cost-status";
 }
 
+/** Timeline bar / list row coloring on the client invoices page. */
+export type BillingTimelineColorBy =
+  | "group"
+  | "linking-status"
+  | "payment-status";
+
+export interface BillingTimelineViewPreferences {
+  colorBy: BillingTimelineColorBy;
+}
+
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
 export interface BudgetLogSyncState {
   lastSyncAt: number;
@@ -27,6 +37,11 @@ export interface PreferenceService {
   getTimelineView: () => Promise<TimelineViewPreferences>;
   setTimelineView: (
     preferences: Partial<TimelineViewPreferences>,
+  ) => Promise<void>;
+  useBillingTimelineView: () => BillingTimelineViewPreferences;
+  getBillingTimelineView: () => Promise<BillingTimelineViewPreferences>;
+  setBillingTimelineView: (
+    preferences: Partial<BillingTimelineViewPreferences>,
   ) => Promise<void>;
   getBudgetLogSyncState: () => Promise<BudgetLogSyncState | null>;
   setBudgetLogSyncState: (state: BudgetLogSyncState) => Promise<void>;

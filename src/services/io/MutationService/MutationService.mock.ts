@@ -73,6 +73,10 @@ export function createMutationService(
       onActionAccessor.get()("Editing billing");
       await wait();
     },
+    bulkMarkBillingPaid: async () => {
+      onActionAccessor.get()("Bulk marking billings as paid");
+      await wait();
+    },
     editCost: async () => {
       onActionAccessor.get()("Editing cost");
       await wait();

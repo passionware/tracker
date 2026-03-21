@@ -6,17 +6,20 @@ export const clientsMock = createMockFactory<Client>(
     id: 1,
     name: "Test client",
     avatarUrl: null,
+    senderName: null,
   }),
   [
     {
       id: 1,
       name: "Test client",
       avatarUrl: null,
+      senderName: null,
     },
     {
       id: 2,
       name: "Very important client",
       avatarUrl: null,
+      senderName: null,
     },
   ],
 );

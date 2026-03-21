@@ -1,4 +1,5 @@
 import { Billing, BillingPayload } from "@/api/billing/billing.api.ts";
+import { CalendarDate } from "@internationalized/date";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.ts";
 import {
@@ -50,6 +51,13 @@ export interface MutationApi {
   editBilling: (
     billingId: number,
     payload: Partial<BillingPayload>,
+  ) => Promise<void>;
+  bulkMarkBillingPaid: (
+    entries: Array<{
+      billingId: number;
+      paidAt: CalendarDate;
+      paidAtJustification: string | null;
+    }>,
   ) => Promise<void>;
   editReport: (
     reportId: number,

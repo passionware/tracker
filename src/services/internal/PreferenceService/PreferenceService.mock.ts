@@ -32,6 +32,13 @@ export function createPreferenceService(config: {
     setTimelineView: async () => {
       return;
     },
+    useBillingTimelineView: () => ({
+      colorBy: "payment-status",
+    }),
+    getBillingTimelineView: async () => ({
+      colorBy: "payment-status",
+    }),
+    setBillingTimelineView: async () => {},
     getBudgetLogSyncState: async () => null,
     setBudgetLogSyncState: async () => {},
     getBulkCreateCostPreferences: async () => ({

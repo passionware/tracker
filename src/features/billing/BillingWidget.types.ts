@@ -1,5 +1,6 @@
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithAiMatchingService } from "@/services/front/AiMatchingService/AiMatchingService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import {
@@ -13,6 +14,7 @@ import { WithQueryParamsService } from "@/services/internal/QueryParamsService/Q
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 
 export type BillingWidgetProps = {
@@ -30,6 +32,8 @@ export type BillingWidgetProps = {
     WithMessageService,
     WithRoutingService,
     WithExpressionService,
+    WithVariableService,
+    WithAiMatchingService,
     WithQueryParamsService<{
       billing: import("@/api/billing/billing.api").BillingQuery;
     }>,

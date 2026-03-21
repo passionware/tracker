@@ -132,6 +132,11 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           invoice_date: formatDateForSupabase(billing.invoiceDate),
           description: billing.description,
           workspace_id: billing.workspaceId,
+          paid_at:
+            billing.paidAt != null
+              ? formatDateForSupabase(billing.paidAt)
+              : null,
+          paid_at_justification: billing.paidAtJustification ?? null,
         })
         .select("id");
       if (response.error) {
@@ -299,6 +304,16 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
     editBilling: async (billingId, payload) => {
       const takeIfPresent = <T extends keyof typeof payload>(key: T) =>
         key in payload ? payload[key] : undefined;
+      const paidAtDb =
+        "paidAt" in payload
+          ? payload.paidAt === null
+            ? null
+            : formatDateForSupabase(payload.paidAt as CalendarDate)
+          : undefined;
+      const paidJustDb =
+        "paidAtJustification" in payload
+          ? payload.paidAtJustification
+          : undefined;
       const response = await client
 
         .from("billing")
@@ -319,11 +334,28 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
               ),
               description: takeIfPresent("description"),
               workspace_id: takeIfPresent("workspaceId"),
+              paid_at: paidAtDb,
+              paid_at_justification: paidJustDb,
             },
             (_, key) => key !== undefined,
           ),
         )
         .eq("id", billingId);
+      if (response.error) {
+        throw response.error;
+      }
+    },
+    bulkMarkBillingPaid: async (entries) => {
+      if (entries.length === 0) {
+        return;
+      }
+      const response = await client.rpc("bulk_mark_billing_paid", {
+        p_entries: entries.map((e) => ({
+          billing_id: e.billingId,
+          paid_at: formatDateForSupabase(e.paidAt),
+          paid_at_justification: e.paidAtJustification,
+        })),
+      });
       if (response.error) {
         throw response.error;
       }

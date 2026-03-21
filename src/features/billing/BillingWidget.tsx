@@ -2,10 +2,15 @@ import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
@@ -15,10 +20,7 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSinglePicker.tsx";
 import { BillingQueryBar } from "@/features/_common/elements/query/BillingQueryBar.tsx";
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
-import {
-  ListToolbar,
-  ListToolbarButton,
-} from "@/features/_common/ListToolbar.tsx";
+import { ListToolbar } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
   renderError,
@@ -31,7 +33,16 @@ import {
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
+import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
+import {
+  getBillingTableRowClassName,
+  getBillingTimelineItemColor,
+} from "@/features/billing/billingPaymentStatusStyle.ts";
+import type { BillingMatcherRestorePayload } from "@/features/billing/billingPaymentMatcherPersistence.ts";
+import { BillingPaymentMatcherDialog } from "@/features/billing/BillingPaymentMatcher.tsx";
+import { MarkAsPaidDialog } from "@/features/billing/MarkAsPaidDialog.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
+import { useRestoreBillingPaymentMatcherDraft } from "@/features/billing/useRestoreBillingPaymentMatcherDraft.ts";
 import { cn } from "@/lib/utils";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import {
@@ -48,10 +59,12 @@ import {
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
-import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import type { BillingTimelineColorBy } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
+import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { createSimpleEvent } from "@passionware/simple-event";
 import {
   BriefcaseBusiness,
@@ -65,7 +78,7 @@ import {
   Sun,
   Table,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useColumns } from "./BillingWidget.columns";
 
@@ -90,8 +103,39 @@ export function BillingWidget(props: BillingWidgetProps) {
   const [timelineGroupBy, setTimelineGroupBy] = useState<
     "client" | "workspace"
   >("workspace");
+  const { colorBy: billingTimelineColorBy } =
+    props.services.preferenceService.useBillingTimelineView();
+  const [bulkMarkPaidOpen, setBulkMarkPaidOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [paymentMatcherOpen, setPaymentMatcherOpen] = useState(false);
+  const [paymentMatcherUnpaidSnapshot, setPaymentMatcherUnpaidSnapshot] =
+    useState<BillingViewEntry[]>([]);
+  const [matcherRestorePayload, setMatcherRestorePayload] =
+    useState<BillingMatcherRestorePayload | null>(null);
+  const handleMatcherRestoreConsumed = useCallback(() => {
+    setMatcherRestorePayload(null);
+  }, []);
+  const handleMatcherDraftRestored = useCallback(
+    (selected: BillingViewEntry[], payload: BillingMatcherRestorePayload) => {
+      setPaymentMatcherUnpaidSnapshot(selected);
+      setMatcherRestorePayload(payload);
+      setPaymentMatcherOpen(true);
+    },
+    [],
+  );
   const { openEntityDrawer } = useEntityDrawerContext();
   const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
+
+  const billingVariableContext = useMemo(
+    () =>
+      expressionContextUtils
+        .ofGlobal()
+        .setWorkspace(props.workspaceId)
+        .setClient(props.clientId)
+        .setContractor(idSpecUtils.ofAll())
+        .build(),
+    [props.workspaceId, props.clientId],
+  );
 
   const viewModeItems = [
     {
@@ -121,6 +165,11 @@ export function BillingWidget(props: BillingWidgetProps) {
       label: "Workspace",
       icon: <Frame className="h-4 w-4" />,
     },
+  ];
+  const colorByItems = [
+    { id: "group", label: "Group color" },
+    { id: "linking-status", label: "Linking status" },
+    { id: "payment-status", label: "Payment status" },
   ];
 
   // Get billings - we'll calculate selected IDs from the billings data
@@ -154,6 +203,13 @@ export function BillingWidget(props: BillingWidgetProps) {
     setSelection,
   );
 
+  useRestoreBillingPaymentMatcherDraft({
+    workspaceId: props.workspaceId,
+    clientId: props.clientId,
+    finalBillings,
+    onRestored: handleMatcherDraftRestored,
+  });
+
   const deleteMutation = promiseState.useMutation(async () => {
     if (selectedBillingIds.length === 0) {
       return;
@@ -178,26 +234,23 @@ export function BillingWidget(props: BillingWidgetProps) {
     await deleteMutation.track(void 0);
   }
 
+  const selectedUnpaidBillings = useMemo(() => {
+    const entries = rd.tryGet(finalBillings)?.entries ?? [];
+    const sel = new Set(selectedBillingIds);
+    return entries.filter((e) => sel.has(e.id) && e.paidAt == null);
+  }, [finalBillings, selectedBillingIds]);
+
+  const allBillingEntriesForMatcher = useMemo(
+    () => rd.tryGet(finalBillings)?.entries ?? [],
+    [finalBillings],
+  );
+
   const columns = useColumns(props);
 
-  const timelineData = rd.map(finalBillings, (billingView) => {
+  const timelineData = useMemo(
+    () =>
+      rd.map(finalBillings, (billingView) => {
     const timeZone = getLocalTimeZone();
-    const getBillingStatusColor = (
-      status: BillingViewEntry["status"],
-    ): string => {
-      switch (status) {
-        case "unmatched":
-          return "bg-rose-500";
-        case "partially-matched":
-          return "bg-amber-500";
-        case "clarified":
-          return "bg-emerald-500";
-        case "overmatched":
-          return "bg-violet-500";
-        case "matched":
-          return "bg-emerald-500";
-      }
-    };
 
     const entriesWithBounds = billingView.entries
       .map((billing) => {
@@ -267,21 +320,27 @@ export function BillingWidget(props: BillingWidgetProps) {
     const items: TimelineItem<BillingViewEntry>[] = entriesWithBounds.map(
       ({ billing, start, end }) => {
         const laneId = getLane(billing).id;
+        const laneColor = laneMap.get(laneId)?.color;
         return {
           id: `billing-${billing.id}`,
           laneId,
           start,
           end,
           label: billing.invoiceNumber || `Billing #${billing.id}`,
-          color:
-            getBillingStatusColor(billing.status) || laneMap.get(laneId)?.color,
+          color: getBillingTimelineItemColor(
+            billing,
+            billingTimelineColorBy,
+            laneColor,
+          ),
           data: billing,
         };
       },
     );
 
     return { lanes, items };
-  });
+      }),
+    [finalBillings, billingTimelineColorBy, timelineGroupBy],
+  );
 
   return (
     <CommonPageContainer
@@ -328,6 +387,22 @@ export function BillingWidget(props: BillingWidgetProps) {
                 }}
                 placeholder="Group by"
                 searchPlaceholder="Search group by"
+                size="sm"
+                variant="outline"
+                searchable={false}
+              />
+              <SimpleSinglePicker
+                items={colorByItems}
+                value={billingTimelineColorBy}
+                onSelect={(value) => {
+                  if (value) {
+                    void props.services.preferenceService.setBillingTimelineView({
+                      colorBy: value as BillingTimelineColorBy,
+                    });
+                  }
+                }}
+                placeholder="Color by"
+                searchPlaceholder="Search color mode"
                 size="sm"
                 variant="outline"
                 searchable={false}
@@ -413,6 +488,66 @@ export function BillingWidget(props: BillingWidgetProps) {
         bottomSlot={renderTableView()}
         viewMode={viewMode}
       />
+      <MarkAsPaidDialog
+        open={bulkMarkPaidOpen}
+        onOpenChange={setBulkMarkPaidOpen}
+        bulk
+        title="Mark selected invoices as paid"
+        onConfirm={async (data) => {
+          const ids = [...selectedBillingIds];
+          if (ids.length === 0) return;
+          await props.services.mutationService.bulkMarkBillingPaid(
+            ids.map((id) => ({
+              billingId: id,
+              paidAt: data.paidAt,
+              paidAtJustification: data.paidAtJustification,
+            })),
+          );
+          setSelection(selectionState.selectNone());
+          toast.success(`Marked ${ids.length} invoice(s) as paid`);
+        }}
+      />
+      <BillingPaymentMatcherDialog
+        open={paymentMatcherOpen}
+        onOpenChange={(open) => {
+          setPaymentMatcherOpen(open);
+          if (!open) {
+            setPaymentMatcherUnpaidSnapshot([]);
+            setMatcherRestorePayload(null);
+          }
+        }}
+        services={props.services}
+        unpaidBillings={paymentMatcherUnpaidSnapshot}
+        billingLookupEntries={allBillingEntriesForMatcher}
+        variableContext={billingVariableContext}
+        workspaceId={props.workspaceId}
+        clientId={props.clientId}
+        restorePayload={matcherRestorePayload}
+        onRestoreConsumed={handleMatcherRestoreConsumed}
+      />
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete selected invoices?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedBillingIds.length}{" "}
+              selected billing(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={mt.isInProgress(deleteMutation.state)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {mt.isInProgress(deleteMutation.state)
+                ? "Deleting..."
+                : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CommonPageContainer>
   );
 
@@ -469,6 +604,9 @@ export function BillingWidget(props: BillingWidgetProps) {
           onSelectionChange={setSelection}
           columns={columns}
           getRowId={(x) => x.id}
+          getRowClassName={(x) =>
+            getBillingTableRowClassName(x, billingTimelineColorBy)
+          }
           onRowDoubleClick={async (x) => {
             const result =
               await props.services.messageService.editBilling.sendRequest({
@@ -488,97 +626,44 @@ export function BillingWidget(props: BillingWidgetProps) {
             openEntityDrawer({ type: "billing", id: row.id });
           }}
           toolbar={
-            selectionState.getTotalSelected(
-              selection,
-              rd.tryGet(billings)?.entries.length ?? 0,
-            ) > 0 ? (
-              <ListToolbar>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectionState.getTotalSelected(
-                      selection,
-                      rd.tryGet(finalBillings)?.entries.length ?? 0,
-                    )}{" "}
-                    selected
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div>
-                        <ListToolbarButton variant="destructive">
-                          Delete
-                        </ListToolbarButton>
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-4" align="start">
-                      <div className="space-y-3">
-                        <div className="text-sm text-slate-700">
-                          Are you sure you want to delete{" "}
-                          {selectedBillingIds.length} selected billing(s)? This
-                          action cannot be undone.
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleBatchDelete}
-                            disabled={mt.isInProgress(deleteMutation.state)}
-                          >
-                            {mt.isInProgress(deleteMutation.state)
-                              ? "Deleting..."
-                              : "Confirm"}
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </ListToolbar>
-            ) : undefined
-          }
-          caption={
-            <>
-              <div className="mb-2 font-semibold text-gray-700">
-                A list of all billings for the selected client.
+            <ListToolbar>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <BillingListBulkActions
+                  selectedCount={selectedBillingIds.length}
+                  selectedUnpaidCount={selectedUnpaidBillings.length}
+                  onMarkPaid={() => setBulkMarkPaidOpen(true)}
+                  onMatchPayments={() => {
+                    setPaymentMatcherUnpaidSnapshot(selectedUnpaidBillings);
+                    setPaymentMatcherOpen(true);
+                  }}
+                  onDeleteRequest={() => setDeleteConfirmOpen(true)}
+                />
               </div>
-              {rd.tryMap(finalBillings, (view) => {
-                const totals = view.totalSelected ?? view.total;
-                const selectedCount = view.totalSelected
-                  ? selectedBillingIds.length
-                  : view.entries.length;
-
-                const billingDetails = [
-                  { label: "Charged", value: totals.netAmount },
-                  { label: "Reconciled", value: totals.matchedAmount },
-                  { label: "To reconcile", value: totals.remainingAmount },
-                ];
-
-                return (
-                  <div>
-                    <h3 className="my-3 text-base font-semibold text-gray-900">
-                      Summary ({selectedCount}{" "}
-                      {selectedCount === 1 ? "invoice" : "invoices"})
-                    </h3>
-                    <Summary>
-                      {billingDetails.map((item) => (
-                        <SummaryCurrencyGroup
-                          key={item.label}
-                          label={item.label}
-                          group={item.value}
-                          services={props.services}
-                        />
-                      ))}
-                    </Summary>
-                  </div>
-                );
-              })}
-            </>
+            </ListToolbar>
           }
+          caption={rd.tryMap(finalBillings, (view) => {
+            const totals = view.totalSelected ?? view.total;
+
+            const billingDetails = [
+              { label: "Charged", value: totals.netAmount },
+              { label: "Reconciled", value: totals.matchedAmount },
+              { label: "To reconcile", value: totals.remainingAmount },
+            ];
+
+            return (
+              <Summary variant="strip" className="w-full">
+                {billingDetails.map((item) => (
+                  <SummaryCurrencyGroup
+                    key={item.label}
+                    label={item.label}
+                    group={item.value}
+                    services={props.services}
+                    variant="strip"
+                  />
+                ))}
+              </Summary>
+            );
+          })}
         />
       </>
     );

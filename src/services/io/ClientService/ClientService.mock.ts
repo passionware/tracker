@@ -8,16 +8,16 @@ export function createClientService(): ClientService {
         {
           id: 1,
           name: "Client 1",
-          fullName: "Client 1",
           avatarUrl: null,
+          senderName: null,
         },
       ]),
     useClient: () =>
       rd.of({
         id: 1,
         name: "Client 1",
-        fullName: "Client 1",
         avatarUrl: null,
+        senderName: null,
       }),
   };
 }

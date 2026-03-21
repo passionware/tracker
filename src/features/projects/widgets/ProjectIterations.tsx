@@ -4,19 +4,16 @@ import {
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   ListToolbar,
-  ListToolbarButton,
+  ListToolbarActionsMenu,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
@@ -31,6 +28,7 @@ import {
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
+import { ListOrdered } from "lucide-react";
 import { capitalize } from "lodash";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -182,81 +180,68 @@ export function ProjectIterations(props: ProjectIterationsProps) {
           sharedColumns.description,
         ]}
         toolbar={
-          selectionState.getTotalSelected(
-            selection,
-            rd.tryGet(projectIterations)?.length ?? 0,
-          ) > 0 ? (
-            <ListToolbar>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {selectionState.getTotalSelected(
-                    selection,
-                    rd.tryGet(projectIterations)?.length ?? 0,
-                  )}{" "}
-                  selected
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <DropdownMenu
-                  open={dropdownOpen}
-                  onOpenChange={setDropdownOpen}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <ListToolbarButton
-                      variant="default"
-                      disabled={mt.isInProgress(bulkStatusChangeMutation.state)}
+          <ListToolbar>
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
+              <ListToolbarActionsMenu
+                selectedCount={selectedIterationIds.length}
+                open={dropdownOpen}
+                onOpenChange={setDropdownOpen}
+                disabled={
+                  selectedIterationIds.length === 0 ||
+                  mt.isInProgress(bulkStatusChangeMutation.state)
+                }
+                disabledReason={
+                  mt.isInProgress(bulkStatusChangeMutation.state) &&
+                  selectedIterationIds.length > 0
+                    ? "Updating iteration status…"
+                    : undefined
+                }
+              >
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    disabled={mt.isInProgress(
+                      bulkStatusChangeMutation.state,
+                    )}
+                  >
+                    <ListOrdered className="h-4 w-4" />
+                    Change iteration status
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      onSelect={() => handleBulkStatusChange("draft")}
+                      disabled={mt.isInProgress(
+                        bulkStatusChangeMutation.state,
+                      )}
                     >
-                      Actions
-                    </ListToolbarButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger
-                        disabled={mt.isInProgress(
-                          bulkStatusChangeMutation.state,
-                        )}
-                      >
-                        Change iteration status
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem
-                          onSelect={() => handleBulkStatusChange("draft")}
-                          disabled={mt.isInProgress(
-                            bulkStatusChangeMutation.state,
-                          )}
-                        >
-                          {mt.isInProgress(bulkStatusChangeMutation.state)
-                            ? "Updating..."
-                            : "Draft"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleBulkStatusChange("active")}
-                          disabled={mt.isInProgress(
-                            bulkStatusChangeMutation.state,
-                          )}
-                        >
-                          {mt.isInProgress(bulkStatusChangeMutation.state)
-                            ? "Updating..."
-                            : "Active"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleBulkStatusChange("closed")}
-                          disabled={mt.isInProgress(
-                            bulkStatusChangeMutation.state,
-                          )}
-                        >
-                          {mt.isInProgress(bulkStatusChangeMutation.state)
-                            ? "Updating..."
-                            : "Closed"}
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </ListToolbar>
-          ) : null
+                      {mt.isInProgress(bulkStatusChangeMutation.state)
+                        ? "Updating..."
+                        : "Draft"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleBulkStatusChange("active")}
+                      disabled={mt.isInProgress(
+                        bulkStatusChangeMutation.state,
+                      )}
+                    >
+                      {mt.isInProgress(bulkStatusChangeMutation.state)
+                        ? "Updating..."
+                        : "Active"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleBulkStatusChange("closed")}
+                      disabled={mt.isInProgress(
+                        bulkStatusChangeMutation.state,
+                      )}
+                    >
+                      {mt.isInProgress(bulkStatusChangeMutation.state)
+                        ? "Updating..."
+                        : "Closed"}
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </ListToolbarActionsMenu>
+            </div>
+          </ListToolbar>
         }
       />
     </>

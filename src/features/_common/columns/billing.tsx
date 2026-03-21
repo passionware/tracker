@@ -59,6 +59,22 @@ export const billingColumns = {
         sortKey: "invoiceDate",
       },
     }),
+  paidStatus: (services: WithFormatService) =>
+    getColumnHelper<BillingViewEntry>().display({
+      id: "paidStatus",
+      header: "Paid",
+      cell: (info) => {
+        const paidAt = info.row.original.paidAt;
+        if (paidAt == null) {
+          return (
+            <RollingBadge tone="solid" variant="neutral" className="max-w-28">
+              Unpaid
+            </RollingBadge>
+          );
+        }
+        return services.formatService.temporal.single.compact(paidAt);
+      },
+    }),
   netAmount: (services: WithFormatService) =>
     getColumnHelper<Pick<BillingViewEntry, "netAmount">>().accessor(
       "netAmount",
@@ -134,7 +150,10 @@ export const billingColumns = {
             );
             return (
               <div data-no-row-open>
-                <ChargeInfoPopover billing={info.row.original} services={services}>
+                <ChargeInfoPopover
+                  billing={info.row.original}
+                  services={services}
+                >
                   {badge}
                 </ChargeInfoPopover>
               </div>

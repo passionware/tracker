@@ -62,6 +62,21 @@ export const ContractorMultiPicker = injectConfig(
       />
     ),
     renderOption: (item) => <ContractorView contractor={rd.of(item)} />,
+    renderMultiOption: (item, ctx) => (
+      <ContractorView
+        contractor={rd.of(item)}
+        multiPickerOptionZones={{
+          onAvatarClick: ctx.onAvatarClick,
+          onRightPartClick: ctx.onRightPartClick,
+        }}
+        multiPickerTrailing={ctx.trailingSlot}
+        multiPickerExclusiveHover={{
+          onPointerEnter: ctx.onExclusiveZonePointerEnter,
+          onPointerLeave: ctx.onExclusiveZonePointerLeave,
+        }}
+        multiPickerDimExclusiveStrip={ctx.dimExclusiveStrip}
+      />
+    ),
     getKey: (item) => item.id.toString(),
     getItemId: (item) => item.id,
     useSelectedItems: (ids) => {

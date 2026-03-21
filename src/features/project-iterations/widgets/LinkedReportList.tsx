@@ -1,23 +1,25 @@
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
+import {
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
 import {
   ListToolbar,
-  ListToolbarButton,
+  ListToolbarActionsMenu,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import {
@@ -30,6 +32,7 @@ import {
   WorkspaceSpec,
 } from "@/services/front/RoutingService/RoutingService.ts";
 import { mt, rd } from "@passionware/monads";
+import { FileText, Unlink } from "lucide-react";
 import { promiseState } from "@passionware/platform-react";
 import { useState } from "react";
 import { ReportGenerationWidget } from "./report-generation/tmetric/ReportGenerationWidget";
@@ -53,6 +56,7 @@ export function LinkedReportList(
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
+  const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
   const reports = props.services.reportDisplayService.useReportView(query);
   const iteration =
     props.services.projectIterationService.useProjectIterationDetail(
@@ -87,6 +91,7 @@ export function LinkedReportList(
   }
 
   return (
+    <>
     <ListView
       data={rd.map(reports, (r) => r.entries)}
       selection={selection}
@@ -121,116 +126,87 @@ export function LinkedReportList(
         </>
       }
       toolbar={
-        selectionState.getTotalSelected(
-          selection,
-          rd.tryGet(reports)?.entries.length ?? 0,
-        ) > 0 ? (
-          <ListToolbar>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {selectionState.getTotalSelected(
-                  selection,
-                  rd.tryGet(reports)?.entries.length ?? 0,
-                )}{" "}
-                selected
-              </span>
-            </div>
+        <ListToolbar>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <ListToolbarActionsMenu selectedCount={selectedReportIds.length}>
+              <DropdownMenuItem
+                disabled={selectedReportIds.length === 0}
+                onSelect={() => {
+                  if (!rd.isSuccess(reports)) return;
+                  if (!rd.isSuccess(iteration)) return;
 
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div>
-                    <ListToolbarButton variant="destructive">
-                      Delete
-                    </ListToolbarButton>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" align="start">
-                  <div className="space-y-3">
-                    <div className="text-sm text-slate-700">
-                      Are you sure you want to unlink {selectedReportIds.length}{" "}
-                      selected report(s) from this iteration?
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBatchUnlink}
-                        disabled={mt.isInProgress(unlinkMutation.state)}
-                      >
-                        {mt.isInProgress(unlinkMutation.state)
-                          ? "Deleting..."
-                          : "Confirm"}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  const selectedReports = reports.data.entries.filter((e) =>
+                    selectionState.isSelected(selection, e.id),
+                  );
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <ListToolbarButton variant="default">
-                    Actions
-                  </ListToolbarButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {/*
-                    This will open a dialog where you can fill data from external source -> ie. tmetric
-                    It is important that the linked report is somehow mapped to the report billing and cost amounts
-                    After importing, you can correct the data freely.
-                    Then you can save the new version of the report.
-                    Then you can view the report (specific version) in the interactive preview that provides useful analysis.
-                    This also should be a public view that is queried by ID. This should be carefully exposed using RLS for anonymous users.
-                    */}
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      // props.services.reportGenerationService.generateReport({
-                      //   reportIds: selectionState.getSelectedIds(
-                      //     selection,
-                      //     rd.tryGet(reports)?.entries.map((e) => e.id) ?? [],
-                      //   ),
-                      //   sourceType: "tmetric",
-                      //   projectIterationId: props.projectIterationId,
-                      // });
-                      if (!rd.isSuccess(reports)) return;
-                      if (!rd.isSuccess(iteration)) return;
+                  const contractors = uniqBy(
+                    selectedReports.map((e) => e.originalReport.contractor),
+                    (c) => c.id,
+                  );
 
-                      const selectedReports = reports.data.entries.filter((e) =>
-                        selectionState.isSelected(selection, e.id),
-                      );
-
-                      // Extract unique contractors from selected reports
-                      const contractors = uniqBy(
-                        selectedReports.map((e) => e.originalReport.contractor),
-                        (c) => c.id,
-                      );
-
-                      props.services.dialogService.show((api) => {
-                        return (
-                          <ReportGenerationWidget
-                            {...api}
-                            contractors={contractors}
-                            periodStart={iteration.data.periodStart}
-                            periodEnd={iteration.data.periodEnd}
-                            projectIterationId={props.projectIterationId}
-                            clientId={props.clientId}
-                            services={props.services}
-                          />
-                        );
-                      });
-                    }}
-                  >
-                    Generate Detailed Report
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </ListToolbar>
-        ) : null
+                  props.services.dialogService.show((api) => {
+                    return (
+                      <ReportGenerationWidget
+                        {...api}
+                        contractors={contractors}
+                        periodStart={iteration.data.periodStart}
+                        periodEnd={iteration.data.periodEnd}
+                        projectIterationId={props.projectIterationId}
+                        clientId={props.clientId}
+                        services={props.services}
+                      />
+                    );
+                  });
+                }}
+              >
+                <FileText className="h-4 w-4" />
+                Generate Detailed Report
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructrive"
+                disabled={
+                  selectedReportIds.length === 0 ||
+                  mt.isInProgress(unlinkMutation.state)
+                }
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setUnlinkConfirmOpen(true);
+                }}
+              >
+                <Unlink className="h-4 w-4" />
+                Unlink from iteration
+              </DropdownMenuItem>
+            </ListToolbarActionsMenu>
+          </div>
+        </ListToolbar>
       }
     />
+      <AlertDialog
+        open={unlinkConfirmOpen}
+        onOpenChange={setUnlinkConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unlink reports from iteration?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unlink {selectedReportIds.length}{" "}
+              selected report(s) from this iteration?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchUnlink}
+              disabled={mt.isInProgress(unlinkMutation.state)}
+            >
+              {mt.isInProgress(unlinkMutation.state)
+                ? "Unlinking..."
+                : "Unlink"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

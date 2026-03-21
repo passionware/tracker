@@ -99,6 +99,8 @@ export interface BillingViewEntry {
   client: Client;
   invoiceDate: CalendarDate;
   description: string | null;
+  paidAt: CalendarDate | null;
+  paidAtJustification: string | null;
   links: Billing["linkBillingReport"];
   matchedAmount: CurrencyValue;
   remainingAmount: CurrencyValue;

@@ -26,16 +26,31 @@ import { Overwrite } from "@passionware/platform-ts";
 import { PopoverContentProps } from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
 import { CommandLoading } from "cmdk";
-import { AnimatePresence, motion } from "framer-motion";
 import { partialRight, xor } from "lodash";
 import { Check, ChevronsUpDown, LoaderCircle, Unlink2, X } from "lucide-react";
-import { Fragment, ReactNode, useState } from "react";
+import { Fragment, MouseEvent, ReactNode, useRef, useState } from "react";
 
 export interface AbstractPickerConfig<Id, Data, Props> {
   useSelectedItems: (ids: Id[]) => RemoteData<Data[]>;
   useItems: (query: string) => RemoteData<Data[]>;
   renderItem: (item: Unassigned | Data, props: Props) => ReactNode;
   renderOption?: (item: Data) => ReactNode;
+  /** When set, mouse selection uses zone-specific rules; keyboard still toggles. */
+  renderMultiOption?: (
+    item: Data,
+    ctx: {
+      isSelected: boolean;
+      itemId: Id;
+      onAvatarClick: (e: MouseEvent) => void;
+      /** Entire row to the right of the avatar (incl. check) = exclusive select. */
+      onRightPartClick: (e: MouseEvent) => void;
+      trailingSlot: ReactNode;
+      onExclusiveZonePointerEnter: () => void;
+      onExclusiveZonePointerLeave: () => void;
+      /** True when another row's exclusive strip is hovered — fade this row's strip only. */
+      dimExclusiveStrip: boolean;
+    },
+  ) => ReactNode;
   getItemId: (item: Data) => Id;
   getKey: (item: Data) => string;
   unassignedLabel?: ReactNode;
@@ -100,7 +115,13 @@ export function AbstractMultiPicker<Id, Data>(
   } = _props;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  /** While pointer is over an option's exclusive strip, other options fade (renderMultiOption only). */
+  const [exclusiveHoverKey, setExclusiveHoverKey] = useState<string | null>(
+    null,
+  );
   const promise = promiseState.useRemoteData();
+  /** cmdk Item also calls onSelect on click; without this, that toggle runs after zone clicks and breaks exclusive select. */
+  const suppressCmdkItemSelectRef = useRef(false);
 
   const options = rd.useLastWithPlaceholder(config.useItems(query));
 
@@ -136,6 +157,29 @@ export function AbstractMultiPicker<Id, Data>(
     }
     // setOpen(false);
     setQuery("");
+  };
+
+  const applyMultiOptionZoneClick = (
+    e: MouseEvent,
+    zone: "avatar" | "right",
+    itemId: Id,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    suppressCmdkItemSelectRef.current = true;
+    queueMicrotask(() => {
+      suppressCmdkItemSelectRef.current = false;
+    });
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      handleSelect(xor(value, [itemId]), itemId, "toggle");
+      return;
+    }
+    if (zone === "avatar") {
+      handleSelect(xor(value, [itemId]), itemId, "toggle");
+      return;
+    }
+    // zone === "right"
+    handleSelect([itemId], itemId, "include");
   };
 
   const button = (
@@ -224,7 +268,13 @@ export function AbstractMultiPicker<Id, Data>(
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setExclusiveHoverKey(null);
+      }}
+    >
       <PopoverTrigger asChild>{button}</PopoverTrigger>
       <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
         <Command shouldFilter={false}>
@@ -232,33 +282,29 @@ export function AbstractMultiPicker<Id, Data>(
             placeholder={config.searchPlaceholder || "Search item"}
             value={query}
             onValueChange={setQuery}
+            endAdornment={
+              <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
+                {value.length > 0 ? (
+                  <button
+                    type="button"
+                    aria-label="Clear selection"
+                    className={cn(
+                      "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
+                      "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
+                    )}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect([], null, "clear")}
+                  >
+                    <X className="size-3.5 shrink-0" />
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            }
           />
           <CommandList>
             <CommandGroup>
               <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
-                <AnimatePresence initial={false}>
-                  {value.length > 0 && (
-                    <motion.div
-                      layout
-                      key="clear-button"
-                      initial={{ opacity: 0, y: -30, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -30, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <CommandItem
-                        value={undefined}
-                        onSelect={() => {
-                          handleSelect([], null, "clear");
-                        }}
-                        variant="danger"
-                      >
-                        <X />
-                        Clear
-                      </CommandItem>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
                 {allowUnassigned && (
                   <CommandItem
                     variant="info"
@@ -294,32 +340,69 @@ export function AbstractMultiPicker<Id, Data>(
                   }
                   return options.map((data) => {
                     const itemId = config.getItemId(data);
+                    const rowKey = config.getKey(data);
                     const isSelected = value.some(
                       (v) => String(v) === String(itemId),
                     );
+                    const renderBody = config.renderMultiOption
+                      ? config.renderMultiOption(data, {
+                          isSelected,
+                          itemId,
+                          onAvatarClick: (e) =>
+                            applyMultiOptionZoneClick(e, "avatar", itemId),
+                          onRightPartClick: (e) =>
+                            applyMultiOptionZoneClick(e, "right", itemId),
+                          trailingSlot: (
+                            <Check
+                              className={cn(
+                                isSelected ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          ),
+                          onExclusiveZonePointerEnter: () =>
+                            setExclusiveHoverKey(rowKey),
+                          onExclusiveZonePointerLeave: () =>
+                            setExclusiveHoverKey((cur) =>
+                              cur === rowKey ? null : cur,
+                            ),
+                          dimExclusiveStrip:
+                            exclusiveHoverKey !== null &&
+                            exclusiveHoverKey !== rowKey,
+                        })
+                      : partialRight(
+                          config.renderOption ?? config.renderItem,
+                          _props,
+                        )(data);
                     return (
                       <CommandItem
-                        key={config.getKey(data)}
-                        value={config.getKey(data)}
+                        key={rowKey}
+                        value={rowKey}
                         className={cn(
+                          "min-w-0 w-full",
+                          config.renderMultiOption &&
+                            "gap-0 p-0! items-stretch min-h-0",
                           isSelected &&
                             "bg-accent text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground",
                         )}
                         onSelect={() => {
+                          if (
+                            config.renderMultiOption &&
+                            suppressCmdkItemSelectRef.current
+                          ) {
+                            return;
+                          }
                           handleSelect(xor(value, [itemId]), itemId, "toggle");
-                          // setOpen(false);
                         }}
                       >
-                        {partialRight(
-                          config.renderOption ?? config.renderItem,
-                          _props,
-                        )(data)}
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            isSelected ? "opacity-100" : "opacity-0",
-                          )}
-                        />
+                        {renderBody}
+                        {!config.renderMultiOption ? (
+                          <Check
+                            className={cn(
+                              "ml-auto",
+                              isSelected ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                        ) : null}
                       </CommandItem>
                     );
                   });

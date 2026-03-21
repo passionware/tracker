@@ -15,6 +15,11 @@ export const billingBase$ = z.object({
   description: z.string().nullable(),
   workspace_id: z.number(),
   is_committed: z.boolean(),
+  paid_at: z
+    .string()
+    .nullable()
+    .transform((s) => (s ? parseDate(s) : null)),
+  paid_at_justification: z.string().nullable(),
 });
 
 export type BillingBase$ = z.output<typeof billingBase$>;

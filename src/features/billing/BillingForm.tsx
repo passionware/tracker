@@ -68,6 +68,8 @@ export function BillingForm(props: BillingFormProps) {
         "Invoice date is required",
       ),
       description: data.description,
+      paidAt: null,
+      paidAtJustification: null,
     };
     props.onSubmit(allData, getDirtyFields(allData, form));
   }

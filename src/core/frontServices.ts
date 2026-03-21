@@ -1,6 +1,7 @@
 import { MergeServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
+import { WithAiMatchingService } from "@/services/front/AiMatchingService/AiMatchingService.ts";
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { WithGeneratedReportViewService } from "@/services/front/GeneratedReportViewService/GeneratedReportViewService.ts";
 import { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
@@ -71,6 +72,7 @@ export type FrontServices = MergeServices<
     WithCostService,
     WithExchangeService,
     WithPreferenceService,
+    WithAiMatchingService,
     WithVariableService,
     WithBillingService,
     WithExpressionService,

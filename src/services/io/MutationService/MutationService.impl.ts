@@ -166,6 +166,12 @@ export function createMutationService(
         scope: "Editing client billing",
       });
     },
+    bulkMarkBillingPaid: async (entries) => {
+      await api.bulkMarkBillingPaid(entries);
+      await config.services.messageService.reportSystemEffect.sendRequest({
+        scope: "Marking billings as paid",
+      });
+    },
     editReport: async (reportId, payload) => {
       await api.editReport(reportId, payload);
       await config.services.messageService.reportSystemEffect.sendRequest({

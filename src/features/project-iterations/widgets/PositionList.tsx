@@ -16,11 +16,8 @@ import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
-import {
-  Summary,
-  SummaryEntry,
-  SummaryEntryValue,
-} from "@/features/_common/Summary.tsx";
+import { Summary, SummaryEntry } from "@/features/_common/Summary.tsx";
+import { cn } from "@/lib/utils.ts";
 import { maybe, rd } from "@passionware/monads";
 import { createColumnHelper } from "@tanstack/react-table";
 import { get, sumBy, uniqBy } from "lodash";
@@ -350,7 +347,7 @@ export function PositionList(
               iteration.positions.filter((p) => p.quantity > 0),
               (p) => p.quantity * p.unitPrice,
             ),
-            className: "text-green-600",
+            className: "text-green-600 dark:text-green-500",
           },
           {
             label: "Outcome",
@@ -358,43 +355,44 @@ export function PositionList(
               iteration.positions.filter((p) => p.quantity < 0),
               (p) => p.quantity * p.unitPrice,
             ),
-            className: "text-red-600",
+            className: "text-red-600 dark:text-red-500",
           },
           {
             label: "Balance",
             value: sumBy(iteration.positions, (p) => p.quantity * p.unitPrice),
-            className: "text-gray-600",
+            className: "text-muted-foreground",
           },
         ];
 
         return (
-          <div>
-            <p>
-              The balance should be zero. It means that all income and outcome
-              positions are balanced. We need to create payroll positions for
-              linked reports. If we can't cover all reported work with payroll
-              positions, we need to create a debt. Balance will be still "0" and
-              we clearly say that the iteration is closed with a debt to
-              specific contractor. Also, if the client has paid upfront too
-              much, we close the iteration with a debt to the client. Then we
-              can insert a debt as a new position in the next iteration.
-            </p>
-            <h3 className="my-3 text-base font-semibold ">
-              Summary ({iteration.positions.length} positions)
-            </h3>
-            <Summary>
+          <>
+            <span className="sr-only">
+              {iteration.positions.length}{" "}
+              {iteration.positions.length === 1 ? "position" : "positions"}.
+              Totals: income, outcome, and balance for this iteration.
+            </span>
+            <Summary variant="strip" className="w-full">
               {details.map((item) => (
-                <SummaryEntry key={item.label} label={item.label}>
-                  <SummaryEntryValue>
+                <SummaryEntry
+                  key={item.label}
+                  label={item.label}
+                  variant="strip"
+                >
+                  <span
+                    className={cn(
+                      "text-sm font-semibold tabular-nums tracking-tight",
+                      item.className,
+                    )}
+                  >
                     {props.services.formatService.financial.amount(
                       item.value,
                       iteration.currency,
                     )}
-                  </SummaryEntryValue>
+                  </span>
                 </SummaryEntry>
               ))}
             </Summary>
-          </div>
+          </>
         );
       })}
     />

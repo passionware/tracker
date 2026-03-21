@@ -157,50 +157,39 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
         onRowClick={(row) => {
           openEntityDrawer({ type: "cost", id: row.id });
         }}
-        caption={
-          <>
-            <div className="mb-2 font-semibold text-gray-700">
-              A list of all costs associated with the selected workspace.
-            </div>
-            {rd.mapOrElse(
-              costs,
-              (view) => {
-                const billingDetails = [
-                  { label: "Net total", value: view.total.netAmount },
-                  // { label: "Charged gross", value: view.total.grossAmount },
-                  { label: "Total matched", value: view.total.matchedAmount },
-                  {
-                    label: "Total remaining",
-                    value: view.total.remainingAmount,
-                  },
-                ];
-
-                return (
-                  <>
-                    <h3 className="my-3 text-base font-semibold">
-                      Summary ({view.entries.length} costs)
-                    </h3>
-                    <Summary>
-                      {billingDetails.map((item) => (
-                        <SummaryCurrencyGroup
-                          key={item.label}
-                          label={item.label}
-                          group={item.value}
-                          services={props.services}
-                        />
-                      ))}
-                    </Summary>
-                  </>
-                );
+        caption={rd.mapOrElse(
+          costs,
+          (view) => {
+            const billingDetails = [
+              { label: "Net total", value: view.total.netAmount },
+              // { label: "Charged gross", value: view.total.grossAmount },
+              { label: "Total matched", value: view.total.matchedAmount },
+              {
+                label: "Total remaining",
+                value: view.total.remainingAmount,
               },
-              <div className="grid grid-flow-col gap-3">
-                <Skeleton className="w-full h-10" />
-                <Skeleton className="w-full h-10" />
-                <Skeleton className="w-full h-10" />
-              </div>,
-            )}
-          </>
-        }
+            ];
+
+            return (
+              <Summary variant="strip" className="w-full">
+                {billingDetails.map((item) => (
+                  <SummaryCurrencyGroup
+                    key={item.label}
+                    label={item.label}
+                    group={item.value}
+                    services={props.services}
+                    variant="strip"
+                  />
+                ))}
+              </Summary>
+            );
+          },
+          <div className="grid grid-flow-col gap-3">
+            <Skeleton className="w-full h-10" />
+            <Skeleton className="w-full h-10" />
+            <Skeleton className="w-full h-10" />
+          </div>,
+        )}
       />
     </CommonPageContainer>
   );
