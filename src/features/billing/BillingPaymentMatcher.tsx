@@ -40,9 +40,12 @@ import type { BillingMatcherListQuery } from "@/features/billing/BillingMatcherM
 import { BillingMatcherMatchesTable } from "@/features/billing/BillingMatcherMatchesTable.tsx";
 import { useBillingPaymentMatcherColumns } from "@/features/billing/useBillingPaymentMatcherColumns.tsx";
 import { AiLoadingOverlay } from "@/features/_common/patterns/AiLoadingOverlay.tsx";
+import { FileDropEmptyState } from "@/features/_common/patterns/FileDropEmptyState.tsx";
 import { IconTile } from "@/features/_common/patterns/IconTile.tsx";
 import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel.tsx";
+import { SelectedUploadCard } from "@/features/_common/patterns/SelectedUploadCard.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
+import { UploadDropCard } from "@/features/_common/patterns/UploadDropCard.tsx";
 import { formatBytes } from "@/platform/lang/formatBytes.ts";
 import { cn } from "@/lib/utils.ts";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
@@ -51,7 +54,7 @@ import type { ExpressionContext } from "@/services/front/ExpressionService/Expre
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { mt } from "@passionware/monads";
@@ -363,22 +366,12 @@ export function BillingPaymentMatcherDialog({
           >
             {step === "upload" ? (
               <div className="mx-auto grid min-h-0 w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] lg:items-stretch lg:gap-x-8 lg:gap-y-4">
-                <div className="flex min-h-[min(52vh,420px)] flex-col rounded-2xl border border-border bg-gradient-to-b from-card to-card/50 p-6 shadow-sm lg:row-span-2 lg:h-full lg:min-h-0">
-                  <div className="mb-5 flex items-center gap-3">
-                    <IconTile variant="accent">
-                      <Upload aria-hidden />
-                    </IconTile>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <h3 className="text-[15px] font-semibold leading-snug text-foreground">
-                        Bank export
-                      </h3>
-                      <p className="text-sm leading-snug text-muted-foreground">
-                        Drop your file or browse — no need to clean or edit the
-                        file first.
-                      </p>
-                    </div>
-                  </div>
-
+                <UploadDropCard
+                  className="lg:row-span-2 lg:h-full lg:min-h-0"
+                  icon={<Upload aria-hidden />}
+                  title="Bank export"
+                  description="Drop your file or browse — no need to clean or edit the file first."
+                >
                   <input
                     ref={fileInputRef}
                     id="bank-file-input"
@@ -406,23 +399,17 @@ export function BillingPaymentMatcherDialog({
                   />
 
                   {filePayload ? (
-                    <div className="flex flex-1 flex-col rounded-xl border border-border/80 bg-muted/25 p-4 sm:p-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <IconTile variant="muted">
-                            <FileText aria-hidden />
-                          </IconTile>
-                          <div className="min-w-0 flex-1">
-                            <p className="break-all text-sm font-medium leading-snug text-foreground">
-                              {fileMeta?.name ?? filePayload.fileName}
-                            </p>
-                            {fileMeta ? (
-                              <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                                {formatBytes(fileMeta.size)}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
+                    <SelectedUploadCard
+                      leading={
+                        <IconTile variant="muted">
+                          <FileText aria-hidden />
+                        </IconTile>
+                      }
+                      title={fileMeta?.name ?? filePayload.fileName}
+                      subtitle={
+                        fileMeta ? formatBytes(fileMeta.size) : undefined
+                      }
+                      actions={
                         <Button
                           type="button"
                           variant="outline"
@@ -436,26 +423,16 @@ export function BillingPaymentMatcherDialog({
                         >
                           Replace file
                         </Button>
-                      </div>
-                    </div>
+                      }
+                    />
                   ) : (
-                    <label
-                      htmlFor="bank-file-input"
-                      className="group flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/90 bg-muted/15 px-6 py-12 text-center transition-colors hover:border-primary/45 hover:bg-muted/30 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
-                    >
-                      <Upload
-                        className="mb-3 size-10 text-muted-foreground transition-colors group-hover:text-primary"
-                        aria-hidden
-                      />
-                      <span className="font-medium text-foreground">
-                        Choose a bank file
-                      </span>
-                      <span className="mt-1 block max-w-xs text-sm text-muted-foreground">
-                        CSV, PDF, or TXT — same as from your bank
-                      </span>
-                    </label>
+                    <FileDropEmptyState
+                      inputId="bank-file-input"
+                      title="Choose a bank file"
+                      description="CSV, PDF, or TXT — same as from your bank"
+                    />
                   )}
-                </div>
+                </UploadDropCard>
 
                 <SurfaceCard className="flex h-full min-h-0 flex-col">
                   <PanelSectionLabel icon={ListChecks}>

@@ -23,7 +23,7 @@ import { OverflowTooltip } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { ChevronsUpDown, Orbit, Plus } from "lucide-react";
 
 export type WorkspaceSwitcherProps = {

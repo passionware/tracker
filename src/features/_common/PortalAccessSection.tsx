@@ -1,7 +1,7 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Building2, Home, CheckCircle2, XCircle, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -10,7 +10,7 @@ type PortalType = "tracker" | "cockpit";
 
 interface PortalAccessSectionProps
   extends WithServices<
-    [WithAuthService, WithCockpitAuthService, WithRoutingService]
+    [WithAuthService, WithCockpitAuthService]
   > {
   currentPortal: PortalType;
   currentUserEmail?: string;
@@ -31,7 +31,7 @@ export function PortalAccessSection({
       icon: Home,
       auth: mainAppAuth,
       loginPath: "/login",
-      navigatePath: services.routingService.forGlobal().root(),
+      navigatePath: myRouting.forGlobal().root(),
       logout: services.authService.logout,
       color: "green",
     },
@@ -40,8 +40,8 @@ export function PortalAccessSection({
       name: "Client Cockpit",
       icon: Building2,
       auth: cockpitAuth,
-      loginPath: services.routingService.forClientCockpit().login(),
-      navigatePath: services.routingService.forClientCockpit().root(),
+      loginPath: myRouting.forClientCockpit().login(),
+      navigatePath: myRouting.forClientCockpit().root(),
       logout: services.cockpitAuthService.logout,
       color: "blue",
     },

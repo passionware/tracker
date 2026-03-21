@@ -29,7 +29,7 @@ import { Nullable } from "@/platform/typescript/Nullable.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { z } from "zod";
 
 export interface ProjectContractor {

@@ -1,5 +1,5 @@
 import { parseDate } from "@/platform/lang/parseDate.ts";
-import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { createFormatServiceForStory } from "@/services/FormatService/FormatService.mock.tsx";
 import { maybe } from "@passionware/monads";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
@@ -10,7 +10,7 @@ const meta = {
   args: {
     value: maybe.ofAbsent(),
     fieldLabel: "Some field",
-    services: { formatService: createFormatService(() => new Date()) },
+    services: { formatService: createFormatServiceForStory() },
   },
   argTypes: {
     onUpdate: { action: "onUpdate" },

@@ -16,7 +16,7 @@ import { ReportView } from "@/services/front/ReportDisplayService/ReportDisplayS
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { CalendarDate } from "@internationalized/date";
 import { RemoteData } from "@passionware/monads";
 

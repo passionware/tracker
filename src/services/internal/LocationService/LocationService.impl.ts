@@ -1,23 +1,140 @@
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { myRouting } from "@/routing/myRouting.ts";
 import {
+  ClientSpec,
   routingUtils,
-  WithRoutingService,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { LocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, type Maybe } from "@passionware/monads";
+import { matchPath, useLocation } from "react-router-dom";
+
+type GlobalRoutes = ReturnType<typeof myRouting.forGlobal>;
+
+type UrlSegmentCodec<T> = {
+  fromString: (raw: string) => T;
+  toString: (value: Maybe<T>) => string;
+};
+
+type SessionStoredSpecSlot<T> = {
+  persist: (spec: T) => void;
+  read: () => Maybe<T>;
+};
+
+/** Read/write one IdSpec slot in sessionStorage (global manage-* routes have no URL segment). */
+function createSessionStoredSpecSlot<T>(
+  storageKey: string,
+  codec: UrlSegmentCodec<T>,
+): SessionStoredSpecSlot<T> {
+  function persist(spec: T): void {
+    if (typeof sessionStorage === "undefined") {
+      return;
+    }
+    sessionStorage.setItem(storageKey, codec.toString(maybe.of(spec)));
+  }
+
+  function read(): Maybe<T> {
+    if (typeof sessionStorage === "undefined") {
+      return maybe.ofAbsent();
+    }
+    const raw = sessionStorage.getItem(storageKey);
+    if (raw == null || raw === "") {
+      return maybe.ofAbsent();
+    }
+    try {
+      return maybe.of(codec.fromString(raw));
+    } catch {
+      return maybe.ofAbsent();
+    }
+  }
+
+  return { persist, read };
+}
+
+const workspaceScopeSlot = createSessionStoredSpecSlot(
+  "tracker:lastWorkspaceSlot",
+  routingUtils.workspace,
+);
+const clientScopeSlot = createSessionStoredSpecSlot(
+  "tracker:lastClientSlot",
+  routingUtils.client,
+);
+
+function persistAppScope(ws: WorkspaceSpec, cl: ClientSpec): void {
+  workspaceScopeSlot.persist(ws);
+  clientScopeSlot.persist(cl);
+}
+
+/** Same idea as createPersistentBrowserHistory: splat matches nested URLs, base matches the index. */
+function pathnameMatchesPathOrNested(pathname: string, basePath: string): boolean {
+  const nestedPattern = `${basePath}/*`;
+  return (
+    matchPath(nestedPattern, pathname) != null ||
+    matchPath(basePath, pathname) != null
+  );
+}
+
+function pathnameUnderConfiguration(pathname: string, global: GlobalRoutes): boolean {
+  return pathnameMatchesPathOrNested(pathname, global.configuration());
+}
+
+/** When switching workspace/client on a global admin page, re-navigate to the same section root. */
+function globalManagementRemountTarget(
+  pathname: string,
+  global: GlobalRoutes,
+): (() => string) | null {
+  if (!pathnameUnderConfiguration(pathname, global)) {
+    return null;
+  }
+  if (pathnameMatchesPathOrNested(pathname, global.manageWorkspaces())) {
+    return global.manageWorkspaces;
+  }
+  if (pathnameMatchesPathOrNested(pathname, global.manageClients())) {
+    return global.manageClients;
+  }
+  return null;
+}
+
+function resolveScopedSpecForPathname<T extends WorkspaceSpec | ClientSpec>(
+  pathname: string,
+  fromUrl: Maybe<T>,
+  slot: SessionStoredSpecSlot<T>,
+): Maybe<T> {
+  if (maybe.isPresent(fromUrl)) {
+    slot.persist(fromUrl);
+    return fromUrl;
+  }
+  const global = myRouting.forGlobal();
+  if (pathnameUnderConfiguration(pathname, global)) {
+    const stored = slot.read();
+    return maybe.isPresent(stored)
+      ? stored
+      : (idSpecUtils.ofAll() as Maybe<T>);
+  }
+  return maybe.ofAbsent();
+}
 
 export function createLocationService(
-  config: WithServices<[WithRoutingService, WithNavigationService]>,
+  config: WithServices<[WithNavigationService]>,
 ): LocationService {
   function tryPersistCurrentRoute(
     newWorkspaceId: WorkspaceSpec,
-    newClientId: WorkspaceSpec,
+    newClientId: ClientSpec,
   ) {
-    const { routingService, navigationService } = config.services;
-    const routing = routingService.forWorkspace().forClient();
+    const { navigationService } = config.services;
+    const pathname =
+      typeof window !== "undefined" ? window.location.pathname : "";
+    const globalR = myRouting.forGlobal();
+    const remountGlobal = globalManagementRemountTarget(pathname, globalR);
+    if (remountGlobal) {
+      persistAppScope(newWorkspaceId, newClientId);
+      navigationService.navigate(remountGlobal());
+      return;
+    }
+
+    const routing = myRouting.forWorkspace().forClient();
 
     const routesToKeep = [
       "reports",
@@ -36,9 +153,8 @@ export function createLocationService(
 
     for (const route of routesToKeep) {
       if (navigationService.match(routing[route]() + "/*")) {
-        // we are in the route we want to keep
         navigationService.navigate(
-          routingService
+          myRouting
             .forWorkspace(newWorkspaceId)
             .forClient(newClientId)
             // eslint-disable-next-line no-unexpected-multiline
@@ -48,40 +164,71 @@ export function createLocationService(
       }
     }
     navigationService.navigate(
-      routingService.forWorkspace(newWorkspaceId).forClient(newClientId).root(),
+      myRouting.forWorkspace(newWorkspaceId).forClient(newClientId).root(),
     );
   }
 
   const api: LocationService = {
     useCurrentClientId: () => {
+      const location = useLocation();
       const match = config.services.navigationService.useMatch(
-        config.services.routingService.forWorkspace().forClient().root() + "/*",
+        myRouting.forWorkspace().forClient().root() + "/*",
       );
-
-      return maybe.map(match?.params.clientId, routingUtils.client.fromString);
+      const fromUrl = maybe.map(
+        match?.params.clientId,
+        routingUtils.client.fromString,
+      );
+      return resolveScopedSpecForPathname(
+        location.pathname,
+        fromUrl,
+        clientScopeSlot,
+      );
     },
     getCurrentClientId: () => {
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
       const match = config.services.navigationService.match(
-        config.services.routingService.forWorkspace().forClient().root() + "/*",
+        myRouting.forWorkspace().forClient().root() + "/*",
       );
-      return maybe.map(match?.params.clientId, routingUtils.client.fromString);
+      const fromUrl = maybe.map(
+        match?.params.clientId,
+        routingUtils.client.fromString,
+      );
+      return resolveScopedSpecForPathname(
+        pathname,
+        fromUrl,
+        clientScopeSlot,
+      );
     },
     useCurrentWorkspaceId: () => {
+      const location = useLocation();
       const match = config.services.navigationService.useMatch(
-        config.services.routingService.forWorkspace().root() + "/*",
+        myRouting.forWorkspace().root() + "/*",
       );
-      return maybe.map(
+      const fromUrl = maybe.map(
         match?.params.workspaceId,
         routingUtils.workspace.fromString,
+      );
+      return resolveScopedSpecForPathname(
+        location.pathname,
+        fromUrl,
+        workspaceScopeSlot,
       );
     },
     getCurrentWorkspaceId: () => {
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
       const match = config.services.navigationService.match(
-        config.services.routingService.forWorkspace().root() + "/*",
+        myRouting.forWorkspace().root() + "/*",
       );
-      return maybe.map(
+      const fromUrl = maybe.map(
         match?.params.workspaceId,
         routingUtils.workspace.fromString,
+      );
+      return resolveScopedSpecForPathname(
+        pathname,
+        fromUrl,
+        workspaceScopeSlot,
       );
     },
     changeCurrentClientId: (id) => {
@@ -98,29 +245,18 @@ export function createLocationService(
     },
     useCurrentProjectId: () => {
       const match = config.services.navigationService.useMatch(
-        config.services.routingService
-          .forWorkspace()
-          .forClient()
-          .forProject()
-          .root() + "/*",
+        myRouting.forWorkspace().forClient().forProject().root() + "/*",
       );
       return maybe.map(match?.params.projectId, parseInt);
     },
     getCurrentProjectId: () => {
       const match = config.services.navigationService.match(
-        config.services.routingService
-          .forWorkspace()
-          .forClient()
-          .forProject()
-          .root() + "/*",
+        myRouting.forWorkspace().forClient().forProject().root() + "/*",
       );
       return maybe.map(match?.params.projectId, parseInt);
     },
     useCurrentProjectTab: () => {
-      const forProject = config.services.routingService
-        .forWorkspace()
-        .forClient()
-        .forProject();
+      const forProject = myRouting.forWorkspace().forClient().forProject();
       const matchWon = config.services.navigationService.useMatchMany({
         iterations: forProject.iterations() + "/*",
         details: forProject.details() + "/*",
@@ -130,11 +266,7 @@ export function createLocationService(
     },
     useCurrentProjectIterationStatus: () => {
       const match = config.services.navigationService.useMatch(
-        config.services.routingService
-          .forWorkspace()
-          .forClient()
-          .forProject()
-          .iterations() + "/*",
+        myRouting.forWorkspace().forClient().forProject().iterations() + "/*",
       );
       return maybe.map(
         match?.params.projectIterationStatus,
@@ -143,11 +275,7 @@ export function createLocationService(
     },
     getCurrentProjectIterationStatus: () => {
       const match = config.services.navigationService.match(
-        config.services.routingService
-          .forWorkspace()
-          .forClient()
-          .forProject()
-          .iterations() + "/*",
+        myRouting.forWorkspace().forClient().forProject().iterations() + "/*",
       );
       return maybe.map(
         match?.params.projectIterationStatus,
@@ -156,7 +284,7 @@ export function createLocationService(
     },
     useCurrentProjectIterationId: () => {
       const match = config.services.navigationService.useMatch(
-        config.services.routingService
+        myRouting
           .forWorkspace()
           .forClient()
           .forProject()
@@ -166,7 +294,7 @@ export function createLocationService(
       return maybe.map(match?.params.iterationId, parseInt);
     },
     useCurrentProjectIterationTab: () => {
-      const forIteration = config.services.routingService
+      const forIteration = myRouting
         .forWorkspace()
         .forClient()
         .forProject()
@@ -208,7 +336,7 @@ export function createLocationService(
     },
     getCurrentProjectIterationId: () => {
       const match = config.services.navigationService.match(
-        config.services.routingService
+        myRouting
           .forWorkspace()
           .forClient()
           .forProject()
@@ -219,7 +347,7 @@ export function createLocationService(
     },
     getCurrentGeneratedReportId: () => {
       const match = config.services.navigationService.match(
-        config.services.routingService
+        myRouting
           .forWorkspace()
           .forClient()
           .forProject()
@@ -230,7 +358,7 @@ export function createLocationService(
       return maybe.map(match?.params.generatedReportId, parseInt);
     },
     useCurrentGeneratedReportTab: () => {
-      const forGeneratedReport = config.services.routingService
+      const forGeneratedReport = myRouting
         .forWorkspace()
         .forClient()
         .forProject()

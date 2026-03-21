@@ -3,6 +3,7 @@ import {
   BillingInvoicePayload,
   BillingPatchPayload,
 } from "@/api/billing/billing.api.ts";
+import { Client } from "@/api/clients/clients.api.ts";
 import { CalendarDate } from "@internationalized/date";
 import { Cost, CostPayload } from "@/api/cost/cost.api.ts";
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report.ts";
@@ -14,7 +15,27 @@ import {
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project, ProjectPayload } from "@/api/project/project.api.ts";
 import { Report, ReportPayload } from "@/api/reports/reports.api.ts";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
 import { LinkBillingReportPayload } from "../link-billing-report/link-billing-report.api";
+
+export interface ClientCreatePayload {
+  workspaceId: number;
+  name: string;
+  avatarUrl: string | null;
+  senderName: string | null;
+}
+
+export type ClientUpdatePayload = Partial<{
+  name: string;
+  avatarUrl: string | null;
+  senderName: string | null;
+}>;
+
+export type WorkspaceUpdatePayload = Partial<{
+  name: string;
+  slug: string;
+  avatarUrl: string | null;
+}>;
 
 export interface MutationApi {
   linkReportAndBilling: (payload: LinkBillingReportPayload) => Promise<void>;
@@ -121,6 +142,23 @@ export interface MutationApi {
     projectId: number,
     contractorId: number,
     workspaceId: number,
+  ) => Promise<void>;
+  createClient: (payload: ClientCreatePayload) => Promise<{ id: Client["id"] }>;
+  updateClient: (
+    clientId: Client["id"],
+    payload: ClientUpdatePayload,
+  ) => Promise<void>;
+  removeClientFromWorkspace: (
+    workspaceId: number,
+    clientId: Client["id"],
+  ) => Promise<void>;
+  linkClientToWorkspace: (
+    workspaceId: number,
+    clientId: Client["id"],
+  ) => Promise<void>;
+  updateWorkspace: (
+    workspaceId: Workspace["id"],
+    payload: WorkspaceUpdatePayload,
   ) => Promise<void>;
   commit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;
   undoCommit: (entityType: "report" | "billing" | "cost", id: number) => Promise<void>;

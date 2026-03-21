@@ -7,7 +7,6 @@ import { WithGeneratedReportViewService } from "@/services/front/GeneratedReport
 import { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { WithReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
@@ -34,12 +33,14 @@ import { WithCockpitTenantService } from "@/services/cockpit/CockpitTenantServic
 import { WithTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.ts";
 import { WithDialogService } from "@/services/front/DialogService/DialogService";
 import { BillingQuery } from "@/api/billing/billing.api";
+import { ClientQuery } from "@/api/clients/clients.api.ts";
 import { CostQuery } from "@/api/cost/cost.api";
 import { DashboardQuery } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { ProjectQuery } from "@/api/project/project.api";
 import { ReportQuery } from "@/api/reports/reports.api";
 import { UserQuery } from "@/api/user/user.api";
 import { VariableQuery } from "@/api/variable/variable.api";
+import { WorkspaceQuery } from "@/api/workspace/workspace.api.ts";
 
 /**
  * Ideally this should contain all the services that are safe to use by the front-end widgets.
@@ -57,11 +58,12 @@ export type FrontServices = MergeServices<
       users: UserQuery;
       reports: ReportQuery;
       billing: BillingQuery;
+      clients: ClientQuery;
+      workspaces: WorkspaceQuery;
       costs: CostQuery;
       variables: VariableQuery;
       dashboard: DashboardQuery;
     }>,
-    WithRoutingService,
     WithFormatService,
     WithReportDisplayService,
     WithReconciliationService,
@@ -93,6 +95,8 @@ export type FrontServices = MergeServices<
       users: UserQuery;
       reports: ReportQuery;
       billing: BillingQuery;
+      clients: ClientQuery;
+      workspaces: WorkspaceQuery;
       costs: CostQuery;
       variables: VariableQuery;
       dashboard: DashboardQuery;

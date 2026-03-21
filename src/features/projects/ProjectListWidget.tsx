@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { QueryFilter } from "@/api/_common/query/queryUtils.ts";
 import { ProjectQuery, projectQueryUtils } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -26,7 +27,7 @@ import { Nullable } from "@/platform/typescript/Nullable";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -131,7 +132,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
         getRowId={(x) => x.id}
         onRowDoubleClick={(project) => {
           props.services.navigationService.navigate(
-            props.services.routingService
+            myRouting
               .forWorkspace(props.workspaceId)
               .forClient(props.clientId)
               .forProject(project.id.toString())
@@ -146,7 +147,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
             },
             props.services,
           ),
-          project.name(props.services, props),
+          project.name(props),
           project.createdAt(props.services),
           project.status,
           columnHelper.display({
@@ -184,7 +185,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
                           );
                         bag.close();
                         props.services.navigationService.navigate(
-                          props.services.routingService
+                          myRouting
                             .forWorkspace(
                               data.workspaceIds.length > 1
                                 ? null

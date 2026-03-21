@@ -1,10 +1,7 @@
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { Maybe } from "@passionware/monads";
 import { ReactNode } from "react";
 

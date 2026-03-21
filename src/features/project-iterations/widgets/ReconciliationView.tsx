@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -45,7 +46,7 @@ import { ChevronDown, ChevronRight, X, Check, AlertCircle } from "lucide-react";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import {
   ReportFact,
   BillingFact,
@@ -725,7 +726,7 @@ export function ReconciliationView(
                 // Navigation handlers for header buttons
                 const handleReportHeaderClick = () => {
                   props.services.navigationService.navigate(
-                    props.services.routingService
+                    myRouting
                       .forWorkspace(props.workspaceId)
                       .forClient(props.clientId)
                       .reports(),
@@ -734,7 +735,7 @@ export function ReconciliationView(
 
                 const handleBillingHeaderClick = () => {
                   props.services.navigationService.navigate(
-                    props.services.routingService
+                    myRouting
                       .forWorkspace(props.workspaceId)
                       .forClient(props.clientId)
                       .charges(),

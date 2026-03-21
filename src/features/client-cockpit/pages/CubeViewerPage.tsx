@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -31,7 +32,7 @@ export function CubeViewerPage(props: WithFrontServices) {
   const handleBack = () => {
     if (tenantId) {
       navigate(
-        props.services.routingService
+        myRouting
           .forClientCockpit()
           .forClient(tenantId)
           .reports(),
@@ -42,7 +43,7 @@ export function CubeViewerPage(props: WithFrontServices) {
   const handlePdfExport = () => {
     if (tenantId && reportId) {
       navigate(
-        props.services.routingService
+        myRouting
           .forClientCockpit()
           .forClient(tenantId)
           .forReport(reportId)

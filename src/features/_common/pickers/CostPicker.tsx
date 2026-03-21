@@ -11,7 +11,7 @@ import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceServi
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { maybe, rd } from "@passionware/monads";
 import { WithMutationService } from "@/services/io/MutationService/MutationService";

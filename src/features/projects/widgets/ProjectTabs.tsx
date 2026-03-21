@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
@@ -11,7 +12,7 @@ import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 import { Route, Routes } from "react-router-dom";
 
@@ -22,7 +23,7 @@ export function ProjectTabs(
     projectId: Project["id"];
   },
 ) {
-  const forProject = props.services.routingService
+  const forProject = myRouting
     .forWorkspace(props.workspaceId)
     .forClient(props.clientId)
     .forProject(props.projectId.toString());

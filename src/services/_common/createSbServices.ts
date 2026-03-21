@@ -5,8 +5,6 @@ import { createFormatService } from "@/services/FormatService/FormatService.impl
 import { FormatService } from "@/services/FormatService/FormatService.ts";
 import { createExpressionService } from "@/services/front/ExpressionService/ExpressionService.impl.ts";
 import { ExpressionService } from "@/services/front/ExpressionService/ExpressionService.ts";
-import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
-import { RoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { createNavigationService } from "@/services/internal/NavigationService/NavigationService.mock.ts";
 import { NavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
@@ -36,7 +34,6 @@ const factories = {
   variable: createVariableService,
   preference: createPreferenceService,
   project: createProjectService,
-  routing: createRoutingService,
 } as const;
 
 type FactoryArgs = {
@@ -73,7 +70,6 @@ type OutputServices<C extends SbServiceConfig> = {
     ? ReturnType<typeof createProjectService>
     : never;
   navigationService: NavigationService;
-  routingService: RoutingService;
 };
 
 /**
@@ -130,7 +126,6 @@ export function createSbServices<SC extends SbServiceConfig>(config?: SC) {
       navigationService: createNavigationService(
         createArgsAccessor(decorator).forArg("onAction"),
       ),
-      routingService: createRoutingService(),
     } as unknown as OutputServices<SC>,
     workspace: config?.workspace ? factories.workspace() : undefined,
     client: config?.client ? factories.client() : undefined,

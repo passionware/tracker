@@ -748,6 +748,75 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         throw error;
       }
     },
+    createClient: async (payload) => {
+      const { data, error } = await client.rpc("create_client_for_workspace", {
+        p_workspace_id: payload.workspaceId,
+        p_name: payload.name,
+        p_avatar_url: payload.avatarUrl,
+        p_sender_name: payload.senderName,
+      });
+      if (error) {
+        throw error;
+      }
+      const rawId = data as number | string;
+      const id = typeof rawId === "string" ? parseInt(rawId, 10) : rawId;
+      return { id };
+    },
+    updateClient: async (clientId, payload) => {
+      const row = pickBy(
+        {
+          name: payload.name,
+          avatar_url: payload.avatarUrl,
+          sender_name: payload.senderName,
+        },
+        (v) => v !== undefined,
+      );
+      if (Object.keys(row).length === 0) {
+        return;
+      }
+      const { error } = await client.from("client").update(row).eq("id", clientId);
+      if (error) {
+        throw error;
+      }
+    },
+    updateWorkspace: async (workspaceId, payload) => {
+      const row = pickBy(
+        {
+          name: payload.name,
+          slug: payload.slug,
+          avatar_url: payload.avatarUrl,
+        },
+        (v) => v !== undefined,
+      );
+      if (Object.keys(row).length === 0) {
+        return;
+      }
+      const { error } = await client
+        .from("workspace")
+        .update(row)
+        .eq("id", workspaceId);
+      if (error) {
+        throw error;
+      }
+    },
+    removeClientFromWorkspace: async (workspaceId, clientId) => {
+      const { error } = await client.rpc("remove_client_from_workspace", {
+        p_workspace_id: workspaceId,
+        p_client_id: clientId,
+      });
+      if (error) {
+        throw error;
+      }
+    },
+    linkClientToWorkspace: async (workspaceId, clientId) => {
+      const { error } = await client.rpc("link_client_to_workspace", {
+        p_workspace_id: workspaceId,
+        p_client_id: clientId,
+      });
+      if (error) {
+        throw error;
+      }
+    },
     commit: async (entityType, id) => {
       const { error } = await client.rpc("set_committed", {
         p_table: entityType,

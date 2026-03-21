@@ -16,6 +16,7 @@ import type {
   DrawerDescriptor,
   DrawerDescriptorServices,
 } from "../DrawerDescriptor";
+import { DrawerContextEntityStrip } from "@/features/_common/patterns/DrawerContextEntityStrip.tsx";
 import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
 
@@ -207,13 +208,23 @@ function BillingDrawerContent({
     )
     .catch(renderSmallError("min-h-24 w-full"))
     .map((billing) => (
-      <ChargeInfo
-        billing={billing}
-        services={services}
-        onOpenReportDetails={(reportId) =>
-          pushEntityDrawer({ type: "report", id: reportId })
-        }
-      />
+      <>
+        <DrawerContextEntityStrip
+          services={services}
+          workspace={billing.workspace}
+          client={billing.client}
+          onOpenClientDetails={(clientId) =>
+            pushEntityDrawer({ type: "client", id: clientId })
+          }
+        />
+        <ChargeInfo
+          billing={billing}
+          services={services}
+          onOpenReportDetails={(reportId) =>
+            pushEntityDrawer({ type: "report", id: reportId })
+          }
+        />
+      </>
     ));
 }
 

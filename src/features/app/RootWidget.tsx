@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { EntityDrawerRouteLayout } from "@/features/_common/drawers/EntityDrawerRouteLayout.tsx";
 import {
@@ -30,6 +31,8 @@ import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
+import { ClientsManageWidget } from "@/features/clients/ClientsManageWidget.tsx";
+import { WorkspacesManageWidget } from "@/features/workspaces/WorkspacesManageWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
@@ -42,12 +45,12 @@ export function RootWidget(props: WithFrontServices) {
     <>
       <Routes>
         <Route
-          path={props.services.routingService.forGlobal().root()}
+          path={myRouting.forGlobal().root()}
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <Navigate
-                  to={props.services.routingService
+                  to={myRouting
                     .forWorkspace(idSpecUtils.ofAll())
                     .forClient(idSpecUtils.ofAll())
                     .tmetricDashboard()}
@@ -72,7 +75,7 @@ export function RootWidget(props: WithFrontServices) {
         {/* Standalone Grouped View - With Sidebar but no breadcrumbs/tabs */}
         <Route
           path={
-            props.services.routingService
+            myRouting
               .forWorkspace()
               .forClient()
               .forProject()
@@ -115,7 +118,7 @@ export function RootWidget(props: WithFrontServices) {
         />
         {/* Export Builder Page */}
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .forProject()
@@ -156,14 +159,14 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService.forWorkspace().forClient().root()}
+          path={myRouting.forWorkspace().forClient().root()}
           element={
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <IdResolver services={props.services}>
                   {(workspaceId, clientId) => (
                     <Navigate
-                      to={props.services.routingService
+                      to={myRouting
                         .forWorkspace(workspaceId)
                         .forClient(clientId)
                         .projectsRoot()}
@@ -175,7 +178,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .reports()}
@@ -202,7 +205,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .charges()}
@@ -229,7 +232,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .costs()}
@@ -256,7 +259,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .potentialCosts()}
@@ -283,7 +286,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .tmetricDashboardCube()}
@@ -304,7 +307,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .tmetricDashboardTimeline()}
@@ -325,7 +328,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .tmetricDashboardContractorFor()}
@@ -346,7 +349,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .tmetricDashboardContractor()}
@@ -367,7 +370,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .tmetricDashboard()}
@@ -388,7 +391,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .variables()}
@@ -409,7 +412,73 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path="/w/:workspaceId/clients/:clientId/environment/clients"
+          element={
+            <Navigate
+              to={myRouting.forGlobal().manageClients()}
+              replace
+            />
+          }
+        />
+        <Route
+          path="/w/:workspaceId/clients/:clientId/environment/workspaces"
+          element={
+            <Navigate
+              to={myRouting.forGlobal().manageWorkspaces()}
+              replace
+            />
+          }
+        />
+        <Route
+          path={myRouting.forGlobal().manageClients()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <EntityDrawerRouteLayout
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    >
+                      <ClientsManageWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forGlobal().manageWorkspaces()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <EntityDrawerRouteLayout
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    >
+                      <WorkspacesManageWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting
             .forWorkspace()
             .forClient()
             .allProjects()}
@@ -431,7 +500,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .activeProjects()}
@@ -456,7 +525,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .closedProjects()}
@@ -481,7 +550,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={props.services.routingService
+          path={myRouting
             .forWorkspace()
             .forClient()
             .projectsRoot()}
@@ -490,7 +559,7 @@ export function RootWidget(props: WithFrontServices) {
               {(workspaceId, clientId) => (
                 <Navigate
                   replace
-                  to={props.services.routingService
+                  to={myRouting
                     .forWorkspace(workspaceId)
                     .forClient(clientId)
                     .activeProjects()}
@@ -500,7 +569,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={`${props.services.routingService
+          path={`${myRouting
             .forWorkspace()
             .forClient()
             .forProject()
@@ -527,7 +596,7 @@ export function RootWidget(props: WithFrontServices) {
           }
         />
         <Route
-          path={`${props.services.routingService
+          path={`${myRouting
             .forWorkspace()
             .forClient()
             .forProject()
@@ -562,7 +631,7 @@ export function RootWidget(props: WithFrontServices) {
         {/* Public routes - no authentication required */}
         <Route path="/p/*" element={<PublicApp services={props.services} />} />
         <Route
-          path={`${props.services.routingService.forClientCockpit().root()}/*`}
+          path={`${myRouting.forClientCockpit().root()}/*`}
           element={<CockpitMainRouter services={props.services} />}
         />
       </Routes>

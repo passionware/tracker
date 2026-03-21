@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
@@ -18,7 +19,7 @@ import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { Route, Routes } from "react-router-dom";
 import { GeneratedReportIdResolver } from "../app/RootWidget.idResolvers";
 
@@ -30,7 +31,7 @@ export function IterationWidget(
     projectIterationId: ProjectIteration["id"];
   },
 ) {
-  const forIteration = props.services.routingService
+  const forIteration = myRouting
     .forWorkspace(props.workspaceId)
     .forClient(props.clientId)
     .forProject(props.projectId.toString())

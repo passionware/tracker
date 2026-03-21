@@ -4,7 +4,7 @@ import {
   ClientSpec,
   ContractorSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { RemoteData } from "@passionware/monads";
 
 /**

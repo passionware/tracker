@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api.ts";
 import { Project } from "@/api/project/project.api.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -9,7 +10,7 @@ import { ProjectIterationForm } from "@/features/project-iterations/IterationFor
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Check, Loader2, PlusCircle } from "lucide-react";
@@ -88,7 +89,7 @@ export function NewIterationPopover(
               }
               bag.close();
               props.services.navigationService.navigate(
-                props.services.routingService
+                myRouting
                   .forWorkspace(props.workspaceId)
                   .forClient(props.clientId)
                   .forProject(props.projectId.toString())

@@ -17,7 +17,7 @@ import { TimelineVisualization } from "@/features/_common/TimeLineVisualization.
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
 
 export function TimeEntriesView(

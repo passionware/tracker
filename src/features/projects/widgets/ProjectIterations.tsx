@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import {
   ProjectIteration,
   projectIterationQueryUtils,
@@ -24,7 +25,7 @@ import {
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -127,7 +128,7 @@ export function ProjectIterations(props: ProjectIterationsProps) {
         getRowId={(x) => x.id}
         onRowDoubleClick={(row) => {
           props.services.navigationService.navigate(
-            props.services.routingService
+            myRouting
               .forWorkspace(props.workspaceId)
               .forClient(props.clientId)
               .forProject(props.projectId.toString())

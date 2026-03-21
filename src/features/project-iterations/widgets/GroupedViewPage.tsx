@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -6,7 +7,7 @@ import { WithFrontServices } from "@/core/frontServices.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
 import { ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -88,7 +89,7 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
 
   const handleBackToReport = () => {
     // Navigate back to the basic report view
-    const backUrl = props.services.routingService
+    const backUrl = myRouting
       .forWorkspace(props.workspaceId)
       .forClient(props.clientId)
       .forProject(props.projectId.toString())
@@ -144,7 +145,7 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
               size="sm"
               onClick={() => {
                 // Use routing service to construct the export URL
-                const exportUrl = props.services.routingService
+                const exportUrl = myRouting
                   .forWorkspace(props.workspaceId)
                   .forClient(props.clientId)
                   .forProject(props.projectId.toString())

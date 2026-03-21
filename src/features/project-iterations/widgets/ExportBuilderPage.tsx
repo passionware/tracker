@@ -40,7 +40,7 @@ import type { ProjectIteration } from "@/api/project-iteration/project-iteration
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SerializedCubeViewWithSelection } from "@/features/_common/Cube/SerializedCubeViewWithSelection";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.ts";

@@ -12,7 +12,7 @@ import {
   CubeProvider,
   useCubeState,
 } from "@/features/_common/Cube/index.ts";
-import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { createFormatServiceForStory } from "@/services/FormatService/FormatService.mock.tsx";
 import type { Meta, StoryObj } from "@storybook/react";
 
 // Mock report data for stories
@@ -247,7 +247,7 @@ export const CustomStyling: Story = {
 // Full Cube Layout with All Components
 export const FullCubeLayout: Story = {
   render: () => {
-    const formatService = createFormatService(() => new Date());
+    const formatService = createFormatServiceForStory();
     return (
       <div className="h-screen">
         <CubeStoryWrapper>

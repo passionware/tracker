@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,9 +50,9 @@ export function CockpitLoginPage(props: WithFrontServices) {
       console.log(
         "CockpitLoginPage: User authenticated, redirecting to cockpit root",
       );
-      navigate(props.services.routingService.forClientCockpit().root());
+      navigate(myRouting.forClientCockpit().root());
     }
-  }, [authState, navigate, props.services.routingService]);
+  }, [authState, navigate, myRouting]);
 
   const form = useForm<LoginFormData>({
     mode: "onBlur",
@@ -70,7 +71,7 @@ export function CockpitLoginPage(props: WithFrontServices) {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await props.services.cockpitAuthService.loginWithEmail(data);
-      navigate(props.services.routingService.forClientCockpit().root());
+      navigate(myRouting.forClientCockpit().root());
     } catch (error) {
       console.error("Login error:", error);
     }

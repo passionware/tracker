@@ -7,6 +7,10 @@ import { billingDrawerDescriptor } from "./billingDescriptor";
 import type { BillingSpec } from "./billingDescriptor";
 import { billingFormDrawerDescriptor } from "./billingFormDescriptor";
 import type { BillingFormSpec } from "./billingFormDescriptor";
+import { clientDrawerDescriptor } from "./clientDescriptor";
+import type { ClientDrawerSpec } from "@/features/clients/clientDrawerViews.tsx";
+import { clientFormDrawerDescriptor } from "./clientFormDescriptor";
+import type { ClientFormSpec } from "./clientFormDescriptor";
 import { costDrawerDescriptor } from "./costDescriptor";
 import type { CostSpec } from "./costDescriptor";
 import { costFormDrawerDescriptor } from "./costFormDescriptor";
@@ -15,28 +19,41 @@ import { reportDrawerDescriptor } from "./reportDescriptor";
 import type { ReportSpec } from "./reportDescriptor";
 import { reportFormDrawerDescriptor } from "./reportFormDescriptor";
 import type { ReportFormSpec } from "./reportFormDescriptor";
+import { workspaceDrawerDescriptor } from "./workspaceDescriptor";
+import type { WorkspaceDrawerSpec } from "@/features/workspaces/workspaceDrawerViews.tsx";
+import { workspaceFormDrawerDescriptor } from "./workspaceFormDescriptor";
+import type { WorkspaceFormSpec } from "./workspaceFormDescriptor";
 
 /** Any item that can be on the drawer stack (detail or form). */
 export type EntityStackItem =
   | ReportSpec
   | CostSpec
   | BillingSpec
+  | ClientDrawerSpec
+  | ClientFormSpec
   | ReportFormSpec
   | CostFormSpec
-  | BillingFormSpec;
+  | BillingFormSpec
+  | WorkspaceDrawerSpec
+  | WorkspaceFormSpec;
 
-export type { ReportSpec, CostSpec, BillingSpec };
-export type { ReportFormSpec, CostFormSpec, BillingFormSpec };
+export type { ReportSpec, CostSpec, BillingSpec, ClientDrawerSpec };
+export type { ReportFormSpec, CostFormSpec, BillingFormSpec, ClientFormSpec };
+export type { WorkspaceDrawerSpec, WorkspaceFormSpec };
 
 export {
   reportDrawerDescriptor,
   costDrawerDescriptor,
   billingDrawerDescriptor,
+  clientDrawerDescriptor,
+  workspaceDrawerDescriptor,
 };
 export {
   reportFormDrawerDescriptor,
   costFormDrawerDescriptor,
   billingFormDrawerDescriptor,
+  clientFormDrawerDescriptor,
+  workspaceFormDrawerDescriptor,
 };
 
 export function getEntityStackKey(entity: EntityStackItem): string {
@@ -53,6 +70,14 @@ export function getEntityStackKey(entity: EntityStackItem): string {
       return billingDrawerDescriptor.getKey(entity);
     case "billing-form":
       return billingFormDrawerDescriptor.getKey(entity);
+    case "client":
+      return clientDrawerDescriptor.getKey(entity);
+    case "client-form":
+      return clientFormDrawerDescriptor.getKey(entity);
+    case "workspace":
+      return workspaceDrawerDescriptor.getKey(entity);
+    case "workspace-form":
+      return workspaceFormDrawerDescriptor.getKey(entity);
   }
 }
 
@@ -76,6 +101,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return billingDrawerDescriptor.getLabel(entity);
       case "billing-form":
         return billingFormDrawerDescriptor.getLabel(entity);
+      case "client":
+        return clientDrawerDescriptor.getLabel(entity);
+      case "client-form":
+        return clientFormDrawerDescriptor.getLabel(entity);
+      case "workspace":
+        return workspaceDrawerDescriptor.getLabel(entity);
+      case "workspace-form":
+        return workspaceFormDrawerDescriptor.getLabel(entity);
     }
   },
   getTitle: (entity) => {
@@ -92,6 +125,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return billingDrawerDescriptor.getTitle(entity);
       case "billing-form":
         return billingFormDrawerDescriptor.getTitle(entity);
+      case "client":
+        return clientDrawerDescriptor.getTitle(entity);
+      case "client-form":
+        return clientFormDrawerDescriptor.getTitle(entity);
+      case "workspace":
+        return workspaceDrawerDescriptor.getTitle(entity);
+      case "workspace-form":
+        return workspaceFormDrawerDescriptor.getTitle(entity);
     }
   },
   renderBreadcrumbLabel: (
@@ -111,6 +152,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return billingDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "billing-form":
         return billingFormDrawerDescriptor.renderBreadcrumbLabel(entity);
+      case "client":
+        return clientDrawerDescriptor.renderBreadcrumbLabel(entity, services);
+      case "client-form":
+        return clientFormDrawerDescriptor.renderBreadcrumbLabel(entity);
+      case "workspace":
+        return workspaceDrawerDescriptor.renderBreadcrumbLabel(entity, services);
+      case "workspace-form":
+        return workspaceFormDrawerDescriptor.renderBreadcrumbLabel(entity);
     }
   },
   renderSmallPreview: (
@@ -130,6 +179,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return billingDrawerDescriptor.renderSmallPreview(entity, services);
       case "billing-form":
         return billingFormDrawerDescriptor.renderSmallPreview();
+      case "client":
+        return clientDrawerDescriptor.renderSmallPreview(entity, services);
+      case "client-form":
+        return clientFormDrawerDescriptor.renderSmallPreview(entity, services);
+      case "workspace":
+        return workspaceDrawerDescriptor.renderSmallPreview(entity, services);
+      case "workspace-form":
+        return workspaceFormDrawerDescriptor.renderSmallPreview(entity, services);
     }
   },
   renderDrawerContent: (
@@ -152,6 +209,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
           entity,
           services,
         );
+      case "client":
+        return clientDrawerDescriptor.renderDrawerContent(entity, services);
+      case "client-form":
+        return clientFormDrawerDescriptor.renderDrawerContent(entity, services);
+      case "workspace":
+        return workspaceDrawerDescriptor.renderDrawerContent(entity, services);
+      case "workspace-form":
+        return workspaceFormDrawerDescriptor.renderDrawerContent(entity, services);
     }
   },
   renderHeaderActions: (
@@ -170,6 +235,14 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "billing":
         return billingDrawerDescriptor.renderHeaderActions?.(entity, services);
       case "billing-form":
+        return null;
+      case "client":
+        return clientDrawerDescriptor.renderHeaderActions?.(entity, services);
+      case "client-form":
+        return null;
+      case "workspace":
+        return workspaceDrawerDescriptor.renderHeaderActions?.(entity, services);
+      case "workspace-form":
         return null;
     }
   },

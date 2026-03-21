@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { DrawerDescriptorServices } from "./DrawerDescriptor";
-import type { ClientSpec, WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import type { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { getEntityStackKey } from "./descriptors";
 import { EntityDetailDrawers } from "./EntityDetailDrawers.tsx";
 import { EntityDrawerProvider } from "./entityDrawerContext.tsx";

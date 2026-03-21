@@ -42,7 +42,6 @@ import {
   ReportViewEntry,
   WithReportDisplayService,
 } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { WithRoutingService } from "@/services/front/RoutingService/RoutingService.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -72,7 +71,6 @@ export interface ReportCostInfoProps
       WithExpressionService,
       WithWorkspaceService,
       WithClientService,
-      WithRoutingService,
     ]
   > {
   report: ReportViewEntry;

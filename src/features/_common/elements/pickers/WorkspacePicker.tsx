@@ -2,6 +2,7 @@ import { unassignedUtils } from "@/api/_common/query/filters/Unassigned.ts";
 import {
   Workspace,
   workspaceQueryUtils,
+  WorkspaceQuery,
 } from "@/api/workspace/workspace.api.ts";
 import { AbstractPicker } from "@/features/_common/elements/pickers/_common/AbstractPicker.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -15,7 +16,12 @@ import { AbstractMultiPicker } from "./_common/AbstractMultiPicker.tsx";
 export const WorkspacePicker = injectConfig(
   AbstractPicker<Workspace["id"], Workspace>,
 )
-  .fromProps<WithServices<[WithWorkspaceService]>>((api) => ({
+  .fromProps<
+    WithServices<[WithWorkspaceService]> & {
+      /** Base workspace list query (e.g. filters); search from the picker is merged in. */
+      itemsQuery?: WorkspaceQuery;
+    }
+  >((api) => ({
     renderItem: (item, props) => (
       <WorkspaceView
         layout={props.layout}
@@ -30,10 +36,11 @@ export const WorkspacePicker = injectConfig(
       const props = api.useProps();
       return props.services.workspaceService.useWorkspace(id);
     },
-    useItems: (query) => {
+    useItems: (search) => {
       const props = api.useProps();
+      const base = props.itemsQuery ?? workspaceQueryUtils.ofEmpty();
       return props.services.workspaceService.useWorkspaces(
-        workspaceQueryUtils.setSearch(workspaceQueryUtils.ofEmpty(), query),
+        workspaceQueryUtils.setSearch(base, search),
       );
     },
     searchPlaceholder: "Search for a workspace",

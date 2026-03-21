@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import type { Project } from "@/api/project/project.api";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd, type RemoteData } from "@passionware/monads";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService";
+import type { WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
@@ -959,7 +960,7 @@ export function TmetricScopeHierarchyPanel({
                               <div className="flex flex-col gap-1 min-w-0">
                                 {workspaceId != null ? (
                                   <Link
-                                    to={services.routingService
+                                    to={myRouting
                                       .forWorkspace(workspaceId)
                                       .forClient(clientId)
                                       .forProject(

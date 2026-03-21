@@ -8,9 +8,50 @@ import {
 } from "@/components/ui/drawer.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { entityDrawerDescriptor, getEntityStackKey } from "./descriptors";
+import {
+  entityDrawerDescriptor,
+  getEntityStackKey,
+  type EntityStackItem,
+} from "./descriptors";
 import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
 import { ChevronRight } from "lucide-react";
+
+const defaultDrawerDescription =
+  "Review links, amounts, and related associations.";
+
+function isFormStackEntity(entity: EntityStackItem): boolean {
+  return (
+    entity.type === "billing-form" ||
+    entity.type === "client-form" ||
+    entity.type === "workspace-form" ||
+    entity.type === "cost-form" ||
+    entity.type === "report-form"
+  );
+}
+
+/** Same shell as `BulkCreateCostDrawer`: flex body + inner scroll, footer outside scroll. */
+function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
+  return entity.type === "client-form" || entity.type === "workspace-form";
+}
+
+function drawerDescriptionForEntity(entity: EntityStackItem): string {
+  switch (entity.type) {
+    case "client":
+      return "Linked workspaces, bank sender label, and edit actions.";
+    case "client-form":
+      return "Update name, logo, and bank sender label.";
+    case "workspace":
+      return "Profile and slug; use Edit to change details.";
+    case "workspace-form":
+      return "Update workspace name, slug, and logo.";
+    case "billing-form":
+    case "cost-form":
+    case "report-form":
+      return "Edit the fields below and save, or cancel to go back.";
+    default:
+      return defaultDrawerDescription;
+  }
+}
 
 export function EntityDetailDrawers() {
   const { services, entityStack, closeEntityDrawer, jumpToEntityStackIndex } =
@@ -53,14 +94,14 @@ export function EntityDetailDrawers() {
                   >
                     <Button
                       size="xs"
-                      variant={
-                        itemIndex === breadcrumbItems.length - 1
-                          ? "secondary"
-                          : "ghost"
-                      }
+                      variant="ghost"
                       data-no-row-open
                       onClick={() => jumpToEntityStackIndex(itemIndex)}
-                      className="h-6 px-2"
+                      className={
+                        itemIndex === breadcrumbItems.length - 1
+                          ? "h-6 px-2 font-medium text-foreground hover:text-foreground"
+                          : "h-6 px-2"
+                      }
                     >
                       {item.label}
                     </Button>
@@ -87,31 +128,65 @@ export function EntityDetailDrawers() {
                 : null}
             </div>
           </div>
-          <DrawerDescription>
-            Review links, amounts, and related associations.
-          </DrawerDescription>
+          {activeEntity ? (
+            isFormStackEntity(activeEntity) &&
+            activeEntity.type !== "client-form" &&
+            activeEntity.type !== "workspace-form" ? (
+              <DrawerDescription className="sr-only">
+                {drawerDescriptionForEntity(activeEntity)}
+              </DrawerDescription>
+            ) : (
+              <DrawerDescription>
+                {drawerDescriptionForEntity(activeEntity)}
+              </DrawerDescription>
+            )
+          ) : (
+            <DrawerDescription>{defaultDrawerDescription}</DrawerDescription>
+          )}
           {activeEntity
             ? entityDrawerDescriptor.renderSmallPreview(activeEntity, services)
             : null}
         </DrawerHeader>
-        <div className="px-4 pb-4 overflow-y-auto flex-1">
-          <AnimatePresence mode="wait" initial={false}>
-            {activeEntity ? (
-              <motion.div
-                key={getEntityStackKey(activeEntity)}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
-              >
-                {entityDrawerDescriptor.renderDrawerContent(
-                  activeEntity,
-                  services,
-                )}
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </div>
+        {activeEntity && usesBulkCostDrawerShell(activeEntity) ? (
+          <div className="flex min-h-0 flex-1 flex-col px-4">
+            <AnimatePresence mode="wait" initial={false}>
+              {activeEntity ? (
+                <motion.div
+                  key={getEntityStackKey(activeEntity)}
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  {entityDrawerDescriptor.renderDrawerContent(
+                    activeEntity,
+                    services,
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <AnimatePresence mode="wait" initial={false}>
+              {activeEntity ? (
+                <motion.div
+                  key={getEntityStackKey(activeEntity)}
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                >
+                  {entityDrawerDescriptor.renderDrawerContent(
+                    activeEntity,
+                    services,
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        )}
       </DrawerContent>
     </Drawer>
   );

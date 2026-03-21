@@ -23,7 +23,7 @@ import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePi
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";

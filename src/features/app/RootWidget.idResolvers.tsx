@@ -2,7 +2,7 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { maybe } from "@passionware/monads";
 import { ReactNode } from "react";

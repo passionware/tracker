@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -16,7 +17,7 @@ export function IterationFilterDropdown(props: WithFrontServices) {
   const workspaceId = props.services.locationService.useCurrentWorkspaceId();
   const clientId = props.services.locationService.useCurrentClientId();
   const projectId = props.services.locationService.useCurrentProjectId();
-  const forProject = props.services.routingService
+  const forProject = myRouting
     .forWorkspace(workspaceId)
     .forClient(clientId)
     .forProject(projectId?.toString());

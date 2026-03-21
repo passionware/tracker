@@ -1,3 +1,4 @@
+import { myRouting } from "@/routing/myRouting.ts";
 import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
@@ -19,7 +20,7 @@ import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Slot } from "@radix-ui/react-slot";
 import { Link2, FileText } from "lucide-react";
@@ -224,7 +225,7 @@ export function IterationTabs(
     projectIterationId: ProjectIteration["id"];
   },
 ) {
-  const forIteration = props.services.routingService
+  const forIteration = myRouting
     .forWorkspace(props.workspaceId)
     .forClient(props.clientId)
     .forProject(props.projectId.toString())

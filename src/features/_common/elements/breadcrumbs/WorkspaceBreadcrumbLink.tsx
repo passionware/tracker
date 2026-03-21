@@ -9,7 +9,7 @@ import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
-import { WorkspaceSpec } from "@/services/front/RoutingService/RoutingService.ts";
+import { WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { rd } from "@passionware/monads";
 

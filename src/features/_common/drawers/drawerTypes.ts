@@ -5,8 +5,7 @@ import type { WithReportDisplayService } from "@/services/front/ReportDisplaySer
 import type {
   ClientSpec,
   WorkspaceSpec,
-  WithRoutingService,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import type { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import type { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import type { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
@@ -23,7 +22,6 @@ export type DrawerServices = WithServices<
     WithContractorService,
     WithWorkspaceService,
     WithExpressionService,
-    WithRoutingService,
   ]
 >;
 

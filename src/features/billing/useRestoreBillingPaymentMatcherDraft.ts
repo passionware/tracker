@@ -8,7 +8,7 @@ import { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDi
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService.ts";
+} from "@/routing/routingUtils.ts";
 import { rd, type RemoteData } from "@passionware/monads";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";

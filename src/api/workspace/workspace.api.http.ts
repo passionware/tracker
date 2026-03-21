@@ -1,4 +1,5 @@
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
+import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   workspace$,
   workspaceFromHttp,
@@ -14,9 +15,12 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
       let request = client.from("workspace").select("*");
 
       if (query.search) {
-        request = request
-          .ilike("name", `%${query.search}%`)
-          .or(`slug.ilike('%${query.search}%')`);
+        // PostgREST filter syntax rejects SQL-style `'...'` inside `.or()` (PGRST100).
+        // Use `col.ilike."pattern"` with double quotes; double any `"` inside the pattern.
+        const term = query.search.replace(/"/g, '""');
+        request = request.or(
+          `name.ilike."%${term}%",slug.ilike."%${term}%"`,
+        );
       }
 
       if (query.filters.id) {
@@ -25,6 +29,10 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
           query.filters.id,
           "id",
         );
+      }
+
+      if (query.sort) {
+        request = sorterSupabaseUtils.sort(request, query.sort, {});
       }
 
       const { data, error } = await request;

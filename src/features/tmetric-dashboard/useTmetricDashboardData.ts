@@ -15,7 +15,7 @@ import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import type {
   ClientSpec,
   WorkspaceSpec,
-} from "@/services/front/RoutingService/RoutingService";
+} from "@/routing/routingUtils.ts";
 import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
