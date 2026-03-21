@@ -1,8 +1,8 @@
-import { BillingPayload } from "@/api/billing/billing.api.ts";
+import { BillingInvoicePayload } from "@/api/billing/billing.api.ts";
 
 export interface BillingEditMessage {
   request: {
-    defaultValues: Partial<BillingPayload>;
+    defaultValues: Partial<BillingInvoicePayload>;
     operatingMode: "create" | "edit" | "duplicate";
   };
   response:
@@ -11,7 +11,7 @@ export interface BillingEditMessage {
       }
     | {
         action: "confirm";
-        payload: BillingPayload;
-        changes: Partial<BillingPayload>;
+        payload: BillingInvoicePayload;
+        changes: Partial<BillingInvoicePayload>;
       };
 }

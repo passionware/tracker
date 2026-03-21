@@ -1,4 +1,4 @@
-import { BillingPayload } from "@/api/billing/billing.api.ts";
+import { BillingInvoicePayload } from "@/api/billing/billing.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { DatePicker } from "@/components/ui/date-picker.tsx";
 import {
@@ -25,8 +25,11 @@ import { useForm } from "react-hook-form";
 
 export interface BillingFormProps
   extends WithServices<[WithClientService, WithWorkspaceService]> {
-  defaultValues?: Partial<BillingPayload>;
-  onSubmit: (data: BillingPayload, changes: Partial<BillingPayload>) => void;
+  defaultValues?: Partial<BillingInvoicePayload>;
+  onSubmit: (
+    data: BillingInvoicePayload,
+    changes: Partial<BillingInvoicePayload>,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -68,8 +71,6 @@ export function BillingForm(props: BillingFormProps) {
         "Invoice date is required",
       ),
       description: data.description,
-      paidAt: null,
-      paidAtJustification: null,
     };
     props.onSubmit(allData, getDirtyFields(allData, form));
   }

@@ -132,11 +132,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           invoice_date: formatDateForSupabase(billing.invoiceDate),
           description: billing.description,
           workspace_id: billing.workspaceId,
-          paid_at:
-            billing.paidAt != null
-              ? formatDateForSupabase(billing.paidAt)
-              : null,
-          paid_at_justification: billing.paidAtJustification ?? null,
+          paid_at: null,
+          paid_at_justification: null,
         })
         .select("id");
       if (response.error) {

@@ -3,7 +3,7 @@
  * It is declaration of the effect of the reconciliation.
  */
 
-import { BillingPayload } from "@/api/billing/billing.api";
+import { BillingInvoicePayload } from "@/api/billing/billing.api";
 import { CostPayload } from "@/api/cost/cost.api";
 import { ReconcileLinkBillingReportPayload } from "@/api/link-billing-report/link-billing-report.api";
 import { LinkCostReportPayload } from "@/api/link-cost-report/link-cost-report";
@@ -32,7 +32,7 @@ export interface ReportFact extends FactBase {
 
 export interface BillingFact extends FactBase {
   type: "billing";
-  payload: Required<BillingPayload>;
+  payload: Required<BillingInvoicePayload>;
 }
 
 export interface CostFact extends FactBase {

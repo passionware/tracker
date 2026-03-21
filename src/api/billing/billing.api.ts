@@ -42,7 +42,8 @@ import { Maybe } from "@passionware/monads";
 import { chain } from "lodash";
 import { z } from "zod";
 
-export interface BillingPayload {
+/** Invoice/workspace fields editable via the billing form and used when creating a billing row. */
+export interface BillingInvoicePayload {
   currency: string;
   totalNet: number;
   totalGross: number;
@@ -51,16 +52,26 @@ export interface BillingPayload {
   invoiceDate: CalendarDate;
   description: string | null;
   workspaceId: Workspace["id"];
-  /** Settlement / bank date when the client paid this invoice. */
+}
+
+/** Settlement / bank date when the client paid this invoice (set via mark-paid / matcher / patch, not the main form). */
+export interface BillingPaymentFields {
   paidAt: CalendarDate | null;
   paidAtJustification: string | null;
 }
 
-export interface BillingBase extends BillingPayload {
+export interface BillingBase extends BillingInvoicePayload {
   id: number;
   createdAt: Date;
   isCommitted: boolean;
+  paidAt: CalendarDate | null;
+  paidAtJustification: string | null;
 }
+
+/** Patch type for `editBilling`: invoice fields and/or payment fields. */
+export type BillingPatchPayload = Partial<
+  BillingInvoicePayload & BillingPaymentFields
+>;
 
 export interface Billing extends BillingBase {
   // how much of billing value is already linked to reports
