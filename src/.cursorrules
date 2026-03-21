@@ -29,3 +29,6 @@ Remove unused exports, components, and parameters (e.g. a component never import
 # Avoid hardcoded lists when data-driven is possible
 Don't hardcode currency lists or similar; derive from actual data (e.g. iteration currencies) and use on-demand loading (e.g. ensureExchange) for the rest when you don't have the full set up front.
 
+# Storybook
+Never use hardcoded `title` in story meta; let Storybook infer the title from the file path.
+
