@@ -1,6 +1,6 @@
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import type { CurrencyValueGroup } from "@/services/ExchangeService/ExchangeService.ts";
-import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { createFormatServiceForStory } from "@/services/FormatService/FormatService.mock.tsx";
 import type { StoryObj } from "@storybook/react-vite";
 
 import { Summary } from "./Summary.tsx";
@@ -9,7 +9,7 @@ import {
   type SummaryCurrencyGroupProps,
 } from "./SummaryCurrencyGroup.tsx";
 
-const formatService = createFormatService(() => new Date());
+const formatService = createFormatServiceForStory();
 
 const singleSame: CurrencyValueGroup = {
   values: [{ amount: 1250.5, currency: "USD" }],

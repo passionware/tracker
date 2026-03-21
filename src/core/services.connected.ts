@@ -1,5 +1,6 @@
 import { BillingQuery, billingQuerySchema } from "@/api/billing/billing.api";
 import { createBillingApi } from "@/api/billing/billing.api.http.ts";
+import { ClientQuery, clientQuerySchema } from "@/api/clients/clients.api.ts";
 import { createClientsApi } from "@/api/clients/clients.api.http.ts";
 import { createCockpitCubeReportsApi } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.http.ts";
 import { createCockpitTenantsApi } from "@/api/cockpit-tenants/cockpit-tenants.api.http.ts";
@@ -26,6 +27,10 @@ import {
   variableQuerySchema,
 } from "@/api/variable/variable.api";
 import { createVariableApi } from "@/api/variable/variable.api.http.ts";
+import {
+  WorkspaceQuery,
+  workspaceQuerySchema,
+} from "@/api/workspace/workspace.api.ts";
 import { createWorkspaceApi } from "@/api/workspace/workspace.api.http.ts";
 import { clientCockpitSupabase } from "@/core/clientSupabase.connected.ts";
 import { FrontServices } from "@/core/frontServices.ts";
@@ -81,6 +86,8 @@ const queryParamsService = createQueryParamsService<{
   users: UserQuery;
   reports: ReportQuery;
   billing: BillingQuery;
+  clients: ClientQuery;
+  workspaces: WorkspaceQuery;
   costs: CostQuery;
   variables: VariableQuery;
   dashboard: DashboardQuery;
@@ -95,6 +102,12 @@ const queryParamsService = createQueryParamsService<{
     billing: billingQuerySchema.parse as (
       params: Record<string, unknown>,
     ) => BillingQuery,
+    clients: clientQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => ClientQuery,
+    workspaces: workspaceQuerySchema.parse as (
+      params: Record<string, unknown>,
+    ) => WorkspaceQuery,
     costs: costQuerySchema.parse as (
       params: Record<string, unknown>,
     ) => CostQuery,

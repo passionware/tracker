@@ -30,6 +30,8 @@ import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
+import { ClientsManageWidget } from "@/features/clients/ClientsManageWidget.tsx";
+import { WorkspacesManageWidget } from "@/features/workspaces/WorkspacesManageWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
 import { Layout } from "@/layout/AppLayout.tsx";
@@ -402,6 +404,72 @@ export function RootWidget(props: WithFrontServices) {
                       workspaceId={workspaceId}
                       services={props.services}
                     />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/w/:workspaceId/clients/:clientId/environment/clients"
+          element={
+            <Navigate
+              to={props.services.routingService.forGlobal().manageClients()}
+              replace
+            />
+          }
+        />
+        <Route
+          path="/w/:workspaceId/clients/:clientId/environment/workspaces"
+          element={
+            <Navigate
+              to={props.services.routingService.forGlobal().manageWorkspaces()}
+              replace
+            />
+          }
+        />
+        <Route
+          path={props.services.routingService.forGlobal().manageClients()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <EntityDrawerRouteLayout
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    >
+                      <ClientsManageWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={props.services.routingService.forGlobal().manageWorkspaces()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <EntityDrawerRouteLayout
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    >
+                      <WorkspacesManageWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
               </Layout>

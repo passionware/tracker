@@ -9,7 +9,7 @@ import { Layout } from "@/layout/AppLayout.tsx";
 import { createGuardedAccessor } from "@/platform/lang/guardedAccessor.ts";
 import { FixedMeta } from "@/platform/storybook/FixedMeta.ts";
 import { createStaticAccessor } from "@/services/_common/createStaticAccessor.ts";
-import { createFormatService } from "@/services/FormatService/FormatService.impl.tsx";
+import { createFormatServiceForStory } from "@/services/FormatService/FormatService.mock.tsx";
 import { createRoutingService } from "@/services/front/RoutingService/RoutingService.impl.ts";
 import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
 import { createClientService } from "@/services/io/ClientService/ClientService.mock.ts";
@@ -54,7 +54,7 @@ const meta = {
         }),
         workspaceService: createWorkspaceService(),
         clientService: createClientService(),
-        formatService: createFormatService(() => new Date()),
+        formatService: createFormatServiceForStory(),
         preferenceService: createPreferenceService({
           dangerMode: createStaticAccessor(false),
           onAction,

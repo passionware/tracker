@@ -118,6 +118,14 @@ function useData(
               title: "Variables",
               url: routing.variables(),
             },
+            {
+              title: "Clients",
+              url: services.routingService.forGlobal().manageClients(),
+            },
+            {
+              title: "Workspaces",
+              url: services.routingService.forGlobal().manageWorkspaces(),
+            },
             // {
             //   title: "Get Started",
             //   url: "#",

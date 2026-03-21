@@ -19,6 +19,7 @@ import type {
   DrawerDescriptor,
   DrawerDescriptorServices,
 } from "../DrawerDescriptor";
+import { DrawerContextEntityStrip } from "@/features/_common/patterns/DrawerContextEntityStrip.tsx";
 import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
 
@@ -208,6 +209,14 @@ function ReportDrawerContent({
     .catch(renderSmallError("min-h-24 w-full"))
     .map((report) => (
       <>
+        <DrawerContextEntityStrip
+          services={services}
+          workspace={report.workspace}
+          client={report.client}
+          onOpenClientDetails={(clientId) =>
+            pushEntityDrawer({ type: "client", id: clientId })
+          }
+        />
         <ReportInfo
           report={report}
           workspaceId={idSpecUtils.mapSpecificOrElse(

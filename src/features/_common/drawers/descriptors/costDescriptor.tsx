@@ -16,6 +16,7 @@ import type {
   DrawerDescriptor,
   DrawerDescriptorServices,
 } from "../DrawerDescriptor";
+import { DrawerContextEntityStrip } from "@/features/_common/patterns/DrawerContextEntityStrip.tsx";
 import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
 
@@ -178,25 +179,38 @@ function CostDrawerContent({
       </div>,
     )
     .catch(renderSmallError("min-h-24 w-full"))
-    .map((cost) => (
-      <CostInfo
-        costEntry={cost}
-        clientId={idSpecUtils.mapSpecificOrElse(
-          context.clientId,
-          (x) => x,
-          idSpecUtils.ofAll(),
-        )}
-        workspaceId={idSpecUtils.mapSpecificOrElse(
-          context.workspaceId,
-          (x) => x,
-          idSpecUtils.ofAll(),
-        )}
-        services={services}
-        onOpenReportDetails={(reportId) =>
-          pushEntityDrawer({ type: "report", id: reportId })
-        }
-      />
-    ));
+    .map((cost) => {
+      const linkedClientId = cost.linkReports[0]?.report.clientId ?? null;
+      return (
+        <>
+          <DrawerContextEntityStrip
+            services={services}
+            workspace={cost.workspace}
+            clientId={linkedClientId}
+            onOpenClientDetails={(clientId) =>
+              pushEntityDrawer({ type: "client", id: clientId })
+            }
+          />
+          <CostInfo
+            costEntry={cost}
+            clientId={idSpecUtils.mapSpecificOrElse(
+              context.clientId,
+              (x) => x,
+              idSpecUtils.ofAll(),
+            )}
+            workspaceId={idSpecUtils.mapSpecificOrElse(
+              context.workspaceId,
+              (x) => x,
+              idSpecUtils.ofAll(),
+            )}
+            services={services}
+            onOpenReportDetails={(reportId) =>
+              pushEntityDrawer({ type: "report", id: reportId })
+            }
+          />
+        </>
+      );
+    });
 }
 
 export const costDrawerDescriptor = {
