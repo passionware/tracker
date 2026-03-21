@@ -8,13 +8,18 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { CurrencyValueGroup } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { maybe } from "@passionware/monads";
+import { cn } from "@/lib/utils.ts";
 import { ReactNode } from "react";
+
+const stripValueClass =
+  "text-sm font-semibold tabular-nums tracking-tight text-foreground";
 
 export interface SummaryCurrencyGroupProps
   extends WithServices<[WithFormatService]> {
   group: CurrencyValueGroup;
   label: ReactNode;
   description?: ReactNode;
+  variant?: "card" | "strip";
 }
 
 export function SummaryCurrencyGroup({
@@ -22,17 +27,23 @@ export function SummaryCurrencyGroup({
   label,
   services,
   description,
+  variant = "card",
 }: SummaryCurrencyGroupProps) {
   return (
-    <SummaryEntry label={label} description={description}>
+    <SummaryEntry
+      label={label}
+      description={description}
+      variant={variant}
+    >
       {maybe.map(group, (group) => {
         if (group.values.length === 1) {
-          const summaryEntryValue = (
-            <>
-              <SummaryEntryValue>
-                {services.formatService.financial.currency(group.values[0])}
-              </SummaryEntryValue>
-            </>
+          const formatted = services.formatService.financial.currency(
+            group.values[0],
+          );
+          const summaryEntryValue = variant === "strip" ? (
+            <span className={stripValueClass}>{formatted}</span>
+          ) : (
+            <SummaryEntryValue>{formatted}</SummaryEntryValue>
           );
           if (
             group.approximatedJointValue.currency.toUpperCase() !==
@@ -57,9 +68,15 @@ export function SummaryCurrencyGroup({
                   </div>
                 }
               >
-                <SummaryEntryValue className="flex flex-row gap-1">
-                  {services.formatService.financial.currency(group.values[0])}
-                </SummaryEntryValue>
+                {variant === "strip" ? (
+                  <span className={cn(stripValueClass, "cursor-help")}>
+                    {formatted}
+                  </span>
+                ) : (
+                  <SummaryEntryValue className="flex flex-row gap-1">
+                    {formatted}
+                  </SummaryEntryValue>
+                )}
               </SimpleTooltip>
             );
           }
@@ -79,12 +96,21 @@ export function SummaryCurrencyGroup({
               </div>
             }
           >
-            <SummaryEntryValue className="flex flex-row gap-1">
-              ~{" "}
-              {services.formatService.financial.currency(
-                group.approximatedJointValue,
-              )}
-            </SummaryEntryValue>
+            {variant === "strip" ? (
+              <span className={cn(stripValueClass, "cursor-help")}>
+                ~{" "}
+                {services.formatService.financial.currency(
+                  group.approximatedJointValue,
+                )}
+              </span>
+            ) : (
+              <SummaryEntryValue className="flex flex-row gap-1">
+                ~{" "}
+                {services.formatService.financial.currency(
+                  group.approximatedJointValue,
+                )}
+              </SummaryEntryValue>
+            )}
           </SimpleTooltip>
         );
       })}

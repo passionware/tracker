@@ -2,8 +2,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -18,27 +18,17 @@ import { cn } from "@/lib/utils.ts";
 import { selectionState, SelectionState } from "@/platform/lang/SelectionState";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import { maybe, rd, RemoteData } from "@passionware/monads";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  Header,
-  SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
+import { ColumnDef, flexRender, Header } from "@tanstack/react-table";
 import { get } from "lodash";
 import { Info } from "lucide-react";
 import * as React from "react";
 import { ReactNode } from "react";
-import { sharedColumns } from "./columns/_common/sharedColumns";
+import type { SimpleEvent } from "@passionware/simple-event";
+import { ListViewTotalsBar } from "./ListViewTotalsBar.tsx";
+import { shouldSuppressListViewRowOpen } from "./listViewRowOpenGuard.ts";
 import { SelectionLayout } from "./SelectionLayout";
-import {
-  SimpleEvent,
-  useSimpleEventSubscription,
-} from "@passionware/simple-event";
+import { useListViewScrollToRow } from "./useListViewScrollToRow.ts";
+import { useListViewTable } from "./useListViewTable.ts";
 
 // Simple approach: make selection props optional and handle at runtime
 export type ListViewProps<TData, Query extends SortableQueryBase, TId> = {
@@ -59,6 +49,9 @@ export type ListViewProps<TData, Query extends SortableQueryBase, TId> = {
   toolbar?: React.ReactNode;
   getRowId: (row: TData) => TId;
   scrollEvent?: SimpleEvent<TId>;
+  getRowClassName?: (row: TData) => string | undefined;
+  /** When false, header row scrolls with body (use when an outer sticky section title replaces it). Default true. */
+  stickyTableHeader?: boolean;
 };
 
 export function ListView<TData, Query extends SortableQueryBase, TId>(
@@ -79,85 +72,26 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
     onSelectionChange,
     toolbar,
     getRowId,
+    getRowClassName,
+    stickyTableHeader = true,
   } = props;
 
-  // Stan lokalny do sortowania, filtrowania itp.
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
+  /**
+   * Full-width tfoot is a hit-transparent sticky slot; only ListViewTotalsBar receives clicks
+   * and visible surface (bg-popover/90).
+   */
+  const tableFooterSlotClass =
+    "sticky bottom-0 z-20 border-0 bg-transparent pointer-events-none shadow-none";
 
-  // Helper to convert TId to string for DOM attributes and TanStack Table
-  const getIdAsString = React.useCallback(
-    (row: TData): string => {
-      return String(getRowId(row));
-    },
-    [getRowId],
-  );
-
-  // W zależności od tego, czy mamy dane, w tablicy przekazujemy albo puste [],
-  // albo wartość z data (jeżeli jest w stanie success).
-  const dataWithPlaceholder = rd.useLastWithPlaceholder(data);
-  const tableData = rd.getOrElse(dataWithPlaceholder, [] as TData[]);
-
-  // Inicjalizacja tabeli z tanstack react table
-  const table = useReactTable<any>({
-    data: tableData as any,
-    getRowId: (row: any) => getIdAsString(row as TData),
-    manualPagination: true,
-    columns:
-      selection && onSelectionChange
-        ? [
-            sharedColumns.selection(
-              selection as any,
-              data as any,
-              onSelectionChange as any,
-              getRowId,
-            ),
-            ...columns,
-          ]
-        : columns,
-    manualSorting: true,
-    enableSorting: true,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    debugTable: false,
+  const { table, dataWithPlaceholder } = useListViewTable({
+    data,
+    columns,
+    selection,
+    onSelectionChange,
+    getRowId,
   });
 
-  const itemContainerRef = React.useRef<HTMLTableSectionElement | null>(null);
-
-  useSimpleEventSubscription(props.scrollEvent?.addListener, (id) => {
-    if (!itemContainerRef.current) return;
-    const rowElement = itemContainerRef.current.querySelector(
-      `[data-item-id="${id}"]`,
-    ) as HTMLElement | null;
-    if (rowElement && typeof rowElement.scrollIntoView === "function") {
-      // Add highlight class immediately
-      rowElement.classList.add("list-view-row-highlight");
-      // Scroll instantly (faster)
-      rowElement.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      // Remove highlight class after animation completes
-      setTimeout(() => {
-        rowElement.classList.remove("list-view-row-highlight");
-      }, 2500);
-    }
-  });
+  const itemContainerRef = useListViewScrollToRow(props.scrollEvent);
 
   const columnsElement = table.getHeaderGroups().map((headerGroup) => (
     <TableRow key={headerGroup.id}>
@@ -226,9 +160,22 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
     .journey(dataWithPlaceholder)
     .wait(() => (
       // Wyświetlamy skeletony
-      <div className={cn("rounded-md border overflow-auto", className)}>
+      <div
+        className={cn(
+          "rounded-md border",
+          stickyTableHeader
+            ? "overflow-auto"
+            : "overflow-x-auto overflow-y-visible",
+          className,
+        )}
+      >
         <Table>
-          <TableHeader className="sticky top-0 bg-background hover:bg-background z-10 shadow-sm">
+          <TableHeader
+            className={cn(
+              stickyTableHeader &&
+                "sticky top-0 z-10 bg-background shadow-sm hover:bg-background",
+            )}
+          >
             {columnsElement}
           </TableHeader>
           <TableBody className="bg-background">
@@ -243,9 +190,21 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
             ))}
           </TableBody>
           {caption && (
-            <TableCaption className="text-sm text-sky-900 text-left bg-sky-50 p-4 rounded-md border border-sky-400">
-              {caption}
-            </TableCaption>
+            <TableFooter className={tableFooterSlotClass}>
+              <TableRow className="pointer-events-none border-0 hover:bg-transparent">
+                <TableCell
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="pointer-events-none p-0 align-top border-0 bg-transparent"
+                >
+                  <ListViewTotalsBar
+                    sticky={false}
+                    className="pointer-events-auto bg-popover/90 backdrop-blur-sm supports-[backdrop-filter]:bg-popover/90"
+                  >
+                    {caption}
+                  </ListViewTotalsBar>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
           )}
         </Table>
       </div>
@@ -275,7 +234,10 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
                   <TableRow
                     key={row.id}
                     data-item-id={String(rowId)}
-                    className="[--highlight-color:var(--color-highlight)]"
+                    className={cn(
+                      "[--highlight-color:var(--color-highlight)]",
+                      getRowClassName?.(row.original as TData),
+                    )}
                     aria-selected={maybe.mapOrElse(
                       selection,
                       (selection) =>
@@ -283,29 +245,11 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
                       false,
                     )}
                     onClick={(e) => {
-                      if (e.target instanceof Element) {
-                        if (e.target.closest("a, button, [data-no-row-open]")) {
-                          return;
-                        }
-                        // check if the click was physically inside, not via react portal:
-                        if (!e.currentTarget.contains(e.target)) {
-                          return;
-                        }
-                      }
-
+                      if (shouldSuppressListViewRowOpen(e)) return;
                       onRowClick?.(row.original as TData);
                     }}
                     onDoubleClick={(e) => {
-                      if (e.target instanceof Element) {
-                        if (e.target.closest("a, button, [data-no-row-open]")) {
-                          return;
-                        }
-                        // check if the click was physically inside, not via react portal:
-                        if (!e.currentTarget.contains(e.target)) {
-                          return;
-                        }
-                      }
-
+                      if (shouldSuppressListViewRowOpen(e)) return;
                       onRowDoubleClick?.(row.original as TData);
                       if (onRowDoubleClick && !e.defaultPrevented) {
                         window.getSelection?.()?.removeAllRanges();
@@ -356,11 +300,22 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
 
       return (
         <div
-          className={cn("rounded-md border overflow-auto isolate", className)}
+          className={cn(
+            "rounded-md border isolate",
+            stickyTableHeader
+              ? "overflow-auto"
+              : "overflow-x-auto overflow-y-visible",
+            className,
+          )}
         >
           <Table>
             {/* NAGŁÓWEK */}
-            <TableHeader className="sticky top-0 bg-popover hover:bg-sidebar-accent z-10 shadow-sm">
+            <TableHeader
+              className={cn(
+                stickyTableHeader &&
+                  "sticky top-0 z-10 bg-popover shadow-sm hover:bg-sidebar-accent",
+              )}
+            >
               {columnsElement}
             </TableHeader>
 
@@ -396,15 +351,25 @@ export function ListView<TData, Query extends SortableQueryBase, TId>(
             ) : (
               tbody
             )}
-
-            {/* CAPTION */}
-            {caption && (
-              <TableCaption className="text-sm text-sky-900 text-left bg-sky-50 p-4 rounded-md border border-sky-400 m-4">
-                {caption}
-              </TableCaption>
+            {(caption || toolbar) && (
+              <TableFooter className={tableFooterSlotClass}>
+                <TableRow className="pointer-events-none border-0 hover:bg-transparent">
+                  <TableCell
+                    colSpan={table.getVisibleLeafColumns().length}
+                    className="pointer-events-none p-0 align-top border-0 bg-transparent"
+                  >
+                    <ListViewTotalsBar
+                      sticky={false}
+                      leftSlot={toolbar}
+                      className="pointer-events-auto bg-popover/90 backdrop-blur-sm supports-[backdrop-filter]:bg-popover/85"
+                    >
+                      {caption ?? null}
+                    </ListViewTotalsBar>
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
             )}
           </Table>
-          {toolbar}
         </div>
       );
     });

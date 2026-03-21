@@ -6,7 +6,6 @@ import { PanelSectionLabel } from "./PanelSectionLabel.tsx";
 import { SurfaceCard } from "./SurfaceCard.tsx";
 
 const meta = {
-  title: "Common/Patterns/SurfaceCard",
   component: SurfaceCard,
   parameters: {
     layout: "centered",

@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AiLoadingOverlay } from "./AiLoadingOverlay.tsx";
 
 const meta = {
-  title: "Common/Patterns/AiLoadingOverlay",
   component: AiLoadingOverlay,
   parameters: {
     layout: "fullscreen",

@@ -9,7 +9,6 @@ import {
 import { IconTile } from "./IconTile.tsx";
 
 const meta = {
-  title: "Common/Patterns/IconTile",
   component: IconTile,
   parameters: {
     layout: "centered",

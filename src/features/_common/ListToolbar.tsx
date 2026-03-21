@@ -16,7 +16,7 @@ export function ListToolbar({ children, className }: ListToolbarProps) {
         className,
       )}
     >
-      <div className="flex items-center justify-between p-4 gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-2 py-1.5 sm:gap-x-3 sm:gap-y-2 sm:px-3 sm:py-2">
         {children}
       </div>
     </Card>

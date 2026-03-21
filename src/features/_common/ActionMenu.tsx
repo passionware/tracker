@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
 import { Button, ButtonProps } from "@/components/ui/button.tsx";
 import {
   DropdownMenu,
@@ -6,18 +16,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { MarkAsPaidDialog } from "@/features/billing/MarkAsPaidDialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { CalendarDate } from "@internationalized/date";
 import { DropdownMenuItemProps } from "@radix-ui/react-dropdown-menu";
 import {
+  Banknote,
   ClipboardCopy,
   Copy,
   MoreHorizontal,
   Pencil,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
-import { createContext, ReactNode, useContext, useMemo } from "react";
+import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 export interface ActionMenuProps
   extends WithServices<[WithPreferenceService]>,
@@ -111,5 +126,88 @@ export function ActionMenuDuplicateItem({
       <Copy className="size-4" />
       {children}
     </DropdownMenuItem>
+  );
+}
+
+export function ActionMenuMarkPaidMenuItem({
+  children,
+  billingId,
+  paidAt,
+  services,
+  ...rest
+}: DropdownMenuItemProps &
+  WithServices<[WithMutationService]> & {
+    billingId: number;
+    paidAt: CalendarDate | null;
+  }) {
+  const [markOpen, setMarkOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const isPaid = paidAt != null;
+
+  return (
+    <>
+      <DropdownMenuItem
+        {...rest}
+        onSelect={(event) => {
+          event.preventDefault();
+          if (isPaid) {
+            setClearOpen(true);
+          } else {
+            setMarkOpen(true);
+          }
+        }}
+      >
+        {isPaid ? (
+          <RotateCcw className="size-4" />
+        ) : (
+          <Banknote className="size-4" />
+        )}
+        {children ?? (isPaid ? "Remove paid marker" : "Mark as paid")}
+      </DropdownMenuItem>
+      <MarkAsPaidDialog
+        open={markOpen}
+        onOpenChange={setMarkOpen}
+        title="Mark invoice as paid"
+        onConfirm={async (data) => {
+          await services.mutationService.editBilling(billingId, {
+            paidAt: data.paidAt,
+            paidAtJustification: data.paidAtJustification,
+          });
+        }}
+      />
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent data-vaul-no-drag>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove paid marker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The payment date and note on this invoice will be cleared. You can
+              mark it as paid again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearBusy}
+              onClick={async (e) => {
+                e.preventDefault();
+                setClearBusy(true);
+                try {
+                  await services.mutationService.editBilling(billingId, {
+                    paidAt: null,
+                    paidAtJustification: null,
+                  });
+                  setClearOpen(false);
+                } finally {
+                  setClearBusy(false);
+                }
+              }}
+            >
+              {clearBusy ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
