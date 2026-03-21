@@ -172,11 +172,12 @@ export function ClientDrawerBody({
   );
 
   const workspacePickerQuery = useMemo(() => {
+    const base = workspaceQueryUtils.ofDefault();
     const ids = rd.tryGet(linkedRd)?.map((w) => w.id) ?? [];
     if (ids.length === 0) {
-      return workspaceQueryUtils.ofEmpty();
+      return base;
     }
-    return workspaceQueryUtils.getBuilder().build((q) => [
+    return workspaceQueryUtils.transform(base).build((q) => [
       q.withFilter("id", { operator: "matchNone", value: ids }),
     ]);
   }, [linkedRd]);

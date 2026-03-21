@@ -15,6 +15,7 @@ import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { WorkspaceHiddenBadge } from "@/features/workspaces/WorkspaceHiddenBadge.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { useDebouncedUrlSyncedSearch } from "@/platform/react/useDebouncedUrlSyncedSearch.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
@@ -93,7 +94,10 @@ export function WorkspacesManageWidget(props: WorkspacesManageWidgetProps) {
         header: "Name",
         meta: { sortKey: "name" },
         cell: (info) => (
-          <span className="font-medium">{info.getValue()}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-medium">{info.getValue()}</span>
+            <WorkspaceHiddenBadge hidden={info.row.original.hidden} />
+          </span>
         ),
       }),
       columnHelper.accessor("slug", {

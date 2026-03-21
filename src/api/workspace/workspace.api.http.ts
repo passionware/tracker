@@ -1,4 +1,5 @@
 import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.supabase.ts";
+import { booleanFilterSupabaseUtils } from "@/api/_common/query/filters/BooleanFilter.supabase.ts";
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import {
   workspace$,
@@ -28,6 +29,14 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
           request,
           query.filters.id,
           "id",
+        );
+      }
+
+      if (query.filters.hidden) {
+        request = booleanFilterSupabaseUtils.filterBy(
+          request,
+          query.filters.hidden,
+          "hidden",
         );
       }
 

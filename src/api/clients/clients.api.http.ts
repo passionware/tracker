@@ -55,7 +55,8 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
             id,
             name,
             slug,
-            avatar_url
+            avatar_url,
+            hidden
           )
         `,
         )

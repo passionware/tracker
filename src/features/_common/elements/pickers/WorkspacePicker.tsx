@@ -38,7 +38,7 @@ export const WorkspacePicker = injectConfig(
     },
     useItems: (search) => {
       const props = api.useProps();
-      const base = props.itemsQuery ?? workspaceQueryUtils.ofEmpty();
+      const base = props.itemsQuery ?? workspaceQueryUtils.ofDefault();
       return props.services.workspaceService.useWorkspaces(
         workspaceQueryUtils.setSearch(base, search),
       );
@@ -76,7 +76,7 @@ export const WorkspaceMultiPicker = injectConfig(
     useItems: (query) => {
       const props = api.useProps();
       return props.services.workspaceService.useWorkspaces(
-        workspaceQueryUtils.setSearch(workspaceQueryUtils.ofEmpty(), query),
+        workspaceQueryUtils.setSearch(workspaceQueryUtils.ofDefault(), query),
       );
     },
     searchPlaceholder: "Search for a workspace",

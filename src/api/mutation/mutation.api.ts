@@ -35,6 +35,7 @@ export type WorkspaceUpdatePayload = Partial<{
   name: string;
   slug: string;
   avatarUrl: string | null;
+  hidden: boolean;
 }>;
 
 export interface MutationApi {

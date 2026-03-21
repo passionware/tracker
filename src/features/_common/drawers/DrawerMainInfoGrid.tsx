@@ -23,7 +23,7 @@ export function DrawerMainInfoGrid({ items }: DrawerMainInfoGridProps) {
             className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2"
           >
             <span className="text-muted-foreground">{item.label}:</span>
-            <span className="font-medium text-foreground truncate">
+            <span className="min-w-0 font-medium text-foreground truncate">
               {item.value ?? "-"}
             </span>
           </div>

@@ -6,6 +6,7 @@ export const workspace$ = z.object({
   name: z.string(),
   slug: z.string(),
   avatar_url: z.string().nullable(),
+  hidden: z.boolean().default(false),
 });
 
 export type Workspace$ = z.infer<typeof workspace$>;
@@ -16,5 +17,6 @@ export function workspaceFromHttp(data: Workspace$): Workspace {
     name: data.name,
     slug: data.slug,
     avatarUrl: data.avatar_url,
+    hidden: data.hidden,
   };
 }

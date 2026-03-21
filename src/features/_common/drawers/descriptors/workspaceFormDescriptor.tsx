@@ -12,7 +12,7 @@ export type WorkspaceFormSpec = {
   workspaceId: number;
   defaultValues: Pick<
     WorkspaceFormValues,
-    "name" | "slug" | "avatarUrl"
+    "name" | "slug" | "avatarUrl" | "hidden"
   >;
 };
 
