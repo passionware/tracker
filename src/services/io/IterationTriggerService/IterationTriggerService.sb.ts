@@ -10,6 +10,7 @@ export function createIterationTriggerService(): IterationTriggerService {
   return {
     getLogEntries: () => Promise.resolve([]),
     useBudgetTargetLog: () => rd.of([]),
+    useBudgetTargetLogsForIterations: () => rd.of(new Map()),
     useCurrentBudgetTarget: () => rd.of(null),
   };
 }

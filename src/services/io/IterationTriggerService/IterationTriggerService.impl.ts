@@ -1,9 +1,14 @@
-import { IterationTriggerApi } from "@/api/iteration-trigger/iteration-trigger.api";
+import {
+  type BudgetTargetLogEntry,
+  IterationTriggerApi,
+} from "@/api/iteration-trigger/iteration-trigger.api";
 import { WithServices } from "@/platform/typescript/services";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery";
 import { IterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService";
-import { QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryClient, useQueries, useQuery } from "@tanstack/react-query";
+import { rd } from "@passionware/monads";
+import { useMemo } from "react";
 
 export function createIterationTriggerService({
   services,
@@ -35,6 +40,38 @@ export function createIterationTriggerService({
           client,
         ),
       ),
+    useBudgetTargetLogsForIterations: (iterationIds) => {
+      const queries = useQueries(
+        {
+          queries: iterationIds.map((id) => ({
+            queryKey: ["iteration-budget-target", "log", id] as const,
+            queryFn: () => api.getLog(id),
+          })),
+        },
+        client,
+      );
+      return useMemo(() => {
+        if (iterationIds.length === 0) {
+          return rd.of(new Map());
+        }
+        if (queries.some((q) => q.isLoading)) {
+          return rd.ofIdle();
+        }
+        const failed = queries.find((q) => q.isError);
+        if (failed?.error) {
+          return rd.ofError(
+            failed.error instanceof Error
+              ? failed.error
+              : new Error(String(failed.error)),
+          );
+        }
+        const m = new Map<number, BudgetTargetLogEntry[]>();
+        for (let i = 0; i < iterationIds.length; i++) {
+          m.set(iterationIds[i]!, (queries[i]!.data as BudgetTargetLogEntry[]) ?? []);
+        }
+        return rd.of(m);
+      }, [iterationIds, queries]);
+    },
     useCurrentBudgetTarget: (iterationId) =>
       ensureIdleQuery(
         iterationId,
