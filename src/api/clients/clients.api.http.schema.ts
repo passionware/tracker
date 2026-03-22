@@ -1,10 +1,6 @@
 import { workspace$ } from "@/api/workspace/workspace.api.http.schema.ts";
 import { z } from "zod";
 
-export const linkWorkspaceClientWithWorkspace$ = z.object({
-  workspace: workspace$,
-});
-
 export const client$ = z.object({
   id: z.number(),
   name: z.string(),
@@ -17,3 +13,11 @@ export const client$ = z.object({
 });
 
 export type Client$ = z.infer<typeof client$>;
+
+export const linkWorkspaceClientWithWorkspace$ = z.object({
+  workspace: workspace$,
+});
+
+export const linkWorkspaceClientWithClient$ = z.object({
+  client: client$,
+});
