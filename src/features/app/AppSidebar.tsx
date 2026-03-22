@@ -30,10 +30,8 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   AudioLines,
   BriefcaseBusiness,
-  Frame,
   Grid3X3,
   HandCoins,
-  HardHat,
   Leaf,
   PieChart,
 } from "lucide-react";
@@ -91,21 +89,6 @@ function useData(
             {
               title: "Relevant costs",
               url: routing.potentialCosts(),
-            },
-          ],
-        },
-        {
-          title: "Contractor",
-          url: "#",
-          icon: HardHat,
-          items: [
-            {
-              title: "Reports",
-              url: "#",
-            },
-            {
-              title: "Cost invoices",
-              url: "#",
             },
           ],
         },
@@ -179,11 +162,6 @@ function useData(
           name: "Client cockpit",
           url: myRouting.forClientCockpit().root(),
           icon: PieChart,
-        },
-        {
-          name: "Display settings",
-          url: "#",
-          icon: Frame,
         },
       ],
     };
