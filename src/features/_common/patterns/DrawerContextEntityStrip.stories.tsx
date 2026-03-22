@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createClientServiceForEntityStripStory } from "@/services/io/ClientService/ClientService.mock.ts";
 
 import { DrawerContextEntityStrip } from "./DrawerContextEntityStrip.tsx";
+import { Workspace } from "@/api/workspace/workspace.api.ts";
 
 const demoClient = {
   id: 42,
@@ -13,7 +14,10 @@ const demoClient = {
 } satisfies Client;
 
 const services = {
-  clientService: createClientServiceForEntityStripStory(demoClient.id, demoClient),
+  clientService: createClientServiceForEntityStripStory(
+    demoClient.id,
+    demoClient,
+  ),
 };
 
 const workspace = {
@@ -21,7 +25,8 @@ const workspace = {
   name: "Engineering",
   slug: "engineering",
   avatarUrl: null as string | null,
-};
+  hidden: false,
+} satisfies Workspace;
 
 const meta = {
   component: DrawerContextEntityStrip,
