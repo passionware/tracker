@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { WithFrontServices } from "@/core/frontServices";
 import { BudgetTargetHistoryChart } from "@/features/_common/budget-target/BudgetTargetHistoryChart";
-import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
+import { inclusiveCalendarPeriodToEpochRange } from "@/platform/lang/internationalized-date";
 import { BudgetTargetLogEditDialog } from "@/features/_common/budget-target/BudgetTargetLogEditDialog";
 import { rd } from "@passionware/monads";
 import { BudgetTargetForm } from "@/features/project-iterations/widgets/BudgetTargetForm";
@@ -40,10 +40,10 @@ export function BudgetTriggerWidget(
           logEntries={logEntries}
           iterationCurrency={iter.currency}
           formatService={props.services.formatService}
-          periodRange={{
-            start: calendarDateToJSDate(iter.periodStart).getTime(),
-            end: calendarDateToJSDate(iter.periodEnd).getTime(),
-          }}
+          periodRange={inclusiveCalendarPeriodToEpochRange(
+            iter.periodStart,
+            iter.periodEnd,
+          )}
         />
         <div className="flex flex-wrap items-center gap-2 pt-5 border-t">
           <BudgetTargetLogEditDialog

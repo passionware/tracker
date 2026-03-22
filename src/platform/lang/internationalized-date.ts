@@ -17,6 +17,20 @@ export function calendarDateToJSDate(date: CalendarDate): Date {
   return date.toDate(getLocalTimeZone());
 }
 
+/**
+ * Epoch-ms range for charts that must match Passionware timeline layout: `CalendarDate`
+ * start/end are inclusive days; layout ends at the first instant of the day after `periodEnd`.
+ */
+export function inclusiveCalendarPeriodToEpochRange(
+  periodStart: CalendarDate,
+  periodEnd: CalendarDate,
+): { start: number; end: number } {
+  return {
+    start: calendarDateToJSDate(periodStart).getTime(),
+    end: calendarDateToJSDate(periodEnd.add({ days: 1 })).getTime(),
+  };
+}
+
 export function addDaysToCalendarDate(
   date: CalendarDate,
   days: number,

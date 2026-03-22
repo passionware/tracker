@@ -4,7 +4,10 @@ import { BudgetTargetLogEditDialog } from "@/features/_common/budget-target/Budg
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WithFrontServices } from "@/core/frontServices";
-import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
+import {
+  calendarDateToJSDate,
+  inclusiveCalendarPeriodToEpochRange,
+} from "@/platform/lang/internationalized-date";
 import { computePeriodProgress } from "@/platform/lang/datetime-utils";
 import {
   getBillingByIteration,
@@ -333,10 +336,10 @@ function IterationBudgetDetailContent({
         logEntries={logEntries}
         iterationCurrency={iteration.currency}
         formatService={services.formatService}
-        periodRange={{
-          start: calendarDateToJSDate(iteration.periodStart).getTime(),
-          end: calendarDateToJSDate(iteration.periodEnd).getTime(),
-        }}
+        periodRange={inclusiveCalendarPeriodToEpochRange(
+          iteration.periodStart,
+          iteration.periodEnd,
+        )}
       />
       {editMode && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-1.5 pt-4 border-t">
