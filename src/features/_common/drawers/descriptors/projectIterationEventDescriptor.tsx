@@ -175,7 +175,7 @@ function ProjectIterationEventDrawerBody({
             <ul className="space-y-2 text-sm">
               {ev.moves.map((move, i) => (
                 <li
-                  key={i}
+                  key={`${ev.id}-${i}`}
                   className="rounded-md border border-border/80 bg-muted/30 px-3 py-2"
                 >
                   <div className="tabular-nums">

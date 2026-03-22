@@ -10,6 +10,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command.tsx";
 import {
   Popover,
@@ -62,6 +63,8 @@ export interface AbstractPickerConfig<Id, Data, Props> {
   unassignedLabel?: ReactNode;
   searchPlaceholder?: string;
   placeholder?: string;
+  /** Optional leading glyph per option row (plain `renderOption` mode only). */
+  renderOptionStart?: (item: Data) => ReactNode;
 }
 
 export type AbstractMultiPickerProps<Id, Data> = Overwrite<
@@ -85,6 +88,12 @@ export type AbstractMultiPickerProps<Id, Data> = Overwrite<
     maxValueItems?: number;
     /** When maxValueItems is set and there is overflow, this is called with the full value and rendered instead of the extra items. */
     itemOverflowMessage?: (value: Array<Unassigned | Id>) => ReactNode;
+    /** Replaces the default wrapper around `itemOverflowMessage` (default includes muted text). */
+    itemOverflowWrapperClassName?: string;
+    /** When false, hides search input; Clear moves into the list header (same as searchable pickers). */
+    searchable?: boolean;
+    /** Shown before the trigger label (e.g. filter / list icon). */
+    triggerStartIcon?: ReactNode;
   }
 >;
 
@@ -117,6 +126,9 @@ export function AbstractMultiPicker<Id, Data>(
     side = "top",
     maxValueItems,
     itemOverflowMessage,
+    itemOverflowWrapperClassName,
+    searchable = true,
+    triggerStartIcon,
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
@@ -165,6 +177,55 @@ export function AbstractMultiPicker<Id, Data>(
     setQuery("");
   };
 
+  const clearSelection = () => handleSelect([], null, "clear");
+
+  const compactClearButton =
+    value.length > 0 ? (
+      <button
+        type="button"
+        aria-label="Clear selection"
+        className={cn(
+          "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
+          "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
+        )}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={clearSelection}
+      >
+        <X className="size-3.5 shrink-0" />
+        Clear
+      </button>
+    ) : null;
+
+  const nonSearchableClearFooter =
+    !searchable && value.length > 0 ? (
+      <>
+        <CommandSeparator className="" />
+        <CommandItem
+          value="__abstract_multipicker_clear__"
+          className={pickerOptionRowOuterClassName(false)}
+          onSelect={() => clearSelection()}
+        >
+          <div
+            className={cn(
+              pickerOptionRowInnerClassName({
+                isSelected: false,
+                itemsStretch: false,
+              }),
+              "text-rose-800 dark:text-rose-100",
+              "hover:bg-rose-100/90 dark:hover:bg-rose-900/45",
+            )}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/55 dark:text-rose-200">
+              <X className="size-4 shrink-0" strokeWidth={2} />
+            </span>
+            <span className="min-w-0 flex-1 text-left text-sm font-medium">
+              Clear
+            </span>
+          </div>
+        </CommandItem>
+      </>
+    ) : null;
+
   const applyMultiOptionZoneClick = (
     e: MouseEvent,
     zone: "avatar" | "right",
@@ -194,7 +255,7 @@ export function AbstractMultiPicker<Id, Data>(
       role="combobox"
       aria-expanded={open}
       className={cn(
-        "justify-start *:min-w-0",
+        "justify-start gap-2 *:min-w-0",
         className,
         buttonPaddingVariant({ size }),
       )}
@@ -207,6 +268,11 @@ export function AbstractMultiPicker<Id, Data>(
         .wait(<LoaderCircle className="size-3! animate-spin" />)
         .catch(renderSmallError("w-5 h-5"))
         .map(() => null)}
+      {triggerStartIcon != null ? (
+        <span className="shrink-0 text-muted-foreground [&_svg]:size-4">
+          {triggerStartIcon}
+        </span>
+      ) : null}
       {rd
         .fullJourney(currentOption)
         .initially(
@@ -262,14 +328,19 @@ export function AbstractMultiPicker<Id, Data>(
                 </Fragment>
               ))}
               {hasOverflow && itemOverflowMessage ? (
-                <div className="ml-2 truncate min-w-0 text-muted-foreground text-sm">
+                <div
+                  className={
+                    itemOverflowWrapperClassName ??
+                    "ml-2 truncate min-w-0 text-muted-foreground text-sm"
+                  }
+                >
                   {itemOverflowMessage(value)}
                 </div>
               ) : null}
             </>
           );
         })}
-      <ChevronsUpDown className="opacity-50 ml-auto" />
+      <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
     </Button>
   );
 
@@ -284,30 +355,18 @@ export function AbstractMultiPicker<Id, Data>(
       <PopoverTrigger asChild>{button}</PopoverTrigger>
       <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
         <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={config.searchPlaceholder || "Search item"}
-            value={query}
-            onValueChange={setQuery}
-            endAdornment={
-              <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
-                {value.length > 0 ? (
-                  <button
-                    type="button"
-                    aria-label="Clear selection"
-                    className={cn(
-                      "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
-                      "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
-                    )}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSelect([], null, "clear")}
-                  >
-                    <X className="size-3.5 shrink-0" />
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-            }
-          />
+          {searchable ? (
+            <CommandInput
+              placeholder={config.searchPlaceholder || "Search item"}
+              value={query}
+              onValueChange={setQuery}
+              endAdornment={
+                <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
+                  {compactClearButton}
+                </div>
+              }
+            />
+          ) : null}
           <CommandList>
             <CommandGroup className={pickerCommandGroupClassName}>
               <div className={pickerCommandHeaderSlotClassName}>
@@ -340,82 +399,110 @@ export function AbstractMultiPicker<Id, Data>(
                 .journey(options)
                 .wait(<CommandLoading />)
                 .catch((e) => <CommandEmpty>Error: {e.message}</CommandEmpty>)
-                .map((options) => {
-                  if (options.length === 0) {
-                    return <CommandEmpty>Nothing found</CommandEmpty>;
-                  }
-                  return options.map((data) => {
-                    const itemId = config.getItemId(data);
-                    const rowKey = config.getKey(data);
-                    const isSelected = value.some(
-                      (v) => String(v) === String(itemId),
-                    );
-                    const renderBody = config.renderMultiOption
-                      ? config.renderMultiOption(data, {
-                          isSelected,
-                          itemId,
-                          onAvatarClick: (e) =>
-                            applyMultiOptionZoneClick(e, "avatar", itemId),
-                          onRightPartClick: (e) =>
-                            applyMultiOptionZoneClick(e, "right", itemId),
-                          trailingSlot: (
-                            <Check
-                              className={cn(
-                                isSelected ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                          ),
-                          onExclusiveZonePointerEnter: () =>
-                            setExclusiveHoverKey(rowKey),
-                          onExclusiveZonePointerLeave: () =>
-                            setExclusiveHoverKey((cur) =>
-                              cur === rowKey ? null : cur,
-                            ),
-                          dimExclusiveStrip:
-                            exclusiveHoverKey !== null &&
-                            exclusiveHoverKey !== rowKey,
-                        })
-                      : partialRight(
-                          config.renderOption ?? config.renderItem,
-                          _props,
-                        )(data);
-
-                    const itemsStretch = Boolean(config.renderMultiOption);
-
+                .map((optionRows) => {
+                  if (optionRows.length === 0) {
                     return (
-                      <CommandItem
-                        key={rowKey}
-                        value={rowKey}
-                        className={pickerOptionRowOuterClassName(itemsStretch)}
-                        onSelect={() => {
-                          if (
-                            config.renderMultiOption &&
-                            suppressCmdkItemSelectRef.current
-                          ) {
-                            return;
-                          }
-                          handleSelect(xor(value, [itemId]), itemId, "toggle");
-                        }}
-                      >
-                        <div
-                          className={pickerOptionRowInnerClassName({
-                            isSelected,
-                            itemsStretch,
-                          })}
-                        >
-                          {renderBody}
-                          {!config.renderMultiOption ? (
-                            <Check
-                              className={cn(
-                                "ml-auto shrink-0",
-                                isSelected ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                          ) : null}
-                        </div>
-                      </CommandItem>
+                      <>
+                        <CommandEmpty>Nothing found</CommandEmpty>
+                        {nonSearchableClearFooter}
+                      </>
                     );
-                  });
+                  }
+                  return (
+                    <>
+                      {optionRows.map((data) => {
+                        const itemId = config.getItemId(data);
+                        const rowKey = config.getKey(data);
+                        const isSelected = value.some(
+                          (v) => String(v) === String(itemId),
+                        );
+                        const renderBody = config.renderMultiOption
+                          ? config.renderMultiOption(data, {
+                              isSelected,
+                              itemId,
+                              onAvatarClick: (e) =>
+                                applyMultiOptionZoneClick(e, "avatar", itemId),
+                              onRightPartClick: (e) =>
+                                applyMultiOptionZoneClick(e, "right", itemId),
+                              trailingSlot: (
+                                <Check
+                                  className={cn(
+                                    isSelected ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                              ),
+                              onExclusiveZonePointerEnter: () =>
+                                setExclusiveHoverKey(rowKey),
+                              onExclusiveZonePointerLeave: () =>
+                                setExclusiveHoverKey((cur) =>
+                                  cur === rowKey ? null : cur,
+                                ),
+                              dimExclusiveStrip:
+                                exclusiveHoverKey !== null &&
+                                exclusiveHoverKey !== rowKey,
+                            })
+                          : partialRight(
+                              config.renderOption ?? config.renderItem,
+                              _props,
+                            )(data);
+
+                        const itemsStretch = Boolean(config.renderMultiOption);
+
+                        return (
+                          <CommandItem
+                            key={rowKey}
+                            value={rowKey}
+                            className={pickerOptionRowOuterClassName(
+                              itemsStretch,
+                            )}
+                            onSelect={() => {
+                              if (
+                                config.renderMultiOption &&
+                                suppressCmdkItemSelectRef.current
+                              ) {
+                                return;
+                              }
+                              handleSelect(
+                                xor(value, [itemId]),
+                                itemId,
+                                "toggle",
+                              );
+                            }}
+                          >
+                            <div
+                              className={pickerOptionRowInnerClassName({
+                                isSelected,
+                                itemsStretch,
+                              })}
+                            >
+                              {config.renderOptionStart &&
+                              !config.renderMultiOption ? (
+                                <>
+                                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/40 text-muted-foreground">
+                                    {config.renderOptionStart(data)}
+                                  </span>
+                                  <div className="flex min-w-0 flex-1 items-center">
+                                    {renderBody}
+                                  </div>
+                                </>
+                              ) : (
+                                renderBody
+                              )}
+                              {!config.renderMultiOption ? (
+                                <Check
+                                  className={cn(
+                                    "ml-auto size-4 shrink-0",
+                                    isSelected ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                              ) : null}
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                      {nonSearchableClearFooter}
+                    </>
+                  );
                 })}
             </CommandGroup>
           </CommandList>

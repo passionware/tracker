@@ -55,7 +55,7 @@ import {
   dateToCalendarDate,
 } from "@/platform/lang/internationalized-date";
 import {
-  InfiniteTimeline,
+  InfiniteTimelineWithState,
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
@@ -574,7 +574,7 @@ export function BillingWidget(props: BillingWidgetProps) {
               timelineDarkMode && "dark",
             )}
           >
-            <InfiniteTimeline
+            <InfiniteTimelineWithState
               items={timeline.items}
               lanes={timeline.lanes}
               isEventSelected={(item) =>

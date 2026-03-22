@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils.ts";
  * cmdk wraps all children in `[cmdk-group-items]`; gap must apply there, not on the group root.
  */
 export const pickerCommandGroupClassName = cn(
-  "overflow-hidden p-1 text-popover-foreground",
-  "[&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1",
+  "overflow-hidden p-1.5 text-popover-foreground",
+  "[&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1.5",
   "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
 );
 
 /** Top slot inside the group (clear / unassigned rows + border under search). */
 export const pickerCommandHeaderSlotClassName =
-  "space-y-1 border-b border-border pb-1 empty:hidden";
+  "space-y-1.5 border-b border-border pb-1.5 empty:hidden";
 
 export function pickerOptionRowOuterClassName(itemsStretch: boolean) {
   return cn(
@@ -29,7 +29,7 @@ export function pickerOptionRowInnerClassName(options: {
 }) {
   const { isSelected, itemsStretch } = options;
   return cn(
-    "flex min-w-0 flex-1 gap-2 rounded-md p-1.5 transition-colors duration-150 ease-out",
+    "flex min-w-0 flex-1 gap-2.5 rounded-md p-2 transition-colors duration-150 ease-out",
     itemsStretch ? "min-h-0 items-stretch" : "items-center",
     !isSelected &&
       "group-data-[selected=true]/option:bg-accent group-data-[selected=true]/option:text-accent-foreground",
