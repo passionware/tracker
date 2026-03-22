@@ -107,8 +107,6 @@ export function ProjectTabs(
                   <IterationFilterDropdown services={props.services} />
                   <NewIterationPopover
                     services={props.services}
-                    workspaceId={props.workspaceId}
-                    clientId={props.clientId}
                     projectId={props.projectId}
                   />
                 </>

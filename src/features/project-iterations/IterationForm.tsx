@@ -25,6 +25,7 @@ import { CalendarDate } from "@internationalized/date";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 export interface ProjectIterationFormProps {
@@ -32,6 +33,16 @@ export interface ProjectIterationFormProps {
   defaultValues?: Partial<ProjectIterationPayload> & {
     budgetTriggerAmount?: number | null;
   };
+  /**
+   * When set (create mode), shows a project select. Omit when `defaultValues.projectId` is fixed.
+   */
+  projectChoices?: ReadonlyArray<{ id: number; label: string }>;
+  /** Called when the user picks a project (create + `projectChoices`). */
+  onProjectIdChange?: (projectId: number) => void;
+  /** Sync suggested ordinal when the parent loads iterations for the selected project (create). */
+  hintOrdinalNumber?: number;
+  /** Sync suggested budget target from the previous iteration (create). */
+  hintBudgetTriggerAmount?: number | null;
   onSubmit: (
     data: ProjectIterationPayload,
     changes: Partial<ProjectIterationPayload>,
@@ -71,7 +82,32 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
     },
   });
 
+  const { setValue } = form;
+
   const processingPromise = promiseState.useRemoteData<void>();
+
+  useEffect(() => {
+    if (props.mode !== "create" || props.hintOrdinalNumber == null) return;
+    setValue("ordinalNumber", props.hintOrdinalNumber);
+  }, [props.hintOrdinalNumber, props.mode, setValue]);
+
+  useEffect(() => {
+    if (props.mode !== "create") return;
+    if (props.hintBudgetTriggerAmount === undefined) return;
+    setValue(
+      "budgetTriggerAmount",
+      props.hintBudgetTriggerAmount != null
+        ? String(props.hintBudgetTriggerAmount)
+        : "",
+    );
+  }, [props.hintBudgetTriggerAmount, props.mode, setValue]);
+
+  const projectChoicesForPicker =
+    props.mode === "create" &&
+    props.projectChoices &&
+    props.projectChoices.length > 0
+      ? props.projectChoices
+      : null;
 
   function handleSubmit(data: FormModel) {
     const rawBudget =
@@ -117,6 +153,46 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
         onSubmit={form.handleSubmit(handleSubmit)}
         className="grid grid-cols-2 gap-4 min-w-[20rem]"
       >
+        {projectChoicesForPicker && (
+            <FormField
+              control={form.control}
+              name="projectId"
+              rules={{
+                validate: (v) =>
+                  typeof v === "number" && v > 0 ? true : "Select a project",
+              }}
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Project</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={(v) => {
+                        const id = Number(v);
+                        field.onChange(id);
+                        props.onProjectIdChange?.(id);
+                      }}
+                      value={field.value > 0 ? String(field.value) : undefined}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectChoicesForPicker.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>
+                    Choose which project this iteration belongs to
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         <FormField
           control={form.control}
           name="periodStart"
@@ -253,7 +329,8 @@ export function ProjectIterationForm(props: ProjectIterationFormProps) {
         <Button
           type="submit"
           disabled={
-            rd.isPending(processingPromise.state) || !form.formState.isDirty
+            rd.isPending(processingPromise.state) ||
+            (props.mode !== "create" && !form.formState.isDirty)
           }
         >
           {rd
