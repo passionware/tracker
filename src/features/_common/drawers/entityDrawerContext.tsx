@@ -12,6 +12,7 @@ export type EntityDrawerContextValue = {
   openEntityDrawer: (entity: EntityStackItem) => void;
   closeEntityDrawer: () => void;
   jumpToEntityStackIndex: (index: number) => void;
+  replaceEntityDrawerTop: (entity: EntityStackItem) => void;
 };
 
 const EntityDrawerContext = createContext<EntityDrawerContextValue | null>(

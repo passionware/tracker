@@ -25,7 +25,9 @@ function isFormStackEntity(entity: EntityStackItem): boolean {
     entity.type === "client-form" ||
     entity.type === "workspace-form" ||
     entity.type === "cost-form" ||
-    entity.type === "report-form"
+    entity.type === "report-form" ||
+    entity.type === "project-iteration-form" ||
+    (entity.type === "project-iteration" && entity.intent === "create")
   );
 }
 
@@ -47,9 +49,14 @@ function drawerDescriptionForEntity(entity: EntityStackItem): string {
     case "billing-form":
     case "cost-form":
     case "report-form":
+    case "project-iteration-form":
       return "Edit the fields below and save, or cancel to go back.";
-    case "project-iteration-event":
-      return "Moves, balances after this event, and a shortcut to the full iteration events view.";
+    case "project-iteration":
+      return entity.intent === "create"
+        ? "Set period, currency, and optional budget target, then save to create the iteration."
+        : "Iteration summary, generated reports, new report import, and reconciliation via the full iteration UI.";
+    case "generated-report-reconciliation":
+      return "Match generated time to reports, billings, and costs; preview and apply reconciliation.";
     default:
       return defaultDrawerDescription;
   }

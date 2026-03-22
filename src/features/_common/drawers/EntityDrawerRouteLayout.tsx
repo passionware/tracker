@@ -38,6 +38,7 @@ export function EntityDrawerRouteLayout({
         openEntityDrawer: drawerState.openEntityDrawer,
         closeEntityDrawer: drawerState.closeEntityDrawer,
         jumpToEntityStackIndex: drawerState.jumpToEntityStackIndex,
+        replaceEntityDrawerTop: drawerState.replaceEntityDrawerTop,
       }}
     >
       <EntityDetailDrawers />
