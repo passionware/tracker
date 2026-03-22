@@ -15,9 +15,16 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar.tsx";
+import type { AppSidebarNavExpansion } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, matchPath, useLocation } from "react-router-dom";
+
+const defaultSidebarNavExpansion: AppSidebarNavExpansion = {
+  initialized: true,
+  expandedSectionTitles: [],
+  setSectionExpanded: async () => {},
+};
 
 function navUrlMatches(pathname: string, patternBase: string): boolean {
   if (patternBase === "#") {
@@ -32,6 +39,7 @@ function navUrlMatches(pathname: string, patternBase: string): boolean {
 function NavMainCollapsible({
   item,
   pathname,
+  sidebarNavExpansion,
 }: {
   item: {
     title: string;
@@ -40,6 +48,7 @@ function NavMainCollapsible({
     items?: { title: string; url: string }[];
   };
   pathname: string;
+  sidebarNavExpansion: AppSidebarNavExpansion;
 }) {
   const sectionMatches = useMemo(() => {
     if (navUrlMatches(pathname, item.url)) {
@@ -54,10 +63,39 @@ function NavMainCollapsible({
     if (sectionMatches) {
       setOpen(true);
     } else if (prevSectionMatches.current) {
-      setOpen(false);
+      setOpen(
+        sidebarNavExpansion.expandedSectionTitles.includes(item.title),
+      );
     }
     prevSectionMatches.current = sectionMatches;
-  }, [sectionMatches]);
+  }, [
+    sectionMatches,
+    item.title,
+    sidebarNavExpansion.expandedSectionTitles,
+  ]);
+
+  useEffect(() => {
+    if (!sidebarNavExpansion.initialized) return;
+    if (
+      !sectionMatches &&
+      sidebarNavExpansion.expandedSectionTitles.includes(item.title)
+    ) {
+      setOpen(true);
+    }
+  }, [
+    sidebarNavExpansion.initialized,
+    sidebarNavExpansion.expandedSectionTitles,
+    sectionMatches,
+    item.title,
+  ]);
+
+  const onOpenChange = useCallback(
+    (next: boolean) => {
+      setOpen(next);
+      void sidebarNavExpansion.setSectionExpanded(item.title, next);
+    },
+    [item.title, sidebarNavExpansion.setSectionExpanded],
+  );
 
   const parentActive = navUrlMatches(pathname, item.url);
 
@@ -65,7 +103,7 @@ function NavMainCollapsible({
     <Collapsible
       asChild
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={onOpenChange}
       className="group/collapsible"
     >
       <SidebarMenuItem>
@@ -102,6 +140,7 @@ function NavMainCollapsible({
 
 export function NavMain({
   items,
+  sidebarNavExpansion = defaultSidebarNavExpansion,
 }: {
   items: {
     title: string;
@@ -112,6 +151,7 @@ export function NavMain({
       url: string;
     }[];
   }[];
+  sidebarNavExpansion?: AppSidebarNavExpansion;
 }) {
   const location = useLocation();
   return (
@@ -123,6 +163,7 @@ export function NavMain({
             key={item.title}
             item={item}
             pathname={location.pathname}
+            sidebarNavExpansion={sidebarNavExpansion}
           />
         ))}
       </SidebarMenu>

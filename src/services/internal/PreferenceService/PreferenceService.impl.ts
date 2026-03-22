@@ -109,6 +109,31 @@ const billingTimelineViewApi = createLocalStorageApi<BillingTimelineViewPreferen
   defaultBillingTimelineViewPreferences,
 );
 
+const appSidebarNavExpandedSectionsSchema = z.object({
+  sectionTitles: z.array(z.string()),
+});
+
+type AppSidebarNavExpandedSectionsStored = z.infer<
+  typeof appSidebarNavExpandedSectionsSchema
+>;
+
+const defaultAppSidebarNavExpandedSections: AppSidebarNavExpandedSectionsStored =
+  {
+    sectionTitles: [],
+  };
+
+const appSidebarNavExpandedSectionsApi =
+  createLocalStorageApi<AppSidebarNavExpandedSectionsStored>(
+    "app-sidebar-nav-expanded-sections",
+    (data) => {
+      const result = appSidebarNavExpandedSectionsSchema.safeParse(data);
+      return result.success
+        ? result.data
+        : defaultAppSidebarNavExpandedSections;
+    },
+    defaultAppSidebarNavExpandedSections,
+  );
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -219,6 +244,32 @@ export function createPreferenceService(): PreferenceService {
     }
   });
 
+  const useAppSidebarNavExpansionStore = create<{
+    sectionTitles: string[];
+    initialized: boolean;
+    setSectionExpanded: (title: string, expanded: boolean) => Promise<void>;
+  }>((set, get) => ({
+    sectionTitles: defaultAppSidebarNavExpandedSections.sectionTitles,
+    initialized: false,
+    setSectionExpanded: async (title, expanded) => {
+      const prev = get().sectionTitles;
+      const next = expanded
+        ? [...new Set([...prev, title])]
+        : prev.filter((t) => t !== title);
+      set({ sectionTitles: next });
+      await appSidebarNavExpandedSectionsApi.write({ sectionTitles: next });
+    },
+  }));
+
+  void appSidebarNavExpandedSectionsApi.read().then((stored) => {
+    useAppSidebarNavExpansionStore.setState({
+      sectionTitles:
+        stored?.sectionTitles ??
+        defaultAppSidebarNavExpandedSections.sectionTitles,
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -277,6 +328,15 @@ export function createPreferenceService(): PreferenceService {
         return defaultBulkCreateCostPreferences;
       }
       return store.preferences;
+    },
+    useAppSidebarNavExpansion: () => {
+      const { sectionTitles, initialized, setSectionExpanded } =
+        useAppSidebarNavExpansionStore();
+      return {
+        initialized,
+        expandedSectionTitles: sectionTitles,
+        setSectionExpanded,
+      };
     },
   };
 }

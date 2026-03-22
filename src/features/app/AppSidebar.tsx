@@ -214,6 +214,7 @@ export function AppSidebar({
   const currentWorkspaceId =
     services.locationService.useCurrentWorkspaceId() ?? idSpecUtils.ofAll();
   const data = useData(services);
+  const sidebarNavExpansion = services.preferenceService.useAppSidebarNavExpansion();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -247,7 +248,10 @@ export function AppSidebar({
         )}
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain
+          items={data.navMain}
+          sidebarNavExpansion={sidebarNavExpansion}
+        />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
