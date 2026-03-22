@@ -7,7 +7,9 @@ import {
   useRef,
   type RefObject,
 } from "react";
-import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
+import type {
+  VisibleTimelineLaneRow,
+} from "./timeline-lane-tree.ts";
 import {
   type DragState,
   type TimelineItemInternal,
@@ -22,9 +24,9 @@ import {
   timeToPixel,
 } from "./timeline-view-geometry.ts";
 
-export interface UseTimelineLayoutParams<Data> {
+export interface UseTimelineLayoutParams<Data, TLaneMeta = unknown> {
   mergedItems: TimelineItemInternal<Data>[];
-  visibleLaneRows: VisibleTimelineLaneRow[];
+  visibleLaneRows: VisibleTimelineLaneRow<TLaneMeta>[];
   scrollOffset: number;
   zoom: number;
   dragState: DragState<Data> | null;
@@ -38,7 +40,7 @@ export interface UseTimelineLayoutParams<Data> {
  * Lane stacking, time↔pixel mapping, and draw-preview placement. Consumed by the timeline UI
  * (and by interaction logic that needs geometry).
  */
-export function useTimelineLayout<Data>({
+export function useTimelineLayout<Data, TLaneMeta = unknown>({
   mergedItems,
   visibleLaneRows,
   scrollOffset,
@@ -48,7 +50,7 @@ export function useTimelineLayout<Data>({
   snapTime,
   screenXToContainerX,
   containerRef,
-}: UseTimelineLayoutParams<Data>) {
+}: UseTimelineLayoutParams<Data, TLaneMeta>) {
   const previewItemRef = useRef<{
     laneId: string;
     start: number;
@@ -261,6 +263,7 @@ export function useTimelineLayout<Data>({
   };
 }
 
-export type TimelineLayoutApi<Data> = ReturnType<
-  typeof useTimelineLayout<Data>
->;
+export type TimelineLayoutApi<
+  Data,
+  TLaneMeta = unknown,
+> = ReturnType<typeof useTimelineLayout<Data, TLaneMeta>>;

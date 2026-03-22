@@ -29,14 +29,22 @@ import type { TimelineLayoutApi } from "./use-timeline-layout.ts";
 
 export interface UseTimelineInteractionsOptions<Data = unknown> {
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
+  /**
+   * When set, a finished lane draw calls this instead of appending via `onItemsChange`.
+   * Parent keeps controlling `items`; avoids a transient “ghost” item id in selection.
+   */
+  onDrawComplete?: (item: TimelineItem<Data>) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
   onEventSelect?: (item: TimelineItem<Data>) => void;
   itemActivateTrigger?: "mousedown" | "click";
 }
 
-export interface UseTimelineInteractionsParams<Data = unknown> {
-  core: TimelineCoreApi<Data>;
-  layout: TimelineLayoutApi<Data>;
+export interface UseTimelineInteractionsParams<
+  Data = unknown,
+  TLaneMeta = unknown,
+> {
+  core: TimelineCoreApi<Data, TLaneMeta>;
+  layout: TimelineLayoutApi<Data, TLaneMeta>;
   containerRef: RefObject<HTMLDivElement | null>;
   screenXToContainerX: (screenX: number) => number;
   options: UseTimelineInteractionsOptions<Data>;
@@ -45,13 +53,13 @@ export interface UseTimelineInteractionsParams<Data = unknown> {
 /**
  * DOM listeners, wheel/pan/drag, and callbacks that tie core state to layout geometry.
  */
-export function useTimelineInteractions<Data>({
+export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   core,
   layout,
   containerRef,
   screenXToContainerX,
   options,
-}: UseTimelineInteractionsParams<Data>) {
+}: UseTimelineInteractionsParams<Data, TLaneMeta>) {
   const {
     visibleLaneRows,
     internalItems,
@@ -82,6 +90,7 @@ export function useTimelineInteractions<Data>({
 
   const {
     onItemsChange,
+    onDrawComplete,
     onItemClick,
     onEventSelect,
     itemActivateTrigger = "mousedown",
@@ -304,11 +313,23 @@ export function useTimelineInteractions<Data>({
 
   const activateItemOnClick = useCallback(
     (_e: ReactMouseEvent, externalItem: TimelineItem<Data>) => {
-      if (itemActivateTrigger === "click") {
-        onItemClick?.(externalItem);
-      }
+      if (itemActivateTrigger !== "click") return;
+      onItemClick?.(externalItem);
+      // Click activation is not a drag: clear move/resize session immediately so
+      // global mouseup handler and preview state cannot linger after the callback.
+      setDragState(null);
+      setCurrentMouseX(null);
+      setDragModifications(new Map());
+      previewItemRef.current = null;
     },
-    [itemActivateTrigger, onItemClick],
+    [
+      itemActivateTrigger,
+      onItemClick,
+      setDragState,
+      setCurrentMouseX,
+      setDragModifications,
+      previewItemRef,
+    ],
   );
 
   const handleItemMouseDown = (
@@ -484,14 +505,19 @@ export function useTimelineInteractions<Data>({
       }
 
       if (newItem) {
-        const updatedItems = [...internalItems, newItem];
-        if (onItemsChange) {
-          const externalItems = updatedItems.map((item) =>
-            toExternalItem(item, baseDateZoned),
-          );
-          onItemsChange(externalItems);
+        const externalItem = toExternalItem(newItem, baseDateZoned);
+        if (onDrawComplete) {
+          onDrawComplete(externalItem);
+        } else {
+          const updatedItems = [...internalItems, newItem];
+          if (onItemsChange) {
+            const externalItems = updatedItems.map((item) =>
+              toExternalItem(item, baseDateZoned),
+            );
+            onItemsChange(externalItems);
+          }
+          setSelectedItemId(newItem.id);
         }
-        setSelectedItemId(newItem.id);
       }
     },
     [
@@ -503,6 +529,7 @@ export function useTimelineInteractions<Data>({
       snapTime,
       screenXToContainerX,
       onItemsChange,
+      onDrawComplete,
       baseDateZoned,
       previewItemRef,
       setDragState,

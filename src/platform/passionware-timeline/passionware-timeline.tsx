@@ -1,12 +1,13 @@
 "use client";
 
-import React, { forwardRef } from "react";
-import {
+import type { ZonedDateTime } from "@internationalized/date";
+import React, {
   useCallback,
   useRef,
   useState,
   useEffect,
   type MouseEvent as ReactMouseEvent,
+  type Ref,
 } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,8 @@ import {
   ITEM_COLORS,
   formatTime,
   formatDate,
+  formatDrawPreviewRange,
+  type DrawingPreviewLabelParams,
   formatMonthYear,
   formatYear,
   formatQuarter,
@@ -40,6 +43,7 @@ import {
   toExternalItem,
   toInternalItem,
 } from "./passionware-timeline-core.ts";
+import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 import {
   useTimelineCore,
   type TimelineCoreApi,
@@ -51,16 +55,27 @@ import {
   type UseTimelineInteractionsOptions,
 } from "./use-timeline-interactions.ts";
 export { useTimelineCore } from "./use-timeline-core.ts";
-export type { UseTimelineCoreOptions, TimelineCoreApi } from "./use-timeline-core.ts";
+export type {
+  UseTimelineCoreOptions,
+  TimelineCoreApi,
+} from "./use-timeline-core.ts";
 export { useTimelineLayout } from "./use-timeline-layout.ts";
-export type { UseTimelineLayoutParams } from "./use-timeline-layout.ts";
+export type {
+  UseTimelineLayoutParams,
+  TimelineLayoutApi,
+} from "./use-timeline-layout.ts";
 export { useTimelineInteractions } from "./use-timeline-interactions.ts";
 export type {
   UseTimelineInteractionsOptions,
   UseTimelineInteractionsParams,
 } from "./use-timeline-interactions.ts";
 
-export type { TimelineItem } from "./passionware-timeline-core.ts";
+export type {
+  TimelineItem,
+  TimelineTemporal,
+  DrawingPreviewLabelParams,
+} from "./passionware-timeline-core.ts";
+export { timelineTemporalToZoned } from "./passionware-timeline-core.ts";
 export type { Lane, VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 
 // Default Timeline Item Component
@@ -71,7 +86,6 @@ interface DefaultTimelineItemProps<Data = unknown> {
   isSelected: boolean;
   /** Synced list selection; extra emphasis when true. */
   selected: boolean;
-  isHovered: boolean;
   isMinWidth: boolean;
   /** `item` is intentionally loose so render-prop timelines stay assignable across `Data` generics. */
   onMouseDown: (
@@ -80,37 +94,33 @@ interface DefaultTimelineItemProps<Data = unknown> {
     item: TimelineItem<any>,
     type: "move" | "resize-start" | "resize-end",
   ) => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+  /** Optional — e.g. tooltips; hover ring uses CSS `:hover` on the item. */
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   onClick?: (
     e: ReactMouseEvent,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: TimelineItem<any>,
   ) => void;
   onMouseOver?: () => void;
+  ref?: Ref<HTMLDivElement>;
 }
 
-export const DefaultTimelineItem = forwardRef(function DefaultTimelineItem(
-  {
-    item,
-    left,
-    width,
-    isSelected,
-    selected = isSelected,
-    isHovered,
-    isMinWidth,
-    onMouseDown,
-    onMouseEnter,
-    onMouseLeave,
-    onClick,
-    onMouseOver,
-    ...props
-  }: DefaultTimelineItemProps<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any
-  >,
-  ref: React.ForwardedRef<HTMLDivElement>,
-) {
+export function DefaultTimelineItem({
+  item,
+  left,
+  width,
+  isSelected,
+  selected = isSelected,
+  isMinWidth,
+  onMouseDown,
+  onMouseEnter,
+  onMouseLeave,
+  onClick,
+  onMouseOver,
+  ref,
+  ...props
+}: DefaultTimelineItemProps<any>) { // eslint-disable-line @typescript-eslint/no-explicit-any -- bivariant item ref for renderItem
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef(false);
 
@@ -154,7 +164,9 @@ export const DefaultTimelineItem = forwardRef(function DefaultTimelineItem(
           "ring-2 ring-foreground ring-offset-1 ring-offset-background",
         selected &&
           "z-[1] ring-2 ring-primary ring-offset-2 ring-offset-background shadow-md",
-        isHovered && !isSelected && !selected && "ring-1 ring-foreground/50",
+        !isSelected &&
+          !selected &&
+          "hover:ring-1 hover:ring-foreground/50",
       )}
       style={{
         left,
@@ -192,14 +204,12 @@ export const DefaultTimelineItem = forwardRef(function DefaultTimelineItem(
       />
     </div>
   );
-});
-
-DefaultTimelineItem.displayName = "DefaultTimelineItem";
+}
 
 export type { SnapOption } from "./passionware-timeline-core.ts";
 
-export interface InfiniteTimelineProps<Data = unknown> {
-  state: TimelineCoreApi<Data>;
+export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
+  state: TimelineCoreApi<Data, TLaneMeta>;
   /** Passed to `useTimelineInteractions` inside the timeline (wheel, drag, callbacks). */
   interactionOptions?: UseTimelineInteractionsOptions<Data>;
   renderItem?: (props: {
@@ -208,54 +218,66 @@ export interface InfiniteTimelineProps<Data = unknown> {
     width: number;
     isSelected: boolean;
     selected: boolean;
-    isHovered: boolean;
     isMinWidth: boolean;
     onMouseDown: (
       e: ReactMouseEvent,
       item: TimelineItem<Data>,
       type: "move" | "resize-start" | "resize-end",
     ) => void;
-    onMouseEnter: () => void;
-    onMouseLeave: () => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
     onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
   }) => React.ReactNode;
   onItemHover?: (item: TimelineItem<Data>) => void;
   isEventSelected?: (item: TimelineItem<Data>) => boolean;
+  /** In-lane draw preview (“ghost”) content. Default: `formatDrawPreviewRange` (plain string). */
+  renderDrawingPreviewLabel?: (
+    params: DrawingPreviewLabelParams,
+    lane: VisibleTimelineLaneRow<TLaneMeta>,
+  ) => React.ReactNode;
 }
 
-type InfiniteTimelineWithStateProps<Data> = UseTimelineCoreOptions<Data> &
+type InfiniteTimelineWithStateProps<
+  Data,
+  TLaneMeta = unknown,
+> = UseTimelineCoreOptions<Data, TLaneMeta> &
   UseTimelineInteractionsOptions<Data> &
-  Omit<InfiniteTimelineProps<Data>, "state" | "interactionOptions">;
+  Omit<InfiniteTimelineProps<Data, TLaneMeta>, "state" | "interactionOptions">;
 
 /** Calls `useTimelineCore` and renders `InfiniteTimeline`. Use inside leaf components (e.g. under `rd.map`). */
-export function InfiniteTimelineWithState<Data = unknown>({
+export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   items,
   lanes,
   timeZone,
   expandedLaneIds,
   defaultExpandedLaneIds,
   onExpandedLaneIdsChange,
+  defaultSnapOption,
   onItemsChange,
+  onDrawComplete,
   onItemClick,
   onEventSelect,
   itemActivateTrigger,
   renderItem,
   onItemHover,
   isEventSelected,
-}: InfiniteTimelineWithStateProps<Data>) {
-  const state = useTimelineCore<Data>({
+  renderDrawingPreviewLabel,
+}: InfiniteTimelineWithStateProps<Data, TLaneMeta>) {
+  const state = useTimelineCore<Data, TLaneMeta>({
     items,
     lanes,
     timeZone,
     expandedLaneIds,
     defaultExpandedLaneIds,
     onExpandedLaneIdsChange,
+    defaultSnapOption,
   });
   return (
-    <InfiniteTimeline<Data>
+    <InfiniteTimeline<Data, TLaneMeta>
       state={state}
       interactionOptions={{
         onItemsChange,
+        onDrawComplete,
         onItemClick,
         onEventSelect,
         itemActivateTrigger,
@@ -263,17 +285,19 @@ export function InfiniteTimelineWithState<Data = unknown>({
       renderItem={renderItem}
       onItemHover={onItemHover}
       isEventSelected={isEventSelected}
+      renderDrawingPreviewLabel={renderDrawingPreviewLabel}
     />
   );
 }
 
-export function InfiniteTimeline<Data = unknown>({
+export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
   state,
   interactionOptions = {},
   renderItem,
   onItemHover,
   isEventSelected,
-}: InfiniteTimelineProps<Data>) {
+  renderDrawingPreviewLabel,
+}: InfiniteTimelineProps<Data, TLaneMeta>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const screenXToContainerX = useCallback((screenX: number) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -281,7 +305,7 @@ export function InfiniteTimeline<Data = unknown>({
     return screenX - rect.left;
   }, []);
 
-  const layout = useTimelineLayout<Data>({
+  const layout = useTimelineLayout<Data, TLaneMeta>({
     mergedItems: state.mergedItems,
     visibleLaneRows: state.visibleLaneRows,
     scrollOffset: state.scrollOffset,
@@ -293,7 +317,7 @@ export function InfiniteTimeline<Data = unknown>({
     containerRef,
   });
 
-  const interactions = useTimelineInteractions<Data>({
+  const interactions = useTimelineInteractions<Data, TLaneMeta>({
     core: state,
     layout,
     containerRef,
@@ -316,10 +340,8 @@ export function InfiniteTimeline<Data = unknown>({
     dragState,
     panState,
     selectedItemId,
-    hoveredItemId,
     snapTime,
     toggleLaneExpanded,
-    setHoveredItemId,
   } = state;
 
   const {
@@ -480,9 +502,7 @@ export function InfiniteTimeline<Data = unknown>({
     const endT = endDate.getTime();
     while (qCursor.getTime() <= endT + 86400000 * 95) {
       const qZoned = dateToZonedDateTime(qCursor, timeZone);
-      quarterScaleMarkers.push(
-        zonedDateTimeToMinutes(qZoned, baseDateZoned),
-      );
+      quarterScaleMarkers.push(zonedDateTimeToMinutes(qZoned, baseDateZoned));
       const next = new Date(qCursor);
       next.setMonth(next.getMonth() + 3);
       qCursor = next;
@@ -989,7 +1009,10 @@ export function InfiniteTimeline<Data = unknown>({
               return (
                 <div
                   key={lane.id}
-                  className={cn("min-h-0 min-w-0 border-b border-border", zebra)}
+                  className={cn(
+                    "min-h-0 min-w-0 border-b border-border",
+                    zebra,
+                  )}
                   style={{ height: rowHeight }}
                 >
                   {lane.hasChildren ? (
@@ -1312,7 +1335,6 @@ export function InfiniteTimeline<Data = unknown>({
                     const externalItem = toExternalItem(item, baseDateZoned);
                     const selected = isEventSelected?.(externalItem) ?? false;
                     const isSelected = selected || selectedItemId === item.id;
-                    const isHovered = hoveredItemId === item.id;
 
                     // Convert internal item to external format for renderItem callback
                     const itemProps = {
@@ -1321,7 +1343,6 @@ export function InfiniteTimeline<Data = unknown>({
                       width,
                       isSelected,
                       selected,
-                      isHovered,
                       isMinWidth,
                       onMouseDown: (
                         e: ReactMouseEvent,
@@ -1335,17 +1356,13 @@ export function InfiniteTimeline<Data = unknown>({
                         );
                         handleItemMouseDown(e, internalItem, type);
                       },
-                      onMouseEnter: () => setHoveredItemId(item.id),
-                      onMouseLeave: () => setHoveredItemId(null),
                       onMouseOver: onItemHover
                         ? () => onItemHover(externalItem)
                         : undefined,
                       onClick:
                         itemActivateTrigger === "click"
-                          ? (
-                              e: ReactMouseEvent,
-                              clicked: TimelineItem<Data>,
-                            ) => activateItemOnClick(e, clicked)
+                          ? (e: ReactMouseEvent, clicked: TimelineItem<Data>) =>
+                              activateItemOnClick(e, clicked)
                           : undefined,
                     };
 
@@ -1362,7 +1379,8 @@ export function InfiniteTimeline<Data = unknown>({
 
                   {/* Drawing Preview */}
                   {drawingPreview && drawingPreview.laneId === lane.id && (
-                    <DrawingPreview
+                    <DrawingPreview<TLaneMeta>
+                      lane={lane}
                       startTime={drawingPreview.startTime}
                       timeToPixel={(t) => timeToPixel(t) - SIDEBAR_WIDTH}
                       laneIndex={laneIndex}
@@ -1370,10 +1388,13 @@ export function InfiniteTimeline<Data = unknown>({
                       pixelsPerMinute={pixelsPerMinute}
                       scrollOffset={scrollOffset}
                       snapTime={snapTime}
+                      baseDateZoned={baseDateZoned}
+                      snapOption={snapOption}
                       previewRow={
                         previewForLane ? previewForLane.row : undefined
                       }
                       existingItems={itemsWithRows}
+                      renderDrawingPreviewLabel={renderDrawingPreviewLabel}
                     />
                   )}
                 </div>
@@ -1434,7 +1455,8 @@ export function InfiniteTimeline<Data = unknown>({
 }
 
 // Drawing Preview Component
-function DrawingPreview({
+function DrawingPreview<TLaneMeta = unknown>({
+  lane,
   startTime,
   timeToPixel,
   laneIndex,
@@ -1442,9 +1464,13 @@ function DrawingPreview({
   pixelsPerMinute,
   scrollOffset,
   snapTime,
+  baseDateZoned,
+  snapOption,
   previewRow: previewRowProp,
   existingItems,
+  renderDrawingPreviewLabel,
 }: {
+  lane: VisibleTimelineLaneRow<TLaneMeta>;
   startTime: number;
   timeToPixel: (time: number) => number;
   laneIndex: number;
@@ -1452,8 +1478,14 @@ function DrawingPreview({
   pixelsPerMinute: number;
   scrollOffset: number;
   snapTime: (time: number) => number;
+  baseDateZoned: ZonedDateTime;
+  snapOption: SnapOption;
   previewRow?: number;
   existingItems: (TimelineItemInternal<unknown> & { row: number })[];
+  renderDrawingPreviewLabel?: (
+    params: DrawingPreviewLabelParams,
+    lane: VisibleTimelineLaneRow<TLaneMeta>,
+  ) => React.ReactNode;
 }) {
   // Initialize with the start position so it doesn't flash from -infinity
   const initialRect = containerRef.current?.getBoundingClientRect();
@@ -1516,10 +1548,29 @@ function DrawingPreview({
 
   const color = ITEM_COLORS[laneIndex % ITEM_COLORS.length];
 
+  const rangeLabel = formatDrawPreviewRange(
+    previewStart,
+    previewEnd,
+    baseDateZoned,
+    snapOption,
+  );
+
+  const labelContent = renderDrawingPreviewLabel
+    ? renderDrawingPreviewLabel(
+        {
+          previewStartMinutes: previewStart,
+          previewEndMinutes: previewEnd,
+          baseDate: baseDateZoned,
+          snapOption,
+        },
+        lane,
+      )
+    : rangeLabel;
+
   return (
     <div
       className={cn(
-        "absolute rounded opacity-60",
+        "absolute overflow-hidden rounded opacity-60",
         color,
         isMinWidth && "ring-1 ring-foreground/80",
       )}
@@ -1529,6 +1580,18 @@ function DrawingPreview({
         top: 8 + row * SUB_ROW_HEIGHT,
         height: SUB_ROW_HEIGHT - 4,
       }}
-    />
+      title={rangeLabel}
+    >
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-2 inset-y-0 z-[1] flex items-center overflow-hidden",
+          isMinWidth && "inset-x-1",
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate text-left text-xs font-medium text-primary-foreground">
+          {labelContent}
+        </span>
+      </div>
+    </div>
   );
 }

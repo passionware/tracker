@@ -1,14 +1,59 @@
 import {
+  CalendarDate,
   type ZonedDateTime,
   getLocalTimeZone,
   fromAbsolute,
+  toZoned,
 } from "@internationalized/date";
+
+/** Wall-clock instant or calendar day (start of that day in a zone when converted). */
+export type TimelineTemporal = ZonedDateTime | CalendarDate;
+
+export function timelineTemporalToZoned(
+  value: TimelineTemporal,
+  timeZone: string,
+): ZonedDateTime {
+  return value instanceof CalendarDate ? toZoned(value, timeZone) : value;
+}
+
+function resolveLayoutAndSemanticEnd(
+  end: TimelineTemporal,
+  layoutExclusiveEnd: ZonedDateTime | undefined,
+  timeZone: string,
+): { layoutEndZoned: ZonedDateTime; semanticEndZoned: ZonedDateTime | undefined } {
+  if (layoutExclusiveEnd != null) {
+    return {
+      layoutEndZoned: layoutExclusiveEnd,
+      semanticEndZoned: timelineTemporalToZoned(end, timeZone),
+    };
+  }
+  if (end instanceof CalendarDate) {
+    return {
+      layoutEndZoned: toZoned(end.add({ days: 1 }), timeZone),
+      semanticEndZoned: toZoned(end, timeZone),
+    };
+  }
+  return {
+    layoutEndZoned: end,
+    semanticEndZoned: undefined,
+  };
+}
 
 export interface TimelineItem<Data = unknown> {
   id: string;
   laneId: string;
-  start: ZonedDateTime;
-  end: ZonedDateTime;
+  start: TimelineTemporal;
+  /**
+   * Range end: `ZonedDateTime` = instant; `CalendarDate` = inclusive last calendar day
+   * (layout extends to the start of the next day unless `layoutExclusiveEnd` is set).
+   */
+  end: TimelineTemporal;
+  /**
+   * When set, bar width / overlap / stacking use this **exclusive** right edge (e.g. first instant of
+   * the day after a calendar `end` date). Callbacks and `toExternalItem` still expose `end` only —
+   * this field is not part of the public event range.
+   */
+  layoutExclusiveEnd?: ZonedDateTime;
   label: string;
   color?: string;
   row?: number;
@@ -19,7 +64,10 @@ export interface TimelineItemInternal<Data = unknown> {
   id: string;
   laneId: string;
   start: number;
+  /** Layout end in minutes (exclusive when `semanticEndMinutes` is set). */
   end: number;
+  /** When set, `toExternalItem` maps `end` from this instead of `end` (layout uses `end`). */
+  semanticEndMinutes?: number;
   label: string;
   color?: string;
   row?: number;
@@ -112,10 +160,22 @@ export function toInternalItem<Data>(
   item: TimelineItem<Data>,
   baseDate: ZonedDateTime,
 ): TimelineItemInternal<Data> {
+  const { layoutExclusiveEnd, start, end, ...rest } = item;
+  const zone = baseDate.timeZone;
+  const startZoned = timelineTemporalToZoned(start, zone);
+  const { layoutEndZoned, semanticEndZoned } = resolveLayoutAndSemanticEnd(
+    end,
+    layoutExclusiveEnd,
+    zone,
+  );
   return {
-    ...item,
-    start: zonedDateTimeToMinutes(item.start, baseDate),
-    end: zonedDateTimeToMinutes(item.end, baseDate),
+    ...rest,
+    start: zonedDateTimeToMinutes(startZoned, baseDate),
+    end: zonedDateTimeToMinutes(layoutEndZoned, baseDate),
+    semanticEndMinutes:
+      semanticEndZoned != null
+        ? zonedDateTimeToMinutes(semanticEndZoned, baseDate)
+        : undefined,
   };
 }
 
@@ -123,10 +183,12 @@ export function toExternalItem<Data>(
   item: TimelineItemInternal<Data>,
   baseDate: ZonedDateTime,
 ): TimelineItem<Data> {
+  const { semanticEndMinutes, ...rest } = item;
+  const endMinutes = semanticEndMinutes ?? item.end;
   return {
-    ...item,
+    ...rest,
     start: minutesToZonedDateTime(item.start, baseDate),
-    end: minutesToZonedDateTime(item.end, baseDate),
+    end: minutesToZonedDateTime(endMinutes, baseDate),
   };
 }
 
@@ -169,6 +231,79 @@ export function formatDate(minutes: number, baseDate: ZonedDateTime): string {
     month: "short",
     day: "numeric",
   });
+}
+
+const drawPreviewDayOnly: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+};
+
+const drawPreviewDateHour: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
+
+const drawPreviewDateTime: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
+
+/** Time range for customizing the in-lane draw preview (“ghost”) label. Lane row is passed separately. */
+export type DrawingPreviewLabelParams = {
+  previewStartMinutes: number;
+  previewEndMinutes: number;
+  baseDate: ZonedDateTime;
+  snapOption: SnapOption;
+};
+
+/**
+ * Label for in-progress lane draw: range follows snap semantics.
+ * `1day` → calendar dates only; hour / finer snaps → date + time (hour snap omits sub-hour noise via grid).
+ */
+export function formatDrawPreviewRange(
+  startMinutes: number,
+  endMinutes: number,
+  baseDate: ZonedDateTime,
+  snapOption: SnapOption,
+): string {
+  const a = Math.min(startMinutes, endMinutes);
+  const b = Math.max(startMinutes, endMinutes);
+
+  const fmtDay = (z: ZonedDateTime) =>
+    z.toDate().toLocaleDateString("en-US", drawPreviewDayOnly);
+
+  if (snapOption === "1day") {
+    const zStart = minutesToZonedDateTime(a, baseDate);
+    if (b <= a) {
+      return fmtDay(zStart);
+    }
+    const zEndInclusive = minutesToZonedDateTime(b - 1, baseDate);
+    const s = fmtDay(zStart);
+    const e = fmtDay(zEndInclusive);
+    return s === e ? s : `${s} → ${e}`;
+  }
+
+  const opts: Intl.DateTimeFormatOptions =
+    snapOption === "1hour" ? drawPreviewDateHour : drawPreviewDateTime;
+
+  const zA = minutesToZonedDateTime(a, baseDate);
+  const zB = minutesToZonedDateTime(b, baseDate);
+  if (b <= a) {
+    return zA.toDate().toLocaleString("en-US", opts);
+  }
+  const sa = zA.toDate().toLocaleString("en-US", opts);
+  const sb = zB.toDate().toLocaleString("en-US", opts);
+  return sa === sb ? sa : `${sa} → ${sb}`;
 }
 
 export function formatMonthYear(minutes: number, baseDate: ZonedDateTime): string {

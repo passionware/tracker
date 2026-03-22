@@ -2,7 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
-import { flattenVisibleTimelineLanes, type Lane } from "./timeline-lane-tree.ts";
+import {
+  flattenVisibleTimelineLanes,
+  type Lane,
+  type VisibleTimelineLaneRow,
+} from "./timeline-lane-tree.ts";
 import { useTimelineExpansionState } from "./use-timeline-expansion-state.ts";
 import {
   type TimelineItem,
@@ -16,35 +20,42 @@ import {
   dateToZonedDateTime,
   toInternalItem,
   toMinutes,
+  timelineTemporalToZoned,
 } from "./passionware-timeline-core.ts";
 
-export interface UseTimelineCoreOptions<Data = unknown> {
+export interface UseTimelineCoreOptions<
+  Data = unknown,
+  TLaneMeta = unknown,
+> {
   items: TimelineItem<Data>[];
-  lanes?: Lane[];
+  lanes?: Lane<TLaneMeta>[];
   timeZone?: string;
   expandedLaneIds?: ReadonlySet<string> | null;
   defaultExpandedLaneIds?: Iterable<string> | ReadonlySet<string> | null;
   onExpandedLaneIdsChange?: (ids: ReadonlySet<string>) => void;
+  /** Initial grid / drag snap; default `15min`. */
+  defaultSnapOption?: SnapOption;
 }
 
 /**
  * Timeline data pipeline and numeric interaction state only — no pixel mapping, lane heights, or DOM.
  */
-export function useTimelineCore<Data = unknown>({
+export function useTimelineCore<Data = unknown, TLaneMeta = unknown>({
   items,
   lanes,
   expandedLaneIds: expandedLaneIdsProp,
   defaultExpandedLaneIds,
   onExpandedLaneIdsChange,
   timeZone = getLocalTimeZone(),
-}: UseTimelineCoreOptions<Data>) {
+  defaultSnapOption = "15min",
+}: UseTimelineCoreOptions<Data, TLaneMeta>) {
   const expansion = useTimelineExpansionState({
     expandedLaneIds: expandedLaneIdsProp ?? undefined,
     defaultExpandedLaneIds: defaultExpandedLaneIds ?? undefined,
     onExpandedLaneIdsChange,
   });
 
-  const visibleLaneRows = useMemo(
+  const visibleLaneRows: VisibleTimelineLaneRow<TLaneMeta>[] = useMemo(
     () => flattenVisibleTimelineLanes(lanes ?? [], expansion.expandedLaneIds),
     [lanes, expansion.expandedLaneIds],
   );
@@ -62,13 +73,16 @@ export function useTimelineCore<Data = unknown>({
   const baseDateZoned = useMemo(() => {
     if (itemsForTimeline && itemsForTimeline.length > 0) {
       const earliest = itemsForTimeline.reduce((earliest, item) => {
-        const itemMs = item.start.toDate().getTime();
-        const earliestMs = earliest.toDate().getTime();
+        const itemMs = timelineTemporalToZoned(item.start, timeZone).toDate().getTime();
+        const earliestMs = timelineTemporalToZoned(earliest, timeZone)
+          .toDate()
+          .getTime();
         return itemMs < earliestMs ? item.start : earliest;
       }, itemsForTimeline[0].start);
-      const earliestDate = earliest.toDate();
+      const earliestZoned = timelineTemporalToZoned(earliest, timeZone);
+      const earliestDate = earliestZoned.toDate();
       earliestDate.setHours(0, 0, 0, 0);
-      return fromAbsolute(earliestDate.getTime(), earliest.timeZone);
+      return fromAbsolute(earliestDate.getTime(), earliestZoned.timeZone);
     }
     return dateToZonedDateTime(BASE_DATE, timeZone);
   }, [itemsForTimeline, timeZone]);
@@ -125,8 +139,7 @@ export function useTimelineCore<Data = unknown>({
     startVerticalScrollOffset: number;
   } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  const [snapOption, setSnapOption] = useState<SnapOption>("15min");
+  const [snapOption, setSnapOption] = useState<SnapOption>(defaultSnapOption);
   const [currentMouseX, setCurrentMouseX] = useState<number | null>(null);
 
   const [dragModifications, setDragModifications] = useState<
@@ -136,7 +149,16 @@ export function useTimelineCore<Data = unknown>({
   const mergedItems = useMemo(() => {
     return internalItems.map((item) => {
       const modification = dragModifications.get(item.id);
-      return modification ? { ...item, ...modification } : item;
+      if (!modification) return item;
+      const merged = { ...item, ...modification };
+      if (
+        modification.start !== undefined ||
+        modification.end !== undefined
+      ) {
+        const { semanticEndMinutes: _, ...rest } = merged;
+        return rest;
+      }
+      return merged;
     });
   }, [internalItems, dragModifications]);
 
@@ -175,8 +197,6 @@ export function useTimelineCore<Data = unknown>({
     setPanState,
     selectedItemId,
     setSelectedItemId,
-    hoveredItemId,
-    setHoveredItemId,
     snapOption,
     setSnapOption,
     currentMouseX,
@@ -189,4 +209,7 @@ export function useTimelineCore<Data = unknown>({
   };
 }
 
-export type TimelineCoreApi<Data> = ReturnType<typeof useTimelineCore<Data>>;
+export type TimelineCoreApi<
+  Data,
+  TLaneMeta = unknown,
+> = ReturnType<typeof useTimelineCore<Data, TLaneMeta>>;
