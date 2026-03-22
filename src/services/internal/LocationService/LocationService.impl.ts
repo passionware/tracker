@@ -147,6 +147,7 @@ export function createLocationService(
       "allProjects",
       "activeProjects",
       "closedProjects",
+      "projectsTimeline",
       "projectsRoot",
       "root",
     ] satisfies (keyof typeof routing)[];

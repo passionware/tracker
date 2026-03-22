@@ -6,8 +6,11 @@ import type {
   ClientSpec,
   WorkspaceSpec,
 } from "@/routing/routingUtils.ts";
+import type { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
 import type { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import type { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import type { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
+import type { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import type { WithContractorService } from "@/services/io/ContractorService/ContractorService.ts";
 import type { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
 import type { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
@@ -22,6 +25,9 @@ export type DrawerServices = WithServices<
     WithContractorService,
     WithWorkspaceService,
     WithExpressionService,
+    WithNavigationService,
+    WithProjectIterationService,
+    WithProjectIterationDisplayService,
   ]
 >;
 

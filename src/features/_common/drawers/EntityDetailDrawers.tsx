@@ -48,6 +48,8 @@ function drawerDescriptionForEntity(entity: EntityStackItem): string {
     case "cost-form":
     case "report-form":
       return "Edit the fields below and save, or cancel to go back.";
+    case "project-iteration-event":
+      return "Moves, balances after this event, and a shortcut to the full iteration events view.";
     default:
       return defaultDrawerDescription;
   }

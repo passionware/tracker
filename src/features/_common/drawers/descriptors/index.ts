@@ -23,6 +23,8 @@ import { workspaceDrawerDescriptor } from "./workspaceDescriptor";
 import type { WorkspaceDrawerSpec } from "@/features/workspaces/workspaceDrawerViews.tsx";
 import { workspaceFormDrawerDescriptor } from "./workspaceFormDescriptor";
 import type { WorkspaceFormSpec } from "./workspaceFormDescriptor";
+import { projectIterationEventDrawerDescriptor } from "./projectIterationEventDescriptor";
+import type { ProjectIterationEventSpec } from "./projectIterationEventDescriptor";
 
 /** Any item that can be on the drawer stack (detail or form). */
 export type EntityStackItem =
@@ -35,11 +37,13 @@ export type EntityStackItem =
   | CostFormSpec
   | BillingFormSpec
   | WorkspaceDrawerSpec
-  | WorkspaceFormSpec;
+  | WorkspaceFormSpec
+  | ProjectIterationEventSpec;
 
 export type { ReportSpec, CostSpec, BillingSpec, ClientDrawerSpec };
 export type { ReportFormSpec, CostFormSpec, BillingFormSpec, ClientFormSpec };
 export type { WorkspaceDrawerSpec, WorkspaceFormSpec };
+export type { ProjectIterationEventSpec };
 
 export {
   reportDrawerDescriptor,
@@ -78,6 +82,8 @@ export function getEntityStackKey(entity: EntityStackItem): string {
       return workspaceDrawerDescriptor.getKey(entity);
     case "workspace-form":
       return workspaceFormDrawerDescriptor.getKey(entity);
+    case "project-iteration-event":
+      return projectIterationEventDrawerDescriptor.getKey(entity);
   }
 }
 
@@ -109,6 +115,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getLabel(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getLabel(entity);
+      case "project-iteration-event":
+        return projectIterationEventDrawerDescriptor.getLabel(entity);
     }
   },
   getTitle: (entity) => {
@@ -133,6 +141,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getTitle(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getTitle(entity);
+      case "project-iteration-event":
+        return projectIterationEventDrawerDescriptor.getTitle(entity);
     }
   },
   renderBreadcrumbLabel: (
@@ -160,6 +170,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderBreadcrumbLabel(entity);
+      case "project-iteration-event":
+        return projectIterationEventDrawerDescriptor.renderBreadcrumbLabel(
+          entity,
+          services,
+        );
     }
   },
   renderSmallPreview: (
@@ -187,6 +202,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderSmallPreview(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderSmallPreview(entity, services);
+      case "project-iteration-event":
+        return projectIterationEventDrawerDescriptor.renderSmallPreview(
+          entity,
+          services,
+        );
     }
   },
   renderDrawerContent: (
@@ -217,6 +237,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderDrawerContent(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderDrawerContent(entity, services);
+      case "project-iteration-event":
+        return projectIterationEventDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
     }
   },
   renderHeaderActions: (
@@ -243,6 +268,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "workspace":
         return workspaceDrawerDescriptor.renderHeaderActions?.(entity, services);
       case "workspace-form":
+        return null;
+      case "project-iteration-event":
         return null;
     }
   },
