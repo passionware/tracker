@@ -8,6 +8,9 @@ export interface ClientService {
   useClientLinkedWorkspaces: (
     clientId: Maybe<Client["id"]>,
   ) => RemoteData<Workspace[]>;
+  useWorkspaceLinkedClients: (
+    workspaceId: Maybe<Workspace["id"]>,
+  ) => RemoteData<Client[]>;
 }
 
 export interface WithClientService {

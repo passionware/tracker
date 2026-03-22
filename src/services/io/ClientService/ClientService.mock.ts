@@ -32,6 +32,7 @@ export function createClientService(): ClientService {
         hidden: false,
       }),
     useClientLinkedWorkspaces: () => rd.of([]),
+    useWorkspaceLinkedClients: () => rd.of([]),
   };
 }
 
@@ -48,5 +49,6 @@ export function createClientServiceForEntityStripStory(
     useClient: (id) =>
       maybe.isPresent(id) && id === clientId ? rd.of(client) : rd.ofIdle(),
     useClientLinkedWorkspaces: () => rd.of([]),
+    useWorkspaceLinkedClients: () => rd.of([]),
   };
 }

@@ -75,5 +75,18 @@ export function createClientService(
         ),
       );
     },
+    useWorkspaceLinkedClients: (workspaceId) => {
+      return ensureIdleQuery(
+        workspaceId,
+        useQuery(
+          {
+            queryKey: ["client", "linkedClients", workspaceId],
+            enabled: maybe.isPresent(workspaceId),
+            queryFn: () => api.getLinkedClientsForWorkspace(workspaceId!),
+          },
+          client,
+        ),
+      );
+    },
   };
 }
