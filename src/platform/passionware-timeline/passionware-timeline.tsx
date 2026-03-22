@@ -1,19 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { forwardRef } from "react";
 import {
+  useCallback,
   useRef,
   useState,
-  useCallback,
   useEffect,
-  useMemo,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import {
-  ZonedDateTime,
-  getLocalTimeZone,
-  fromAbsolute,
-} from "@internationalized/date";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -23,198 +18,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import {
+  type TimelineItem,
+  type TimelineItemInternal,
+  type SnapOption,
+  SUB_ROW_HEIGHT,
+  HEADER_HEIGHT,
+  SIDEBAR_WIDTH,
+  ITEM_COLORS,
+  formatTime,
+  formatDate,
+  formatMonthYear,
+  formatYear,
+  formatQuarter,
+  formatWeek,
+  getDayStart,
+  minutesToDate,
+  dateToZonedDateTime,
+  zonedDateTimeToMinutes,
+  timelineItemsTimeOverlap,
+  toExternalItem,
+  toInternalItem,
+} from "./passionware-timeline-core.ts";
+import {
+  useTimelineCore,
+  type TimelineCoreApi,
+  type UseTimelineCoreOptions,
+} from "./use-timeline-core.ts";
+import { useTimelineLayout } from "./use-timeline-layout.ts";
+import {
+  useTimelineInteractions,
+  type UseTimelineInteractionsOptions,
+} from "./use-timeline-interactions.ts";
+export { useTimelineCore } from "./use-timeline-core.ts";
+export type { UseTimelineCoreOptions, TimelineCoreApi } from "./use-timeline-core.ts";
+export { useTimelineLayout } from "./use-timeline-layout.ts";
+export type { UseTimelineLayoutParams } from "./use-timeline-layout.ts";
+export { useTimelineInteractions } from "./use-timeline-interactions.ts";
+export type {
+  UseTimelineInteractionsOptions,
+  UseTimelineInteractionsParams,
+} from "./use-timeline-interactions.ts";
 
-// External types - using @internationalized/date
-export interface TimelineItem<Data = unknown> {
-  id: string;
-  laneId: string;
-  start: ZonedDateTime; // External interface uses ZonedDateTime
-  end: ZonedDateTime;
-  label: string;
-  color?: string;
-  row?: number; // Sub-row for parallel items
-  data: Data; // Custom data attached to the item
-}
-
-// Internal types - using minutes for performance
-interface TimelineItemInternal<Data = unknown> {
-  id: string;
-  laneId: string;
-  start: number; // Time in minutes from base date (auto-calculated)
-  end: number;
-  label: string;
-  color?: string;
-  row?: number; // Sub-row for parallel items
-  data: Data; // Custom data attached to the item
-}
-
-export interface Lane {
-  id: string;
-  name: string;
-  color: string;
-}
-
-interface DragState<Data = unknown> {
-  type: "move" | "resize-start" | "resize-end" | "draw";
-  itemId?: string;
-  laneId?: string;
-  startX: number;
-  startTime: number;
-  originalItem?: TimelineItemInternal<Data>;
-  drawStart?: number;
-  hasCrossedThreshold?: boolean; // Whether mouse has moved enough to start drag
-}
-
-type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";
-
-// Constants
-const PIXELS_PER_MINUTE = 2; // Base pixels per minute
-const MIN_ITEM_DURATION = 5; // Minimum 5 minutes
-const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
-const LANE_HEIGHT = 70;
-const SUB_ROW_HEIGHT = 28;
-const HEADER_HEIGHT = 48;
-const SIDEBAR_WIDTH = 180;
-
-// Snap values in minutes
-const SNAP_VALUES: Record<SnapOption, number> = {
-  none: 0,
-  "5min": 5,
-  "15min": 15,
-  "30min": 30,
-  "1hour": 60,
-  "1day": 1440,
-};
-
-// Color palette for items
-const ITEM_COLORS = [
-  "bg-chart-1",
-  "bg-chart-2",
-  "bg-chart-3",
-  "bg-chart-4",
-  "bg-chart-5",
-];
-
-// Initial data - using a base date
-const BASE_DATE = new Date(2025, 0, 27, 8, 0); // Jan 27, 2025 8:00 AM
-const toMinutes = (hours: number, mins = 0) => hours * 60 + mins;
-
-// Conversion utilities between ZonedDateTime and minutes
-// baseDate is auto-calculated from items, so no prop needed
-function zonedDateTimeToMinutes(
-  zonedDateTime: ZonedDateTime,
-  baseDate: ZonedDateTime,
-): number {
-  const baseMs = baseDate.toDate().getTime();
-  const dateMs = zonedDateTime.toDate().getTime();
-  return Math.floor((dateMs - baseMs) / (1000 * 60));
-}
-
-function minutesToZonedDateTime(
-  minutes: number,
-  baseDate: ZonedDateTime,
-): ZonedDateTime {
-  const baseMs = baseDate.toDate().getTime();
-  const targetMs = baseMs + minutes * 60 * 1000;
-  return fromAbsolute(targetMs, baseDate.timeZone);
-}
-
-function dateToZonedDateTime(
-  date: Date,
-  timeZone: string = getLocalTimeZone(),
-): ZonedDateTime {
-  return fromAbsolute(date.getTime(), timeZone);
-}
-
-function zonedDateTimeToDate(zonedDateTime: ZonedDateTime): Date {
-  return zonedDateTime.toDate();
-}
-
-// Helper to convert minutes to Date using base ZonedDateTime
-function minutesToDate(minutes: number, baseDate: ZonedDateTime): Date {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  return zonedDateTime.toDate();
-}
-
-// Convert external TimelineItem to internal format
-function toInternalItem<Data>(
-  item: TimelineItem<Data>,
-  baseDate: ZonedDateTime,
-): TimelineItemInternal<Data> {
-  return {
-    ...item,
-    start: zonedDateTimeToMinutes(item.start, baseDate),
-    end: zonedDateTimeToMinutes(item.end, baseDate),
-  };
-}
-
-// Convert internal TimelineItem to external format
-function toExternalItem<Data>(
-  item: TimelineItemInternal<Data>,
-  baseDate: ZonedDateTime,
-): TimelineItem<Data> {
-  return {
-    ...item,
-    start: minutesToZonedDateTime(item.start, baseDate),
-    end: minutesToZonedDateTime(item.end, baseDate),
-  };
-}
-
-// Note: initialItems removed - component now requires external items with ZonedDateTime
-
-// Format time from minutes to display string
-function formatTime(minutes: number): string {
-  // Normalize minutes to handle negative values correctly
-  // Convert to positive equivalent within a day
-  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
-  const hours = Math.floor(normalizedMinutes / 60);
-  const mins = normalizedMinutes % 60;
-  const period = hours >= 12 ? "PM" : "AM";
-  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
-}
-
-// Format date from minutes offset
-function formatDate(minutes: number, baseDate: ZonedDateTime): string {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-// Format month and year
-function formatMonthYear(minutes: number, baseDate: ZonedDateTime): string {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-}
-
-// Format year only
-function formatYear(minutes: number, baseDate: ZonedDateTime): string {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.getFullYear().toString();
-}
-
-// Format week (start of week)
-function formatWeek(minutes: number, baseDate: ZonedDateTime): string {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  // Get start of week (Sunday)
-  const dayOfWeek = date.getDay();
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - dayOfWeek);
-  return startOfWeek.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
+export type { TimelineItem } from "./passionware-timeline-core.ts";
 
 // Default Timeline Item Component
 interface DefaultTimelineItemProps<Data = unknown> {
@@ -226,32 +72,44 @@ interface DefaultTimelineItemProps<Data = unknown> {
   selected: boolean;
   isHovered: boolean;
   isMinWidth: boolean;
+  /** `item` is intentionally loose so render-prop timelines stay assignable across `Data` generics. */
   onMouseDown: (
     e: ReactMouseEvent,
-    item: TimelineItem<Data>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bivariant item ref for renderItem
+    item: TimelineItem<any>,
     type: "move" | "resize-start" | "resize-end",
   ) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
+  onClick?: (
+    e: ReactMouseEvent,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    item: TimelineItem<any>,
+  ) => void;
   onMouseOver?: () => void;
 }
 
-export function DefaultTimelineItem<Data = unknown>({
-  item,
-  left,
-  width,
-  isSelected,
-  selected = isSelected,
-  isHovered,
-  isMinWidth,
-  onMouseDown,
-  onMouseEnter,
-  onMouseLeave,
-  onClick,
-  onMouseOver,
-  ...props
-}: DefaultTimelineItemProps<Data>) {
+export const DefaultTimelineItem = forwardRef(function DefaultTimelineItem(
+  {
+    item,
+    left,
+    width,
+    isSelected,
+    selected = isSelected,
+    isHovered,
+    isMinWidth,
+    onMouseDown,
+    onMouseEnter,
+    onMouseLeave,
+    onClick,
+    onMouseOver,
+    ...props
+  }: DefaultTimelineItemProps<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any
+  >,
+  ref: React.ForwardedRef<HTMLDivElement>,
+) {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef(false);
 
@@ -285,6 +143,7 @@ export function DefaultTimelineItem<Data = unknown>({
 
   return (
     <div
+      ref={ref}
       {...props}
       data-timeline-item
       className={cn(
@@ -332,18 +191,16 @@ export function DefaultTimelineItem<Data = unknown>({
       />
     </div>
   );
-}
+});
 
-// Get day offset in minutes
-function getDayStart(minutes: number): number {
-  return Math.floor(minutes / 1440) * 1440;
-}
+DefaultTimelineItem.displayName = "DefaultTimelineItem";
 
-interface InfiniteTimelineProps<Data = unknown> {
-  items: TimelineItem<Data>[];
-  lanes: Lane[];
-  timeZone?: string; // Timezone for date conversions, defaults to local
-  // baseDate is auto-calculated from items, no prop needed!
+export type { SnapOption } from "./passionware-timeline-core.ts";
+
+export interface InfiniteTimelineProps<Data = unknown> {
+  state: TimelineCoreApi<Data>;
+  /** Passed to `useTimelineInteractions` inside the timeline (wheel, drag, callbacks). */
+  interactionOptions?: UseTimelineInteractionsOptions<Data>;
   renderItem?: (props: {
     item: TimelineItem<Data>;
     left: number;
@@ -361,718 +218,128 @@ interface InfiniteTimelineProps<Data = unknown> {
     onMouseLeave: () => void;
     onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
   }) => React.ReactNode;
-  onItemsChange?: (items: TimelineItem<Data>[]) => void;
-  onItemClick?: (item: TimelineItem<Data>) => void;
-  /** Shift+click when the item does not overlap another in the same lane (time collision). */
-  onEventSelect?: (item: TimelineItem<Data>) => void;
   onItemHover?: (item: TimelineItem<Data>) => void;
-  /** Predicate used to mark selected events. */
   isEventSelected?: (item: TimelineItem<Data>) => boolean;
 }
 
-export function InfiniteTimeline<Data = unknown>({
-  items: externalItems,
+type InfiniteTimelineWithStateProps<Data> = UseTimelineCoreOptions<Data> &
+  UseTimelineInteractionsOptions<Data> &
+  Omit<InfiniteTimelineProps<Data>, "state" | "interactionOptions">;
+
+/** Calls `useTimelineCore` and renders `InfiniteTimeline`. Use inside leaf components (e.g. under `rd.map`). */
+export function InfiniteTimelineWithState<Data = unknown>({
+  items,
   lanes,
-  timeZone = getLocalTimeZone(),
-  renderItem,
+  timeZone,
+  expandedLaneIds,
+  defaultExpandedLaneIds,
+  onExpandedLaneIdsChange,
   onItemsChange,
   onItemClick,
   onEventSelect,
+  itemActivateTrigger,
+  renderItem,
+  onItemHover,
+  isEventSelected,
+}: InfiniteTimelineWithStateProps<Data>) {
+  const state = useTimelineCore<Data>({
+    items,
+    lanes,
+    timeZone,
+    expandedLaneIds,
+    defaultExpandedLaneIds,
+    onExpandedLaneIdsChange,
+  });
+  return (
+    <InfiniteTimeline<Data>
+      state={state}
+      interactionOptions={{
+        onItemsChange,
+        onItemClick,
+        onEventSelect,
+        itemActivateTrigger,
+      }}
+      renderItem={renderItem}
+      onItemHover={onItemHover}
+      isEventSelected={isEventSelected}
+    />
+  );
+}
+
+export function InfiniteTimeline<Data = unknown>({
+  state,
+  interactionOptions = {},
+  renderItem,
   onItemHover,
   isEventSelected,
 }: InfiniteTimelineProps<Data>) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const previewItemRef = useRef<{
-    laneId: string;
-    start: number;
-    end: number;
-    row: number;
-  } | null>(null);
-
-  // Auto-calculate baseDate from items (earliest start time, or default)
-  const baseDateZoned = useMemo(() => {
-    if (externalItems && externalItems.length > 0) {
-      // Use the earliest item's start time as base
-      const earliest = externalItems.reduce((earliest, item) => {
-        const itemMs = item.start.toDate().getTime();
-        const earliestMs = earliest.toDate().getTime();
-        return itemMs < earliestMs ? item.start : earliest;
-      }, externalItems[0].start);
-      // Round down to start of day for cleaner calculations
-      const earliestDate = earliest.toDate();
-      earliestDate.setHours(0, 0, 0, 0);
-      return fromAbsolute(earliestDate.getTime(), earliest.timeZone);
-    }
-    // Default base date if no items
-    return dateToZonedDateTime(BASE_DATE, timeZone);
-  }, [externalItems, timeZone]);
-
-  // Convert external items to internal format (minutes) - use useMemo instead of useState
-  const items = useMemo(() => {
-    if (externalItems && externalItems.length > 0) {
-      return externalItems.map((item) => toInternalItem(item, baseDateZoned));
-    }
-    // No initial items - return empty array if no external items provided
-    return [];
-  }, [externalItems, baseDateZoned]);
-
-  // Calculate initial zoom and scroll to fit all items
-  const initialView = useMemo(() => {
-    const allItems = items;
-    if (!allItems || allItems.length === 0) {
-      return {
-        zoom: 1,
-        scrollOffset: -toMinutes(7) * PIXELS_PER_MINUTE,
-      };
-    }
-
-    const minStart = Math.min(...allItems.map((item) => item.start));
-    const maxEnd = Math.max(...allItems.map((item) => item.end));
-    const totalMinutes = maxEnd - minStart;
-
-    if (totalMinutes <= 0) {
-      return {
-        zoom: 1,
-        scrollOffset: -toMinutes(7) * PIXELS_PER_MINUTE,
-      };
-    }
-
-    // Estimate container width (will be refined when container is mounted)
-    const estimatedContainerWidth = 1200;
-    const availableWidth = estimatedContainerWidth - SIDEBAR_WIDTH;
-
-    // Calculate zoom to fit all items with some padding (10% on each side)
-    const padding = 0.1;
-    const requiredPixelsPerMinute =
-      (availableWidth * (1 - 2 * padding)) / totalMinutes;
-    const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
-
-    // Don't clamp - use the calculated zoom
-    const zoom = calculatedZoom;
-
-    // Calculate scroll offset to center the items
-    const centerTime = (minStart + maxEnd) / 2;
-    const scrollOffset =
-      availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * zoom;
-
-    return { zoom, scrollOffset };
-  }, [items]);
-
-  const [scrollOffset, setScrollOffset] = useState(initialView.scrollOffset);
-  const [verticalScrollOffset, setVerticalScrollOffset] = useState(0);
-  const [zoom, setZoom] = useState(initialView.zoom);
-  const [dragState, setDragState] = useState<DragState<Data> | null>(null);
-  const [panState, setPanState] = useState<{
-    startX: number;
-    startY: number;
-    startScrollOffset: number;
-    startVerticalScrollOffset: number;
-  } | null>(null);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  const [snapOption, setSnapOption] = useState<SnapOption>("15min");
-  const [currentMouseX, setCurrentMouseX] = useState<number | null>(null);
-
-  const pixelsPerMinute = PIXELS_PER_MINUTE * zoom;
-
-  // Snap time to grid
-  const snapTime = useCallback(
-    (time: number): number => {
-      const snapValue = SNAP_VALUES[snapOption];
-      if (snapValue === 0) return time;
-      return Math.round(time / snapValue) * snapValue;
-    },
-    [snapOption],
-  );
-
-  // Temporary modifications during drag operations (merged with items for rendering)
-  const [dragModifications, setDragModifications] = useState<
-    Map<string, Partial<TimelineItemInternal<Data>>>
-  >(new Map());
-  const lastAutoFitSignatureRef = useRef<string | null>(null);
-
-  // Merge items with drag modifications for rendering
-  const mergedItems = useMemo(() => {
-    return items.map((item) => {
-      const modification = dragModifications.get(item.id);
-      return modification ? { ...item, ...modification } : item;
-    });
-  }, [items, dragModifications]);
-
-  const autoFitSignature = useMemo(() => {
-    if (!items.length) return "";
-    return items
-      .map((item) => `${item.id}|${item.laneId}|${item.start}|${item.end}`)
-      .join(";");
-  }, [items]);
-
-  // Update zoom and scroll only when timeline geometry changes.
-  useEffect(() => {
-    const allItems = items;
-    if (!allItems || allItems.length === 0) return;
-    if (lastAutoFitSignatureRef.current === autoFitSignature) return;
-
-    const minStart = Math.min(...allItems.map((item) => item.start));
-    const maxEnd = Math.max(...allItems.map((item) => item.end));
-    const totalMinutes = maxEnd - minStart;
-
-    if (totalMinutes <= 0) return;
-
-    const containerWidth = containerRef.current?.clientWidth || 1200;
-    const availableWidth = containerWidth - SIDEBAR_WIDTH;
-
-    // Calculate zoom to fit all items with some padding (10% on each side)
-    const padding = 0.1;
-    const requiredPixelsPerMinute =
-      (availableWidth * (1 - 2 * padding)) / totalMinutes;
-    const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
-
-    // Update zoom without clamping
-    setZoom(calculatedZoom);
-
-    // Calculate scroll offset to center the items
-    const centerTime = (minStart + maxEnd) / 2;
-    const newScrollOffset =
-      availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
-    setScrollOffset(newScrollOffset);
-    lastAutoFitSignatureRef.current = autoFitSignature;
-  }, [items, autoFitSignature]);
-
-  // Note: onItemsChange is now called directly when items are modified (drag, draw, delete)
-  // No need for a useEffect since items is derived from externalItems via useMemo
-
-  // Calculate sub-rows for overlapping items in a lane
-  const getItemsWithRows = useCallback(
-    (
-      laneId: string,
-      previewItem?: { start: number; end: number; row: number },
-    ) => {
-      const laneItems = mergedItems.filter((item) => item.laneId === laneId);
-      const sortedItems = [...laneItems].sort((a, b) => a.start - b.start);
-      const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] =
-        [];
-
-      for (const item of sortedItems) {
-        // Find the first available row
-        let row = 0;
-        let foundRow = false;
-
-        while (!foundRow) {
-          // Check collision with already placed items
-          const hasOverlapWithItems = itemsWithRows.some(
-            (placed) =>
-              placed.row === row &&
-              !(item.end <= placed.start || item.start >= placed.end),
-          );
-
-          // Check collision with preview item if it's in this lane and on this row
-          const hasOverlapWithPreview =
-            previewItem &&
-            previewItem.row === row &&
-            !(item.end <= previewItem.start || item.start >= previewItem.end);
-
-          if (!hasOverlapWithItems && !hasOverlapWithPreview) {
-            foundRow = true;
-          } else {
-            row++;
-          }
-        }
-
-        itemsWithRows.push({ ...item, row });
-      }
-
-      return itemsWithRows;
-    },
-    [mergedItems],
-  );
-
-  // Get max rows for a lane
-  const getMaxRows = useCallback(
-    (
-      laneId: string,
-      previewItem?: { start: number; end: number; row: number },
-    ) => {
-      const itemsWithRows = getItemsWithRows(laneId, previewItem);
-      if (itemsWithRows.length === 0 && !previewItem) return 1;
-      const maxItemRow =
-        itemsWithRows.length > 0
-          ? Math.max(...itemsWithRows.map((i) => i.row))
-          : -1;
-      const previewRow = previewItem ? previewItem.row : -1;
-      return Math.max(maxItemRow, previewRow) + 1;
-    },
-    [getItemsWithRows],
-  );
-
-  // Get lane height (including preview row if drawing)
-  const getLaneHeight = useCallback(
-    (
-      laneId: string,
-      previewItem?: { start: number; end: number; row: number },
-    ) => {
-      const maxRows = Math.max(getMaxRows(laneId, previewItem), 2);
-      return Math.max(LANE_HEIGHT, maxRows * SUB_ROW_HEIGHT + 16);
-    },
-    [getMaxRows],
-  );
-
-  // Calculate lane Y offset
-  const getLaneYOffset = useCallback(
-    (laneIndex: number) => {
-      let offset = 0;
-      const preview = previewItemRef.current;
-      for (let i = 0; i < laneIndex; i++) {
-        const lanePreview =
-          preview && preview.laneId === lanes[i].id ? preview : undefined;
-        offset += getLaneHeight(lanes[i].id, lanePreview);
-      }
-      return offset;
-    },
-    [lanes, getLaneHeight],
-  );
-
-  // Calculate visible range for markers
-  const getVisibleRange = useCallback(() => {
-    const containerWidth = containerRef.current?.clientWidth || 1200;
-    const startTime = Math.floor(-scrollOffset / pixelsPerMinute) - 60;
-    const endTime =
-      Math.ceil((containerWidth - scrollOffset) / pixelsPerMinute) + 60;
-    return { startTime, endTime };
-  }, [scrollOffset, pixelsPerMinute]);
-
-  // Convert pixel position to time
-  // pixel should be relative to the container (not screen coordinates)
-  const pixelToTime = useCallback(
-    (pixel: number) => {
-      return (pixel - SIDEBAR_WIDTH - scrollOffset) / pixelsPerMinute;
-    },
-    [scrollOffset, pixelsPerMinute],
-  );
-
-  // Convert screen X coordinate to container-relative X coordinate
-  const screenXToContainerX = useCallback((screenX: number): number => {
+  const screenXToContainerX = useCallback((screenX: number) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return screenX;
     return screenX - rect.left;
   }, []);
 
-  // Convert time to pixel position
-  const timeToPixel = useCallback(
-    (time: number) => {
-      return time * pixelsPerMinute + scrollOffset + SIDEBAR_WIDTH;
-    },
-    [scrollOffset, pixelsPerMinute],
-  );
+  const layout = useTimelineLayout<Data>({
+    mergedItems: state.mergedItems,
+    visibleLaneRows: state.visibleLaneRows,
+    scrollOffset: state.scrollOffset,
+    zoom: state.zoom,
+    dragState: state.dragState,
+    currentMouseX: state.currentMouseX,
+    snapTime: state.snapTime,
+    screenXToContainerX,
+    containerRef,
+  });
 
-  // Handle wheel scroll (vertical scroll, horizontal pan with shift, and zoom)
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      e.preventDefault();
+  const interactions = useTimelineInteractions<Data>({
+    core: state,
+    layout,
+    containerRef,
+    screenXToContainerX,
+    options: interactionOptions,
+  });
 
-      if (e.ctrlKey || e.metaKey) {
-        // Zoom centered on mouse position
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
+  const {
+    visibleLaneRows,
+    itemsForTimeline,
+    baseDateZoned,
+    mergedItems,
+    timeZone,
+    scrollOffset,
+    verticalScrollOffset,
+    zoom,
+    snapOption,
+    setSnapOption,
+    setZoom,
+    dragState,
+    panState,
+    selectedItemId,
+    hoveredItemId,
+    snapTime,
+    toggleLaneExpanded,
+    setHoveredItemId,
+  } = state;
 
-        // Get mouse position relative to timeline content area
-        const mouseX = e.clientX - rect.left - SIDEBAR_WIDTH;
+  const {
+    pixelsPerMinute,
+    getLaneHeight,
+    getLaneYOffset,
+    getItemsWithRows,
+    timeToPixel,
+    getVisibleRange,
+    calculatedPreviewItem,
+    totalHeight,
+  } = layout;
 
-        // Calculate time at mouse position before zoom
-        const timeAtMouse =
-          (mouseX - scrollOffset) / (PIXELS_PER_MINUTE * zoom);
-
-        // Calculate new zoom level
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(0.001, Math.min(4, zoom * zoomFactor));
-
-        // Calculate new scroll offset to keep the same time under the mouse
-        const newScrollOffset =
-          mouseX - timeAtMouse * PIXELS_PER_MINUTE * newZoom;
-
-        setZoom(newZoom);
-        setScrollOffset(newScrollOffset);
-      } else if (e.shiftKey) {
-        // Shift+scroll: horizontal pan
-        setScrollOffset((prev) => prev - e.deltaX - e.deltaY);
-      } else {
-        // Regular scroll: vertical scrolling
-        setVerticalScrollOffset((prev) => {
-          const containerHeight = containerRef.current?.clientHeight || 0;
-          const preview = previewItemRef.current;
-          const totalHeight = lanes.reduce((sum, lane) => {
-            const lanePreview =
-              preview && preview.laneId === lane.id ? preview : undefined;
-            return sum + getLaneHeight(lane.id, lanePreview);
-          }, 0);
-          const maxOffset = Math.max(
-            0,
-            totalHeight - containerHeight + HEADER_HEIGHT,
-          );
-          const scrollDelta =
-            Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-          return Math.max(0, Math.min(maxOffset, prev + scrollDelta));
-        });
-      }
-    },
-    [zoom, scrollOffset, lanes, getLaneHeight],
-  );
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [handleWheel]);
-
-  // Handle left mouse button panning (when not on items/lanes)
-  const handleMouseDown = useCallback(
-    (e: globalThis.MouseEvent) => {
-      // Left mouse button (button 0) for panning, but only if not on items/lanes
-      // Items and lanes will handle their own mouse events and stop propagation
-      if (e.button === 0 && !dragState && !panState) {
-        // Check if we're clicking on an item or lane by checking the target
-        const target = e.target as HTMLElement;
-        // If clicking on timeline items or lanes, don't pan
-        // Also check if meta/ctrl key is pressed (used for drawing)
-        if (
-          e.metaKey ||
-          e.ctrlKey ||
-          target.closest("[data-timeline-item]") ||
-          target.closest("[data-timeline-lane]")
-        ) {
-          return;
-        }
-        e.preventDefault();
-        setPanState({
-          startX: e.clientX,
-          startY: e.clientY,
-          startScrollOffset: scrollOffset,
-          startVerticalScrollOffset: verticalScrollOffset,
-        });
-      }
-    },
-    [dragState, panState, scrollOffset, verticalScrollOffset],
-  );
-
-  // Handle panning with middle mouse button
-  const handlePanMove = useCallback(
-    (e: globalThis.MouseEvent) => {
-      if (!panState) return;
-
-      const deltaX = e.clientX - panState.startX;
-      const deltaY = e.clientY - panState.startY;
-
-      setScrollOffset(panState.startScrollOffset + deltaX);
-      const containerHeight = containerRef.current?.clientHeight || 0;
-      const preview = previewItemRef.current;
-      const totalHeight = lanes.reduce((sum, lane) => {
-        const lanePreview =
-          preview && preview.laneId === lane.id ? preview : undefined;
-        return sum + getLaneHeight(lane.id, lanePreview);
-      }, 0);
-      const maxOffset = Math.max(
-        0,
-        totalHeight - containerHeight + HEADER_HEIGHT,
-      );
-      const newOffset = panState.startVerticalScrollOffset - deltaY;
-      setVerticalScrollOffset(Math.max(0, Math.min(maxOffset, newOffset)));
-    },
-    [panState, lanes, getLaneHeight],
-  );
-
-  const handlePanUp = useCallback(() => {
-    setPanState(null);
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener("mousedown", handleMouseDown);
-    if (panState) {
-      window.addEventListener("mousemove", handlePanMove);
-      window.addEventListener("mouseup", handlePanUp);
-      // Prevent context menu on middle mouse
-      window.addEventListener("contextmenu", (e) => e.preventDefault());
-    }
-
-    return () => {
-      container.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handlePanMove);
-      window.removeEventListener("mouseup", handlePanUp);
-    };
-  }, [handleMouseDown, handlePanMove, handlePanUp, panState]);
-
-  // Generate a unique ID
-  const generateId = () =>
-    `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  const beginItemDrag = useCallback(
-    (
-      clientX: number,
-      item: TimelineItemInternal<Data>,
-      type: "move" | "resize-start" | "resize-end",
-    ) => {
-      const containerX = screenXToContainerX(clientX);
-      setSelectedItemId(item.id);
-      setDragState({
-        type,
-        itemId: item.id,
-        startX: clientX,
-        startTime: pixelToTime(containerX),
-        originalItem: { ...item },
-        hasCrossedThreshold: false,
-      });
-      const externalItem = toExternalItem(item, baseDateZoned);
-      onItemClick?.(externalItem);
-    },
-    [screenXToContainerX, pixelToTime, baseDateZoned, onItemClick],
-  );
-
-  // Handle mouse down on item (start drag) - uses internal format
-  const handleItemMouseDown = (
-    e: ReactMouseEvent,
-    item: TimelineItemInternal<Data>,
-    type: "move" | "resize-start" | "resize-end",
-  ) => {
-    // Ignore middle mouse button and cmd+left (used for drawing)
-    if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) return;
-
-    const laneSiblings = getItemsWithRows(item.laneId).filter(
-      (i) => i.row === (item.row ?? 0),
-    );
-    const hasTimeCollision = laneSiblings.some(
-      (other) =>
-        other.id !== item.id &&
-        !(item.end <= other.start || item.start >= other.end),
-    );
-
-    if (type === "move" && e.shiftKey && onEventSelect && !hasTimeCollision) {
-      e.stopPropagation();
-      setSelectedItemId(item.id);
-      onEventSelect(toExternalItem(item, baseDateZoned));
-      return;
-    }
-
-    e.stopPropagation();
-    beginItemDrag(e.clientX, item, type);
-  };
-
-  // Handle mouse down on lane (start drawing or allow panning)
-  const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
-    // Check if this is a drawing action (middle mouse or cmd+left)
-    const isDrawingButton =
-      e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
-
-    if (isDrawingButton) {
-      // Start drawing
-      if (dragState) return;
-      e.stopPropagation();
-      const containerX = screenXToContainerX(e.clientX);
-      const time = snapTime(pixelToTime(containerX));
-
-      setDragState({
-        type: "draw",
-        laneId,
-        startX: e.clientX,
-        startTime: time,
-        drawStart: time,
-      });
-      setCurrentMouseX(e.clientX);
-      setSelectedItemId(null);
-    } else if (e.button === 0 && !dragState && !panState) {
-      // Regular left click on empty lane space - allow panning
-      // Check if we're clicking on an item
-      const target = e.target as HTMLElement;
-      if (target.closest("[data-timeline-item]")) {
-        return; // Let item handle it
-      }
-      // Start panning
-      e.preventDefault();
-      e.stopPropagation();
-      setPanState({
-        startX: e.clientX,
-        startY: e.clientY,
-        startScrollOffset: scrollOffset,
-        startVerticalScrollOffset: verticalScrollOffset,
-      });
-    }
-  };
-
-  // Handle global mouse move
-  const handleMouseMove = useCallback(
-    (e: globalThis.MouseEvent) => {
-      if (!dragState) return;
-
-      const containerX = screenXToContainerX(e.clientX);
-      const currentTime = pixelToTime(containerX);
-
-      if (dragState.type === "draw" && dragState.drawStart !== undefined) {
-        // Track mouse position for preview item calculation
-        setCurrentMouseX(e.clientX);
-        return;
-      }
-
-      // Check if we've crossed the drag threshold
-      const deltaX = Math.abs(e.clientX - dragState.startX);
-      const hasCrossedThreshold =
-        dragState.hasCrossedThreshold || deltaX >= DRAG_THRESHOLD;
-
-      // Update drag state to mark threshold as crossed
-      if (hasCrossedThreshold && !dragState.hasCrossedThreshold) {
-        setDragState((prev) =>
-          prev ? { ...prev, hasCrossedThreshold: true } : null,
-        );
-      }
-
-      // Only update drag modifications if threshold has been crossed
-      if (hasCrossedThreshold && dragState.originalItem && dragState.itemId) {
-        const original = dragState.originalItem!;
-        const deltaTime = currentTime - dragState.startTime;
-        let newStart = original.start;
-        let newEnd = original.end;
-
-        switch (dragState.type) {
-          case "move":
-            newStart = snapTime(original.start + deltaTime);
-            newEnd = newStart + (original.end - original.start);
-            break;
-          case "resize-start":
-            newStart = snapTime(
-              Math.min(
-                original.start + deltaTime,
-                original.end - MIN_ITEM_DURATION,
-              ),
-            );
-            break;
-          case "resize-end":
-            newEnd = snapTime(
-              Math.max(
-                original.end + deltaTime,
-                original.start + MIN_ITEM_DURATION,
-              ),
-            );
-            break;
-        }
-
-        setDragModifications((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(dragState.itemId!, { start: newStart, end: newEnd });
-          return newMap;
-        });
-      }
-    },
-    [dragState, pixelToTime, snapTime, screenXToContainerX],
-  );
-
-  // Handle global mouse up
-  const handleMouseUp = useCallback(
-    (e: globalThis.MouseEvent) => {
-      if (!dragState) return;
-
-      // Store drag state values before clearing
-      const wasDrawing =
-        dragState.type === "draw" &&
-        dragState.laneId &&
-        dragState.drawStart !== undefined;
-
-      let newItem: TimelineItemInternal<Data> | null = null;
-
-      if (wasDrawing) {
-        const containerX = screenXToContainerX(e.clientX);
-        const endTime = snapTime(pixelToTime(containerX));
-        const start = Math.min(dragState.drawStart!, endTime);
-        const end = Math.max(dragState.drawStart!, endTime);
-
-        if (end - start >= MIN_ITEM_DURATION) {
-          const laneIndex = lanes.findIndex((l) => l.id === dragState.laneId!);
-          // Create item in internal format (minutes)
-          newItem = {
-            id: generateId(),
-            laneId: dragState.laneId!,
-            start,
-            end,
-            label: "New Event",
-            color: ITEM_COLORS[laneIndex % ITEM_COLORS.length],
-          } as TimelineItemInternal<Data>;
-        }
-      }
-
-      // Clear preview ref and drag state FIRST to prevent stale layout calculations
-      // This ensures calculatedPreviewItem becomes null before we add the new item
-      previewItemRef.current = null;
-      setDragState(null);
-      setCurrentMouseX(null);
-
-      // Apply drag modifications and notify parent
-      if (dragModifications.size > 0 && dragState.itemId) {
-        const updatedItems = items.map((item) => {
-          const modification = dragModifications.get(item.id);
-          return modification ? { ...item, ...modification } : item;
-        });
-        if (onItemsChange) {
-          const externalItems = updatedItems.map((item) =>
-            toExternalItem(item, baseDateZoned),
-          );
-          onItemsChange(externalItems);
-        }
-        setDragModifications(new Map());
-      }
-
-      // Then add the new item (if any) and notify parent
-      if (newItem) {
-        const updatedItems = [...items, newItem];
-        if (onItemsChange) {
-          const externalItems = updatedItems.map((item) =>
-            toExternalItem(item, baseDateZoned),
-          );
-          onItemsChange(externalItems);
-        }
-        setSelectedItemId(newItem.id);
-      }
-    },
-    [
-      dragState,
-      dragModifications,
-      items,
-      pixelToTime,
-      lanes,
-      snapTime,
-      screenXToContainerX,
-      onItemsChange,
-      baseDateZoned,
-    ],
-  );
-
-  useEffect(() => {
-    if (dragState) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [dragState, handleMouseMove, handleMouseUp]);
-
-  // Delete selected item
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedItemId) {
-        const updatedItems = items.filter((item) => item.id !== selectedItemId);
-        if (onItemsChange) {
-          const externalItems = updatedItems.map((item) =>
-            toExternalItem(item, baseDateZoned),
-          );
-          onItemsChange(externalItems);
-        }
-        setSelectedItemId(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItemId, items, onItemsChange, baseDateZoned]);
+  const {
+    handleItemMouseDown,
+    handleLaneMouseDown,
+    onTimelineGridMouseDown,
+    drawingPreview,
+    itemActivateTrigger,
+    activateItemOnClick,
+  } = interactions;
 
   const { startTime, endTime } = getVisibleRange();
 
@@ -1082,12 +349,13 @@ export function InfiniteTimeline<Data = unknown>({
   const quarterSpacingPx = 15 * pixelsPerMinute; // 15 minutes
 
   // Determine time scale based on zoom level
-  type TimeScale = "hours" | "days" | "weeks" | "months";
+  type TimeScale = "hours" | "days" | "weeks" | "months" | "quarters";
   const getTimeScale = (): TimeScale => {
-    if (daySpacingPx < 20) return "months"; // Very zoomed out - show months
-    if (daySpacingPx < 50) return "weeks"; // Zoomed out - show weeks
-    if (daySpacingPx < 200) return "days"; // Medium zoom - show days
-    return "hours"; // Zoomed in - show hours
+    if (daySpacingPx < 14) return "quarters"; // Very zoomed out - Q1, Q2, …
+    if (daySpacingPx < 20) return "months"; // Zoomed out - month ticks
+    if (daySpacingPx < 50) return "weeks";
+    if (daySpacingPx < 200) return "days";
+    return "hours";
   };
 
   const timeScale = getTimeScale();
@@ -1110,6 +378,7 @@ export function InfiniteTimeline<Data = unknown>({
   const weekMarkers: number[] = [];
   const monthMarkers: number[] = [];
   const yearMarkers: number[] = [];
+  const quarterScaleMarkers: number[] = [];
 
   if (timeScale === "hours") {
     // Generate time markers (hourly with 15-min subdivisions)
@@ -1199,6 +468,32 @@ export function InfiniteTimeline<Data = unknown>({
       monthMarkers.push(monthMinutes);
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
+  } else if (timeScale === "quarters") {
+    const startDate = minutesToDate(startTime, baseDateZoned);
+    const endDate = minutesToDate(endTime, baseDateZoned);
+    let qCursor = new Date(
+      startDate.getFullYear(),
+      Math.floor(startDate.getMonth() / 3) * 3,
+      1,
+    );
+    const endT = endDate.getTime();
+    while (qCursor.getTime() <= endT + 86400000 * 95) {
+      const qZoned = dateToZonedDateTime(qCursor, timeZone);
+      quarterScaleMarkers.push(
+        zonedDateTimeToMinutes(qZoned, baseDateZoned),
+      );
+      const next = new Date(qCursor);
+      next.setMonth(next.getMonth() + 3);
+      qCursor = next;
+    }
+
+    const currentYear = new Date(startDate.getFullYear(), 0, 1);
+    const endYear = new Date(endDate.getFullYear() + 1, 0, 1);
+    while (currentYear < endYear) {
+      const yearZoned = dateToZonedDateTime(new Date(currentYear), timeZone);
+      yearMarkers.push(zonedDateTimeToMinutes(yearZoned, baseDateZoned));
+      currentYear.setFullYear(currentYear.getFullYear() + 1);
+    }
   } else if (timeScale === "months") {
     // Show months in time header, years in top header
     const startDate = minutesToDate(startTime, baseDateZoned);
@@ -1230,124 +525,6 @@ export function InfiniteTimeline<Data = unknown>({
       currentYear.setFullYear(currentYear.getFullYear() + 1);
     }
   }
-
-  // Drawing preview dimensions
-  const getDrawingPreview = () => {
-    if (
-      !dragState ||
-      dragState.type !== "draw" ||
-      dragState.drawStart === undefined
-    ) {
-      return null;
-    }
-    return {
-      laneId: dragState.laneId,
-      startTime: dragState.drawStart,
-    };
-  };
-
-  const drawingPreview = getDrawingPreview();
-
-  // Calculate preview item's full information for collision detection
-  // This uses the same logic as getItemsWithRows to ensure the preview row matches the final row
-  const calculatedPreviewItem = React.useMemo(() => {
-    if (
-      !dragState ||
-      dragState.type !== "draw" ||
-      dragState.drawStart === undefined ||
-      !dragState.laneId ||
-      currentMouseX === null
-    ) {
-      return null;
-    }
-
-    const containerX = screenXToContainerX(currentMouseX);
-    const currentTime = snapTime(pixelToTime(containerX));
-    const previewStart = Math.min(dragState.drawStart, currentTime);
-    const previewEnd = Math.max(dragState.drawStart, currentTime);
-
-    // Create a temporary preview item to include in the sorted processing
-    // This ensures the preview row matches exactly what the final row will be
-    const previewItemTemp: TimelineItemInternal<Data> = {
-      id: "__preview__",
-      laneId: dragState.laneId,
-      start: previewStart,
-      end: previewEnd,
-      label: "",
-      data: undefined as Data,
-    };
-
-    // Get all items in this lane, including the preview item
-    const laneItems = mergedItems.filter(
-      (item) => item.laneId === dragState.laneId,
-    );
-    const allItems = [...laneItems, previewItemTemp];
-
-    // Sort all items by start time (same as getItemsWithRows)
-    const sortedItems = allItems.sort((a, b) => a.start - b.start);
-    const itemsWithRows: (TimelineItemInternal<Data> & { row: number })[] = [];
-
-    // Process items in sorted order (same logic as getItemsWithRows)
-    for (const item of sortedItems) {
-      let row = 0;
-      let foundRow = false;
-
-      while (!foundRow) {
-        // Check collision with already placed items
-        const hasOverlap = itemsWithRows.some(
-          (placed) =>
-            placed.row === row &&
-            !(item.end <= placed.start || item.start >= placed.end),
-        );
-
-        if (!hasOverlap) {
-          foundRow = true;
-        } else {
-          row++;
-        }
-      }
-
-      itemsWithRows.push({ ...item, row });
-    }
-
-    // Find the preview item's row from the processed items
-    const previewItemWithRow = itemsWithRows.find(
-      (item) => item.id === "__preview__",
-    );
-
-    if (!previewItemWithRow) {
-      return null;
-    }
-
-    return {
-      laneId: dragState.laneId,
-      start: previewStart,
-      end: previewEnd,
-      row: previewItemWithRow.row,
-    };
-  }, [
-    dragState,
-    currentMouseX,
-    mergedItems,
-    snapTime,
-    pixelToTime,
-    screenXToContainerX,
-  ]);
-
-  // Update ref when preview item changes
-  useEffect(() => {
-    previewItemRef.current = calculatedPreviewItem;
-  }, [calculatedPreviewItem]);
-
-  // Total timeline height
-  const totalHeight = lanes.reduce((sum, lane) => {
-    const lanePreview =
-      calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
-        ? calculatedPreviewItem
-        : undefined;
-    return sum + getLaneHeight(lane.id, lanePreview);
-  }, 0);
-
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
       {/* Toolbar */}
@@ -1392,7 +569,13 @@ export function InfiniteTimeline<Data = unknown>({
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
-              Zoom: {Math.round(zoom * 100)}%
+              Zoom:{" "}
+              {(() => {
+                const p = zoom * 100;
+                if (p < 0.01) return `${p.toFixed(3)}%`;
+                if (p < 1) return `${p.toFixed(2)}%`;
+                return `${Math.round(p)}%`;
+              })()}
             </span>
             <Button
               onClick={() => setZoom(1)}
@@ -1464,7 +647,7 @@ export function InfiniteTimeline<Data = unknown>({
                   </div>
                 );
               })}
-            {timeScale === "months" &&
+            {(timeScale === "months" || timeScale === "quarters") &&
               yearMarkers.map((minutes) => {
                 const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
                 const containerWidth =
@@ -1669,6 +852,42 @@ export function InfiniteTimeline<Data = unknown>({
                 );
               })}
 
+            {timeScale === "quarters" &&
+              quarterScaleMarkers.map((minutes) => {
+                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const containerWidth =
+                  containerRef.current?.clientWidth || 2000;
+                if (x < -50 || x > containerWidth) return null;
+
+                const date = minutesToDate(minutes, baseDateZoned);
+                const isQ1 = date.getMonth() === 0;
+
+                return (
+                  <div
+                    key={`cal-quarter-${minutes}`}
+                    className="absolute top-0 h-full flex flex-col justify-end pb-1"
+                    style={{ left: x }}
+                  >
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums -translate-x-1/2",
+                        isQ1
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {formatQuarter(minutes, baseDateZoned)}
+                    </span>
+                    <div
+                      className={cn(
+                        "w-px mt-0.5 ml-0",
+                        isQ1 ? "h-2 bg-foreground/50" : "h-1 bg-border/60",
+                      )}
+                    />
+                  </div>
+                );
+              })}
+
             {timeScale === "months" &&
               monthMarkers.map((minutes) => {
                 const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
@@ -1720,32 +939,83 @@ export function InfiniteTimeline<Data = unknown>({
               position: "relative",
             }}
           >
-            {lanes.map((lane, index) => {
+            {visibleLaneRows.map((lane, index) => {
               const lanePreview =
                 calculatedPreviewItem &&
                 calculatedPreviewItem.laneId === lane.id
                   ? calculatedPreviewItem
                   : undefined;
-              return (
-                <div
-                  key={lane.id}
-                  className={cn(
-                    "flex items-start gap-3 px-4 py-3 border-b border-border",
-                    index % 2 === 0
-                      ? "bg-timeline-lane"
-                      : "bg-timeline-lane-alt",
-                  )}
-                  style={{ height: getLaneHeight(lane.id, lanePreview) }}
-                >
-                  <div
+              const rowHeight = getLaneHeight(lane.id, lanePreview);
+              const indentPx = 8 + lane.depth * 12;
+              const zebra =
+                index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt";
+              const rowInnerClass = cn(
+                "flex h-full min-h-0 min-w-0 w-full items-center gap-2 py-2 pr-2 text-left",
+                lane.hasChildren &&
+                  cn(
+                    "cursor-pointer rounded-sm",
+                    "text-foreground hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  ),
+              );
+
+              const labelBlock = (
+                <>
+                  <span
+                    className="flex size-6 shrink-0 items-center justify-center text-muted-foreground"
+                    aria-hidden={!lane.hasChildren}
+                  >
+                    {lane.hasChildren ? (
+                      <ChevronRight
+                        className={cn(
+                          "size-4 shrink-0 transition-transform",
+                          lane.expanded && "rotate-90",
+                        )}
+                      />
+                    ) : null}
+                  </span>
+                  <span
                     className={cn(
-                      "w-2 h-2 rounded-full mt-0.5 shrink-0",
+                      "size-2 shrink-0 rounded-full ring-1 ring-border/40 ring-inset",
                       lane.color,
                     )}
                   />
-                  <span className="text-xs text-foreground whitespace-normal truncate min-w-0 h-full">
+                  <span className="min-w-0 flex-1 text-xs leading-snug text-foreground [overflow-wrap:anywhere]">
                     {lane.name}
                   </span>
+                </>
+              );
+
+              return (
+                <div
+                  key={lane.id}
+                  className={cn("min-h-0 min-w-0 border-b border-border", zebra)}
+                  style={{ height: rowHeight }}
+                >
+                  {lane.hasChildren ? (
+                    <button
+                      type="button"
+                      data-timeline-lane-expand
+                      className={rowInnerClass}
+                      style={{ paddingLeft: indentPx }}
+                      aria-expanded={lane.expanded}
+                      aria-label={`${lane.expanded ? "Collapse" : "Expand"} ${lane.name} sublanes`}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleLaneExpanded(lane.id);
+                      }}
+                    >
+                      {labelBlock}
+                    </button>
+                  ) : (
+                    <div
+                      className={rowInnerClass}
+                      style={{ paddingLeft: indentPx }}
+                    >
+                      {labelBlock}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1759,29 +1029,7 @@ export function InfiniteTimeline<Data = unknown>({
             left: SIDEBAR_WIDTH,
             right: 0,
           }}
-          onMouseDown={(e) => {
-            // Handle panning on empty space in the grid
-            if (e.button === 0 && !dragState && !panState) {
-              // Check if we're clicking on an item or lane
-              const target = e.target as HTMLElement;
-              if (
-                e.metaKey ||
-                e.ctrlKey ||
-                target.closest("[data-timeline-item]") ||
-                target.closest("[data-timeline-lane]")
-              ) {
-                return;
-              }
-              e.preventDefault();
-              e.stopPropagation();
-              setPanState({
-                startX: e.clientX,
-                startY: e.clientY,
-                startScrollOffset: scrollOffset,
-                startVerticalScrollOffset: verticalScrollOffset,
-              });
-            }
-          }}
+          onMouseDown={onTimelineGridMouseDown}
         >
           <div
             style={{
@@ -1936,6 +1184,45 @@ export function InfiniteTimeline<Data = unknown>({
                 </>
               )}
 
+              {timeScale === "quarters" && (
+                <>
+                  {quarterScaleMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    const date = minutesToDate(minutes, baseDateZoned);
+                    const isQ1 = date.getMonth() === 0;
+
+                    return (
+                      <div
+                        key={`qgrid-cal-${minutes}`}
+                        className={cn(
+                          "absolute top-0 w-px",
+                          isQ1 ? "bg-primary/50" : "bg-border/40",
+                        )}
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                  {yearMarkers.map((minutes) => {
+                    const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                    const containerWidth =
+                      containerRef.current?.clientWidth || 2000;
+                    if (x < 0 || x > containerWidth) return null;
+
+                    return (
+                      <div
+                        key={`ygrid-q-${minutes}`}
+                        className="absolute top-0 w-0.5 bg-primary/60"
+                        style={{ left: x, height: totalHeight }}
+                      />
+                    );
+                  })}
+                </>
+              )}
+
               {timeScale === "months" && (
                 <>
                   {/* Month lines */}
@@ -1987,7 +1274,7 @@ export function InfiniteTimeline<Data = unknown>({
             </div>
 
             {/* Lanes */}
-            {lanes.map((lane, laneIndex) => {
+            {visibleLaneRows.map((lane, laneIndex) => {
               const previewForLane =
                 calculatedPreviewItem &&
                 calculatedPreviewItem.laneId === lane.id
@@ -2052,6 +1339,13 @@ export function InfiniteTimeline<Data = unknown>({
                       onMouseOver: onItemHover
                         ? () => onItemHover(externalItem)
                         : undefined,
+                      onClick:
+                        itemActivateTrigger === "click"
+                          ? (
+                              e: ReactMouseEvent,
+                              clicked: TimelineItem<Data>,
+                            ) => activateItemOnClick(e, clicked)
+                          : undefined,
                     };
 
                     return (
@@ -2114,7 +1408,8 @@ export function InfiniteTimeline<Data = unknown>({
       {/* Status Bar */}
       <div className="flex items-center justify-between px-4 h-8 border-t border-border bg-card text-xs text-muted-foreground">
         <span>
-          {items.length} events across {lanes.length} tracks
+          {itemsForTimeline.length} events across {visibleLaneRows.length}{" "}
+          tracks
         </span>
         <div className="flex items-center gap-4">
           {selectedItemId &&
@@ -2193,11 +1488,13 @@ function DrawingPreview({
     let row = 0;
     let foundRow = false;
     while (!foundRow) {
-      const hasOverlap = existingItems.some(
-        (placed) =>
-          placed.row === row &&
-          !(previewEnd <= placed.start || previewStart >= placed.end),
-      );
+      const hasOverlap = existingItems.some((placed) => {
+        if (placed.row !== row) return false;
+        return timelineItemsTimeOverlap(
+          { start: previewStart, end: previewEnd },
+          placed,
+        );
+      });
       if (!hasOverlap) {
         foundRow = true;
       } else {
