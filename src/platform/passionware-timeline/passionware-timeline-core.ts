@@ -167,6 +167,57 @@ export function minutesToZonedDateTime(
   return fromAbsolute(targetMs, baseDate.timeZone);
 }
 
+/** Civil midnight in `baseDate.timeZone` for the instant at `minutes` (not `floor(m/1440)*1440`). */
+export function getZonedDayStartMinutes(
+  minutes: number,
+  baseDate: ZonedDateTime,
+): number {
+  return zonedDateTimeToMinutes(
+    toZoned(
+      toCalendarDate(minutesToZonedDateTime(minutes, baseDate)),
+      baseDate.timeZone,
+    ),
+    baseDate,
+  );
+}
+
+function calendarDayAfterEndTime(
+  endTime: number,
+  baseDate: ZonedDateTime,
+): CalendarDate {
+  return toCalendarDate(minutesToZonedDateTime(endTime, baseDate)).add({
+    days: 1,
+  });
+}
+
+/** Timeline minutes for local midnight on the calendar day after `endTime`'s date. */
+export function getZonedDayAfterEndMinutes(
+  endTime: number,
+  baseDate: ZonedDateTime,
+): number {
+  const nextDay = calendarDayAfterEndTime(endTime, baseDate);
+  return zonedDateTimeToMinutes(
+    toZoned(nextDay, baseDate.timeZone),
+    baseDate,
+  );
+}
+
+/** Local midnights from the day of `startTime` through the day after `endTime` (calendar dates). */
+export function collectDayMarkerMinutesForRange(
+  startTime: number,
+  endTime: number,
+  baseDate: ZonedDateTime,
+): number[] {
+  const zone = baseDate.timeZone;
+  let cal = toCalendarDate(minutesToZonedDateTime(startTime, baseDate));
+  const until = calendarDayAfterEndTime(endTime, baseDate);
+  const out: number[] = [];
+  for (; cal.compare(until) <= 0; cal = cal.add({ days: 1 })) {
+    out.push(zonedDateTimeToMinutes(toZoned(cal, zone), baseDate));
+  }
+  return out;
+}
+
 function calendarQuarterStart(cal: CalendarDate): CalendarDate {
   const m = Math.floor((cal.month - 1) / 3) * 3 + 1;
   return new CalendarDate(cal.year, m, 1);
@@ -461,8 +512,4 @@ export function formatWeek(minutes: number, baseDate: ZonedDateTime): string {
     month: "short",
     day: "numeric",
   });
-}
-
-export function getDayStart(minutes: number): number {
-  return Math.floor(minutes / 1440) * 1440;
 }

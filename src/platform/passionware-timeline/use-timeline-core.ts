@@ -158,7 +158,8 @@ export function useTimelineCore<Data = unknown, TLaneMeta = unknown>({
         modification.start !== undefined ||
         modification.end !== undefined
       ) {
-        const { semanticEndMinutes: _, ...rest } = merged;
+        const { semanticEndMinutes: _unused, ...rest } = merged;
+        void _unused;
         return rest;
       }
       return merged;

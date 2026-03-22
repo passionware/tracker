@@ -38,10 +38,12 @@ import {
   formatQuarter,
   formatWeek,
   alignDayMinutesToWeekStart,
+  collectDayMarkerMinutesForRange,
   collectMonthStartMinutesForRange,
   collectQuarterStartMinutesForRange,
   collectYearStartMinutesForRange,
-  getDayStart,
+  getZonedDayAfterEndMinutes,
+  getZonedDayStartMinutes,
   minutesToZonedDateTime,
   timelineZonedNow,
   zonedDateTimeToMinutes,
@@ -436,19 +438,23 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
       }
     }
 
-    // Generate day markers for top header
-    const startDay = getDayStart(startTime);
-    const endDay = getDayStart(endTime) + 1440;
-    for (let d = startDay; d <= endDay; d += 1440) {
-      dayMarkers.push(d);
-    }
+    // Generate day markers for top header (local civil midnights, not fixed 1440 blocks)
+    dayMarkers.push(
+      ...collectDayMarkerMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+      ),
+    );
   } else if (timeScale === "days") {
     // Show days in time header, months in top header
-    const startDay = getDayStart(startTime);
-    const endDay = getDayStart(endTime) + 1440;
-    for (let d = startDay; d <= endDay; d += 1440) {
-      dayMarkers.push(d);
-    }
+    dayMarkers.push(
+      ...collectDayMarkerMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+      ),
+    );
 
     monthMarkers.push(
       ...collectMonthStartMinutesForRange(
@@ -460,12 +466,12 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
     );
   } else if (timeScale === "weeks") {
     // Show weeks in time header, months in top header
-    const startDay = getDayStart(startTime);
-    const endDay = getDayStart(endTime) + 1440;
+    const endLimit = getZonedDayAfterEndMinutes(endTime, baseDateZoned);
+    const startDay = getZonedDayStartMinutes(startTime, baseDateZoned);
 
     const currentWeek = alignDayMinutesToWeekStart(startDay, baseDateZoned);
 
-    for (let w = currentWeek; w <= endDay; w += 10080) {
+    for (let w = currentWeek; w <= endLimit; w += 10080) {
       // 7 days = 10080 minutes
       weekMarkers.push(w);
     }
