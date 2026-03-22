@@ -6,7 +6,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip.tsx";
 import { useSidebar } from "@/components/ui/sidebar.tsx";
-import { getDevDatabaseSidebarLines } from "@/core/devDatabaseEnv.ts";
+import {
+  getDevDatabaseSidebarLines,
+  isLocalhostHostname,
+} from "@/core/devDatabaseEnv.ts";
 import { cn } from "@/lib/utils";
 import { Database } from "lucide-react";
 
@@ -77,7 +80,10 @@ export function DevDatabaseBannerView({
 
 export function SidebarDevDatabaseBanner() {
   const { state, isMobile } = useSidebar();
-  const lines = getDevDatabaseSidebarLines();
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    isLocalhostHostname(window.location.hostname);
+  const lines = getDevDatabaseSidebarLines({ isLocalhost });
   const collapsed = state === "collapsed" && !isMobile;
 
   return <DevDatabaseBannerView lines={lines} collapsed={collapsed} />;
