@@ -7,6 +7,7 @@ import {
 } from "@/features/_common/ProtectedRoute.tsx";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
 import { LoginPage } from "@/features/app/LoginWidget.tsx";
+import { NotFoundPage } from "@/features/app/NotFoundPage.tsx";
 import {
   GeneratedReportIdResolver,
   IdResolver,
@@ -26,6 +27,7 @@ import { ExportBuilderPage } from "@/features/project-iterations/widgets/ExportB
 import { GroupedViewPage } from "@/features/project-iterations/widgets/GroupedViewPage.tsx";
 import { ProjectDetailWidget } from "@/features/projects/ProjectDetailWidget.tsx";
 import { ProjectListWidget } from "@/features/projects/ProjectListWidget.tsx";
+import { ProjectsTimelineWidget } from "@/features/projects/ProjectsTimelineWidget.tsx";
 import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
@@ -62,6 +64,10 @@ export function RootWidget(props: WithFrontServices) {
         <Route
           path="/login"
           element={<LoginPage services={props.services} />}
+        />
+        <Route
+          path={myRouting.forGlobal().notFound()}
+          element={<NotFoundPage services={props.services} />}
         />
         {/* OAuth callback routes */}
         <Route
@@ -553,6 +559,33 @@ export function RootWidget(props: WithFrontServices) {
           path={myRouting
             .forWorkspace()
             .forClient()
+            .projectsTimeline()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <EntityDrawerRouteLayout
+                      clientId={clientId}
+                      workspaceId={workspaceId}
+                      services={props.services}
+                    >
+                      <ProjectsTimelineWidget
+                        clientId={clientId}
+                        workspaceId={workspaceId}
+                        services={props.services}
+                      />
+                    </EntityDrawerRouteLayout>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting
+            .forWorkspace()
+            .forClient()
             .projectsRoot()}
           element={
             <IdResolver services={props.services}>
@@ -633,6 +666,10 @@ export function RootWidget(props: WithFrontServices) {
         <Route
           path={`${myRouting.forClientCockpit().root()}/*`}
           element={<CockpitMainRouter services={props.services} />}
+        />
+        <Route
+          path="*"
+          element={<NotFoundPage services={props.services} />}
         />
       </Routes>
       <RenderIfAuthenticated services={props.services}>

@@ -67,6 +67,10 @@ function useData(
               title: "Closed projects",
               url: routing.closedProjects(),
             },
+            {
+              title: "Timeline",
+              url: routing.projectsTimeline(),
+            },
           ],
         },
         {
