@@ -19,6 +19,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  pickerCommandGroupClassName,
+  pickerCommandHeaderSlotClassName,
+  pickerOptionRowInnerClassName,
+  pickerOptionRowOuterClassName,
+} from "@/features/_common/elements/pickers/_common/picker-command-layout.ts";
 import { cn } from "@/lib/utils.ts";
 import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -303,8 +309,8 @@ export function AbstractMultiPicker<Id, Data>(
             }
           />
           <CommandList>
-            <CommandGroup>
-              <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
+            <CommandGroup className={pickerCommandGroupClassName}>
+              <div className={pickerCommandHeaderSlotClassName}>
                 {allowUnassigned && (
                   <CommandItem
                     variant="info"
@@ -373,17 +379,14 @@ export function AbstractMultiPicker<Id, Data>(
                           config.renderOption ?? config.renderItem,
                           _props,
                         )(data);
+
+                    const itemsStretch = Boolean(config.renderMultiOption);
+
                     return (
                       <CommandItem
                         key={rowKey}
                         value={rowKey}
-                        className={cn(
-                          "min-w-0 w-full",
-                          config.renderMultiOption &&
-                            "gap-0 p-0! items-stretch min-h-0",
-                          isSelected &&
-                            "bg-accent text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground",
-                        )}
+                        className={pickerOptionRowOuterClassName(itemsStretch)}
                         onSelect={() => {
                           if (
                             config.renderMultiOption &&
@@ -394,15 +397,22 @@ export function AbstractMultiPicker<Id, Data>(
                           handleSelect(xor(value, [itemId]), itemId, "toggle");
                         }}
                       >
-                        {renderBody}
-                        {!config.renderMultiOption ? (
-                          <Check
-                            className={cn(
-                              "ml-auto",
-                              isSelected ? "opacity-100" : "opacity-0",
-                            )}
-                          />
-                        ) : null}
+                        <div
+                          className={pickerOptionRowInnerClassName({
+                            isSelected,
+                            itemsStretch,
+                          })}
+                        >
+                          {renderBody}
+                          {!config.renderMultiOption ? (
+                            <Check
+                              className={cn(
+                                "ml-auto shrink-0",
+                                isSelected ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          ) : null}
+                        </div>
                       </CommandItem>
                     );
                   });

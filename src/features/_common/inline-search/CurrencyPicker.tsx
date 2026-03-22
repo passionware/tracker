@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button.tsx";
 import {
+  pickerCommandGroupClassName,
+  pickerOptionRowInnerClassName,
+  pickerOptionRowOuterClassName,
+} from "@/features/_common/elements/pickers/_common/picker-command-layout.ts";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -59,25 +64,36 @@ export function CurrencyPicker({ value, onSelect }: CurrencyPickerProps) {
           />
           <CommandList>
             <CommandEmpty>No currency found.</CommandEmpty>
-            <CommandGroup>
-              {filteredCurrencies.map((currency) => (
-                <CommandItem
-                  key={currency.id}
-                  value={currency.id}
-                  onSelect={() => {
-                    onSelect(currency.id);
-                    setOpen(false);
-                  }}
-                >
-                  {currency.label}
-                  <Check
-                    className={cn(
-                      "ml-auto",
-                      value === currency.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                </CommandItem>
-              ))}
+            <CommandGroup className={pickerCommandGroupClassName}>
+              {filteredCurrencies.map((currency) => {
+                const isSelected = value === currency.id;
+                return (
+                  <CommandItem
+                    key={currency.id}
+                    value={currency.id}
+                    className={pickerOptionRowOuterClassName(false)}
+                    onSelect={() => {
+                      onSelect(currency.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <div
+                      className={pickerOptionRowInnerClassName({
+                        isSelected,
+                        itemsStretch: false,
+                      })}
+                    >
+                      {currency.label}
+                      <Check
+                        className={cn(
+                          "ml-auto shrink-0",
+                          isSelected ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </div>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
