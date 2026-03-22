@@ -614,12 +614,18 @@ export function RootWidget(props: WithFrontServices) {
                   {(workspaceId, clientId) => (
                     <ProjectIdResolver services={props.services}>
                       {(projectId) => (
-                        <ProjectDetailWidget
+                        <EntityDrawerRouteLayout
                           clientId={clientId}
                           workspaceId={workspaceId}
-                          projectId={projectId}
                           services={props.services}
-                        />
+                        >
+                          <ProjectDetailWidget
+                            clientId={clientId}
+                            workspaceId={workspaceId}
+                            projectId={projectId}
+                            services={props.services}
+                          />
+                        </EntityDrawerRouteLayout>
                       )}
                     </ProjectIdResolver>
                   )}

@@ -59,7 +59,6 @@ import {
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
-import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import type { BillingTimelineColorBy } from "@/services/internal/PreferenceService/PreferenceService.ts";
@@ -250,8 +249,6 @@ export function BillingWidget(props: BillingWidgetProps) {
   const timelineData = useMemo(
     () =>
       rd.map(finalBillings, (billingView) => {
-    const timeZone = getLocalTimeZone();
-
     const entriesWithBounds = billingView.entries
       .map((billing) => {
         const linkedReports = billing.links.flatMap((link) =>
@@ -276,8 +273,8 @@ export function BillingWidget(props: BillingWidgetProps) {
 
         return {
           billing,
-          start: toZoned(earliestReport.periodStart, timeZone),
-          end: toZoned(latestReport.periodEnd, timeZone).add({ days: 1 }),
+          start: earliestReport.periodStart,
+          end: latestReport.periodEnd,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);

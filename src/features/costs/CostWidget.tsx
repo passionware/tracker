@@ -54,7 +54,6 @@ import {
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createSimpleEvent } from "@passionware/simple-event";
@@ -183,7 +182,6 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   const columns = useColumns(props);
 
   const timelineData = rd.map(finalCosts, (costView) => {
-    const timeZone = getLocalTimeZone();
     const getCostStatusColor = (status: CostEntry["status"]): string => {
       switch (status) {
         case "unmatched":
@@ -229,10 +227,8 @@ export function CostWidget(props: PotentialCostWidgetProps) {
 
         return {
           cost,
-          start: toZoned(earliestReport.report.periodStart, timeZone),
-          end: toZoned(latestReport.report.periodEnd, timeZone).add({
-            days: 1,
-          }),
+          start: earliestReport.report.periodStart,
+          end: latestReport.report.periodEnd,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
