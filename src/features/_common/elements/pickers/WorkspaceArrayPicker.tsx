@@ -23,6 +23,21 @@ export const WorkspaceArrayPicker = injectConfig(
       />
     ),
     renderOption: (item) => <WorkspaceView workspace={rd.of(item)} />,
+    renderMultiOption: (item, ctx) => (
+      <WorkspaceView
+        workspace={rd.of(item)}
+        multiPickerOptionZones={{
+          onAvatarClick: ctx.onAvatarClick,
+          onRightPartClick: ctx.onRightPartClick,
+        }}
+        multiPickerTrailing={ctx.trailingSlot}
+        multiPickerExclusiveHover={{
+          onPointerEnter: ctx.onExclusiveZonePointerEnter,
+          onPointerLeave: ctx.onExclusiveZonePointerLeave,
+        }}
+        multiPickerDimExclusiveStrip={ctx.dimExclusiveStrip}
+      />
+    ),
     getKey: (item) => item.id.toString(),
     getItemId: (item) => item.id,
     useSelectedItems: (ids) => {

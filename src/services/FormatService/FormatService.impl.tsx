@@ -235,6 +235,19 @@ export function createFormatService(clock: () => Date): FormatService {
             </RangeWrapper>
           );
         },
+        plainText: (startDate, endDate) => {
+          const fixedStartDate = tmpFixDate(startDate);
+          const fixedEndDate = tmpFixDate(endDate);
+          try {
+            if (isSameDay(fixedStartDate, fixedEndDate)) {
+              return format(fixedStartDate, "dd.MM.yyyy");
+            }
+            return `${format(fixedStartDate, "dd.MM.yyyy")} – ${format(fixedEndDate, "dd.MM.yyyy")}`;
+          } catch (e) {
+            console.log(e);
+            return `error: ${e}`;
+          }
+        },
         long: (startDate, endDate) => {
           const fixedStartDate = tmpFixDate(startDate);
           const fixedEndDate = tmpFixDate(endDate);

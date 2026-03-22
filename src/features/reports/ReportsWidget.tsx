@@ -56,7 +56,6 @@ import { cn } from "@/lib/utils";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import {
   addDaysToCalendarDate,
-  calendarDateToJSDate,
   dateToCalendarDate,
 } from "@/platform/lang/internationalized-date";
 import {
@@ -66,12 +65,11 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import {
   DefaultTimelineItem,
-  InfiniteTimeline,
+  InfiniteTimelineWithState,
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
-import { getLocalTimeZone, toZoned } from "@internationalized/date";
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createSimpleEvent } from "@passionware/simple-event";
@@ -462,20 +460,14 @@ export function ReportsWidget(props: ReportsWidgetProps) {
 
         const items: TimelineItem<ReportViewEntry>[] = reports.map(
           (report: ReportViewEntry) => {
-            const endDate = calendarDateToJSDate(report.periodEnd);
-            // Add one day to end date to include the full end day
-            endDate.setHours(23, 59, 59, 999);
-
             const laneId = getLaneId(report);
             const lane = lanes.find((l) => l.id === laneId);
 
             return {
               id: `report-${report.id}`,
               laneId: lane?.id || laneId,
-              start: toZoned(report.periodStart, getLocalTimeZone()),
-              end: toZoned(report.periodEnd, getLocalTimeZone()).add({
-                days: 1,
-              }),
+              start: report.periodStart,
+              end: report.periodEnd,
               label: report.description || `Report #${report.id}`,
               color: getTimelineItemColor(report, lane) || lane?.color,
               data: report,
@@ -724,7 +716,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               getDimmedClasses(rd.isPlaceholderData(timelineData)),
             )}
           >
-            <InfiniteTimeline
+            <InfiniteTimelineWithState
               isEventSelected={(item) =>
                 selectionState.isSelected(selection, item.data.id)
               }

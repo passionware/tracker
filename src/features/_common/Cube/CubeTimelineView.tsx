@@ -9,9 +9,10 @@ import { useMemo } from "react";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import {
   InfiniteTimeline,
-  type Lane,
+  useTimelineCore,
   type TimelineItem,
-} from "@/platform/passionware-timeline";
+} from "@/platform/passionware-timeline/passionware-timeline.tsx";
+import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
 import {
   useCubeContext,
   useCurrentBreakdownDimensionId,
@@ -277,6 +278,8 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
     return { lanes, items };
   }, [groupedData, createEventLabel, timeZone]);
 
+  const timelineState = useTimelineCore({ items, lanes });
+
   if (currentItems.length === 0) {
     return (
       <div className={cn("p-4", className)}>
@@ -305,7 +308,7 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
         </div>
       )}
       <div className="w-full h-full rounded-md overflow-hidden border border-slate-200">
-        <InfiniteTimeline items={items} lanes={lanes} />
+        <InfiniteTimeline state={timelineState} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import {
   client$,
+  linkWorkspaceClientWithClient$,
   linkWorkspaceClientWithWorkspace$,
 } from "@/api/clients/clients.api.http.schema.ts";
 import { workspaceFromHttp } from "@/api/workspace/workspace.api.http.schema.ts";
@@ -76,6 +77,29 @@ export function createClientsApi(client: SupabaseClient): ClientsApi {
         z.array(linkWorkspaceClientWithWorkspace$),
         data,
       ).map((row) => workspaceFromHttp(row.workspace));
+    },
+    getLinkedClientsForWorkspace: async (workspaceId) => {
+      const { data, error } = await client
+        .from("link_workspace_client")
+        .select(
+          `
+          client:client_id (
+            id,
+            name,
+            avatar_url,
+            sender_name,
+            hidden
+          )
+        `,
+        )
+        .eq("workspace_id", workspaceId);
+      if (error) {
+        throw error;
+      }
+      return parseWithDataError(
+        z.array(linkWorkspaceClientWithClient$),
+        data,
+      ).map((row) => clientFromHttp(row.client));
     },
   };
 }

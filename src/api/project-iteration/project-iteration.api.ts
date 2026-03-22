@@ -94,6 +94,10 @@ export interface ProjectIterationApi {
     query: ProjectIterationQuery,
   ) => Promise<ProjectIteration[]>;
   getProjectIterationDetail: (id: number) => Promise<ProjectIterationDetail>;
+  /** Full detail rows for each id; omit ids missing in the database. */
+  getProjectIterationDetailsByIds: (
+    ids: ProjectIteration["id"][],
+  ) => Promise<ProjectIterationDetail[]>;
   getProjectIterationsByIds: (
     ids: ProjectIteration["id"][],
   ) => Promise<Record<ProjectIteration["id"], ProjectIteration>>;

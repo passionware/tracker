@@ -1,8 +1,12 @@
+import type { FrontServices } from "@/core/frontServices.ts";
 import type { ReactNode } from "react";
-import type { DrawerServices } from "./drawerTypes";
 
-/** The merged services object (DrawerServices.services) passed to descriptor methods. */
-export type DrawerDescriptorServices = DrawerServices["services"];
+/**
+ * Drawers receive the same service bundle as the app shell (`EntityDrawerRouteLayout`
+ * passes `props.services`), so descriptors may use any front service (e.g. report
+ * generation from the iteration drawer).
+ */
+export type DrawerDescriptorServices = FrontServices;
 
 export type DrawerDescriptor<EntitySpec> = {
   getKey: (entity: EntitySpec) => string;

@@ -65,6 +65,24 @@ export function createProjectIterationApi(
         parseWithDataError(projectIterationDetail$, data),
       );
     },
+    getProjectIterationDetailsByIds: async (ids) => {
+      if (ids.length === 0) {
+        return [];
+      }
+      const { data, error } = await client
+        .from("project_iteration")
+        .select("*, project_iteration_position(*)")
+        .in("id", ids)
+        .order("order", {
+          ascending: true,
+          foreignTable: "project_iteration_position",
+        });
+      if (error) {
+        throw error;
+      }
+      const rows = parseWithDataError(z.array(projectIterationDetail$), data);
+      return rows.map(projectIterationDetailFromHttp);
+    },
     getProjectIterationsByIds: async (ids) => {
       if (ids.length === 0) {
         return {};

@@ -43,6 +43,13 @@ export function useEntityDrawerState<T = EntityStackItem>(
     setEntityStack((current) => current.slice(0, -1));
   }, []);
 
+  /** Replace the top stack entry (e.g. swap create form for created entity detail). */
+  const replaceEntityDrawerTop = useCallback((entity: T) => {
+    setEntityStack((current) =>
+      current.length === 0 ? [entity] : [...current.slice(0, -1), entity],
+    );
+  }, []);
+
   const closeEntityDrawer = useCallback(() => {
     setEntityStack([]);
   }, []);
@@ -54,6 +61,7 @@ export function useEntityDrawerState<T = EntityStackItem>(
     pushEntityDrawer,
     jumpToEntityStackIndex,
     popEntityDrawer,
+    replaceEntityDrawerTop,
     closeEntityDrawer,
     setEntityStack,
   };

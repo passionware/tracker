@@ -11,6 +11,10 @@ alwaysApply: true
 
 When a pattern becomes the **standard** way to build a part of the app, **add a short entry** under the relevant rule in `.cursor/rules/` so future work stays consistent.
 
+# Data fetching (React Query)
+
+**Do not import or call TanStack Query (`useQuery`, `useQueries`, `useMutation`, etc.) from feature UI, routes, or widgets.** Expose **`useX` / `ensureX` on services** (`@/services/.../*.impl.ts`) and consume those from components. Keeps cache keys, stale times, and orchestration in one place.
+
 # Dead code and unused options
 
 Remove unused exports, components, and parameters (e.g. a component never imported, or a param always passed false). Prefer deleting over commenting out.

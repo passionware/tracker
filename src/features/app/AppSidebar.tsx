@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { myQueryClient } from "@/core/query.connected.ts";
+import { SidebarDevDatabaseBanner } from "@/features/_common/patterns/SidebarDevDatabaseBanner.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { ClientSwitcher } from "@/features/app/ClientSwitcher.tsx";
 
@@ -30,10 +31,8 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   AudioLines,
   BriefcaseBusiness,
-  Frame,
   Grid3X3,
   HandCoins,
-  HardHat,
   Leaf,
   PieChart,
 } from "lucide-react";
@@ -57,6 +56,10 @@ function useData(
           url: routing.projectsRoot(),
           icon: BriefcaseBusiness,
           items: [
+            {
+              title: "Timeline",
+              url: routing.projectsTimeline(),
+            },
             {
               title: "Active projects",
               url: routing.activeProjects(),
@@ -91,21 +94,6 @@ function useData(
             {
               title: "Relevant costs",
               url: routing.potentialCosts(),
-            },
-          ],
-        },
-        {
-          title: "Contractor",
-          url: "#",
-          icon: HardHat,
-          items: [
-            {
-              title: "Reports",
-              url: "#",
-            },
-            {
-              title: "Cost invoices",
-              url: "#",
             },
           ],
         },
@@ -180,11 +168,6 @@ function useData(
           url: myRouting.forClientCockpit().root(),
           icon: PieChart,
         },
-        {
-          name: "Display settings",
-          url: "#",
-          icon: Frame,
-        },
       ],
     };
   }, [currentClientId, currentWorkspaceId]);
@@ -214,6 +197,7 @@ export function AppSidebar({
   const currentWorkspaceId =
     services.locationService.useCurrentWorkspaceId() ?? idSpecUtils.ofAll();
   const data = useData(services);
+  const sidebarNavExpansion = services.preferenceService.useAppSidebarNavExpansion();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -247,7 +231,10 @@ export function AppSidebar({
         )}
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain
+          items={data.navMain}
+          sidebarNavExpansion={sidebarNavExpansion}
+        />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
@@ -257,6 +244,7 @@ export function AppSidebar({
             buttonPosition="relative"
           />
         </div>
+        <SidebarDevDatabaseBanner />
         {rd
           .journey(auth)
           .wait(<Skeleton className="w-20 h-4" />)

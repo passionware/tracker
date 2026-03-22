@@ -6,6 +6,7 @@ import { RootWidget } from "@/features/app/RootWidget.tsx";
 import { unstable_HistoryRouter as HistoryRouter } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { DialogServiceHandler } from "./services/front/DialogService/DialogService.impl.connected";
+import { PointerFollowTooltipProvider } from "./components/ui/pointer-follow-tooltip.tsx";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { createTrackerPersistentBrowserHistory } from "./services/internal/navigation/createPersistentBrowserHistory.connected";
 
@@ -15,10 +16,12 @@ function App() {
   return (
     <HistoryRouter history={history as any}>
       <TooltipProvider delayDuration={0}>
-        <NavigationServiceInject />
-        <DialogServiceHandler />
-        <RootWidget services={myServices} />
-        <Toaster />
+        <PointerFollowTooltipProvider>
+          <NavigationServiceInject />
+          <DialogServiceHandler />
+          <RootWidget services={myServices} />
+          <Toaster />
+        </PointerFollowTooltipProvider>
       </TooltipProvider>
     </HistoryRouter>
   );

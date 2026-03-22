@@ -200,16 +200,16 @@ export function AbstractEntityView({
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-1 items-stretch gap-0 self-stretch text-xs whitespace-pre text-foreground",
+        "flex w-full min-w-0 flex-1 items-center gap-0 self-stretch text-xs whitespace-pre text-foreground",
         className,
       )}
     >
       {/*
-        No padding on this outer row: padding would receive clicks and bubble to cmdk Item (toggle).
-        Inset lives inside the two columns; padding is part of each column’s box so clicks stay routed.
+        Vertical padding comes from the picker option shell (p-1.5); zones only add horizontal insets
+        so row height matches non–multi-option entity rows. Clicks stay on the two columns, not the gap.
       */}
       <div
-        className="flex shrink-0 cursor-pointer touch-manipulation items-center py-1.5 pl-2"
+        className="flex shrink-0 cursor-pointer touch-manipulation items-center pl-0 pr-1"
         onClick={(e) =>
           optionZoneClick(e, multiPickerOptionZones.onAvatarClick)
         }
@@ -218,7 +218,7 @@ export function AbstractEntityView({
       </div>
       <div
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 cursor-pointer touch-manipulation items-center gap-2 py-1.5 pl-2 pr-2",
+          "flex min-h-0 min-w-0 flex-1 cursor-pointer touch-manipulation items-center gap-2 pl-1 pr-0",
           "transition-opacity duration-200 ease-out motion-reduce:transition-none",
           multiPickerDimExclusiveStrip &&
             "opacity-40 motion-reduce:opacity-100",

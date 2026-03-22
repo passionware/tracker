@@ -18,6 +18,12 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
+import {
+  pickerCommandGroupClassName,
+  pickerCommandHeaderSlotClassName,
+  pickerOptionRowInnerClassName,
+  pickerOptionRowOuterClassName,
+} from "@/features/_common/elements/pickers/_common/picker-command-layout.ts";
 import { cn } from "@/lib/utils.ts";
 import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
@@ -199,8 +205,8 @@ export function AbstractPicker<Id, Data>(
             />
           )}
           <CommandList>
-            <CommandGroup>
-              <div className="border-b pb-1 mb-1 space-y-1 empty:hidden">
+            <CommandGroup className={pickerCommandGroupClassName}>
+              <div className={pickerCommandHeaderSlotClassName}>
                 {allowClear && maybe.isPresent(value) && !searchable && (
                   <CommandItem
                     value={undefined}
@@ -242,36 +248,49 @@ export function AbstractPicker<Id, Data>(
                   if (options.length === 0) {
                     return <CommandEmpty>Nothing found</CommandEmpty>;
                   }
-                  return options.map((data) => (
-                    <CommandItem
-                      key={config.getKey(data)}
-                      value={config.getKey(data)}
-                      onSelect={() => {
-                        if (value === config.getItemId(data)) {
-                          if (allowClear) {
-                            handleSelect(null);
+                  return options.map((data) => {
+                    const itemId = config.getItemId(data);
+                    const isSelected =
+                      maybe.isPresent(value) &&
+                      unassignedUtils.isAssigned(value) &&
+                      String(value) === String(itemId);
+                    return (
+                      <CommandItem
+                        key={config.getKey(data)}
+                        value={config.getKey(data)}
+                        className={pickerOptionRowOuterClassName(false)}
+                        onSelect={() => {
+                          if (value === itemId) {
+                            if (allowClear) {
+                              handleSelect(null);
+                            }
+                            setOpen(false);
+                            return;
                           }
-                          setOpen(false);
-                          return;
-                        }
 
-                        handleSelect(config.getItemId(data));
-                      }}
-                    >
-                      {partialRight(
-                        config.renderOption ?? config.renderItem,
-                        _props,
-                      )(data)}
-                      <Check
-                        className={cn(
-                          "ml-auto",
-                          value === config.getItemId(data)
-                            ? "opacity-100"
-                            : "opacity-0",
-                        )}
-                      />
-                    </CommandItem>
-                  ));
+                          handleSelect(itemId);
+                        }}
+                      >
+                        <div
+                          className={pickerOptionRowInnerClassName({
+                            isSelected,
+                            itemsStretch: false,
+                          })}
+                        >
+                          {partialRight(
+                            config.renderOption ?? config.renderItem,
+                            _props,
+                          )(data)}
+                          <Check
+                            className={cn(
+                              "ml-auto shrink-0",
+                              isSelected ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                        </div>
+                      </CommandItem>
+                    );
+                  });
                 })}
             </CommandGroup>
           </CommandList>

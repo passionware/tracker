@@ -23,6 +23,12 @@ import { workspaceDrawerDescriptor } from "./workspaceDescriptor";
 import type { WorkspaceDrawerSpec } from "@/features/workspaces/workspaceDrawerViews.tsx";
 import { workspaceFormDrawerDescriptor } from "./workspaceFormDescriptor";
 import type { WorkspaceFormSpec } from "./workspaceFormDescriptor";
+import { projectIterationDrawerDescriptor } from "./projectIterationDescriptor";
+import type { ProjectIterationSpec } from "./projectIterationDescriptor";
+import { projectIterationFormDrawerDescriptor } from "./projectIterationFormDescriptor";
+import type { ProjectIterationFormSpec } from "./projectIterationFormDescriptor";
+import { generatedReportReconciliationDrawerDescriptor } from "./generatedReportReconciliationDescriptor";
+import type { GeneratedReportReconciliationSpec } from "./generatedReportReconciliationDescriptor";
 
 /** Any item that can be on the drawer stack (detail or form). */
 export type EntityStackItem =
@@ -35,11 +41,19 @@ export type EntityStackItem =
   | CostFormSpec
   | BillingFormSpec
   | WorkspaceDrawerSpec
-  | WorkspaceFormSpec;
+  | WorkspaceFormSpec
+  | ProjectIterationSpec
+  | ProjectIterationFormSpec
+  | GeneratedReportReconciliationSpec;
 
 export type { ReportSpec, CostSpec, BillingSpec, ClientDrawerSpec };
 export type { ReportFormSpec, CostFormSpec, BillingFormSpec, ClientFormSpec };
 export type { WorkspaceDrawerSpec, WorkspaceFormSpec };
+export type {
+  ProjectIterationSpec,
+  ProjectIterationFormSpec,
+  GeneratedReportReconciliationSpec,
+};
 
 export {
   reportDrawerDescriptor,
@@ -78,6 +92,12 @@ export function getEntityStackKey(entity: EntityStackItem): string {
       return workspaceDrawerDescriptor.getKey(entity);
     case "workspace-form":
       return workspaceFormDrawerDescriptor.getKey(entity);
+    case "project-iteration":
+      return projectIterationDrawerDescriptor.getKey(entity);
+    case "project-iteration-form":
+      return projectIterationFormDrawerDescriptor.getKey(entity);
+    case "generated-report-reconciliation":
+      return generatedReportReconciliationDrawerDescriptor.getKey(entity);
   }
 }
 
@@ -109,6 +129,12 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getLabel(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getLabel(entity);
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.getLabel(entity);
+      case "project-iteration-form":
+        return projectIterationFormDrawerDescriptor.getLabel(entity);
+      case "generated-report-reconciliation":
+        return generatedReportReconciliationDrawerDescriptor.getLabel(entity);
     }
   },
   getTitle: (entity) => {
@@ -133,6 +159,12 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getTitle(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getTitle(entity);
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.getTitle(entity);
+      case "project-iteration-form":
+        return projectIterationFormDrawerDescriptor.getTitle(entity);
+      case "generated-report-reconciliation":
+        return generatedReportReconciliationDrawerDescriptor.getTitle(entity);
     }
   },
   renderBreadcrumbLabel: (
@@ -160,6 +192,21 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderBreadcrumbLabel(entity);
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.renderBreadcrumbLabel(
+          entity,
+          services,
+        );
+      case "project-iteration-form":
+        return projectIterationFormDrawerDescriptor.renderBreadcrumbLabel(
+          entity,
+          services,
+        );
+      case "generated-report-reconciliation":
+        return generatedReportReconciliationDrawerDescriptor.renderBreadcrumbLabel(
+          entity,
+          services,
+        );
     }
   },
   renderSmallPreview: (
@@ -187,6 +234,21 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderSmallPreview(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderSmallPreview(entity, services);
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.renderSmallPreview(
+          entity,
+          services,
+        );
+      case "project-iteration-form":
+        return projectIterationFormDrawerDescriptor.renderSmallPreview(
+          entity,
+          services,
+        );
+      case "generated-report-reconciliation":
+        return generatedReportReconciliationDrawerDescriptor.renderSmallPreview(
+          entity,
+          services,
+        );
     }
   },
   renderDrawerContent: (
@@ -217,6 +279,21 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderDrawerContent(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderDrawerContent(entity, services);
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
+      case "project-iteration-form":
+        return projectIterationFormDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
+      case "generated-report-reconciliation":
+        return generatedReportReconciliationDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
     }
   },
   renderHeaderActions: (
@@ -243,6 +320,15 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "workspace":
         return workspaceDrawerDescriptor.renderHeaderActions?.(entity, services);
       case "workspace-form":
+        return null;
+      case "project-iteration":
+        return projectIterationDrawerDescriptor.renderHeaderActions?.(
+          entity,
+          services,
+        );
+      case "project-iteration-form":
+        return null;
+      case "generated-report-reconciliation":
         return null;
     }
   },

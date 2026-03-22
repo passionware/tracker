@@ -56,6 +56,8 @@ export type ProjectQuery = WithFilters<{
   workspaceId: EnumFilter<Workspace["id"]>;
   createdAt: DateFilter;
   status: EnumFilter<"draft" | "active" | "closed">;
+  /** Filters loaded iterations on the projects timeline (not sent to project list API). */
+  iterationStatus: EnumFilter<"draft" | "active" | "closed">;
 }> &
   WithSearch &
   WithPagination &
@@ -73,6 +75,7 @@ export const projectQueryUtils = withBuilderUtils({
       workspaceId: null,
       status: null,
       createdAt: null,
+      iterationStatus: null,
     },
     page: paginationUtils.ofDefault(),
     sort: null,
@@ -119,6 +122,12 @@ export const projectQuerySchema = z
         .preprocess(strToNull, dateFilterSchema.nullable())
         .default(null),
       status: z
+        .preprocess(
+          strToNull,
+          enumFilterSchema(z.enum(["draft", "active", "closed"])).nullable(),
+        )
+        .default(null),
+      iterationStatus: z
         .preprocess(
           strToNull,
           enumFilterSchema(z.enum(["draft", "active", "closed"])).nullable(),

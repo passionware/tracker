@@ -29,6 +29,16 @@ export interface BulkCreateCostPreferences {
   vatPercent: number;
 }
 
+/** Persisted app sidebar: which top-level nav sections stay expanded (by section title). */
+export interface AppSidebarNavExpansion {
+  initialized: boolean;
+  expandedSectionTitles: readonly string[];
+  setSectionExpanded: (
+    sectionTitle: string,
+    expanded: boolean,
+  ) => Promise<void>;
+}
+
 export interface PreferenceService {
   useIsDangerMode: () => boolean;
   getIsDangerMode: () => boolean;
@@ -50,6 +60,16 @@ export interface PreferenceService {
     preferences: Partial<BulkCreateCostPreferences>,
   ) => Promise<void>;
   useBulkCreateCostPreferences: () => BulkCreateCostPreferences;
+  useAppSidebarNavExpansion: () => AppSidebarNavExpansion;
+  /**
+   * Last project chosen when creating an iteration, keyed by `workspaceId:clientId`
+   * (`"all"` for unspecific route scope). Used to preselect the project picker.
+   */
+  getLastProjectForNewIteration: (scopeKey: string) => Promise<number | null>;
+  setLastProjectForNewIteration: (
+    scopeKey: string,
+    projectId: number,
+  ) => Promise<void>;
 }
 
 export interface WithPreferenceService {

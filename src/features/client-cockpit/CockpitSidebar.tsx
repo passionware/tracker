@@ -20,6 +20,7 @@ import { maybe, rd } from "@passionware/monads";
 import { Building2, FileText, Home } from "lucide-react";
 import { ComponentProps } from "react";
 import { Link, matchPath, useLocation } from "react-router-dom";
+import { SidebarDevDatabaseBanner } from "@/features/_common/patterns/SidebarDevDatabaseBanner.tsx";
 import { CockpitNavUser } from "./CockpitNavUser";
 
 export function CockpitSidebar({
@@ -126,6 +127,7 @@ export function CockpitSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
+        <SidebarDevDatabaseBanner />
         {rd
           .journey(cockpitAuth)
           .wait(<Skeleton className="w-20 h-4" />)

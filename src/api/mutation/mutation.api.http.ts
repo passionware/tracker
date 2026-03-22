@@ -106,6 +106,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           currency: normalizeCurrency(report.currency),
           client_id: report.clientId,
           workspace_id: report.workspaceId,
+          project_iteration_id: report.projectIterationId,
           // Optional breakdown fields
           d_unit: report.unit,
           d_quantity: report.quantity,

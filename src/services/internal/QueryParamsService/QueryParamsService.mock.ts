@@ -23,6 +23,7 @@ export const defaultQueryParamsMockConfig = {
           workspaceId: null,
           status: null,
           createdAt: null,
+          iterationStatus: null,
         },
       }),
       use: () => ({
@@ -34,6 +35,7 @@ export const defaultQueryParamsMockConfig = {
           workspaceId: null,
           status: null,
           createdAt: null,
+          iterationStatus: null,
         },
       }),
     },

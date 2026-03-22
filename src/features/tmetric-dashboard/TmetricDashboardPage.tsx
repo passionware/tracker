@@ -21,7 +21,7 @@ import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
-import { InfiniteTimeline } from "@/platform/passionware-timeline";
+import { InfiniteTimelineWithState } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import {
   ClientSpec,
@@ -409,7 +409,7 @@ export function TmetricDashboardPage(
                   </CardHeader>
                   <CardContent className="flex-1 min-h-[400px]">
                     <div className="w-full h-full min-h-[400px] rounded-md overflow-hidden border border-border">
-                      <InfiniteTimeline
+                      <InfiniteTimelineWithState
                         items={resolvedTimeline.timelineItems}
                         lanes={resolvedTimeline.timelineLanes}
                       />

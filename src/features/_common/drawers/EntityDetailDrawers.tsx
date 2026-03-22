@@ -25,7 +25,9 @@ function isFormStackEntity(entity: EntityStackItem): boolean {
     entity.type === "client-form" ||
     entity.type === "workspace-form" ||
     entity.type === "cost-form" ||
-    entity.type === "report-form"
+    entity.type === "report-form" ||
+    entity.type === "project-iteration-form" ||
+    (entity.type === "project-iteration" && entity.intent === "create")
   );
 }
 
@@ -37,17 +39,24 @@ function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
 function drawerDescriptionForEntity(entity: EntityStackItem): string {
   switch (entity.type) {
     case "client":
-      return "Linked workspaces, bank sender label, and edit actions.";
+      return "Manage workspace links. Edit name, bank sender, and visibility from the actions menu.";
     case "client-form":
       return "Update name, logo, and bank sender label.";
     case "workspace":
-      return "Profile and slug; use Edit to change details.";
+      return "Link or unlink clients below. Slug, ID, and visibility are in the header; edit from the actions menu.";
     case "workspace-form":
       return "Update workspace name, slug, and logo.";
     case "billing-form":
     case "cost-form":
     case "report-form":
+    case "project-iteration-form":
       return "Edit the fields below and save, or cancel to go back.";
+    case "project-iteration":
+      return entity.intent === "create"
+        ? "Set period, currency, and optional budget target, then save to create the iteration."
+        : "Iteration summary, generated reports, new report import, and reconciliation via the full iteration UI.";
+    case "generated-report-reconciliation":
+      return "Match generated time to reports, billings, and costs; preview and apply reconciliation.";
     default:
       return defaultDrawerDescription;
   }

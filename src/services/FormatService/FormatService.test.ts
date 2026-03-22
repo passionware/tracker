@@ -30,6 +30,19 @@ describe("FormatService", () => {
       expect(formattedDatetime).toBe("07.10.2024 12:34:56");
     });
 
+    it("should format range plainText for same day as single date", () => {
+      const d = toZonedTime("2024-10-07T12:00:00Z", timeZone);
+      expect(formatService.temporal.range.plainText(d, d)).toBe("07.10.2024");
+    });
+
+    it("should format range plainText across days", () => {
+      const a = toZonedTime("2024-10-07T12:00:00Z", timeZone);
+      const b = toZonedTime("2024-10-09T12:00:00Z", timeZone);
+      expect(formatService.temporal.range.plainText(a, b)).toBe(
+        "07.10.2024 – 09.10.2024",
+      );
+    });
+
     describe("relative", () => {
       describe("useDaysLeft", () => {
         it("should calculate days left correctly", () => {

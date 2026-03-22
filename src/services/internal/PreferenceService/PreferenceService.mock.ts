@@ -50,5 +50,12 @@ export function createPreferenceService(config: {
       paymentDeductionPercent: 0,
       vatPercent: 23,
     }),
+    useAppSidebarNavExpansion: () => ({
+      initialized: true,
+      expandedSectionTitles: [],
+      setSectionExpanded: async () => {},
+    }),
+    getLastProjectForNewIteration: async () => null,
+    setLastProjectForNewIteration: async () => {},
   };
 }

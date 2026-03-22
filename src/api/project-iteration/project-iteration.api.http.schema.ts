@@ -49,16 +49,18 @@ export const accountSpec$ = z.discriminatedUnion("type", [
 
 export const projectIterationEvent$ = z.object({
   id: z.string().uuid(), // UUID v4
-  description: z.string(), // np. "licencja przerzucana na klienta"
-  moves: z.array(
-    z.object({
-      from: accountSpec$,
-      to: accountSpec$,
-      amount: z.number(),
-      unit_price: z.number(),
-      unit: z.string(),
-    }),
-  ),
+  description: z.string().default(""), // np. "licencja przerzucana na klienta"
+  moves: z
+    .array(
+      z.object({
+        from: accountSpec$,
+        to: accountSpec$,
+        amount: z.number(),
+        unit_price: z.number(),
+        unit: z.string(),
+      }),
+    )
+    .default([]),
 });
 export type ProjectIterationEvent$ = z.infer<typeof projectIterationEvent$>;
 

@@ -1,6 +1,7 @@
 import type { Client } from "@/api/clients/clients.api.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createClientServiceForEntityStripStory } from "@/services/io/ClientService/ClientService.mock.ts";
+import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
 
 import { DrawerContextEntityStrip } from "./DrawerContextEntityStrip.tsx";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
@@ -18,6 +19,7 @@ const services = {
     demoClient.id,
     demoClient,
   ),
+  workspaceService: createWorkspaceService(),
 };
 
 const workspace = {
@@ -27,6 +29,7 @@ const workspace = {
   avatarUrl: null as string | null,
   hidden: false,
 } satisfies Workspace;
+// todo projects view -> with timeline, iterations, billing and paying status, etc
 
 const meta = {
   component: DrawerContextEntityStrip,

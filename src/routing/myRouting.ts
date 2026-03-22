@@ -55,6 +55,8 @@ export const myRouting = {
             `/w/${workspaceSlot}/clients/${clientSlot}/projects/active`,
           closedProjects: () =>
             `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
+          projectsTimeline: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/projects/timeline`,
           forProject: (projectId: string | ":projectId" = ":projectId") => {
             const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
             return {
@@ -118,6 +120,7 @@ export const myRouting = {
   },
   forGlobal: () => ({
     root: () => "/",
+    notFound: () => "/not-found",
     configuration: () => "/configuration",
     manageClients: () => "/configuration/clients",
     manageWorkspaces: () => "/configuration/workspaces",

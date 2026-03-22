@@ -11,6 +11,8 @@ import {
   getContractorIdFromRoleKey,
   getIterationIdFromRoleKey,
 } from "@/services/io/_common/roleKeyUtils";
+import type { TimelineItem } from "@/platform/passionware-timeline/passionware-timeline-core";
+import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { rd, type RemoteData } from "@passionware/monads";
 import {
@@ -817,7 +819,7 @@ export function findMatchingIteration(
  * which entries count.
  */
 export function getContractorIterationBreakdown(
-  report: { data: import("@/services/io/_common/GenericReport").GenericReport },
+  report: { data: GenericReport },
   iterations: ProjectIteration[],
   projectsMap: Map<number, { name: string }>,
   rangeStart: Date,
@@ -946,7 +948,7 @@ export function getContractorIterationBreakdown(
 }
 
 export function getIterationSummary(
-  report: { data: import("@/services/io/_common/GenericReport").GenericReport },
+  report: { data: GenericReport },
   iterations: ProjectIteration[],
   projectsMap: Map<number, { name: string }>,
   rangeStart: Date,
@@ -1092,11 +1094,11 @@ const TIMELINE_LANE_COLORS = [
 ];
 
 export function buildTimelineFromReport(
-  report: { data: import("@/services/io/_common/GenericReport").GenericReport },
+  report: { data: GenericReport },
   contractorNameMap: Map<number, string>,
 ): {
-  lanes: import("@/platform/passionware-timeline").Lane[];
-  items: import("@/platform/passionware-timeline").TimelineItem<unknown>[];
+  lanes: Lane[];
+  items: TimelineItem<unknown>[];
 } {
   const reportData = report.data;
   const timeZone = getLocalTimeZone();
@@ -1120,8 +1122,7 @@ export function buildTimelineFromReport(
       color: TIMELINE_LANE_COLORS[i % TIMELINE_LANE_COLORS.length],
     }));
 
-  const items: import("@/platform/passionware-timeline").TimelineItem<unknown>[] =
-    [];
+  const items: TimelineItem<unknown>[] = [];
   reportData.timeEntries.forEach((entry, idx) => {
     const taskType = reportData.definitions.taskTypes[entry.taskId];
     const activityType = reportData.definitions.activityTypes[entry.activityId];

@@ -125,4 +125,7 @@ export interface ClientsApi {
   getClients: (query: ClientQuery) => Promise<Client[]>;
   getClient: (id: number) => Promise<Client>;
   getLinkedWorkspacesForClient: (clientId: Client["id"]) => Promise<Workspace[]>;
+  getLinkedClientsForWorkspace: (
+    workspaceId: Workspace["id"],
+  ) => Promise<Client[]>;
 }

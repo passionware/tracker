@@ -12,12 +12,14 @@ import { WithFrontServices } from "@/core/frontServices";
 import type { SimpleItem } from "@/features/_common/elements/pickers/SimpleView";
 import { idSpecUtils } from "@/platform/lang/IdSpec";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
+import type { TimelineItem } from "@/platform/passionware-timeline/passionware-timeline-core";
+import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree";
 import type {
   ClientSpec,
   WorkspaceSpec,
 } from "@/routing/routingUtils.ts";
 import type { ContractorsWithIntegrationStatus } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
-import { maybe, mt, rd } from "@passionware/monads";
+import { maybe, mt, rd, type RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import {
   addDays,
@@ -83,24 +85,20 @@ export interface UseTmetricDashboardDataResult {
   iterationPickerItems: SimpleItem[];
 
   // Derived from report
-  contractorIterationBreakdown: import("@passionware/monads").RemoteData<
+  contractorIterationBreakdown: RemoteData<
     ContractorIterationBreakdown[] | null
   >;
-  contractorNameMap: import("@passionware/monads").RemoteData<
-    Map<number, string>
-  >;
-  timeline: import("@passionware/monads").RemoteData<{
-    timelineLanes: import("@/platform/passionware-timeline").Lane[];
-    timelineItems: import("@/platform/passionware-timeline").TimelineItem<unknown>[];
+  contractorNameMap: RemoteData<Map<number, string>>;
+  timeline: RemoteData<{
+    timelineLanes: Lane[];
+    timelineItems: TimelineItem<unknown>[];
   }>;
-  contractorsSummary: import("@passionware/monads").RemoteData<ContractorsSummaryScoped>;
-  iterationSummary: import("@passionware/monads").RemoteData<
-    IterationSummary[] | null
-  >;
+  contractorsSummary: RemoteData<ContractorsSummaryScoped>;
+  iterationSummary: RemoteData<IterationSummary[] | null>;
 
   // Report as source (for cube, etc.)
-  basicInfo: import("@passionware/monads").RemoteData<unknown>;
-  reportAsSource: import("@passionware/monads").RemoteData<GeneratedReportSource>;
+  basicInfo: RemoteData<unknown>;
+  reportAsSource: RemoteData<GeneratedReportSource>;
 
   // Integration
   integrationStatus: ContractorsWithIntegrationStatus | null;

@@ -109,6 +109,47 @@ const billingTimelineViewApi = createLocalStorageApi<BillingTimelineViewPreferen
   defaultBillingTimelineViewPreferences,
 );
 
+const appSidebarNavExpandedSectionsSchema = z.object({
+  sectionTitles: z.array(z.string()),
+});
+
+type AppSidebarNavExpandedSectionsStored = z.infer<
+  typeof appSidebarNavExpandedSectionsSchema
+>;
+
+const defaultAppSidebarNavExpandedSections: AppSidebarNavExpandedSectionsStored =
+  {
+    sectionTitles: [],
+  };
+
+const appSidebarNavExpandedSectionsApi =
+  createLocalStorageApi<AppSidebarNavExpandedSectionsStored>(
+    "app-sidebar-nav-expanded-sections",
+    (data) => {
+      const result = appSidebarNavExpandedSectionsSchema.safeParse(data);
+      return result.success
+        ? result.data
+        : defaultAppSidebarNavExpandedSections;
+    },
+    defaultAppSidebarNavExpandedSections,
+  );
+
+const lastProjectForNewIterationSchema = z.record(
+  z.string(),
+  z.number().int().positive(),
+);
+
+const lastProjectForNewIterationApi = createLocalStorageApi<
+  Record<string, number>
+>(
+  "last-project-for-new-iteration-v1",
+  (data) => {
+    const result = lastProjectForNewIterationSchema.safeParse(data);
+    return result.success ? result.data : {};
+  },
+  {},
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -219,6 +260,32 @@ export function createPreferenceService(): PreferenceService {
     }
   });
 
+  const useAppSidebarNavExpansionStore = create<{
+    sectionTitles: string[];
+    initialized: boolean;
+    setSectionExpanded: (title: string, expanded: boolean) => Promise<void>;
+  }>((set, get) => ({
+    sectionTitles: defaultAppSidebarNavExpandedSections.sectionTitles,
+    initialized: false,
+    setSectionExpanded: async (title, expanded) => {
+      const prev = get().sectionTitles;
+      const next = expanded
+        ? [...new Set([...prev, title])]
+        : prev.filter((t) => t !== title);
+      set({ sectionTitles: next });
+      await appSidebarNavExpandedSectionsApi.write({ sectionTitles: next });
+    },
+  }));
+
+  void appSidebarNavExpandedSectionsApi.read().then((stored) => {
+    useAppSidebarNavExpansionStore.setState({
+      sectionTitles:
+        stored?.sectionTitles ??
+        defaultAppSidebarNavExpandedSections.sectionTitles,
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -277,6 +344,26 @@ export function createPreferenceService(): PreferenceService {
         return defaultBulkCreateCostPreferences;
       }
       return store.preferences;
+    },
+    useAppSidebarNavExpansion: () => {
+      const { sectionTitles, initialized, setSectionExpanded } =
+        useAppSidebarNavExpansionStore();
+      return {
+        initialized,
+        expandedSectionTitles: sectionTitles,
+        setSectionExpanded,
+      };
+    },
+    getLastProjectForNewIteration: async (scopeKey: string) => {
+      const map = (await lastProjectForNewIterationApi.read()) ?? {};
+      const id = map[scopeKey];
+      return typeof id === "number" && id > 0 ? id : null;
+    },
+    setLastProjectForNewIteration: async (scopeKey: string, projectId: number) => {
+      if (projectId <= 0) return;
+      const map = { ...((await lastProjectForNewIterationApi.read()) ?? {}) };
+      map[scopeKey] = projectId;
+      await lastProjectForNewIterationApi.write(map);
     },
   };
 }

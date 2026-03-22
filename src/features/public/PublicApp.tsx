@@ -1,4 +1,8 @@
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  NotFoundActionsPublic,
+  NotFoundScreen,
+} from "@/features/app/NotFoundPage.tsx";
 import { PublicLayout } from "./PublicLayout.tsx";
 import { ReportExplorer } from "./ReportExplorer.tsx";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -19,6 +23,15 @@ export function PublicApp(props: WithFrontServices) {
         <Route
           path="/explorer/reports"
           element={<ReportExplorer services={props.services} />}
+        />
+        <Route
+          path="*"
+          element={
+            <NotFoundScreen
+              layout="inset"
+              actions={<NotFoundActionsPublic />}
+            />
+          }
         />
       </Routes>
     </PublicLayout>
