@@ -116,7 +116,15 @@ export const DRAG_THRESHOLD = 5;
 export const LANE_HEIGHT = 70;
 export const SUB_ROW_HEIGHT = 28;
 export const HEADER_HEIGHT = 48;
-export const SIDEBAR_WIDTH = 180;
+/** Fixed track-label column width (also used for time ↔ pixel math). */
+export const SIDEBAR_WIDTH = 256;
+
+/**
+ * Horizontal slack for the time axis (track pixel space): extend which ticks are collected and
+ * which labels/grid lines render so centered text can stay visible while overlapping this margin
+ * past the left/right edges (important when zoomed out — a fixed “minutes” buffer is negligible).
+ */
+export const RULER_TRACK_OVERFLOW_PX = 200;
 
 export const SNAP_VALUES: Record<SnapOption, number> = {
   none: 0,

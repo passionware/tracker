@@ -9,10 +9,11 @@ import { useState } from "react";
 import {
   InfiniteTimeline,
   InfiniteTimelineWithState,
+  useSyncTimelineAtoms,
+  useTimelineState,
   type TimelineItem,
 } from "./passionware-timeline.tsx";
 import type { Lane } from "./timeline-lane-tree.ts";
-import { useTimelineCore } from "./use-timeline-core.ts";
 
 const timeZone = getLocalTimeZone();
 
@@ -28,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Use `InfiniteTimelineWithState` for convenience, or `useTimelineCore` (state only) + `InfiniteTimeline` (layout + interactions inside the component). Pass callbacks via `interactionOptions`. Nest `children` on `Lane` for sublanes. Default `itemActivateTrigger` is `mousedown` (pairs with table row focus); use `click` when items use hover tooltips or open drawers on activation.",
+          "Use `InfiniteTimelineWithState` for convenience, or `useTimelineState` + `useSyncTimelineAtoms` next to your data, then `InfiniteTimeline` (no prop→atom sync inside the view). Pass callbacks via `interactionOptions`. Nest `children` on `Lane` for sublanes. Default `itemActivateTrigger` is `mousedown` (pairs with table row focus); use `click` when items use hover tooltips or open drawers on activation.",
       },
     },
   },
@@ -229,11 +230,13 @@ export const RecursiveLaneTree: Story = {
 
 function ControlledExpansionDemo() {
   const [ids, setIds] = useState<Set<string>>(() => new Set(["iter-1"]));
-  const state = useTimelineCore({
+  const state = useTimelineState({
+    onExpandedLaneIdsChange: (next) => setIds(new Set(next)),
+  });
+  useSyncTimelineAtoms(state, {
     lanes: iterationLanes,
     items: iterationItems,
     expandedLaneIds: ids,
-    onExpandedLaneIdsChange: (next) => setIds(new Set(next)),
   });
 
   return (
@@ -267,11 +270,10 @@ export const ControlledExpansion: Story = {
 };
 
 function ExpansionViaHookDefaultsDemo() {
-  const state = useTimelineCore({
-    lanes: iterationLanes,
-    items: iterationItems,
+  const state = useTimelineState({
     defaultExpandedLaneIds: ["iter-1", "iter-1-reports"],
   });
+  useSyncTimelineAtoms(state, { lanes: iterationLanes, items: iterationItems });
   return <InfiniteTimeline state={state} />;
 }
 

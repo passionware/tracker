@@ -1,6 +1,7 @@
 import {
   HEADER_HEIGHT,
   PIXELS_PER_MINUTE,
+  RULER_TRACK_OVERFLOW_PX,
   SIDEBAR_WIDTH,
 } from "./passionware-timeline-core.ts";
 
@@ -26,14 +27,21 @@ export function pixelToTime(
   );
 }
 
+/**
+ * Visible time span for the **tracks** region (right of the fixed lane sidebar), extended by
+ * {@link RULER_TRACK_OVERFLOW_PX} so ruler ticks exist for partially visible centered labels.
+ * `containerWidth` is the scroll surface width; time is laid out from pixel `SIDEBAR_WIDTH`.
+ */
 export function getVisibleTimeRange(
   scrollOffset: number,
   zoom: number,
   containerWidth: number,
 ): { startTime: number; endTime: number } {
   const ppm = pixelsPerMinuteFromZoom(zoom);
-  const startTime = Math.floor(-scrollOffset / ppm) - 60;
-  const endTime = Math.ceil((containerWidth - scrollOffset) / ppm) + 60;
+  const tracksWidth = Math.max(0, containerWidth - SIDEBAR_WIDTH);
+  const m = RULER_TRACK_OVERFLOW_PX;
+  const startTime = Math.floor((-m - scrollOffset) / ppm);
+  const endTime = Math.ceil((tracksWidth + m - scrollOffset) / ppm);
   return { startTime, endTime };
 }
 

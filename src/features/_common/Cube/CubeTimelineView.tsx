@@ -9,7 +9,8 @@ import { useMemo } from "react";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import {
   InfiniteTimeline,
-  useTimelineCore,
+  useSyncTimelineAtoms,
+  useTimelineState,
   type TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
@@ -278,7 +279,8 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
     return { lanes, items };
   }, [groupedData, createEventLabel, timeZone]);
 
-  const timelineState = useTimelineCore({ items, lanes });
+  const timelineState = useTimelineState();
+  useSyncTimelineAtoms(timelineState, { items, lanes, timeZone });
 
   if (currentItems.length === 0) {
     return (
