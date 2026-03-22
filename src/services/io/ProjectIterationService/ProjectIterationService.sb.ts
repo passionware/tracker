@@ -21,5 +21,8 @@ export function createProjectIterationService(config: {
     ensureProjectIterations: () =>
       testQuery.asPromise(config.listAccessor.get()),
     useProjectIterationById: () => rd.of({}),
+    ensureProjectIterationDetail: () =>
+      testQuery.asPromise(config.itemAccessor.get()),
+    useProjectIterationDetailsByIds: () => new Map(),
   };
 }
