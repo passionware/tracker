@@ -29,6 +29,10 @@ import { projectIterationFormDrawerDescriptor } from "./projectIterationFormDesc
 import type { ProjectIterationFormSpec } from "./projectIterationFormDescriptor";
 import { generatedReportReconciliationDrawerDescriptor } from "./generatedReportReconciliationDescriptor";
 import type { GeneratedReportReconciliationSpec } from "./generatedReportReconciliationDescriptor";
+import { projectDrawerDescriptor } from "./projectDescriptor";
+import type { ProjectDrawerSpec } from "@/features/projects/projectDrawerViews.tsx";
+import { projectFormDrawerDescriptor } from "./projectFormDescriptor";
+import type { ProjectFormSpec } from "./projectFormDescriptor";
 
 /** Any item that can be on the drawer stack (detail or form). */
 export type EntityStackItem =
@@ -42,11 +46,14 @@ export type EntityStackItem =
   | BillingFormSpec
   | WorkspaceDrawerSpec
   | WorkspaceFormSpec
+  | ProjectDrawerSpec
+  | ProjectFormSpec
   | ProjectIterationSpec
   | ProjectIterationFormSpec
   | GeneratedReportReconciliationSpec;
 
 export type { ReportSpec, CostSpec, BillingSpec, ClientDrawerSpec };
+export type { ProjectDrawerSpec, ProjectFormSpec };
 export type { ReportFormSpec, CostFormSpec, BillingFormSpec, ClientFormSpec };
 export type { WorkspaceDrawerSpec, WorkspaceFormSpec };
 export type {
@@ -61,6 +68,7 @@ export {
   billingDrawerDescriptor,
   clientDrawerDescriptor,
   workspaceDrawerDescriptor,
+  projectDrawerDescriptor,
 };
 export {
   reportFormDrawerDescriptor,
@@ -68,6 +76,7 @@ export {
   billingFormDrawerDescriptor,
   clientFormDrawerDescriptor,
   workspaceFormDrawerDescriptor,
+  projectFormDrawerDescriptor,
 };
 
 export function getEntityStackKey(entity: EntityStackItem): string {
@@ -92,6 +101,10 @@ export function getEntityStackKey(entity: EntityStackItem): string {
       return workspaceDrawerDescriptor.getKey(entity);
     case "workspace-form":
       return workspaceFormDrawerDescriptor.getKey(entity);
+    case "project":
+      return projectDrawerDescriptor.getKey(entity);
+    case "project-form":
+      return projectFormDrawerDescriptor.getKey(entity);
     case "project-iteration":
       return projectIterationDrawerDescriptor.getKey(entity);
     case "project-iteration-form":
@@ -129,6 +142,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getLabel(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getLabel(entity);
+      case "project":
+        return projectDrawerDescriptor.getLabel(entity);
+      case "project-form":
+        return projectFormDrawerDescriptor.getLabel(entity);
       case "project-iteration":
         return projectIterationDrawerDescriptor.getLabel(entity);
       case "project-iteration-form":
@@ -159,6 +176,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.getTitle(entity);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.getTitle(entity);
+      case "project":
+        return projectDrawerDescriptor.getTitle(entity);
+      case "project-form":
+        return projectFormDrawerDescriptor.getTitle(entity);
       case "project-iteration":
         return projectIterationDrawerDescriptor.getTitle(entity);
       case "project-iteration-form":
@@ -192,6 +213,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderBreadcrumbLabel(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderBreadcrumbLabel(entity);
+      case "project":
+        return projectDrawerDescriptor.renderBreadcrumbLabel(entity, services);
+      case "project-form":
+        return projectFormDrawerDescriptor.renderBreadcrumbLabel(entity);
       case "project-iteration":
         return projectIterationDrawerDescriptor.renderBreadcrumbLabel(
           entity,
@@ -234,6 +259,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderSmallPreview(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderSmallPreview(entity, services);
+      case "project":
+        return projectDrawerDescriptor.renderSmallPreview(entity, services);
+      case "project-form":
+        return projectFormDrawerDescriptor.renderSmallPreview(entity, services);
       case "project-iteration":
         return projectIterationDrawerDescriptor.renderSmallPreview(
           entity,
@@ -279,6 +308,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return workspaceDrawerDescriptor.renderDrawerContent(entity, services);
       case "workspace-form":
         return workspaceFormDrawerDescriptor.renderDrawerContent(entity, services);
+      case "project":
+        return projectDrawerDescriptor.renderDrawerContent(entity, services);
+      case "project-form":
+        return projectFormDrawerDescriptor.renderDrawerContent(entity, services);
       case "project-iteration":
         return projectIterationDrawerDescriptor.renderDrawerContent(
           entity,
@@ -320,6 +353,10 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "workspace":
         return workspaceDrawerDescriptor.renderHeaderActions?.(entity, services);
       case "workspace-form":
+        return null;
+      case "project":
+        return projectDrawerDescriptor.renderHeaderActions?.(entity, services);
+      case "project-form":
         return null;
       case "project-iteration":
         return projectIterationDrawerDescriptor.renderHeaderActions?.(

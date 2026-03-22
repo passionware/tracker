@@ -38,6 +38,10 @@ export type ProjectTimelineItemData =
       /** Semantic calendar period for tooltips (same as timeline `start`/`end` when using `CalendarDate`). */
       periodStart: CalendarDate;
       periodEnd: CalendarDate;
+      /** Same as timeline bar before optional generated-report billing suffix (for tooltips). */
+      summaryLabel: string;
+      /** Pre-formatted `totalBillingBudget` from the newest generated report for this iteration (by `createdAt`). */
+      latestGeneratedReportBillingLabel?: string;
     }
   | {
       kind: "report";
@@ -85,6 +89,14 @@ export interface BuildProjectTimelineLanesOptions {
   groupBy?: ProjectTimelineGroupBy;
   /** For client grouping labels; falls back to `Client {id}`. */
   clientNameById?: ReadonlyMap<number, string>;
+  /**
+   * Pre-formatted billing totals from each iteration’s latest generated report
+   * (`GeneratedReportSource`, newest `createdAt`).
+   */
+  latestGeneratedReportBillingLabelByIterationId?: ReadonlyMap<
+    ProjectIteration["id"],
+    string
+  >;
 }
 
 type ClientGroupKey = { kind: "client"; clientId: Project["clientId"] };
@@ -143,16 +155,19 @@ function calendarDateToZonedInstant(
   return toZoned(date, timeZone).add({ hours: 12 });
 }
 
-/** Same visible string as iteration bars on the projects timeline (`buildProjectTimelineLanesAndItems`). */
+/**
+ * Base iteration line: `N · project name` (ordinal only; pair with a cycle-style icon in the UI).
+ * Used for draw preview text and tooltip title.
+ */
 export function projectTimelineIterationBarLabel(
   projectNameById: ReadonlyMap<Project["id"], string>,
   projectId: Project["id"],
   ordinalNumber: number,
 ): string {
-  const pn = projectNameById.get(projectId);
-  return pn
-    ? `${pn} · #${ordinalNumber}`
-    : `Iteration ${ordinalNumber}`;
+  const orderPart = String(ordinalNumber);
+  const pn = projectNameById.get(projectId)?.trim();
+  const namePart = pn ? pn : `Project ${projectId}`;
+  return `${orderPart} · ${namePart}`;
 }
 
 /** Next ordinal for a new iteration on that project (max existing + 1). */
@@ -230,6 +245,8 @@ export function buildProjectTimelineLanesAndItems(
     options?.projectNameById ??
     new Map(projects.map((p) => [p.id, p.name] as const));
   const clientNameById = options?.clientNameById;
+  const latestGenBillingByIterationId =
+    options?.latestGeneratedReportBillingLabelByIterationId;
 
   const projectById = new Map(projects.map((p) => [p.id, p] as const));
 
@@ -392,18 +409,24 @@ export function buildProjectTimelineLanesAndItems(
 
     for (const it of groupIterations) {
       const palette = iterationPaletteById.get(it.id)!;
-      const iterLabel = projectTimelineIterationBarLabel(
-        projectNameById,
-        it.projectId,
-        it.ordinalNumber,
-      );
+      const orderPart = String(it.ordinalNumber);
+      const pn = projectNameById.get(it.projectId)?.trim();
+      const namePart = pn ? pn : `Project ${it.projectId}`;
+      const summaryLabel = `${orderPart} · ${namePart}`;
+      const latestGenBilling =
+        latestGenBillingByIterationId?.get(it.id) ?? undefined;
+      /** Bar: iteration order · billing (if any) · project name */
+      const iterationBarLabel =
+        latestGenBilling != null && latestGenBilling.length > 0
+          ? `${orderPart} · ${latestGenBilling} · ${namePart}`
+          : summaryLabel;
 
       items.push({
         id: `ev-it-${it.id}`,
         laneId: rootId,
         start: it.periodStart,
         end: it.periodEnd,
-        label: iterLabel,
+        label: iterationBarLabel,
         color: palette,
         data: {
           kind: "iteration",
@@ -411,6 +434,10 @@ export function buildProjectTimelineLanesAndItems(
           projectId: it.projectId,
           periodStart: it.periodStart,
           periodEnd: it.periodEnd,
+          summaryLabel,
+          ...(latestGenBilling != null && latestGenBilling.length > 0
+            ? { latestGeneratedReportBillingLabel: latestGenBilling }
+            : {}),
         },
       });
     }

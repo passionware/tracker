@@ -27,13 +27,18 @@ function isFormStackEntity(entity: EntityStackItem): boolean {
     entity.type === "cost-form" ||
     entity.type === "report-form" ||
     entity.type === "project-iteration-form" ||
+    entity.type === "project-form" ||
     (entity.type === "project-iteration" && entity.intent === "create")
   );
 }
 
 /** Same shell as `BulkCreateCostDrawer`: flex body + inner scroll, footer outside scroll. */
 function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
-  return entity.type === "client-form" || entity.type === "workspace-form";
+  return (
+    entity.type === "client-form" ||
+    entity.type === "workspace-form" ||
+    entity.type === "project-form"
+  );
 }
 
 function drawerDescriptionForEntity(entity: EntityStackItem): string {
@@ -46,11 +51,15 @@ function drawerDescriptionForEntity(entity: EntityStackItem): string {
       return "Link or unlink clients below. Slug, ID, and visibility are in the header; edit from the actions menu.";
     case "workspace-form":
       return "Update workspace name, slug, and logo.";
+    case "project":
+      return "Project summary and workspace links. Edit from the header menu or card actions; delete from the card.";
     case "billing-form":
     case "cost-form":
     case "report-form":
     case "project-iteration-form":
       return "Edit the fields below and save, or cancel to go back.";
+    case "project-form":
+      return "Update project name, status, client, workspaces, and description.";
     case "project-iteration":
       return entity.intent === "create"
         ? "Set period, currency, and optional budget target, then save to create the iteration."
@@ -140,7 +149,8 @@ export function EntityDetailDrawers() {
           {activeEntity ? (
             isFormStackEntity(activeEntity) &&
             activeEntity.type !== "client-form" &&
-            activeEntity.type !== "workspace-form" ? (
+            activeEntity.type !== "workspace-form" &&
+            activeEntity.type !== "project-form" ? (
               <DrawerDescription className="sr-only">
                 {drawerDescriptionForEntity(activeEntity)}
               </DrawerDescription>

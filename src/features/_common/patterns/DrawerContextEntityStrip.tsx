@@ -1,15 +1,21 @@
 import { Client } from "@/api/clients/clients.api.ts";
+import type { Project } from "@/api/project/project.api.ts";
 import { Workspace } from "@/api/workspace/workspace.api.ts";
 import {
   ClientView,
   ClientWidget,
 } from "@/features/_common/elements/pickers/ClientView.tsx";
 import {
+  ProjectView,
+  ProjectWidget,
+} from "@/features/_common/elements/pickers/ProjectView.tsx";
+import {
   WorkspaceView,
   WorkspaceWidget,
 } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import type { WithServices } from "@/platform/typescript/services.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
+import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { type Maybe, maybe, rd } from "@passionware/monads";
 import type { ReactNode } from "react";
@@ -17,7 +23,7 @@ import type { ReactNode } from "react";
 import { ClickableRegion } from "./ClickableRegion.tsx";
 
 export type DrawerContextEntityStripServices = WithServices<
-  [WithClientService, WithWorkspaceService]
+  [WithClientService, WithWorkspaceService, WithProjectService]
 >;
 
 export interface DrawerContextEntityStripProps {
@@ -30,15 +36,21 @@ export interface DrawerContextEntityStripProps {
   client?: Client;
   /** When only an id is known (e.g. cost → first linked report’s `clientId`). */
   clientId?: number | null;
+  /** Prefer when already loaded (e.g. iteration detail). */
+  project?: Project;
+  /** When only an id is known; requires `services.projectService`. */
+  projectId?: number | null;
   /** When set, the client block is wrapped in `ClickableRegion`. */
   onOpenClientDetails?: (clientId: number) => void;
+  /** When set, the project block is wrapped in `ClickableRegion`. */
+  onOpenProjectDetails?: (projectId: number) => void;
   /** Override default “Context” label (e.g. i18n). */
   contextLabel?: ReactNode;
 }
 
 /**
- * Workspace + optional client strip for entity drawer bodies. Reuses picker views
- * so visuals stay aligned with the rest of the app.
+ * Workspace + optional client + optional project strip for entity drawer bodies.
+ * Reuses picker views so visuals stay aligned with the rest of the app.
  */
 export function DrawerContextEntityStrip({
   services,
@@ -46,10 +58,14 @@ export function DrawerContextEntityStrip({
   workspaceId,
   client,
   clientId,
+  project,
+  projectId,
   onOpenClientDetails,
+  onOpenProjectDetails,
   contextLabel = "Context",
 }: DrawerContextEntityStripProps) {
   const resolvedId = client?.id ?? clientId ?? null;
+  const resolvedProjectId = project?.id ?? projectId ?? null;
 
   const workspaceNode =
     workspace != null ? (
@@ -75,7 +91,19 @@ export function DrawerContextEntityStrip({
       />
     ) : null;
 
-  if (workspaceNode == null && clientNode == null) {
+  const projectNode =
+    project != null ? (
+      <ProjectView project={rd.of(project)} layout="full" size="sm" />
+    ) : resolvedProjectId != null && resolvedProjectId > 0 ? (
+      <ProjectWidget
+        projectId={maybe.of(resolvedProjectId)}
+        services={services}
+        layout="full"
+        size="sm"
+      />
+    ) : null;
+
+  if (workspaceNode == null && clientNode == null && projectNode == null) {
     return null;
   }
 
@@ -100,6 +128,18 @@ export function DrawerContextEntityStrip({
           </ClickableRegion>
         ) : (
           clientNode
+        )}
+        {projectNode != null &&
+        onOpenProjectDetails != null &&
+        resolvedProjectId != null ? (
+          <ClickableRegion
+            onActivate={() => onOpenProjectDetails(resolvedProjectId)}
+            aria-label={`Open project ${project?.name ?? resolvedProjectId}`}
+          >
+            {projectNode}
+          </ClickableRegion>
+        ) : (
+          projectNode
         )}
       </div>
     </div>

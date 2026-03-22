@@ -1,5 +1,7 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { projectIterationQueryUtils } from "@/api/project-iteration/project-iteration.api.ts";
+import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
+import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
 import { clientQueryUtils } from "@/api/clients/clients.api.ts";
 import type { ClientQuery } from "@/api/clients/clients.api.ts";
 import {
@@ -35,6 +37,7 @@ import {
   type ProjectTimelineLaneMeta,
 } from "@/features/projects/widgets/projectTimelineModel.ts";
 import type { CalendarDate } from "@internationalized/date";
+import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import type { FormatService } from "@/services/FormatService/FormatService.ts";
 import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -48,8 +51,14 @@ import {
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { PointerFollowTooltip } from "@/components/ui/pointer-follow-tooltip.tsx";
 import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
-import { rd, type RemoteData } from "@passionware/monads";
-import { BriefcaseBusiness, GitBranch, Moon, Sun } from "lucide-react";
+import { maybe, rd, type RemoteData } from "@passionware/monads";
+import {
+  BriefcaseBusiness,
+  CirclePlay,
+  GitBranch,
+  Moon,
+  Sun,
+} from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 /** Calendar period as stored in domain data — not timeline geometry (exclusive zoned end). */
@@ -59,6 +68,31 @@ function projectTimelineTooltipSemanticCalendarRange(
   periodEnd: CalendarDate,
 ): ReactNode {
   return fmt.temporal.range.long(periodStart, periodEnd);
+}
+
+function pickLatestGeneratedReportByIterationId(
+  reports: readonly GeneratedReportSource[],
+): Map<number, GeneratedReportSource> {
+  const sorted = [...reports].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+  const byIteration = new Map<number, GeneratedReportSource>();
+  for (const r of sorted) {
+    if (!byIteration.has(r.projectIterationId)) {
+      byIteration.set(r.projectIterationId, r);
+    }
+  }
+  return byIteration;
+}
+
+function formatCurrencyValuesPlain(
+  values: CurrencyValue[],
+  fmt: FormatService,
+): string {
+  if (values.length === 0) return "";
+  return values
+    .map((v) => fmt.financial.amountText(v.amount, v.currency))
+    .join(" · ");
 }
 
 /** Aligns with `formatUnit` in report columns (short labels for timeline tooltips). */
@@ -372,6 +406,24 @@ function ProjectsTimelineLoaded(props: {
 
   const reportsRd = props.services.reportService.useReports(reportsQuery);
 
+  const generatedReportsQuery = useMemo(() => {
+    if (!iterationsList || iterationsList.length === 0) {
+      return null;
+    }
+    return generatedReportSourceQueryUtils.getBuilder().build((q) => [
+      q.withFilter("projectIterationId", {
+        operator: "oneOf",
+        value: iterationsList.map((i) => i.id),
+      }),
+      (q2) => generatedReportSourceQueryUtils.setPageSize(q2, 5000),
+    ]);
+  }, [iterationsList]);
+
+  const generatedReportsRd =
+    props.services.generatedReportSourceService.useGeneratedReportSources(
+      maybe.of(generatedReportsQuery),
+    );
+
   return rd
     .journey(iterationsRd)
     .wait(<Skeleton className="min-h-0 flex-1 w-full rounded-md" />)
@@ -389,6 +441,7 @@ function ProjectsTimelineLoaded(props: {
       return (
         <ProjectsTimelineWithReports
           clientId={props.clientId}
+          generatedReportsRd={generatedReportsRd}
           groupBy={props.groupBy}
           iterations={iterations}
           projectNameById={props.projectNameById}
@@ -409,6 +462,7 @@ function ProjectsTimelineWithReports(props: {
   projects: Project[];
   iterations: ProjectIteration[];
   reportsRd: RemoteData<Report[]>;
+  generatedReportsRd: RemoteData<GeneratedReportSource[]>;
   projectNameById: ReadonlyMap<number, string>;
   groupBy: ProjectTimelineGroupBy;
   timelineDarkMode: boolean;
@@ -438,14 +492,36 @@ function ProjectsTimelineWithReports(props: {
 
   const { openEntityDrawer, pushEntityDrawer } = useEntityDrawerContext();
 
+  const reportsAndGeneratedRd = rd.combine({
+    reports: props.reportsRd,
+    generated: props.generatedReportsRd,
+  });
+
   return rd
-    .journey(props.reportsRd)
+    .journey(reportsAndGeneratedRd)
     .wait(<Skeleton className="min-h-0 flex-1 w-full rounded-md" />)
     .catch(renderError)
-    .map((reports) => {
+    .map(({ reports, generated }) => {
       const clientNameById = new Map(
         rd.tryGet(clientsRd)?.map((c) => [c.id, c.name] as const) ?? [],
       );
+
+      const latestByIteration =
+        pickLatestGeneratedReportByIterationId(generated);
+      const billingLabelByIterationId = new Map<number, string>();
+      for (const [iterationId, report] of latestByIteration) {
+        const basic =
+          props.services.generatedReportViewService.getBasicInformationView(
+            report,
+          );
+        const label = formatCurrencyValuesPlain(
+          basic.statistics.totalBillingBudget,
+          props.services.formatService,
+        );
+        if (label.length > 0) {
+          billingLabelByIterationId.set(iterationId, label);
+        }
+      }
 
       const { lanes, items, defaultExpandedLaneIds } =
         buildProjectTimelineLanesAndItems(
@@ -457,6 +533,8 @@ function ProjectsTimelineWithReports(props: {
             projectNameById: props.projectNameById,
             groupBy: props.groupBy,
             clientNameById,
+            latestGeneratedReportBillingLabelByIterationId:
+              billingLabelByIterationId,
           },
         );
 
@@ -530,10 +608,20 @@ function ProjectsTimelineWithReports(props: {
                         props.iterations,
                         projectId,
                       );
-                      return projectTimelineIterationBarLabel(
-                        props.projectNameById,
-                        projectId,
-                        nextOrd,
+                      return (
+                        <span className="flex w-full min-w-0 items-center gap-1">
+                          <CirclePlay
+                            className="h-3 w-3 shrink-0 opacity-95"
+                            aria-hidden
+                          />
+                          <span className="min-w-0 truncate">
+                            {projectTimelineIterationBarLabel(
+                              props.projectNameById,
+                              projectId,
+                              nextOrd,
+                            )}
+                          </span>
+                        </span>
                       );
                     }
                     const start = Math.min(
@@ -565,6 +653,16 @@ function ProjectsTimelineWithReports(props: {
                         />
                       ) : d.kind === "cost" ? (
                         <TimelineMilestoneDiamond {...itemProps} />
+                      ) : d.kind === "iteration" ? (
+                        <DefaultTimelineItem
+                          {...itemProps}
+                          leadingVisual={
+                            <CirclePlay
+                              className="h-3 w-3 opacity-95"
+                              aria-hidden
+                            />
+                          }
+                        />
                       ) : (
                         <DefaultTimelineItem {...itemProps} />
                       );
@@ -780,7 +878,7 @@ function ProjectsTimelineWithReports(props: {
                       tooltipContent = (
                         <div className="space-y-1">
                           <p className="text-sm font-medium leading-snug text-foreground">
-                            {item.label}
+                            {d.summaryLabel}
                           </p>
                           <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
                             <span>Iteration ·</span>
@@ -790,6 +888,17 @@ function ProjectsTimelineWithReports(props: {
                               d.periodEnd,
                             )}
                           </div>
+                          {d.latestGeneratedReportBillingLabel != null &&
+                            d.latestGeneratedReportBillingLabel.length > 0 && (
+                              <p className="text-[10px]">
+                                <span className="text-muted-foreground">
+                                  Latest generated report · billing ·{" "}
+                                </span>
+                                <span className="font-medium tabular-nums text-foreground">
+                                  {d.latestGeneratedReportBillingLabel}
+                                </span>
+                              </p>
+                            )}
                         </div>
                       );
                     }
