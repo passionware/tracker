@@ -56,6 +56,10 @@ function useData(
           icon: BriefcaseBusiness,
           items: [
             {
+              title: "Timeline",
+              url: routing.projectsTimeline(),
+            },
+            {
               title: "Active projects",
               url: routing.activeProjects(),
             },
@@ -66,10 +70,6 @@ function useData(
             {
               title: "Closed projects",
               url: routing.closedProjects(),
-            },
-            {
-              title: "Timeline",
-              url: routing.projectsTimeline(),
             },
           ],
         },
