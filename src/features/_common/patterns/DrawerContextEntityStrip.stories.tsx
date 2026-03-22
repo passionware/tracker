@@ -27,6 +27,7 @@ const workspace = {
   avatarUrl: null as string | null,
   hidden: false,
 } satisfies Workspace;
+// todo projects view -> with timeline, iterations, billing and paying status, etc
 
 const meta = {
   component: DrawerContextEntityStrip,
