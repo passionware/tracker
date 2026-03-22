@@ -1,5 +1,11 @@
 "use client";
 
+/* Atom values are read via store.get() inside handlers; listing store/read helpers in hook
+ * deps would rerun effects every render. Subscriptions below cover pan/drag/autofit only.
+ */
+/* eslint-disable react-hooks/exhaustive-deps */
+
+import { useAtomValue } from "jotai";
 import {
   useCallback,
   useEffect,
@@ -24,15 +30,19 @@ import {
   normalizeWheelDeltaPixels,
   verticalScrollMaxOffset,
 } from "./timeline-view-geometry.ts";
-import type { TimelineCoreApi } from "./use-timeline-core.ts";
-import type { TimelineLayoutApi } from "./use-timeline-layout.ts";
+import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
+import type { TimelineStateApi } from "./use-timeline-state.ts";
+import {
+  getItemsWithRowsForLane,
+  getLaneHeightForPreview,
+  layoutPixelToTime,
+  totalLanesHeight,
+  type CalculatedDrawPreview,
+  type LanePreviewShape,
+} from "./timeline-layout-logic.ts";
 
 export interface UseTimelineInteractionsOptions<Data = unknown> {
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
-  /**
-   * When set, a finished lane draw calls this instead of appending via `onItemsChange`.
-   * Parent keeps controlling `items`; avoids a transient “ghost” item id in selection.
-   */
   onDrawComplete?: (item: TimelineItem<Data>) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
   onEventSelect?: (item: TimelineItem<Data>) => void;
@@ -43,50 +53,37 @@ export interface UseTimelineInteractionsParams<
   Data = unknown,
   TLaneMeta = unknown,
 > {
-  core: TimelineCoreApi<Data, TLaneMeta>;
-  layout: TimelineLayoutApi<Data, TLaneMeta>;
+  state: TimelineStateApi<Data, TLaneMeta>;
   containerRef: RefObject<HTMLDivElement | null>;
   screenXToContainerX: (screenX: number) => number;
   options: UseTimelineInteractionsOptions<Data>;
+  /** Filled by draw-preview sync; wheel/pan read `current` for lane heights. */
+  previewItemRef: RefObject<CalculatedDrawPreview | null>;
 }
 
 /**
- * DOM listeners, wheel/pan/drag, and callbacks that tie core state to layout geometry.
+ * DOM listeners, wheel/pan/drag. Reads timeline atoms via `store.get` so this hook
+ * does not subscribe to atom updates (avoids rerendering the orchestrator).
  */
 export function useTimelineInteractions<Data, TLaneMeta = unknown>({
-  core,
-  layout,
+  state,
   containerRef,
   screenXToContainerX,
   options,
+  previewItemRef,
 }: UseTimelineInteractionsParams<Data, TLaneMeta>) {
+  const { store, atoms } = state.bundle;
   const {
-    visibleLaneRows,
-    internalItems,
-    baseDateZoned,
-    scrollOffset,
     setScrollOffset,
-    verticalScrollOffset,
     setVerticalScrollOffset,
-    zoom,
     setZoom,
-    dragState,
     setDragState,
-    panState,
     setPanState,
-    selectedItemId,
     setSelectedItemId,
+    setCurrentMouseX,
     setDragModifications,
     snapTime,
-    setCurrentMouseX,
-    dragModifications,
-    autoFitSignature,
-  } = core;
-
-  const lastAutoFitSignatureRef = useRef<string | null>(null);
-
-  const { previewItemRef, getItemsWithRows, getLaneHeight, pixelToTime } =
-    layout;
+  } = state;
 
   const {
     onItemsChange,
@@ -96,16 +93,51 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     itemActivateTrigger = "mousedown",
   } = options;
 
+  const lastAutoFitSignatureRef = useRef<string | null>(null);
+
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  useEffect(() => {
-    const allItems = internalItems;
-    if (!allItems || allItems.length === 0) return;
-    if (lastAutoFitSignatureRef.current === autoFitSignature) return;
+  const readVisibleLaneRows = () => store.get(atoms.visibleLaneRowsAtom);
+  const readInternalItems = () => store.get(atoms.internalItemsAtom);
+  const readMergedItems = () => store.get(atoms.mergedItemsAtom);
+  const readBaseDateZoned = () => store.get(atoms.baseDateZonedAtom);
+  const readScrollOffset = () => store.get(atoms.scrollOffsetAtom);
+  const readZoom = () => store.get(atoms.zoomAtom);
+  const readVerticalScroll = () => store.get(atoms.verticalScrollOffsetAtom);
+  const readDragModifications = () => store.get(atoms.dragModificationsAtom);
+  const readDragState = () => store.get(atoms.dragStateAtom);
+  const readPanState = () => store.get(atoms.panStateAtom);
 
-    const minStart = Math.min(...allItems.map((item) => item.start));
-    const maxEnd = Math.max(...allItems.map((item) => item.end));
+  const panState = useAtomValue(atoms.panStateAtom, { store });
+  const dragState = useAtomValue(atoms.dragStateAtom, { store });
+  const selectedItemId = useAtomValue(atoms.selectedItemIdAtom, { store });
+  const autoFitSignature = useAtomValue(atoms.autoFitSignatureAtom, { store });
+
+  const getItemsWithRows = useCallback(
+    (laneId: string, previewItem?: LanePreviewShape) =>
+      getItemsWithRowsForLane(readMergedItems(), laneId, previewItem),
+    [atoms.mergedItemsAtom, store],
+  );
+
+  const pixelToTime = useCallback(
+    (pixel: number) =>
+      layoutPixelToTime(pixel, readScrollOffset(), readZoom()),
+    [atoms.scrollOffsetAtom, atoms.zoomAtom, store],
+  );
+
+  useEffect(() => {
+    const allItems = readInternalItems() as TimelineItemInternal<Data>[];
+    if (!allItems || allItems.length === 0) return;
+    const sig = autoFitSignature;
+    if (lastAutoFitSignatureRef.current === sig) return;
+
+    const minStart = Math.min(
+      ...allItems.map((item: TimelineItemInternal<Data>) => item.start),
+    );
+    const maxEnd = Math.max(
+      ...allItems.map((item: TimelineItemInternal<Data>) => item.end),
+    );
     const totalMinutes = maxEnd - minStart;
 
     if (totalMinutes <= 0) return;
@@ -124,8 +156,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     const newScrollOffset =
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
     setScrollOffset(newScrollOffset);
-    lastAutoFitSignatureRef.current = autoFitSignature;
-  }, [internalItems, autoFitSignature, containerRef, setScrollOffset, setZoom]);
+    lastAutoFitSignatureRef.current = sig;
+  }, [
+    autoFitSignature,
+    containerRef,
+    setScrollOffset,
+    setZoom,
+    store,
+    atoms.internalItemsAtom,
+  ]);
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
@@ -136,6 +175,10 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       const ch = rect?.height ?? 600;
       const dx = normalizeWheelDeltaPixels(e, "x", cw, ch);
       const dy = normalizeWheelDeltaPixels(e, "y", cw, ch);
+
+      const scrollOffset = readScrollOffset();
+      const zoom = readZoom();
+      const visibleLaneRows = readVisibleLaneRows();
 
       if (e.ctrlKey || e.metaKey) {
         if (!rect) return;
@@ -168,11 +211,12 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
           setVerticalScrollOffset((prev) => {
             const containerHeight = containerRef.current?.clientHeight || 0;
             const preview = previewItemRef.current;
-            const totalHeight = visibleLaneRows.reduce((sum, lane) => {
-              const lanePreview =
-                preview && preview.laneId === lane.id ? preview : undefined;
-              return sum + getLaneHeight(lane.id, lanePreview);
-            }, 0);
+            const merged = readMergedItems();
+            const totalHeight = totalLanesHeight(
+              visibleLaneRows,
+              preview,
+              (laneId, p) => getLaneHeightForPreview(merged, laneId, p),
+            );
             const maxOffset = verticalScrollMaxOffset(
               totalHeight,
               containerHeight,
@@ -183,15 +227,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       }
     },
     [
-      zoom,
-      scrollOffset,
-      visibleLaneRows,
-      getLaneHeight,
-      previewItemRef,
       containerRef,
+      previewItemRef,
       setScrollOffset,
       setVerticalScrollOffset,
       setZoom,
+      store,
+      atoms.visibleLaneRowsAtom,
+      atoms.scrollOffsetAtom,
+      atoms.zoomAtom,
+      atoms.mergedItemsAtom,
     ],
   );
 
@@ -205,7 +250,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   const handleMouseDown = useCallback(
     (e: globalThis.MouseEvent) => {
-      if (e.button === 0 && !dragState && !panState) {
+      if (e.button === 0 && !readDragState() && !readPanState()) {
         const target = e.target as HTMLElement;
         if (
           e.metaKey ||
@@ -219,16 +264,24 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         setPanState({
           startX: e.clientX,
           startY: e.clientY,
-          startScrollOffset: scrollOffset,
-          startVerticalScrollOffset: verticalScrollOffset,
+          startScrollOffset: readScrollOffset(),
+          startVerticalScrollOffset: readVerticalScroll(),
         });
       }
     },
-    [dragState, panState, scrollOffset, verticalScrollOffset, setPanState],
+    [
+      atoms.dragStateAtom,
+      atoms.panStateAtom,
+      atoms.scrollOffsetAtom,
+      atoms.verticalScrollOffsetAtom,
+      setPanState,
+      store,
+    ],
   );
 
   const handlePanMove = useCallback(
     (e: globalThis.MouseEvent) => {
+      const panState = readPanState();
       if (!panState) return;
 
       const deltaX = e.clientX - panState.startX;
@@ -237,23 +290,26 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       setScrollOffset(panState.startScrollOffset + deltaX);
       const containerHeight = containerRef.current?.clientHeight || 0;
       const preview = previewItemRef.current;
-      const totalHeight = visibleLaneRows.reduce((sum, lane) => {
-        const lanePreview =
-          preview && preview.laneId === lane.id ? preview : undefined;
-        return sum + getLaneHeight(lane.id, lanePreview);
-      }, 0);
+      const visibleLaneRows = readVisibleLaneRows();
+      const merged = readMergedItems();
+      const totalHeight = totalLanesHeight(
+        visibleLaneRows,
+        preview,
+        (laneId, p) => getLaneHeightForPreview(merged, laneId, p),
+      );
       const maxOffset = verticalScrollMaxOffset(totalHeight, containerHeight);
       const newOffset = panState.startVerticalScrollOffset - deltaY;
       setVerticalScrollOffset(Math.max(0, Math.min(maxOffset, newOffset)));
     },
     [
-      panState,
-      visibleLaneRows,
-      getLaneHeight,
-      previewItemRef,
       containerRef,
+      previewItemRef,
       setScrollOffset,
       setVerticalScrollOffset,
+      store,
+      atoms.mergedItemsAtom,
+      atoms.panStateAtom,
+      atoms.visibleLaneRowsAtom,
     ],
   );
 
@@ -295,7 +351,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         originalItem: { ...item },
         hasCrossedThreshold: false,
       });
-      const externalItem = toExternalItem(item, baseDateZoned);
+      const externalItem = toExternalItem(item, readBaseDateZoned());
       if (itemActivateTrigger === "mousedown") {
         onItemClick?.(externalItem);
       }
@@ -303,11 +359,12 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     [
       screenXToContainerX,
       pixelToTime,
-      baseDateZoned,
       itemActivateTrigger,
       onItemClick,
       setDragState,
       setSelectedItemId,
+      store,
+      atoms.baseDateZonedAtom,
     ],
   );
 
@@ -315,8 +372,6 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     (_e: ReactMouseEvent, externalItem: TimelineItem<Data>) => {
       if (itemActivateTrigger !== "click") return;
       onItemClick?.(externalItem);
-      // Click activation is not a drag: clear move/resize session immediately so
-      // global mouseup handler and preview state cannot linger after the callback.
       setDragState(null);
       setCurrentMouseX(null);
       setDragModifications(new Map());
@@ -350,7 +405,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     if (type === "move" && e.shiftKey && onEventSelect && !hasTimeCollision) {
       e.stopPropagation();
       setSelectedItemId(item.id);
-      onEventSelect(toExternalItem(item, baseDateZoned));
+      onEventSelect(toExternalItem(item, readBaseDateZoned()));
       return;
     }
 
@@ -363,7 +418,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
 
     if (isDrawingButton) {
-      if (dragState) return;
+      if (readDragState()) return;
       e.stopPropagation();
       const containerX = screenXToContainerX(e.clientX);
       const time = snapTime(pixelToTime(containerX));
@@ -377,7 +432,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       });
       setCurrentMouseX(e.clientX);
       setSelectedItemId(null);
-    } else if (e.button === 0 && !dragState && !panState) {
+    } else if (e.button === 0 && !readDragState() && !readPanState()) {
       const target = e.target as HTMLElement;
       if (target.closest("[data-timeline-item]")) {
         return;
@@ -387,14 +442,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       setPanState({
         startX: e.clientX,
         startY: e.clientY,
-        startScrollOffset: scrollOffset,
-        startVerticalScrollOffset: verticalScrollOffset,
+        startScrollOffset: readScrollOffset(),
+        startVerticalScrollOffset: readVerticalScroll(),
       });
     }
   };
 
   const handleMouseMove = useCallback(
     (e: globalThis.MouseEvent) => {
+      const dragState = readDragState();
       if (!dragState) return;
 
       const containerX = screenXToContainerX(e.clientX);
@@ -451,11 +507,21 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         });
       }
     },
-    [dragState, pixelToTime, snapTime, screenXToContainerX, setDragModifications, setDragState, setCurrentMouseX],
+    [
+      pixelToTime,
+      snapTime,
+      screenXToContainerX,
+      setDragModifications,
+      setDragState,
+      setCurrentMouseX,
+      store,
+      atoms.dragStateAtom,
+    ],
   );
 
   const handleMouseUp = useCallback(
     (e: globalThis.MouseEvent) => {
+      const dragState = readDragState();
       if (!dragState) return;
 
       const wasDrawing =
@@ -472,8 +538,8 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         const end = Math.max(dragState.drawStart!, endTime);
 
         if (end - start >= MIN_ITEM_DURATION) {
-          const laneIndex = visibleLaneRows.findIndex(
-            (l) => l.id === dragState.laneId!,
+          const laneIndex = readVisibleLaneRows().findIndex(
+            (l: VisibleTimelineLaneRow<TLaneMeta>) => l.id === dragState.laneId!,
           );
           newItem = {
             id: generateId(),
@@ -487,19 +553,25 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       }
 
       previewItemRef.current = null;
+      const dragMods = readDragModifications();
+      const internalItems = readInternalItems() as TimelineItemInternal<Data>[];
+      const baseDateZoned = readBaseDateZoned();
+
       setDragState(null);
       setCurrentMouseX(null);
 
-      if (dragModifications.size > 0 && dragState.itemId) {
-        const updatedItems = internalItems.map((item) => {
-          const modification = dragModifications.get(item.id);
-          return modification ? { ...item, ...modification } : item;
-        });
+      if (dragMods.size > 0 && dragState.itemId) {
+        const updatedItems = internalItems.map(
+          (item: TimelineItemInternal<Data>) => {
+            const modification = dragMods.get(item.id);
+            return modification ? { ...item, ...modification } : item;
+          },
+        );
         if (onItemsChange) {
           const externalItems = updatedItems.map((item) =>
             toExternalItem(item, baseDateZoned),
           );
-          onItemsChange(externalItems);
+          onItemsChange(externalItems as TimelineItem<Data>[]);
         }
         setDragModifications(new Map());
       }
@@ -514,28 +586,29 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
             const externalItems = updatedItems.map((item) =>
               toExternalItem(item, baseDateZoned),
             );
-            onItemsChange(externalItems);
+            onItemsChange(externalItems as TimelineItem<Data>[]);
           }
           setSelectedItemId(newItem.id);
         }
       }
     },
     [
-      dragState,
-      dragModifications,
-      internalItems,
       pixelToTime,
-      visibleLaneRows,
       snapTime,
       screenXToContainerX,
       onItemsChange,
       onDrawComplete,
-      baseDateZoned,
       previewItemRef,
       setDragState,
       setCurrentMouseX,
       setDragModifications,
       setSelectedItemId,
+      store,
+      atoms.dragModificationsAtom,
+      atoms.dragStateAtom,
+      atoms.internalItemsAtom,
+      atoms.baseDateZonedAtom,
+      atoms.visibleLaneRowsAtom,
     ],
   );
 
@@ -553,14 +626,14 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === "Delete" || e.key === "Backspace") && selectedItemId) {
-        const updatedItems = internalItems.filter(
-          (item) => item.id !== selectedItemId,
-        );
+        const updatedItems = (
+          readInternalItems() as TimelineItemInternal<Data>[]
+        ).filter((item: TimelineItemInternal<Data>) => item.id !== selectedItemId);
         if (onItemsChange) {
           const externalItems = updatedItems.map((item) =>
-            toExternalItem(item, baseDateZoned),
+            toExternalItem(item, readBaseDateZoned()),
           );
-          onItemsChange(externalItems);
+          onItemsChange(externalItems as TimelineItem<Data>[]);
         }
         setSelectedItemId(null);
       }
@@ -569,22 +642,26 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     selectedItemId,
-    internalItems,
     onItemsChange,
-    baseDateZoned,
     setSelectedItemId,
+    store,
+    atoms.internalItemsAtom,
+    atoms.baseDateZonedAtom,
   ]);
 
   const drawingPreview =
     dragState &&
     dragState.type === "draw" &&
     dragState.drawStart !== undefined
-      ? { laneId: dragState.laneId, startTime: dragState.drawStart }
+      ? {
+          laneId: dragState.laneId,
+          startTime: dragState.drawStart,
+        }
       : null;
 
   const onTimelineGridMouseDown = useCallback(
     (e: ReactMouseEvent) => {
-      if (e.button === 0 && !dragState && !panState) {
+      if (e.button === 0 && !readDragState() && !readPanState()) {
         const target = e.target as HTMLElement;
         if (
           e.metaKey ||
@@ -599,12 +676,19 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         setPanState({
           startX: e.clientX,
           startY: e.clientY,
-          startScrollOffset: scrollOffset,
-          startVerticalScrollOffset: verticalScrollOffset,
+          startScrollOffset: readScrollOffset(),
+          startVerticalScrollOffset: readVerticalScroll(),
         });
       }
     },
-    [dragState, panState, scrollOffset, verticalScrollOffset, setPanState],
+    [
+      setPanState,
+      store,
+      atoms.dragStateAtom,
+      atoms.panStateAtom,
+      atoms.scrollOffsetAtom,
+      atoms.verticalScrollOffsetAtom,
+    ],
   );
 
   return {
