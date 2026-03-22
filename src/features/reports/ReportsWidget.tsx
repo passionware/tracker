@@ -66,7 +66,7 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import {
   DefaultTimelineItem,
-  InfiniteTimeline,
+  InfiniteTimelineWithState,
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
@@ -724,7 +724,7 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               getDimmedClasses(rd.isPlaceholderData(timelineData)),
             )}
           >
-            <InfiniteTimeline
+            <InfiniteTimelineWithState
               isEventSelected={(item) =>
                 selectionState.isSelected(selection, item.data.id)
               }

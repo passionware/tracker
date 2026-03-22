@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
-import { InfiniteTimeline } from "@/platform/passionware-timeline";
+import { InfiniteTimelineWithState } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -308,7 +308,7 @@ export function TmetricContractorDetailPage(
                   </CardHeader>
                   <CardContent className="flex-1 min-h-[280px]">
                     <div className="h-full min-h-[280px] w-full overflow-hidden rounded-md border border-border">
-                      <InfiniteTimeline
+                      <InfiniteTimelineWithState
                         items={tFiltered.timelineItems}
                         lanes={tFiltered.timelineLanes}
                       />

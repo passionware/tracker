@@ -49,7 +49,7 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import {
-  InfiniteTimeline,
+  InfiniteTimelineWithState,
   Lane,
   TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline";
@@ -421,9 +421,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               disabled={mt.isInProgress(deleteMutation.state)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {mt.isInProgress(deleteMutation.state)
-                ? "Deleting..."
-                : "Delete"}
+              {mt.isInProgress(deleteMutation.state) ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -453,7 +451,7 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               timelineDarkMode && "dark",
             )}
           >
-            <InfiniteTimeline
+            <InfiniteTimelineWithState
               items={timeline.items}
               lanes={timeline.lanes}
               isEventSelected={(item) =>

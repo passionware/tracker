@@ -61,6 +61,7 @@ export type {
 } from "./use-timeline-interactions.ts";
 
 export type { TimelineItem } from "./passionware-timeline-core.ts";
+export type { Lane, VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 
 // Default Timeline Item Component
 interface DefaultTimelineItemProps<Data = unknown> {
