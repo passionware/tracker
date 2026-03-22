@@ -37,11 +37,11 @@ function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
 function drawerDescriptionForEntity(entity: EntityStackItem): string {
   switch (entity.type) {
     case "client":
-      return "Linked workspaces, bank sender label, and edit actions.";
+      return "Manage workspace links. Edit name, bank sender, and visibility from the actions menu.";
     case "client-form":
       return "Update name, logo, and bank sender label.";
     case "workspace":
-      return "Profile and slug; use Edit to change details.";
+      return "Link or unlink clients below. Slug, ID, and visibility are in the header; edit from the actions menu.";
     case "workspace-form":
       return "Update workspace name, slug, and logo.";
     case "billing-form":

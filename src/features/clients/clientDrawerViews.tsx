@@ -8,11 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -24,7 +19,11 @@ import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerC
 import { WorkspacePicker } from "@/features/_common/elements/pickers/WorkspacePicker.tsx";
 import { WorkspaceView } from "@/features/_common/elements/pickers/WorkspaceView.tsx";
 import type { DrawerDescriptorServices } from "@/features/_common/drawers/DrawerDescriptor";
-import { DrawerMainInfoGrid } from "@/features/_common/drawers/DrawerMainInfoGrid.tsx";
+import {
+  DrawerHeaderHero,
+  DrawerHeaderHeroMetaItem,
+  DrawerHeaderHeroSkeleton,
+} from "@/features/_common/patterns/DrawerHeaderHero.tsx";
 import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel.tsx";
 import { MutedInsetRow } from "@/features/_common/patterns/MutedInsetRow.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
@@ -33,7 +32,7 @@ import { ClientHiddenBadge } from "@/features/clients/ClientHiddenBadge.tsx";
 import { getInitials } from "@/platform/lang/getInitials.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { Building2, Link2, Loader2, Unlink2, Users } from "lucide-react";
+import { Building2, Link2, Loader2, Unlink2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export type ClientDrawerSpec = { type: "client"; id: number };
@@ -49,43 +48,35 @@ export function ClientDrawerHeaderPreview({
   const clientRd = services.clientService.useClient(clientId);
   return rd
     .journey(clientRd)
-    .wait(
-      <div className="flex gap-3">
-        <Skeleton className="size-14 shrink-0 rounded-lg" />
-        <Skeleton className="h-16 min-w-0 flex-1" />
-      </div>,
-    )
+    .wait(<DrawerHeaderHeroSkeleton />)
     .catch(renderSmallError("min-h-16 w-full"))
     .map((client) => (
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <Avatar className="size-14 shrink-0 rounded-lg">
-          {client.avatarUrl ? (
-            <AvatarImage src={client.avatarUrl} alt="" />
-          ) : null}
-          <AvatarFallback className="rounded-lg text-base">
-            {getInitials(client.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <DrawerMainInfoGrid
-            items={[
-              {
-                label: "Name",
-                value: (
-                  <span className="flex w-full min-w-0 items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate">
-                      {client.name}
-                    </span>
-                    <ClientHiddenBadge hidden={client.hidden} />
-                  </span>
-                ),
-              },
-              { label: "Client ID", value: client.id.toString() },
-              { label: "Bank sender", value: client.senderName ?? "—" },
-            ]}
-          />
-        </div>
-      </div>
+      <DrawerHeaderHero
+        avatarUrl={client.avatarUrl}
+        avatarAlt=""
+        fallbackInitials={getInitials(client.name)}
+        title={client.name}
+        titleAdornment={<ClientHiddenBadge hidden={client.hidden} />}
+        meta={
+          <>
+            <DrawerHeaderHeroMetaItem
+              label="Client ID"
+              value={client.id}
+              valueClassName="tabular-nums"
+            />
+            <DrawerHeaderHeroMetaItem
+              label="Bank sender"
+              value={client.senderName ?? "—"}
+              className="sm:max-w-[min(100%,22rem)]"
+              valueClassName="[overflow-wrap:anywhere]"
+            />
+            <DrawerHeaderHeroMetaItem
+              label="Visibility"
+              value={client.hidden ? "Hidden" : "Visible"}
+            />
+          </>
+        }
+      />
     ));
 }
 
@@ -197,36 +188,12 @@ export function ClientDrawerBody({
   return rd
     .journey(clientRd)
     .wait(
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>,
+      <Skeleton className="min-h-[12rem] w-full rounded-2xl" />,
     )
     .catch(renderSmallError("min-h-24 w-full"))
-    .map((client) => (
+    .map(() => (
       <div className="space-y-4">
-        <SurfaceCard className="space-y-3">
-          <PanelSectionLabel icon={Users}>Client</PanelSectionLabel>
-          <DrawerMainInfoGrid
-            items={[
-              {
-                label: "Name",
-                value: (
-                  <span className="flex w-full min-w-0 items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate">
-                      {client.name}
-                    </span>
-                    <ClientHiddenBadge hidden={client.hidden} />
-                  </span>
-                ),
-              },
-              { label: "Client ID", value: client.id.toString() },
-              { label: "Bank sender", value: client.senderName ?? "—" },
-            ]}
-          />
-        </SurfaceCard>
-
-        <SurfaceCard className="space-y-6 p-4 shadow-none">
+        <SurfaceCard className="space-y-6">
           <section className="space-y-3">
             <PanelSectionLabel icon={Building2}>
               Linked workspaces
@@ -287,25 +254,23 @@ export function ClientDrawerBody({
 
           <section className="space-y-3">
             <PanelSectionLabel icon={Link2}>Add to workspace</PanelSectionLabel>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="min-w-0 flex-1">
-                <WorkspacePicker
-                  value={workspaceToLink}
-                  onSelect={(id) =>
-                    setWorkspaceToLink(
-                      typeof id === "number" && !Number.isNaN(id) ? id : null,
-                    )
-                  }
-                  services={services}
-                  itemsQuery={workspacePickerQuery}
-                  placeholder="Choose workspace"
-                />
-              </div>
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <WorkspacePicker
+                value={workspaceToLink}
+                onSelect={(id) =>
+                  setWorkspaceToLink(
+                    typeof id === "number" && !Number.isNaN(id) ? id : null,
+                  )
+                }
+                services={services}
+                itemsQuery={workspacePickerQuery}
+                placeholder="Choose workspace"
+              />
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="shrink-0"
+                className="w-full shrink-0 sm:w-auto"
                 disabled={
                   workspaceToLink == null ||
                   mt.isInProgress(linkMutation.state)
