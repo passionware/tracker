@@ -148,6 +148,12 @@ const closedProjectsPatternConfig = createWorkspaceClientPatternConfig(
   projectQuerySchema,
 );
 
+const projectsTimelinePatternConfig = createWorkspaceClientPatternConfig(
+  `${myRouting.forWorkspace().forClient().projectsTimeline()}`,
+  "projects-timeline",
+  projectQuerySchema,
+);
+
 /**
  * Configuration for reports route persistent navigation
  */
@@ -232,6 +238,7 @@ export const trackerPersistentNavigationConfig: PersistentNavigationConfig = {
     allProjectsPatternConfig,
     activeProjectsPatternConfig,
     closedProjectsPatternConfig,
+    projectsTimelinePatternConfig,
     reportsPatternConfig,
     billingPatternConfig,
     costsPatternConfig,

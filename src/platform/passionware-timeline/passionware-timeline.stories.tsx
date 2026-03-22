@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  fromAbsolute,
+  CalendarDateTime,
   getLocalTimeZone,
+  toZoned,
   type ZonedDateTime,
 } from "@internationalized/date";
 import { useState } from "react";
@@ -16,8 +17,8 @@ import { useTimelineCore } from "./use-timeline-core.ts";
 const timeZone = getLocalTimeZone();
 
 function at(dayOffset: number, hour: number, minute = 0): ZonedDateTime {
-  const d = new Date(2025, 2, 10 + dayOffset, hour, minute, 0, 0);
-  return fromAbsolute(d.getTime(), timeZone);
+  const dt = new CalendarDateTime(2025, 3, 10 + dayOffset, hour, minute);
+  return toZoned(dt, timeZone);
 }
 
 const meta = {

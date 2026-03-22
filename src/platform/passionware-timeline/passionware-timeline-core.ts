@@ -1,10 +1,29 @@
+/**
+ * Public timeline model: {@link CalendarDate} (date-only ranges) and {@link ZonedDateTime} (instants).
+ * `CalendarDateTime` is used only privately (e.g. default empty-state anchor → {@link toZoned}).
+ * JavaScript `Date` appears only at boundaries: {@link ZonedDateTime#toDate} for `Intl`/`DateFormatter`,
+ * and epoch math in {@link zonedDateTimeToMinutes} / {@link minutesToZonedDateTime}.
+ */
 import {
   CalendarDate,
+  CalendarDateTime,
+  DateFormatter,
   type ZonedDateTime,
-  getLocalTimeZone,
+  getDayOfWeek,
   fromAbsolute,
+  now,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  toCalendarDate,
   toZoned,
 } from "@internationalized/date";
+
+/**
+ * Empty-timeline anchor as **local wall time** (no zone) — only meaningful after
+ * {@link toZoned}(…, `timeZone`). Not exported; use {@link defaultTimelineBaseZoned}.
+ */
+const DEFAULT_BASE_WALL_CLOCK = new CalendarDateTime(2025, 1, 27, 8, 0);
 
 /** Wall-clock instant or calendar day (start of that day in a zone when converted). */
 export type TimelineTemporal = ZonedDateTime | CalendarDate;
@@ -116,7 +135,15 @@ export const ITEM_COLORS = [
   "bg-chart-5",
 ];
 
-export const BASE_DATE = new Date(2025, 0, 27, 8, 0);
+/** Default timeline origin when there are no items — always a {@link ZonedDateTime} in `timeZone`. */
+export function defaultTimelineBaseZoned(timeZone: string): ZonedDateTime {
+  return toZoned(DEFAULT_BASE_WALL_CLOCK, timeZone);
+}
+
+/** Current instant in `timeZone` (replaces ad-hoc `new Date()` at the timeline boundary). */
+export function timelineZonedNow(timeZone: string): ZonedDateTime {
+  return now(timeZone);
+}
 
 export function toMinutes(hours: number, mins = 0): number {
   return hours * 60 + mins;
@@ -140,20 +167,127 @@ export function minutesToZonedDateTime(
   return fromAbsolute(targetMs, baseDate.timeZone);
 }
 
-export function dateToZonedDateTime(
-  date: Date,
-  timeZone: string = getLocalTimeZone(),
-): ZonedDateTime {
-  return fromAbsolute(date.getTime(), timeZone);
+/** Civil midnight in `baseDate.timeZone` for the instant at `minutes` (not `floor(m/1440)*1440`). */
+export function getZonedDayStartMinutes(
+  minutes: number,
+  baseDate: ZonedDateTime,
+): number {
+  return zonedDateTimeToMinutes(
+    toZoned(
+      toCalendarDate(minutesToZonedDateTime(minutes, baseDate)),
+      baseDate.timeZone,
+    ),
+    baseDate,
+  );
 }
 
-export function zonedDateTimeToDate(zonedDateTime: ZonedDateTime): Date {
-  return zonedDateTime.toDate();
+function calendarDayAfterEndTime(
+  endTime: number,
+  baseDate: ZonedDateTime,
+): CalendarDate {
+  return toCalendarDate(minutesToZonedDateTime(endTime, baseDate)).add({
+    days: 1,
+  });
 }
 
-export function minutesToDate(minutes: number, baseDate: ZonedDateTime): Date {
-  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  return zonedDateTime.toDate();
+/** Timeline minutes for local midnight on the calendar day after `endTime`'s date. */
+export function getZonedDayAfterEndMinutes(
+  endTime: number,
+  baseDate: ZonedDateTime,
+): number {
+  const nextDay = calendarDayAfterEndTime(endTime, baseDate);
+  return zonedDateTimeToMinutes(
+    toZoned(nextDay, baseDate.timeZone),
+    baseDate,
+  );
+}
+
+/** Local midnights from the day of `startTime` through the day after `endTime` (calendar dates). */
+export function collectDayMarkerMinutesForRange(
+  startTime: number,
+  endTime: number,
+  baseDate: ZonedDateTime,
+): number[] {
+  const zone = baseDate.timeZone;
+  let cal = toCalendarDate(minutesToZonedDateTime(startTime, baseDate));
+  const until = calendarDayAfterEndTime(endTime, baseDate);
+  const out: number[] = [];
+  for (; cal.compare(until) <= 0; cal = cal.add({ days: 1 })) {
+    out.push(zonedDateTimeToMinutes(toZoned(cal, zone), baseDate));
+  }
+  return out;
+}
+
+function calendarQuarterStart(cal: CalendarDate): CalendarDate {
+  const m = Math.floor((cal.month - 1) / 3) * 3 + 1;
+  return new CalendarDate(cal.year, m, 1);
+}
+
+/** Month-start tick minutes in [startTime, endTime] using `timeZone` (matches `minutesToZonedDateTime`). */
+export function collectMonthStartMinutesForRange(
+  startTime: number,
+  endTime: number,
+  baseDate: ZonedDateTime,
+  timeZone: string,
+): number[] {
+  const zS = minutesToZonedDateTime(startTime, baseDate);
+  const zE = minutesToZonedDateTime(endTime, baseDate);
+  let cal = startOfMonth(toCalendarDate(zS));
+  const endMonth = startOfMonth(toCalendarDate(zE));
+  const out: number[] = [];
+  while (cal.compare(endMonth) <= 0) {
+    out.push(zonedDateTimeToMinutes(toZoned(cal, timeZone), baseDate));
+    cal = cal.add({ months: 1 });
+  }
+  return out;
+}
+
+/** Jan 1 tick minutes for each year intersecting the range, in `timeZone`. */
+export function collectYearStartMinutesForRange(
+  startTime: number,
+  endTime: number,
+  baseDate: ZonedDateTime,
+  timeZone: string,
+): number[] {
+  const zS = minutesToZonedDateTime(startTime, baseDate);
+  const zE = minutesToZonedDateTime(endTime, baseDate);
+  let cal = startOfYear(toCalendarDate(zS));
+  const endY = startOfYear(toCalendarDate(zE));
+  const out: number[] = [];
+  while (cal.compare(endY) <= 0) {
+    out.push(zonedDateTimeToMinutes(toZoned(cal, timeZone), baseDate));
+    cal = cal.add({ years: 1 });
+  }
+  return out;
+}
+
+/** Quarter-start tick minutes in range, in `timeZone`. */
+export function collectQuarterStartMinutesForRange(
+  startTime: number,
+  endTime: number,
+  baseDate: ZonedDateTime,
+  timeZone: string,
+): number[] {
+  const zS = minutesToZonedDateTime(startTime, baseDate);
+  const zE = minutesToZonedDateTime(endTime, baseDate);
+  let cal = calendarQuarterStart(toCalendarDate(zS));
+  const endCal = toCalendarDate(zE);
+  const out: number[] = [];
+  while (cal.compare(endCal) <= 0) {
+    out.push(zonedDateTimeToMinutes(toZoned(cal, timeZone), baseDate));
+    cal = cal.add({ months: 3 });
+  }
+  return out;
+}
+
+/** Snap day-grid minute offset to Sunday week start (weekday in `baseDate.timeZone`). */
+export function alignDayMinutesToWeekStart(
+  startDay: number,
+  baseDate: ZonedDateTime,
+): number {
+  const cal = toCalendarDate(minutesToZonedDateTime(startDay, baseDate));
+  const dow = getDayOfWeek(cal, "en-US", "sun");
+  return startDay - dow * 1440;
 }
 
 export function toInternalItem<Data>(
@@ -223,14 +357,55 @@ export function formatTime(minutes: number): string {
   return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
 }
 
+const RULER_LOCALE = "en-US";
+
+const rulerFormatters = new Map<string, DateFormatter>();
+
+function rulerDateFormatter(
+  timeZone: string,
+  options: Intl.DateTimeFormatOptions,
+): DateFormatter {
+  const key = `${timeZone}\0${JSON.stringify(options)}`;
+  let f = rulerFormatters.get(key);
+  if (!f) {
+    f = new DateFormatter(RULER_LOCALE, { ...options, timeZone });
+    rulerFormatters.set(key, f);
+  }
+  return f;
+}
+
+/** Ruler string from a `ZonedDateTime` (only bridge to `Date` here for `Intl`). */
+function formatZonedDateTimeString(
+  z: ZonedDateTime,
+  options: Omit<Intl.DateTimeFormatOptions, "timeZone">,
+): string {
+  return rulerDateFormatter(z.timeZone, options as Intl.DateTimeFormatOptions).format(
+    z.toDate(),
+  );
+}
+
 export function formatDate(minutes: number, baseDate: ZonedDateTime): string {
   const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.toLocaleDateString("en-US", {
+  return formatZonedDateTimeString(zonedDateTime, {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
+}
+
+/** Month + day in `baseDate.timeZone` (day-scale lower ruler). */
+export function formatMonthDay(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  return formatZonedDateTimeString(zonedDateTime, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** Month only in `baseDate.timeZone` (month-scale lower ruler). */
+export function formatMonthShort(minutes: number, baseDate: ZonedDateTime): string {
+  const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
+  return formatZonedDateTimeString(zonedDateTime, { month: "short" });
 }
 
 const drawPreviewDayOnly: Intl.DateTimeFormatOptions = {
@@ -280,7 +455,7 @@ export function formatDrawPreviewRange(
   const b = Math.max(startMinutes, endMinutes);
 
   const fmtDay = (z: ZonedDateTime) =>
-    z.toDate().toLocaleDateString("en-US", drawPreviewDayOnly);
+    formatZonedDateTimeString(z, drawPreviewDayOnly);
 
   if (snapOption === "1day") {
     const zStart = minutesToZonedDateTime(a, baseDate);
@@ -299,17 +474,18 @@ export function formatDrawPreviewRange(
   const zA = minutesToZonedDateTime(a, baseDate);
   const zB = minutesToZonedDateTime(b, baseDate);
   if (b <= a) {
-    return zA.toDate().toLocaleString("en-US", opts);
+    return rulerDateFormatter(zA.timeZone, opts).format(zA.toDate());
   }
-  const sa = zA.toDate().toLocaleString("en-US", opts);
-  const sb = zB.toDate().toLocaleString("en-US", opts);
+  const fmtA = rulerDateFormatter(zA.timeZone, opts);
+  const fmtB = rulerDateFormatter(zB.timeZone, opts);
+  const sa = fmtA.format(zA.toDate());
+  const sb = fmtB.format(zB.toDate());
   return sa === sb ? sa : `${sa} → ${sb}`;
 }
 
 export function formatMonthYear(minutes: number, baseDate: ZonedDateTime): string {
   const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.toLocaleDateString("en-US", {
+  return formatZonedDateTimeString(zonedDateTime, {
     month: "short",
     year: "numeric",
   });
@@ -317,30 +493,23 @@ export function formatMonthYear(minutes: number, baseDate: ZonedDateTime): strin
 
 export function formatYear(minutes: number, baseDate: ZonedDateTime): string {
   const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  return date.getFullYear().toString();
+  return String(zonedDateTime.year);
 }
 
 /** Calendar quarter tick label (year is shown on the upper ruler row). */
 export function formatQuarter(minutes: number, baseDate: ZonedDateTime): string {
   const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  const q = Math.floor(date.getMonth() / 3) + 1;
+  const q = Math.floor((zonedDateTime.month - 1) / 3) + 1;
   return `Q${q}`;
 }
 
 export function formatWeek(minutes: number, baseDate: ZonedDateTime): string {
   const zonedDateTime = minutesToZonedDateTime(minutes, baseDate);
-  const date = zonedDateTimeToDate(zonedDateTime);
-  const dayOfWeek = date.getDay();
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - dayOfWeek);
-  return startOfWeek.toLocaleDateString("en-US", {
+  const cal = toCalendarDate(zonedDateTime);
+  const weekStartCal = startOfWeek(cal, "en-US");
+  const zWeekStart = toZoned(weekStartCal, zonedDateTime.timeZone);
+  return formatZonedDateTimeString(zWeekStart, {
     month: "short",
     day: "numeric",
   });
-}
-
-export function getDayStart(minutes: number): number {
-  return Math.floor(minutes / 1440) * 1440;
 }

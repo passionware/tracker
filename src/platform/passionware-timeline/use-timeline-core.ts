@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
+import {
+  getLocalTimeZone,
+  toCalendarDate,
+  toZoned,
+} from "@internationalized/date";
 import {
   flattenVisibleTimelineLanes,
   type Lane,
@@ -13,11 +17,10 @@ import {
   type TimelineItemInternal,
   type DragState,
   type SnapOption,
-  BASE_DATE,
   PIXELS_PER_MINUTE,
   SIDEBAR_WIDTH,
   SNAP_VALUES,
-  dateToZonedDateTime,
+  defaultTimelineBaseZoned,
   toInternalItem,
   toMinutes,
   timelineTemporalToZoned,
@@ -70,22 +73,22 @@ export function useTimelineCore<Data = unknown, TLaneMeta = unknown>({
     [items, visibleLaneIdSet],
   );
 
+  // Anchor from the full item list, not only visible lanes — otherwise collapsing a track
+  // that holds the earliest event shifts the grid / "now" line vs real calendar (stories often hide this).
   const baseDateZoned = useMemo(() => {
-    if (itemsForTimeline && itemsForTimeline.length > 0) {
-      const earliest = itemsForTimeline.reduce((earliest, item) => {
-        const itemMs = timelineTemporalToZoned(item.start, timeZone).toDate().getTime();
-        const earliestMs = timelineTemporalToZoned(earliest, timeZone)
-          .toDate()
-          .getTime();
-        return itemMs < earliestMs ? item.start : earliest;
-      }, itemsForTimeline[0].start);
+    if (items.length > 0) {
+      const earliest = items.reduce((acc, item) => {
+        const itemZ = timelineTemporalToZoned(item.start, timeZone);
+        const accZ = timelineTemporalToZoned(acc, timeZone);
+        return itemZ.compare(accZ) < 0 ? item.start : acc;
+      }, items[0].start);
       const earliestZoned = timelineTemporalToZoned(earliest, timeZone);
-      const earliestDate = earliestZoned.toDate();
-      earliestDate.setHours(0, 0, 0, 0);
-      return fromAbsolute(earliestDate.getTime(), earliestZoned.timeZone);
+      // Start-of-day in the timeline zone — do not use Date#setHours (that is browser-local, not `timeZone`).
+      const day = toCalendarDate(earliestZoned);
+      return toZoned(day, timeZone);
     }
-    return dateToZonedDateTime(BASE_DATE, timeZone);
-  }, [itemsForTimeline, timeZone]);
+    return defaultTimelineBaseZoned(timeZone);
+  }, [items, timeZone]);
 
   const internalItems = useMemo(() => {
     if (itemsForTimeline && itemsForTimeline.length > 0) {
@@ -155,7 +158,8 @@ export function useTimelineCore<Data = unknown, TLaneMeta = unknown>({
         modification.start !== undefined ||
         modification.end !== undefined
       ) {
-        const { semanticEndMinutes: _, ...rest } = merged;
+        const { semanticEndMinutes: _unused, ...rest } = merged;
+        void _unused;
         return rest;
       }
       return merged;
