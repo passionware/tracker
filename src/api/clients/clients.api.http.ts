@@ -3,6 +3,7 @@ import { enumFilterSupabaseUtils } from "@/api/_common/query/filters/EnumFilter.
 import { sorterSupabaseUtils } from "@/api/_common/query/sorters/Sorter.supabase.ts";
 import { clientFromHttp } from "@/api/clients/clients.api.http.adapter.ts";
 import {
+  client$,
   linkWorkspaceClientWithClient$,
   linkWorkspaceClientWithWorkspace$,
 } from "@/api/clients/clients.api.http.schema.ts";
