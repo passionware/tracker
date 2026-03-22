@@ -29,15 +29,21 @@ import {
   ITEM_COLORS,
   formatTime,
   formatDate,
+  formatMonthDay,
+  formatMonthShort,
   formatDrawPreviewRange,
   type DrawingPreviewLabelParams,
   formatMonthYear,
   formatYear,
   formatQuarter,
   formatWeek,
+  alignDayMinutesToWeekStart,
+  collectMonthStartMinutesForRange,
+  collectQuarterStartMinutesForRange,
+  collectYearStartMinutesForRange,
   getDayStart,
-  minutesToDate,
-  dateToZonedDateTime,
+  minutesToZonedDateTime,
+  timelineZonedNow,
   zonedDateTimeToMinutes,
   timelineItemsTimeOverlap,
   toExternalItem,
@@ -75,7 +81,16 @@ export type {
   TimelineTemporal,
   DrawingPreviewLabelParams,
 } from "./passionware-timeline-core.ts";
-export { timelineTemporalToZoned } from "./passionware-timeline-core.ts";
+export type {
+  CalendarDate,
+  CalendarDateTime,
+  ZonedDateTime,
+} from "@internationalized/date";
+export {
+  defaultTimelineBaseZoned,
+  timelineTemporalToZoned,
+  timelineZonedNow,
+} from "./passionware-timeline-core.ts";
 export type { Lane, VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 
 // Default Timeline Item Component
@@ -435,116 +450,68 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
       dayMarkers.push(d);
     }
 
-    // Generate month markers for top header
-    const startDate = minutesToDate(startTime, baseDateZoned);
-    const endDate = minutesToDate(endTime, baseDateZoned);
-    const currentMonth = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      1,
+    monthMarkers.push(
+      ...collectMonthStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
     );
-    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
-
-    while (currentMonth < endMonth) {
-      const monthStart = new Date(currentMonth);
-      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
-      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
-      monthMarkers.push(monthMinutes);
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
   } else if (timeScale === "weeks") {
     // Show weeks in time header, months in top header
     const startDay = getDayStart(startTime);
     const endDay = getDayStart(endTime) + 1440;
 
-    // Find first Sunday (start of week)
-    let currentWeek = startDay;
-    const startDate = minutesToDate(startDay, baseDateZoned);
-    const dayOfWeek = startDate.getDay();
-    if (dayOfWeek !== 0) {
-      currentWeek -= dayOfWeek * 1440; // Go back to Sunday
-    }
+    const currentWeek = alignDayMinutesToWeekStart(startDay, baseDateZoned);
 
     for (let w = currentWeek; w <= endDay; w += 10080) {
       // 7 days = 10080 minutes
       weekMarkers.push(w);
     }
 
-    // Generate month markers for top header
-    const startDate2 = minutesToDate(startTime, baseDateZoned);
-    const endDate2 = minutesToDate(endTime, baseDateZoned);
-    const currentMonth = new Date(
-      startDate2.getFullYear(),
-      startDate2.getMonth(),
-      1,
+    monthMarkers.push(
+      ...collectMonthStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
     );
-    const endMonth = new Date(
-      endDate2.getFullYear(),
-      endDate2.getMonth() + 1,
-      1,
-    );
-
-    while (currentMonth < endMonth) {
-      const monthStart = new Date(currentMonth);
-      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
-      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
-      monthMarkers.push(monthMinutes);
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
   } else if (timeScale === "quarters") {
-    const startDate = minutesToDate(startTime, baseDateZoned);
-    const endDate = minutesToDate(endTime, baseDateZoned);
-    let qCursor = new Date(
-      startDate.getFullYear(),
-      Math.floor(startDate.getMonth() / 3) * 3,
-      1,
+    quarterScaleMarkers.push(
+      ...collectQuarterStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
     );
-    const endT = endDate.getTime();
-    while (qCursor.getTime() <= endT + 86400000 * 95) {
-      const qZoned = dateToZonedDateTime(qCursor, timeZone);
-      quarterScaleMarkers.push(zonedDateTimeToMinutes(qZoned, baseDateZoned));
-      const next = new Date(qCursor);
-      next.setMonth(next.getMonth() + 3);
-      qCursor = next;
-    }
-
-    const currentYear = new Date(startDate.getFullYear(), 0, 1);
-    const endYear = new Date(endDate.getFullYear() + 1, 0, 1);
-    while (currentYear < endYear) {
-      const yearZoned = dateToZonedDateTime(new Date(currentYear), timeZone);
-      yearMarkers.push(zonedDateTimeToMinutes(yearZoned, baseDateZoned));
-      currentYear.setFullYear(currentYear.getFullYear() + 1);
-    }
+    yearMarkers.push(
+      ...collectYearStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
+    );
   } else if (timeScale === "months") {
-    // Show months in time header, years in top header
-    const startDate = minutesToDate(startTime, baseDateZoned);
-    const endDate = minutesToDate(endTime, baseDateZoned);
-    const currentMonth = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      1,
+    monthMarkers.push(
+      ...collectMonthStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
     );
-    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
-
-    while (currentMonth < endMonth) {
-      const monthStart = new Date(currentMonth);
-      const monthZoned = dateToZonedDateTime(monthStart, timeZone);
-      const monthMinutes = zonedDateTimeToMinutes(monthZoned, baseDateZoned);
-      monthMarkers.push(monthMinutes);
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
-
-    // Generate year markers for top header (only at start of each year)
-    const currentYear = new Date(startDate.getFullYear(), 0, 1);
-    const endYear = new Date(endDate.getFullYear() + 1, 0, 1);
-
-    while (currentYear < endYear) {
-      const yearStart = new Date(currentYear);
-      const yearZoned = dateToZonedDateTime(yearStart, timeZone);
-      const yearMinutes = zonedDateTimeToMinutes(yearZoned, baseDateZoned);
-      yearMarkers.push(yearMinutes);
-      currentYear.setFullYear(currentYear.getFullYear() + 1);
-    }
+    yearMarkers.push(
+      ...collectYearStartMinutesForRange(
+        startTime,
+        endTime,
+        baseDateZoned,
+        timeZone,
+      ),
+    );
   }
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
@@ -801,8 +768,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = minutesToDate(minutes, baseDateZoned);
-                const isFirstOfMonth = date.getDate() === 1;
+                const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                const isFirstOfMonth = zAt.day === 1;
 
                 return (
                   <div
@@ -818,10 +785,7 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                           : "text-muted-foreground",
                       )}
                     >
-                      {date.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatMonthDay(minutes, baseDateZoned)}
                     </span>
                     <div
                       className={cn(
@@ -842,8 +806,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = minutesToDate(minutes, baseDateZoned);
-                const isFirstOfMonth = date.getDate() <= 7;
+                const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                const isFirstOfMonth = zAt.day <= 7;
 
                 return (
                   <div
@@ -880,8 +844,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = minutesToDate(minutes, baseDateZoned);
-                const isQ1 = date.getMonth() === 0;
+                const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                const isQ1 = zAt.month === 1;
 
                 return (
                   <div
@@ -916,8 +880,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                   containerRef.current?.clientWidth || 2000;
                 if (x < -50 || x > containerWidth) return null;
 
-                const date = minutesToDate(minutes, baseDateZoned);
-                const isQuarter = date.getMonth() % 3 === 0;
+                const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                const isQuarter = (zAt.month - 1) % 3 === 0;
 
                 return (
                   <div
@@ -933,7 +897,7 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                           : "text-muted-foreground",
                       )}
                     >
-                      {date.toLocaleDateString("en-US", { month: "short" })}
+                      {formatMonthShort(minutes, baseDateZoned)}
                     </span>
                     <div
                       className={cn(
@@ -1129,10 +1093,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(
-                      minutesToDate(minutes, baseDateZoned),
-                    );
-                    const isFirstOfMonth = date.getDate() === 1;
+                    const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                    const isFirstOfMonth = zAt.day === 1;
 
                     return (
                       <div
@@ -1173,10 +1135,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(
-                      minutesToDate(minutes, baseDateZoned),
-                    );
-                    const isFirstOfMonth = date.getDate() <= 7;
+                    const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                    const isFirstOfMonth = zAt.day <= 7;
 
                     return (
                       <div
@@ -1216,8 +1176,8 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = minutesToDate(minutes, baseDateZoned);
-                    const isQ1 = date.getMonth() === 0;
+                    const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                    const isQ1 = zAt.month === 1;
 
                     return (
                       <div
@@ -1256,11 +1216,9 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
                       containerRef.current?.clientWidth || 2000;
                     if (x < 0 || x > containerWidth) return null;
 
-                    const date = new Date(
-                      minutesToDate(minutes, baseDateZoned),
-                    );
-                    const isQuarter = date.getMonth() % 3 === 0;
-                    const isYearStart = date.getMonth() === 0;
+                    const zAt = minutesToZonedDateTime(minutes, baseDateZoned);
+                    const isQuarter = (zAt.month - 1) % 3 === 0;
+                    const isYearStart = zAt.month === 1;
 
                     return (
                       <div
@@ -1405,7 +1363,7 @@ export function InfiniteTimeline<Data = unknown, TLaneMeta = unknown>({
 
         {/* Current time indicator (now line) */}
         {(() => {
-          const now = dateToZonedDateTime(new Date(), timeZone);
+          const now = timelineZonedNow(timeZone);
           // Calculate minutes from baseDate to now
           const nowMinutes = zonedDateTimeToMinutes(now, baseDateZoned);
           const x = timeToPixel(nowMinutes);
