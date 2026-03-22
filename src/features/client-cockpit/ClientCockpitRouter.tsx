@@ -10,6 +10,10 @@ import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import { rd } from "@passionware/monads";
 import { Layout } from "@/layout/AppLayout.tsx";
 import { CockpitSidebar } from "./CockpitSidebar";
+import {
+  NotFoundActionsCockpit,
+  NotFoundScreen,
+} from "@/features/app/NotFoundPage.tsx";
 
 /**
  * Main cockpit router - simple like main app
@@ -92,6 +96,20 @@ export function CockpitMainRouter(props: WithFrontServices) {
           <ProtectedCockpitRoute services={props.services}>
             <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
               <RedirectFromRoot services={props.services} />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
+      />
+
+      <Route
+        path="*"
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <NotFoundScreen
+                layout="inset"
+                actions={<NotFoundActionsCockpit services={props.services} />}
+              />
             </Layout>
           </ProtectedCockpitRoute>
         }
