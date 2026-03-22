@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { myQueryClient } from "@/core/query.connected.ts";
+import { SidebarDevDatabaseBanner } from "@/features/_common/patterns/SidebarDevDatabaseBanner.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { ClientSwitcher } from "@/features/app/ClientSwitcher.tsx";
 
@@ -243,6 +244,7 @@ export function AppSidebar({
             buttonPosition="relative"
           />
         </div>
+        <SidebarDevDatabaseBanner />
         {rd
           .journey(auth)
           .wait(<Skeleton className="w-20 h-4" />)
