@@ -1,4 +1,6 @@
 import type { BudgetTargetLogEntry } from "@/api/iteration-trigger/iteration-trigger.api";
+import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
+import { inclusiveCalendarPeriodToEpochRange } from "@/platform/lang/internationalized-date.ts";
 import { format } from "date-fns";
 
 export type ChartDatum = {
@@ -137,4 +139,50 @@ export function buildChartData(
     data = appendForecastIfNeeded(data, periodRange);
   }
   return data;
+}
+
+function collectNumericSeriesValues(data: ChartDatum[]): number[] {
+  const out: number[] = [];
+  for (const row of data) {
+    for (const v of [row.target, row.billing, row.forecast]) {
+      if (v != null && Number.isFinite(v)) out.push(v);
+    }
+  }
+  return out;
+}
+
+/**
+ * Single shared Y domain for several iteration budget charts in the same lane
+ * (same numeric scale; assumes values are comparable like same workspace currency context).
+ */
+export function computeSharedBudgetChartYDomain(
+  iterationIds: readonly ProjectIteration["id"][],
+  entriesByIterationId: ReadonlyMap<
+    ProjectIteration["id"],
+    BudgetTargetLogEntry[]
+  >,
+  iterationById: ReadonlyMap<
+    ProjectIteration["id"],
+    Pick<ProjectIteration, "currency" | "periodStart" | "periodEnd">
+  >,
+): [number, number] | null {
+  const values: number[] = [];
+  for (const id of iterationIds) {
+    const entries = entriesByIterationId.get(id);
+    const it = iterationById.get(id);
+    if (!entries?.length || !it) continue;
+    const periodRange = inclusiveCalendarPeriodToEpochRange(
+      it.periodStart,
+      it.periodEnd,
+    );
+    const data = buildChartData(entries, it.currency, periodRange);
+    values.push(...collectNumericSeriesValues(data));
+  }
+  if (values.length === 0) return null;
+  const minv = Math.min(...values);
+  const maxv = Math.max(...values);
+  const span = maxv - minv;
+  const pad =
+    span > 0 ? span * 0.06 : Math.max(Math.abs(minv) * 0.08, 1);
+  return [Math.max(0, minv - pad), maxv + pad];
 }

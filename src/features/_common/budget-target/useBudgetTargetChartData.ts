@@ -9,6 +9,8 @@ export interface UseBudgetTargetChartDataParams {
   logEntries: RemoteData<BudgetTargetLogEntry[]>;
   iterationCurrency: string;
   periodRange?: { start: number; end: number };
+  /** When set (e.g. lane-normalized timeline), fixes Y scale across sibling charts. */
+  yDomain?: [number, number] | null;
 }
 
 export interface BudgetTargetChartResult {
@@ -19,6 +21,7 @@ export interface BudgetTargetChartResult {
   lastRealDataDate: number | null;
   hasForecast: boolean;
   isEmpty: boolean;
+  yDomain?: [number, number];
 }
 
 function getResult(
@@ -64,8 +67,12 @@ export function useBudgetTargetChartData({
   logEntries,
   iterationCurrency,
   periodRange,
+  yDomain,
 }: UseBudgetTargetChartDataParams): RemoteData<BudgetTargetChartResult> {
-  return rd.map(logEntries, (entries) =>
-    getResult(entries, iterationCurrency, periodRange),
-  );
+  return rd.map(logEntries, (entries) => {
+    const base = getResult(entries, iterationCurrency, periodRange);
+    return yDomain != null
+      ? { ...base, yDomain }
+      : base;
+  });
 }
