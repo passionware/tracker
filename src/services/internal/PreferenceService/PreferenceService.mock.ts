@@ -55,5 +55,7 @@ export function createPreferenceService(config: {
       expandedSectionTitles: [],
       setSectionExpanded: async () => {},
     }),
+    getLastProjectForNewIteration: async () => null,
+    setLastProjectForNewIteration: async () => {},
   };
 }

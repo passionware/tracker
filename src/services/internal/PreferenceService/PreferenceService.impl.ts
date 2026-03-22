@@ -134,6 +134,22 @@ const appSidebarNavExpandedSectionsApi =
     defaultAppSidebarNavExpandedSections,
   );
 
+const lastProjectForNewIterationSchema = z.record(
+  z.string(),
+  z.number().int().positive(),
+);
+
+const lastProjectForNewIterationApi = createLocalStorageApi<
+  Record<string, number>
+>(
+  "last-project-for-new-iteration-v1",
+  (data) => {
+    const result = lastProjectForNewIterationSchema.safeParse(data);
+    return result.success ? result.data : {};
+  },
+  {},
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -337,6 +353,17 @@ export function createPreferenceService(): PreferenceService {
         expandedSectionTitles: sectionTitles,
         setSectionExpanded,
       };
+    },
+    getLastProjectForNewIteration: async (scopeKey: string) => {
+      const map = (await lastProjectForNewIterationApi.read()) ?? {};
+      const id = map[scopeKey];
+      return typeof id === "number" && id > 0 ? id : null;
+    },
+    setLastProjectForNewIteration: async (scopeKey: string, projectId: number) => {
+      if (projectId <= 0) return;
+      const map = { ...((await lastProjectForNewIterationApi.read()) ?? {}) };
+      map[scopeKey] = projectId;
+      await lastProjectForNewIterationApi.write(map);
     },
   };
 }

@@ -644,13 +644,19 @@ export function RootWidget(props: WithFrontServices) {
                       {(projectId) => (
                         <ProjectIterationIdResolver services={props.services}>
                           {(projectIterationId) => (
-                            <IterationWidget
-                              workspaceId={workspaceId}
+                            <EntityDrawerRouteLayout
                               clientId={clientId}
-                              projectId={projectId}
+                              workspaceId={workspaceId}
                               services={props.services}
-                              projectIterationId={projectIterationId}
-                            />
+                            >
+                              <IterationWidget
+                                workspaceId={workspaceId}
+                                clientId={clientId}
+                                projectId={projectId}
+                                services={props.services}
+                                projectIterationId={projectIterationId}
+                              />
+                            </EntityDrawerRouteLayout>
                           )}
                         </ProjectIterationIdResolver>
                       )}

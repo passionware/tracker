@@ -61,6 +61,15 @@ export interface PreferenceService {
   ) => Promise<void>;
   useBulkCreateCostPreferences: () => BulkCreateCostPreferences;
   useAppSidebarNavExpansion: () => AppSidebarNavExpansion;
+  /**
+   * Last project chosen when creating an iteration, keyed by `workspaceId:clientId`
+   * (`"all"` for unspecific route scope). Used to preselect the project picker.
+   */
+  getLastProjectForNewIteration: (scopeKey: string) => Promise<number | null>;
+  setLastProjectForNewIteration: (
+    scopeKey: string,
+    projectId: number,
+  ) => Promise<void>;
 }
 
 export interface WithPreferenceService {

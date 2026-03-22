@@ -47,6 +47,14 @@ export interface FormatService {
         end: Date | CalendarDate,
       ) => ReactNode;
       long: (start: Date | CalendarDate, end: Date | CalendarDate) => ReactNode;
+      /**
+       * Same calendar style as `date` (`dd.MM.yyyy`), plain string — for tooltips,
+       * timeline draw preview, exports, etc.
+       */
+      plainText: (
+        start: Date | CalendarDate,
+        end: Date | CalendarDate,
+      ) => string;
     };
   };
 }
