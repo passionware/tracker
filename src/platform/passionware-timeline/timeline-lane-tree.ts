@@ -6,6 +6,11 @@ export interface Lane<TLaneMeta = unknown> {
   id: string;
   name: string;
   color: string;
+  /**
+   * Minimum height (px) of the timeline track row for this lane (e.g. rich item content).
+   * Default height still grows with stacked/overlapping items in the lane.
+   */
+  minTrackHeightPx?: number;
   /** Nested sublanes (e.g. iteration → reports → billings). Omit for a flat track. */
   children?: Lane<TLaneMeta>[];
   /**
@@ -51,6 +56,9 @@ export function flattenVisibleTimelineLanes<TLaneMeta = unknown>(
         depth,
         hasChildren: expandable,
         expanded,
+        ...(node.minTrackHeightPx != null
+          ? { minTrackHeightPx: node.minTrackHeightPx }
+          : {}),
         ...(node.meta !== undefined ? { meta: node.meta } : {}),
       });
       if (expanded && children.length > 0) {

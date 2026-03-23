@@ -85,6 +85,11 @@ export function useTimelineVisibleLaneRows<TLaneMeta = unknown>() {
   return useAtomValue(atoms.visibleLaneRowsAtom, { store });
 }
 
+export function useTimelineMinimizedLaneIds(): ReadonlySet<string> {
+  const { store, atoms } = useTimelineStore();
+  return useAtomValue(atoms.minimizedLaneIdsAtom, { store });
+}
+
 export function useTimelineItemsForTimelineCount(): number {
   const { store, atoms } = useTimelineStore();
   return useAtomValue(atoms.itemsForTimelineAtom, { store }).length;

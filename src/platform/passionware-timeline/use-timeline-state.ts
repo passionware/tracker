@@ -29,6 +29,8 @@ export interface TimelineStateApi<Data = unknown, TLaneMeta = unknown> {
   bundle: TimelineJotaiBundle<Data, TLaneMeta>;
   snapTime: (time: number) => number;
   toggleLaneExpanded: (laneId: string) => void;
+  toggleLaneMinimized: (laneId: string) => void;
+  setMinimizedLaneIds: (ids: ReadonlySet<string>) => void;
   setItems: (items: TimelineItem<Data>[]) => void;
   setLanes: (lanes: Lane<TLaneMeta>[] | undefined) => void;
   setTimeZone: (timeZone: string) => void;
@@ -299,11 +301,31 @@ export function useTimelineState<Data = unknown, TLaneMeta = unknown>(
     [atoms.expandedLaneIdsAtom, store],
   );
 
+  const setMinimizedLaneIds = useCallback(
+    (ids: ReadonlySet<string>) => {
+      store.set(atoms.minimizedLaneIdsAtom, new Set(ids));
+    },
+    [atoms.minimizedLaneIdsAtom, store],
+  );
+
+  const toggleLaneMinimized = useCallback(
+    (laneId: string) => {
+      const prev = store.get(atoms.minimizedLaneIdsAtom);
+      const next = new Set<string>(prev);
+      if (next.has(laneId)) next.delete(laneId);
+      else next.add(laneId);
+      store.set(atoms.minimizedLaneIdsAtom, next);
+    },
+    [atoms.minimizedLaneIdsAtom, store],
+  );
+
   return useMemo(
     () => ({
       bundle,
       snapTime,
       toggleLaneExpanded,
+      toggleLaneMinimized,
+      setMinimizedLaneIds,
       setItems,
       setLanes,
       setTimeZone,
@@ -326,6 +348,7 @@ export function useTimelineState<Data = unknown, TLaneMeta = unknown>(
       setExpandedLaneIds,
       setItems,
       setLanes,
+      setMinimizedLaneIds,
       setPanState,
       setScrollOffset,
       setSelectedItemId,
@@ -335,6 +358,7 @@ export function useTimelineState<Data = unknown, TLaneMeta = unknown>(
       setZoom,
       snapTime,
       toggleLaneExpanded,
+      toggleLaneMinimized,
     ],
   );
 }

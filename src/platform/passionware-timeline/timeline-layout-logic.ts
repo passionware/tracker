@@ -10,6 +10,9 @@ import { pixelToTime, timeToPixel } from "./timeline-view-geometry.ts";
 
 export type LanePreviewShape = { start: number; end: number; row: number };
 
+/** Height for lanes whose track content is hidden (minimized). */
+export const TIMELINE_MINIMIZED_LANE_HEIGHT_PX = 52;
+
 export function layoutTimeToPixel(
   time: number,
   scrollOffset: number,
@@ -82,9 +85,15 @@ export function getLaneHeightForPreview<Data>(
   mergedItems: TimelineItemInternal<Data>[],
   laneId: string,
   previewItem?: LanePreviewShape,
+  minTrackHeightPx?: number,
+  minimizedLaneIds?: ReadonlySet<string>,
 ): number {
+  if (minimizedLaneIds?.has(laneId)) {
+    return TIMELINE_MINIMIZED_LANE_HEIGHT_PX;
+  }
   const maxRows = Math.max(getMaxRowsForLane(mergedItems, laneId, previewItem), 2);
-  return Math.max(LANE_HEIGHT, maxRows * SUB_ROW_HEIGHT + 16);
+  const computed = Math.max(LANE_HEIGHT, maxRows * SUB_ROW_HEIGHT + 16);
+  return Math.max(computed, minTrackHeightPx ?? 0);
 }
 
 /** Draw-preview placement including `laneId` for lane-level height/y-offset. */

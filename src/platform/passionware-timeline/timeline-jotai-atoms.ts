@@ -38,6 +38,7 @@ export interface TimelineJotaiAtoms<Data, TLaneMeta = unknown> {
   lanesAtom: PrimitiveAtom<Lane<TLaneMeta>[] | undefined>;
   timeZoneAtom: PrimitiveAtom<string>;
   expandedLaneIdsAtom: PrimitiveAtom<ReadonlySet<string>>;
+  minimizedLaneIdsAtom: PrimitiveAtom<ReadonlySet<string>>;
   visibleLaneRowsAtom: Atom<VisibleTimelineLaneRow<TLaneMeta>[]>;
   visibleLaneIdSetAtom: Atom<Set<string>>;
   itemsForTimelineAtom: Atom<TimelineItem<Data>[]>;
@@ -83,6 +84,7 @@ function createTimelineJotaiAtoms<
   const lanesAtom = atom<Lane<TLaneMeta>[] | undefined>(undefined);
   const timeZoneAtom = atom<string>(getLocalTimeZone());
   const expandedLaneIdsAtom = atom<ReadonlySet<string>>(new Set<string>());
+  const minimizedLaneIdsAtom = atom<ReadonlySet<string>>(new Set<string>());
 
   const visibleLaneRowsAtom = atom((get) =>
     flattenVisibleTimelineLanes(get(lanesAtom) ?? [], get(expandedLaneIdsAtom)),
@@ -95,7 +97,10 @@ function createTimelineJotaiAtoms<
 
   const itemsForTimelineAtom = atom((get) => {
     const visible = get(visibleLaneIdSetAtom);
-    return get(itemsAtom).filter((i) => visible.has(i.laneId));
+    const minimized = get(minimizedLaneIdsAtom);
+    return get(itemsAtom).filter(
+      (i) => visible.has(i.laneId) && !minimized.has(i.laneId),
+    );
   });
 
   const baseDateZonedAtom = atom((get) => {
@@ -192,6 +197,7 @@ function createTimelineJotaiAtoms<
     lanesAtom,
     timeZoneAtom,
     expandedLaneIdsAtom,
+    minimizedLaneIdsAtom,
     visibleLaneRowsAtom,
     visibleLaneIdSetAtom,
     itemsForTimelineAtom,

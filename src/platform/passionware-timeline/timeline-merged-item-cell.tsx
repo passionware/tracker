@@ -32,6 +32,7 @@ type ItemCellProps<Data = unknown> = Pick<
   itemId: string;
   layoutRow: number;
   itemActivateTrigger: "mousedown" | "click";
+  laneTrackHeightPx: number;
 };
 
 function TimelineMergedItemCellInner<Data = unknown>({
@@ -41,6 +42,7 @@ function TimelineMergedItemCellInner<Data = unknown>({
   onItemHover,
   isEventSelected,
   itemActivateTrigger,
+  laneTrackHeightPx,
 }: ItemCellProps<Data>) {
   const item = useTimelineMergedItem<Data>(itemId);
   const baseDateZoned = useTimelineBaseDateZoned();
@@ -98,6 +100,7 @@ function TimelineMergedItemCellInner<Data = unknown>({
     isSelected,
     selected,
     isMinWidth,
+    laneTrackHeightPx,
     onMouseDown: onItemMouseDown,
     onMouseOver: onItemHover ? () => onItemHover(externalItem) : undefined,
     onClick:

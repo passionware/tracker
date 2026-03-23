@@ -37,6 +37,7 @@ import {
   useTimelineSnapOption,
   useTimelineSnapTime,
   useTimelineVerticalScrollOffset,
+  useTimelineMinimizedLaneIds,
   useTimelineVisibleLaneRows,
   useTimelineZoom,
 } from "./use-timeline-selectors.ts";
@@ -153,7 +154,6 @@ function DrawingPreview<Data = unknown, TLaneMeta = unknown>({
         top: 8 + row * SUB_ROW_HEIGHT,
         height: SUB_ROW_HEIGHT - 4,
       }}
-      title={rangeLabel}
     >
       <div
         className={cn(
@@ -468,6 +468,7 @@ function TimelineTracksPanelInner<
   const handlersRef = useTimelineHandlersRef();
 
   const visibleLaneRows = useTimelineVisibleLaneRows<TLaneMeta>();
+  const minimizedLaneIds = useTimelineMinimizedLaneIds();
   const mergedItems = useTimelineMergedItems<Data>();
   const scrollOffset = useTimelineScrollOffset();
   const verticalScrollOffset = useTimelineVerticalScrollOffset();
@@ -513,9 +514,17 @@ function TimelineTracksPanelInner<
   );
 
   const getLaneHeight = useCallback(
-    (laneId: string, preview?: LanePreviewShape) =>
-      getLaneHeightForPreview(mergedItems, laneId, preview),
-    [mergedItems],
+    (laneId: string, preview?: LanePreviewShape) => {
+      const laneRow = visibleLaneRows.find((l) => l.id === laneId);
+      return getLaneHeightForPreview(
+        mergedItems,
+        laneId,
+        preview,
+        laneRow?.minTrackHeightPx,
+        minimizedLaneIds,
+      );
+    },
+    [mergedItems, minimizedLaneIds, visibleLaneRows],
   );
 
   const getItemsWithRows = useCallback(
@@ -595,6 +604,7 @@ function TimelineTracksPanelInner<
                   key={rowItem.id}
                   itemId={rowItem.id}
                   layoutRow={rowItem.row}
+                  laneTrackHeightPx={laneHeight}
                   renderItem={renderItem}
                   onItemHover={onItemHover}
                   isEventSelected={isEventSelected}

@@ -19,6 +19,8 @@ export interface DefaultTimelineItemProps<Data = unknown> {
   isMinWidth: boolean;
   /** Optional icon or badge before the label (e.g. iteration / sprint marker). */
   leadingVisual?: ReactNode;
+  /** Ignored by default item; timeline passes it for custom `renderItem` consumers. */
+  laneTrackHeightPx?: number;
   onMouseDown: (
     e: ReactMouseEvent,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,6 +46,7 @@ function DefaultTimelineItemInner({
   selected = isSelected,
   isMinWidth,
   leadingVisual,
+  laneTrackHeightPx: _laneTrackHeightPx,
   onMouseDown,
   onMouseEnter,
   onMouseLeave,

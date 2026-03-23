@@ -42,6 +42,7 @@ export type {
 } from "@internationalized/date";
 export {
   defaultTimelineBaseZoned,
+  timelineTemporalRangeToLayoutMinutes,
   timelineTemporalToZoned,
   timelineZonedNow,
 } from "./passionware-timeline-core.ts";
@@ -83,6 +84,7 @@ export {
   useViewportStartDate,
   useViewportVisibleMinutesRange,
   useTimelineItemsForTimelineCount,
+  useTimelineMinimizedLaneIds,
 } from "./use-timeline-selectors.ts";
 export { useTimelineRulerLayout } from "./use-timeline-ruler-layout.ts";
 export type { TimelineHorizontalAxisApi } from "./use-timeline-selectors.ts";
@@ -124,6 +126,7 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   onItemClick,
   onEventSelect,
   itemActivateTrigger,
+  viewportRange,
   renderItem,
   onItemHover,
   isEventSelected,
@@ -144,6 +147,7 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
         onItemClick,
         onEventSelect,
         itemActivateTrigger,
+        viewportRange,
       }}
       renderItem={renderItem}
       onItemHover={onItemHover}
