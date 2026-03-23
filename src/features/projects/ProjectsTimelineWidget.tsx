@@ -10,6 +10,7 @@ import {
 } from "@/api/project/project.api.ts";
 import type { Project } from "@/api/project/project.api.ts";
 import type { Report } from "@/api/reports/reports.api.ts";
+import type { ReportQuery } from "@/api/reports/reports.api.ts";
 import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
@@ -27,11 +28,13 @@ import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerC
 import { renderError } from "@/features/_common/renderError.tsx";
 import { ProjectTimelineBillingMarker } from "@/features/projects/widgets/ProjectTimelineBillingMarker.tsx";
 import { ProjectTimelineCostMarker } from "@/features/projects/widgets/ProjectTimelineCostMarker.tsx";
+import { ProjectTimelineFloatingBulkBar } from "@/features/projects/widgets/ProjectTimelineFloatingBulkBar.tsx";
 import {
   buildProjectTimelineLanesAndItems,
   indexProjectTimelineLanesById,
   nextIterationOrdinalForProject,
   projectTimelineIterationBarLabel,
+  projectTimelineSelectionKeyFromItem,
   suggestedIterationPeriodFromDrawnBar,
   type ProjectTimelineGroupBy,
   type ProjectTimelineItemData,
@@ -44,6 +47,7 @@ import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService.t
 import type { FormatService } from "@/services/FormatService/FormatService.ts";
 import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
 import {
   minutesToZonedDateTime,
   type TimelineItem,
@@ -54,7 +58,12 @@ import {
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { PointerFollowTooltip } from "@/components/ui/pointer-follow-tooltip.tsx";
 import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
-import { maybe, rd, type RemoteData } from "@passionware/monads";
+import {
+  selectionState,
+  useSelectionCleanup,
+  type SelectionState,
+} from "@/platform/lang/SelectionState.ts";
+import { maybe, rd, type Maybe, type RemoteData } from "@passionware/monads";
 import {
   BriefcaseBusiness,
   CirclePlay,
@@ -476,6 +485,7 @@ function ProjectsTimelineLoaded(props: {
           iterations={iterations}
           projectNameById={props.projectNameById}
           projects={props.projects}
+          reportQuery={maybe.of(reportsQuery)}
           reportsRd={reportsRd}
           services={props.services}
           timelineDarkMode={props.timelineDarkMode}
@@ -485,12 +495,516 @@ function ProjectsTimelineLoaded(props: {
     });
 }
 
+/** Hooks + timeline + floating bulk actions (must not live inside `rd.map`). */
+function ProjectsTimelineChartWithSelection(props: {
+  services: ProjectsTimelineWidgetProps["services"];
+  workspaceId: WorkspaceSpec;
+  clientId: ClientSpec;
+  iterations: ProjectIteration[];
+  projectNameById: ReadonlyMap<number, string>;
+  groupBy: ProjectTimelineGroupBy;
+  timelineDarkMode: boolean;
+  reportQuery: Maybe<ReportQuery>;
+  lanes: Lane<ProjectTimelineLaneMeta>[];
+  items: TimelineItem<ProjectTimelineItemData>[];
+  defaultExpandedLaneIds: Iterable<string> | ReadonlySet<string> | null;
+  viewportRange:
+    | { start: CalendarDate; end: CalendarDate }
+    | null
+    | undefined;
+  yDomainByBudgetLaneId: Map<string, [number, number]>;
+  pushEntityDrawer: ReturnType<
+    typeof useEntityDrawerContext
+  >["pushEntityDrawer"];
+  openEntityDrawer: ReturnType<
+    typeof useEntityDrawerContext
+  >["openEntityDrawer"];
+}) {
+  const [timelineSelection, setTimelineSelection] = useState<
+    SelectionState<string>
+  >(selectionState.selectNone());
+
+  const allTimelineKeys = useMemo(
+    () => props.items.map(projectTimelineSelectionKeyFromItem),
+    [props.items],
+  );
+
+  useSelectionCleanup(timelineSelection, allTimelineKeys, setTimelineSelection);
+
+  const laneById = useMemo(
+    () => indexProjectTimelineLanesById(props.lanes),
+    [props.lanes],
+  );
+
+  const handleTimelineDrawComplete = useCallback(
+    (drawn: TimelineItem<unknown>) => {
+      const lane = laneById.get(drawn.laneId);
+      const m = lane?.meta;
+      if (!m || (m.clientId == null && m.projectId == null)) return;
+      const { periodStart, periodEnd } = suggestedIterationPeriodFromDrawnBar(
+        drawn.start,
+        drawn.end,
+      );
+      const draftKey = `tl-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      if (m.projectId != null) {
+        props.pushEntityDrawer({
+          type: "project-iteration",
+          intent: "create",
+          projectId: m.projectId,
+          draftKey,
+          periodStart,
+          periodEnd,
+          afterCreate: "drawer-detail",
+        });
+      } else if (m.clientId != null) {
+        props.pushEntityDrawer({
+          type: "project-iteration",
+          intent: "create",
+          presetClientId: m.clientId,
+          draftKey,
+          periodStart,
+          periodEnd,
+          afterCreate: "drawer-detail",
+        });
+      }
+    },
+    [laneById, props.pushEntityDrawer],
+  );
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-md border bg-card",
+          props.timelineDarkMode && "dark",
+        )}
+      >
+        <div className="min-h-0 flex-1">
+          <div className="h-full min-h-0">
+            <InfiniteTimelineWithState<
+              ProjectTimelineItemData,
+              ProjectTimelineLaneMeta
+            >
+              key={props.groupBy}
+              lanes={props.lanes}
+              items={props.items}
+              defaultExpandedLaneIds={props.defaultExpandedLaneIds}
+              defaultSnapOption="1day"
+              itemActivateTrigger="click"
+              viewportRange={props.viewportRange}
+              isEventSelected={(item) =>
+                selectionState.isSelected(
+                  timelineSelection,
+                  projectTimelineSelectionKeyFromItem(item),
+                )
+              }
+              onEventSelect={(item) => {
+                setTimelineSelection((s) =>
+                  selectionState.toggle(
+                    s,
+                    projectTimelineSelectionKeyFromItem(item),
+                  ),
+                );
+              }}
+              onRangeSelect={(hitItems, mod) => {
+                const keys = [
+                  ...new Set(hitItems.map(projectTimelineSelectionKeyFromItem)),
+                ];
+                setTimelineSelection((s) => {
+                  if (mod.subtract) {
+                    return selectionState.removeFrom(s, keys);
+                  }
+                  if (mod.extend) {
+                    return selectionState.addTo(s, keys);
+                  }
+                  return selectionState.selectSome(keys);
+                });
+              }}
+              onEscapeSelection={() =>
+                setTimelineSelection(selectionState.selectNone())
+              }
+              onDrawComplete={handleTimelineDrawComplete}
+              renderDrawingPreviewLabel={(p, lane) => {
+                const projectId = lane.meta?.projectId;
+                if (projectId != null) {
+                  const nextOrd = nextIterationOrdinalForProject(
+                    props.iterations,
+                    projectId,
+                  );
+                  return (
+                    <span className="flex w-full min-w-0 items-center gap-1">
+                      <CirclePlay
+                        className="h-3 w-3 shrink-0 opacity-95"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 truncate">
+                        {projectTimelineIterationBarLabel(
+                          props.projectNameById,
+                          projectId,
+                          nextOrd,
+                        )}
+                      </span>
+                    </span>
+                  );
+                }
+                const start = Math.min(
+                  p.previewStartMinutes,
+                  p.previewEndMinutes,
+                );
+                const end = Math.max(
+                  p.previewStartMinutes,
+                  p.previewEndMinutes,
+                );
+                const zStart = minutesToZonedDateTime(start, p.baseDate);
+                const zEnd = minutesToZonedDateTime(end, p.baseDate);
+                const { periodStart, periodEnd } =
+                  suggestedIterationPeriodFromDrawnBar(zStart, zEnd);
+                return props.services.formatService.temporal.range.plainText(
+                  periodStart,
+                  periodEnd,
+                );
+              }}
+              renderItem={(itemProps) => {
+                const renderPaneItem = (
+                  itemPropsArg: typeof itemProps,
+                  yDomainByBudgetLaneIdArg: Map<string, [number, number]>,
+                ) => {
+                  const { item } = itemPropsArg;
+                  const d = item.data;
+
+                  if (d.kind === "iteration-budget") {
+                    return (
+                      <ProjectTimelineIterationBudgetBar
+                        {...itemPropsArg}
+                        services={props.services}
+                        sharedYDomain={yDomainByBudgetLaneIdArg.get(
+                          item.laneId,
+                        )}
+                      />
+                    );
+                  }
+
+                  const inner =
+                    d.kind === "billing" ? (
+                      <ProjectTimelineBillingMarker {...itemPropsArg} />
+                    ) : d.kind === "cost" ? (
+                      <ProjectTimelineCostMarker {...itemPropsArg} />
+                    ) : d.kind === "iteration" ? (
+                      <DefaultTimelineItem
+                        {...itemPropsArg}
+                        leadingVisual={
+                          <CirclePlay
+                            className="h-3 w-3 opacity-95"
+                            aria-hidden
+                          />
+                        }
+                      />
+                    ) : (
+                      <DefaultTimelineItem {...itemPropsArg} />
+                    );
+
+                  const fmt = props.services.formatService;
+
+                  let tooltipContent: ReactNode;
+                  if (d.kind === "billing") {
+                    tooltipContent = (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-snug text-foreground">
+                          {d.invoiceNumber}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
+                          <span>Billing ·</span>
+                          {projectTimelineTooltipSemanticCalendarRange(
+                            fmt,
+                            d.invoiceDate,
+                            d.invoiceDate,
+                          )}
+                        </div>
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">
+                            Amount ·{" "}
+                          </span>
+                          <span className="font-medium tabular-nums text-foreground">
+                            {fmt.financial.amount(d.totalGross, d.currency)}
+                          </span>
+                        </p>
+                        {d.totalGross !== d.totalNet && (
+                          <p className="text-[10px]">
+                            <span className="text-muted-foreground">
+                              Net ·{" "}
+                            </span>
+                            <span className="tabular-nums text-foreground">
+                              {fmt.financial.amount(d.totalNet, d.currency)}
+                            </span>
+                          </p>
+                        )}
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">Due · </span>
+                          <span className="font-medium text-foreground">
+                            {fmt.temporal.date(d.invoiceDate)}
+                          </span>
+                        </p>
+                        {d.unpaid && (
+                          <p className="text-[10px] font-medium text-amber-700 dark:text-amber-500">
+                            Unpaid
+                          </p>
+                        )}
+                      </div>
+                    );
+                  } else if (d.kind === "report") {
+                    const unitSuffix = formatReportTimelineUnit(d.unit);
+                    tooltipContent = (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-snug text-foreground">
+                          {item.label}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
+                          <span>Report ·</span>
+                          {projectTimelineTooltipSemanticCalendarRange(
+                            fmt,
+                            d.periodStart,
+                            d.periodEnd,
+                          )}
+                        </div>
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">
+                            Net ·{" "}
+                          </span>
+                          <span className="font-medium tabular-nums text-foreground">
+                            {fmt.financial.amount(d.netValue, d.currency)}
+                          </span>
+                        </p>
+                        {d.quantity != null && (
+                          <p className="text-[10px]">
+                            <span className="text-muted-foreground">
+                              Quantity ·{" "}
+                            </span>
+                            <span className="tabular-nums text-foreground">
+                              {d.quantity.toFixed(2)} {unitSuffix}
+                            </span>
+                          </p>
+                        )}
+                        {d.unitPrice != null && (
+                          <p className="text-[10px]">
+                            <span className="text-muted-foreground">
+                              Unit price ·{" "}
+                            </span>
+                            <span className="tabular-nums text-foreground">
+                              {fmt.financial.amount(d.unitPrice, d.currency)}/
+                              {unitSuffix}
+                            </span>
+                          </p>
+                        )}
+                        <div className="mt-1.5 space-y-2 border-t border-border pt-1.5">
+                          <div className="flex gap-3">
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Billing
+                              </p>
+                              <p className="text-[10px]">
+                                <span className="text-muted-foreground">
+                                  Billed ·{" "}
+                                </span>
+                                <span className="tabular-nums text-foreground">
+                                  {fmt.financial.amount(
+                                    d.reportBillingValue,
+                                    d.currency,
+                                  )}
+                                </span>
+                              </p>
+                              <p className="text-[10px]">
+                                <span className="text-muted-foreground">
+                                  To link ·{" "}
+                                </span>
+                                <span className="tabular-nums text-foreground">
+                                  {fmt.financial.amount(
+                                    d.reportBillingBalance,
+                                    d.currency,
+                                  )}
+                                </span>
+                              </p>
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-0.5 border-l border-border pl-3">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Cost
+                              </p>
+                              <p className="text-[10px]">
+                                <span className="text-muted-foreground">
+                                  Paid ·{" "}
+                                </span>
+                                <span className="tabular-nums text-foreground">
+                                  {fmt.financial.amount(
+                                    d.reportCostValue,
+                                    d.currency,
+                                  )}
+                                </span>
+                              </p>
+                              <p className="text-[10px]">
+                                <span className="text-muted-foreground">
+                                  To compensate ·{" "}
+                                </span>
+                                <span className="tabular-nums text-foreground">
+                                  {fmt.financial.amount(
+                                    d.reportCostBalance,
+                                    d.currency,
+                                  )}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-[10px] border-t border-border pt-2">
+                            <span className="text-muted-foreground">
+                              Overhead ·{" "}
+                            </span>
+                            <span className="tabular-nums text-foreground">
+                              {fmt.financial.amount(
+                                d.billingCostBalance,
+                                d.currency,
+                              )}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  } else if (d.kind === "cost") {
+                    tooltipContent = (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-snug text-foreground">
+                          {d.invoiceNumber ?? item.label}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
+                          <span>Cost ·</span>
+                          {projectTimelineTooltipSemanticCalendarRange(
+                            fmt,
+                            d.invoiceDate,
+                            d.invoiceDate,
+                          )}
+                        </div>
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">
+                            Net ·{" "}
+                          </span>
+                          <span className="font-medium tabular-nums text-foreground">
+                            {fmt.financial.amount(d.netValue, d.currency)}
+                          </span>
+                        </p>
+                        {d.grossValue != null && (
+                          <p className="text-[10px]">
+                            <span className="text-muted-foreground">
+                              Gross ·{" "}
+                            </span>
+                            <span className="tabular-nums text-foreground">
+                              {fmt.financial.amount(d.grossValue, d.currency)}
+                            </span>
+                          </p>
+                        )}
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">
+                            Invoice date ·{" "}
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {fmt.temporal.date(d.invoiceDate)}
+                          </span>
+                        </p>
+                      </div>
+                    );
+                  } else if (d.kind === "iteration") {
+                    tooltipContent = (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-snug text-foreground">
+                          {d.summaryLabel}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
+                          <span>Iteration ·</span>
+                          {projectTimelineTooltipSemanticCalendarRange(
+                            fmt,
+                            d.periodStart,
+                            d.periodEnd,
+                          )}
+                        </div>
+                        {d.latestGeneratedReportBillingLabel != null &&
+                          d.latestGeneratedReportBillingLabel.length > 0 && (
+                            <p className="text-[10px]">
+                              <span className="text-muted-foreground">
+                                Latest generated report · billing ·{" "}
+                              </span>
+                              <span className="font-medium tabular-nums text-foreground">
+                                {d.latestGeneratedReportBillingLabel}
+                              </span>
+                            </p>
+                          )}
+                      </div>
+                    );
+                  } else {
+                    tooltipContent = (
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        {item.label}
+                      </div>
+                    );
+                  }
+
+                  const wideTooltip = true;
+
+                  return (
+                    <PointerFollowTooltip
+                      delayDuration={280}
+                      light
+                      contentClassName={cn(
+                        "shadow-md",
+                        wideTooltip
+                          ? "max-w-none p-3"
+                          : "max-w-xs px-3 py-2",
+                      )}
+                      content={tooltipContent}
+                    >
+                      {inner}
+                    </PointerFollowTooltip>
+                  );
+                };
+                return renderPaneItem(itemProps, props.yDomainByBudgetLaneId);
+              }}
+              onItemClick={(item) => {
+                const d = item.data;
+                if (d.kind === "iteration" || d.kind === "iteration-budget") {
+                  props.openEntityDrawer({
+                    type: "project-iteration",
+                    intent: "detail",
+                    projectId: d.projectId,
+                    iterationId: d.iterationId,
+                  });
+                } else if (d.kind === "report") {
+                  props.openEntityDrawer({ type: "report", id: d.reportId });
+                } else if (d.kind === "billing") {
+                  props.openEntityDrawer({ type: "billing", id: d.billingId });
+                } else if (d.kind === "cost") {
+                  props.openEntityDrawer({ type: "cost", id: d.costId });
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <ProjectTimelineFloatingBulkBar
+        services={props.services}
+        workspaceId={props.workspaceId}
+        clientId={props.clientId}
+        selection={timelineSelection}
+        onSelectionChange={setTimelineSelection}
+        timelineItems={props.items}
+        iterations={props.iterations}
+        reportQuery={props.reportQuery}
+      />
+    </div>
+  );
+}
+
 function ProjectsTimelineWithReports(props: {
   services: ProjectsTimelineWidgetProps["services"];
   workspaceId: WorkspaceSpec;
   clientId: ClientSpec;
   projects: Project[];
   iterations: ProjectIteration[];
+  reportQuery: Maybe<ReportQuery>;
   reportsRd: RemoteData<Report[]>;
   generatedReportsRd: RemoteData<GeneratedReportSource[]>;
   projectNameById: ReadonlyMap<number, string>;
@@ -608,421 +1122,26 @@ function ProjectsTimelineWithReports(props: {
         );
       }
 
-      const laneById = indexProjectTimelineLanesById(lanes);
       const viewportRange = projectTimelineViewportFromEventItems(items);
 
-      const handleTimelineDrawComplete = (drawn: TimelineItem<unknown>) => {
-        const lane = laneById.get(drawn.laneId);
-        const m = lane?.meta;
-        if (!m || (m.clientId == null && m.projectId == null)) return;
-        const { periodStart, periodEnd } = suggestedIterationPeriodFromDrawnBar(
-          drawn.start,
-          drawn.end,
-        );
-        const draftKey = `tl-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        if (m.projectId != null) {
-          pushEntityDrawer({
-            type: "project-iteration",
-            intent: "create",
-            projectId: m.projectId,
-            draftKey,
-            periodStart,
-            periodEnd,
-            afterCreate: "drawer-detail",
-          });
-        } else if (m.clientId != null) {
-          pushEntityDrawer({
-            type: "project-iteration",
-            intent: "create",
-            presetClientId: m.clientId,
-            draftKey,
-            periodStart,
-            periodEnd,
-            afterCreate: "drawer-detail",
-          });
-        }
-      };
-
       return (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div
-            className={cn(
-              "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-md border bg-card",
-              props.timelineDarkMode && "dark",
-            )}
-          >
-            <div className="min-h-0 flex-1">
-              <div className="h-full min-h-0">
-                <InfiniteTimelineWithState<
-                  ProjectTimelineItemData,
-                  ProjectTimelineLaneMeta
-                >
-                  key={props.groupBy}
-                  lanes={lanes}
-                  items={items}
-                  defaultExpandedLaneIds={defaultExpandedLaneIds}
-                  defaultSnapOption="1day"
-                  itemActivateTrigger="click"
-                  viewportRange={viewportRange}
-                  onDrawComplete={handleTimelineDrawComplete}
-                  renderDrawingPreviewLabel={(p, lane) => {
-                    const projectId = lane.meta?.projectId;
-                    if (projectId != null) {
-                      const nextOrd = nextIterationOrdinalForProject(
-                        props.iterations,
-                        projectId,
-                      );
-                      return (
-                        <span className="flex w-full min-w-0 items-center gap-1">
-                          <CirclePlay
-                            className="h-3 w-3 shrink-0 opacity-95"
-                            aria-hidden
-                          />
-                          <span className="min-w-0 truncate">
-                            {projectTimelineIterationBarLabel(
-                              props.projectNameById,
-                              projectId,
-                              nextOrd,
-                            )}
-                          </span>
-                        </span>
-                      );
-                    }
-                    const start = Math.min(
-                      p.previewStartMinutes,
-                      p.previewEndMinutes,
-                    );
-                    const end = Math.max(
-                      p.previewStartMinutes,
-                      p.previewEndMinutes,
-                    );
-                    const zStart = minutesToZonedDateTime(start, p.baseDate);
-                    const zEnd = minutesToZonedDateTime(end, p.baseDate);
-                    const { periodStart, periodEnd } =
-                      suggestedIterationPeriodFromDrawnBar(zStart, zEnd);
-                    return props.services.formatService.temporal.range.plainText(
-                      periodStart,
-                      periodEnd,
-                    );
-                  }}
-                  renderItem={(itemProps) => {
-                    const { item } = itemProps;
-                    const d = item.data;
-
-                    if (d.kind === "iteration-budget") {
-                      return (
-                        <ProjectTimelineIterationBudgetBar
-                          {...itemProps}
-                          services={props.services}
-                          sharedYDomain={yDomainByBudgetLaneId.get(
-                            item.laneId,
-                          )}
-                        />
-                      );
-                    }
-
-                    const inner =
-                      d.kind === "billing" ? (
-                        <ProjectTimelineBillingMarker {...itemProps} />
-                      ) : d.kind === "cost" ? (
-                        <ProjectTimelineCostMarker {...itemProps} />
-                      ) : d.kind === "iteration" ? (
-                        <DefaultTimelineItem
-                          {...itemProps}
-                          leadingVisual={
-                            <CirclePlay
-                              className="h-3 w-3 opacity-95"
-                              aria-hidden
-                            />
-                          }
-                        />
-                      ) : (
-                        <DefaultTimelineItem {...itemProps} />
-                      );
-
-                    const fmt = props.services.formatService;
-
-                    let tooltipContent: ReactNode;
-                    if (d.kind === "billing") {
-                      tooltipContent = (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-snug text-foreground">
-                            {d.invoiceNumber}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
-                            <span>Billing ·</span>
-                            {projectTimelineTooltipSemanticCalendarRange(
-                              fmt,
-                              d.invoiceDate,
-                              d.invoiceDate,
-                            )}
-                          </div>
-                          <p className="text-[10px]">
-                            <span className="text-muted-foreground">
-                              Amount ·{" "}
-                            </span>
-                            <span className="font-medium tabular-nums text-foreground">
-                              {fmt.financial.amount(d.totalGross, d.currency)}
-                            </span>
-                          </p>
-                          {d.totalGross !== d.totalNet && (
-                            <p className="text-[10px]">
-                              <span className="text-muted-foreground">
-                                Net ·{" "}
-                              </span>
-                              <span className="tabular-nums text-foreground">
-                                {fmt.financial.amount(d.totalNet, d.currency)}
-                              </span>
-                            </p>
-                          )}
-                          <p className="text-[10px]">
-                            <span className="text-muted-foreground">
-                              Due ·{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {fmt.temporal.date(d.invoiceDate)}
-                            </span>
-                          </p>
-                          {d.unpaid && (
-                            <p className="text-[10px] font-medium text-amber-700 dark:text-amber-500">
-                              Unpaid
-                            </p>
-                          )}
-                        </div>
-                      );
-                    } else if (d.kind === "report") {
-                      const unitSuffix = formatReportTimelineUnit(d.unit);
-                      tooltipContent = (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-snug text-foreground">
-                            {item.label}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
-                            <span>Report ·</span>
-                            {projectTimelineTooltipSemanticCalendarRange(
-                              fmt,
-                              d.periodStart,
-                              d.periodEnd,
-                            )}
-                          </div>
-                          <p className="text-[10px]">
-                            <span className="text-muted-foreground">
-                              Net ·{" "}
-                            </span>
-                            <span className="font-medium tabular-nums text-foreground">
-                              {fmt.financial.amount(d.netValue, d.currency)}
-                            </span>
-                          </p>
-                          {d.quantity != null && (
-                            <p className="text-[10px]">
-                              <span className="text-muted-foreground">
-                                Quantity ·{" "}
-                              </span>
-                              <span className="tabular-nums text-foreground">
-                                {d.quantity.toFixed(2)} {unitSuffix}
-                              </span>
-                            </p>
-                          )}
-                          {d.unitPrice != null && (
-                            <p className="text-[10px]">
-                              <span className="text-muted-foreground">
-                                Unit price ·{" "}
-                              </span>
-                              <span className="tabular-nums text-foreground">
-                                {fmt.financial.amount(d.unitPrice, d.currency)}/
-                                {unitSuffix}
-                              </span>
-                            </p>
-                          )}
-                          <div className="mt-1.5 space-y-2 border-t border-border pt-1.5">
-                            <div className="flex gap-3">
-                              <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Billing
-                                </p>
-                                <p className="text-[10px]">
-                                  <span className="text-muted-foreground">
-                                    Billed ·{" "}
-                                  </span>
-                                  <span className="tabular-nums text-foreground">
-                                    {fmt.financial.amount(
-                                      d.reportBillingValue,
-                                      d.currency,
-                                    )}
-                                  </span>
-                                </p>
-                                <p className="text-[10px]">
-                                  <span className="text-muted-foreground">
-                                    To link ·{" "}
-                                  </span>
-                                  <span className="tabular-nums text-foreground">
-                                    {fmt.financial.amount(
-                                      d.reportBillingBalance,
-                                      d.currency,
-                                    )}
-                                  </span>
-                                </p>
-                              </div>
-                              <div className="min-w-0 flex-1 space-y-0.5 border-l border-border pl-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Cost
-                                </p>
-                                <p className="text-[10px]">
-                                  <span className="text-muted-foreground">
-                                    Paid ·{" "}
-                                  </span>
-                                  <span className="tabular-nums text-foreground">
-                                    {fmt.financial.amount(
-                                      d.reportCostValue,
-                                      d.currency,
-                                    )}
-                                  </span>
-                                </p>
-                                <p className="text-[10px]">
-                                  <span className="text-muted-foreground">
-                                    To compensate ·{" "}
-                                  </span>
-                                  <span className="tabular-nums text-foreground">
-                                    {fmt.financial.amount(
-                                      d.reportCostBalance,
-                                      d.currency,
-                                    )}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-[10px] border-t border-border pt-2">
-                              <span className="text-muted-foreground">
-                                Overhead ·{" "}
-                              </span>
-                              <span className="tabular-nums text-foreground">
-                                {fmt.financial.amount(
-                                  d.billingCostBalance,
-                                  d.currency,
-                                )}
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    } else if (d.kind === "cost") {
-                      tooltipContent = (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-snug text-foreground">
-                            {d.invoiceNumber ?? item.label}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
-                            <span>Cost ·</span>
-                            {projectTimelineTooltipSemanticCalendarRange(
-                              fmt,
-                              d.invoiceDate,
-                              d.invoiceDate,
-                            )}
-                          </div>
-                          <p className="text-[10px]">
-                            <span className="text-muted-foreground">
-                              Net ·{" "}
-                            </span>
-                            <span className="font-medium tabular-nums text-foreground">
-                              {fmt.financial.amount(d.netValue, d.currency)}
-                            </span>
-                          </p>
-                          {d.grossValue != null && (
-                            <p className="text-[10px]">
-                              <span className="text-muted-foreground">
-                                Gross ·{" "}
-                              </span>
-                              <span className="tabular-nums text-foreground">
-                                {fmt.financial.amount(d.grossValue, d.currency)}
-                              </span>
-                            </p>
-                          )}
-                          <p className="text-[10px]">
-                            <span className="text-muted-foreground">
-                              Invoice date ·{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {fmt.temporal.date(d.invoiceDate)}
-                            </span>
-                          </p>
-                        </div>
-                      );
-                    } else if (d.kind === "iteration") {
-                      tooltipContent = (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-snug text-foreground">
-                            {d.summaryLabel}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground">
-                            <span>Iteration ·</span>
-                            {projectTimelineTooltipSemanticCalendarRange(
-                              fmt,
-                              d.periodStart,
-                              d.periodEnd,
-                            )}
-                          </div>
-                          {d.latestGeneratedReportBillingLabel != null &&
-                            d.latestGeneratedReportBillingLabel.length > 0 && (
-                              <p className="text-[10px]">
-                                <span className="text-muted-foreground">
-                                  Latest generated report · billing ·{" "}
-                                </span>
-                                <span className="font-medium tabular-nums text-foreground">
-                                  {d.latestGeneratedReportBillingLabel}
-                                </span>
-                              </p>
-                            )}
-                        </div>
-                      );
-                    } else {
-                      tooltipContent = (
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          {item.label}
-                        </div>
-                      );
-                    }
-
-                    // Badge-style `range.long` needs horizontal room in every tooltip.
-                    const wideTooltip = true;
-
-                    return (
-                      <PointerFollowTooltip
-                        delayDuration={280}
-                        light
-                        contentClassName={cn(
-                          "shadow-md",
-                          wideTooltip
-                            ? "max-w-none p-3"
-                            : "max-w-xs px-3 py-2",
-                        )}
-                        content={tooltipContent}
-                      >
-                        {inner}
-                      </PointerFollowTooltip>
-                    );
-                  }}
-                  onItemClick={(item) => {
-                    const d = item.data;
-                    if (d.kind === "iteration" || d.kind === "iteration-budget") {
-                      openEntityDrawer({
-                        type: "project-iteration",
-                        intent: "detail",
-                        projectId: d.projectId,
-                        iterationId: d.iterationId,
-                      });
-                    } else if (d.kind === "report") {
-                      openEntityDrawer({ type: "report", id: d.reportId });
-                    } else if (d.kind === "billing") {
-                      openEntityDrawer({ type: "billing", id: d.billingId });
-                    } else if (d.kind === "cost") {
-                      openEntityDrawer({ type: "cost", id: d.costId });
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectsTimelineChartWithSelection
+          clientId={props.clientId}
+          defaultExpandedLaneIds={defaultExpandedLaneIds}
+          groupBy={props.groupBy}
+          items={items}
+          iterations={props.iterations}
+          lanes={lanes}
+          openEntityDrawer={openEntityDrawer}
+          projectNameById={props.projectNameById}
+          pushEntityDrawer={pushEntityDrawer}
+          reportQuery={props.reportQuery}
+          services={props.services}
+          timelineDarkMode={props.timelineDarkMode}
+          viewportRange={viewportRange ?? undefined}
+          workspaceId={props.workspaceId}
+          yDomainByBudgetLaneId={yDomainByBudgetLaneId}
+        />
       );
     });
 }

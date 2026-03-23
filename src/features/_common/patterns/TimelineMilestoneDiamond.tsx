@@ -224,6 +224,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
             className="pointer-events-auto absolute z-0 cursor-grab bg-destructive/15 dark:bg-destructive/22"
             style={unpaidRedStyle}
             data-timeline-item
+            data-timeline-item-id={item.id}
             data-billing-unpaid=""
             aria-hidden
             onMouseDown={handleMouseDown}
@@ -236,6 +237,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
           ref={ref}
           {...rest}
           data-timeline-item
+          data-timeline-item-id={item.id}
           data-billing-unpaid={unpaidBilling ? "" : undefined}
           aria-label={item.label}
           className={cn(
@@ -274,6 +276,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
       ref={ref}
       {...rest}
       data-timeline-item
+      data-timeline-item-id={item.id}
       data-billing-unpaid={unpaidBilling ? "" : undefined}
       aria-label={item.label}
       className={cn("absolute z-[2]", markerRingClass)}

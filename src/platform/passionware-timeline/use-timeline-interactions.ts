@@ -25,7 +25,6 @@ import {
   SIDEBAR_WIDTH,
   TIMELINE_ZOOM_MAX,
   TIMELINE_ZOOM_MIN,
-  timelineItemsTimeOverlap,
   timelineTemporalRangeToLayoutMinutes,
   toExternalItem,
 } from "./passionware-timeline-core.ts";
@@ -36,13 +35,15 @@ import {
 import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 import type { TimelineStateApi } from "./use-timeline-state.ts";
 import {
-  getItemsWithRowsForLane,
   getLaneHeightForPreview,
   layoutPixelToTime,
   totalLanesHeight,
   type CalculatedDrawPreview,
-  type LanePreviewShape,
 } from "./timeline-layout-logic.ts";
+import {
+  isTimelineMarqueePointer,
+  useTimelineMarqueeController,
+} from "./timeline-marquee-controller.tsx";
 
 function viewportTemporalSerializationKey(t: TimelineTemporal): string {
   return t instanceof CalendarDate ? `cal:${t.toString()}` : `zdt:${t.toString()}`;
@@ -53,6 +54,17 @@ export interface UseTimelineInteractionsOptions<Data = unknown> {
   onDrawComplete?: (item: TimelineItem<Data>) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
   onEventSelect?: (item: TimelineItem<Data>) => void;
+  /**
+   * Ctrl+left or right-button drag: items whose DOM hits intersect the rectangle.
+   * Use with `isEventSelected` for Shift+subtract when starting on a selected item.
+   */
+  onRangeSelect?: (
+    items: TimelineItem<Data>[],
+    modifier: { extend: boolean; subtract: boolean },
+  ) => void;
+  isEventSelected?: (item: TimelineItem<Data>) => boolean;
+  /** Called on Escape when `onRangeSelect` is set (e.g. clear `SelectionState`). */
+  onEscapeSelection?: () => void;
   itemActivateTrigger?: "mousedown" | "click";
   /**
    * When set, initial horizontal zoom + scroll fit this span (same layout rules as item
@@ -105,9 +117,21 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     onDrawComplete,
     onItemClick,
     onEventSelect,
+    onRangeSelect,
+    isEventSelected,
+    onEscapeSelection,
     itemActivateTrigger = "mousedown",
     viewportRange = null,
   } = options;
+
+  const marquee = useTimelineMarqueeController<Data, TLaneMeta>({
+    store,
+    bundle: state.bundle,
+    containerRef,
+    onRangeSelect,
+    isEventSelected,
+    onEscapeClear: onRangeSelect ? onEscapeSelection : undefined,
+  });
 
   const lastHorizontalFitKeyRef = useRef<string | null>(null);
 
@@ -129,6 +153,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   const panState = useAtomValue(atoms.panStateAtom, { store });
   const dragState = useAtomValue(atoms.dragStateAtom, { store });
   const selectedItemId = useAtomValue(atoms.selectedItemIdAtom, { store });
+  const currentTool = useAtomValue(atoms.currentToolAtom, { store });
   const autoFitSignature = useAtomValue(atoms.autoFitSignatureAtom, { store });
   const timeZone = useAtomValue(atoms.timeZoneAtom, { store });
   const baseDateZoned = useAtomValue(atoms.baseDateZonedAtom, { store });
@@ -138,10 +163,30 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     ? `${viewportTemporalSerializationKey(viewportRange.start)}|${viewportTemporalSerializationKey(viewportRange.end)}`
     : "";
 
-  const getItemsWithRows = useCallback(
-    (laneId: string, previewItem?: LanePreviewShape) =>
-      getItemsWithRowsForLane(readMergedItems(), laneId, previewItem),
-    [atoms.mergedItemsAtom, store],
+  type ResolvedPointerAction = "pan" | "draw" | "select" | "none";
+  const resolvePointerAction = useCallback(
+    (
+      e: { button: number; ctrlKey: boolean; metaKey: boolean },
+      source: "item" | "lane" | "grid",
+    ): ResolvedPointerAction => {
+      if (source !== "item" && onRangeSelect && isTimelineMarqueePointer(e)) {
+        return "select";
+      }
+      if (e.button === 1 || (e.button === 0 && e.metaKey)) {
+        return "draw";
+      }
+      if (e.button !== 0) {
+        return "none";
+      }
+      if (currentTool === "select" && onRangeSelect) {
+        return "select";
+      }
+      if (currentTool === "draw" && source !== "item") {
+        return "draw";
+      }
+      return "pan";
+    },
+    [currentTool, onRangeSelect],
   );
 
   const pixelToTime = useCallback(
@@ -306,10 +351,11 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   const handleMouseDown = useCallback(
     (e: globalThis.MouseEvent) => {
       if (e.button === 0 && !readDragState() && !readPanState()) {
+        if (resolvePointerAction(e, "grid") !== "pan") {
+          return;
+        }
         const target = e.target as HTMLElement;
         if (
-          e.metaKey ||
-          e.ctrlKey ||
           target.closest("[data-timeline-item]") ||
           target.closest("[data-timeline-lane]")
         ) {
@@ -331,6 +377,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       atoms.verticalScrollOffsetAtom,
       setPanState,
       store,
+      resolvePointerAction,
     ],
   );
 
@@ -386,16 +433,18 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     if (!container) return;
 
     container.addEventListener("mousedown", handleMouseDown);
+    const preventContextMenu = (e: MouseEvent) => e.preventDefault();
     if (panState) {
       window.addEventListener("mousemove", handlePanMove);
       window.addEventListener("mouseup", handlePanUp);
-      window.addEventListener("contextmenu", (e) => e.preventDefault());
+      window.addEventListener("contextmenu", preventContextMenu);
     }
 
     return () => {
       container.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handlePanMove);
       window.removeEventListener("mouseup", handlePanUp);
+      window.removeEventListener("contextmenu", preventContextMenu);
     };
   }, [handleMouseDown, handlePanMove, handlePanUp, panState, containerRef]);
 
@@ -434,6 +483,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   const activateItemOnClick = useCallback(
     (_e: ReactMouseEvent, externalItem: TimelineItem<Data>) => {
+      if (_e.shiftKey) {
+        return;
+      }
       if (itemActivateTrigger !== "click") return;
       onItemClick?.(externalItem);
       setDragState(null);
@@ -456,32 +508,46 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     item: TimelineItemInternal<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
-    if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) return;
-
-    const laneSiblings = getItemsWithRows(item.laneId).filter(
-      (i) => i.row === (item.row ?? 0),
-    );
-    const hasTimeCollision = laneSiblings.some(
-      (other) =>
-        other.id !== item.id && timelineItemsTimeOverlap(item, other),
-    );
-
-    if (type === "move" && e.shiftKey && onEventSelect && !hasTimeCollision) {
+    if (type === "move" && e.button === 0 && e.shiftKey && onEventSelect) {
       e.stopPropagation();
+      e.preventDefault();
       setSelectedItemId(item.id);
       onEventSelect(toExternalItem(item, readBaseDateZoned()));
       return;
     }
+
+    const pointerAction = resolvePointerAction(e, "item");
+    if (
+      onRangeSelect &&
+      pointerAction === "select" &&
+      marquee.tryBeginMarquee(e, {
+        allowSubtractiveFromTarget: true,
+        force: e.button === 0 && !e.ctrlKey,
+      })
+    ) {
+      return;
+    }
+    if (pointerAction !== "pan") return;
 
     e.stopPropagation();
     beginItemDrag(e.clientX, item, type);
   };
 
   const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
-    const isDrawingButton =
-      e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey));
+    const pointerAction = resolvePointerAction(e, "lane");
 
-    if (isDrawingButton) {
+    if (
+      onRangeSelect &&
+      pointerAction === "select" &&
+      marquee.tryBeginMarquee(e, {
+        allowSubtractiveFromTarget: true,
+        force: e.button === 0 && !e.ctrlKey,
+      })
+    ) {
+      return;
+    }
+
+    if (pointerAction === "draw") {
       if (readDragState()) return;
       e.stopPropagation();
       const containerX = screenXToContainerX(e.clientX);
@@ -496,7 +562,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       });
       setCurrentMouseX(e.clientX);
       setSelectedItemId(null);
-    } else if (e.button === 0 && !readDragState() && !readPanState()) {
+    } else if (pointerAction === "pan" && !readDragState() && !readPanState()) {
       const target = e.target as HTMLElement;
       if (target.closest("[data-timeline-item]")) {
         return;
@@ -689,6 +755,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const currentDrag = readDragState();
+        if (currentDrag?.type === "draw") {
+          setDragState(null);
+          setCurrentMouseX(null);
+          previewItemRef.current = null;
+          return;
+        }
+      }
       if ((e.key === "Delete" || e.key === "Backspace") && selectedItemId) {
         const updatedItems = (
           readInternalItems() as TimelineItemInternal<Data>[]
@@ -708,9 +783,13 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     selectedItemId,
     onItemsChange,
     setSelectedItemId,
+    setDragState,
+    setCurrentMouseX,
+    previewItemRef,
     store,
     atoms.internalItemsAtom,
     atoms.baseDateZonedAtom,
+    atoms.dragStateAtom,
   ]);
 
   const drawingPreview =
@@ -725,11 +804,23 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   const onTimelineGridMouseDown = useCallback(
     (e: ReactMouseEvent) => {
-      if (e.button === 0 && !readDragState() && !readPanState()) {
+      const pointerAction = resolvePointerAction(e, "grid");
+      if (
+        onRangeSelect &&
+        pointerAction === "select" &&
+        marquee.tryBeginMarquee(e, {
+          allowSubtractiveFromTarget: true,
+          force: e.button === 0 && !e.ctrlKey,
+        })
+      ) {
+        return;
+      }
+      if (pointerAction === "draw") {
+        return;
+      }
+      if (pointerAction === "pan" && !readDragState() && !readPanState()) {
         const target = e.target as HTMLElement;
         if (
-          e.metaKey ||
-          e.ctrlKey ||
           target.closest("[data-timeline-item]") ||
           target.closest("[data-timeline-lane]")
         ) {
@@ -752,6 +843,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       atoms.panStateAtom,
       atoms.scrollOffsetAtom,
       atoms.verticalScrollOffsetAtom,
+      onRangeSelect,
+      resolvePointerAction,
+      marquee.tryBeginMarquee,
     ],
   );
 
@@ -762,5 +856,6 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     drawingPreview,
     activateItemOnClick,
     itemActivateTrigger,
+    marqueeDragVector: marquee.marqueeDragVector,
   };
 }

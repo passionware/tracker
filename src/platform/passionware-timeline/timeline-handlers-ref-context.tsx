@@ -12,6 +12,7 @@ import {
   useTimelineInteractions,
   type UseTimelineInteractionsOptions,
 } from "./use-timeline-interactions.ts";
+import { TimelineMarqueeOverlay } from "./timeline-marquee-controller.tsx";
 import { useTimelineRefs } from "./timeline-refs-context.tsx";
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- shared handler surface across generic timeline instances */
@@ -61,6 +62,7 @@ export function TimelineInteractionBridge<Data, TLaneMeta = unknown>({
   handlersRef.current = api;
   return (
     <TimelineHandlersRefContext.Provider value={handlersRef}>
+      <TimelineMarqueeOverlay dragVector={api.marqueeDragVector} />
       {children}
     </TimelineHandlersRefContext.Provider>
   );

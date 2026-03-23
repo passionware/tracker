@@ -33,6 +33,8 @@ export type TimelinePanState = {
   startVerticalScrollOffset: number;
 };
 
+export type TimelineTool = "pan" | "draw" | "select";
+
 export interface TimelineJotaiAtoms<Data, TLaneMeta = unknown> {
   itemsAtom: PrimitiveAtom<TimelineItem<Data>[]>;
   lanesAtom: PrimitiveAtom<Lane<TLaneMeta>[] | undefined>;
@@ -51,6 +53,7 @@ export interface TimelineJotaiAtoms<Data, TLaneMeta = unknown> {
   dragStateAtom: PrimitiveAtom<DragState<Data> | null>;
   panStateAtom: PrimitiveAtom<TimelinePanState | null>;
   selectedItemIdAtom: PrimitiveAtom<string | null>;
+  currentToolAtom: PrimitiveAtom<TimelineTool>;
   snapOptionAtom: PrimitiveAtom<SnapOption>;
   currentMouseXAtom: PrimitiveAtom<number | null>;
   dragModificationsAtom: PrimitiveAtom<
@@ -140,6 +143,7 @@ function createTimelineJotaiAtoms<
   const dragStateAtom = atom<DragState<Data> | null>(null);
   const panStateAtom = atom<TimelinePanState | null>(null);
   const selectedItemIdAtom = atom<string | null>(null);
+  const currentToolAtom = atom<TimelineTool>("pan");
   const snapOptionAtom = atom<SnapOption>("15min");
   const currentMouseXAtom = atom<number | null>(null);
   const dragModificationsAtom = atom<
@@ -210,6 +214,7 @@ function createTimelineJotaiAtoms<
     dragStateAtom,
     panStateAtom,
     selectedItemIdAtom,
+    currentToolAtom,
     snapOptionAtom,
     currentMouseXAtom,
     dragModificationsAtom,

@@ -9,14 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group.tsx";
 import { type SnapOption, formatTime } from "./passionware-timeline-core.ts";
 import type { CalculatedDrawPreview } from "./timeline-layout-logic.ts";
 import {
+  useSetTimelineTool,
   useSetTimelineSnapOption,
   useSetTimelineZoom,
   useTimelineMergedItems,
   useTimelineSelectedItemId,
   useTimelineSnapOption,
+  useTimelineTool,
   useTimelineVisibleLaneRows,
   useTimelineZoom,
   useTimelineItemsForTimelineCount,
@@ -33,6 +36,8 @@ import type { InfiniteTimelineProps } from "./timeline-infinite-types.ts";
 const TimelineToolbar = memo(function TimelineToolbar() {
   const snapOption = useTimelineSnapOption();
   const setSnapOption = useSetTimelineSnapOption();
+  const currentTool = useTimelineTool();
+  const setCurrentTool = useSetTimelineTool();
   const zoom = useTimelineZoom();
   const setZoom = useSetTimelineZoom();
   return (
@@ -48,10 +53,38 @@ const TimelineToolbar = memo(function TimelineToolbar() {
           <span className="text-border">|</span>
           <span>Ctrl+Scroll to zoom</span>
           <span className="text-border">|</span>
-          <span>Middle mouse or Cmd+Click to draw</span>
+          <span>Tool sets default left-drag behavior</span>
+          <span className="text-border">|</span>
+          <span>Ctrl+drag/right-drag selects</span>
+          <span className="text-border">|</span>
+          <span>Cmd+drag or middle-drag draws</span>
         </div>
       </div>
       <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Tool:</span>
+          <ToggleGroup
+            type="single"
+            value={currentTool}
+            onValueChange={(value) => {
+              if (value === "") return;
+              setCurrentTool(value as "pan" | "draw" | "select");
+            }}
+            variant="outline"
+            size="sm"
+          >
+            <ToggleGroupItem value="pan" className="h-7 px-2 text-xs">
+              Pan
+            </ToggleGroupItem>
+            <ToggleGroupItem value="draw" className="h-7 px-2 text-xs">
+              Draw
+            </ToggleGroupItem>
+            <ToggleGroupItem value="select" className="h-7 px-2 text-xs">
+              Select
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Snap:</span>
           <Select
@@ -186,7 +219,10 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
         <TimelineToolbar />
         <TimelineInteractionBridge
           state={props.state}
-          interactionOptions={props.interactionOptions ?? {}}
+          interactionOptions={{
+            ...(props.interactionOptions ?? {}),
+            isEventSelected: props.isEventSelected,
+          }}
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <TimelineScrollableMain
