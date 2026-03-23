@@ -4,6 +4,7 @@ import { memo, useLayoutEffect, type ReactNode } from "react";
 import {
   useTimelineDragState,
   useTimelinePanState,
+  useTimelineTool,
 } from "./use-timeline-selectors.ts";
 import { useTimelineRefs } from "./timeline-refs-context.tsx";
 import { useTimelineStore } from "./timeline-store-context.tsx";
@@ -18,6 +19,7 @@ export const TimelineScrollSurface = memo(function TimelineScrollSurface({
   const { store, atoms } = useTimelineStore();
   const panState = useTimelinePanState();
   const dragState = useTimelineDragState();
+  const currentTool = useTimelineTool();
 
   /** Measure on this node so width matches layout (avoids atom stuck at default / sibling effect order). */
   useLayoutEffect(() => {
@@ -50,7 +52,9 @@ export const TimelineScrollSurface = memo(function TimelineScrollSurface({
             ? "crosshair"
             : dragState
               ? "grabbing"
-              : "grab",
+              : currentTool === "draw" || currentTool === "select"
+                ? "crosshair"
+                : "grab",
       }}
     >
       {children}

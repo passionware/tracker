@@ -91,6 +91,7 @@ function DefaultTimelineItemInner({
       ref={ref}
       {...props}
       data-timeline-item
+      data-timeline-item-id={item.id}
       className={cn(
         "absolute rounded transition-shadow cursor-grab group",
         item.color || "bg-primary",

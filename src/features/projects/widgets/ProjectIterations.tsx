@@ -4,12 +4,6 @@ import {
   projectIterationQueryUtils,
 } from "@/api/project-iteration/project-iteration.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
-import {
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
@@ -17,6 +11,7 @@ import {
   ListToolbarActionsMenu,
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
+import { ProjectIterationBulkStatusSubmenu } from "@/features/_common/bulk/ProjectIterationBulkStatusSubmenu.tsx";
 import {
   selectionState,
   SelectionState,
@@ -29,7 +24,6 @@ import {
 import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { ListOrdered } from "lucide-react";
 import { capitalize } from "lodash";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -198,48 +192,13 @@ export function ProjectIterations(props: ProjectIterationsProps) {
                     : undefined
                 }
               >
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    disabled={mt.isInProgress(
-                      bulkStatusChangeMutation.state,
-                    )}
-                  >
-                    <ListOrdered className="h-4 w-4" />
-                    Change iteration status
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem
-                      onSelect={() => handleBulkStatusChange("draft")}
-                      disabled={mt.isInProgress(
-                        bulkStatusChangeMutation.state,
-                      )}
-                    >
-                      {mt.isInProgress(bulkStatusChangeMutation.state)
-                        ? "Updating..."
-                        : "Draft"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleBulkStatusChange("active")}
-                      disabled={mt.isInProgress(
-                        bulkStatusChangeMutation.state,
-                      )}
-                    >
-                      {mt.isInProgress(bulkStatusChangeMutation.state)
-                        ? "Updating..."
-                        : "Active"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleBulkStatusChange("closed")}
-                      disabled={mt.isInProgress(
-                        bulkStatusChangeMutation.state,
-                      )}
-                    >
-                      {mt.isInProgress(bulkStatusChangeMutation.state)
-                        ? "Updating..."
-                        : "Closed"}
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                <ProjectIterationBulkStatusSubmenu
+                  mutationInProgress={mt.isInProgress(
+                    bulkStatusChangeMutation.state,
+                  )}
+                  onStatusChange={handleBulkStatusChange}
+                  busyItemLabels
+                />
               </ListToolbarActionsMenu>
             </div>
           </ListToolbar>

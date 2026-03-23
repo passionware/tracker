@@ -60,6 +60,7 @@ export {
 export { TimelineInfiniteRoot } from "./timeline-infinite-view.tsx";
 export type { InfiniteTimelineProps } from "./timeline-infinite-types.ts";
 export {
+  useSetTimelineTool,
   useSetTimelineSnapOption,
   useSetTimelineZoom,
   useTimelineBaseDateZoned,
@@ -77,6 +78,7 @@ export {
   useTimelineSelectedItemId,
   useTimelineSnapOption,
   useTimelineSnapTime,
+  useTimelineTool,
   useTimelineTimeZone,
   useTimelineVerticalScrollOffset,
   useTimelineVisibleLaneRows,
@@ -125,6 +127,8 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   onDrawComplete,
   onItemClick,
   onEventSelect,
+  onRangeSelect,
+  onEscapeSelection,
   itemActivateTrigger,
   viewportRange,
   renderItem,
@@ -146,6 +150,8 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
         onDrawComplete,
         onItemClick,
         onEventSelect,
+        onRangeSelect,
+        onEscapeSelection,
         itemActivateTrigger,
         viewportRange,
       }}

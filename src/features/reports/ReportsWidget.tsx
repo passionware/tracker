@@ -4,20 +4,6 @@ import { reportQueryUtils } from "@/api/reports/reports.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
-import {
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu.tsx";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -48,6 +34,8 @@ import {
 } from "@/features/_common/SplitViewLayout.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import { BulkDeleteAlertDialog } from "@/features/_common/bulk/BulkDeleteAlertDialog.tsx";
+import { ReportListBulkMenuItems } from "@/features/_common/bulk/ReportListBulkMenuItems.tsx";
 import { BulkCreateCostDrawer } from "@/features/reports/BulkCreateCostDrawer.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
@@ -87,8 +75,6 @@ import {
   SplitSquareHorizontal,
   Sun,
   Table,
-  Trash2,
-  Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -723,6 +709,23 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               onEventSelect={(item) => {
                 setSelection((s) => selectionState.toggle(s, item.data.id));
               }}
+              onRangeSelect={(hitItems, mod) => {
+                const ids = [
+                  ...new Set(
+                    hitItems
+                      .map((i) => i.data.id)
+                      .filter((id): id is number => typeof id === "number"),
+                  ),
+                ];
+                setSelection((s) => {
+                  if (mod.subtract) return selectionState.removeFrom(s, ids);
+                  if (mod.extend) return selectionState.addTo(s, ids);
+                  return selectionState.selectSome(ids);
+                });
+              }}
+              onEscapeSelection={() =>
+                setSelection(selectionState.selectNone())
+              }
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}
@@ -797,25 +800,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                   selectedCount={selectedReportIds.length}
                   contentClassName="min-w-[11rem]"
                 >
-                  <DropdownMenuItem
-                    disabled={selectedReportIds.length === 0}
-                    onSelect={() => setIsBulkCreateCostOpen(true)}
-                  >
-                    <Wallet className="h-4 w-4" />
-                    Create cost for selected
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructrive"
-                    disabled={selectedReportIds.length === 0}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setDeleteConfirmOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
+                  <ReportListBulkMenuItems
+                    selectedCount={selectedReportIds.length}
+                    onCreateCost={() => setIsBulkCreateCostOpen(true)}
+                    onDeleteRequest={() => setDeleteConfirmOpen(true)}
+                  />
                 </ListToolbarActionsMenu>
               </div>
             </ListToolbar>
@@ -874,32 +863,20 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             openEntityDrawer({ type: "cost", id: createdCostId });
           }}
         />
-        <AlertDialog
+        <BulkDeleteAlertDialog
           open={deleteConfirmOpen}
           onOpenChange={setDeleteConfirmOpen}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete selected reports?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete {selectedReportIds.length}{" "}
-                selected report(s)? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleBatchDelete}
-                disabled={mt.isInProgress(deleteMutation.state)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {mt.isInProgress(deleteMutation.state)
-                  ? "Deleting..."
-                  : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          title="Delete selected reports?"
+          description={
+            <>
+              Are you sure you want to delete {selectedReportIds.length}{" "}
+              selected report(s)? This action cannot be undone.
+            </>
+          }
+          deleteInProgress={mt.isInProgress(deleteMutation.state)}
+          onConfirmDelete={handleBatchDelete}
+          deletingLabel="Deleting..."
+        />
       </>
     );
   }

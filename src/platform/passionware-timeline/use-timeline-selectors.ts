@@ -65,6 +65,16 @@ export function useTimelineSelectedItemId(): string | null {
   return useAtomValue(atoms.selectedItemIdAtom, { store });
 }
 
+export function useTimelineTool() {
+  const { store, atoms } = useTimelineStore();
+  return useAtomValue(atoms.currentToolAtom, { store });
+}
+
+export function useSetTimelineTool() {
+  const { store, atoms } = useTimelineStore();
+  return useSetAtom(atoms.currentToolAtom, { store });
+}
+
 export function useTimelineCurrentMouseX(): number | null {
   const { store, atoms } = useTimelineStore();
   return useAtomValue(atoms.currentMouseXAtom, { store });

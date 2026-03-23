@@ -1,16 +1,6 @@
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
@@ -32,6 +22,7 @@ import {
 } from "@/features/_common/SplitViewLayout.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
 import {
@@ -39,8 +30,6 @@ import {
   getBillingTimelineItemColor,
 } from "@/features/billing/billingPaymentStatusStyle.ts";
 import type { BillingMatcherRestorePayload } from "@/features/billing/billingPaymentMatcherPersistence.ts";
-import { BillingPaymentMatcherDialog } from "@/features/billing/BillingPaymentMatcher.tsx";
-import { MarkAsPaidDialog } from "@/features/billing/MarkAsPaidDialog.tsx";
 import { BillingWidgetProps } from "@/features/billing/BillingWidget.types.ts";
 import { useRestoreBillingPaymentMatcherDraft } from "@/features/billing/useRestoreBillingPaymentMatcherDraft.ts";
 import { cn } from "@/lib/utils";
@@ -485,12 +474,27 @@ export function BillingWidget(props: BillingWidgetProps) {
         bottomSlot={renderTableView()}
         viewMode={viewMode}
       />
-      <MarkAsPaidDialog
-        open={bulkMarkPaidOpen}
-        onOpenChange={setBulkMarkPaidOpen}
-        bulk
-        title="Mark selected invoices as paid"
-        onConfirm={async (data) => {
+      <BillingBulkDialogs
+        services={props.services}
+        workspaceId={props.workspaceId}
+        clientId={props.clientId}
+        variableContext={billingVariableContext}
+        billingLookupEntries={allBillingEntriesForMatcher}
+        unpaidBillingsSnapshot={paymentMatcherUnpaidSnapshot}
+        bulkMarkPaidOpen={bulkMarkPaidOpen}
+        onBulkMarkPaidOpenChange={setBulkMarkPaidOpen}
+        paymentMatcherOpen={paymentMatcherOpen}
+        onPaymentMatcherOpenChange={(open) => {
+          setPaymentMatcherOpen(open);
+          if (!open) {
+            setPaymentMatcherUnpaidSnapshot([]);
+            setMatcherRestorePayload(null);
+          }
+        }}
+        deleteConfirmOpen={deleteConfirmOpen}
+        onDeleteConfirmOpenChange={setDeleteConfirmOpen}
+        selectedBillingIds={selectedBillingIds}
+        onBulkMarkPaidConfirm={async (data) => {
           const ids = [...selectedBillingIds];
           if (ids.length === 0) return;
           await props.services.mutationService.bulkMarkBillingPaid(
@@ -503,48 +507,11 @@ export function BillingWidget(props: BillingWidgetProps) {
           setSelection(selectionState.selectNone());
           toast.success(`Marked ${ids.length} invoice(s) as paid`);
         }}
+        deleteInProgress={mt.isInProgress(deleteMutation.state)}
+        onBulkDeleteConfirm={handleBatchDelete}
+        matcherRestorePayload={matcherRestorePayload}
+        onMatcherRestoreConsumed={handleMatcherRestoreConsumed}
       />
-      <BillingPaymentMatcherDialog
-        open={paymentMatcherOpen}
-        onOpenChange={(open) => {
-          setPaymentMatcherOpen(open);
-          if (!open) {
-            setPaymentMatcherUnpaidSnapshot([]);
-            setMatcherRestorePayload(null);
-          }
-        }}
-        services={props.services}
-        unpaidBillings={paymentMatcherUnpaidSnapshot}
-        billingLookupEntries={allBillingEntriesForMatcher}
-        variableContext={billingVariableContext}
-        workspaceId={props.workspaceId}
-        clientId={props.clientId}
-        restorePayload={matcherRestorePayload}
-        onRestoreConsumed={handleMatcherRestoreConsumed}
-      />
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete selected invoices?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedBillingIds.length}{" "}
-              selected billing(s)? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBatchDelete}
-              disabled={mt.isInProgress(deleteMutation.state)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {mt.isInProgress(deleteMutation.state)
-                ? "Deleting..."
-                : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </CommonPageContainer>
   );
 
@@ -580,6 +547,23 @@ export function BillingWidget(props: BillingWidgetProps) {
               onEventSelect={(item) => {
                 setSelection((s) => selectionState.toggle(s, item.data.id));
               }}
+              onRangeSelect={(hitItems, mod) => {
+                const ids = [
+                  ...new Set(
+                    hitItems
+                      .map((i) => i.data.id)
+                      .filter((id): id is number => typeof id === "number"),
+                  ),
+                ];
+                setSelection((s) => {
+                  if (mod.subtract) return selectionState.removeFrom(s, ids);
+                  if (mod.extend) return selectionState.addTo(s, ids);
+                  return selectionState.selectSome(ids);
+                });
+              }}
+              onEscapeSelection={() =>
+                setSelection(selectionState.selectNone())
+              }
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}

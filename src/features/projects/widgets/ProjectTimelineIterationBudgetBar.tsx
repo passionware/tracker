@@ -61,6 +61,7 @@ export function ProjectTimelineIterationBudgetBar(
   return (
     <div
       data-timeline-item
+      data-timeline-item-id={props.item.id}
       className={cn(
         "absolute cursor-pointer overflow-hidden bg-transparent",
         props.isSelected &&
