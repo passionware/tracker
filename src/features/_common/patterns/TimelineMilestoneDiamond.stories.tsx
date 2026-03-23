@@ -101,6 +101,38 @@ const itemUnpaidBilling = {
   color: "bg-chart-2",
 } satisfies TimelineItem<Record<string, never>>;
 
+export const BillingWithIterationPeriod: Story = {
+  args: {
+    item: itemUnpaidBilling,
+    left: 118,
+    variant: "billing-unpaid",
+    laneHighlight: {
+      bandLeft: 28,
+      bandWidth: 96,
+      trackHeightPx: 64,
+    },
+    isSelected: false,
+    selected: false,
+    isHovered: false,
+    onMouseDown: noopMouseDown,
+    onMouseEnter: noop,
+    onMouseLeave: noop,
+  },
+  render: function BillingWithIterationPeriodStory(args) {
+    const [hover, setHover] = useState(false);
+    return (
+      <div className="relative h-16 w-48 rounded-md border bg-timeline-lane">
+        <TimelineMilestoneDiamond
+          {...args}
+          isHovered={hover}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        />
+      </div>
+    );
+  },
+};
+
 export const BillingUnpaid: Story = {
   args: {
     item: itemUnpaidBilling,

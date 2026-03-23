@@ -26,6 +26,7 @@ import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryB
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
 import { TimelineMilestoneDiamond } from "@/features/_common/patterns/TimelineMilestoneDiamond.tsx";
+import { ProjectTimelineBillingMarker } from "@/features/projects/widgets/ProjectTimelineBillingMarker.tsx";
 import {
   buildProjectTimelineLanesAndItems,
   indexProjectTimelineLanesById,
@@ -722,10 +723,7 @@ function ProjectsTimelineWithReports(props: {
 
                     const inner =
                       d.kind === "billing" ? (
-                        <TimelineMilestoneDiamond
-                          {...itemProps}
-                          variant={d.unpaid ? "billing-unpaid" : "default"}
-                        />
+                        <ProjectTimelineBillingMarker {...itemProps} />
                       ) : d.kind === "cost" ? (
                         <TimelineMilestoneDiamond {...itemProps} />
                       ) : d.kind === "iteration" ? (
