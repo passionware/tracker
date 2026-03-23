@@ -102,6 +102,28 @@ export type ProjectTimelineItemData =
       }[];
     };
 
+/** Stable string id for `SelectionState` on the projects timeline (mixed entity kinds). */
+export function projectTimelineSelectionKey(d: ProjectTimelineItemData): string {
+  switch (d.kind) {
+    case "iteration":
+      return `iteration:${d.iterationId}`;
+    case "iteration-budget":
+      return `iteration-budget:${d.iterationId}`;
+    case "report":
+      return `report:${d.reportId}`;
+    case "billing":
+      return `billing:${d.billingId}`;
+    case "cost":
+      return `cost:${d.costId}`;
+  }
+}
+
+export function projectTimelineSelectionKeyFromItem(
+  item: TimelineItem<ProjectTimelineItemData>,
+): string {
+  return projectTimelineSelectionKey(item.data);
+}
+
 export interface BuildProjectTimelineLanesOptions {
   /** When set (e.g. global timeline), bar labels include the project name. */
   projectNameById?: ReadonlyMap<Project["id"], string>;

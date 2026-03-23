@@ -1,17 +1,6 @@
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { BreadcrumbPage } from "@/components/ui/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
@@ -37,6 +26,8 @@ import {
 } from "@/features/_common/SplitViewLayout.tsx";
 import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import { BulkDeleteAlertDialog } from "@/features/_common/bulk/BulkDeleteAlertDialog.tsx";
+import { CostListBulkDeleteMenuItem } from "@/features/_common/bulk/CostListBulkDeleteMenuItem.tsx";
 import { CostForm } from "@/features/costs/CostForm.tsx";
 import { useColumns } from "@/features/costs/CostWidget.columns.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
@@ -68,7 +59,6 @@ import {
   SplitSquareHorizontal,
   Sun,
   Table,
-  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -401,27 +391,20 @@ export function CostWidget(props: PotentialCostWidgetProps) {
         bottomSlot={renderTableView()}
         viewMode={viewMode}
       />
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete selected costs?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedCostIds.length} selected
-              cost(s)? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBatchDelete}
-              disabled={mt.isInProgress(deleteMutation.state)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {mt.isInProgress(deleteMutation.state) ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BulkDeleteAlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete selected costs?"
+        description={
+          <>
+            Are you sure you want to delete {selectedCostIds.length} selected
+            cost(s)? This action cannot be undone.
+          </>
+        }
+        deleteInProgress={mt.isInProgress(deleteMutation.state)}
+        onConfirmDelete={handleBatchDelete}
+        deletingLabel="Deleting..."
+      />
     </CommonPageContainer>
   );
 
@@ -456,6 +439,23 @@ export function CostWidget(props: PotentialCostWidgetProps) {
               onEventSelect={(item) => {
                 setSelection((s) => selectionState.toggle(s, item.data.id));
               }}
+              onRangeSelect={(hitItems, mod) => {
+                const ids = [
+                  ...new Set(
+                    hitItems
+                      .map((i) => i.data.id)
+                      .filter((id): id is number => typeof id === "number"),
+                  ),
+                ];
+                setSelection((s) => {
+                  if (mod.subtract) return selectionState.removeFrom(s, ids);
+                  if (mod.extend) return selectionState.addTo(s, ids);
+                  return selectionState.selectSome(ids);
+                });
+              }}
+              onEscapeSelection={() =>
+                setSelection(selectionState.selectNone())
+              }
               onItemClick={(item) => {
                 scrollEvent.emit(item.data.id);
               }}
@@ -501,17 +501,10 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             <ListToolbar>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <ListToolbarActionsMenu selectedCount={selectedCostIds.length}>
-                  <DropdownMenuItem
-                    variant="destructrive"
-                    disabled={selectedCostIds.length === 0}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setDeleteConfirmOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
+                  <CostListBulkDeleteMenuItem
+                    selectedCount={selectedCostIds.length}
+                    onDeleteRequest={() => setDeleteConfirmOpen(true)}
+                  />
                 </ListToolbarActionsMenu>
               </div>
             </ListToolbar>
