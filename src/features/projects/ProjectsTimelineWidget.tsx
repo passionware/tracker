@@ -36,6 +36,8 @@ import {
   type ProjectTimelineItemData,
   type ProjectTimelineLaneMeta,
 } from "@/features/projects/widgets/projectTimelineModel.ts";
+import { computeSharedBudgetChartYDomain } from "@/features/_common/budget-target/BudgetTargetHistoryChart.utils.ts";
+import { ProjectTimelineIterationBudgetBar } from "@/features/projects/widgets/ProjectTimelineIterationBudgetBar.tsx";
 import type { CalendarDate } from "@internationalized/date";
 import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import type { FormatService } from "@/services/FormatService/FormatService.ts";
@@ -68,6 +70,33 @@ function projectTimelineTooltipSemanticCalendarRange(
   periodEnd: CalendarDate,
 ): ReactNode {
   return fmt.temporal.range.long(periodStart, periodEnd);
+}
+
+/** Union of calendar periods for iteration, budget, and report bars — matches timeline auto-fit to events. */
+function projectTimelineViewportFromEventItems(
+  items: TimelineItem<ProjectTimelineItemData>[],
+): { start: CalendarDate; end: CalendarDate } | undefined {
+  let minStart: CalendarDate | undefined;
+  let maxEnd: CalendarDate | undefined;
+  for (const item of items) {
+    const d = item.data;
+    if (
+      d.kind !== "iteration" &&
+      d.kind !== "iteration-budget" &&
+      d.kind !== "report"
+    ) {
+      continue;
+    }
+    const { periodStart, periodEnd } = d;
+    if (minStart == null || periodStart.compare(minStart) < 0) {
+      minStart = periodStart;
+    }
+    if (maxEnd == null || periodEnd.compare(maxEnd) > 0) {
+      maxEnd = periodEnd;
+    }
+  }
+  if (minStart == null || maxEnd == null) return undefined;
+  return { start: minStart, end: maxEnd };
 }
 
 function pickLatestGeneratedReportByIterationId(
@@ -490,6 +519,15 @@ function ProjectsTimelineWithReports(props: {
 
   const clientsRd = props.services.clientService.useClients(clientsQuery);
 
+  const timelineIterationIds = useMemo(
+    () => props.iterations.map((i) => i.id),
+    [props.iterations],
+  );
+  const budgetLogsByIterationRd =
+    props.services.iterationTriggerService.useBudgetTargetLogsForIterations(
+      timelineIterationIds,
+    );
+
   const { openEntityDrawer, pushEntityDrawer } = useEntityDrawerContext();
 
   const reportsAndGeneratedRd = rd.combine({
@@ -538,6 +576,29 @@ function ProjectsTimelineWithReports(props: {
           },
         );
 
+      const budgetLogMap = rd.tryGet(budgetLogsByIterationRd);
+      const iterationById = new Map(
+        props.iterations.map((i) => [i.id, i] as const),
+      );
+      const yDomainByBudgetLaneId = new Map<string, [number, number]>();
+      if (budgetLogMap) {
+        const laneIterationIds = new Map<string, number[]>();
+        for (const item of items) {
+          if (item.data.kind !== "iteration-budget") continue;
+          const list = laneIterationIds.get(item.laneId) ?? [];
+          list.push(item.data.iterationId);
+          laneIterationIds.set(item.laneId, list);
+        }
+        for (const [laneId, ids] of laneIterationIds) {
+          const domain = computeSharedBudgetChartYDomain(
+            [...new Set(ids)],
+            budgetLogMap,
+            iterationById,
+          );
+          if (domain) yDomainByBudgetLaneId.set(laneId, domain);
+        }
+      }
+
       if (items.length === 0) {
         return (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-8 text-sm text-muted-foreground">
@@ -547,6 +608,7 @@ function ProjectsTimelineWithReports(props: {
       }
 
       const laneById = indexProjectTimelineLanesById(lanes);
+      const viewportRange = projectTimelineViewportFromEventItems(items);
 
       const handleTimelineDrawComplete = (drawn: TimelineItem<unknown>) => {
         const lane = laneById.get(drawn.laneId);
@@ -600,6 +662,7 @@ function ProjectsTimelineWithReports(props: {
                   defaultExpandedLaneIds={defaultExpandedLaneIds}
                   defaultSnapOption="1day"
                   itemActivateTrigger="click"
+                  viewportRange={viewportRange}
                   onDrawComplete={handleTimelineDrawComplete}
                   renderDrawingPreviewLabel={(p, lane) => {
                     const projectId = lane.meta?.projectId;
@@ -644,6 +707,18 @@ function ProjectsTimelineWithReports(props: {
                   renderItem={(itemProps) => {
                     const { item } = itemProps;
                     const d = item.data;
+
+                    if (d.kind === "iteration-budget") {
+                      return (
+                        <ProjectTimelineIterationBudgetBar
+                          {...itemProps}
+                          services={props.services}
+                          sharedYDomain={yDomainByBudgetLaneId.get(
+                            item.laneId,
+                          )}
+                        />
+                      );
+                    }
 
                     const inner =
                       d.kind === "billing" ? (
@@ -874,7 +949,7 @@ function ProjectsTimelineWithReports(props: {
                           </p>
                         </div>
                       );
-                    } else {
+                    } else if (d.kind === "iteration") {
                       tooltipContent = (
                         <div className="space-y-1">
                           <p className="text-sm font-medium leading-snug text-foreground">
@@ -901,6 +976,12 @@ function ProjectsTimelineWithReports(props: {
                             )}
                         </div>
                       );
+                    } else {
+                      tooltipContent = (
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          {item.label}
+                        </div>
+                      );
                     }
 
                     // Badge-style `range.long` needs horizontal room in every tooltip.
@@ -924,7 +1005,7 @@ function ProjectsTimelineWithReports(props: {
                   }}
                   onItemClick={(item) => {
                     const d = item.data;
-                    if (d.kind === "iteration") {
+                    if (d.kind === "iteration" || d.kind === "iteration-budget") {
                       openEntityDrawer({
                         type: "project-iteration",
                         intent: "detail",

@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils.ts";
 import type { WithFormatService } from "@/services/FormatService/FormatService";
 import type { ChartDatum } from "./BudgetTargetHistoryChart.utils.ts";
 import { useBudgetTargetChartData } from "./useBudgetTargetChartData";
@@ -156,7 +157,10 @@ export function BudgetTargetHistoryChart({
       <div
         className={
           isEmbeddedLayout
-            ? "budget-target-chart flex h-full min-h-0 min-w-0 flex-col"
+            ? cn(
+                "budget-target-chart flex h-full min-h-0 min-w-0 flex-col",
+                isSparkline && "bg-transparent",
+              )
             : "space-y-1 budget-target-chart"
         }
       >
@@ -169,7 +173,7 @@ export function BudgetTargetHistoryChart({
           config={BUDGET_CHART_CONFIG}
           className={
             isSparkline
-              ? "aspect-auto h-full min-h-[72px] w-full min-w-0 flex-1 justify-stretch p-0 [&_.recharts-responsive-container]:!w-full [&_.recharts-responsive-container]:max-w-none"
+              ? "aspect-auto h-full min-h-[72px] w-full min-w-0 flex-1 justify-stretch bg-transparent p-0 [&_.recharts-responsive-container]:!w-full [&_.recharts-responsive-container]:max-w-none [&_.recharts-wrapper]:bg-transparent [&_svg]:bg-transparent"
               : isEmbeddedLayout
                 ? "h-full min-h-[72px] w-full flex-1"
                 : "h-[140px] w-full"
@@ -188,6 +192,7 @@ export function BudgetTargetHistoryChart({
                 strokeDasharray="2 2"
                 horizontal
                 vertical={false}
+                stroke="var(--timeline-grid)"
               />
             ) : (
               <CartesianGrid strokeDasharray="2 2" vertical={false} />

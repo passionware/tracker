@@ -22,6 +22,9 @@ const LANE_PALETTE = [
   "bg-chart-5",
 ] as const;
 
+/** Min track height for the iteration budget chart sublane (px). */
+export const PROJECT_TIMELINE_ITERATION_BUDGET_LANE_MIN_HEIGHT_PX = 152;
+
 export type ProjectTimelineGroupBy = "client" | "project";
 
 /** Lane `meta` for projects timeline (draw-to-create, grouping context). */
@@ -42,6 +45,14 @@ export type ProjectTimelineItemData =
       summaryLabel: string;
       /** Pre-formatted `totalBillingBudget` from the newest generated report for this iteration (by `createdAt`). */
       latestGeneratedReportBillingLabel?: string;
+    }
+  | {
+      kind: "iteration-budget";
+      iterationId: ProjectIteration["id"];
+      projectId: Project["id"];
+      periodStart: CalendarDate;
+      periodEnd: CalendarDate;
+      currency: string;
     }
   | {
       kind: "report";
@@ -225,9 +236,9 @@ function groupKeyForIteration(
 }
 
 /**
- * Lanes: expandable group (client or project) with **all iterations on the group’s main row**;
- * children are shared Reports / Billings / Costs tracks. Iteration bars and linked
- * report/billing/cost markers use per-iteration chart colors on the timeline.
+ * Lanes: expandable group (client or project) with **iteration bars on the root row**;
+ * children are Iteration budget (chart), Reports, Billings, Costs. Linked markers use
+ * per-iteration chart colors on the timeline.
  */
 export function buildProjectTimelineLanesAndItems(
   iterations: ProjectIteration[],
@@ -364,6 +375,7 @@ export function buildProjectTimelineLanesAndItems(
       }
     }
 
+    const iterationBudgetLane = `${rootId}/iteration-budget`;
     const reportsLane = `${rootId}/reports`;
     const billingsLane = `${rootId}/billings`;
     const costsLane = `${rootId}/costs`;
@@ -384,6 +396,13 @@ export function buildProjectTimelineLanesAndItems(
       color: "bg-muted-foreground/25",
       meta: laneMeta,
       children: [
+        {
+          id: iterationBudgetLane,
+          name: "Iteration budget",
+          color: "bg-emerald-600/25",
+          meta: laneMeta,
+          minTrackHeightPx: PROJECT_TIMELINE_ITERATION_BUDGET_LANE_MIN_HEIGHT_PX,
+        },
         {
           id: reportsLane,
           name: `Reports (${reportSeen.size})`,
@@ -438,6 +457,23 @@ export function buildProjectTimelineLanesAndItems(
           ...(latestGenBilling != null && latestGenBilling.length > 0
             ? { latestGeneratedReportBillingLabel: latestGenBilling }
             : {}),
+        },
+      });
+
+      items.push({
+        id: `ev-it-budget-${it.id}`,
+        laneId: iterationBudgetLane,
+        start: it.periodStart,
+        end: it.periodEnd,
+        label: "\u00a0",
+        color: palette,
+        data: {
+          kind: "iteration-budget",
+          iterationId: it.id,
+          projectId: it.projectId,
+          periodStart: it.periodStart,
+          periodEnd: it.periodEnd,
+          currency: it.currency,
         },
       });
     }
