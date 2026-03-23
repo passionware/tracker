@@ -1,6 +1,8 @@
 import type { Client } from "@/api/clients/clients.api.ts";
+import type { Project } from "@/api/project/project.api.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createClientServiceForEntityStripStory } from "@/services/io/ClientService/ClientService.mock.ts";
+import { createProjectServiceForEntityStripStory } from "@/services/io/ProjectService/ProjectService.mock.ts";
 import { createWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.mock.ts";
 
 import { DrawerContextEntityStrip } from "./DrawerContextEntityStrip.tsx";
@@ -14,10 +16,24 @@ const demoClient = {
   hidden: false,
 } satisfies Client;
 
+const demoProject = {
+  id: 99,
+  name: "Website redesign",
+  status: "active" as const,
+  description: null,
+  workspaceIds: [7],
+  clientId: demoClient.id,
+  createdAt: new Date("2024-01-01"),
+} satisfies Project;
+
 const services = {
   clientService: createClientServiceForEntityStripStory(
     demoClient.id,
     demoClient,
+  ),
+  projectService: createProjectServiceForEntityStripStory(
+    demoProject.id,
+    demoProject,
   ),
   workspaceService: createWorkspaceService(),
 };
@@ -38,7 +54,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Strip shown at the top of report / billing / cost drawer bodies. Client chip is optional; when `onOpenClientDetails` is passed it becomes a nested-drawer affordance.",
+          "Strip shown at the top of entity drawer bodies (workspace, optional client, optional project). When `onOpenClientDetails` / `onOpenProjectDetails` are passed, those chips become clickable affordances.",
       },
     },
   },
@@ -53,7 +69,9 @@ export const WithClientClickable = {
     services,
     workspace,
     client: demoClient,
+    project: demoProject,
     onOpenClientDetails: () => {},
+    onOpenProjectDetails: () => {},
   },
   decorators: [
     (Story) => (

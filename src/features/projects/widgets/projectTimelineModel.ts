@@ -22,6 +22,9 @@ const LANE_PALETTE = [
   "bg-chart-5",
 ] as const;
 
+/** Min track height for the iteration budget chart sublane (px). */
+export const PROJECT_TIMELINE_ITERATION_BUDGET_LANE_MIN_HEIGHT_PX = 152;
+
 export type ProjectTimelineGroupBy = "client" | "project";
 
 /** Lane `meta` for projects timeline (draw-to-create, grouping context). */
@@ -38,6 +41,18 @@ export type ProjectTimelineItemData =
       /** Semantic calendar period for tooltips (same as timeline `start`/`end` when using `CalendarDate`). */
       periodStart: CalendarDate;
       periodEnd: CalendarDate;
+      /** Same as timeline bar before optional generated-report billing suffix (for tooltips). */
+      summaryLabel: string;
+      /** Pre-formatted `totalBillingBudget` from the newest generated report for this iteration (by `createdAt`). */
+      latestGeneratedReportBillingLabel?: string;
+    }
+  | {
+      kind: "iteration-budget";
+      iterationId: ProjectIteration["id"];
+      projectId: Project["id"];
+      periodStart: CalendarDate;
+      periodEnd: CalendarDate;
+      currency: string;
     }
   | {
       kind: "report";
@@ -85,6 +100,14 @@ export interface BuildProjectTimelineLanesOptions {
   groupBy?: ProjectTimelineGroupBy;
   /** For client grouping labels; falls back to `Client {id}`. */
   clientNameById?: ReadonlyMap<number, string>;
+  /**
+   * Pre-formatted billing totals from each iteration’s latest generated report
+   * (`GeneratedReportSource`, newest `createdAt`).
+   */
+  latestGeneratedReportBillingLabelByIterationId?: ReadonlyMap<
+    ProjectIteration["id"],
+    string
+  >;
 }
 
 type ClientGroupKey = { kind: "client"; clientId: Project["clientId"] };
@@ -143,16 +166,19 @@ function calendarDateToZonedInstant(
   return toZoned(date, timeZone).add({ hours: 12 });
 }
 
-/** Same visible string as iteration bars on the projects timeline (`buildProjectTimelineLanesAndItems`). */
+/**
+ * Base iteration line: `N · project name` (ordinal only; pair with a cycle-style icon in the UI).
+ * Used for draw preview text and tooltip title.
+ */
 export function projectTimelineIterationBarLabel(
   projectNameById: ReadonlyMap<Project["id"], string>,
   projectId: Project["id"],
   ordinalNumber: number,
 ): string {
-  const pn = projectNameById.get(projectId);
-  return pn
-    ? `${pn} · #${ordinalNumber}`
-    : `Iteration ${ordinalNumber}`;
+  const orderPart = String(ordinalNumber);
+  const pn = projectNameById.get(projectId)?.trim();
+  const namePart = pn ? pn : `Project ${projectId}`;
+  return `${orderPart} · ${namePart}`;
 }
 
 /** Next ordinal for a new iteration on that project (max existing + 1). */
@@ -210,9 +236,9 @@ function groupKeyForIteration(
 }
 
 /**
- * Lanes: expandable group (client or project) with **all iterations on the group’s main row**;
- * children are shared Reports / Billings / Costs tracks. Iteration bars and linked
- * report/billing/cost markers use per-iteration chart colors on the timeline.
+ * Lanes: expandable group (client or project) with **iteration bars on the root row**;
+ * children are Iteration budget (chart), Reports, Billings, Costs. Linked markers use
+ * per-iteration chart colors on the timeline.
  */
 export function buildProjectTimelineLanesAndItems(
   iterations: ProjectIteration[],
@@ -230,6 +256,8 @@ export function buildProjectTimelineLanesAndItems(
     options?.projectNameById ??
     new Map(projects.map((p) => [p.id, p.name] as const));
   const clientNameById = options?.clientNameById;
+  const latestGenBillingByIterationId =
+    options?.latestGeneratedReportBillingLabelByIterationId;
 
   const projectById = new Map(projects.map((p) => [p.id, p] as const));
 
@@ -347,6 +375,7 @@ export function buildProjectTimelineLanesAndItems(
       }
     }
 
+    const iterationBudgetLane = `${rootId}/iteration-budget`;
     const reportsLane = `${rootId}/reports`;
     const billingsLane = `${rootId}/billings`;
     const costsLane = `${rootId}/costs`;
@@ -367,6 +396,13 @@ export function buildProjectTimelineLanesAndItems(
       color: "bg-muted-foreground/25",
       meta: laneMeta,
       children: [
+        {
+          id: iterationBudgetLane,
+          name: "Iteration budget",
+          color: "bg-emerald-600/25",
+          meta: laneMeta,
+          minTrackHeightPx: PROJECT_TIMELINE_ITERATION_BUDGET_LANE_MIN_HEIGHT_PX,
+        },
         {
           id: reportsLane,
           name: `Reports (${reportSeen.size})`,
@@ -392,18 +428,24 @@ export function buildProjectTimelineLanesAndItems(
 
     for (const it of groupIterations) {
       const palette = iterationPaletteById.get(it.id)!;
-      const iterLabel = projectTimelineIterationBarLabel(
-        projectNameById,
-        it.projectId,
-        it.ordinalNumber,
-      );
+      const orderPart = String(it.ordinalNumber);
+      const pn = projectNameById.get(it.projectId)?.trim();
+      const namePart = pn ? pn : `Project ${it.projectId}`;
+      const summaryLabel = `${orderPart} · ${namePart}`;
+      const latestGenBilling =
+        latestGenBillingByIterationId?.get(it.id) ?? undefined;
+      /** Bar: iteration order · billing (if any) · project name */
+      const iterationBarLabel =
+        latestGenBilling != null && latestGenBilling.length > 0
+          ? `${orderPart} · ${latestGenBilling} · ${namePart}`
+          : summaryLabel;
 
       items.push({
         id: `ev-it-${it.id}`,
         laneId: rootId,
         start: it.periodStart,
         end: it.periodEnd,
-        label: iterLabel,
+        label: iterationBarLabel,
         color: palette,
         data: {
           kind: "iteration",
@@ -411,6 +453,27 @@ export function buildProjectTimelineLanesAndItems(
           projectId: it.projectId,
           periodStart: it.periodStart,
           periodEnd: it.periodEnd,
+          summaryLabel,
+          ...(latestGenBilling != null && latestGenBilling.length > 0
+            ? { latestGeneratedReportBillingLabel: latestGenBilling }
+            : {}),
+        },
+      });
+
+      items.push({
+        id: `ev-it-budget-${it.id}`,
+        laneId: iterationBudgetLane,
+        start: it.periodStart,
+        end: it.periodEnd,
+        label: "\u00a0",
+        color: palette,
+        data: {
+          kind: "iteration-budget",
+          iterationId: it.id,
+          projectId: it.projectId,
+          periodStart: it.periodStart,
+          periodEnd: it.periodEnd,
+          currency: it.currency,
         },
       });
     }

@@ -133,6 +133,7 @@ type ScrollableMainProps<
   "renderItem" | "onItemHover" | "isEventSelected" | "renderDrawingPreviewLabel"
 > & {
   toggleLaneExpanded: (laneId: string) => void;
+  toggleLaneMinimized: (laneId: string) => void;
   itemActivateTrigger: "mousedown" | "click";
 };
 
@@ -151,6 +152,7 @@ function TimelineScrollableMainInner<
       <TimelineScrollHeaders />
       <TimelineLaneSidebarBlock
         toggleLaneExpanded={props.toggleLaneExpanded}
+        toggleLaneMinimized={props.toggleLaneMinimized}
       />
       <TimelineTracksPanel {...props} />
       <TimelineNowIndicator />
@@ -193,6 +195,7 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
               isEventSelected={props.isEventSelected}
               renderDrawingPreviewLabel={props.renderDrawingPreviewLabel}
               toggleLaneExpanded={props.state.toggleLaneExpanded}
+              toggleLaneMinimized={props.state.toggleLaneMinimized}
               itemActivateTrigger={
                 props.interactionOptions?.itemActivateTrigger ?? "mousedown"
               }

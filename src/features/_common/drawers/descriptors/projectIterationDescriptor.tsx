@@ -142,9 +142,12 @@ function ProjectIterationSmallPreview({
 function ProjectIterationCreateContextStrip({
   entity,
   services,
+  contextProjectId = 0,
 }: {
   entity: Extract<ProjectIterationSpec, { intent: "create" }>;
   services: DrawerDescriptorServices;
+  /** Resolved target project (fixed on entity or chosen in picker); omit or ≤0 hides project. */
+  contextProjectId?: number;
 }) {
   const { context, pushEntityDrawer } = useEntityDrawerContext();
   const workspaceMaybe = idSpecUtils.isSpecific(context.workspaceId)
@@ -155,13 +158,25 @@ function ProjectIterationCreateContextStrip({
     (idSpecUtils.isSpecific(context.clientId)
       ? (context.clientId as number)
       : null);
+  const projectIdForStrip =
+    contextProjectId > 0
+      ? contextProjectId
+      : entity.projectId != null && entity.projectId > 0
+        ? entity.projectId
+        : null;
 
   return (
     <DrawerContextEntityStrip
       services={services}
       workspaceId={workspaceMaybe}
       clientId={clientIdResolved}
+      projectId={projectIdForStrip}
       onOpenClientDetails={(id) => pushEntityDrawer?.({ type: "client", id })}
+      onOpenProjectDetails={
+        projectIdForStrip != null
+          ? (id) => pushEntityDrawer?.({ type: "project", id })
+          : undefined
+      }
     />
   );
 }
@@ -205,7 +220,11 @@ function ProjectIterationDetailContextStrip({
       services={services}
       workspace={workspace}
       clientId={project.clientId}
+      project={project}
       onOpenClientDetails={(id) => pushEntityDrawer?.({ type: "client", id })}
+      onOpenProjectDetails={(id) =>
+        pushEntityDrawer?.({ type: "project", id })
+      }
     />
   );
 }
@@ -365,7 +384,11 @@ function ProjectIterationCreateDrawerBody({
   if (needsProjectPicker && rd.isPending(projectsRd)) {
     return (
       <div className="flex min-h-0 flex-1 flex-col p-1">
-        <ProjectIterationCreateContextStrip entity={entity} services={services} />
+        <ProjectIterationCreateContextStrip
+          entity={entity}
+          services={services}
+          contextProjectId={activeProjectId}
+        />
         <Skeleton className="h-40 w-full max-w-md" />
       </div>
     );
@@ -374,7 +397,11 @@ function ProjectIterationCreateDrawerBody({
   if (needsProjectPicker && projectChoices && projectChoices.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col p-1">
-        <ProjectIterationCreateContextStrip entity={entity} services={services} />
+        <ProjectIterationCreateContextStrip
+          entity={entity}
+          services={services}
+          contextProjectId={activeProjectId}
+        />
         <p className="text-sm text-muted-foreground">
           No projects available for this client.
         </p>
@@ -391,7 +418,11 @@ function ProjectIterationCreateDrawerBody({
   if (awaitingLastProjectPreference) {
     return (
       <div className="flex min-h-0 flex-1 flex-col p-1">
-        <ProjectIterationCreateContextStrip entity={entity} services={services} />
+        <ProjectIterationCreateContextStrip
+          entity={entity}
+          services={services}
+          contextProjectId={activeProjectId}
+        />
         <Skeleton className="h-40 w-full max-w-md" />
       </div>
     );
@@ -399,7 +430,11 @@ function ProjectIterationCreateDrawerBody({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col p-1">
-      <ProjectIterationCreateContextStrip entity={entity} services={services} />
+      <ProjectIterationCreateContextStrip
+        entity={entity}
+        services={services}
+        contextProjectId={activeProjectId}
+      />
       <ProjectIterationForm
         mode="create"
         onCancel={() => popEntityDrawer?.()}

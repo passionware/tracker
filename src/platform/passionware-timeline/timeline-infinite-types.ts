@@ -17,6 +17,8 @@ export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
     isSelected: boolean;
     selected: boolean;
     isMinWidth: boolean;
+    /** Resolved lane track height for this item’s lane (for full-height custom content). */
+    laneTrackHeightPx?: number;
     onMouseDown: (
       e: ReactMouseEvent,
       item: TimelineItem<Data>,

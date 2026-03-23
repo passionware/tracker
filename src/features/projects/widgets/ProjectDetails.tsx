@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import { PopoverHeader } from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import {
@@ -14,11 +13,11 @@ import {
   ActionMenuDeleteItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView.tsx";
 import { WorkspaceWidget } from "@/features/_common/elements/pickers/WorkspaceView";
-import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { ProjectForm } from "@/features/projects/_common/ProjectForm.tsx";
+import { projectPayloadFromProject } from "@/features/projects/projectPayload.ts";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -33,6 +32,7 @@ export function ProjectDetails(
     clientId: ClientSpec;
   },
 ) {
+  const { pushEntityDrawer } = useEntityDrawerContext();
   const project = props.services.projectService.useProject(props.projectId);
   return (
     <Card>
@@ -101,31 +101,17 @@ export function ProjectDetails(
                   >
                     Delete project
                   </ActionMenuDeleteItem>
-                  <InlinePopoverForm
-                    trigger={
-                      <ActionMenuEditItem onSelect={(e) => e.preventDefault()}>
-                        Edit project details
-                      </ActionMenuEditItem>
+                  <ActionMenuEditItem
+                    onClick={() =>
+                      pushEntityDrawer({
+                        type: "project-form",
+                        projectId: project.id,
+                        defaultValues: projectPayloadFromProject(project),
+                      })
                     }
-                    content={(bag) => (
-                      <>
-                        <PopoverHeader>Edit project</PopoverHeader>
-                        <ProjectForm
-                          services={props.services}
-                          onCancel={bag.close}
-                          mode="edit"
-                          defaultValues={project}
-                          onSubmit={async (data) => {
-                            await props.services.mutationService.editProject(
-                              project.id,
-                              data,
-                            );
-                            bag.close();
-                          }}
-                        />
-                      </>
-                    )}
-                  />
+                  >
+                    Edit project details
+                  </ActionMenuEditItem>
                 </>
               ))}
           </ActionMenu>

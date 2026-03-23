@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useRef, type MouseEvent as ReactMouseEvent, type Ref } from "react";
+import React, {
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { cn } from "@/lib/utils";
 import { SUB_ROW_HEIGHT } from "./passionware-timeline-core.ts";
 import type { TimelineItem } from "./passionware-timeline-core.ts";
@@ -12,6 +17,10 @@ export interface DefaultTimelineItemProps<Data = unknown> {
   isSelected: boolean;
   selected: boolean;
   isMinWidth: boolean;
+  /** Optional icon or badge before the label (e.g. iteration / sprint marker). */
+  leadingVisual?: ReactNode;
+  /** Ignored by default item; timeline passes it for custom `renderItem` consumers. */
+  laneTrackHeightPx?: number;
   onMouseDown: (
     e: ReactMouseEvent,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +45,8 @@ function DefaultTimelineItemInner({
   isSelected,
   selected = isSelected,
   isMinWidth,
+  leadingVisual,
+  laneTrackHeightPx: _laneTrackHeightPx,
   onMouseDown,
   onMouseEnter,
   onMouseLeave,
@@ -109,11 +120,16 @@ function DefaultTimelineItemInner({
 
       <div
         className={cn(
-          "absolute inset-x-2 inset-y-0 flex min-w-0 max-w-full items-center overflow-hidden",
+          "absolute inset-x-2 inset-y-0 flex min-w-0 max-w-full items-center gap-1 overflow-hidden",
           isMinWidth && "inset-x-1",
         )}
       >
-        <span className="block min-w-0 w-full truncate text-left text-xs font-medium text-primary-foreground">
+        {leadingVisual != null ? (
+          <span className="flex shrink-0 items-center text-primary-foreground">
+            {leadingVisual}
+          </span>
+        ) : null}
+        <span className="block min-w-0 min-h-0 flex-1 truncate text-left text-xs font-medium text-primary-foreground">
           {item.label}
         </span>
       </div>

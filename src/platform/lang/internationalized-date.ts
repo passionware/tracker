@@ -4,6 +4,7 @@ import {
   isSameDay,
   parseDate,
   today,
+  toZoned,
 } from "@internationalized/date";
 
 export function dateToCalendarDate(date: Date): CalendarDate {
@@ -15,6 +16,25 @@ export function dateToCalendarDate(date: Date): CalendarDate {
 
 export function calendarDateToJSDate(date: CalendarDate): Date {
   return date.toDate(getLocalTimeZone());
+}
+
+/**
+ * Epoch-ms range for charts that must match Passionware timeline layout: `CalendarDate`
+ * start/end are inclusive days; layout ends at the first instant of the day after `periodEnd`.
+ * Pass the Passionware timeline store’s `timeZone` (not only the browser default) so chart
+ * X domains match bar `left`/`width` geometry.
+ */
+export function inclusiveCalendarPeriodToEpochRange(
+  periodStart: CalendarDate,
+  periodEnd: CalendarDate,
+  timeZone: string = getLocalTimeZone(),
+): { start: number; end: number } {
+  const startZ = toZoned(periodStart, timeZone);
+  const endZ = toZoned(periodEnd.add({ days: 1 }), timeZone);
+  return {
+    start: startZ.toDate().getTime(),
+    end: endZ.toDate().getTime(),
+  };
 }
 
 export function addDaysToCalendarDate(

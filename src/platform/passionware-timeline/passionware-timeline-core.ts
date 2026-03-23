@@ -58,6 +58,28 @@ function resolveLayoutAndSemanticEnd(
   };
 }
 
+/**
+ * Converts a public timeline range (same rules as {@link TimelineItem} start/end) into layout
+ * minutes relative to `baseDateZoned`, matching {@link toInternalItem} bar geometry.
+ */
+export function timelineTemporalRangeToLayoutMinutes(
+  start: TimelineTemporal,
+  end: TimelineTemporal,
+  timeZone: string,
+  baseDateZoned: ZonedDateTime,
+): { startMinutes: number; endMinutes: number } {
+  const startZ = timelineTemporalToZoned(start, timeZone);
+  const { layoutEndZoned } = resolveLayoutAndSemanticEnd(
+    end,
+    undefined,
+    timeZone,
+  );
+  return {
+    startMinutes: zonedDateTimeToMinutes(startZ, baseDateZoned),
+    endMinutes: zonedDateTimeToMinutes(layoutEndZoned, baseDateZoned),
+  };
+}
+
 export interface TimelineItem<Data = unknown> {
   id: string;
   laneId: string;

@@ -106,7 +106,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
         {...rest}
         data-timeline-item
         data-billing-unpaid={unpaidBilling ? "" : undefined}
-        title={item.label}
+        aria-label={item.label}
         className={cn(
           "absolute z-[2] flex cursor-grab items-center justify-center rounded-sm transition-shadow",
           isSelected &&

@@ -5,6 +5,7 @@
  */
 /* eslint-disable react-hooks/exhaustive-deps */
 
+import { CalendarDate } from "@internationalized/date";
 import { useAtomValue } from "jotai";
 import {
   useCallback,
@@ -16,6 +17,7 @@ import {
 import {
   type TimelineItem,
   type TimelineItemInternal,
+  type TimelineTemporal,
   DRAG_THRESHOLD,
   ITEM_COLORS,
   MIN_ITEM_DURATION,
@@ -24,6 +26,7 @@ import {
   TIMELINE_ZOOM_MAX,
   TIMELINE_ZOOM_MIN,
   timelineItemsTimeOverlap,
+  timelineTemporalRangeToLayoutMinutes,
   toExternalItem,
 } from "./passionware-timeline-core.ts";
 import {
@@ -41,12 +44,24 @@ import {
   type LanePreviewShape,
 } from "./timeline-layout-logic.ts";
 
+function viewportTemporalSerializationKey(t: TimelineTemporal): string {
+  return t instanceof CalendarDate ? `cal:${t.toString()}` : `zdt:${t.toString()}`;
+}
+
 export interface UseTimelineInteractionsOptions<Data = unknown> {
   onItemsChange?: (items: TimelineItem<Data>[]) => void;
   onDrawComplete?: (item: TimelineItem<Data>) => void;
   onItemClick?: (item: TimelineItem<Data>) => void;
   onEventSelect?: (item: TimelineItem<Data>) => void;
   itemActivateTrigger?: "mousedown" | "click";
+  /**
+   * When set, initial horizontal zoom + scroll fit this span (same layout rules as item
+   * start/end) instead of the union of all items. Omit or `null` for default auto-fit.
+   */
+  viewportRange?: {
+    start: TimelineTemporal;
+    end: TimelineTemporal;
+  } | null;
 }
 
 export interface UseTimelineInteractionsParams<
@@ -91,9 +106,10 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     onItemClick,
     onEventSelect,
     itemActivateTrigger = "mousedown",
+    viewportRange = null,
   } = options;
 
-  const lastAutoFitSignatureRef = useRef<string | null>(null);
+  const lastHorizontalFitKeyRef = useRef<string | null>(null);
 
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -108,11 +124,19 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   const readDragModifications = () => store.get(atoms.dragModificationsAtom);
   const readDragState = () => store.get(atoms.dragStateAtom);
   const readPanState = () => store.get(atoms.panStateAtom);
+  const readMinimizedLaneIds = () => store.get(atoms.minimizedLaneIdsAtom);
 
   const panState = useAtomValue(atoms.panStateAtom, { store });
   const dragState = useAtomValue(atoms.dragStateAtom, { store });
   const selectedItemId = useAtomValue(atoms.selectedItemIdAtom, { store });
   const autoFitSignature = useAtomValue(atoms.autoFitSignatureAtom, { store });
+  const timeZone = useAtomValue(atoms.timeZoneAtom, { store });
+  const baseDateZoned = useAtomValue(atoms.baseDateZonedAtom, { store });
+  const containerWidth = useAtomValue(atoms.containerWidthAtom, { store });
+
+  const viewportRangeKey = viewportRange
+    ? `${viewportTemporalSerializationKey(viewportRange.start)}|${viewportTemporalSerializationKey(viewportRange.end)}`
+    : "";
 
   const getItemsWithRows = useCallback(
     (laneId: string, previewItem?: LanePreviewShape) =>
@@ -127,23 +151,41 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   );
 
   useEffect(() => {
-    const allItems = readInternalItems() as TimelineItemInternal<Data>[];
-    if (!allItems || allItems.length === 0) return;
-    const sig = autoFitSignature;
-    if (lastAutoFitSignatureRef.current === sig) return;
+    let minStart: number;
+    let maxEnd: number;
+    let fitKey: string;
 
-    const minStart = Math.min(
-      ...allItems.map((item: TimelineItemInternal<Data>) => item.start),
-    );
-    const maxEnd = Math.max(
-      ...allItems.map((item: TimelineItemInternal<Data>) => item.end),
-    );
+    if (viewportRange) {
+      const { startMinutes, endMinutes } = timelineTemporalRangeToLayoutMinutes(
+        viewportRange.start,
+        viewportRange.end,
+        timeZone,
+        baseDateZoned,
+      );
+      minStart = startMinutes;
+      maxEnd = endMinutes;
+      fitKey = `vp|${viewportRangeKey}|${timeZone}|${baseDateZoned.toString()}|${containerWidth}`;
+    } else {
+      const allItems = store.get(atoms.internalItemsAtom) as TimelineItemInternal<
+        Data
+      >[];
+      if (!allItems || allItems.length === 0) return;
+      fitKey = autoFitSignature;
+      minStart = Math.min(
+        ...allItems.map((item: TimelineItemInternal<Data>) => item.start),
+      );
+      maxEnd = Math.max(
+        ...allItems.map((item: TimelineItemInternal<Data>) => item.end),
+      );
+    }
+
+    if (lastHorizontalFitKeyRef.current === fitKey) return;
+
     const totalMinutes = maxEnd - minStart;
-
     if (totalMinutes <= 0) return;
 
-    const containerWidth = containerRef.current?.clientWidth || 1200;
-    const availableWidth = containerWidth - SIDEBAR_WIDTH;
+    const cw = containerRef.current?.clientWidth || containerWidth || 1200;
+    const availableWidth = Math.max(0, cw - SIDEBAR_WIDTH);
 
     const padding = 0.1;
     const requiredPixelsPerMinute =
@@ -156,14 +198,18 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     const newScrollOffset =
       availableWidth / 2 - centerTime * PIXELS_PER_MINUTE * calculatedZoom;
     setScrollOffset(newScrollOffset);
-    lastAutoFitSignatureRef.current = sig;
+    lastHorizontalFitKeyRef.current = fitKey;
   }, [
+    atoms.internalItemsAtom,
     autoFitSignature,
+    baseDateZoned,
     containerRef,
+    containerWidth,
     setScrollOffset,
     setZoom,
     store,
-    atoms.internalItemsAtom,
+    timeZone,
+    viewportRangeKey,
   ]);
 
   const handleWheel = useCallback(
@@ -215,7 +261,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
             const totalHeight = totalLanesHeight(
               visibleLaneRows,
               preview,
-              (laneId, p) => getLaneHeightForPreview(merged, laneId, p),
+              (laneId, p) => {
+                const laneRow = visibleLaneRows.find((l) => l.id === laneId);
+                return getLaneHeightForPreview(
+                  merged,
+                  laneId,
+                  p,
+                  laneRow?.minTrackHeightPx,
+                  readMinimizedLaneIds(),
+                );
+              },
             );
             const maxOffset = verticalScrollMaxOffset(
               totalHeight,
@@ -295,7 +350,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       const totalHeight = totalLanesHeight(
         visibleLaneRows,
         preview,
-        (laneId, p) => getLaneHeightForPreview(merged, laneId, p),
+        (laneId, p) => {
+          const laneRow = visibleLaneRows.find((l) => l.id === laneId);
+          return getLaneHeightForPreview(
+            merged,
+            laneId,
+            p,
+            laneRow?.minTrackHeightPx,
+            readMinimizedLaneIds(),
+          );
+        },
       );
       const maxOffset = verticalScrollMaxOffset(totalHeight, containerHeight);
       const newOffset = panState.startVerticalScrollOffset - deltaY;
