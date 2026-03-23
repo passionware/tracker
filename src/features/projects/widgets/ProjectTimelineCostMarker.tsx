@@ -19,13 +19,12 @@ import type { ProjectTimelineItemData } from "./projectTimelineModel.ts";
 type Props = DefaultTimelineItemProps<ProjectTimelineItemData>;
 
 /**
- * Billing instant on the timeline. **Unpaid**: red iteration-period band always visible and
- * hoverable/draggable, stacked under other milestones’ diamonds (`z-0` vs `z-[2]`).
- * **Paid**: same range in green only while the **diamond** is hovered (bands are not hit targets).
+ * Cost instant on the timeline; hovering the diamond shows green washes for every linked report’s
+ * calendar period on this lane.
  */
-export function ProjectTimelineBillingMarker(props: Props) {
+export function ProjectTimelineCostMarker(props: Props) {
   const d = props.item.data;
-  if (d.kind !== "billing") {
+  if (d.kind !== "cost") {
     return null;
   }
 
@@ -33,31 +32,33 @@ export function ProjectTimelineBillingMarker(props: Props) {
   const scrollOffset = useTimelineScrollOffset();
   const zoom = useTimelineZoom();
 
-  const iterationBand = useMemo(() => {
+  const diamondHoverBands = useMemo(() => {
     const trackH = props.laneTrackHeightPx;
-    if (trackH == null || trackH <= 0) {
+    if (trackH == null || trackH <= 0 || d.linkedReportPeriods.length === 0) {
       return undefined;
     }
-    const { startMinutes, endMinutes } = timelineTemporalRangeToLayoutMinutes(
-      d.periodStart,
-      d.periodEnd,
-      baseDateZoned.timeZone,
-      baseDateZoned,
-    );
     const timeToPixel = (t: number) => layoutTimeToPixel(t, scrollOffset, zoom);
     const ppm = pixelsPerMinuteFromZoom(zoom);
-    const bandLeft = timeToPixel(startMinutes) - SIDEBAR_WIDTH;
-    const naturalW = (endMinutes - startMinutes) * ppm;
-    const bandWidth = Math.max(naturalW, 3);
-    return {
-      bandLeft,
-      bandWidth,
-      trackHeightPx: trackH,
-    };
+    const bands = d.linkedReportPeriods.map((p) => {
+      const { startMinutes, endMinutes } = timelineTemporalRangeToLayoutMinutes(
+        p.periodStart,
+        p.periodEnd,
+        baseDateZoned.timeZone,
+        baseDateZoned,
+      );
+      const bandLeft = timeToPixel(startMinutes) - SIDEBAR_WIDTH;
+      const naturalW = (endMinutes - startMinutes) * ppm;
+      const bandWidth = Math.max(naturalW, 3);
+      return {
+        bandLeft,
+        bandWidth,
+        trackHeightPx: trackH,
+      };
+    });
+    return bands;
   }, [
     baseDateZoned,
-    d.periodEnd,
-    d.periodStart,
+    d.linkedReportPeriods,
     props.laneTrackHeightPx,
     scrollOffset,
     zoom,
@@ -66,11 +67,7 @@ export function ProjectTimelineBillingMarker(props: Props) {
   return (
     <TimelineMilestoneDiamond
       {...props}
-      variant={d.unpaid ? "billing-unpaid" : "default"}
-      laneHighlight={d.unpaid ? iterationBand : undefined}
-      diamondHoverBands={
-        !d.unpaid && iterationBand != null ? [iterationBand] : undefined
-      }
+      diamondHoverBands={diamondHoverBands}
     />
   );
 }
