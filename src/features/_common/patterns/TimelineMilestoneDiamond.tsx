@@ -18,6 +18,35 @@ export type TimelineMilestoneLaneHighlight = {
   trackHeightPx: number;
 };
 
+function computeMilestoneExpandedWrap(
+  left: number,
+  laneHighlight: TimelineMilestoneLaneHighlight | undefined,
+  diamondHoverBands: readonly TimelineMilestoneLaneHighlight[],
+): { wrapLeft: number; wrapWidth: number; trackHeightPx: number } {
+  const diamondHalf = HIT_BOX / 2;
+  let wrapLeft = left - diamondHalf;
+  let wrapRight = left + diamondHalf;
+  let trackHeightPx = 0;
+  if (laneHighlight != null) {
+    wrapLeft = Math.min(wrapLeft, laneHighlight.bandLeft);
+    wrapRight = Math.max(
+      wrapRight,
+      laneHighlight.bandLeft + laneHighlight.bandWidth,
+    );
+    trackHeightPx = Math.max(trackHeightPx, laneHighlight.trackHeightPx);
+  }
+  for (const b of diamondHoverBands) {
+    wrapLeft = Math.min(wrapLeft, b.bandLeft);
+    wrapRight = Math.max(wrapRight, b.bandLeft + b.bandWidth);
+    trackHeightPx = Math.max(trackHeightPx, b.trackHeightPx);
+  }
+  return {
+    wrapLeft,
+    wrapWidth: Math.max(wrapRight - wrapLeft, 1),
+    trackHeightPx,
+  };
+}
+
 export type TimelineMilestoneDiamondProps<Data = unknown> = {
   item: TimelineItem<Data>;
   /** Extra semantics for styling (e.g. outstanding client invoice). */
@@ -30,8 +59,16 @@ export type TimelineMilestoneDiamondProps<Data = unknown> = {
   /**
    * When set, root expands to include this horizontal band (e.g. iteration period on the billing lane).
    * Band is drawn full `trackHeightPx` behind the diamond; `left` stays the instant position.
+   * **Unpaid:** the red band is also a hit target (`z-0`) so you can hover/drag from it, but it stacks
+   * **under** other milestones’ diamonds (`z-[2]`).
    */
   laneHighlight?: TimelineMilestoneLaneHighlight;
+  /**
+   * Green washes (e.g. paid billing iteration, or **all** linked report periods for a cost) shown
+   * only while the **diamond** is hovered (`peer`/`peer-hover`; bands stay `pointer-events-none`).
+   * Omit or pass `[]` when unused. Do not combine with `laneHighlight`.
+   */
+  diamondHoverBands?: readonly TimelineMilestoneLaneHighlight[];
   isSelected: boolean;
   selected: boolean;
   /** @deprecated Hover ring uses CSS `:hover`; kept for Storybook / spread compatibility. */
@@ -63,6 +100,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
   width: _width,
   isMinWidth: _isMinWidth,
   laneHighlight,
+  diamondHoverBands,
   isSelected,
   selected = isSelected,
   isHovered: _legacyIsHovered,
@@ -77,6 +115,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
   void _width;
   void _isMinWidth;
   void _legacyIsHovered;
+  const hoverBands = diamondHoverBands ?? [];
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef(false);
 
@@ -144,62 +183,88 @@ export function TimelineMilestoneDiamond<Data = unknown>({
     />
   );
 
-  if (laneHighlight != null) {
-    const { bandLeft, bandWidth, trackHeightPx } = laneHighlight;
-    const diamondHalf = HIT_BOX / 2;
-    const dLeftEdge = left - diamondHalf;
-    const dRightEdge = left + diamondHalf;
-    const bandRight = bandLeft + bandWidth;
-    const wrapLeft = Math.min(bandLeft, dLeftEdge);
-    const wrapRight = Math.max(bandRight, dRightEdge);
-    const wrapWidth = Math.max(wrapRight - wrapLeft, 1);
+  const needsExpandedLayout =
+    laneHighlight != null || hoverBands.length > 0;
+  if (needsExpandedLayout) {
+    const { wrapLeft, wrapWidth, trackHeightPx } =
+      computeMilestoneExpandedWrap(left, laneHighlight, hoverBands);
+    const showUnpaidRed = laneHighlight != null;
+    const showDiamondHoverGreen = hoverBands.length > 0;
+
+    const unpaidRedStyle =
+      laneHighlight != null
+        ? ({
+            left: laneHighlight.bandLeft - wrapLeft,
+            top: 0,
+            width: laneHighlight.bandWidth,
+            height: trackHeightPx,
+          } as const)
+        : null;
+
+    const diamondHostStyle = {
+      left: left - wrapLeft,
+      top,
+      width: HIT_BOX,
+      height: HIT_BOX,
+      transform: "translateX(-50%)" as const,
+    };
 
     return (
       <div
-        ref={ref}
-        {...rest}
-        data-timeline-item
-        data-billing-unpaid={unpaidBilling ? "" : undefined}
-        aria-label={item.label}
-        className={cn(
-          "absolute cursor-grab",
-          selected ? "z-[3]" : "z-[2]",
-        )}
+        className="pointer-events-none absolute"
         style={{
           left: wrapLeft,
           top: 0,
           width: wrapWidth,
           height: trackHeightPx,
         }}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onMouseOver={onMouseOver}
       >
-        {unpaidBilling && (
+        {showUnpaidRed && unpaidRedStyle != null && (
           <div
-            className="pointer-events-none absolute z-[1] bg-destructive/15 dark:bg-destructive/22"
-            style={{
-              left: bandLeft - wrapLeft,
-              top: 0,
-              width: bandWidth,
-              height: trackHeightPx,
-            }}
+            className="pointer-events-auto absolute z-0 cursor-grab bg-destructive/15 dark:bg-destructive/22"
+            style={unpaidRedStyle}
+            data-timeline-item
+            data-billing-unpaid=""
             aria-hidden
+            onMouseDown={handleMouseDown}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            onMouseOver={onMouseOver}
           />
         )}
         <div
-          className={cn("absolute z-[2]", markerRingClass)}
-          style={{
-            left: left - wrapLeft,
-            top,
-            width: HIT_BOX,
-            height: HIT_BOX,
-            transform: "translateX(-50%)",
-          }}
+          ref={ref}
+          {...rest}
+          data-timeline-item
+          data-billing-unpaid={unpaidBilling ? "" : undefined}
+          aria-label={item.label}
+          className={cn(
+            "pointer-events-auto absolute z-[2] cursor-grab",
+            markerRingClass,
+            showDiamondHoverGreen && "peer",
+          )}
+          style={diamondHostStyle}
+          onMouseDown={handleMouseDown}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onMouseOver={onMouseOver}
         >
           {diamondShape}
         </div>
+        {showDiamondHoverGreen &&
+          hoverBands.map((band, i) => (
+            <div
+              key={i}
+              className="pointer-events-none absolute z-[1] bg-emerald-600/22 opacity-0 transition-opacity duration-150 peer-hover:opacity-100 dark:bg-emerald-500/26"
+              style={{
+                left: band.bandLeft - wrapLeft,
+                top: 0,
+                width: band.bandWidth,
+                height: trackHeightPx,
+              }}
+              aria-hidden
+            />
+          ))}
       </div>
     );
   }

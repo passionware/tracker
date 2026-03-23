@@ -95,6 +95,11 @@ export type ProjectTimelineItemData =
       currency: string;
       invoiceDate: CalendarDate;
       invoiceNumber: string | null;
+      /** Report calendar periods that link this cost (shown on cost-lane diamond hover). */
+      linkedReportPeriods: readonly {
+        periodStart: CalendarDate;
+        periodEnd: CalendarDate;
+      }[];
     };
 
 export interface BuildProjectTimelineLanesOptions {
@@ -339,6 +344,11 @@ export function buildProjectTimelineLanesAndItems(
         cost: NonNullable<Report["linkCostReport"][0]["cost"]>;
         contractorLabel: string;
         palette: (typeof LANE_PALETTE)[number];
+        linkedReportPeriods: {
+          reportId: Report["id"];
+          periodStart: CalendarDate;
+          periodEnd: CalendarDate;
+        }[];
       }
     >();
 
@@ -369,15 +379,26 @@ export function buildProjectTimelineLanesAndItems(
         for (const row of r.linkCostReport) {
           if (row.cost) {
             const prev = costSeen.get(row.cost.id);
+            const periodEntry = {
+              reportId: r.id,
+              periodStart: r.periodStart,
+              periodEnd: r.periodEnd,
+            };
             if (!prev) {
               costSeen.set(row.cost.id, {
                 cost: row.cost,
                 contractorLabel: reportContractor,
                 palette,
+                linkedReportPeriods: [periodEntry],
               });
             } else {
               if (!prev.contractorLabel && reportContractor) {
                 prev.contractorLabel = reportContractor;
+              }
+              if (
+                !prev.linkedReportPeriods.some((p) => p.reportId === r.id)
+              ) {
+                prev.linkedReportPeriods.push(periodEntry);
               }
             }
           }
@@ -584,8 +605,16 @@ export function buildProjectTimelineLanesAndItems(
       });
     }
 
-    for (const { cost: c, contractorLabel, palette } of costSeen.values()) {
+    for (const {
+      cost: c,
+      contractorLabel,
+      palette,
+      linkedReportPeriods,
+    } of costSeen.values()) {
       const at = calendarDateToZonedInstant(c.invoiceDate, timeZone);
+      const periodsSorted = [...linkedReportPeriods].sort((a, b) =>
+        a.periodStart.compare(b.periodStart),
+      );
       items.push({
         id: `ev-c-${c.id}-${rootId}`,
         laneId: costsLane,
@@ -607,6 +636,12 @@ export function buildProjectTimelineLanesAndItems(
             typeof c.invoiceNumber === "string" && c.invoiceNumber.trim()
               ? c.invoiceNumber.trim()
               : null,
+          linkedReportPeriods: periodsSorted.map(
+            ({ periodStart, periodEnd }) => ({
+              periodStart,
+              periodEnd,
+            }),
+          ),
         },
       });
     }

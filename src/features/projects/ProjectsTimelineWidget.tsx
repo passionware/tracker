@@ -25,8 +25,8 @@ import { SimpleSinglePicker } from "@/features/_common/elements/pickers/SimpleSi
 import { ProjectQueryBar } from "@/features/_common/elements/query/ProjectQueryBar.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
-import { TimelineMilestoneDiamond } from "@/features/_common/patterns/TimelineMilestoneDiamond.tsx";
 import { ProjectTimelineBillingMarker } from "@/features/projects/widgets/ProjectTimelineBillingMarker.tsx";
+import { ProjectTimelineCostMarker } from "@/features/projects/widgets/ProjectTimelineCostMarker.tsx";
 import {
   buildProjectTimelineLanesAndItems,
   indexProjectTimelineLanesById,
@@ -725,7 +725,7 @@ function ProjectsTimelineWithReports(props: {
                       d.kind === "billing" ? (
                         <ProjectTimelineBillingMarker {...itemProps} />
                       ) : d.kind === "cost" ? (
-                        <TimelineMilestoneDiamond {...itemProps} />
+                        <ProjectTimelineCostMarker {...itemProps} />
                       ) : d.kind === "iteration" ? (
                         <DefaultTimelineItem
                           {...itemProps}

@@ -133,6 +133,71 @@ export const BillingWithIterationPeriod: Story = {
   },
 };
 
+export const CostLinkedReportBands: Story = {
+  args: {
+    item: itemOrange,
+    left: 100,
+    variant: "default",
+    diamondHoverBands: [
+      { bandLeft: 16, bandWidth: 40, trackHeightPx: 64 },
+      { bandLeft: 72, bandWidth: 52, trackHeightPx: 64 },
+    ],
+    isSelected: false,
+    selected: false,
+    isHovered: false,
+    onMouseDown: noopMouseDown,
+    onMouseEnter: noop,
+    onMouseLeave: noop,
+  },
+  render: function CostLinkedReportBandsStory(args) {
+    const [hover, setHover] = useState(false);
+    return (
+      <div className="relative h-16 w-64 rounded-md border bg-timeline-lane-alt">
+        <TimelineMilestoneDiamond
+          {...args}
+          isHovered={hover}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        />
+      </div>
+    );
+  },
+};
+
+export const BillingPaidHoverIteration: Story = {
+  args: {
+    item: itemViolet,
+    left: 118,
+    variant: "default",
+    diamondHoverBands: [
+      {
+        bandLeft: 28,
+        bandWidth: 96,
+        trackHeightPx: 64,
+      },
+    ],
+    isSelected: false,
+    selected: false,
+    isHovered: false,
+    onMouseDown: noopMouseDown,
+    onMouseEnter: noop,
+    onMouseLeave: noop,
+  },
+  render: function BillingPaidHoverIterationStory(args) {
+    const [hover, setHover] = useState(false);
+    return (
+      <div className="relative h-16 w-48 rounded-md border bg-timeline-lane">
+        <TimelineMilestoneDiamond
+          {...args}
+          isHovered={hover}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        />
+      </div>
+    );
+  },
+};
+
 export const BillingUnpaid: Story = {
   args: {
     item: itemUnpaidBilling,
