@@ -82,6 +82,10 @@ export type ProjectTimelineItemData =
       currency: string;
       /** Used in tooltip as due/invoice date (no separate due date on billing). */
       invoiceDate: CalendarDate;
+      /** Iteration whose report links this billing (billing lane highlights this period). */
+      iterationId: ProjectIteration["id"];
+      periodStart: CalendarDate;
+      periodEnd: CalendarDate;
     }
   | {
       kind: "cost";
@@ -324,6 +328,9 @@ export function buildProjectTimelineLanesAndItems(
         billing: NonNullable<Report["linkBillingReport"][0]["billing"]>;
         contractorLabel: string;
         palette: (typeof LANE_PALETTE)[number];
+        iterationId: ProjectIteration["id"];
+        periodStart: CalendarDate;
+        periodEnd: CalendarDate;
       }
     >();
     const costSeen = new Map<
@@ -348,6 +355,9 @@ export function buildProjectTimelineLanesAndItems(
                 billing: row.billing,
                 contractorLabel: reportContractor,
                 palette,
+                iterationId: it.id,
+                periodStart: it.periodStart,
+                periodEnd: it.periodEnd,
               });
             } else {
               if (!prev.contractorLabel && reportContractor) {
@@ -538,7 +548,14 @@ export function buildProjectTimelineLanesAndItems(
       if (byDate !== 0) return byDate;
       return a.billing.id - b.billing.id;
     });
-    for (const { billing: b, contractorLabel, palette } of billingRows) {
+    for (const {
+      billing: b,
+      contractorLabel,
+      palette,
+      iterationId,
+      periodStart,
+      periodEnd,
+    } of billingRows) {
       const at = calendarDateToZonedInstant(b.invoiceDate, timeZone);
       const unpaid = b.paidAt == null;
       const invoiceNumber =
@@ -560,6 +577,9 @@ export function buildProjectTimelineLanesAndItems(
           totalGross: b.totalGross,
           currency: b.currency,
           invoiceDate: b.invoiceDate,
+          iterationId,
+          periodStart,
+          periodEnd,
         },
       });
     }
