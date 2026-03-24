@@ -29,6 +29,7 @@ import { renderError } from "@/features/_common/renderError.tsx";
 import { ProjectTimelineBillingMarker } from "@/features/projects/widgets/ProjectTimelineBillingMarker.tsx";
 import { ProjectTimelineCostMarker } from "@/features/projects/widgets/ProjectTimelineCostMarker.tsx";
 import { ProjectTimelineFloatingBulkBar } from "@/features/projects/widgets/ProjectTimelineFloatingBulkBar.tsx";
+import { ProjectTimelineReportBar } from "@/features/projects/widgets/ProjectTimelineReportBar.tsx";
 import {
   buildProjectTimelineLanesAndItems,
   indexProjectTimelineLanesById,
@@ -64,13 +65,7 @@ import {
   type SelectionState,
 } from "@/platform/lang/SelectionState.ts";
 import { maybe, rd, type Maybe, type RemoteData } from "@passionware/monads";
-import {
-  BriefcaseBusiness,
-  CirclePlay,
-  GitBranch,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { BriefcaseBusiness, CirclePlay, GitBranch, Moon, Sun } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 /** Calendar period as stored in domain data — not timeline geometry (exclusive zoned end). */
@@ -144,6 +139,17 @@ function formatReportTimelineUnit(unit: string | null): string {
       return u;
     default:
       return u;
+  }
+}
+
+function reportPaymentStatusLabel(status: "unpaid" | "partially-paid" | "paid"): string {
+  switch (status) {
+    case "unpaid":
+      return "Unpaid";
+    case "partially-paid":
+      return "Partially paid";
+    case "paid":
+      return "Paid";
   }
 }
 
@@ -699,6 +705,8 @@ function ProjectsTimelineChartWithSelection(props: {
                           />
                         }
                       />
+                    ) : d.kind === "report" ? (
+                      <ProjectTimelineReportBar {...itemPropsArg} />
                     ) : (
                       <DefaultTimelineItem {...itemPropsArg} />
                     );
@@ -795,6 +803,21 @@ function ProjectsTimelineChartWithSelection(props: {
                             </span>
                           </p>
                         )}
+                        <p className="text-[10px]">
+                          <span className="text-muted-foreground">Cost payment · </span>
+                          <span
+                            className={cn(
+                              "font-medium",
+                              d.paymentStatus === "unpaid"
+                                ? "text-rose-700 dark:text-rose-400"
+                                : d.paymentStatus === "partially-paid"
+                                  ? "text-amber-700 dark:text-amber-400"
+                                  : "text-emerald-700 dark:text-emerald-400",
+                            )}
+                          >
+                            {reportPaymentStatusLabel(d.paymentStatus)}
+                          </span>
+                        </p>
                         <div className="mt-1.5 space-y-2 border-t border-border pt-1.5">
                           <div className="flex gap-3">
                             <div className="min-w-0 flex-1 space-y-0.5">
