@@ -57,6 +57,7 @@ export type ProjectTimelineItemData =
   | {
       kind: "report";
       reportId: number;
+      paymentStatus: "unpaid" | "partially-paid" | "paid";
       netValue: number;
       currency: string;
       quantity: number | null;
@@ -554,6 +555,12 @@ export function buildProjectTimelineLanesAndItems(
       return a.r.id - b.r.id;
     });
     for (const { r, palette } of groupReports) {
+      const paymentStatus: "unpaid" | "partially-paid" | "paid" =
+        r.reportCostBalance <= 0
+          ? "paid"
+          : r.reportCostValue > 0
+            ? "partially-paid"
+            : "unpaid";
       items.push({
         id: `ev-r-${r.id}`,
         laneId: reportsLane,
@@ -567,6 +574,7 @@ export function buildProjectTimelineLanesAndItems(
         data: {
           kind: "report",
           reportId: r.id,
+          paymentStatus,
           netValue: r.netValue,
           currency: r.currency,
           quantity: r.quantity ?? null,
