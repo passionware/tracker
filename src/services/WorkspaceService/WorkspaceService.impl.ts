@@ -1,3 +1,4 @@
+import { Client } from "@/api/clients/clients.api.ts";
 import { Workspace, WorkspaceApi } from "@/api/workspace/workspace.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
@@ -58,6 +59,20 @@ export function createWorkspaceService(
             queryFn: () => api.getWorkspace(id!),
             staleTime: 10 * 60 * 1000, // Dłuższy czas "starości" dla pojedynczych workspace
             initialData: () => findWorkspaceInCache(id!), // Znajdź dane w cache, jeśli istnieją
+          },
+          queryClient,
+        ),
+      ),
+
+    useWorkspacesForClient: (clientId: Maybe<Client["id"]>) =>
+      ensureIdleQuery(
+        clientId,
+        useQuery(
+          {
+            enabled: maybe.isPresent(clientId),
+            queryKey: ["workspace", "for_client", clientId],
+            queryFn: () => api.getWorkspacesForClient(clientId!),
+            staleTime: 10 * 60 * 1000,
           },
           queryClient,
         ),

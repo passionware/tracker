@@ -98,6 +98,7 @@ export interface BillingViewEntry {
   invoiceNumber: string;
   client: Client;
   invoiceDate: CalendarDate;
+  dueDate: CalendarDate | null;
   description: string | null;
   paidAt: CalendarDate | null;
   paidAtJustification: string | null;

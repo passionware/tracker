@@ -341,6 +341,9 @@ export function convertGeneratedReportToFacts(
         clientId: project.clientId,
         invoiceNumber: `DRAFT-BILLING-${projectIteration.periodStart.year}-${String(projectIteration.periodStart.month).padStart(2, "0")}-WS${workspaceGroup.workspaceId}`,
         invoiceDate: projectIteration.periodEnd,
+        dueDate: projectIteration.periodEnd.add({
+          days: project.defaultBillingDueDays,
+        }),
         description: billingDescription,
         workspaceId: workspaceGroup.workspaceId,
       },
