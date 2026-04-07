@@ -15,6 +15,8 @@ export const projectMock = createMockFactory<ProjectBase>(
     workspaceIds: faker.helpers
       .arrayElements(workspaceMock.static.list)
       .map((x) => x.id),
+    defaultBillingDueDays: faker.number.int({ min: 0, max: 30 }),
+    emailReplyInviteMessage: faker.lorem.sentence(),
   }),
   [
     {
@@ -25,6 +27,8 @@ export const projectMock = createMockFactory<ProjectBase>(
       description: "This is a project",
       clientId: clientsMock.static.list[0].id,
       workspaceIds: [workspaceMock.static.list[0].id],
+      defaultBillingDueDays: 14,
+      emailReplyInviteMessage: "Please confirm your invoice.",
     },
     {
       id: 2,
@@ -34,6 +38,8 @@ export const projectMock = createMockFactory<ProjectBase>(
       description: "This is another project",
       clientId: clientsMock.static.list[1].id,
       workspaceIds: [workspaceMock.static.list[1].id],
+      defaultBillingDueDays: 14,
+      emailReplyInviteMessage: "Please confirm your invoice.",
     },
     {
       id: 3,
@@ -43,6 +49,8 @@ export const projectMock = createMockFactory<ProjectBase>(
       description: "This is yet another project",
       clientId: clientsMock.static.list[1].id,
       workspaceIds: [workspaceMock.static.list[1].id],
+      defaultBillingDueDays: 14,
+      emailReplyInviteMessage: "Please confirm your invoice.",
     },
   ],
 );
