@@ -43,6 +43,13 @@ export interface ProjectPayload {
   description: Nullable<string>;
   workspaceIds: Workspace["id"][];
   clientId: Client["id"];
+  /** Days after iteration period end for default billing due date in reconciliation. */
+  defaultBillingDueDays: number;
+  /**
+   * Optional closing line for client report emails (cockpit invoice + reminder templates).
+   * Stored on publish in cube meta for cockpit.
+   */
+  emailReplyInviteMessage: Nullable<string>;
 }
 
 export interface ProjectBase extends ProjectPayload {

@@ -131,6 +131,9 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           client_id: billing.clientId,
           invoice_number: billing.invoiceNumber,
           invoice_date: formatDateForSupabase(billing.invoiceDate),
+          due_date: billing.dueDate
+            ? formatDateForSupabase(billing.dueDate)
+            : null,
           description: billing.description,
           workspace_id: billing.workspaceId,
           paid_at: null,
@@ -312,6 +315,12 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         "paidAtJustification" in payload
           ? payload.paidAtJustification
           : undefined;
+      const dueDateDb =
+        "dueDate" in payload
+          ? payload.dueDate === null
+            ? null
+            : formatDateForSupabase(payload.dueDate as CalendarDate)
+          : undefined;
       const response = await client
 
         .from("billing")
@@ -330,6 +339,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
                 takeIfPresent("invoiceDate"),
                 formatDateForSupabase,
               ),
+              due_date: dueDateDb,
               description: takeIfPresent("description"),
               workspace_id: takeIfPresent("workspaceId"),
               paid_at: paidAtDb,
@@ -409,6 +419,15 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         p_client_id: takeIfPresent("clientId"),
         p_status: takeIfPresent("status"),
         p_workspace_ids: takeIfPresent("workspaceIds"),
+        p_default_billing_due_days: takeIfPresent("defaultBillingDueDays"),
+        ...("emailReplyInviteMessage" in payload
+          ? {
+              p_email_reply_invite_message:
+                payload.emailReplyInviteMessage == null
+                  ? ""
+                  : String(payload.emailReplyInviteMessage),
+            }
+          : {}),
       });
 
       if (error) {
@@ -484,6 +503,8 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           p_client_id: project.clientId,
           p_status: project.status,
           p_workspace_ids: project.workspaceIds,
+          p_default_billing_due_days: project.defaultBillingDueDays,
+          p_email_reply_invite_message: project.emailReplyInviteMessage ?? null,
         },
       );
 

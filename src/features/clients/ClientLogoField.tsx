@@ -16,6 +16,10 @@ export interface ClientLogoFieldProps {
   value: string | null;
   onChange: (next: string | null) => void;
   disabled?: boolean;
+  /** Upload card heading (default "Logo"). */
+  title?: string;
+  /** Upload card body copy under the heading. */
+  description?: string;
 }
 
 export function ClientLogoField(props: ClientLogoFieldProps) {
@@ -90,8 +94,11 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
     >
       <UploadDropCard
         icon={<ImageIcon aria-hidden />}
-        title="Logo"
-        description="PNG, JPG, or SVG — drag, browse, or use an image URL below."
+        title={props.title ?? "Logo"}
+        description={
+          props.description ??
+          "PNG, JPG, or SVG — drag, browse, or use an image URL below."
+        }
         bodyClassName="min-h-[min(240px,40vh)] lg:min-h-[220px]"
       >
         <input

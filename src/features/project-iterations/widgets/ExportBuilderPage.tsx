@@ -35,6 +35,8 @@ import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import { PublishToCockpitButton } from "./PublishToCockpitButton";
+import { resolveCockpitPublishBillingDueDate } from "./cockpitPublishBillingDueDate";
+import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import type {
@@ -108,6 +110,45 @@ function ExportBuilderContent({
     report,
     services,
   });
+
+  const billingListQuery = useMemo(
+    () =>
+      billingQueryUtils.ensureDefault(
+        {
+          filters: {
+            clientId: null,
+            workspaceId: null,
+            remainingAmount: null,
+            contractorId: null,
+            invoiceDate: null,
+            commitState: null,
+          },
+          page: { page: 0, pageSize: 500 },
+          sort: { field: "invoiceDate", order: "desc" },
+        },
+        workspaceId,
+        clientId,
+      ),
+    [workspaceId, clientId],
+  );
+
+  const billingsRd = services.billingService.useBillings(
+    maybe.of(billingListQuery),
+  );
+
+  const publishBillingDueDate = useMemo(() => {
+    const billings = rd.tryGet(billingsRd);
+    const iteration = rd.tryGet(iterationState);
+    const project = rd.tryGet(projectState);
+    if (!billings || !iteration || !project) {
+      return undefined;
+    }
+    return resolveCockpitPublishBillingDueDate(billings, {
+      iterationId: iteration.id,
+      periodEnd: iteration.periodEnd,
+      defaultBillingDueDays: project.defaultBillingDueDays,
+    });
+  }, [billingsRd, iterationState, projectState]);
 
   // Get dimensions and measures from the serializable config
   const { dimensions, measures } = serializableConfig;
@@ -743,6 +784,7 @@ function ExportBuilderContent({
                   clientSpec={clientId}
                   sourceWorkspaceId={project.workspaceIds?.[0] ?? null}
                   sourceClientId={project.clientId}
+                  billingDueDate={publishBillingDueDate}
                 />
               ))}
             <Button

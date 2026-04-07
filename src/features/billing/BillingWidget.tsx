@@ -448,6 +448,7 @@ export function BillingWidget(props: BillingWidgetProps) {
                         .currency,
                   ),
                   invoiceDate: dateToCalendarDate(new Date()),
+                  dueDate: null,
                   clientId: idSpecUtils.switchAll(props.clientId, undefined),
                 }}
                 services={props.services}

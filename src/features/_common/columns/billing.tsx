@@ -59,6 +59,19 @@ export const billingColumns = {
         sortKey: "invoiceDate",
       },
     }),
+  dueDate: (services: WithFormatService) =>
+    getColumnHelper<BillingViewEntry>().accessor("dueDate", {
+      header: "Due date",
+      cell: (info) => {
+        const d = info.getValue();
+        return d
+          ? services.formatService.temporal.single.compact(d)
+          : "—";
+      },
+      meta: {
+        sortKey: "dueDate",
+      },
+    }),
   paidStatus: (services: WithFormatService) =>
     getColumnHelper<BillingViewEntry>().display({
       id: "paidStatus",

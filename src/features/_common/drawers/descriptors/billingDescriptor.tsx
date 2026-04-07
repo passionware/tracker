@@ -96,6 +96,10 @@ function BillingSmallPreview({
       const invoiceDateLabel = services.formatService.temporal.single.compact(
         billing.invoiceDate,
       );
+      const dueDateLabel =
+        billing.dueDate == null
+          ? "—"
+          : services.formatService.temporal.single.compact(billing.dueDate);
       const paidLabel =
         billing.paidAt == null
           ? "Unpaid"
@@ -107,6 +111,7 @@ function BillingSmallPreview({
             { label: "Workspace", value: workspaceLabel },
             { label: "Invoice #", value: invoiceNumberLabel },
             { label: "Invoice date", value: invoiceDateLabel },
+            { label: "Payment due", value: dueDateLabel },
             { label: "Paid", value: paidLabel },
             ...(billing.paidAtJustification
               ? [

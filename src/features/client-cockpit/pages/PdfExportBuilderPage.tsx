@@ -47,6 +47,7 @@ import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/Cu
 import { CockpitTenant } from "@/api/cockpit-tenants/cockpit-tenants.api";
 import { FormatService } from "@/services/FormatService/FormatService";
 import passionwareLogoRaw from "./passionware.png?inline";
+import { buildCockpitAbsoluteUrl } from "../cockpitReportBranding.ts";
 
 // Use the domain model types
 type PdfPageConfig = PDFPageConfig;
@@ -70,7 +71,10 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
   const tenantData = props.services.cockpitTenantService.useTenant(tenantId);
   const tenantInfo = rd.tryGet(tenantData);
   const clientDisplayName = tenantInfo?.name;
-  const clientAvatarDataUrl = tenantInfo?.logo_url;
+  const issuerWorkspaceName =
+    tenantInfo?.workspaceName?.trim() || "Passionware";
+  const workspaceLogoUrl = tenantInfo?.workspaceLogoUrl?.trim() || null;
+  const clientLogoUrl = tenantInfo?.clientLogoUrl?.trim() || null;
 
   // PDF configuration state
   const [pdfConfig, setPdfConfig] = useState<PdfExportConfig>({
@@ -347,22 +351,24 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
                   <Download className="h-4 w-4 mr-2" />
                   Generate PDF
                 </Button>
-                {isAdmin && (
+                {isAdmin && tenantId && reportId && (
                   <EmailTemplateDialog
                     reportData={reportData}
-                    reportLink={
-                      window.location.origin +
+                    reportLink={buildCockpitAbsoluteUrl(
+                      undefined,
                       myRouting
                         .forClientCockpit()
-                        .forClient(tenantId?.toString())
+                        .forClient(tenantId)
                         .forReport(reportId)
-                        .cubeViewer()
-                    }
+                        .cubeViewer(),
+                    )}
                     formatService={props.services.formatService}
-                    workspaceLogoDataUrl={passionwareLogoRaw}
-                    workspaceName="Passionware"
-                    clientDisplayName={clientDisplayName}
-                    clientAvatarDataUrl={clientAvatarDataUrl}
+                    workspaceLogoDataUrl={
+                      workspaceLogoUrl || passionwareLogoRaw
+                    }
+                    workspaceName={issuerWorkspaceName}
+                    clientDisplayName={clientDisplayName ?? "Client"}
+                    clientAvatarDataUrl={clientLogoUrl}
                   >
                     <Button variant="outline">
                       <Mail className="h-4 w-4 mr-2" />

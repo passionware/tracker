@@ -12,6 +12,10 @@ export const billingBase$ = z.object({
   client_id: z.number(),
   invoice_number: z.string(),
   invoice_date: z.string().transform(parseDate),
+  due_date: z
+    .string()
+    .nullable()
+    .transform((s) => (s ? parseDate(s) : null)),
   description: z.string().nullable(),
   workspace_id: z.number(),
   is_committed: z.boolean(),

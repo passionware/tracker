@@ -21,6 +21,10 @@ import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import {
+  readBillingDueDateFromCubeData,
+  readEmailReplyInviteMessageFromCubeData,
+} from "./emailReplyInviteCopy";
 
 interface EmailTemplateDialogProps {
   reportData: CockpitCubeReportWithCreator;
@@ -31,6 +35,11 @@ interface EmailTemplateDialogProps {
   workspaceName: string;
   clientDisplayName?: string;
   clientAvatarDataUrl?: string | null;
+  /**
+   * Overrides closing copy for both templates (full paragraph each); defaults
+   * to `reportData.cube_data.meta.source.emailReplyInviteMessage` when omitted.
+   */
+  replyInviteMessage?: string | null;
 }
 
 export function EmailTemplateDialog({
@@ -42,7 +51,15 @@ export function EmailTemplateDialog({
   workspaceName,
   clientDisplayName,
   clientAvatarDataUrl,
+  replyInviteMessage: replyInviteMessageProp,
 }: EmailTemplateDialogProps) {
+  const replyInviteFromReport = readEmailReplyInviteMessageFromCubeData(
+    reportData.cube_data as Record<string, unknown>,
+  );
+  const replyInviteMessage =
+    replyInviteMessageProp !== undefined
+      ? replyInviteMessageProp
+      : replyInviteFromReport;
   const contentRef = useRef<HTMLDivElement | null>(null);
   const reminderContentRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"invoice" | "reminder">("invoice");
@@ -54,6 +71,15 @@ export function EmailTemplateDialog({
   const [invoiceDueDate, setInvoiceDueDate] = useState<Maybe<CalendarDate>>(
     maybe.of(today(getLocalTimeZone())),
   );
+
+  useEffect(() => {
+    const fromPublish = readBillingDueDateFromCubeData(
+      reportData.cube_data as Record<string, unknown>,
+    );
+    setInvoiceDueDate(
+      maybe.of(fromPublish ?? today(getLocalTimeZone())),
+    );
+  }, [reportData.id]);
 
   const convertSvgDataUrlToPng = (dataUrl: string) =>
     new Promise<string>((resolve) => {
@@ -284,7 +310,7 @@ export function EmailTemplateDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex gap-0 flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex gap-0 flex-col overflow-hidden">
         <DialogHeader className="flex flex-row items-center justify-between gap-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">📧</span>
@@ -315,10 +341,10 @@ export function EmailTemplateDialog({
         >
           <TabsContent
             value="invoice"
-            className="flex-1 min-h-0 bg-slate-100 p-4 flex items-start justify-center -mx-6 focus:outline-none"
+            className="mt-0 flex-1 min-h-0 flex flex-col bg-slate-100 p-4 -mx-6 focus:outline-none"
           >
             <div
-              className="bg-white rounded-lg shadow-sm p-6 max-w-4xl w-full overflow-y-auto max-h-full"
+              className="bg-white rounded-lg shadow-sm p-6 max-w-4xl w-full mx-auto flex-1 min-h-0 overflow-y-auto"
               ref={contentRef}
             >
               <EmailTemplateContent
@@ -329,12 +355,13 @@ export function EmailTemplateDialog({
                 workspaceName={workspaceName}
                 clientDisplayName={clientDisplayName}
                 clientAvatarDataUrl={sanitizedClientAvatar}
+                replyInviteMessage={replyInviteMessage}
               />
             </div>
           </TabsContent>
           <TabsContent
             value="reminder"
-            className="flex-1 min-h-0 bg-slate-100 p-4 flex flex-col -mx-6 focus:outline-none"
+            className="mt-0 flex-1 min-h-0 flex flex-col bg-slate-100 p-4 -mx-6 focus:outline-none"
           >
             <div className="space-y-4 flex-shrink-0">
               <div className="mb-4">
@@ -361,6 +388,7 @@ export function EmailTemplateDialog({
                 clientDisplayName={clientDisplayName}
                 clientAvatarDataUrl={sanitizedClientAvatar}
                 dueDate={dueDateAsJsDate}
+                replyInviteMessage={replyInviteMessage}
               />
             </div>
           </TabsContent>

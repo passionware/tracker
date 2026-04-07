@@ -39,6 +39,12 @@ export function PDFPreview({ pdfReportModel, formatService }: PDFPreviewProps) {
             {formatService.temporal.date(metadata.dateRange.start)} -{" "}
             {formatService.temporal.date(metadata.dateRange.end)}
           </p>
+          {metadata.paymentDueDate ? (
+            <p className="text-sm text-gray-600 mt-1">
+              Payment due{" "}
+              {formatService.temporal.date(metadata.paymentDueDate)}
+            </p>
+          ) : null}
           <p className="text-xs text-gray-400 mt-2">
             Generated on {formatService.temporal.date(metadata.generatedAt)}
           </p>

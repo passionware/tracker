@@ -53,6 +53,8 @@ type FormModel = {
   description: string;
   clientId: number | null;
   workspaceIds: number[];
+  defaultBillingDueDays: number;
+  emailReplyInviteMessage: string;
 };
 
 export function ProjectForm(props: ProjectFormProps) {
@@ -65,12 +67,16 @@ export function ProjectForm(props: ProjectFormProps) {
       description: props.defaultValues?.description ?? "",
       clientId: props.defaultValues?.clientId ?? null,
       workspaceIds: props.defaultValues?.workspaceIds ?? [],
+      defaultBillingDueDays: props.defaultValues?.defaultBillingDueDays ?? 14,
+      emailReplyInviteMessage:
+        props.defaultValues?.emailReplyInviteMessage ?? "",
     },
   });
 
   const processingPromise = promiseState.useRemoteData<void>();
 
   function handleSubmit(data: FormModel) {
+    const dueDays = Math.max(0, Math.floor(Number(data.defaultBillingDueDays)));
     const allData: ProjectPayload = {
       name: data.name,
       status: data.status,
@@ -80,6 +86,8 @@ export function ProjectForm(props: ProjectFormProps) {
         maybe.fromArray(data.workspaceIds),
         "At least one workspace is required",
       ),
+      defaultBillingDueDays: Number.isFinite(dueDays) ? dueDays : 14,
+      emailReplyInviteMessage: data.emailReplyInviteMessage.trim() || null,
     };
     void processingPromise.track(
       props.onSubmit(allData, getDirtyFields(allData, form)),
@@ -197,12 +205,75 @@ export function ProjectForm(props: ProjectFormProps) {
     />
   );
 
+  const defaultBillingDueDaysField = (
+    <FormField
+      control={form.control}
+      name="defaultBillingDueDays"
+      rules={{
+        validate: (v) =>
+          Number.isFinite(v) && v >= 0 ? true : "Enter zero or more days",
+      }}
+      render={({ field }) => (
+        <FormItem className={cn(isBulk && "col-span-2 sm:col-span-1")}>
+          <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+            Default billing due (days after iteration end)
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="number"
+              min={0}
+              step={1}
+              onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+              value={Number.isFinite(field.value) ? field.value : ""}
+            />
+          </FormControl>
+          <FormDescription>
+            Used when creating draft billings from reconciliation (due date =
+            iteration end + this many days).
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  const emailReplyInviteField = (
+    <FormField
+      control={form.control}
+      name="emailReplyInviteMessage"
+      render={({ field }) => (
+        <FormItem className="col-span-2">
+          <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+            Report email closing (optional)
+          </FormLabel>
+          <FormControl>
+            <Textarea
+              {...field}
+              rows={3}
+              placeholder="If you need any clarification…"
+            />
+          </FormControl>
+          <FormDescription>
+            Shown in cockpit invoice and reminder emails for reports published
+            from this project. Replaces the full closing paragraph (including
+            “Otherwise, please confirm…” on the invoice). Leave empty for
+            defaults.
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
   const fields = (
     <>
       {workspaceField}
       {clientField}
       {nameField}
       {statusField}
+      {defaultBillingDueDaysField}
+      {emailReplyInviteField}
       {descriptionField}
     </>
   );

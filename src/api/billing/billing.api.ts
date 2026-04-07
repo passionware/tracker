@@ -50,6 +50,8 @@ export interface BillingInvoicePayload {
   clientId: number;
   invoiceNumber: string;
   invoiceDate: CalendarDate;
+  /** Payment due date; optional for legacy rows. */
+  dueDate: CalendarDate | null;
   description: string | null;
   workspaceId: Workspace["id"];
 }
@@ -103,6 +105,7 @@ export type BillingQuery = WithFilters<{
   WithPagination &
   WithSorter<
     | "invoiceDate"
+    | "dueDate"
     | "invoiceNumber"
     | "workspace"
     | "client"
@@ -227,6 +230,7 @@ export const billingQuerySchema = z
           .object({
             field: z.enum([
               "invoiceDate",
+              "dueDate",
               "invoiceNumber",
               "workspace",
               "client",

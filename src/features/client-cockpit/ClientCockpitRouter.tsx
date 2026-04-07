@@ -1,7 +1,9 @@
 import { myRouting } from "@/routing/myRouting.ts";
 import { WithFrontServices } from "@/core/frontServices.ts";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { CockpitLoginPage } from "./CockpitLoginPage";
+import { CockpitPortalClientSettingsPage } from "./pages/CockpitPortalClientSettingsPage";
+import { CockpitPortalProviderSettingsPage } from "./pages/CockpitPortalProviderSettingsPage";
 import { CubeReportsPage } from "./pages/CubeReportsPage";
 import { CubeViewerPage } from "./pages/CubeViewerPage";
 import { PdfExportBuilderPage } from "./pages/PdfExportBuilderPage";
@@ -33,6 +35,46 @@ export function CockpitMainRouter(props: WithFrontServices) {
           myRouting.forClientCockpit().login(),
         )}
         element={<CockpitLoginPage services={props.services} />}
+      />
+
+      <Route
+        path={makeRelativePath(
+          basePath,
+          myRouting.forClientCockpit().forClient().portalClientSettings(),
+        )}
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <CockpitPortalClientSettingsPage services={props.services} />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
+      />
+      <Route
+        path={makeRelativePath(
+          basePath,
+          myRouting.forClientCockpit().forClient().portalProviderSettings(),
+        )}
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <CockpitPortalProviderSettingsPage services={props.services} />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
+      />
+      <Route
+        path={makeRelativePath(
+          basePath,
+          myRouting.forClientCockpit().forClient().tenantSettings(),
+        )}
+        element={
+          <ProtectedCockpitRoute services={props.services}>
+            <Layout sidebarSlot={<CockpitSidebar services={props.services} />}>
+              <CockpitSettingsIndexRedirect />
+            </Layout>
+          </ProtectedCockpitRoute>
+        }
       />
 
       <Route
@@ -115,6 +157,20 @@ export function CockpitMainRouter(props: WithFrontServices) {
         }
       />
     </Routes>
+  );
+}
+
+function CockpitSettingsIndexRedirect() {
+  const { clientId } = useParams<{ clientId: string }>();
+  if (!clientId) return null;
+  return (
+    <Navigate
+      replace
+      to={myRouting
+        .forClientCockpit()
+        .forClient(clientId)
+        .portalClientSettings()}
+    />
   );
 }
 

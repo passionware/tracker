@@ -16,6 +16,7 @@ export const billingMock = createMockFactory<BillingBase>(
     id: faker.number.int(),
     invoiceNumber: faker.string.alphanumeric(),
     invoiceDate: dateToCalendarDate(faker.date.recent()),
+    dueDate: null,
     workspaceId: faker.helpers.arrayElement(
       workspaceMock.static.list.map((w) => w.id),
     ),
@@ -30,6 +31,7 @@ export const billingMock = createMockFactory<BillingBase>(
       workspaceId: workspaceMock.static.list[0].id,
       clientId: 1,
       invoiceDate: parseDate("2021-09-01"),
+      dueDate: null,
       invoiceNumber: "2025/09/01-AS/TW",
       createdAt: new Date("2021-09-01"),
       description: "Test description",

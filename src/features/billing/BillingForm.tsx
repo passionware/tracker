@@ -41,6 +41,7 @@ type FormModel = {
   totalGross: string;
   invoiceNumber: string;
   invoiceDate: CalendarDate | null;
+  dueDate: CalendarDate | null;
   description: string;
 };
 
@@ -54,6 +55,7 @@ export function BillingForm(props: BillingFormProps) {
       totalGross: maybe.mapOrElse(props.defaultValues?.totalGross, String, "0"),
       invoiceNumber: props.defaultValues?.invoiceNumber,
       invoiceDate: props.defaultValues?.invoiceDate,
+      dueDate: props.defaultValues?.dueDate ?? null,
       description: props.defaultValues?.description ?? "",
     },
   });
@@ -70,6 +72,7 @@ export function BillingForm(props: BillingFormProps) {
         data.invoiceDate,
         "Invoice date is required",
       ),
+      dueDate: data.dueDate ?? null,
       description: data.description,
     };
     props.onSubmit(allData, getDirtyFields(allData, form));
@@ -213,6 +216,24 @@ export function BillingForm(props: BillingFormProps) {
                     placeholder="Pick a date"
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Due date</FormLabel>
+                <FormControl>
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Optional"
+                  />
+                </FormControl>
+                <FormDescription>Payment due date (optional)</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

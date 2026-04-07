@@ -104,6 +104,7 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                   <TableHead>Client</TableHead>
                   <TableHead>Invoice number</TableHead>
                   <TableHead>Invoice date</TableHead>
+                  <TableHead>Due date</TableHead>
                   <TableHead>Net Amount</TableHead>
                   <TableHead>Remaining</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -138,6 +139,13 @@ export function InlineBillingSearch(props: InlineBillingSearchProps) {
                       {props.services.formatService.temporal.single.compact(
                         billing.invoiceDate,
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {billing.dueDate
+                        ? props.services.formatService.temporal.single.compact(
+                            billing.dueDate,
+                          )
+                        : "—"}
                     </TableCell>
                     <TableCell>
                       {props.services.formatService.financial.amount(

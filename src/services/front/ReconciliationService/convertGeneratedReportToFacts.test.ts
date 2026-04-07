@@ -48,6 +48,8 @@ describe("convertGeneratedReportToFacts", () => {
     description: null,
     workspaceIds: [1, 2],
     clientId: 10,
+    defaultBillingDueDays: 14,
+    emailReplyInviteMessage: null,
     ...overrides,
   });
 
@@ -394,6 +396,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 240.00 EUR
 
       Total: 1280.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 1280,
@@ -921,6 +924,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 1200.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 1200,
@@ -1003,6 +1007,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 600,
@@ -1028,6 +1033,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS2",
             "totalGross": 600,
@@ -1124,6 +1130,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 600,
@@ -1149,6 +1156,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 800.00 USD
 
       Total: 800.00 USD",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-01-WS1",
             "totalGross": 800,
@@ -1529,6 +1537,7 @@ describe("convertGeneratedReportToFacts", () => {
            Amount: 600.00 EUR
 
       Total: 600.00 EUR",
+            "dueDate": [Date:2024-02-14],
             "invoiceDate": [Date:2024-01-31],
             "invoiceNumber": "DRAFT-BILLING-2024-03-WS1",
             "totalGross": 600,

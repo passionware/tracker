@@ -169,6 +169,12 @@ export function ChargeInfo({
           <div className="flex items-center gap-2">
             <span>Link billing to reports</span>
           </div>
+          <p className="text-sm text-muted-foreground">
+            Payment due:{" "}
+            {billing.dueDate
+              ? services.formatService.temporal.single.compact(billing.dueDate)
+              : "—"}
+          </p>
           <TransferView
             services={services}
             fromAmount={billing.remainingAmount}

@@ -21,6 +21,7 @@ import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { generateSmartReportName } from "@/features/project-iterations/widgets/reportNameUtils.ts";
 import { mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
+import type { CalendarDate } from "@internationalized/date";
 import { LogIn, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -36,6 +37,8 @@ interface PublishToCockpitButtonProps {
   clientSpec: ClientSpec;
   sourceWorkspaceId?: number | null;
   sourceClientId?: number | null;
+  /** When set, stored on published cube meta for cockpit email/PDF; otherwise iteration end + project default due offset. */
+  billingDueDate?: CalendarDate;
   disabled?: boolean;
 }
 
@@ -49,6 +52,7 @@ export function PublishToCockpitButton({
   clientSpec,
   sourceWorkspaceId,
   sourceClientId,
+  billingDueDate,
   disabled = false,
 }: PublishToCockpitButtonProps) {
   // Get cockpit auth info at the top level (hooks must be called at component level)
@@ -56,6 +60,7 @@ export function PublishToCockpitButton({
 
   // Get client and project iteration details for better naming
   const clientData = services.clientService.useClient(clientId);
+  const projectData = services.projectService.useProject(projectId);
   const projectIterationData =
     services.projectIterationService.useProjectIterationDetail(
       report.projectIterationId,
@@ -90,6 +95,8 @@ export function PublishToCockpitButton({
         "Project iteration data is required to publish. Please wait for the page to load.",
       );
 
+      const projectRow = rd.tryGet(projectData);
+
       const cockpitAuthInfo = rd.getOrThrow(
         cockpitAuthState,
         "Cockpit authentication required",
@@ -117,6 +124,15 @@ export function PublishToCockpitButton({
           ? (serializableConfig.meta as Record<string, unknown>)
           : undefined;
 
+      const dueDateForPublish =
+        billingDueDate ??
+        iteration.periodEnd.add({
+          days: Math.max(
+            0,
+            Math.floor(Number(projectRow?.defaultBillingDueDays ?? 14)),
+          ),
+        });
+
       const cubeDataPayload: Record<string, unknown> = {
         data: serializableConfig.data,
         meta: {
@@ -128,6 +144,9 @@ export function PublishToCockpitButton({
             projectId,
             projectIterationId: report.projectIterationId,
             generatedReportId: report.id,
+            emailReplyInviteMessage:
+              projectRow?.emailReplyInviteMessage?.trim() || null,
+            billingDueDate: dueDateForPublish.toString(),
           },
         },
       };

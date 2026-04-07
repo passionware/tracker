@@ -11,6 +11,7 @@ import type {
 import type { FormatService } from "../../../services/FormatService/FormatService";
 import type { CockpitCubeReportWithCreator } from "../../../api/cockpit-cube-reports/cockpit-cube-reports.api";
 import type { CockpitTenant } from "../../../api/cockpit-tenants/cockpit-tenants.api";
+import { readBillingDueDateFromCubeData } from "@/features/_common/Cube/emailReplyInviteCopy";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { Maybe } from "@passionware/monads";
 
@@ -38,6 +39,8 @@ export interface PDFReportMetadata {
     name: string;
     email: string;
   }>;
+  /** From published cube meta (`meta.source.billingDueDate`) when present */
+  paymentDueDate: Maybe<Date>;
 }
 
 /**
@@ -308,21 +311,29 @@ export class PDFReportModelUtils {
     report: CockpitCubeReportWithCreator,
     tenantData: CockpitTenant,
   ): PDFReportMetadata {
+    const dueFromCube = readBillingDueDateFromCubeData(
+      report.cube_data as Record<string, unknown>,
+    );
 
     return {
       title: report.name || "Report",
       description: report.description || undefined,
-      companyName: tenantData?.name || "Passionware Consulting sp. z.o.o.",
+      companyName:
+        tenantData.workspaceName?.trim() ||
+        "Passionware Consulting sp. z.o.o.",
       dateRange: {
         start: calendarDateToJSDate(report.start_date),
         end: calendarDateToJSDate(report.end_date),
       },
       generatedAt: new Date(),
-      logoUrl: tenantData.logo_url,
+      logoUrl: tenantData.workspaceLogoUrl ?? null,
       creator: {
         name: report.creator_name || "Unknown",
         email: report.creator_email || "unknown@example.com",
       },
+      paymentDueDate: dueFromCube
+        ? calendarDateToJSDate(dueFromCube)
+        : null,
     };
   }
 

@@ -6,7 +6,7 @@ import { CockpitTenantService } from "./CockpitTenantService";
 
 export function createCockpitTenantService(
   api: CockpitTenantsApi,
-  client: QueryClient,
+  queryClient: QueryClient,
 ): CockpitTenantService {
   return {
     useTenant: (tenantId) =>
@@ -18,8 +18,14 @@ export function createCockpitTenantService(
             enabled: maybe.isPresent(tenantId),
             queryFn: () => api.getTenant(tenantId!),
           },
-          client,
+          queryClient,
         ),
       ),
+    updateTenantSettings: async (tenantId, payload) => {
+      await api.updateTenantSettings(tenantId, payload);
+      await queryClient.invalidateQueries({
+        queryKey: ["cockpit_tenant", tenantId],
+      });
+    },
   };
 }

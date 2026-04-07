@@ -175,6 +175,7 @@ export function calculateBilling(
     },
     invoiceNumber: billing.invoiceNumber,
     invoiceDate: billing.invoiceDate,
+    dueDate: billing.dueDate,
     description: billing.description,
     paidAt: billing.paidAt,
     paidAtJustification: billing.paidAtJustification,

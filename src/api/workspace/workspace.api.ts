@@ -122,4 +122,5 @@ export const workspaceQuerySchema = z
 export interface WorkspaceApi {
   getWorkspaces: (query: WorkspaceQuery) => Promise<Workspace[]>;
   getWorkspace: (id: Workspace["id"]) => Promise<Workspace>;
+  getWorkspacesForClient: (clientId: number) => Promise<Workspace[]>;
 }

@@ -107,6 +107,7 @@ export function ProjectListWidget(props: ProjectListWidgetProps) {
                     ),
                     clientId: idSpecUtils.switchAll(props.clientId, undefined),
                     status: "draft",
+                    defaultBillingDueDays: 14,
                   }}
                   services={props.services}
                   onSubmit={(data) =>

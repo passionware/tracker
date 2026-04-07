@@ -374,6 +374,12 @@ export async function generatePDFDocument(
             {formatService.temporal.date(metadata.dateRange.start)} -{" "}
             {formatService.temporal.date(metadata.dateRange.end)}
           </Text>
+          {metadata.paymentDueDate ? (
+            <Text style={styles.subtitle}>
+              Payment due{" "}
+              {formatService.temporal.date(metadata.paymentDueDate)}
+            </Text>
+          ) : null}
           <Text style={styles.date}>
             Generated on {formatService.temporal.date(metadata.generatedAt)}
           </Text>
