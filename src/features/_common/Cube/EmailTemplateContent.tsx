@@ -26,6 +26,62 @@ function getInitials(name: string) {
   );
 }
 
+/**
+ * Gmail-safe logo slot: presentation table + valign.
+ * Gmail often ignores max-* on `<img>` unless `width` HTML attr + `display:block` + strong inline caps.
+ */
+function buildEmailImageSlotStyles(
+  maxW: number,
+  maxH: number,
+): {
+  table: CSSProperties;
+  cell: CSSProperties;
+  image: CSSProperties;
+  /** Set on `<img width={…}>` — Gmail commonly uses this to cap rendered width. */
+  imageWidthAttr: number;
+} {
+  return {
+    table: {
+      width: `${maxW}px`,
+      height: `${maxH}px`,
+      maxWidth: `${maxW}px`,
+      maxHeight: `${maxH}px`,
+      borderCollapse: "collapse",
+      borderSpacing: 0,
+      margin: 0,
+      padding: 0,
+      lineHeight: 0,
+    },
+    cell: {
+      width: `${maxW}px`,
+      height: `${maxH}px`,
+      maxWidth: `${maxW}px`,
+      maxHeight: `${maxH}px`,
+      padding: 0,
+      textAlign: "center",
+      verticalAlign: "middle",
+      lineHeight: 0,
+      fontSize: 0,
+      borderRadius: "8px",
+      overflow: "hidden",
+    },
+    image: {
+      display: "block",
+      margin: 0,
+      border: 0,
+      outline: "none",
+      textDecoration: "none",
+      maxWidth: `${maxW}px !important`,
+      maxHeight: `${maxH}px !important`,
+      width: "auto !important",
+      height: "auto !important",
+      objectFit: "contain",
+      objectPosition: "center",
+    },
+    imageWidthAttr: maxW,
+  };
+}
+
 // no-op legacy helper removed (we use FormatService instead)
 
 export function EmailTemplateContent({
@@ -234,17 +290,15 @@ export function EmailTemplateContent({
     marginBottom: "4px",
   };
 
-  const logoImageStyle: CSSProperties = {
-    width: "48px",
-    height: "48px",
-    borderRadius: "8px",
-    objectFit: "contain",
-    display: "block",
-  };
+  /** Hard caps for workspace logo (image + slot share the same bounds). */
+  const EMAIL_WORKSPACE_LOGO_MAX_W_PX = 48;
+  const EMAIL_WORKSPACE_LOGO_MAX_H_PX = 48;
 
   const brandFallbackStyle: CSSProperties = {
-    width: "48px",
-    height: "48px",
+    width: `${EMAIL_WORKSPACE_LOGO_MAX_W_PX}px`,
+    height: `${EMAIL_WORKSPACE_LOGO_MAX_H_PX}px`,
+    maxWidth: `${EMAIL_WORKSPACE_LOGO_MAX_W_PX}px`,
+    maxHeight: `${EMAIL_WORKSPACE_LOGO_MAX_H_PX}px`,
     borderRadius: "8px",
     backgroundColor: "#dbeafe",
     color: "#1d4ed8",
@@ -255,29 +309,25 @@ export function EmailTemplateContent({
     justifyContent: "center",
   };
 
-  const avatarWrapperStyle: CSSProperties = {
-    width: "150px",
-    height: "48px",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  };
+  const workspaceImageSlot = buildEmailImageSlotStyles(
+    EMAIL_WORKSPACE_LOGO_MAX_W_PX,
+    EMAIL_WORKSPACE_LOGO_MAX_H_PX,
+  );
 
-  const avatarImageStyle: CSSProperties = {
-    maxWidth: "100%",
-    maxHeight: "100%",
-    width: "auto",
-    height: "auto",
-    objectFit: "contain",
-    objectPosition: "center",
-    display: "block",
-  };
+  /** Compact vs workspace: wide client wordmarks cap here (image + slot share the same bounds). */
+  const EMAIL_CLIENT_LOGO_MAX_W_PX = 104;
+  const EMAIL_CLIENT_LOGO_MAX_H_PX = 40;
+  const clientImageSlot = buildEmailImageSlotStyles(
+    EMAIL_CLIENT_LOGO_MAX_W_PX,
+    EMAIL_CLIENT_LOGO_MAX_H_PX,
+  );
 
+  const clientFallbackW = Math.min(72, EMAIL_CLIENT_LOGO_MAX_W_PX);
   const avatarFallbackStyle: CSSProperties = {
-    width: "72px",
-    height: "48px",
+    width: `${clientFallbackW}px`,
+    height: `${EMAIL_CLIENT_LOGO_MAX_H_PX}px`,
+    maxWidth: `${clientFallbackW}px`,
+    maxHeight: `${EMAIL_CLIENT_LOGO_MAX_H_PX}px`,
     borderRadius: "8px",
     backgroundColor: "#e2e8f0",
     color: "#0f172a",
@@ -327,29 +377,52 @@ export function EmailTemplateContent({
                           verticalAlign: "middle",
                         }}
                       >
-                        <table width="100%" cellPadding={0} cellSpacing={0}>
+                        <table
+                          width="100%"
+                          cellPadding={0}
+                          cellSpacing={0}
+                          style={{ tableLayout: "fixed" }}
+                        >
                           <tbody>
                             <tr>
                               <td
                                 style={{
-                                  width: "56px",
+                                  width: "72px",
+                                  maxWidth: "72px",
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
+                                  overflow: "hidden",
                                 }}
                               >
-                                {resolvedWorkspaceLogo ? (
-                                  <img
-                                    src={resolvedWorkspaceLogo}
-                                    alt={`${workspaceDisplayName} logo`}
-                                    style={logoImageStyle}
-                                    width={48}
-                                    height={48}
-                                  />
-                                ) : (
-                                  <div style={brandFallbackStyle}>
-                                    {workspaceInitials}
-                                  </div>
-                                )}
+                                <table
+                                  role="presentation"
+                                  cellPadding={0}
+                                  cellSpacing={0}
+                                  style={workspaceImageSlot.table}
+                                >
+                                  <tbody>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        valign="middle"
+                                        style={workspaceImageSlot.cell}
+                                      >
+                                        {resolvedWorkspaceLogo ? (
+                                          <img
+                                            src={resolvedWorkspaceLogo}
+                                            alt={`${workspaceDisplayName} logo`}
+                                            width={workspaceImageSlot.imageWidthAttr}
+                                            style={workspaceImageSlot.image}
+                                          />
+                                        ) : (
+                                          <div style={brandFallbackStyle}>
+                                            {workspaceInitials}
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
                               </td>
                               <td style={{ verticalAlign: "middle" }}>
                                 <div
@@ -395,21 +468,35 @@ export function EmailTemplateContent({
                                   verticalAlign: "middle",
                                 }}
                               >
-                                <div style={avatarWrapperStyle}>
-                                  {clientAvatarSource ? (
-                                    <img
-                                      src={clientAvatarSource}
-                                      alt={`${clientName} avatar`}
-                                      style={avatarImageStyle}
-                                      width={150}
-                                      height={48}
-                                    />
-                                  ) : (
-                                    <div style={avatarFallbackStyle}>
-                                      {clientInitials}
-                                    </div>
-                                  )}
-                                </div>
+                                <table
+                                  role="presentation"
+                                  cellPadding={0}
+                                  cellSpacing={0}
+                                  style={clientImageSlot.table}
+                                >
+                                  <tbody>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        valign="middle"
+                                        style={clientImageSlot.cell}
+                                      >
+                                        {clientAvatarSource ? (
+                                          <img
+                                            src={clientAvatarSource}
+                                            alt={`${clientName} avatar`}
+                                            width={clientImageSlot.imageWidthAttr}
+                                            style={clientImageSlot.image}
+                                          />
+                                        ) : (
+                                          <div style={avatarFallbackStyle}>
+                                            {clientInitials}
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
                               </td>
                               <td
                                 style={{
