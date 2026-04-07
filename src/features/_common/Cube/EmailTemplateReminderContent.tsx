@@ -33,6 +33,8 @@ import {
 } from "./emailReminderTemplateTheme";
 import { DEFAULT_EMAIL_REPLY_INVITE_REMINDER } from "./emailReplyInviteCopy";
 
+/** Gmail-safe HTML: inline styles only when pasted; table layout; avoid flex/grid; use `border={0}` on tables. */
+
 interface EmailTemplateReminderContentProps {
   reportData: CockpitCubeReportWithCreator;
   reportLink?: string;
@@ -263,7 +265,7 @@ export function EmailTemplateReminderContent({
     WebkitFontSmoothing: "antialiased",
   };
   const headerInnerStyle: CSSProperties = {
-    padding: "22px 20px",
+    padding: "24px 26px",
   };
   const primaryInnerStyle: CSSProperties = {
     padding: "22px 22px",
@@ -299,9 +301,10 @@ export function EmailTemplateReminderContent({
     color: emailBrandFallbackFg,
     fontWeight: 700,
     fontSize: "18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    lineHeight: `${EMAIL_WORKSPACE_LOGO_MAX_H_PX}px`,
+    textAlign: "center",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
   };
 
   const workspaceImageSlot = buildEmailImageSlotStyles(
@@ -324,9 +327,10 @@ export function EmailTemplateReminderContent({
     color: "#0f172a",
     fontWeight: 600,
     fontSize: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    lineHeight: `${EMAIL_CLIENT_LOGO_MAX_H_PX}px`,
+    textAlign: "center",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
     textTransform: "uppercase",
   };
 
@@ -376,6 +380,7 @@ export function EmailTemplateReminderContent({
     <div style={containerStyle}>
       <table
         width="100%"
+        border={0}
         cellPadding={0}
         cellSpacing={0}
         style={emailHeaderCardStyle}
@@ -384,7 +389,7 @@ export function EmailTemplateReminderContent({
           <tr>
             <td>
               <div style={headerInnerStyle}>
-                <table width="100%" cellPadding={0} cellSpacing={0}>
+                <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
                   <tbody>
                     <tr>
                       <td
@@ -396,6 +401,7 @@ export function EmailTemplateReminderContent({
                       >
                         <table
                           width="100%"
+                          border={0}
                           cellPadding={0}
                           cellSpacing={0}
                           style={{ tableLayout: "fixed" }}
@@ -404,8 +410,8 @@ export function EmailTemplateReminderContent({
                             <tr>
                               <td
                                 style={{
-                                  width: "72px",
-                                  maxWidth: "72px",
+                                  width: "80px",
+                                  maxWidth: "80px",
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
                                   lineHeight: 0,
@@ -414,6 +420,7 @@ export function EmailTemplateReminderContent({
                               >
                                 <table
                                   role="presentation"
+                                  border={0}
                                   cellPadding={0}
                                   cellSpacing={0}
                                   style={workspaceImageSlot.table}
@@ -478,6 +485,7 @@ export function EmailTemplateReminderContent({
                         }}
                       >
                         <table
+                          border={0}
                           cellPadding={0}
                           cellSpacing={0}
                           style={{ marginLeft: "auto" }}
@@ -494,6 +502,7 @@ export function EmailTemplateReminderContent({
                               >
                                 <table
                                   role="presentation"
+                                  border={0}
                                   cellPadding={0}
                                   cellSpacing={0}
                                   style={clientImageSlot.table}
@@ -552,6 +561,7 @@ export function EmailTemplateReminderContent({
 
       <table
         width="100%"
+        border={0}
         cellPadding={0}
         cellSpacing={0}
         style={emailContentCardLeadStyle}
@@ -672,6 +682,7 @@ export function EmailTemplateReminderContent({
 
       <table
         width="100%"
+        border={0}
         cellPadding={0}
         cellSpacing={0}
         style={emailContentCardStyle}
@@ -681,7 +692,7 @@ export function EmailTemplateReminderContent({
             <td>
               <div style={summaryInnerStyle}>
                 <div style={headingStyle}>Summary</div>
-                <table style={tableStyle}>
+                <table border={0} cellPadding={0} cellSpacing={0} style={tableStyle}>
                   <tbody>
                     {totals.map((total, index) => (
                       <tr key={index} style={rowStyle}>
@@ -722,7 +733,7 @@ export function EmailTemplateReminderContent({
               <td style={emailPrimarySectionDividerStyle}>
                 <div style={summaryInnerStyle}>
                   <div style={headingStyle}>Breakdown by Contractor</div>
-                  <table style={tableStyle}>
+                  <table border={0} cellPadding={0} cellSpacing={0} style={tableStyle}>
                     <tbody>
                       {contractorBreakdown.map((contractor, index) => (
                         <tr key={index} style={rowStyle}>
@@ -755,6 +766,7 @@ export function EmailTemplateReminderContent({
 
       <table
         width="100%"
+        border={0}
         cellPadding={0}
         cellSpacing={0}
         style={{
