@@ -64,5 +64,21 @@ export function createWorkspaceApi(client: SupabaseClient): WorkspaceApi {
         parseWithDataError(z.array(workspace$), data)[0],
       );
     },
+    getWorkspacesForClient: async (clientId) => {
+      const { data, error } = await client
+        .from("link_workspace_client")
+        .select("workspace_id, workspace(*)")
+        .eq("client_id", clientId);
+      if (error) {
+        throw error;
+      }
+      const rows = (data ?? []) as Array<{ workspace: unknown }>;
+      const workspaces = rows
+        .map((r) => r.workspace)
+        .filter((w): w is NonNullable<typeof w> => w != null);
+      return parseWithDataError(z.array(workspace$), workspaces).map(
+        workspaceFromHttp,
+      );
+    },
   };
 }

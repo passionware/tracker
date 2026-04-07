@@ -9,6 +9,12 @@ export const project$ = z.object({
   created_at: z.coerce.date(),
   description: z.string().nullable(),
   client_id: z.number(),
+  default_billing_due_days: z.number().optional().default(14),
+  email_reply_invite_message: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
   link_project_workspace: z.array(
     z.object({
       workspace_id: z.number(),

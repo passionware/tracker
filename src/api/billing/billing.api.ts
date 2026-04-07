@@ -50,6 +50,8 @@ export interface BillingInvoicePayload {
   clientId: number;
   invoiceNumber: string;
   invoiceDate: CalendarDate;
+  /** Payment due date; optional for legacy rows. */
+  dueDate: CalendarDate | null;
   description: string | null;
   workspaceId: Workspace["id"];
 }
