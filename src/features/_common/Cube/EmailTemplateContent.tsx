@@ -3,6 +3,10 @@ import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/Cub
 import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { FormatService } from "@/services/FormatService/FormatService";
+import {
+  DEFAULT_REPORT_FOOTER_BRAND_NAME,
+  DEFAULT_REPORT_FOOTER_PORTAL_URL,
+} from "@/features/client-cockpit/cockpitReportBranding.ts";
 import type { CSSProperties } from "react";
 
 interface EmailTemplateContentProps {
@@ -13,6 +17,8 @@ interface EmailTemplateContentProps {
   workspaceName: string;
   clientDisplayName?: string;
   clientAvatarDataUrl?: string | null;
+  reportFooterBrandName?: string;
+  reportFooterPortalUrl?: string;
 }
 
 function getInitials(name: string) {
@@ -27,8 +33,9 @@ function getInitials(name: string) {
 }
 
 /**
- * Gmail-safe logo slot: presentation table + valign.
- * Gmail often ignores max-* on `<img>` unless `width` HTML attr + `display:block` + strong inline caps.
+ * Gmail-safe logo slot: never set both fixed `width`+`height` on `<img>` — Gmail often ignores
+ * `object-fit` and stretches. Use max bounds + `width`/`height: auto` and only `width` HTML attr
+ * (no `height` attr) so aspect ratio is preserved while Gmail caps display width.
  */
 function buildEmailImageSlotStyles(
   maxW: number,
@@ -37,7 +44,6 @@ function buildEmailImageSlotStyles(
   table: CSSProperties;
   cell: CSSProperties;
   image: CSSProperties;
-  /** Set on `<img width={…}>` — Gmail commonly uses this to cap rendered width. */
   imageWidthAttr: number;
 } {
   return {
@@ -67,7 +73,7 @@ function buildEmailImageSlotStyles(
     },
     image: {
       display: "block",
-      margin: 0,
+      margin: "0 auto",
       border: 0,
       outline: "none",
       textDecoration: "none",
@@ -75,8 +81,6 @@ function buildEmailImageSlotStyles(
       maxHeight: `${maxH}px !important`,
       width: "auto !important",
       height: "auto !important",
-      objectFit: "contain",
-      objectPosition: "center",
     },
     imageWidthAttr: maxW,
   };
@@ -92,6 +96,8 @@ export function EmailTemplateContent({
   workspaceName,
   clientDisplayName,
   clientAvatarDataUrl,
+  reportFooterBrandName = DEFAULT_REPORT_FOOTER_BRAND_NAME,
+  reportFooterPortalUrl = DEFAULT_REPORT_FOOTER_PORTAL_URL,
 }: EmailTemplateContentProps) {
   const cubeConfig = deserializeCubeConfig(
     reportData.cube_config as unknown as SerializableCubeConfig,
@@ -250,44 +256,82 @@ export function EmailTemplateContent({
   const workspaceInitials = getInitials(workspaceDisplayName);
   const clientInitials = getInitials(clientName);
 
+  /** Solid fallback when clients strip `background-image` (e.g. some Outlook). */
+  const emailPageBgColor = "#f1f5f9";
+  const emailPageGradient =
+    "linear-gradient(165deg, #f8fafc 0%, #eef2ff 38%, #e0e7ff 55%, #f1f5f9 100%)";
+
   const containerStyle: CSSProperties = {
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    fontFamily:
+      "'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif",
     color: "#0f172a",
     maxWidth: "640px",
     margin: "0 auto",
     fontSize: "14px",
-    lineHeight: "20px",
+    lineHeight: "1.55",
+    padding: "28px 18px 36px",
+    backgroundColor: emailPageBgColor,
+    backgroundImage: emailPageGradient,
+    WebkitFontSmoothing: "antialiased",
   };
 
-  const cardStyle: CSSProperties = {
+  const cardShellBase: CSSProperties = {
     width: "100%",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    marginBottom: "16px",
+    marginBottom: "18px",
     borderCollapse: "separate",
+    borderRadius: "14px",
   };
+
+  /** Hero header — soft cool gradient; degrades to white if gradient unsupported. */
+  const headerCardStyle: CSSProperties = {
+    ...cardShellBase,
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(145deg, #ffffff 0%, #f8fafc 42%, #eff6ff 85%, #e0f2fe 100%)",
+    border: "1px solid rgba(226, 232, 240, 0.95)",
+    boxShadow:
+      "0 2px 4px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06)",
+  };
+
+  /** Body / summary cards — minimal lift from page background. */
+  const contentCardStyle: CSSProperties = {
+    ...cardShellBase,
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(180deg, #ffffff 0%, #fafbfc 55%, #ffffff 100%)",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05)",
+  };
+
   const headerInnerStyle: CSSProperties = {
-    padding: "16px",
+    padding: "22px 20px",
   };
   const primaryInnerStyle: CSSProperties = {
-    padding: "20px",
+    padding: "22px 22px",
   };
   const summaryInnerStyle: CSSProperties = {
-    padding: "20px",
+    padding: "22px 22px",
+  };
+
+  const primarySectionDividerStyle: CSSProperties = {
+    borderTop: "1px solid #f1f5f9",
   };
 
   const headingStyle: CSSProperties = {
-    fontSize: "18px",
-    fontWeight: 600,
-    margin: "0 0 8px 0",
+    fontSize: "19px",
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+    margin: "0 0 12px 0",
+    color: "#0f172a",
   };
 
   const labelStyle: CSSProperties = {
     textTransform: "uppercase",
     fontSize: "11px",
-    letterSpacing: "0.05em",
+    letterSpacing: "0.08em",
     color: "#64748b",
-    marginBottom: "4px",
+    marginBottom: "6px",
+    fontWeight: 600,
   };
 
   /** Hard caps for workspace logo (image + slot share the same bounds). */
@@ -314,9 +358,9 @@ export function EmailTemplateContent({
     EMAIL_WORKSPACE_LOGO_MAX_H_PX,
   );
 
-  /** Compact vs workspace: wide client wordmarks cap here (image + slot share the same bounds). */
-  const EMAIL_CLIENT_LOGO_MAX_W_PX = 104;
-  const EMAIL_CLIENT_LOGO_MAX_H_PX = 40;
+  /** Client wordmark — keep width modest so header stays balanced next to copy. */
+  const EMAIL_CLIENT_LOGO_MAX_W_PX = 96;
+  const EMAIL_CLIENT_LOGO_MAX_H_PX = 48;
   const clientImageSlot = buildEmailImageSlotStyles(
     EMAIL_CLIENT_LOGO_MAX_W_PX,
     EMAIL_CLIENT_LOGO_MAX_H_PX,
@@ -345,24 +389,41 @@ export function EmailTemplateContent({
     fontWeight: 600,
   };
 
+  /** Pill CTA — Gmail supports linear-gradient on anchors in many builds; solid blue fallback. */
+  const ctaLinkStyle: CSSProperties = {
+    display: "inline-block",
+    padding: "12px 22px",
+    borderRadius: "999px",
+    fontWeight: 600,
+    fontSize: "14px",
+    textDecoration: "none",
+    color: "#ffffff",
+    backgroundColor: "#2563eb",
+    backgroundImage:
+      "linear-gradient(180deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%)",
+    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.35)",
+  };
+
   const tableStyle: CSSProperties = {
     width: "100%",
     borderCollapse: "collapse",
   };
 
   const rowStyle: CSSProperties = {
-    borderBottom: "1px solid #e2e8f0",
+    borderBottom: "1px solid #f1f5f9",
   };
 
   const footerStyle: CSSProperties = {
     textAlign: "center",
-    marginTop: "24px",
-    color: "#475569",
+    marginTop: "8px",
+    color: "#64748b",
+    fontSize: "13px",
+    lineHeight: "1.6",
   };
 
   return (
     <div style={containerStyle}>
-      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={headerCardStyle}>
         <tbody>
           <tr>
             <td>
@@ -391,7 +452,9 @@ export function EmailTemplateContent({
                                   maxWidth: "72px",
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
-                                  overflow: "hidden",
+                                  /* Inherited page line-height (1.55) inflates image row in Gmail */
+                                  lineHeight: 0,
+                                  fontSize: 0,
                                 }}
                               >
                                 <table
@@ -429,16 +492,18 @@ export function EmailTemplateContent({
                                   style={{
                                     fontSize: "22px",
                                     fontWeight: 700,
-                                    color: "#2563eb",
+                                    letterSpacing: "-0.03em",
+                                    color: "#1d4ed8",
                                   }}
                                 >
                                   {workspaceDisplayName}
                                 </div>
                                 <div
                                   style={{
-                                    color: "#475569",
+                                    color: "#64748b",
                                     fontWeight: 500,
-                                    marginTop: "4px",
+                                    marginTop: "6px",
+                                    fontSize: "13px",
                                   }}
                                 >
                                   Time &amp; Budget Report
@@ -466,6 +531,8 @@ export function EmailTemplateContent({
                                 style={{
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
+                                  lineHeight: 0,
+                                  fontSize: 0,
                                 }}
                               >
                                 <table
@@ -524,20 +591,20 @@ export function EmailTemplateContent({
         </tbody>
       </table>
 
-      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={contentCardStyle}>
         <tbody>
           <tr>
             <td>
               <div style={primaryInnerStyle}>
                 <div style={labelStyle}>Period</div>
-                <div style={{ fontWeight: 600 }}>
+                <div style={{ fontWeight: 600, fontSize: "15px", color: "#0f172a" }}>
                   {from} &nbsp;—&nbsp; {to}
                 </div>
               </div>
             </td>
           </tr>
           <tr>
-            <td>
+            <td style={primarySectionDividerStyle}>
               <div style={primaryInnerStyle}>
                 <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Hello,</p>
                 <p style={{ margin: "0 0 8px 0" }}>
@@ -557,11 +624,11 @@ export function EmailTemplateContent({
           </tr>
           {reportLink && (
             <tr>
-              <td>
+              <td style={primarySectionDividerStyle}>
                 <div style={primaryInnerStyle}>
                   <a
                     href={reportLink}
-                    style={linkStyle}
+                    style={ctaLinkStyle}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -574,7 +641,7 @@ export function EmailTemplateContent({
         </tbody>
       </table>
 
-      <table width="100%" cellPadding={0} cellSpacing={0} style={cardStyle}>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={contentCardStyle}>
         <tbody>
           <tr>
             <td>
@@ -602,8 +669,9 @@ export function EmailTemplateContent({
                           style={{
                             padding: "8px 0",
                             textAlign: "right",
-                            fontWeight: 600,
-                            color: "#2563eb",
+                            fontWeight: 700,
+                            color: "#1d4ed8",
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {total.value}
@@ -617,7 +685,7 @@ export function EmailTemplateContent({
           </tr>
           {contractorBreakdown.length > 0 && (
             <tr>
-              <td>
+              <td style={primarySectionDividerStyle}>
                 <div style={summaryInnerStyle}>
                   <div style={headingStyle}>Breakdown by Contractor</div>
                   <table style={tableStyle}>
@@ -650,7 +718,14 @@ export function EmailTemplateContent({
         width="100%"
         cellPadding={0}
         cellSpacing={0}
-        style={{ ...cardStyle, border: 0 }}
+        style={{
+          ...cardShellBase,
+          marginBottom: 0,
+          backgroundColor: "transparent",
+          backgroundImage: "none",
+          border: "none",
+          boxShadow: "none",
+        }}
       >
         <tbody>
           <tr>
@@ -664,13 +739,13 @@ export function EmailTemplateContent({
               >
                 <p style={{ margin: "0 0 4px 0" }}>Best regards,</p>
                 <p style={{ margin: "0 0 4px 0", fontWeight: 600 }}>
-                  Passionware Consulting
+                  {reportFooterBrandName}
                 </p>
                 <p style={{ margin: "0 0 4px 0", color: "#2563eb" }}>
                   Time &amp; Budget Report
                 </p>
-                <a href="https://passionware.dev" style={linkStyle}>
-                  https://passionware.dev
+                <a href={reportFooterPortalUrl} style={linkStyle}>
+                  {reportFooterPortalUrl}
                 </a>
               </div>
             </td>
