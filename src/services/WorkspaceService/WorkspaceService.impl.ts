@@ -3,7 +3,7 @@ import { Workspace, WorkspaceApi } from "@/api/workspace/workspace.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery.ts";
 import { WorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
-import { maybe } from "@passionware/monads";
+import { maybe, Maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 
 export function createWorkspaceService(

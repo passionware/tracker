@@ -30,5 +30,13 @@ export function createWorkspaceService(): WorkspaceService {
           ),
         rd.ofIdle(),
       ),
+    useWorkspacesForClient: (clientId) =>
+      maybe.mapOrElse(
+        clientId,
+        () =>
+          // Workspace has no clientId; real API uses link_workspace_client. Stub: all mock workspaces.
+          rd.of(workspaceMock.static.list),
+        rd.ofIdle(),
+      ),
   };
 }

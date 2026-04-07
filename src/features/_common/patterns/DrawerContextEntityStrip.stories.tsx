@@ -24,6 +24,8 @@ const demoProject = {
   workspaceIds: [7],
   clientId: demoClient.id,
   createdAt: new Date("2024-01-01"),
+  defaultBillingDueDays: 14,
+  emailReplyInviteMessage: null,
 } satisfies Project;
 
 const services = {
