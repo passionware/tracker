@@ -108,6 +108,7 @@ export function createBillingApi(client: SupabaseClient): BillingApi {
       if (query.sort) {
         request = sorterSupabaseUtils.sort(request, query.sort, {
           invoiceDate: "invoice_date",
+          dueDate: "due_date",
           invoiceNumber: "invoice_number",
           client: "client(name)",
           workspace: "workspace(name)",

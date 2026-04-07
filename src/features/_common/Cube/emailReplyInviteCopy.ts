@@ -1,3 +1,5 @@
+import { CalendarDate, parseDate } from "@internationalized/date";
+
 /** Full closing paragraph in the invoice email (custom text replaces this whole block). */
 export const DEFAULT_EMAIL_REPLY_INVITE_INVOICE =
   "If anything needs clarification, reply to this email. Otherwise, please confirm so we can issue the invoice(s).";
@@ -20,4 +22,25 @@ export function readEmailReplyInviteMessageFromCubeData(
   if (typeof raw !== "string") return null;
   const t = raw.trim();
   return t.length > 0 ? t : null;
+}
+
+/**
+ * Payment due date set at publish time (`cube_data.meta.source.billingDueDate`, `YYYY-MM-DD`).
+ */
+export function readBillingDueDateFromCubeData(
+  cubeData: Record<string, unknown>,
+): CalendarDate | null {
+  const meta = cubeData.meta;
+  if (!meta || typeof meta !== "object") return null;
+  const source = (meta as Record<string, unknown>).source;
+  if (!source || typeof source !== "object") return null;
+  const raw = (source as Record<string, unknown>).billingDueDate;
+  if (typeof raw !== "string") return null;
+  const t = raw.trim();
+  if (!t) return null;
+  try {
+    return parseDate(t);
+  } catch {
+    return null;
+  }
 }

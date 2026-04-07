@@ -60,6 +60,11 @@ export function useBillingPaymentMatcherColumns(args: {
                       {formatDate(b.invoiceDate)}
                     </span>
                   </MatcherDateField>
+                  <MatcherDateField label="Payment due">
+                    <span className="tabular-nums text-sm leading-none text-foreground">
+                      {b.dueDate ? formatDate(b.dueDate) : "—"}
+                    </span>
+                  </MatcherDateField>
                   {b.client.name?.trim() ? (
                     <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
                       {b.client.name.trim()}

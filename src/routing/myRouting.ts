@@ -132,6 +132,10 @@ export const myRouting = {
     forClient: (clientId: string | ":clientId" = ":clientId") => ({
       root: () => `/c/${clientId}`,
       reports: () => `/c/${clientId}/reports`,
+      /** Index; redirects to portal client settings. */
+      tenantSettings: () => `/c/${clientId}/settings`,
+      portalClientSettings: () => `/c/${clientId}/settings/client`,
+      portalProviderSettings: () => `/c/${clientId}/settings/provider`,
       forReport: (reportId: string | ":reportId" = ":reportId") => ({
         root: () => `/c/${clientId}/reports/${reportId}`,
         preview: () => `/c/${clientId}/reports/${reportId}/preview`,

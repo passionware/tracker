@@ -87,6 +87,15 @@ export function BillingPreview({ services, billingId }: BillingPreviewProps) {
               </span>
             </div>
 
+            <div className="flex justify-between">
+              <span className="text-slate-500">Payment due:</span>
+              <span className="font-medium text-xs">
+                {billing.dueDate
+                  ? services.formatService.temporal.date(billing.dueDate)
+                  : "—"}
+              </span>
+            </div>
+
             {billing.description && (
               <div className="pt-2 border-t border-slate-200">
                 <div className="text-xs text-slate-500">

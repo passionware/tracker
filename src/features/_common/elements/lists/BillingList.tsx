@@ -57,6 +57,7 @@ export function BillingList(props: BillingListProps) {
         ...billingColumns.getContextual(props.context),
         billingColumns.invoiceNumber,
         billingColumns.invoiceDate(props.services),
+        billingColumns.dueDate(props.services),
         billingColumns.report.linkingStatus.read,
         billingColumns.report.linkedValue(props.services),
         billingColumns.netAmount(props.services),

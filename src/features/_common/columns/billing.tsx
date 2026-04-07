@@ -68,6 +68,9 @@ export const billingColumns = {
           ? services.formatService.temporal.single.compact(d)
           : "—";
       },
+      meta: {
+        sortKey: "dueDate",
+      },
     }),
   paidStatus: (services: WithFormatService) =>
     getColumnHelper<BillingViewEntry>().display({

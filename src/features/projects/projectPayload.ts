@@ -8,5 +8,7 @@ export function projectPayloadFromProject(project: Project): ProjectPayload {
     description: project.description,
     clientId: project.clientId,
     workspaceIds: project.workspaceIds,
+    defaultBillingDueDays: project.defaultBillingDueDays,
+    emailReplyInviteMessage: project.emailReplyInviteMessage,
   };
 }

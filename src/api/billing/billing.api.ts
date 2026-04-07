@@ -105,6 +105,7 @@ export type BillingQuery = WithFilters<{
   WithPagination &
   WithSorter<
     | "invoiceDate"
+    | "dueDate"
     | "invoiceNumber"
     | "workspace"
     | "client"
@@ -229,6 +230,7 @@ export const billingQuerySchema = z
           .object({
             field: z.enum([
               "invoiceDate",
+              "dueDate",
               "invoiceNumber",
               "workspace",
               "client",

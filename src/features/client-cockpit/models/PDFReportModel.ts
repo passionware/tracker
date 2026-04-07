@@ -11,6 +11,7 @@ import type {
 import type { FormatService } from "../../../services/FormatService/FormatService";
 import type { CockpitCubeReportWithCreator } from "../../../api/cockpit-cube-reports/cockpit-cube-reports.api";
 import type { CockpitTenant } from "../../../api/cockpit-tenants/cockpit-tenants.api";
+import { readBillingDueDateFromCubeData } from "@/features/_common/Cube/emailReplyInviteCopy";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { Maybe } from "@passionware/monads";
 
@@ -38,6 +39,8 @@ export interface PDFReportMetadata {
     name: string;
     email: string;
   }>;
+  /** From published cube meta (`meta.source.billingDueDate`) when present */
+  paymentDueDate: Maybe<Date>;
 }
 
 /**
@@ -308,6 +311,9 @@ export class PDFReportModelUtils {
     report: CockpitCubeReportWithCreator,
     tenantData: CockpitTenant,
   ): PDFReportMetadata {
+    const dueFromCube = readBillingDueDateFromCubeData(
+      report.cube_data as Record<string, unknown>,
+    );
 
     return {
       title: report.name || "Report",
@@ -325,6 +331,9 @@ export class PDFReportModelUtils {
         name: report.creator_name || "Unknown",
         email: report.creator_email || "unknown@example.com",
       },
+      paymentDueDate: dueFromCube
+        ? calendarDateToJSDate(dueFromCube)
+        : null,
     };
   }
 

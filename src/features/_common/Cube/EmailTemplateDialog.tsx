@@ -21,7 +21,10 @@ import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { readEmailReplyInviteMessageFromCubeData } from "./emailReplyInviteCopy";
+import {
+  readBillingDueDateFromCubeData,
+  readEmailReplyInviteMessageFromCubeData,
+} from "./emailReplyInviteCopy";
 
 interface EmailTemplateDialogProps {
   reportData: CockpitCubeReportWithCreator;
@@ -68,6 +71,15 @@ export function EmailTemplateDialog({
   const [invoiceDueDate, setInvoiceDueDate] = useState<Maybe<CalendarDate>>(
     maybe.of(today(getLocalTimeZone())),
   );
+
+  useEffect(() => {
+    const fromPublish = readBillingDueDateFromCubeData(
+      reportData.cube_data as Record<string, unknown>,
+    );
+    setInvoiceDueDate(
+      maybe.of(fromPublish ?? today(getLocalTimeZone())),
+    );
+  }, [reportData.id]);
 
   const convertSvgDataUrlToPng = (dataUrl: string) =>
     new Promise<string>((resolve) => {
