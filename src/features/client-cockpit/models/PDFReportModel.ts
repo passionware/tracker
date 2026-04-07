@@ -312,13 +312,15 @@ export class PDFReportModelUtils {
     return {
       title: report.name || "Report",
       description: report.description || undefined,
-      companyName: tenantData?.name || "Passionware Consulting sp. z.o.o.",
+      companyName:
+        tenantData.workspaceName?.trim() ||
+        "Passionware Consulting sp. z.o.o.",
       dateRange: {
         start: calendarDateToJSDate(report.start_date),
         end: calendarDateToJSDate(report.end_date),
       },
       generatedAt: new Date(),
-      logoUrl: tenantData.logo_url,
+      logoUrl: tenantData.workspaceLogoUrl ?? null,
       creator: {
         name: report.creator_name || "Unknown",
         email: report.creator_email || "unknown@example.com",
