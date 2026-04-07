@@ -6,9 +6,10 @@ export const EMAIL_CLIENT_LOGO_MAX_W_PX = 96;
 export const EMAIL_CLIENT_LOGO_MAX_H_PX = 48;
 
 /**
- * Gmail-safe logo slot: never set both fixed `width`+`height` on `<img>` — Gmail often ignores
- * `object-fit` and stretches. Use max bounds + `width`/`height: auto` and only `width` HTML attr
- * (no `height` attr) so aspect ratio is preserved while Gmail caps display width.
+ * Gmail-safe logo slot: use `<img src>` (Gmail strips many `background-image` on divs, esp. data URLs).
+ * Never set both fixed `width`+`height` on `<img>` — Gmail often ignores `object-fit` and stretches.
+ * Use max bounds + `width`/`height: auto` and only `width` HTML attr (no `height` attr) so aspect
+ * ratio is preserved while Gmail caps display width.
  */
 export function buildEmailImageSlotStyles(
   maxW: number,

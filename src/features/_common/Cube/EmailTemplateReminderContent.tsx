@@ -389,10 +389,17 @@ export function EmailTemplateReminderContent({
           <tr>
             <td>
               <div style={headerInnerStyle}>
-                <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
+                <table
+                  width="100%"
+                  border={0}
+                  cellPadding={0}
+                  cellSpacing={0}
+                  style={{ tableLayout: "fixed", width: "100%" }}
+                >
                   <tbody>
                     <tr>
                       <td
+                        width="50%"
                         style={{
                           width: "50%",
                           paddingRight: "12px",
@@ -478,22 +485,31 @@ export function EmailTemplateReminderContent({
                         </table>
                       </td>
                       <td
+                        width="50%"
+                        align="right"
+                        valign="middle"
                         style={{
                           width: "50%",
                           verticalAlign: "middle",
                           textAlign: "right",
                         }}
                       >
+                        {/* `margin: auto` on nested tables is stripped in Gmail; `align="right"` is reliable */}
                         <table
+                          align="right"
                           border={0}
                           cellPadding={0}
                           cellSpacing={0}
-                          style={{ marginLeft: "auto" }}
+                          style={{ width: "auto" }}
                         >
                           <tbody>
                             <tr>
                               <td
+                                width={EMAIL_CLIENT_LOGO_MAX_W_PX}
+                                valign="middle"
                                 style={{
+                                  width: `${EMAIL_CLIENT_LOGO_MAX_W_PX}px`,
+                                  maxWidth: `${EMAIL_CLIENT_LOGO_MAX_W_PX}px`,
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
                                   lineHeight: 0,
@@ -534,9 +550,12 @@ export function EmailTemplateReminderContent({
                                 </table>
                               </td>
                               <td
+                                valign="middle"
                                 style={{
                                   verticalAlign: "middle",
                                   textAlign: "left",
+                                  fontSize: "14px",
+                                  lineHeight: 1.45,
                                 }}
                               >
                                 <div style={labelStyle}>Client</div>
