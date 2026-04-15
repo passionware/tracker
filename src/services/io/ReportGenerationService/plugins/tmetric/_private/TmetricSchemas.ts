@@ -52,7 +52,7 @@ export const zTMetricTimeEntry = z.object({
   isBillable: z.boolean(),
   isInvoiced: z.boolean(),
   startTime: z.string(), // ISO format
-  endTime: z.string().nullable(), // ISO format or null if running; we will filter these out
+  endTime: z.string().nullable(), // ISO format or null while timer is running
 });
 
 export type TMetricTimeEntry = z.infer<typeof zTMetricTimeEntry>;

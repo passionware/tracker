@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mockTmetricResponse } from "./__test__/mock-tmetric-response.ts";
 import type { TMetricAdapterInput } from "./TmetricAdapter.ts";
 import { adaptTMetricToGeneric, inferActivity } from "./TmetricAdapter.ts";
@@ -169,6 +169,31 @@ describe("TmetricAdapter", () => {
       expect(result.definitions.taskTypes[timeEntry.taskId]?.name).toBe(
         "Unnamed task",
       );
+    });
+
+    it("should map running timers (null endTime) to endAt at current time", () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date("2025-10-01T14:00:00.000Z"));
+
+        const running: TMetricTimeEntry[] = [
+          {
+            ...mockTmetricResponse[0],
+            startTime: "2025-10-01T12:00:00.000Z",
+            endTime: null,
+          },
+        ];
+
+        const result = adaptTMetricToGeneric(createMockInput(running));
+        const timeEntry = result.timeEntries[0];
+
+        expect(timeEntry.endAt.toISOString()).toBe("2025-10-01T14:00:00.000Z");
+        expect(timeEntry.updatedAt.toISOString()).toBe(
+          "2025-10-01T14:00:00.000Z",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("should handle entries with whitespace-only notes", () => {
