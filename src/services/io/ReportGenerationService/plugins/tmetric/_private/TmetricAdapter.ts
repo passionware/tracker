@@ -275,8 +275,8 @@ export function adaptTMetricToGeneric(
           throw new Error("Invalid end time");
         }
       } else {
-        // If no end time, use start time + 1 hour as fallback
-        endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+        // Running timer: provisional end at "now" so reported duration matches elapsed time.
+        endAt = new Date(Math.max(Date.now(), startAt.getTime()));
       }
     } catch {
       // Fallback to start time + 1 hour

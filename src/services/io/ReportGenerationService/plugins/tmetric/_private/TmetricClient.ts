@@ -87,10 +87,12 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
 
       const data = await get(url, config.token, zTMetricEntriesResponse);
 
-      // Filter out running entries without endTime and normalize note to required string
-      let filteredData = data
-        .filter((e) => !!e.endTime)
-        .map((e) => ({ ...e, note: e.note ?? "", tags: e.tags ?? [] }));
+      // Keep running entries (endTime null); adapter maps them to a provisional end time.
+      let filteredData = data.map((e) => ({
+        ...e,
+        note: e.note ?? "",
+        tags: e.tags ?? [],
+      }));
 
       // Client-side filtering by project IDs if specified
       if (projectIds && projectIds.length > 0) {
