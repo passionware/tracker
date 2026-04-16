@@ -193,6 +193,11 @@ export interface ReportDisplayService {
    */
   useReportEntry: (id: Maybe<Report["id"]>) => RemoteData<ReportViewEntry>;
   /**
+   * Loads reports and workspaces from the API/cache and builds view entries
+   * (e.g. opening bulk create cost from outside the reports list query).
+   */
+  ensureReportViewEntries: (ids: number[]) => Promise<ReportViewEntry[]>;
+  /**
    * Returns a single billing view entry by id (for detail views).
    */
   useBillingEntry: (id: Maybe<Billing["id"]>) => RemoteData<BillingViewEntry>;

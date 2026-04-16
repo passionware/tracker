@@ -4,7 +4,11 @@ import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { useBillingEntryFromData, useBillingView } from "@/services/front/ReportDisplayService/_private/billing.ts";
 import { useCostEntryFromData, useCostView } from "@/services/front/ReportDisplayService/_private/cost.ts";
-import { useReportEntryFromData, useReportView } from "@/services/front/ReportDisplayService/_private/report.ts";
+import {
+  calculateReportEntry,
+  useReportEntryFromData,
+  useReportView,
+} from "@/services/front/ReportDisplayService/_private/report.ts";
 import { ReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -51,6 +55,21 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
       return useReportEntryFromData(report, workspaces);
+    },
+    ensureReportViewEntries: async (ids: number[]) => {
+      if (ids.length === 0) return [];
+      const reports = await Promise.all(
+        ids.map((id) => config.services.reportService.ensureReport(id)),
+      );
+      const workspaceIds = [...new Set(reports.map((r) => r.workspaceId))];
+      const workspaces = await Promise.all(
+        workspaceIds.map((wid) =>
+          config.services.workspaceService.ensureWorkspace(wid),
+        ),
+      );
+      return reports.map((report) =>
+        calculateReportEntry(report, workspaces),
+      );
     },
     useBillingEntry: (id: Maybe<number>) => {
       const billing = config.services.billingService.useBilling(id);

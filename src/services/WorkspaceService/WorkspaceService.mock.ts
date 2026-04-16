@@ -16,6 +16,11 @@ function filterWorkspacesByQuery(
 export function createWorkspaceService(): WorkspaceService {
   return {
     useWorkspaces: (query) => rd.of(filterWorkspacesByQuery(query)),
+    ensureWorkspace: async (id) =>
+      maybe.getOrThrow(
+        workspaceMock.static.list.find((workspace) => workspace.id === id),
+        "Workspace not found",
+      ),
     useWorkspace: (id) =>
       maybe.mapOrElse(
         id,

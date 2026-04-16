@@ -64,6 +64,13 @@ export function createWorkspaceService(
         ),
       ),
 
+    ensureWorkspace: (id) =>
+      queryClient.ensureQueryData({
+        queryKey: ["workspace", "item", id],
+        queryFn: () => api.getWorkspace(id),
+        staleTime: 10 * 60 * 1000,
+      }),
+
     useWorkspacesForClient: (clientId: Maybe<Client["id"]>) =>
       ensureIdleQuery(
         clientId,
