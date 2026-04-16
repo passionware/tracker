@@ -322,30 +322,59 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         }
 
         if (absY > 0) {
-          setVerticalScrollOffset((prev) => {
-            const containerHeight = containerRef.current?.clientHeight || 0;
-            const preview = previewItemRef.current;
-            const merged = readMergedItems();
-            const totalHeight = totalLanesHeight(
-              visibleLaneRows,
-              preview,
-              (laneId, p) => {
-                const laneRow = visibleLaneRows.find((l) => l.id === laneId);
-                return getLaneHeightForPreview(
-                  merged,
-                  laneId,
-                  p,
-                  laneRow?.minTrackHeightPx,
-                  readMinimizedLaneIds(),
-                );
-              },
+          const containerHeight = containerRef.current?.clientHeight || 0;
+          const preview = previewItemRef.current;
+          const merged = readMergedItems();
+          const totalHeight = totalLanesHeight(
+            visibleLaneRows,
+            preview,
+            (laneId, p) => {
+              const laneRow = visibleLaneRows.find((l) => l.id === laneId);
+              return getLaneHeightForPreview(
+                merged,
+                laneId,
+                p,
+                laneRow?.minTrackHeightPx,
+                readMinimizedLaneIds(),
+              );
+            },
+          );
+          const maxOffset = verticalScrollMaxOffset(
+            totalHeight,
+            containerHeight,
+          );
+          const currentV = readVerticalScroll();
+          const noVerticalScroll = maxOffset <= 0;
+          const atTop = currentV <= 0;
+          const atBottom = currentV >= maxOffset - 0.5;
+          const dyWantsUp = dy < 0;
+          const dyWantsDown = dy > 0;
+          const verticalStuck =
+            noVerticalScroll ||
+            (atTop && dyWantsUp) ||
+            (atBottom && dyWantsDown);
+
+          if (verticalStuck) {
+            if (!rect) return;
+            const mouseX =
+              e.clientX - rect.left - store.get(atoms.laneSidebarWidthPxAtom);
+            const ppm = pixelsPerMinuteFromZoom(zoom);
+            const timeAtMouse = (mouseX - scrollOffset) / ppm;
+            const zoomFactor = dy > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(
+              TIMELINE_ZOOM_MIN,
+              Math.min(TIMELINE_ZOOM_MAX, zoom * zoomFactor),
             );
-            const maxOffset = verticalScrollMaxOffset(
-              totalHeight,
-              containerHeight,
-            );
-            return Math.max(0, Math.min(maxOffset, prev + dy));
-          });
+            const newScrollOffset =
+              mouseX - timeAtMouse * pixelsPerMinuteFromZoom(newZoom);
+            setZoom(newZoom);
+            setScrollOffset(newScrollOffset);
+            return;
+          }
+
+          setVerticalScrollOffset((prev) =>
+            Math.max(0, Math.min(maxOffset, prev + dy)),
+          );
         }
       }
     },
@@ -359,6 +388,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       atoms.visibleLaneRowsAtom,
       atoms.laneSidebarWidthPxAtom,
       atoms.scrollOffsetAtom,
+      atoms.verticalScrollOffsetAtom,
       atoms.zoomAtom,
       atoms.mergedItemsAtom,
     ],
