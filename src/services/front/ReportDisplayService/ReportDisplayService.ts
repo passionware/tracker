@@ -193,10 +193,11 @@ export interface ReportDisplayService {
    */
   useReportEntry: (id: Maybe<Report["id"]>) => RemoteData<ReportViewEntry>;
   /**
-   * Loads reports and workspaces from the API/cache and builds view entries
-   * (e.g. opening bulk create cost from outside the reports list query).
+   * View entries for specific report ids (TanStack cache via `useReport` keys per id).
    */
-  ensureReportViewEntries: (ids: number[]) => Promise<ReportViewEntry[]>;
+  useReportViewEntriesByIds: (
+    ids: Maybe<Report["id"][]>,
+  ) => RemoteData<ReportViewEntry[]>;
   /**
    * Returns a single billing view entry by id (for detail views).
    */

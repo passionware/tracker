@@ -9,6 +9,7 @@ export function createReportService(): ReportService {
     useReport: () => {
       return rd.ofError(new Error("Not implemented"));
     },
+    useReportsByIds: () => rd.of([]),
     ensureReport: () => {
       throw new Error("Not implemented");
     },

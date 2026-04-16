@@ -1,5 +1,5 @@
 import { workspaceQueryUtils } from "@/api/workspace/workspace.api.ts";
-import { Maybe } from "@passionware/monads";
+import { Maybe, rd } from "@passionware/monads";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { useBillingEntryFromData, useBillingView } from "@/services/front/ReportDisplayService/_private/billing.ts";
@@ -56,19 +56,15 @@ export function createReportDisplayService(
       );
       return useReportEntryFromData(report, workspaces);
     },
-    ensureReportViewEntries: async (ids: number[]) => {
-      if (ids.length === 0) return [];
-      const reports = await Promise.all(
-        ids.map((id) => config.services.reportService.ensureReport(id)),
+    useReportViewEntriesByIds: (ids: Maybe<number[]>) => {
+      const reportsRd = config.services.reportService.useReportsByIds(ids);
+      const workspaces = config.services.workspaceService.useWorkspaces(
+        workspaceQueryUtils.ofEmpty(),
       );
-      const workspaceIds = [...new Set(reports.map((r) => r.workspaceId))];
-      const workspaces = await Promise.all(
-        workspaceIds.map((wid) =>
-          config.services.workspaceService.ensureWorkspace(wid),
-        ),
-      );
-      return reports.map((report) =>
-        calculateReportEntry(report, workspaces),
+      return rd.useMemoMap(
+        rd.useCombine({ reports: reportsRd, workspaces }),
+        ({ reports, workspaces: ws }) =>
+          reports.map((report) => calculateReportEntry(report, ws)),
       );
     },
     useBillingEntry: (id: Maybe<number>) => {

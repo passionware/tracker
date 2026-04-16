@@ -1,9 +1,9 @@
 import { ReportApi } from "@/api/reports/reports.api.ts";
 import { MessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { ReportService } from "@/services/io/ReportService/ReportService.ts";
-import { QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryClient, useQueries, useQuery } from "@tanstack/react-query";
 import { ensureIdleQuery } from "../_common/ensureIdleQuery";
-import { maybe } from "@passionware/monads";
+import { maybe, rd } from "@passionware/monads";
 
 export function createReportService(
   api: ReportApi,
@@ -42,6 +42,22 @@ export function createReportService(
           },
           client,
         ),
+      );
+    },
+    useReportsByIds: (ids) => {
+      const idList = maybe.mapOrElse(ids, (list) => list, [] as number[]);
+      const results = useQueries(
+        {
+          queries: idList.map((id) => ({
+            queryKey: ["contractor_report", "item", id],
+            queryFn: () => api.getReport(id),
+          })),
+        },
+        client,
+      );
+      return rd.useMemoMap(
+        ensureIdleQuery(ids, rd.combineAll(results)),
+        (reports) => reports,
       );
     },
     ensureReport: (id) => {
