@@ -14,6 +14,7 @@ import {
   useSyncTimelineAtoms,
   useTimelineState,
   type TimelineItem,
+  type TimelineTimeRangeShadow,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import {
   ITEM_COLORS,
@@ -507,6 +508,17 @@ export function TmetricLiveContractorsTimeline({
     };
   }, [panel.fetchedAt, timeZone]);
 
+  /** Dim outside the last-24h “live” window: older than 24h, and future from panel snapshot time. */
+  const timeRangeShadows = useMemo((): TimelineTimeRangeShadow[] => {
+    const nowMs = readTimeMs(panel.fetchedAt) ?? Date.now();
+    const last24hStartMs = nowMs - 24 * 60 * 60 * 1000;
+    const grey = "bg-zinc-500/20";
+    return [
+      { start: null, end: fromAbsolute(last24hStartMs, timeZone), className: grey },
+      { start: fromAbsolute(nowMs, timeZone), end: null, className: grey },
+    ];
+  }, [panel.fetchedAt, timeZone]);
+
   const timelineState = useTimelineState<TmetricLiveBarData, TmetricLiveLaneMeta>({
     defaultSnapOption: "15min",
   });
@@ -554,6 +566,7 @@ export function TmetricLiveContractorsTimeline({
           viewportRange,
           itemActivateTrigger: "click",
         }}
+        timeRangeShadows={timeRangeShadows}
         renderItem={(itemProps) => <TmetricReadOnlyBar {...itemProps} />}
       />
     </div>

@@ -169,6 +169,7 @@ type ScrollableMainProps<
   | "renderDrawingPreviewLabel"
   | "renderLaneLabel"
   | "hideLaneControls"
+  | "timeRangeShadows"
 > & {
   toggleLaneExpanded: (laneId: string) => void;
   toggleLaneMinimized: (laneId: string) => void;
@@ -190,6 +191,7 @@ function TimelineScrollableMainInner<
     onItemHover,
     isEventSelected,
     renderDrawingPreviewLabel,
+    timeRangeShadows,
   } = props;
 
   return (
@@ -211,6 +213,7 @@ function TimelineScrollableMainInner<
         isEventSelected={isEventSelected}
         renderDrawingPreviewLabel={renderDrawingPreviewLabel}
         itemActivateTrigger={itemActivateTrigger}
+        timeRangeShadows={timeRangeShadows}
       />
       <TimelineNowIndicator />
     </TimelineScrollSurface>
@@ -257,6 +260,7 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
               renderDrawingPreviewLabel={props.renderDrawingPreviewLabel}
               renderLaneLabel={props.renderLaneLabel}
               hideLaneControls={props.hideLaneControls}
+              timeRangeShadows={props.timeRangeShadows}
               toggleLaneExpanded={props.state.toggleLaneExpanded}
               toggleLaneMinimized={props.state.toggleLaneMinimized}
               itemActivateTrigger={

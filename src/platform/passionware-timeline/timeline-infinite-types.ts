@@ -2,10 +2,24 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type {
   DrawingPreviewLabelParams,
   TimelineItem,
+  TimelineTemporal,
 } from "./passionware-timeline-core.ts";
 import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 import type { TimelineStateApi } from "./use-timeline-state.ts";
 import type { UseTimelineInteractionsOptions } from "./use-timeline-interactions.ts";
+
+/**
+ * Paints a horizontal band on the **tracks** (time axis) behind items. Use `start: null` / `end: null`
+ * for an open-ended interval on that side (extends far in layout minutes, clipped by the view).
+ */
+export interface TimelineTimeRangeShadow {
+  /** Inclusive-ish layout start; `null` = unbounded past. */
+  start: TimelineTemporal | null;
+  /** Layout end; `null` = unbounded future. */
+  end: TimelineTemporal | null;
+  /** Fill classes (e.g. `bg-muted/20`). */
+  className: string;
+}
 
 export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
   state: TimelineStateApi<Data, TLaneMeta>;
@@ -46,4 +60,9 @@ export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
     params: DrawingPreviewLabelParams,
     lane: VisibleTimelineLaneRow<TLaneMeta>,
   ) => ReactNode;
+  /**
+   * Vertical bands on the time axis (painted above lane stripes as a tint, `pointer-events: none`,
+   * so items stay interactive).
+   */
+  timeRangeShadows?: TimelineTimeRangeShadow[];
 }

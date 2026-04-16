@@ -58,7 +58,10 @@ export {
   useTimelineHandlersRef,
 } from "./timeline-handlers-ref-context.tsx";
 export { TimelineInfiniteRoot } from "./timeline-infinite-view.tsx";
-export type { InfiniteTimelineProps } from "./timeline-infinite-types.ts";
+export type {
+  InfiniteTimelineProps,
+  TimelineTimeRangeShadow,
+} from "./timeline-infinite-types.ts";
 export {
   useSetTimelineTool,
   useSetTimelineSnapOption,
@@ -138,6 +141,7 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   embedded,
   renderLaneLabel,
   hideLaneControls,
+  timeRangeShadows,
 }: InfiniteTimelineWithStateProps<Data, TLaneMeta>) {
   const state = useTimelineState<Data, TLaneMeta>({
     onExpandedLaneIdsChange,
@@ -165,6 +169,7 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
       onItemHover={onItemHover}
       isEventSelected={isEventSelected}
       renderDrawingPreviewLabel={renderDrawingPreviewLabel}
+      timeRangeShadows={timeRangeShadows}
     />
   );
 }

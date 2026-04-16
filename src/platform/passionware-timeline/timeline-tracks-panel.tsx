@@ -27,6 +27,7 @@ import { TimelineMergedItemCell } from "./timeline-merged-item-cell.tsx";
 import { useTimelineHandlersRef } from "./timeline-handlers-ref-context.tsx";
 import { useTimelineRefs } from "./timeline-refs-context.tsx";
 import type { InfiniteTimelineProps } from "./timeline-infinite-types.ts";
+import { TimelineTimeRangeShadowLayer } from "./timeline-time-range-shadow-layer.tsx";
 import { useTimelineRulerLayout } from "./use-timeline-ruler-layout.ts";
 import {
   useTimelineCurrentMouseX,
@@ -450,7 +451,11 @@ type TracksPanelProps<
   TLaneMeta = unknown,
 > = Pick<
   InfiniteTimelineProps<Data, TLaneMeta>,
-  "renderItem" | "onItemHover" | "isEventSelected" | "renderDrawingPreviewLabel"
+  | "renderItem"
+  | "onItemHover"
+  | "isEventSelected"
+  | "renderDrawingPreviewLabel"
+  | "timeRangeShadows"
 > & {
   itemActivateTrigger: "mousedown" | "click";
 };
@@ -465,6 +470,7 @@ function TimelineTracksPanelInner<
     isEventSelected,
     renderDrawingPreviewLabel,
     itemActivateTrigger,
+    timeRangeShadows,
   } = props;
 
   const { containerRef, screenXToContainerX } = useTimelineRefs();
@@ -641,6 +647,10 @@ function TimelineTracksPanelInner<
             </div>
           );
         })}
+        <TimelineTimeRangeShadowLayer
+          shadows={timeRangeShadows}
+          totalHeight={totalHeight}
+        />
       </div>
     </div>
   );
