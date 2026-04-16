@@ -509,7 +509,7 @@ function ProjectIterationDetailDrawerBody({
   entity: Extract<ProjectIterationSpec, { intent: "detail" }>;
   services: DrawerDescriptorServices;
 }) {
-  const { context } = useEntityDrawerContext();
+  const { context, closeEntityDrawer } = useEntityDrawerContext();
   const detailRd = services.projectIterationService.useProjectIterationDetail(
     maybe.of(entity.iterationId),
   );
@@ -545,11 +545,12 @@ function ProjectIterationDetailDrawerBody({
             <Button
               size="sm"
               variant="outline"
-              onClick={() =>
-                services.navigationService.navigate(routingBase.root())
-              }
+              onClick={() => {
+                closeEntityDrawer();
+                services.navigationService.navigate(routingBase.root());
+              }}
             >
-              Open iteration
+              Go to full view
             </Button>
             <GenerateReportPopover
               triggerClassName="shrink-0"
