@@ -296,6 +296,7 @@ export const myServices = {
     cacheApi: createTmetricDashboardCacheApi(mySupabase),
     projectIterationApi: myProjectIterationApi,
     client: myQueryClient,
+    contractorApi: createContractorApi(mySupabase),
     services: {
       projectService,
       projectIterationService,

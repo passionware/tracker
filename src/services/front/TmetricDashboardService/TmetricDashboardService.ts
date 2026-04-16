@@ -2,7 +2,7 @@ import {
   TmetricDashboardCacheEntry,
   TmetricDashboardCacheScope,
 } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
-import type { RemoteData } from "@passionware/monads";
+import type { Maybe, RemoteData } from "@passionware/monads";
 
 export interface ContractorInScope {
   contractorId: number;
@@ -65,8 +65,56 @@ export interface TmetricDashboardService {
     periodStart: Date | null;
     periodEnd: Date | null;
   }) => RemoteData<TmetricDashboardCacheEntry>;
+
+  /**
+   * Live TMetric activity for integrated contractors on active-iteration projects
+   * in the given workspaces (same scope idea as the TMetric dashboard).
+   * Refetches periodically while enabled (e.g. popover open).
+   */
+  useLiveContractorsPanel: (params: {
+    workspaceIds: Maybe<number[]>;
+    enabled?: boolean;
+  }) => RemoteData<TmetricLiveContractorsPanelData>;
 }
 
 export interface WithTmetricDashboardService {
   tmetricDashboardService: TmetricDashboardService;
+}
+
+/** One contractor row for the live TMetric sidebar panel. */
+export interface TmetricLiveContractorRow {
+  contractorId: number;
+  fullName: string;
+  /** Distinct clients where this contractor has TMetric integration in scope (row aggregates all). */
+  clientIds: number[];
+  /** Active timer from TMetric (endTime null), if any. */
+  currentTimer: null | {
+    label: string;
+    projectName?: string;
+    startedAt: Date;
+  };
+  /** Sum of time overlapping the last 24 hours (includes running timer). */
+  last24hHours: number;
+  /** Completed entries in the last 24h, newest first. */
+  recentEntries: Array<{
+    id: number;
+    label: string;
+    projectName?: string;
+    startTime: Date;
+    endTime: Date;
+    durationHours: number;
+  }>;
+  /** Present when this contractor’s TMetric fetch failed. */
+  error?: string;
+}
+
+export interface TmetricLiveContractorsPanelData {
+  fetchedAt: Date;
+  rows: TmetricLiveContractorRow[];
+  /** Aggregates across returned rows (ignores rows with errors for hours). */
+  summary: {
+    integratedContractors: number;
+    totalHoursLast24h: number;
+    activeTimers: number;
+  };
 }
