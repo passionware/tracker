@@ -498,9 +498,9 @@ export function TmetricLiveContractorsPopover(
                               </li>
                             ))}
                           </ul>
-                        ),
-                      ),
-                  ),
+                        )
+                      )
+                  )
                 )}
             </div>
 

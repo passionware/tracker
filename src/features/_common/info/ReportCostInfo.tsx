@@ -24,7 +24,7 @@ import {
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InfoHeaderSection } from "@/features/_common/info/_common/InfoHeaderSection.tsx";
-import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
+import { InlineCostClarify } from "@/features/_common/inline-search/InlineCostClarify.tsx";
 import {
   ListToolbar,
   ListToolbarButton,
@@ -236,17 +236,13 @@ export function ReportCostInfo({
                   align="center"
                   side="right"
                 >
-                  <InlineBillingClarify
+                  <InlineCostClarify
                     maxAmount={report.remainingCompensationAmount.amount}
+                    currency={report.remainingCompensationAmount.currency}
                     services={services}
-                    onSelect={(data) => {
-                      assert(data.linkType === "clarify");
-                      assert(
-                        maybe.isPresent(data.reportAmount),
-                        "Only report clarifications are allowed",
-                      );
+                    onSelect={(payload) => {
                       void clarifyState.track(
-                        services.mutationService.linkCostAndReport(data),
+                        services.mutationService.linkCostAndReport(payload),
                       );
                     }}
                     context={{ reportId: report.id }}

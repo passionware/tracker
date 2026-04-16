@@ -51,6 +51,7 @@ function LinkedReportRowActionsMenu(props: {
   services: WithFrontServices["services"];
   reportId: number;
 }) {
+  const { pushEntityDrawer } = useEntityDrawerContext();
   return (
     <ActionMenu services={props.services}>
       <DropdownMenuItem
@@ -78,7 +79,7 @@ export function LinkedReportList(
     clientId: ClientSpec;
   },
 ) {
-  const { openEntityDrawer, pushEntityDrawer } = useEntityDrawerContext();
+  const { openEntityDrawer } = useEntityDrawerContext();
   const query = reportQueryUtils
     .getBuilder(props.workspaceId, props.clientId)
     .build((q) => [
