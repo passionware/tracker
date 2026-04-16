@@ -1,5 +1,6 @@
 import { LinkBillingReportPayload } from "@/api/link-billing-report/link-billing-report.api.ts";
 import { MutationApi } from "@/api/mutation/mutation.api.ts";
+import { serializeReportDefaultsForRpc } from "@/api/project/reportDefaults.schema.ts";
 import { CalendarDate } from "@internationalized/date";
 import { maybe } from "@passionware/monads";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -420,12 +421,11 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
         p_status: takeIfPresent("status"),
         p_workspace_ids: takeIfPresent("workspaceIds"),
         p_default_billing_due_days: takeIfPresent("defaultBillingDueDays"),
-        ...("emailReplyInviteMessage" in payload
+        ...("reportDefaults" in payload
           ? {
-              p_email_reply_invite_message:
-                payload.emailReplyInviteMessage == null
-                  ? ""
-                  : String(payload.emailReplyInviteMessage),
+              p_report_defaults: serializeReportDefaultsForRpc(
+                payload.reportDefaults!,
+              ),
             }
           : {}),
       });
@@ -504,7 +504,7 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           p_status: project.status,
           p_workspace_ids: project.workspaceIds,
           p_default_billing_due_days: project.defaultBillingDueDays,
-          p_email_reply_invite_message: project.emailReplyInviteMessage ?? null,
+          p_report_defaults: serializeReportDefaultsForRpc(project.reportDefaults),
         },
       );
 

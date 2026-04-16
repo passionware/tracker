@@ -5,6 +5,7 @@ import { Maybe, RemoteData } from "@passionware/monads";
 export interface WorkspaceService {
   useWorkspaces: (query: WorkspaceQuery) => RemoteData<Workspace[]>;
   useWorkspace: (id: Maybe<Workspace["id"]>) => RemoteData<Workspace>;
+  ensureWorkspace: (id: Workspace["id"]) => Promise<Workspace>;
   useWorkspacesForClient: (
     clientId: Maybe<Client["id"]>,
   ) => RemoteData<Workspace[]>;

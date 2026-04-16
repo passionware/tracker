@@ -1,3 +1,7 @@
+/**
+ * Hosts {@link BulkCreateCostPanel} (bulk create cost flow). The filename is legacy;
+ * the panel is mounted inside the entity drawer stack via `bulk-create-cost-for-reports`.
+ */
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
@@ -20,14 +24,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover.tsx";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer.tsx";
+import { DrawerFooter } from "@/components/ui/drawer.tsx";
 import {
   Input,
   NumberInput,
@@ -84,7 +81,7 @@ type LinkDraft = {
 
 type CostDraftSnapshot = Partial<CostPayload>;
 
-export interface BulkCreateCostDrawerProps
+export interface BulkCreateCostPanelProps
   extends WithServices<
     [
       WithMutationService,
@@ -96,9 +93,8 @@ export interface BulkCreateCostDrawerProps
       WithPreferenceService,
     ]
   > {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   selectedReports: ReportViewEntry[];
+  onCancel: () => void;
   onCompleted: (createdCostId: number) => void;
 }
 
@@ -166,13 +162,12 @@ function getUniqueRatePairsFromMappings(
   return Array.from(pairs.values());
 }
 
-export function BulkCreateCostDrawer({
+export function BulkCreateCostPanel({
   services,
-  open,
-  onOpenChange,
   selectedReports,
+  onCancel,
   onCompleted,
-}: BulkCreateCostDrawerProps) {
+}: BulkCreateCostPanelProps) {
   const [links, setLinks] = useState<LinkDraft[]>([]);
   const [costDraft, setCostDraft] = useState<CostDraftSnapshot>({});
   const [dryRunPreviewOpen, setDryRunPreviewOpen] = useState(false);
@@ -216,10 +211,9 @@ export function BulkCreateCostDrawer({
     onVatPercentChange: setVatPercent,
   });
 
+  const selectedReportsKey = selectedReports.map((r) => r.id).join(",");
+
   useEffect(() => {
-    if (!open) {
-      return;
-    }
     const defaultCurrency =
       selectedReports[0]?.remainingCompensationAmount.currency ?? "EUR";
     setLinks(
@@ -271,7 +265,7 @@ export function BulkCreateCostDrawer({
     });
     // bulkCreateCostPrefs.vatPercent read once per open/selection only (not when VAT pref changes mid-session)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedReports]);
+  }, [selectedReportsKey, bulkCreateCostPrefs.vatPercent]);
 
   const costCurrency = costDraft.currency ?? links[0]?.reportCurrency ?? "EUR";
 
@@ -426,7 +420,6 @@ export function BulkCreateCostDrawer({
         `Created cost and linked ${selectedLinks.length} report${selectedLinks.length > 1 ? "s" : ""}.`,
       );
       onCompleted(createdCost.id);
-      onOpenChange(false);
     },
   );
 
@@ -683,16 +676,8 @@ export function BulkCreateCostDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
-        <DrawerHeader>
-          <DrawerTitle>Create cost for selected invoices</DrawerTitle>
-          <DrawerDescription>
-            Create one cost and map selected reports to cost links in one step.
-          </DrawerDescription>
-        </DrawerHeader>
-
-        <div className="px-4 pb-4 overflow-y-auto flex-1 space-y-4">
+    <>
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 space-y-4">
           {resolvedRates === undefined && ratePairsFromMappings.length > 0 ? (
             <div className="text-sm text-muted-foreground py-8">
               Loading exchange rates...
@@ -1187,9 +1172,9 @@ export function BulkCreateCostDrawer({
               )}
             </>
           )}
-        </div>
+      </div>
 
-        <DrawerFooter className="border-t border-border">
+      <DrawerFooter className="border-t border-border shrink-0">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 text-sm">
             <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -1232,7 +1217,7 @@ export function BulkCreateCostDrawer({
               <div className="text-xs text-muted-foreground">still to pay</div>
             </div>
             <div className="flex flex-col gap-2 justify-center">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
               <Button
@@ -1247,8 +1232,7 @@ export function BulkCreateCostDrawer({
               </Button>
             </div>
           </div>
-        </DrawerFooter>
-      </DrawerContent>
+      </DrawerFooter>
 
       <Dialog open={dryRunPreviewOpen} onOpenChange={setDryRunPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
@@ -1334,6 +1318,6 @@ export function BulkCreateCostDrawer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Drawer>
+    </>
   );
 }

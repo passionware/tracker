@@ -1,9 +1,8 @@
 import { CockpitCubeReportWithCreator } from "@/api/cockpit-cube-reports/cockpit-cube-reports.api.ts";
-import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
 import { deserializeCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization";
+import type { CubeDataItem } from "@/features/_common/Cube/CubeService.types";
 import { SerializableCubeConfig } from "@/features/_common/Cube/serialization/CubeSerialization.types";
 import { FormatService } from "@/services/FormatService/FormatService";
-import { differenceInDays, startOfDay } from "date-fns";
 import type { CSSProperties } from "react";
 import {
   buildEmailImageSlotStyles,
@@ -13,29 +12,12 @@ import {
   EMAIL_WORKSPACE_LOGO_MAX_W_PX,
 } from "./emailTemplateImageSlots";
 import {
-  emailBrandFallbackBg,
-  emailBrandFallbackFg,
-  emailCardShellBase,
-  emailContentCardCornerRadius,
-  emailContentCardLeadStyle,
-  emailContentCardStyle,
-  emailContractorBillingColor,
-  emailCtaLinkStyle,
-  emailFooterAccentColor,
-  emailHeaderCardStyle,
-  emailLinkStyle,
-  emailPageBgColor,
-  emailPageGradient,
-  emailPrimarySectionDividerStyle,
-  emailSummaryMetricColor,
-  emailTableRowBorderColor,
-  emailWorkspaceTitleColor,
-} from "./emailReminderTemplateTheme";
-import { DEFAULT_EMAIL_REPLY_INVITE_REMINDER } from "./emailReplyInviteCopy";
+  invoiceBodyInterpolationVars,
+  readInvoiceEmailBodyTemplateFromCubeData,
+  resolveInvoiceEmailBodyHtml,
+} from "./emailBodyTemplate";
 
-/** Gmail-safe HTML: inline styles only when pasted; table layout; avoid flex/grid; use `border={0}` on tables. */
-
-interface EmailTemplateReminderContentProps {
+interface EmailTemplateContentProps {
   reportData: CockpitCubeReportWithCreator;
   reportLink?: string;
   formatService: FormatService;
@@ -43,9 +25,6 @@ interface EmailTemplateReminderContentProps {
   workspaceName: string;
   clientDisplayName?: string;
   clientAvatarDataUrl?: string | null;
-  dueDate: Date | null;
-  /** From published cube meta; when null/empty, default reminder closing paragraph is used. */
-  replyInviteMessage?: string | null;
 }
 
 function getInitials(name: string) {
@@ -59,7 +38,8 @@ function getInitials(name: string) {
   );
 }
 
-export function EmailTemplateReminderContent({
+/** Gmail-safe HTML: inline styles only when pasted; table layout; avoid flex/grid; use `border={0}` on tables. */
+export function EmailTemplateContent({
   reportData,
   reportLink,
   formatService,
@@ -67,11 +47,7 @@ export function EmailTemplateReminderContent({
   workspaceName,
   clientDisplayName,
   clientAvatarDataUrl,
-  dueDate,
-  replyInviteMessage,
-}: EmailTemplateReminderContentProps) {
-  const replyInviteLine =
-    replyInviteMessage?.trim() || DEFAULT_EMAIL_REPLY_INVITE_REMINDER;
+}: EmailTemplateContentProps) {
   const cubeConfig = deserializeCubeConfig(
     reportData.cube_config as unknown as SerializableCubeConfig,
     reportData.cube_data.data as CubeDataItem[],
@@ -229,27 +205,22 @@ export function EmailTemplateReminderContent({
   const workspaceInitials = getInitials(workspaceDisplayName);
   const clientInitials = getInitials(clientName);
 
-  const dueDateFormatted = dueDate ? formatService.temporal.date(dueDate) : "";
+  const cubeData = reportData.cube_data as Record<string, unknown>;
+  const invoiceBodyTemplate = readInvoiceEmailBodyTemplateFromCubeData(cubeData);
+  const invoiceMainBodyHtml = resolveInvoiceEmailBodyHtml(
+    invoiceBodyTemplate,
+    invoiceBodyInterpolationVars({
+      periodFrom: from,
+      periodTo: to,
+      workspaceName: workspaceDisplayName,
+      clientName,
+    }),
+  );
 
-  // Calculate relative date text (e.g., "tomorrow", "in 2 days")
-  const getRelativeDateText = (targetDate: Date | null): string => {
-    if (!targetDate) return "";
-    const today = startOfDay(new Date());
-    const target = startOfDay(targetDate);
-    const daysDiff = differenceInDays(target, today);
-
-    if (daysDiff < 0) {
-      return "overdue";
-    } else if (daysDiff === 0) {
-      return "today";
-    } else if (daysDiff === 1) {
-      return "tomorrow";
-    } else {
-      return `in ${daysDiff} days`;
-    }
-  };
-
-  const relativeDateText = dueDate ? getRelativeDateText(dueDate) : "";
+  /** Solid fallback when clients strip `background-image` (e.g. some Outlook). */
+  const emailPageBgColor = "#f1f5f9";
+  const emailPageGradient =
+    "linear-gradient(165deg, #f8fafc 0%, #eef2ff 38%, #e0e7ff 55%, #f1f5f9 100%)";
 
   const containerStyle: CSSProperties = {
     fontFamily:
@@ -264,7 +235,36 @@ export function EmailTemplateReminderContent({
     backgroundImage: emailPageGradient,
     WebkitFontSmoothing: "antialiased",
   };
+
+  const cardShellBase: CSSProperties = {
+    width: "100%",
+    marginBottom: "18px",
+    borderCollapse: "separate",
+    borderRadius: "14px",
+  };
+
+  const headerCardStyle: CSSProperties = {
+    ...cardShellBase,
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(145deg, #ffffff 0%, #f8fafc 42%, #eff6ff 85%, #e0f2fe 100%)",
+    border: "1px solid rgba(226, 232, 240, 0.95)",
+    boxShadow:
+      "0 2px 4px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06)",
+  };
+
+  const contentCardStyle: CSSProperties = {
+    ...cardShellBase,
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(180deg, #ffffff 0%, #fafbfc 55%, #ffffff 100%)",
+    border: "1px solid #e2e8f0",
+    boxShadow:
+      "0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05)",
+  };
+
   const headerInnerStyle: CSSProperties = {
+    /* Extra horizontal inset so logos clear rounded header corners in preview + Gmail */
     padding: "24px 26px",
   };
   const primaryInnerStyle: CSSProperties = {
@@ -272,6 +272,10 @@ export function EmailTemplateReminderContent({
   };
   const summaryInnerStyle: CSSProperties = {
     padding: "22px 22px",
+  };
+
+  const primarySectionDividerStyle: CSSProperties = {
+    borderTop: "1px solid #f1f5f9",
   };
 
   const headingStyle: CSSProperties = {
@@ -297,8 +301,8 @@ export function EmailTemplateReminderContent({
     maxWidth: `${EMAIL_WORKSPACE_LOGO_MAX_W_PX}px`,
     maxHeight: `${EMAIL_WORKSPACE_LOGO_MAX_H_PX}px`,
     borderRadius: "8px",
-    backgroundColor: emailBrandFallbackBg,
-    color: emailBrandFallbackFg,
+    backgroundColor: "#dbeafe",
+    color: "#1d4ed8",
     fontWeight: 700,
     fontSize: "18px",
     lineHeight: `${EMAIL_WORKSPACE_LOGO_MAX_H_PX}px`,
@@ -311,6 +315,7 @@ export function EmailTemplateReminderContent({
     EMAIL_WORKSPACE_LOGO_MAX_W_PX,
     EMAIL_WORKSPACE_LOGO_MAX_H_PX,
   );
+
   const clientImageSlot = buildEmailImageSlotStyles(
     EMAIL_CLIENT_LOGO_MAX_W_PX,
     EMAIL_CLIENT_LOGO_MAX_H_PX,
@@ -340,7 +345,28 @@ export function EmailTemplateReminderContent({
   };
 
   const rowStyle: CSSProperties = {
-    borderBottom: `1px solid ${emailTableRowBorderColor}`,
+    borderBottom: "1px solid #f1f5f9",
+  };
+
+  const linkStyle: CSSProperties = {
+    color: "#2563eb",
+    textDecoration: "none",
+    fontWeight: 600,
+  };
+
+  /** Pill CTA — Gmail supports linear-gradient on anchors in many builds; solid blue fallback. */
+  const ctaLinkStyle: CSSProperties = {
+    display: "inline-block",
+    padding: "12px 22px",
+    borderRadius: "8px",
+    fontWeight: 600,
+    fontSize: "14px",
+    textDecoration: "none",
+    color: "#ffffff",
+    backgroundColor: "#2563eb",
+    backgroundImage:
+      "linear-gradient(180deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%)",
+    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.35)",
   };
 
   const footerStyle: CSSProperties = {
@@ -351,40 +377,9 @@ export function EmailTemplateReminderContent({
     lineHeight: "1.6",
   };
 
-  const reminderPurposeCallout: CSSProperties = {
-    backgroundColor: "#f8fafc",
-    borderLeft: `4px solid ${emailWorkspaceTitleColor}`,
-    padding: "18px 22px",
-    margin: 0,
-    borderTopRightRadius: emailContentCardCornerRadius,
-    overflow: "hidden",
-  };
-
-  const reminderPurposeHeadline: CSSProperties = {
-    fontSize: "15px",
-    fontWeight: 600,
-    letterSpacing: "-0.02em",
-    color: "#0f172a",
-    margin: "0 0 8px 0",
-    lineHeight: 1.35,
-  };
-
-  const reminderPurposeBody: CSSProperties = {
-    fontSize: "13px",
-    lineHeight: 1.55,
-    color: "#64748b",
-    margin: 0,
-  };
-
   return (
     <div style={containerStyle}>
-      <table
-        width="100%"
-        border={0}
-        cellPadding={0}
-        cellSpacing={0}
-        style={emailHeaderCardStyle}
-      >
+      <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={headerCardStyle}>
         <tbody>
           <tr>
             <td>
@@ -421,6 +416,7 @@ export function EmailTemplateReminderContent({
                                   maxWidth: "80px",
                                   paddingRight: "12px",
                                   verticalAlign: "middle",
+                                  /* Inherited page line-height (1.55) inflates image row in Gmail */
                                   lineHeight: 0,
                                   fontSize: 0,
                                 }}
@@ -443,9 +439,7 @@ export function EmailTemplateReminderContent({
                                           <img
                                             src={resolvedWorkspaceLogo}
                                             alt={`${workspaceDisplayName} logo`}
-                                            width={
-                                              workspaceImageSlot.imageWidthAttr
-                                            }
+                                            width={workspaceImageSlot.imageWidthAttr}
                                             style={workspaceImageSlot.image}
                                           />
                                         ) : (
@@ -464,7 +458,7 @@ export function EmailTemplateReminderContent({
                                     fontSize: "22px",
                                     fontWeight: 700,
                                     letterSpacing: "-0.03em",
-                                    color: emailWorkspaceTitleColor,
+                                    color: "#1d4ed8",
                                   }}
                                 >
                                   {workspaceDisplayName}
@@ -534,9 +528,7 @@ export function EmailTemplateReminderContent({
                                           <img
                                             src={clientAvatarSource}
                                             alt={`${clientName} avatar`}
-                                            width={
-                                              clientImageSlot.imageWidthAttr
-                                            }
+                                            width={clientImageSlot.imageWidthAttr}
                                             style={clientImageSlot.image}
                                           />
                                         ) : (
@@ -578,115 +570,33 @@ export function EmailTemplateReminderContent({
         </tbody>
       </table>
 
-      <table
-        width="100%"
-        border={0}
-        cellPadding={0}
-        cellSpacing={0}
-        style={emailContentCardLeadStyle}
-      >
+      <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={contentCardStyle}>
         <tbody>
           <tr>
-            <td
-              style={{
-                padding: 0,
-                verticalAlign: "top",
-                borderTopRightRadius: emailContentCardCornerRadius,
-                overflow: "hidden",
-              }}
-            >
-              <div style={reminderPurposeCallout}>
-                <p style={reminderPurposeHeadline}>Payment reminder</p>
-                <p style={reminderPurposeBody}>
-                  We&apos;re following up on your open invoice. The period
-                  summary below is the same one we&apos;ve already shared —
-                  included again for convenience.
-                </p>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style={emailPrimarySectionDividerStyle}>
+            <td>
               <div style={primaryInnerStyle}>
                 <div style={labelStyle}>Period</div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    fontSize: "15px",
-                    color: "#0f172a",
-                  }}
-                >
+                <div style={{ fontWeight: 600, fontSize: "15px", color: "#0f172a" }}>
                   {from} &nbsp;—&nbsp; {to}
                 </div>
               </div>
             </td>
           </tr>
-          {dueDateFormatted ? (
-            <tr>
-              <td style={emailPrimarySectionDividerStyle}>
-                <div style={primaryInnerStyle}>
-                  <div style={labelStyle}>Payment due</div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: "15px",
-                      color: "#0f172a",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {dueDateFormatted}
-                  </div>
-                </div>
-              </td>
-            </tr>
-          ) : null}
           <tr>
-            <td style={emailPrimarySectionDividerStyle}>
-              <div style={primaryInnerStyle}>
-                <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Hello,</p>
-                <p style={{ margin: "0 0 8px 0" }}>
-                  This is a gentle reminder regarding the invoice for the time
-                  &amp; billing summary covering the period{" "}
-                  <strong>
-                    {from} to {to}
-                  </strong>
-                  .
-                </p>
-                {dueDateFormatted && (
-                  <p style={{ margin: "0 0 8px 0" }}>
-                    {relativeDateText === "overdue" ? (
-                      <>
-                        We would appreciate receiving the payment that was due
-                        on <strong>{dueDateFormatted}</strong>.
-                      </>
-                    ) : relativeDateText ? (
-                      <>
-                        We would be happy to receive the payment{" "}
-                        <strong>{relativeDateText}</strong> ({dueDateFormatted}
-                        ).
-                      </>
-                    ) : (
-                      <>
-                        We would be happy to receive the payment on{" "}
-                        <strong>{dueDateFormatted}</strong>.
-                      </>
-                    )}
-                  </p>
-                )}
-                <p style={{ margin: "0 0 8px 0" }}>
-                  Please find the summary below for your review.
-                </p>
-                <p style={{ margin: 0 }}>{replyInviteLine}</p>
-              </div>
+            <td style={primarySectionDividerStyle}>
+              <div
+                style={primaryInnerStyle}
+                dangerouslySetInnerHTML={{ __html: invoiceMainBodyHtml }}
+              />
             </td>
           </tr>
           {reportLink && (
             <tr>
-              <td style={emailPrimarySectionDividerStyle}>
+              <td style={primarySectionDividerStyle}>
                 <div style={primaryInnerStyle}>
                   <a
                     href={reportLink}
-                    style={emailCtaLinkStyle}
+                    style={ctaLinkStyle}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -699,13 +609,7 @@ export function EmailTemplateReminderContent({
         </tbody>
       </table>
 
-      <table
-        width="100%"
-        border={0}
-        cellPadding={0}
-        cellSpacing={0}
-        style={emailContentCardStyle}
-      >
+      <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={contentCardStyle}>
         <tbody>
           <tr>
             <td>
@@ -734,7 +638,7 @@ export function EmailTemplateReminderContent({
                             padding: "8px 0",
                             textAlign: "right",
                             fontWeight: 600,
-                            color: emailSummaryMetricColor,
+                            color: "#1d4ed8",
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
@@ -749,7 +653,7 @@ export function EmailTemplateReminderContent({
           </tr>
           {contractorBreakdown.length > 0 && (
             <tr>
-              <td style={emailPrimarySectionDividerStyle}>
+              <td style={primarySectionDividerStyle}>
                 <div style={summaryInnerStyle}>
                   <div style={headingStyle}>Breakdown by Contractor</div>
                   <table border={0} cellPadding={0} cellSpacing={0} style={tableStyle}>
@@ -763,12 +667,7 @@ export function EmailTemplateReminderContent({
                             <div style={{ color: "#475569" }}>
                               {numberFormatter.format(contractor.hours)} h
                             </div>
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                color: emailContractorBillingColor,
-                              }}
-                            >
+                            <div style={{ fontWeight: 600, color: "#16a34a" }}>
                               {contractor.billing}
                             </div>
                           </td>
@@ -789,7 +688,7 @@ export function EmailTemplateReminderContent({
         cellPadding={0}
         cellSpacing={0}
         style={{
-          ...emailCardShellBase,
+          ...cardShellBase,
           marginBottom: 0,
           backgroundColor: "transparent",
           backgroundImage: "none",
@@ -811,12 +710,10 @@ export function EmailTemplateReminderContent({
                 <p style={{ margin: "0 0 4px 0", fontWeight: 600 }}>
                   Passionware Consulting
                 </p>
-                <p
-                  style={{ margin: "0 0 4px 0", color: emailFooterAccentColor }}
-                >
+                <p style={{ margin: "0 0 4px 0", color: "#2563eb" }}>
                   Time &amp; Budget Report
                 </p>
-                <a href="https://passionware.dev" style={emailLinkStyle}>
+                <a href="https://passionware.dev" style={linkStyle}>
                   https://passionware.dev
                 </a>
               </div>

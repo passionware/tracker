@@ -246,10 +246,10 @@ export function ReportCostInfo({
                         "Only report clarifications are allowed",
                       );
                       void clarifyState.track(
-                        services.mutationService.linkReportAndBilling(data),
+                        services.mutationService.linkCostAndReport(data),
                       );
                     }}
-                    context={{ reportId: report.id, billingId: -1 }} // stop reusing InlineBilingClarify for cost clarifications
+                    context={{ reportId: report.id }}
                   />
                 </PopoverContent>
               </Popover>
@@ -396,37 +396,43 @@ export function ReportCostInfo({
             header: "Linking",
             cell: (cellInfo) => {
               const { cost, link } = cellInfo.row.original;
-              const element = cost ? (
-                <div className="flex flex-row gap-2 items-center h-full">
-                  <div>work of</div>
-                  <div className="text-green-600 font-bold">
-                    {services.formatService.financial.amount(
-                      link.reportAmount,
-                      report.netAmount.currency,
-                    )}
-                  </div>
-                  <Shuffle className="size-4" />
-                  <div>
-                    {services.formatService.financial.amount(
-                      link.costAmount,
-                      cost?.currency,
-                    )}
-                  </div>
-                  <div>of cost</div>
-                </div>
-              ) : (
-                <div>
-                  Clarification of{" "}
-                  {services.formatService.financial.amount(
-                    link.reportAmount,
-                    report.netAmount.currency,
-                  )}
-                </div>
+              const clarificationAmount = services.formatService.financial.amount(
+                link.reportAmount,
+                report.netAmount.currency,
               );
+              const clarificationDescription = link.description?.trim() ?? "";
+
+              if (cost) {
+                return (
+                  <SimpleTooltip title={link.description}>
+                    <div className="flex flex-row gap-2 items-center h-full">
+                      <div>work of</div>
+                      <div className="text-green-600 font-bold">
+                        {services.formatService.financial.amount(
+                          link.reportAmount,
+                          report.netAmount.currency,
+                        )}
+                      </div>
+                      <Shuffle className="size-4" />
+                      <div>
+                        {services.formatService.financial.amount(
+                          link.costAmount,
+                          cost?.currency,
+                        )}
+                      </div>
+                      <div>of cost</div>
+                    </div>
+                  </SimpleTooltip>
+                );
+              }
+
               return (
-                <SimpleTooltip title={link.description}>
-                  {element}
-                </SimpleTooltip>
+                <div className="min-w-0 whitespace-pre-wrap break-words text-left">
+                  Clarification of {clarificationAmount}
+                  {clarificationDescription
+                    ? `: ${clarificationDescription}`
+                    : null}
+                </div>
               );
             },
           }),

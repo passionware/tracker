@@ -1,39 +1,23 @@
-import type { GeneratedReportSource } from "@/api/generated-report-source/generated-report-source.api.ts";
+import type { CalendarDate } from "@internationalized/date";
+import {
+  getLocalTimeZone,
+  maxDate,
+  minDate,
+  startOfMonth,
+} from "@internationalized/date";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "long" });
 
-export interface ReportDateRange {
-  start: Date;
-  end: Date;
-}
-
-/**
- * Extract the overall start/end range from a report's time entries.
- */
-export function getReportDateRange(
-  report: GeneratedReportSource,
-): ReportDateRange | null {
-  const entries = report.data.timeEntries;
-  if (!entries.length) {
-    return null;
-  }
-
-  const start = entries.reduce(
-    (min, entry) => (entry.startAt < min ? entry.startAt : min),
-    entries[0].startAt,
-  );
-  const end = entries.reduce(
-    (max, entry) => (entry.endAt > max ? entry.endAt : max),
-    entries[0].endAt,
-  );
-
-  return { start, end };
+interface CalendarPeriod {
+  start: CalendarDate;
+  end: CalendarDate;
 }
 
 interface SmartNameParams {
   clientName: string;
-  report?: GeneratedReportSource;
-  range?: ReportDateRange | null;
+  /** Inclusive iteration bounds — drives month label and H1/H2. */
+  periodStart?: CalendarDate | null;
+  periodEnd?: CalendarDate | null;
   fallback?: string;
 }
 
@@ -42,125 +26,113 @@ interface SmartNameParams {
  * best-fit month (based on coverage), and optional half-of-month suffix.
  *
  * Examples:
- * - "Countful - October'25 H1"
- * - "Countful - December'25 H2"
- * - "Atelltio - January'25"
+ * - "ACME - October'25 H1"
+ * - "ACME - December'25 H2"
+ * - "ACME - January'25"
  */
 export function generateSmartReportName({
   clientName,
-  report,
-  range,
+  periodStart,
+  periodEnd,
   fallback,
 }: SmartNameParams): string {
-  const resolvedRange = range ?? (report ? getReportDateRange(report) : null);
-
-  if (!resolvedRange) {
+  if (!periodStart || !periodEnd) {
     return fallback ?? `${clientName} - Report`;
   }
 
-  const normalizedRange = normalizeRange(resolvedRange);
-  const primaryMonthStart = findPrimaryMonth(normalizedRange);
+  const range: CalendarPeriod = { start: periodStart, end: periodEnd };
+  const primaryMonthStart = findPrimaryMonth(range);
   const monthLabel = formatMonth(primaryMonthStart);
-  const halfIndicator = detectHalfDescriptor(normalizedRange, primaryMonthStart);
+  const halfIndicator = detectHalfDescriptor(range, primaryMonthStart);
 
   return `${clientName} - ${monthLabel}${
     halfIndicator ? ` ${halfIndicator}` : ""
   }`;
 }
 
-function normalizeRange(range: ReportDateRange): ReportDateRange {
-  return {
-    start: startOfDay(range.start),
-    end: startOfDay(range.end),
-  };
-}
-
-function startOfDay(date: Date): Date {
-  const normalized = new Date(date);
-  normalized.setHours(0, 0, 0, 0);
-  return normalized;
-}
-
-function startOfMonth(date: Date): Date {
-  const normalized = startOfDay(date);
-  normalized.setDate(1);
-  return normalized;
-}
-
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function findPrimaryMonth(range: ReportDateRange): Date {
+function findPrimaryMonth(range: CalendarPeriod): CalendarDate {
   const monthCoverages = calculateMonthCoverages(range);
   if (!monthCoverages.length) {
     return startOfMonth(range.start);
   }
 
   return monthCoverages.reduce((best, current) =>
-    current.coverageMs > best.coverageMs ? current : best,
+    current.coverageDays > best.coverageDays ? current : best,
   ).monthStart;
 }
 
-function calculateMonthCoverages(range: ReportDateRange) {
-  const coverages: Array<{ monthStart: Date; coverageMs: number }> = [];
+function calculateMonthCoverages(range: CalendarPeriod) {
+  const coverages: Array<{ monthStart: CalendarDate; coverageDays: number }> =
+    [];
   const rangeStartMonth = startOfMonth(range.start);
   const rangeEndMonth = startOfMonth(range.end);
-  const endExclusive = addDays(range.end, 1); // make end inclusive
 
   for (
-    let cursor = new Date(rangeStartMonth);
-    cursor <= rangeEndMonth;
-    cursor = addMonths(cursor, 1)
+    let cursor = rangeStartMonth;
+    cursor.compare(rangeEndMonth) <= 0;
+    cursor = cursor.add({ months: 1 })
   ) {
-    const monthStart = cursor;
-    const monthEndExclusive = addMonths(monthStart, 1);
-    const overlapStart =
-      range.start > monthStart ? range.start : monthStart;
-    const overlapEnd =
-      endExclusive < monthEndExclusive ? endExclusive : monthEndExclusive;
-    const overlapMs = Math.max(0, overlapEnd.getTime() - overlapStart.getTime());
-
-    if (overlapMs > 0) {
-      coverages.push({ monthStart: new Date(monthStart), coverageMs: overlapMs });
+    const coverageDays = calendarCoverageDays(
+      range.start,
+      range.end,
+      cursor,
+    );
+    if (coverageDays > 0) {
+      coverages.push({ monthStart: cursor.copy(), coverageDays });
     }
   }
 
   return coverages;
 }
 
-function formatMonth(monthStart: Date): string {
-  const monthName = monthFormatter.format(monthStart);
-  const yearShort = String(monthStart.getFullYear()).slice(-2);
+/** Half-open overlap between [rangeStart, rangeEndInclusive] and [monthStart, nextMonth). */
+function calendarCoverageDays(
+  rangeStart: CalendarDate,
+  rangeEndInclusive: CalendarDate,
+  monthStart: CalendarDate,
+): number {
+  const calendar = rangeStart.calendar;
+  const rangeEndExclusive = rangeEndInclusive.add({ days: 1 });
+  const monthEndExclusive = monthStart.add({ months: 1 });
+
+  const overlapStart = maxDate(rangeStart, monthStart)!;
+  const overlapEndExclusive = minDate(rangeEndExclusive, monthEndExclusive)!;
+
+  if (overlapEndExclusive.compare(overlapStart) <= 0) {
+    return 0;
+  }
+  return (
+    calendar.toJulianDay(overlapEndExclusive) -
+    calendar.toJulianDay(overlapStart)
+  );
+}
+
+function formatMonth(monthStart: CalendarDate): string {
+  const monthName = monthFormatter.format(
+    monthStart.toDate(getLocalTimeZone()),
+  );
+  const yearShort = String(monthStart.year).slice(-2);
   return `${monthName}'${yearShort}`;
 }
 
 function detectHalfDescriptor(
-  range: ReportDateRange,
-  monthStart: Date,
+  range: CalendarPeriod,
+  monthStart: CalendarDate,
 ): "H1" | "H2" | null {
   const sameMonth =
-    range.start.getFullYear() === range.end.getFullYear() &&
-    range.start.getMonth() === range.end.getMonth();
+    range.start.year === range.end.year &&
+    range.start.month === range.end.month;
 
   const matchesPrimaryMonth =
-    range.start.getFullYear() === monthStart.getFullYear() &&
-    range.start.getMonth() === monthStart.getMonth();
+    range.start.year === monthStart.year &&
+    range.start.month === monthStart.month;
 
   if (!sameMonth || !matchesPrimaryMonth) {
     return null;
   }
 
-  const startDay = range.start.getDate();
-  const endDay = range.end.getDate();
+  const startDay = range.start.day;
+  const endDay = range.end.day;
 
   if (endDay <= 15) {
     return "H1";
@@ -172,4 +144,3 @@ function detectHalfDescriptor(
 
   return null;
 }
-

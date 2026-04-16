@@ -166,7 +166,7 @@ export function useReportEntryFromData(
   );
 }
 
-function calculateReportEntry(
+export function calculateReportEntry(
   report: Report,
   workspaces: Workspace[],
 ): ReportViewEntry {

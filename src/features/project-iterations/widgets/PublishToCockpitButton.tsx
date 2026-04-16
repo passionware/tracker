@@ -69,10 +69,15 @@ export function PublishToCockpitButton({
     rd.tryMap(clientData, (client) => client.name) || `Client ${clientId}`;
 
   const defaultPublishValues = useMemo(() => {
+    const iterationPeriod = rd.tryMap(projectIterationData, (i) => ({
+      periodStart: i.periodStart,
+      periodEnd: i.periodEnd,
+    }));
     return {
       name: generateSmartReportName({
         clientName,
-        report,
+        periodStart: iterationPeriod?.periodStart ?? null,
+        periodEnd: iterationPeriod?.periodEnd ?? null,
         fallback: `${clientName} - Project - ${
           rd.tryMap(
             projectIterationData,
@@ -82,7 +87,7 @@ export function PublishToCockpitButton({
       }),
       description: `Exported cube data from project iteration ${report.projectIterationId} on ${new Date().toLocaleDateString()}`,
     };
-  }, [clientName, projectIterationData, report, report.projectIterationId]);
+  }, [clientName, projectIterationData, report.projectIterationId]);
 
   const publishMutation = promiseState.useMutation(
     async ({ name, description }: PublishFormValues) => {
@@ -144,8 +149,18 @@ export function PublishToCockpitButton({
             projectId,
             projectIterationId: report.projectIterationId,
             generatedReportId: report.id,
-            emailReplyInviteMessage:
-              projectRow?.emailReplyInviteMessage?.trim() || null,
+            emailSubjectTemplateInvoice:
+              projectRow?.reportDefaults?.invoiceEmail?.titleTemplate?.trim() ||
+              null,
+            emailSubjectTemplateReminder:
+              projectRow?.reportDefaults?.reminderEmail?.titleTemplate?.trim() ||
+              null,
+            invoiceEmailBodyMarkdownTemplate:
+              projectRow?.reportDefaults?.invoiceEmail?.bodyMarkdownTemplate?.trim() ||
+              null,
+            reminderEmailBodyMarkdownTemplate:
+              projectRow?.reportDefaults?.reminderEmail?.bodyMarkdownTemplate?.trim() ||
+              null,
             billingDueDate: dueDateForPublish.toString(),
           },
         },

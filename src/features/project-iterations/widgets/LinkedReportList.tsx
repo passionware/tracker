@@ -15,8 +15,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import {
+  ActionMenu,
+  ActionMenuCopyItem,
+} from "@/features/_common/ActionMenu.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { reportColumns } from "@/features/_common/columns/report.tsx";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import {
   ListToolbar,
   ListToolbarActionsMenu,
@@ -31,12 +36,40 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/routing/routingUtils.ts";
+import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { mt, rd } from "@passionware/monads";
-import { FileText, Unlink } from "lucide-react";
+import { createColumnHelper } from "@tanstack/react-table";
+import { FileText, Unlink, Wallet } from "lucide-react";
 import { promiseState } from "@passionware/platform-react";
 import { useState } from "react";
 import { ReportGenerationWidget } from "./report-generation/tmetric/ReportGenerationWidget";
 import { uniqBy } from "lodash";
+
+const linkedReportActionsColumnHelper = createColumnHelper<ReportViewEntry>();
+
+function LinkedReportRowActionsMenu(props: {
+  services: WithFrontServices["services"];
+  reportId: number;
+}) {
+  return (
+    <ActionMenu services={props.services}>
+      <DropdownMenuItem
+        onClick={() =>
+          pushEntityDrawer({
+            type: "bulk-create-cost-for-reports",
+            reportIds: [props.reportId],
+          })
+        }
+      >
+        <Wallet className="h-4 w-4" />
+        Create cost
+      </DropdownMenuItem>
+      <ActionMenuCopyItem copyText={String(props.reportId)}>
+        Copy report ID
+      </ActionMenuCopyItem>
+    </ActionMenu>
+  );
+}
 
 export function LinkedReportList(
   props: WithFrontServices & {
@@ -45,6 +78,7 @@ export function LinkedReportList(
     clientId: ClientSpec;
   },
 ) {
+  const { openEntityDrawer, pushEntityDrawer } = useEntityDrawerContext();
   const query = reportQueryUtils
     .getBuilder(props.workspaceId, props.clientId)
     .build((q) => [
@@ -99,6 +133,7 @@ export function LinkedReportList(
       query={query}
       onQueryChange={() => {}}
       getRowId={(x) => x.id}
+      onRowClick={(row) => openEntityDrawer({ type: "report", id: row.id })}
       columns={[
         reportColumns.contractor.withAdjacency,
         reportColumns.billing.linkingStatus.read(props.services),
@@ -112,6 +147,16 @@ export function LinkedReportList(
         reportColumns.cost.linkedValue(props.services),
         reportColumns.period(props.services),
         sharedColumns.description,
+        linkedReportActionsColumnHelper.display({
+          id: "actions",
+          enableHiding: false,
+          cell: ({ row }) => (
+            <LinkedReportRowActionsMenu
+              services={props.services}
+              reportId={row.original.id}
+            />
+          ),
+        }),
       ]}
       caption={
         <>
@@ -128,7 +173,25 @@ export function LinkedReportList(
       toolbar={
         <ListToolbar>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <ListToolbarActionsMenu selectedCount={selectedReportIds.length}>
+            <ListToolbarActionsMenu
+              selectedCount={selectedReportIds.length}
+              contentClassName="min-w-[11rem]"
+            >
+              <DropdownMenuItem
+                disabled={selectedReportIds.length === 0}
+                onSelect={() =>
+                  openEntityDrawer({
+                    type: "bulk-create-cost-for-reports",
+                    reportIds: selectedReportIds,
+                    afterCreate: () =>
+                      setSelection(selectionState.selectNone()),
+                  })
+                }
+              >
+                <Wallet className="h-4 w-4" />
+                Create cost for selected
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={selectedReportIds.length === 0}
                 onSelect={() => {

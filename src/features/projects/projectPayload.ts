@@ -1,4 +1,5 @@
 import type { Project, ProjectPayload } from "@/api/project/project.api.ts";
+import { emptyReportDefaults } from "@/api/project/reportDefaults.schema.ts";
 
 /** Shape expected by `ProjectForm` defaults and `project-form` stack entity. */
 export function projectPayloadFromProject(project: Project): ProjectPayload {
@@ -9,6 +10,6 @@ export function projectPayloadFromProject(project: Project): ProjectPayload {
     clientId: project.clientId,
     workspaceIds: project.workspaceIds,
     defaultBillingDueDays: project.defaultBillingDueDays,
-    emailReplyInviteMessage: project.emailReplyInviteMessage,
+    reportDefaults: project.reportDefaults ?? emptyReportDefaults(),
   };
 }

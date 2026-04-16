@@ -13,7 +13,6 @@ import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerC
 import { ListToolbarActionsMenu } from "@/features/_common/ListToolbar.tsx";
 import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
-import { BulkCreateCostDrawer } from "@/features/reports/BulkCreateCostDrawer.tsx";
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -126,19 +125,10 @@ export function ProjectTimelineFloatingBulkBar(
     [props.workspaceId, props.clientId],
   );
 
-  const reportViewRd = props.services.reportDisplayService.useReportView(
-    props.reportQuery,
-    reportIds.length > 0 ? reportIds : undefined,
-  );
   const billingViewRd = props.services.reportDisplayService.useBillingView(
     maybe.of(billingQuery),
     billingIds.length > 0 ? billingIds : undefined,
   );
-  const selectedReports = useMemo(() => {
-    const entries = rd.tryGet(reportViewRd)?.entries ?? [];
-    const set = new Set(reportIds);
-    return entries.filter((e) => set.has(e.id));
-  }, [reportViewRd, reportIds]);
 
   const selectedBillingEntries = useMemo(() => {
     const entries = rd.tryGet(billingViewRd)?.entries ?? [];
@@ -156,7 +146,6 @@ export function ProjectTimelineFloatingBulkBar(
     [billingViewRd],
   );
 
-  const [bulkCreateCostOpen, setBulkCreateCostOpen] = useState(false);
   const [deleteReportOpen, setDeleteReportOpen] = useState(false);
   const [deleteBillingOpen, setDeleteBillingOpen] = useState(false);
   const [deleteCostOpen, setDeleteCostOpen] = useState(false);
@@ -242,7 +231,14 @@ export function ProjectTimelineFloatingBulkBar(
             >
               <ReportListBulkMenuItems
                 selectedCount={reportIds.length}
-                onCreateCost={() => setBulkCreateCostOpen(true)}
+                onCreateCost={() =>
+                  openEntityDrawer({
+                    type: "bulk-create-cost-for-reports",
+                    reportIds,
+                    afterCreate: () =>
+                      props.onSelectionChange(selectionState.selectNone()),
+                  })
+                }
                 onDeleteRequest={() => setDeleteReportOpen(true)}
                 deleteLabel="Delete reports"
               />
@@ -293,16 +289,6 @@ export function ProjectTimelineFloatingBulkBar(
         </Card>
       </div>
 
-      <BulkCreateCostDrawer
-        open={bulkCreateCostOpen}
-        onOpenChange={setBulkCreateCostOpen}
-        selectedReports={selectedReports}
-        services={props.services}
-        onCompleted={(createdCostId) => {
-          props.onSelectionChange(selectionState.selectNone());
-          openEntityDrawer({ type: "cost", id: createdCostId });
-        }}
-      />
       <BillingBulkDialogs
         services={props.services}
         workspaceId={props.workspaceId}

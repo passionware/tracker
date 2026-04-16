@@ -14,6 +14,7 @@ import {
   type EntityStackItem,
 } from "./descriptors";
 import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
+import { cn } from "@/lib/utils.ts";
 import { ChevronRight } from "lucide-react";
 
 const defaultDrawerDescription =
@@ -28,16 +29,18 @@ function isFormStackEntity(entity: EntityStackItem): boolean {
     entity.type === "report-form" ||
     entity.type === "project-iteration-form" ||
     entity.type === "project-form" ||
+    entity.type === "bulk-create-cost-for-reports" ||
     (entity.type === "project-iteration" && entity.intent === "create")
   );
 }
 
-/** Same shell as `BulkCreateCostDrawer`: flex body + inner scroll, footer outside scroll. */
+/** Same shell as bulk create cost (`BulkCreateCostPanel`): flex body + inner scroll, footer outside scroll. */
 function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
   return (
     entity.type === "client-form" ||
     entity.type === "workspace-form" ||
-    entity.type === "project-form"
+    entity.type === "project-form" ||
+    entity.type === "bulk-create-cost-for-reports"
   );
 }
 
@@ -66,6 +69,8 @@ function drawerDescriptionForEntity(entity: EntityStackItem): string {
         : "Iteration summary, generated reports, new report import, and reconciliation via the full iteration UI.";
     case "generated-report-reconciliation":
       return "Match generated time to reports, billings, and costs; preview and apply reconciliation.";
+    case "bulk-create-cost-for-reports":
+      return "Create one cost and map selected reports to cost links in one step.";
     default:
       return defaultDrawerDescription;
   }
@@ -94,7 +99,14 @@ export function EntityDetailDrawers() {
       }}
       direction="right"
     >
-      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+      <DrawerContent
+        className={cn(
+          "inset-y-0 right-0 left-auto h-full rounded-l-2xl border-l border-border mt-0",
+          activeEntity?.type === "project-form"
+            ? "w-[min(99vw,1720px)]"
+            : "w-[min(92vw,980px)]",
+        )}
+      >
         <DrawerHeader>
           {breadcrumbItems.length > 1 && (
             <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground -ml-2 -mt-2">
@@ -150,7 +162,8 @@ export function EntityDetailDrawers() {
             isFormStackEntity(activeEntity) &&
             activeEntity.type !== "client-form" &&
             activeEntity.type !== "workspace-form" &&
-            activeEntity.type !== "project-form" ? (
+            activeEntity.type !== "project-form" &&
+            activeEntity.type !== "bulk-create-cost-for-reports" ? (
               <DrawerDescription className="sr-only">
                 {drawerDescriptionForEntity(activeEntity)}
               </DrawerDescription>

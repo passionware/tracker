@@ -3,13 +3,14 @@ import type { GeneratedReportSource } from "@/api/generated-report-source/genera
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import type { DrawerDescriptorServices } from "@/features/_common/drawers/DrawerDescriptor.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { myRouting } from "@/routing/myRouting.ts";
 import type { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const PREVIEW_COUNT = 3;
 
@@ -44,6 +45,18 @@ function GeneratedReportRow(props: {
   const fmt = props.services.formatService;
   const entries = props.report.data.timeEntries.length;
 
+  const basicInfo = useMemo(() => {
+    try {
+      return props.services.generatedReportViewService.getBasicInformationView(
+        props.report,
+      );
+    } catch {
+      return null;
+    }
+  }, [props.report, props.services.generatedReportViewService]);
+
+  const totalBilling = basicInfo?.statistics.totalBillingBudget ?? [];
+
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/80 bg-muted/20 px-3 py-2 text-sm">
       <div className="min-w-0 flex-1 space-y-0.5">
@@ -53,6 +66,24 @@ function GeneratedReportRow(props: {
         <p className="text-xs text-muted-foreground">
           {fmt.temporal.single.compactWithTime(props.report.createdAt)} ·{" "}
           {entries} time {entries === 1 ? "entry" : "entries"}
+          {totalBilling.length > 0 ? (
+            <>
+              {" · "}
+              <span className="inline-flex flex-wrap items-center gap-x-1">
+                <span>Billing</span>
+                <CurrencyValueWidget
+                  values={totalBilling}
+                  services={props.services}
+                  exchangeService={props.services.exchangeService}
+                  className="text-xs text-muted-foreground"
+                />
+              </span>
+            </>
+          ) : basicInfo != null ? (
+            <> · Billing —</>
+          ) : (
+            <> · Billing unavailable</>
+          )}
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5">

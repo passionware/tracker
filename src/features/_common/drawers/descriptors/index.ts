@@ -33,6 +33,8 @@ import { projectDrawerDescriptor } from "./projectDescriptor";
 import type { ProjectDrawerSpec } from "@/features/projects/projectDrawerViews.tsx";
 import { projectFormDrawerDescriptor } from "./projectFormDescriptor";
 import type { ProjectFormSpec } from "./projectFormDescriptor";
+import { bulkCreateCostForReportsDrawerDescriptor } from "./bulkCreateCostForReportsDescriptor";
+import type { BulkCreateCostForReportsSpec } from "./bulkCreateCostForReportsDescriptor";
 
 /** Any item that can be on the drawer stack (detail or form). */
 export type EntityStackItem =
@@ -50,9 +52,11 @@ export type EntityStackItem =
   | ProjectFormSpec
   | ProjectIterationSpec
   | ProjectIterationFormSpec
-  | GeneratedReportReconciliationSpec;
+  | GeneratedReportReconciliationSpec
+  | BulkCreateCostForReportsSpec;
 
 export type { ReportSpec, CostSpec, BillingSpec, ClientDrawerSpec };
+export type { BulkCreateCostForReportsSpec };
 export type { ProjectDrawerSpec, ProjectFormSpec };
 export type { ReportFormSpec, CostFormSpec, BillingFormSpec, ClientFormSpec };
 export type { WorkspaceDrawerSpec, WorkspaceFormSpec };
@@ -111,6 +115,8 @@ export function getEntityStackKey(entity: EntityStackItem): string {
       return projectIterationFormDrawerDescriptor.getKey(entity);
     case "generated-report-reconciliation":
       return generatedReportReconciliationDrawerDescriptor.getKey(entity);
+    case "bulk-create-cost-for-reports":
+      return bulkCreateCostForReportsDrawerDescriptor.getKey(entity);
   }
 }
 
@@ -152,6 +158,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return projectIterationFormDrawerDescriptor.getLabel(entity);
       case "generated-report-reconciliation":
         return generatedReportReconciliationDrawerDescriptor.getLabel(entity);
+      case "bulk-create-cost-for-reports":
+        return bulkCreateCostForReportsDrawerDescriptor.getLabel(entity);
     }
   },
   getTitle: (entity) => {
@@ -186,6 +194,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         return projectIterationFormDrawerDescriptor.getTitle(entity);
       case "generated-report-reconciliation":
         return generatedReportReconciliationDrawerDescriptor.getTitle(entity);
+      case "bulk-create-cost-for-reports":
+        return bulkCreateCostForReportsDrawerDescriptor.getTitle(entity);
     }
   },
   renderBreadcrumbLabel: (
@@ -232,6 +242,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
           entity,
           services,
         );
+      case "bulk-create-cost-for-reports":
+        return bulkCreateCostForReportsDrawerDescriptor.renderBreadcrumbLabel(
+          entity,
+          services,
+        );
     }
   },
   renderSmallPreview: (
@@ -275,6 +290,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
         );
       case "generated-report-reconciliation":
         return generatedReportReconciliationDrawerDescriptor.renderSmallPreview(
+          entity,
+          services,
+        );
+      case "bulk-create-cost-for-reports":
+        return bulkCreateCostForReportsDrawerDescriptor.renderSmallPreview(
           entity,
           services,
         );
@@ -327,6 +347,11 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
           entity,
           services,
         );
+      case "bulk-create-cost-for-reports":
+        return bulkCreateCostForReportsDrawerDescriptor.renderDrawerContent(
+          entity,
+          services,
+        );
     }
   },
   renderHeaderActions: (
@@ -366,6 +391,8 @@ export const entityDrawerDescriptor: DrawerDescriptor<EntityStackItem> = {
       case "project-iteration-form":
         return null;
       case "generated-report-reconciliation":
+        return null;
+      case "bulk-create-cost-for-reports":
         return null;
     }
   },

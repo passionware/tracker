@@ -1,10 +1,14 @@
 import { workspaceQueryUtils } from "@/api/workspace/workspace.api.ts";
-import { Maybe } from "@passionware/monads";
+import { Maybe, rd } from "@passionware/monads";
 import { WithServices } from "@/platform/typescript/services.ts";
 import { WithExchangeService } from "@/services/ExchangeService/ExchangeService.ts";
 import { useBillingEntryFromData, useBillingView } from "@/services/front/ReportDisplayService/_private/billing.ts";
 import { useCostEntryFromData, useCostView } from "@/services/front/ReportDisplayService/_private/cost.ts";
-import { useReportEntryFromData, useReportView } from "@/services/front/ReportDisplayService/_private/report.ts";
+import {
+  calculateReportEntry,
+  useReportEntryFromData,
+  useReportView,
+} from "@/services/front/ReportDisplayService/_private/report.ts";
 import { ReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { WithBillingService } from "@/services/io/BillingService/BillingService.ts";
 import { WithCostService } from "@/services/io/CostService/CostService.ts";
@@ -51,6 +55,17 @@ export function createReportDisplayService(
         workspaceQueryUtils.ofEmpty(),
       );
       return useReportEntryFromData(report, workspaces);
+    },
+    useReportViewEntriesByIds: (ids: Maybe<number[]>) => {
+      const reportsRd = config.services.reportService.useReportsByIds(ids);
+      const workspaces = config.services.workspaceService.useWorkspaces(
+        workspaceQueryUtils.ofEmpty(),
+      );
+      return rd.useMemoMap(
+        rd.useCombine({ reports: reportsRd, workspaces }),
+        ({ reports, workspaces: ws }) =>
+          reports.map((report) => calculateReportEntry(report, ws)),
+      );
     },
     useBillingEntry: (id: Maybe<number>) => {
       const billing = config.services.billingService.useBilling(id);

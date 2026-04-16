@@ -1,5 +1,8 @@
 import { myRouting } from "@/routing/myRouting.ts";
-import { generatedReportSourceQueryUtils } from "@/api/generated-report-source/generated-report-source.api.ts";
+import {
+  generatedReportSourceQueryUtils,
+  type GeneratedReportSource,
+} from "@/api/generated-report-source/generated-report-source.api.ts";
 import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import {
   AlertDialog,
@@ -16,12 +19,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import type { CurrencyValue } from "@/services/ExchangeService/ExchangeService.ts";
 import {
   ActionMenu,
   ActionMenuCopyItem,
   ActionMenuDeleteItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget.tsx";
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import {
   ListToolbar,
@@ -154,6 +159,33 @@ export function GeneratedReportList(
           cell: ({ row }) => {
             const data = row.original.data;
             return data.timeEntries.length;
+          },
+        },
+        {
+          id: "totalBilling",
+          header: "Total billing",
+          cell: ({ row }) => {
+            const report = row.original as GeneratedReportSource;
+            let billing: CurrencyValue[] = [];
+            try {
+              billing =
+                props.services.generatedReportViewService.getBasicInformationView(
+                  report,
+                ).statistics.totalBillingBudget;
+            } catch {
+              return <span className="text-muted-foreground">—</span>;
+            }
+            if (billing.length === 0) {
+              return <span className="text-muted-foreground">—</span>;
+            }
+            return (
+              <CurrencyValueWidget
+                values={billing}
+                services={props.services}
+                exchangeService={props.services.exchangeService}
+                className="text-sm"
+              />
+            );
           },
         },
         {

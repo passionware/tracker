@@ -193,6 +193,12 @@ export interface ReportDisplayService {
    */
   useReportEntry: (id: Maybe<Report["id"]>) => RemoteData<ReportViewEntry>;
   /**
+   * View entries for specific report ids (TanStack cache via `useReport` keys per id).
+   */
+  useReportViewEntriesByIds: (
+    ids: Maybe<Report["id"][]>,
+  ) => RemoteData<ReportViewEntry[]>;
+  /**
    * Returns a single billing view entry by id (for detail views).
    */
   useBillingEntry: (id: Maybe<Billing["id"]>) => RemoteData<BillingViewEntry>;

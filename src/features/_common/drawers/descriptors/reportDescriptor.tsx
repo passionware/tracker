@@ -14,7 +14,7 @@ import { ReportInfo } from "@/features/_common/info/ReportInfo.tsx";
 import { renderSmallError } from "@/features/_common/renderError";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { rd } from "@passionware/monads";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Wallet } from "lucide-react";
 import type {
   DrawerDescriptor,
   DrawerDescriptorServices,
@@ -149,6 +149,17 @@ function ReportHeaderActions({
         >
           Edit Report
         </ActionMenuEditItem>
+        <DropdownMenuItem
+          onClick={() =>
+            pushEntityDrawer({
+              type: "bulk-create-cost-for-reports",
+              reportIds: [entity.id],
+            })
+          }
+        >
+          <Wallet className="h-4 w-4" />
+          Create cost
+        </DropdownMenuItem>
         <ActionMenuDuplicateItem
           onClick={() =>
             pushEntityDrawer({

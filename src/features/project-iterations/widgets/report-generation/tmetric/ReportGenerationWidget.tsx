@@ -13,7 +13,7 @@ import { DialogClose, DialogProps } from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import { promiseState } from "@passionware/platform-react";
-import { rd } from "@passionware/monads";
+import { mt, rd } from "@passionware/monads";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import {
   Table,
@@ -30,6 +30,7 @@ import {
   extractPrefilledRatesFromGenericReport,
   PrefilledRateResult,
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CalendarDate } from "@internationalized/date";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -118,6 +119,74 @@ export function ReportGenerationWidget({
     prefilledRates: PrefilledRateResult;
   }>();
 
+  const generateReportMutation = promiseState.useMutation(async () => {
+    const reportData = rd.getOrThrow(initialData.state, "Report not found");
+
+    const reportWithConfiguredRates = applyConfiguredRatesToReport(
+      reportData.reportData,
+      configuredRates,
+    );
+
+    const generatedReportSource =
+      await services.generatedReportSourceWriteService.createGeneratedReportSource(
+        {
+          projectIterationId,
+          data: reportWithConfiguredRates,
+          originalData: reportData.originalData,
+        },
+      );
+
+    const projectId = rd.tryMap(iteration, (iter) => iter.projectId);
+    const wsId =
+      contractors.length > 0
+        ? (
+            await services.reportService.ensureReports(
+              reportQueryUtils
+                .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
+                .build((q) => [
+                  q.withFilter("contractorId", {
+                    operator: "oneOf",
+                    value: [contractors[0].id],
+                  }),
+                  q.withFilter("clientId", {
+                    operator: "oneOf",
+                    value: [typeof clientId === "number" ? clientId : undefined].filter(
+                      (id): id is number => id !== undefined,
+                    ),
+                  }),
+                ]),
+            )
+          )[0]?.workspaceId
+        : undefined;
+    const clId = typeof clientId === "number" ? clientId : undefined;
+
+    if (wsId && clId && projectId) {
+      const reportUrl = myRouting
+        .forWorkspace(wsId)
+        .forClient(clId)
+        .forProject(projectId.toString())
+        .forIteration(projectIterationId.toString())
+        .forGeneratedReport(generatedReportSource.id.toString())
+        .root();
+
+      toast.success("Report generated successfully!", {
+        duration: 5000,
+        action: {
+          label: "View Report",
+          onClick: () => {
+            services.navigationService.navigate(reportUrl);
+          },
+        },
+      });
+    } else {
+      toast.success("Report generated successfully!");
+    }
+
+    props.onOpenChange?.(false);
+  });
+
+  const isGeneratingReport = mt.isInProgress(generateReportMutation.state);
+
   // Extract stable values for dependencies to prevent infinite loops
   const projectIdValue =
     project && rd.isSuccess(project) ? project.data.id : null;
@@ -199,89 +268,6 @@ export function ReportGenerationWidget({
     projectIterationId,
     projectIdValue,
   ]);
-
-  const handleGenerateReport = async () => {
-    try {
-      // Create TMetric plugin instance
-
-      const reportData = rd.getOrThrow(initialData.state, "Report not found");
-
-      // Apply configured rates to the report data
-      const reportWithConfiguredRates = applyConfiguredRatesToReport(
-        reportData.reportData,
-        configuredRates,
-      );
-
-      // Save to GeneratedReportSourceService
-      const generatedReportSource =
-        await services.generatedReportSourceWriteService.createGeneratedReportSource(
-          {
-            projectIterationId,
-            data: reportWithConfiguredRates,
-            originalData: reportData.originalData,
-          },
-        );
-
-      console.log("Report generated:", generatedReportSource);
-
-      // Get routing information for the toast link
-      const projectId = rd.tryMap(iteration, (iter) => iter.projectId);
-      // Get workspaceId from the first contractor (they should all be in the same workspace for a project)
-      const wsId =
-        contractors.length > 0
-          ? (
-              await services.reportService.ensureReports(
-                reportQueryUtils
-                  .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
-                  .build((q) => [
-                    q.withFilter("contractorId", {
-                      operator: "oneOf",
-                      value: [contractors[0].id],
-                    }),
-                    q.withFilter("clientId", {
-                      operator: "oneOf",
-                      value: [
-                        typeof clientId === "number" ? clientId : undefined,
-                      ].filter((id): id is number => id !== undefined),
-                    }),
-                  ]),
-              )
-            )[0]?.workspaceId
-          : undefined;
-      const clId = typeof clientId === "number" ? clientId : undefined;
-
-      if (wsId && clId && projectId) {
-        // Generate link to view the report
-        const reportUrl = myRouting
-          .forWorkspace(wsId)
-          .forClient(clId)
-          .forProject(projectId.toString())
-          .forIteration(projectIterationId.toString())
-          .forGeneratedReport(generatedReportSource.id.toString())
-          .root();
-
-        // Show success toast with navigation button
-        toast.success("Report generated successfully!", {
-          duration: 5000,
-          action: {
-            label: "View Report",
-            onClick: () => {
-              services.navigationService.navigate(reportUrl);
-            },
-          },
-        });
-      } else {
-        // Fallback toast without link if routing info is unavailable
-        toast.success("Report generated successfully!");
-      }
-
-      // Close the dialog on success
-      props.onOpenChange?.(false);
-    } catch (error) {
-      console.error("Failed to generate report:", error);
-      toast.error("Failed to generate report");
-    }
-  };
 
   return (
     <Dialog {...props}>
@@ -391,8 +377,23 @@ export function ReportGenerationWidget({
                   <Button onClick={() => setActiveTab("generate")}>Next</Button>
                 )}
                 {activeTab === "generate" && (
-                  <Button onClick={handleGenerateReport}>
-                    Generate Report
+                  <Button
+                    disabled={isGeneratingReport}
+                    onClick={() =>
+                      void generateReportMutation.track(undefined).catch(
+                        (error) => {
+                          console.error("Failed to generate report:", error);
+                          toast.error("Failed to generate report");
+                        },
+                      )
+                    }
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {isGeneratingReport ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : null}
+                      {isGeneratingReport ? "Generating…" : "Generate Report"}
+                    </span>
                   </Button>
                 )}
               </>

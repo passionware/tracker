@@ -16,7 +16,10 @@ export const projectMock = createMockFactory<ProjectBase>(
       .arrayElements(workspaceMock.static.list)
       .map((x) => x.id),
     defaultBillingDueDays: faker.number.int({ min: 0, max: 30 }),
-    emailReplyInviteMessage: faker.lorem.sentence(),
+    reportDefaults: {
+      invoiceEmail: { bodyMarkdownTemplate: faker.lorem.sentence() },
+      reminderEmail: { bodyMarkdownTemplate: faker.lorem.sentence() },
+    },
   }),
   [
     {
@@ -28,7 +31,15 @@ export const projectMock = createMockFactory<ProjectBase>(
       clientId: clientsMock.static.list[0].id,
       workspaceIds: [workspaceMock.static.list[0].id],
       defaultBillingDueDays: 14,
-      emailReplyInviteMessage: "Please confirm your invoice.",
+      reportDefaults: {
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
+      },
     },
     {
       id: 2,
@@ -39,7 +50,15 @@ export const projectMock = createMockFactory<ProjectBase>(
       clientId: clientsMock.static.list[1].id,
       workspaceIds: [workspaceMock.static.list[1].id],
       defaultBillingDueDays: 14,
-      emailReplyInviteMessage: "Please confirm your invoice.",
+      reportDefaults: {
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
+      },
     },
     {
       id: 3,
@@ -50,7 +69,15 @@ export const projectMock = createMockFactory<ProjectBase>(
       clientId: clientsMock.static.list[1].id,
       workspaceIds: [workspaceMock.static.list[1].id],
       defaultBillingDueDays: 14,
-      emailReplyInviteMessage: "Please confirm your invoice.",
+      reportDefaults: {
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
+      },
     },
   ],
 );
