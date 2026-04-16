@@ -12,11 +12,13 @@ import {
   columnHelper,
   reportColumns,
 } from "@/features/_common/columns/report.tsx";
+import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Wallet } from "lucide-react";
 
 export function useColumns(props: ReportsWidgetProps) {
+  const { pushEntityDrawer } = useEntityDrawerContext();
   return [
     ...reportColumns.getContextual({
       contractorId: idSpecUtils.ofAll(),
@@ -92,6 +94,17 @@ export function useColumns(props: ReportsWidgetProps) {
           >
             Edit Report
           </ActionMenuEditItem>
+          <DropdownMenuItem
+            onClick={() => {
+              pushEntityDrawer({
+                type: "bulk-create-cost-for-reports",
+                reportIds: [row.original.id],
+              });
+            }}
+          >
+            <Wallet className="h-4 w-4" />
+            Create cost
+          </DropdownMenuItem>
           <ActionMenuDuplicateItem
             onClick={async () => {
               const result =

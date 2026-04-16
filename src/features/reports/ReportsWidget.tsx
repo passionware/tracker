@@ -36,7 +36,6 @@ import { Summary } from "@/features/_common/Summary.tsx";
 import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { BulkDeleteAlertDialog } from "@/features/_common/bulk/BulkDeleteAlertDialog.tsx";
 import { ReportListBulkMenuItems } from "@/features/_common/bulk/ReportListBulkMenuItems.tsx";
-import { BulkCreateCostDrawer } from "@/features/reports/BulkCreateCostDrawer.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
 import { useColumns } from "@/features/reports/ReportsWidget.columns.tsx";
 import { ReportsWidgetProps } from "@/features/reports/ReportsWidget.types.tsx";
@@ -96,7 +95,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   const [selection, setSelection] = useState<SelectionState<number>>(
     selectionState.selectNone(),
   );
-  const [isBulkCreateCostOpen, setIsBulkCreateCostOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { openEntityDrawer } = useEntityDrawerContext();
 
@@ -250,11 +248,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   }
 
   const columns = useColumns(props);
-  const selectedReports = useMemo(() => {
-    const entries = rd.tryGet(finalReports)?.entries ?? [];
-    const ids = new Set(selectedReportIds);
-    return entries.filter((entry) => ids.has(entry.id));
-  }, [finalReports, selectedReportIds]);
   // Extract project iteration IDs from reports when grouping by project iteration
   const projectIterationIds = useMemo(() => {
     if (timelineGroupBy !== "projectIteration") {
@@ -802,7 +795,14 @@ export function ReportsWidget(props: ReportsWidgetProps) {
                 >
                   <ReportListBulkMenuItems
                     selectedCount={selectedReportIds.length}
-                    onCreateCost={() => setIsBulkCreateCostOpen(true)}
+                    onCreateCost={() =>
+                      openEntityDrawer({
+                        type: "bulk-create-cost-for-reports",
+                        reportIds: selectedReportIds,
+                        afterCreate: () =>
+                          setSelection(selectionState.selectNone()),
+                      })
+                    }
                     onDeleteRequest={() => setDeleteConfirmOpen(true)}
                   />
                 </ListToolbarActionsMenu>
@@ -852,16 +852,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
               </Summary>
             );
           })}
-        />
-        <BulkCreateCostDrawer
-          open={isBulkCreateCostOpen}
-          onOpenChange={setIsBulkCreateCostOpen}
-          selectedReports={selectedReports}
-          services={props.services}
-          onCompleted={(createdCostId) => {
-            setSelection(selectionState.selectNone());
-            openEntityDrawer({ type: "cost", id: createdCostId });
-          }}
         />
         <BulkDeleteAlertDialog
           open={deleteConfirmOpen}
