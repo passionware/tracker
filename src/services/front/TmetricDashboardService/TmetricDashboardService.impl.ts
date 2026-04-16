@@ -7,6 +7,10 @@ import {
   ProjectIteration,
   ProjectIterationApi,
 } from "@/api/project-iteration/project-iteration.api";
+import {
+  ContractorApi,
+  contractorQueryUtils,
+} from "@/api/contractor/contractor.api";
 import { maybe } from "@passionware/monads";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery";
@@ -32,15 +36,21 @@ import {
   ContractorsInScopeResult,
   ContractorsWithIntegrationStatus,
   TmetricDashboardService,
+  TmetricLiveContractorRow,
+  TmetricLiveContractorsPanelData,
 } from "./TmetricDashboardService";
+import { resolveTmetricReportPayload } from "@/services/io/ReportGenerationService/plugins/tmetric/_private/config-resolver";
+import { createTMetricClient } from "@/services/io/ReportGenerationService/plugins/tmetric/_private/TmetricClient";
+import type { TMetricTimeEntry } from "@/services/io/ReportGenerationService/plugins/tmetric/_private/TmetricSchemas";
 import {
   calendarDateToJSDate,
   dateToCalendarDate,
 } from "@/platform/lang/internationalized-date";
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 import type { CalendarDate } from "@internationalized/date";
 
 const TMETRIC_DASHBOARD_CACHE_QUERY_KEY = ["tmetric_dashboard_cache"] as const;
+const TMETRIC_LIVE_PANEL_QUERY_KEY = ["tmetric_live_contractors_panel"] as const;
 
 const NO_CACHED_REPORT_MESSAGE = "No cached report found for scope";
 
@@ -100,7 +110,230 @@ export type TmetricDashboardServiceConfig = WithServices<
   cacheApi: TmetricDashboardCacheApi;
   projectIterationApi: ProjectIterationApi;
   client: QueryClient;
+  contractorApi: ContractorApi;
 };
+
+function tmetricEntryLabel(entry: TMetricTimeEntry): string {
+  const note = entry.note?.trim();
+  if (note) return note;
+  const taskName = entry.task?.name?.trim();
+  if (taskName) return taskName;
+  if (entry.project?.name) return entry.project.name;
+  return "No description";
+}
+
+function hoursOverlappingWindow(
+  entry: TMetricTimeEntry,
+  windowStartMs: number,
+  windowEndMs: number,
+): number {
+  const start = new Date(entry.startTime).getTime();
+  const end = entry.endTime
+    ? new Date(entry.endTime).getTime()
+    : windowEndMs;
+  const lo = Math.max(start, windowStartMs);
+  const hi = Math.min(end, windowEndMs);
+  if (hi <= lo) return 0;
+  return (hi - lo) / 3_600_000;
+}
+
+async function fetchLiveContractorsPanelData(
+  config: TmetricDashboardServiceConfig,
+  workspaceIds: number[],
+): Promise<TmetricLiveContractorsPanelData> {
+  const scope: TmetricDashboardCacheScope = {
+    workspaceIds,
+    projectIterationIds: "all_active",
+  };
+  const { all } = await resolveContractorsInScope(config, scope);
+  const { integrated } = await filterContractorsByTmetricIntegration(
+    all,
+    config.services.expressionService,
+  );
+
+  const contextsByContractor = new Map<number, ContractorInScope[]>();
+  for (const c of integrated) {
+    const list = contextsByContractor.get(c.contractorId) ?? [];
+    const dup = list.some(
+      (x) => x.workspaceId === c.workspaceId && x.clientId === c.clientId,
+    );
+    if (!dup) {
+      list.push(c);
+    }
+    contextsByContractor.set(c.contractorId, list);
+  }
+
+  const contractorIds = [...contextsByContractor.keys()].sort((a, b) => a - b);
+
+  const nowMs = Date.now();
+  const cutoffMs = nowMs - 24 * 60 * 60 * 1000;
+  const periodEnd = dateToCalendarDate(new Date(nowMs));
+  const periodStart = dateToCalendarDate(subDays(new Date(nowMs), 2));
+
+  const contractors =
+    contractorIds.length === 0
+      ? []
+      : await config.contractorApi.getContractors(
+          contractorQueryUtils.getBuilder().build((q) => [
+            q.withFilter("id", {
+              operator: "oneOf",
+              value: contractorIds,
+            }),
+          ]),
+        );
+  const fullNameById = new Map(contractors.map((c) => [c.id, c.fullName]));
+
+  async function fetchEntriesForContext(
+    ctx: ContractorInScope,
+  ): Promise<TMetricTimeEntry[]> {
+    const resolvedList = await resolveTmetricReportPayload(
+      { expressionService: config.services.expressionService },
+      {
+        reports: [
+          {
+            contractorId: ctx.contractorId,
+            workspaceId: ctx.workspaceId,
+            clientId: ctx.clientId,
+            periodStart,
+            periodEnd,
+          },
+        ],
+      },
+    );
+    const resolved = resolvedList[0];
+    if (!resolved) {
+      throw new Error("Could not resolve TMetric variables.");
+    }
+    const tmetricClient = createTMetricClient(resolved.config);
+    return tmetricClient.listTimeEntries(resolved.fetchParams);
+  }
+
+  const rows: TmetricLiveContractorRow[] = await Promise.all(
+    contractorIds.map(async (contractorId) => {
+      const contextsList = contextsByContractor.get(contractorId)!;
+      const clientIds = [
+        ...new Set(contextsList.map((c) => c.clientId)),
+      ].sort((a, b) => a - b);
+      const fullName =
+        fullNameById.get(contractorId) ?? `Contractor #${contractorId}`;
+
+      const settled = await Promise.allSettled(
+        contextsList.map((ctx) => fetchEntriesForContext(ctx)),
+      );
+
+      const fetchErrors: string[] = [];
+      const allEntries: TMetricTimeEntry[] = [];
+      for (let i = 0; i < settled.length; i++) {
+        const s = settled[i]!;
+        if (s.status === "fulfilled") {
+          allEntries.push(...s.value);
+        } else {
+          const ctx = contextsList[i]!;
+          const msg =
+            s.reason instanceof Error ? s.reason.message : String(s.reason);
+          fetchErrors.push(`client ${ctx.clientId}: ${msg}`);
+        }
+      }
+
+      const uniqueById = new Map<number, TMetricTimeEntry>();
+      for (const e of allEntries) {
+        uniqueById.set(e.id, e);
+      }
+      const entries = [...uniqueById.values()];
+
+      if (entries.length === 0) {
+        return {
+          contractorId,
+          fullName,
+          clientIds,
+          currentTimer: null,
+          last24hHours: 0,
+          recentEntries: [],
+          error:
+            fetchErrors.length > 0
+              ? fetchErrors.join(" · ")
+              : "No time entries returned.",
+        };
+      }
+
+      const running = entries.filter((e) => e.endTime === null);
+      const current =
+        running.length === 0
+          ? null
+          : running.reduce((a, b) =>
+              new Date(a.startTime).getTime() >
+              new Date(b.startTime).getTime()
+                ? a
+                : b,
+            );
+
+      const currentTimer: TmetricLiveContractorRow["currentTimer"] =
+        current == null
+          ? null
+          : {
+              label: tmetricEntryLabel(current),
+              projectName: current.project?.name,
+              startedAt: new Date(current.startTime),
+            };
+
+      const last24hHours = entries.reduce(
+        (sum, e) => sum + hoursOverlappingWindow(e, cutoffMs, nowMs),
+        0,
+      );
+
+      const recentEntries = entries
+        .filter((e): e is TMetricTimeEntry & { endTime: string } =>
+          Boolean(e.endTime),
+        )
+        .filter((e) => new Date(e.endTime).getTime() >= cutoffMs)
+        .sort(
+          (a, b) =>
+            new Date(b.endTime).getTime() - new Date(a.endTime).getTime(),
+        )
+        .slice(0, 12)
+        .map((e) => ({
+          id: e.id,
+          label: tmetricEntryLabel(e),
+          projectName: e.project?.name,
+          startTime: new Date(e.startTime),
+          endTime: new Date(e.endTime),
+          durationHours: hoursOverlappingWindow(e, cutoffMs, nowMs),
+        }));
+
+      return {
+        contractorId,
+        fullName,
+        clientIds,
+        currentTimer,
+        last24hHours,
+        recentEntries,
+      };
+    }),
+  );
+
+  rows.sort((a, b) => {
+    const aOn = a.currentTimer ? 1 : 0;
+    const bOn = b.currentTimer ? 1 : 0;
+    if (bOn !== aOn) return bOn - aOn;
+    return a.fullName.localeCompare(b.fullName);
+  });
+
+  const totalHoursLast24h = rows.reduce(
+    (sum, r) => sum + (r.error ? 0 : r.last24hHours),
+    0,
+  );
+  const activeTimers = rows.filter((r) => r.currentTimer).length;
+
+  return {
+    fetchedAt: new Date(nowMs),
+    rows,
+    summary: {
+      integratedContractors: rows.length,
+      totalHoursLast24h,
+      activeTimers,
+    },
+  };
+}
 
 function applyPrefilledRatesToReport(
   report: GenericReport,
@@ -554,6 +787,33 @@ export function createTmetricDashboardService(
               }
             },
             enabled,
+          },
+          client,
+        ),
+      );
+    },
+
+    useLiveContractorsPanel: ({ workspaceIds, enabled = true }) => {
+      const sortedIds = maybe.map(maybe.fromArray(workspaceIds), (ids) =>
+        [...ids].sort((a, b) => a - b),
+      );
+      const canRun = enabled && maybe.isPresent(sortedIds);
+      return ensureIdleQuery(
+        sortedIds,
+        useQuery(
+          {
+            queryKey: [
+              ...TMETRIC_LIVE_PANEL_QUERY_KEY,
+              sortedIds ?? [],
+            ] as const,
+            queryFn: () =>
+              fetchLiveContractorsPanelData(
+                config,
+                maybe.getOrThrow(sortedIds),
+              ),
+            enabled: canRun,
+            refetchInterval: canRun ? 60_000 : false,
+            staleTime: 25_000,
           },
           client,
         ),

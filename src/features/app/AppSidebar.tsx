@@ -18,6 +18,7 @@ import { NavMain } from "@/features/app/nav-main.tsx";
 import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
+import { TmetricLiveContractorsPopover } from "@/features/tmetric-dashboard/TmetricLiveContractorsPopover.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
@@ -25,6 +26,7 @@ import { WithPreferenceService } from "@/services/internal/PreferenceService/Pre
 import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
+import { WithTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -183,6 +185,7 @@ export function AppSidebar({
     WithClientService,
     WithLocationService,
     WithPreferenceService,
+    WithTmetricDashboardService,
     WithWorkspaceService,
   ]
 > &
@@ -245,6 +248,7 @@ export function AppSidebar({
           />
         </div>
         <SidebarDevDatabaseBanner />
+        <TmetricLiveContractorsPopover services={services} />
         {rd
           .journey(auth)
           .wait(<Skeleton className="w-20 h-4" />)
