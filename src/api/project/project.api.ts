@@ -30,6 +30,7 @@ import {
   ClientSpec,
   WorkspaceSpec,
 } from "@/routing/routingUtils.ts";
+import type { ReportDefaults } from "@/api/project/reportDefaults.schema.ts";
 import { z } from "zod";
 
 export interface ProjectContractor {
@@ -46,20 +47,10 @@ export interface ProjectPayload {
   /** Days after iteration period end for default billing due date in reconciliation. */
   defaultBillingDueDays: number;
   /**
-   * Optional closing line for client report emails (cockpit invoice + reminder templates).
-   * Stored on publish in cube meta for cockpit.
+   * Cockpit / published-report defaults (email closing, subject templates, …) as JSON.
+   * Persisted in `project.report_defaults`; snapshotted into cube meta on publish.
    */
-  emailReplyInviteMessage: Nullable<string>;
-  /**
-   * Optional invoice email subject template (`{{from}}`, `{{to}}`, `{{period}}`, `{{workspaceName}}`, `{{clientName}}`).
-   * Snapshotted in cube meta on publish; empty uses built-in default template.
-   */
-  emailSubjectTemplateInvoice: Nullable<string>;
-  /**
-   * Optional reminder email subject template (same placeholders plus `{{dueDate}}`).
-   * When empty, non-template reminder subject defaults apply in the email dialog.
-   */
-  emailSubjectTemplateReminder: Nullable<string>;
+  reportDefaults: ReportDefaults;
 }
 
 export interface ProjectBase extends ProjectPayload {

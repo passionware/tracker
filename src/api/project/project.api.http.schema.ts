@@ -1,4 +1,5 @@
 import { Project, ProjectContractor } from "@/api/project/project.api.ts";
+import { parseReportDefaults } from "@/api/project/reportDefaults.schema.ts";
 import camelcaseKeys from "camelcase-keys";
 import { z } from "zod";
 
@@ -10,21 +11,11 @@ export const project$ = z.object({
   description: z.string().nullable(),
   client_id: z.number(),
   default_billing_due_days: z.number().optional().default(14),
-  email_reply_invite_message: z
-    .string()
-    .nullable()
+  report_defaults: z
+    .record(z.unknown())
     .optional()
-    .transform((v) => v ?? null),
-  email_subject_template_invoice: z
-    .string()
     .nullable()
-    .optional()
-    .transform((v) => v ?? null),
-  email_subject_template_reminder: z
-    .string()
-    .nullable()
-    .optional()
-    .transform((v) => v ?? null),
+    .transform((v) => v ?? {}),
   link_project_workspace: z.array(
     z.object({
       workspace_id: z.number(),
@@ -37,6 +28,7 @@ export type Project$ = z.infer<typeof project$>;
 
 export function projectFromHttp({
   link_project_workspace,
+  report_defaults,
   ...data
 }: Project$): Project {
   const camelData = camelcaseKeys(data);
@@ -47,6 +39,7 @@ export function projectFromHttp({
   return {
     ...camelData,
     workspaceIds,
+    reportDefaults: parseReportDefaults(report_defaults ?? {}),
   };
 }
 

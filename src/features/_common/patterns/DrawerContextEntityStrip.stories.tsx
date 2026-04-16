@@ -25,9 +25,7 @@ const demoProject = {
   clientId: demoClient.id,
   createdAt: new Date("2024-01-01"),
   defaultBillingDueDays: 14,
-  emailReplyInviteMessage: null,
-  emailSubjectTemplateInvoice: null,
-  emailSubjectTemplateReminder: null,
+  reportDefaults: {},
 } satisfies Project;
 
 const services = {

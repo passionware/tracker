@@ -54,9 +54,11 @@ type FormModel = {
   clientId: number | null;
   workspaceIds: number[];
   defaultBillingDueDays: number;
-  emailReplyInviteMessage: string;
-  emailSubjectTemplateInvoice: string;
-  emailSubjectTemplateReminder: string;
+  reportDefaults: {
+    emailReplyInviteMessage: string;
+    invoiceEmail: { titleTemplate: string };
+    reminderEmail: { titleTemplate: string };
+  };
 };
 
 export function ProjectForm(props: ProjectFormProps) {
@@ -70,12 +72,20 @@ export function ProjectForm(props: ProjectFormProps) {
       clientId: props.defaultValues?.clientId ?? null,
       workspaceIds: props.defaultValues?.workspaceIds ?? [],
       defaultBillingDueDays: props.defaultValues?.defaultBillingDueDays ?? 14,
-      emailReplyInviteMessage:
-        props.defaultValues?.emailReplyInviteMessage ?? "",
-      emailSubjectTemplateInvoice:
-        props.defaultValues?.emailSubjectTemplateInvoice ?? "",
-      emailSubjectTemplateReminder:
-        props.defaultValues?.emailSubjectTemplateReminder ?? "",
+      reportDefaults: {
+        emailReplyInviteMessage:
+          props.defaultValues?.reportDefaults?.emailReplyInviteMessage ?? "",
+        invoiceEmail: {
+          titleTemplate:
+            props.defaultValues?.reportDefaults?.invoiceEmail?.titleTemplate ??
+            "",
+        },
+        reminderEmail: {
+          titleTemplate:
+            props.defaultValues?.reportDefaults?.reminderEmail?.titleTemplate ??
+            "",
+        },
+      },
     },
   });
 
@@ -93,11 +103,18 @@ export function ProjectForm(props: ProjectFormProps) {
         "At least one workspace is required",
       ),
       defaultBillingDueDays: Number.isFinite(dueDays) ? dueDays : 14,
-      emailReplyInviteMessage: data.emailReplyInviteMessage.trim() || null,
-      emailSubjectTemplateInvoice:
-        data.emailSubjectTemplateInvoice.trim() || null,
-      emailSubjectTemplateReminder:
-        data.emailSubjectTemplateReminder.trim() || null,
+      reportDefaults: {
+        emailReplyInviteMessage:
+          data.reportDefaults.emailReplyInviteMessage.trim() || null,
+        invoiceEmail: {
+          titleTemplate:
+            data.reportDefaults.invoiceEmail.titleTemplate.trim() || null,
+        },
+        reminderEmail: {
+          titleTemplate:
+            data.reportDefaults.reminderEmail.titleTemplate.trim() || null,
+        },
+      },
     };
     void processingPromise.track(
       props.onSubmit(allData, getDirtyFields(allData, form)),
@@ -251,7 +268,7 @@ export function ProjectForm(props: ProjectFormProps) {
   const emailReplyInviteField = (
     <FormField
       control={form.control}
-      name="emailReplyInviteMessage"
+      name="reportDefaults.emailReplyInviteMessage"
       render={({ field }) => (
         <FormItem className="col-span-2">
           <FormLabel className={cn(isBulk && "text-sm font-medium")}>
@@ -286,7 +303,7 @@ export function ProjectForm(props: ProjectFormProps) {
       {emailReplyInviteField}
       <FormField
         control={form.control}
-        name="emailSubjectTemplateInvoice"
+        name="reportDefaults.invoiceEmail.titleTemplate"
         render={({ field }) => (
           <FormItem className="col-span-2">
             <FormLabel className={cn(isBulk && "text-sm font-medium")}>
@@ -310,7 +327,7 @@ export function ProjectForm(props: ProjectFormProps) {
       />
       <FormField
         control={form.control}
-        name="emailSubjectTemplateReminder"
+        name="reportDefaults.reminderEmail.titleTemplate"
         render={({ field }) => (
           <FormItem className="col-span-2">
             <FormLabel className={cn(isBulk && "text-sm font-medium")}>

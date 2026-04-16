@@ -150,11 +150,14 @@ export function PublishToCockpitButton({
             projectIterationId: report.projectIterationId,
             generatedReportId: report.id,
             emailReplyInviteMessage:
-              projectRow?.emailReplyInviteMessage?.trim() || null,
+              projectRow?.reportDefaults?.emailReplyInviteMessage?.trim() ||
+              null,
             emailSubjectTemplateInvoice:
-              projectRow?.emailSubjectTemplateInvoice?.trim() || null,
+              projectRow?.reportDefaults?.invoiceEmail?.titleTemplate?.trim() ||
+              null,
             emailSubjectTemplateReminder:
-              projectRow?.emailSubjectTemplateReminder?.trim() || null,
+              projectRow?.reportDefaults?.reminderEmail?.titleTemplate?.trim() ||
+              null,
             billingDueDate: dueDateForPublish.toString(),
           },
         },
