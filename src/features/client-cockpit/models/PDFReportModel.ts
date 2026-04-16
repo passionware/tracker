@@ -11,7 +11,7 @@ import type {
 import type { FormatService } from "../../../services/FormatService/FormatService";
 import type { CockpitCubeReportWithCreator } from "../../../api/cockpit-cube-reports/cockpit-cube-reports.api";
 import type { CockpitTenant } from "../../../api/cockpit-tenants/cockpit-tenants.api";
-import { readBillingDueDateFromCubeData } from "@/features/_common/Cube/emailReplyInviteCopy";
+import { readBillingDueDateFromCubeData } from "@/features/_common/emailTemplates/emailReplyInviteCopy";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { Maybe } from "@passionware/monads";
 

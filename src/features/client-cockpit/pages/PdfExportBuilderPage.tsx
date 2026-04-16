@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import { EmailTemplateDialog } from "@/features/_common/Cube/EmailTemplateDialog";
+import { EmailTemplateDialog } from "@/features/_common/emailTemplates/EmailTemplateDialog";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import {

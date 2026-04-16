@@ -21,12 +21,11 @@ import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { maybe, Maybe } from "@passionware/monads";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { readBillingDueDateFromCubeData } from "./emailReplyInviteCopy";
 import {
-  readBillingDueDateFromCubeData,
-  readEmailReplyInviteMessageFromCubeData,
-} from "./emailReplyInviteCopy";
-import {
+  DEFAULT_EMAIL_SUBJECT_TEMPLATE_REMINDER,
   emailSubjectInterpolationVars,
+  interpolateEmailSubject,
   readEmailSubjectTemplateInvoiceFromCubeData,
   readEmailSubjectTemplateReminderFromCubeData,
   resolveInvoiceEmailSubject,
@@ -42,11 +41,6 @@ interface EmailTemplateDialogProps {
   workspaceName: string;
   clientDisplayName?: string;
   clientAvatarDataUrl?: string | null;
-  /**
-   * Overrides closing copy for both templates (full paragraph each); defaults
-   * to `reportData.cube_data.meta.source.emailReplyInviteMessage` when omitted.
-   */
-  replyInviteMessage?: string | null;
   /**
    * Overrides invoice subject template; defaults to
    * `cube_data.meta.source.emailSubjectTemplateInvoice` when omitted.
@@ -68,17 +62,9 @@ export function EmailTemplateDialog({
   workspaceName,
   clientDisplayName,
   clientAvatarDataUrl,
-  replyInviteMessage: replyInviteMessageProp,
   emailSubjectTemplateInvoice: emailSubjectTemplateInvoiceProp,
   emailSubjectTemplateReminder: emailSubjectTemplateReminderProp,
 }: EmailTemplateDialogProps) {
-  const replyInviteFromReport = readEmailReplyInviteMessageFromCubeData(
-    reportData.cube_data as Record<string, unknown>,
-  );
-  const replyInviteMessage =
-    replyInviteMessageProp !== undefined
-      ? replyInviteMessageProp
-      : replyInviteFromReport;
   const subjectInvoiceFromReport =
     readEmailSubjectTemplateInvoiceFromCubeData(
       reportData.cube_data as Record<string, unknown>,
@@ -343,7 +329,10 @@ export function EmailTemplateDialog({
       vars,
       () =>
         vars.dueDate
-          ? `Invoice Reminder — Payment Due ${vars.dueDate}`
+          ? interpolateEmailSubject(
+              DEFAULT_EMAIL_SUBJECT_TEMPLATE_REMINDER,
+              vars,
+            )
           : `Invoice Reminder — Time & Billing Summary ${from} to ${to}`,
     );
 
@@ -408,7 +397,6 @@ export function EmailTemplateDialog({
                 workspaceName={workspaceName}
                 clientDisplayName={clientDisplayName}
                 clientAvatarDataUrl={sanitizedClientAvatar}
-                replyInviteMessage={replyInviteMessage}
               />
             </div>
           </TabsContent>
@@ -441,7 +429,6 @@ export function EmailTemplateDialog({
                 clientDisplayName={clientDisplayName}
                 clientAvatarDataUrl={sanitizedClientAvatar}
                 dueDate={dueDateAsJsDate}
-                replyInviteMessage={replyInviteMessage}
               />
             </div>
           </TabsContent>

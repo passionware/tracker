@@ -14,6 +14,7 @@ import {
   type EntityStackItem,
 } from "./descriptors";
 import { useEntityDrawerContext } from "./entityDrawerContext.tsx";
+import { cn } from "@/lib/utils.ts";
 import { ChevronRight } from "lucide-react";
 
 const defaultDrawerDescription =
@@ -98,7 +99,14 @@ export function EntityDetailDrawers() {
       }}
       direction="right"
     >
-      <DrawerContent className="inset-y-0 right-0 left-auto h-full w-[min(92vw,980px)] rounded-l-2xl border-l border-border mt-0">
+      <DrawerContent
+        className={cn(
+          "inset-y-0 right-0 left-auto h-full rounded-l-2xl border-l border-border mt-0",
+          activeEntity?.type === "project-form"
+            ? "w-[min(99vw,1720px)]"
+            : "w-[min(92vw,980px)]",
+        )}
+      >
         <DrawerHeader>
           {breadcrumbItems.length > 1 && (
             <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground -ml-2 -mt-2">

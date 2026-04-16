@@ -149,14 +149,17 @@ export function PublishToCockpitButton({
             projectId,
             projectIterationId: report.projectIterationId,
             generatedReportId: report.id,
-            emailReplyInviteMessage:
-              projectRow?.reportDefaults?.emailReplyInviteMessage?.trim() ||
-              null,
             emailSubjectTemplateInvoice:
               projectRow?.reportDefaults?.invoiceEmail?.titleTemplate?.trim() ||
               null,
             emailSubjectTemplateReminder:
               projectRow?.reportDefaults?.reminderEmail?.titleTemplate?.trim() ||
+              null,
+            invoiceEmailBodyMarkdownTemplate:
+              projectRow?.reportDefaults?.invoiceEmail?.bodyMarkdownTemplate?.trim() ||
+              null,
+            reminderEmailBodyMarkdownTemplate:
+              projectRow?.reportDefaults?.reminderEmail?.bodyMarkdownTemplate?.trim() ||
               null,
             billingDueDate: dueDateForPublish.toString(),
           },

@@ -4,6 +4,10 @@ const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
 export const DEFAULT_EMAIL_SUBJECT_TEMPLATE_INVOICE =
   "Time & Billing Summary — {{from}} to {{to}}";
 
+/** Default when project / cube meta has no custom reminder subject (used when a due date is available). */
+export const DEFAULT_EMAIL_SUBJECT_TEMPLATE_REMINDER =
+  "Invoice Reminder — Payment Due {{dueDate}}";
+
 export type EmailSubjectInterpolationInput = {
   from: string;
   to: string;
@@ -22,6 +26,7 @@ export function emailSubjectInterpolationVars(
   return { from, to, period, workspaceName, clientName, dueDate };
 }
 
+/** `{{placeholder_name}}` → value; unknown keys left unchanged. Values may be HTML when you control escaping. */
 export function interpolateEmailSubject(
   template: string,
   vars: Record<string, string>,

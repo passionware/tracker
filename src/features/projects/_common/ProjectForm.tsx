@@ -18,22 +18,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ClientPicker } from "@/features/_common/elements/pickers/ClientPicker.tsx";
 import { WorkspaceArrayPicker } from "@/features/_common/elements/pickers/WorkspaceArrayPicker";
+import {
+  DEFAULT_INVOICE_EMAIL_BODY_MARKDOWN,
+  DEFAULT_REMINDER_EMAIL_BODY_MARKDOWN,
+} from "@/features/_common/emailTemplates/emailBodyTemplate";
+import {
+  DEFAULT_EMAIL_SUBJECT_TEMPLATE_INVOICE,
+  DEFAULT_EMAIL_SUBJECT_TEMPLATE_REMINDER,
+} from "@/features/_common/emailTemplates/emailSubjectTemplate";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import { getDirtyFields } from "@/platform/react/getDirtyFields.ts";
 import { cn } from "@/lib/utils.ts";
 import { WithServices } from "@/platform/typescript/services.ts";
+import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
 import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { CheckCircle2, Loader2, LoaderCircle } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import {
+  ProjectEmailTemplatePreview,
+  type ProjectEmailTemplateTab,
+} from "./ProjectEmailTemplatePreview.tsx";
+import type { ProjectFormModel } from "./projectFormModel.ts";
+
 export interface ProjectFormProps
-  extends WithServices<[WithClientService, WithWorkspaceService]> {
+  extends WithServices<
+    [WithClientService, WithWorkspaceService, WithFormatService]
+  > {
   defaultValues?: Partial<ProjectPayload>;
   onSubmit: (
     data: ProjectPayload,
@@ -47,24 +66,12 @@ export interface ProjectFormProps
   layout?: "default" | "bulkCostDrawer";
 }
 
-type FormModel = {
-  name: string;
-  status: "draft" | "active" | "closed";
-  description: string;
-  clientId: number | null;
-  workspaceIds: number[];
-  defaultBillingDueDays: number;
-  reportDefaults: {
-    emailReplyInviteMessage: string;
-    invoiceEmail: { titleTemplate: string };
-    reminderEmail: { titleTemplate: string };
-  };
-};
-
 export function ProjectForm(props: ProjectFormProps) {
   const layout = props.layout ?? "default";
   const isBulk = layout === "bulkCostDrawer";
-  const form = useForm<FormModel>({
+  const [emailTemplateTab, setEmailTemplateTab] =
+    useState<ProjectEmailTemplateTab>("invoice");
+  const form = useForm<ProjectFormModel>({
     defaultValues: {
       name: props.defaultValues?.name ?? "",
       status: props.defaultValues?.status ?? "draft",
@@ -73,16 +80,20 @@ export function ProjectForm(props: ProjectFormProps) {
       workspaceIds: props.defaultValues?.workspaceIds ?? [],
       defaultBillingDueDays: props.defaultValues?.defaultBillingDueDays ?? 14,
       reportDefaults: {
-        emailReplyInviteMessage:
-          props.defaultValues?.reportDefaults?.emailReplyInviteMessage ?? "",
         invoiceEmail: {
           titleTemplate:
             props.defaultValues?.reportDefaults?.invoiceEmail?.titleTemplate ??
+            "",
+          bodyMarkdownTemplate:
+            props.defaultValues?.reportDefaults?.invoiceEmail?.bodyMarkdownTemplate ??
             "",
         },
         reminderEmail: {
           titleTemplate:
             props.defaultValues?.reportDefaults?.reminderEmail?.titleTemplate ??
+            "",
+          bodyMarkdownTemplate:
+            props.defaultValues?.reportDefaults?.reminderEmail?.bodyMarkdownTemplate ??
             "",
         },
       },
@@ -91,7 +102,7 @@ export function ProjectForm(props: ProjectFormProps) {
 
   const processingPromise = promiseState.useRemoteData<void>();
 
-  function handleSubmit(data: FormModel) {
+  function handleSubmit(data: ProjectFormModel) {
     const dueDays = Math.max(0, Math.floor(Number(data.defaultBillingDueDays)));
     const allData: ProjectPayload = {
       name: data.name,
@@ -104,15 +115,17 @@ export function ProjectForm(props: ProjectFormProps) {
       ),
       defaultBillingDueDays: Number.isFinite(dueDays) ? dueDays : 14,
       reportDefaults: {
-        emailReplyInviteMessage:
-          data.reportDefaults.emailReplyInviteMessage.trim() || null,
         invoiceEmail: {
           titleTemplate:
             data.reportDefaults.invoiceEmail.titleTemplate.trim() || null,
+          bodyMarkdownTemplate:
+            data.reportDefaults.invoiceEmail.bodyMarkdownTemplate.trim() || null,
         },
         reminderEmail: {
           titleTemplate:
             data.reportDefaults.reminderEmail.titleTemplate.trim() || null,
+          bodyMarkdownTemplate:
+            data.reportDefaults.reminderEmail.bodyMarkdownTemplate.trim() || null,
         },
       },
     };
@@ -232,6 +245,9 @@ export function ProjectForm(props: ProjectFormProps) {
     />
   );
 
+  const emailLoadDefaultBtnClass =
+    "h-7 shrink-0 px-2 text-xs font-normal text-muted-foreground hover:text-foreground";
+
   const defaultBillingDueDaysField = (
     <FormField
       control={form.control}
@@ -265,90 +281,222 @@ export function ProjectForm(props: ProjectFormProps) {
     />
   );
 
-  const emailReplyInviteField = (
-    <FormField
+  const reportEmailFields = (
+    <div className="col-span-full space-y-4 rounded-xl border border-border bg-muted/15 p-4 sm:col-span-2 dark:bg-muted/10">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          Cockpit email templates
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Edit the invoice or reminder email; the preview on the right follows
+          the tab you select.
+        </p>
+      </div>
+      <Tabs
+        value={emailTemplateTab}
+        onValueChange={(v) =>
+          setEmailTemplateTab(v as ProjectEmailTemplateTab)
+        }
+        className="w-full gap-4"
+      >
+        <TabsList
+          size="sm"
+          className="!grid h-auto w-full max-w-md grid-cols-2 gap-1 rounded-lg border border-border bg-muted/50 p-1"
+        >
+          <TabsTrigger
+            value="invoice"
+            size="sm"
+            className="h-8 w-full justify-center rounded-md border-b-0 border-transparent px-2 text-xs data-[state=active]:border-transparent data-[state=active]:bg-background data-[state=active]:shadow-sm sm:text-sm"
+          >
+            Invoice template
+          </TabsTrigger>
+          <TabsTrigger
+            value="reminder"
+            size="sm"
+            className="h-8 w-full justify-center rounded-md border-b-0 border-transparent px-2 text-xs data-[state=active]:border-transparent data-[state=active]:bg-background data-[state=active]:shadow-sm sm:text-sm"
+          >
+            Reminder template
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="invoice" className="mt-0 space-y-4 focus:outline-none">
+          <FormField
+            control={form.control}
+            name="reportDefaults.invoiceEmail.titleTemplate"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+                    Subject (optional)
+                  </FormLabel>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={emailLoadDefaultBtnClass}
+                    onClick={() =>
+                      field.onChange(DEFAULT_EMAIL_SUBJECT_TEMPLATE_INVOICE)
+                    }
+                  >
+                    Load default
+                  </Button>
+                </div>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder='Time & Billing Summary — {{from}} to {{to}}'
+                  />
+                </FormControl>
+                <FormDescription>
+                  Placeholders: {"{{from}}"}, {"{{to}}"}, {"{{period}}"} (range
+                  text), {"{{workspaceName}}"}, {"{{clientName}}"}. Snapshotted
+                  when you publish to the cockpit; leave empty for the default
+                  subject pattern.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="reportDefaults.invoiceEmail.bodyMarkdownTemplate"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+                    Body (optional Markdown)
+                  </FormLabel>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={emailLoadDefaultBtnClass}
+                    onClick={() =>
+                      field.onChange(DEFAULT_INVOICE_EMAIL_BODY_MARKDOWN)
+                    }
+                  >
+                    Load default
+                  </Button>
+                </div>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    rows={isBulk ? 7 : 9}
+                    className="min-h-[10rem] font-mono text-xs"
+                    placeholder="Use **bold**, lists, and {{period_from}} placeholders."
+                  />
+                </FormControl>
+                <FormDescription>
+                  Markdown is converted to Gmail-style inline HTML. Placeholders
+                  (HTML-escaped): {"{{period_from}}"}, {"{{period_to}}"}{" "}
+                  (aliases {"{{from}}"}, {"{{to}}"}), {"{{workspace_name}}"},{" "}
+                  {"{{client_name}}"}. Leave empty for the built-in default
+                  (Markdown).
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </TabsContent>
+        <TabsContent value="reminder" className="mt-0 space-y-4 focus:outline-none">
+          <FormField
+            control={form.control}
+            name="reportDefaults.reminderEmail.titleTemplate"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+                    Subject (optional)
+                  </FormLabel>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={emailLoadDefaultBtnClass}
+                    onClick={() =>
+                      field.onChange(DEFAULT_EMAIL_SUBJECT_TEMPLATE_REMINDER)
+                    }
+                  >
+                    Load default
+                  </Button>
+                </div>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Invoice Reminder — Payment Due {{dueDate}}"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Same placeholders as the invoice template, plus{" "}
+                  {"{{dueDate}}"} (from the published billing due date or the due
+                  date you pick in the email preview). When empty, the app uses
+                  its built-in reminder subject wording.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="reportDefaults.reminderEmail.bodyMarkdownTemplate"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+                    Body (optional Markdown)
+                  </FormLabel>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={emailLoadDefaultBtnClass}
+                    onClick={() =>
+                      field.onChange(DEFAULT_REMINDER_EMAIL_BODY_MARKDOWN)
+                    }
+                  >
+                    Load default
+                  </Button>
+                </div>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    rows={isBulk ? 8 : 10}
+                    className="min-h-[11rem] font-mono text-xs"
+                    placeholder="Markdown; include {{payment_paragraph_html}} for the due-date line."
+                  />
+                </FormControl>
+                <FormDescription>
+                  Markdown → inline HTML. Use {"{{period_from}}"},{" "}
+                  {"{{period_to}}"}, {"{{payment_paragraph_html}}"} (raw HTML block
+                  for the payment line), {"{{workspace_name}}"},{" "}
+                  {"{{client_name}}"}. Leave empty for the built-in default.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
+  const previewPanel = (
+    <ProjectEmailTemplatePreview
+      services={props.services}
       control={form.control}
-      name="reportDefaults.emailReplyInviteMessage"
-      render={({ field }) => (
-        <FormItem className="col-span-2">
-          <FormLabel className={cn(isBulk && "text-sm font-medium")}>
-            Report email closing (optional)
-          </FormLabel>
-          <FormControl>
-            <Textarea
-              {...field}
-              rows={3}
-              placeholder="If you need any clarification…"
-            />
-          </FormControl>
-          <FormDescription>
-            Shown in cockpit invoice and reminder emails for reports published
-            from this project. Replaces the full closing paragraph (including
-            “Otherwise, please confirm…” on the invoice). Leave empty for
-            defaults.
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
+      formatService={props.services.formatService}
+      variant="sideColumn"
+      focusedTemplate={emailTemplateTab}
     />
   );
 
-  const fields = (
+  const leftColumnFields = (
     <>
       {workspaceField}
       {clientField}
       {nameField}
       {statusField}
       {defaultBillingDueDaysField}
-      {emailReplyInviteField}
-      <FormField
-        control={form.control}
-        name="reportDefaults.invoiceEmail.titleTemplate"
-        render={({ field }) => (
-          <FormItem className="col-span-2">
-            <FormLabel className={cn(isBulk && "text-sm font-medium")}>
-              Invoice email subject (optional)
-            </FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder='Time & Billing Summary — {{from}} to {{to}}'
-              />
-            </FormControl>
-            <FormDescription>
-              Placeholders: {"{{from}}"}, {"{{to}}"}, {"{{period}}"} (range
-              text), {"{{workspaceName}}"}, {"{{clientName}}"}. Snapshotted when
-              you publish to the cockpit; leave empty for the default subject
-              pattern.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="reportDefaults.reminderEmail.titleTemplate"
-        render={({ field }) => (
-          <FormItem className="col-span-2">
-            <FormLabel className={cn(isBulk && "text-sm font-medium")}>
-              Reminder email subject (optional)
-            </FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="Invoice Reminder — Payment Due {{dueDate}}"
-              />
-            </FormControl>
-            <FormDescription>
-              Same placeholders as the invoice line, plus {"{{dueDate}}"} (from
-              the published billing due date or the due date you pick in the
-              email preview). When empty, the app uses its built-in reminder
-              subject wording.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {reportEmailFields}
       {descriptionField}
     </>
   );
@@ -399,6 +547,30 @@ export function ProjectForm(props: ProjectFormProps) {
     </div>
   );
 
+  const defaultFormActions = (
+    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+      {props.mode === "create" && (
+        <Button type="button" variant="outline" onClick={props.onCancel}>
+          Cancel
+        </Button>
+      )}
+      {props.mode === "edit" && (
+        <Button type="button" variant="outline" onClick={() => form.reset()}>
+          Reset
+        </Button>
+      )}
+      <Button
+        type="submit"
+        disabled={
+          rd.isPending(processingPromise.state) || !form.formState.isDirty
+        }
+      >
+        {submitIcon}
+        {submitLabel}
+      </Button>
+    </div>
+  );
+
   if (isBulk) {
     return (
       <Form {...form}>
@@ -406,10 +578,15 @@ export function ProjectForm(props: ProjectFormProps) {
           onSubmit={form.handleSubmit(handleSubmit)}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
-            <div className="grid min-w-[20rem] grid-cols-1 gap-4 sm:grid-cols-2">
-              {fields}
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(380px,58%)] lg:items-stretch lg:gap-6">
+            <div className="min-h-0 min-w-0 overflow-y-auto">
+              <div className="grid min-w-[20rem] grid-cols-1 gap-4 sm:grid-cols-2">
+                {leftColumnFields}
+              </div>
             </div>
+            <aside className="flex min-h-0 min-w-0 flex-col border-t border-border pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+              <div className="flex min-h-0 flex-1 flex-col">{previewPanel}</div>
+            </aside>
           </div>
           <DrawerFooter className="shrink-0 border-t border-border">
             {actions}
@@ -423,32 +600,17 @@ export function ProjectForm(props: ProjectFormProps) {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="grid min-w-[20rem] grid-cols-2 gap-4"
+        className="flex min-w-0 flex-col gap-6"
       >
-        {fields}
-        {props.mode === "create" && (
-          <Button type="button" variant="outline" onClick={props.onCancel}>
-            Cancel
-          </Button>
-        )}
-        {props.mode === "edit" && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => form.reset()}
-          >
-            Reset
-          </Button>
-        )}
-        <Button
-          type="submit"
-          disabled={
-            rd.isPending(processingPromise.state) || !form.formState.isDirty
-          }
-        >
-          {submitIcon}
-          {submitLabel}
-        </Button>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,56%)] xl:grid-cols-[minmax(0,1fr)_minmax(440px,58%)] lg:items-stretch">
+          <div className="grid min-w-0 grid-cols-2 gap-4">
+            {leftColumnFields}
+          </div>
+          <aside className="flex min-h-0 min-w-0 flex-col lg:sticky lg:top-4 lg:h-[calc(100dvh-7rem)] lg:max-h-none">
+            {previewPanel}
+          </aside>
+        </div>
+        {defaultFormActions}
       </form>
     </Form>
   );
