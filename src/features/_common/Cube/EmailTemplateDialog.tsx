@@ -25,6 +25,13 @@ import {
   readBillingDueDateFromCubeData,
   readEmailReplyInviteMessageFromCubeData,
 } from "./emailReplyInviteCopy";
+import {
+  emailSubjectInterpolationVars,
+  readEmailSubjectTemplateInvoiceFromCubeData,
+  readEmailSubjectTemplateReminderFromCubeData,
+  resolveInvoiceEmailSubject,
+  resolveReminderEmailSubject,
+} from "./emailSubjectTemplate";
 
 interface EmailTemplateDialogProps {
   reportData: CockpitCubeReportWithCreator;
@@ -40,6 +47,16 @@ interface EmailTemplateDialogProps {
    * to `reportData.cube_data.meta.source.emailReplyInviteMessage` when omitted.
    */
   replyInviteMessage?: string | null;
+  /**
+   * Overrides invoice subject template; defaults to
+   * `cube_data.meta.source.emailSubjectTemplateInvoice` when omitted.
+   */
+  emailSubjectTemplateInvoice?: string | null;
+  /**
+   * Overrides reminder subject template; defaults to
+   * `cube_data.meta.source.emailSubjectTemplateReminder` when omitted.
+   */
+  emailSubjectTemplateReminder?: string | null;
 }
 
 export function EmailTemplateDialog({
@@ -52,6 +69,8 @@ export function EmailTemplateDialog({
   clientDisplayName,
   clientAvatarDataUrl,
   replyInviteMessage: replyInviteMessageProp,
+  emailSubjectTemplateInvoice: emailSubjectTemplateInvoiceProp,
+  emailSubjectTemplateReminder: emailSubjectTemplateReminderProp,
 }: EmailTemplateDialogProps) {
   const replyInviteFromReport = readEmailReplyInviteMessageFromCubeData(
     reportData.cube_data as Record<string, unknown>,
@@ -60,6 +79,22 @@ export function EmailTemplateDialog({
     replyInviteMessageProp !== undefined
       ? replyInviteMessageProp
       : replyInviteFromReport;
+  const subjectInvoiceFromReport =
+    readEmailSubjectTemplateInvoiceFromCubeData(
+      reportData.cube_data as Record<string, unknown>,
+    );
+  const emailSubjectTemplateInvoice =
+    emailSubjectTemplateInvoiceProp !== undefined
+      ? emailSubjectTemplateInvoiceProp
+      : subjectInvoiceFromReport;
+  const subjectReminderFromReport =
+    readEmailSubjectTemplateReminderFromCubeData(
+      reportData.cube_data as Record<string, unknown>,
+    );
+  const emailSubjectTemplateReminder =
+    emailSubjectTemplateReminderProp !== undefined
+      ? emailSubjectTemplateReminderProp
+      : subjectReminderFromReport;
   const contentRef = useRef<HTMLDivElement | null>(null);
   const reminderContentRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"invoice" | "reminder">("invoice");
@@ -211,9 +246,30 @@ export function EmailTemplateDialog({
     }
   };
 
-  const copySubject = async () => {
+  const buildSubjectInterpolationRecord = () => {
     const { from, to } = getDateRange();
-    const subject = `Time & Billing Summary — ${from} to ${to}`;
+    const dueDateFormatted = maybe.mapOrElse(
+      invoiceDueDate,
+      (date: CalendarDate) => {
+        const jsDate = new Date(date.year, date.month - 1, date.day);
+        return formatService.temporal.date(jsDate);
+      },
+      "",
+    );
+    return emailSubjectInterpolationVars({
+      from,
+      to,
+      workspaceName,
+      clientName: clientDisplayName ?? "Client",
+      dueDate: dueDateFormatted,
+    });
+  };
+
+  const copySubject = async () => {
+    const subject = resolveInvoiceEmailSubject(
+      emailSubjectTemplateInvoice,
+      buildSubjectInterpolationRecord(),
+    );
     try {
       await navigator.clipboard.writeText(subject);
     } catch {
@@ -281,18 +337,15 @@ export function EmailTemplateDialog({
 
   const copyReminderSubject = async () => {
     const { from, to } = getDateRange();
-    const dueDateFormatted = maybe.mapOrElse(
-      invoiceDueDate,
-      (date: CalendarDate) => {
-        const jsDate = new Date(date.year, date.month - 1, date.day);
-        return formatService.temporal.date(jsDate);
-      },
-      "",
+    const vars = buildSubjectInterpolationRecord();
+    const subject = resolveReminderEmailSubject(
+      emailSubjectTemplateReminder,
+      vars,
+      () =>
+        vars.dueDate
+          ? `Invoice Reminder — Payment Due ${vars.dueDate}`
+          : `Invoice Reminder — Time & Billing Summary ${from} to ${to}`,
     );
-
-    const subject = dueDateFormatted
-      ? `Invoice Reminder — Payment Due ${dueDateFormatted}`
-      : `Invoice Reminder — Time & Billing Summary ${from} to ${to}`;
 
     try {
       await navigator.clipboard.writeText(subject);

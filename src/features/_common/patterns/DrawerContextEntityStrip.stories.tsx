@@ -26,6 +26,8 @@ const demoProject = {
   createdAt: new Date("2024-01-01"),
   defaultBillingDueDays: 14,
   emailReplyInviteMessage: null,
+  emailSubjectTemplateInvoice: null,
+  emailSubjectTemplateReminder: null,
 } satisfies Project;
 
 const services = {

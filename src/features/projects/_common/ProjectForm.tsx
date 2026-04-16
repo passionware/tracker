@@ -55,6 +55,8 @@ type FormModel = {
   workspaceIds: number[];
   defaultBillingDueDays: number;
   emailReplyInviteMessage: string;
+  emailSubjectTemplateInvoice: string;
+  emailSubjectTemplateReminder: string;
 };
 
 export function ProjectForm(props: ProjectFormProps) {
@@ -70,6 +72,10 @@ export function ProjectForm(props: ProjectFormProps) {
       defaultBillingDueDays: props.defaultValues?.defaultBillingDueDays ?? 14,
       emailReplyInviteMessage:
         props.defaultValues?.emailReplyInviteMessage ?? "",
+      emailSubjectTemplateInvoice:
+        props.defaultValues?.emailSubjectTemplateInvoice ?? "",
+      emailSubjectTemplateReminder:
+        props.defaultValues?.emailSubjectTemplateReminder ?? "",
     },
   });
 
@@ -88,6 +94,10 @@ export function ProjectForm(props: ProjectFormProps) {
       ),
       defaultBillingDueDays: Number.isFinite(dueDays) ? dueDays : 14,
       emailReplyInviteMessage: data.emailReplyInviteMessage.trim() || null,
+      emailSubjectTemplateInvoice:
+        data.emailSubjectTemplateInvoice.trim() || null,
+      emailSubjectTemplateReminder:
+        data.emailSubjectTemplateReminder.trim() || null,
     };
     void processingPromise.track(
       props.onSubmit(allData, getDirtyFields(allData, form)),
@@ -274,6 +284,54 @@ export function ProjectForm(props: ProjectFormProps) {
       {statusField}
       {defaultBillingDueDaysField}
       {emailReplyInviteField}
+      <FormField
+        control={form.control}
+        name="emailSubjectTemplateInvoice"
+        render={({ field }) => (
+          <FormItem className="col-span-2">
+            <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+              Invoice email subject (optional)
+            </FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder='Time & Billing Summary — {{from}} to {{to}}'
+              />
+            </FormControl>
+            <FormDescription>
+              Placeholders: {"{{from}}"}, {"{{to}}"}, {"{{period}}"} (range
+              text), {"{{workspaceName}}"}, {"{{clientName}}"}. Snapshotted when
+              you publish to the cockpit; leave empty for the default subject
+              pattern.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="emailSubjectTemplateReminder"
+        render={({ field }) => (
+          <FormItem className="col-span-2">
+            <FormLabel className={cn(isBulk && "text-sm font-medium")}>
+              Reminder email subject (optional)
+            </FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="Invoice Reminder — Payment Due {{dueDate}}"
+              />
+            </FormControl>
+            <FormDescription>
+              Same placeholders as the invoice line, plus {"{{dueDate}}"} (from
+              the published billing due date or the due date you pick in the
+              email preview). When empty, the app uses its built-in reminder
+              subject wording.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       {descriptionField}
     </>
   );

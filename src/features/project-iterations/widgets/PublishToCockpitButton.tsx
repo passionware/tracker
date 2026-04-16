@@ -151,6 +151,10 @@ export function PublishToCockpitButton({
             generatedReportId: report.id,
             emailReplyInviteMessage:
               projectRow?.emailReplyInviteMessage?.trim() || null,
+            emailSubjectTemplateInvoice:
+              projectRow?.emailSubjectTemplateInvoice?.trim() || null,
+            emailSubjectTemplateReminder:
+              projectRow?.emailSubjectTemplateReminder?.trim() || null,
             billingDueDate: dueDateForPublish.toString(),
           },
         },

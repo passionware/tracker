@@ -10,5 +10,7 @@ export function projectPayloadFromProject(project: Project): ProjectPayload {
     workspaceIds: project.workspaceIds,
     defaultBillingDueDays: project.defaultBillingDueDays,
     emailReplyInviteMessage: project.emailReplyInviteMessage,
+    emailSubjectTemplateInvoice: project.emailSubjectTemplateInvoice,
+    emailSubjectTemplateReminder: project.emailSubjectTemplateReminder,
   };
 }

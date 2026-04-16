@@ -15,6 +15,16 @@ export const project$ = z.object({
     .nullable()
     .optional()
     .transform((v) => v ?? null),
+  email_subject_template_invoice: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  email_subject_template_reminder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
   link_project_workspace: z.array(
     z.object({
       workspace_id: z.number(),

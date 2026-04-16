@@ -50,6 +50,16 @@ export interface ProjectPayload {
    * Stored on publish in cube meta for cockpit.
    */
   emailReplyInviteMessage: Nullable<string>;
+  /**
+   * Optional invoice email subject template (`{{from}}`, `{{to}}`, `{{period}}`, `{{workspaceName}}`, `{{clientName}}`).
+   * Snapshotted in cube meta on publish; empty uses built-in default template.
+   */
+  emailSubjectTemplateInvoice: Nullable<string>;
+  /**
+   * Optional reminder email subject template (same placeholders plus `{{dueDate}}`).
+   * When empty, non-template reminder subject defaults apply in the email dialog.
+   */
+  emailSubjectTemplateReminder: Nullable<string>;
 }
 
 export interface ProjectBase extends ProjectPayload {

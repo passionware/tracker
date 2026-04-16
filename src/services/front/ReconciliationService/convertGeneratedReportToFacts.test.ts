@@ -50,6 +50,8 @@ describe("convertGeneratedReportToFacts", () => {
     clientId: 10,
     defaultBillingDueDays: 14,
     emailReplyInviteMessage: null,
+    emailSubjectTemplateInvoice: null,
+    emailSubjectTemplateReminder: null,
     ...overrides,
   });
 

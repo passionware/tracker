@@ -428,6 +428,22 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
                   : String(payload.emailReplyInviteMessage),
             }
           : {}),
+        ...("emailSubjectTemplateInvoice" in payload
+          ? {
+              p_email_subject_template_invoice:
+                payload.emailSubjectTemplateInvoice == null
+                  ? ""
+                  : String(payload.emailSubjectTemplateInvoice),
+            }
+          : {}),
+        ...("emailSubjectTemplateReminder" in payload
+          ? {
+              p_email_subject_template_reminder:
+                payload.emailSubjectTemplateReminder == null
+                  ? ""
+                  : String(payload.emailSubjectTemplateReminder),
+            }
+          : {}),
       });
 
       if (error) {
@@ -505,6 +521,10 @@ export function createMutationApi(client: SupabaseClient): MutationApi {
           p_workspace_ids: project.workspaceIds,
           p_default_billing_due_days: project.defaultBillingDueDays,
           p_email_reply_invite_message: project.emailReplyInviteMessage ?? null,
+          p_email_subject_template_invoice:
+            project.emailSubjectTemplateInvoice ?? null,
+          p_email_subject_template_reminder:
+            project.emailSubjectTemplateReminder ?? null,
         },
       );
 
