@@ -272,43 +272,49 @@ export function TmetricLiveContractorsPopover(
             align="start"
             sideOffset={10}
           >
-            <div className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-4 py-4">
-              <p className="text-base font-semibold tracking-tight text-foreground">
-                Contractors
-              </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                One lane per contractor — last 24h of TMetric time on the tracks, with
-                status and clients in each lane label.
-              </p>
-              <Link
-                to={tmetricCubeExplorerHref}
-                className="mt-3 inline-flex max-w-full flex-wrap items-baseline gap-x-1 rounded-md py-0.5 text-xs font-medium text-primary underline-offset-4 transition-colors hover:bg-primary/5 hover:underline"
-                onClick={() => setOpen(false)}
-              >
-                Open TMetric cube
-                <span className="font-normal text-muted-foreground no-underline">
-                  · all workspaces · all clients · today
-                </span>
-              </Link>
-              <div className="mt-3 min-h-9">
-                {liveData ? (
-                  <div className="inline-flex min-h-9 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/50 bg-background/70 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground shadow-sm backdrop-blur-sm">
-                    <span>
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {formatHours(liveData.summary.totalHoursLast24h)}
-                      </span>{" "}
-                      / 24h
+            <div className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-4 py-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-x-4 sm:gap-y-2">
+                <div className="min-w-0">
+                  <p className="text-base font-semibold tracking-tight text-foreground">
+                    Contractors
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    One lane per contractor — last 24h of TMetric time on the tracks, with
+                    status and clients in each lane label.
+                  </p>
+                </div>
+                <div className="flex min-h-9 items-center sm:justify-self-end">
+                  {liveData ? (
+                    <div className="inline-flex min-h-9 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/50 bg-background/70 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground shadow-sm backdrop-blur-sm">
+                      <span>
+                        <span className="font-semibold tabular-nums text-foreground">
+                          {formatHours(liveData.summary.totalHoursLast24h)}
+                        </span>{" "}
+                        / 24h
+                      </span>
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
+                      <span>
+                        {liveData.summary.activeTimers} active
+                      </span>
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
+                      <span>{liveData.summary.integratedContractors} people</span>
+                    </div>
+                  ) : showLiveSummaryPlaceholder ? (
+                    <LiveSummarySkeleton />
+                  ) : null}
+                </div>
+                <div className="min-w-0 sm:col-span-2">
+                  <Link
+                    to={tmetricCubeExplorerHref}
+                    className="inline-flex max-w-full flex-wrap items-baseline gap-x-1 rounded-md py-0.5 text-xs font-medium text-primary underline-offset-4 transition-colors hover:bg-primary/5 hover:underline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Open TMetric cube
+                    <span className="font-normal text-muted-foreground no-underline">
+                      · all workspaces · all clients · today
                     </span>
-                    <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
-                    <span>
-                      {liveData.summary.activeTimers} active
-                    </span>
-                    <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
-                    <span>{liveData.summary.integratedContractors} people</span>
-                  </div>
-                ) : showLiveSummaryPlaceholder ? (
-                  <LiveSummarySkeleton />
-                ) : null}
+                  </Link>
+                </div>
               </div>
             </div>
 
