@@ -150,6 +150,23 @@ const lastProjectForNewIterationApi = createLocalStorageApi<
   {},
 );
 
+const tmetricLiveContractorsLastRowCountSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(500);
+
+const tmetricLiveContractorsLastRowCountApi = createLocalStorageApi<
+  number | null
+>(
+  "tmetric-live-contractors-panel-last-row-count-v1",
+  (data) => {
+    const result = tmetricLiveContractorsLastRowCountSchema.safeParse(data);
+    return result.success ? result.data : null;
+  },
+  null,
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -286,6 +303,32 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useTmetricLiveContractorsLastRowCountStore = create<{
+    rowCount: number | null;
+    initialized: boolean;
+    setRowCount: (n: number) => Promise<void>;
+  }>((set, get) => ({
+    rowCount: null,
+    initialized: false,
+    setRowCount: async (n) => {
+      const clamped = tmetricLiveContractorsLastRowCountSchema.parse(
+        Math.min(500, Math.max(0, Math.floor(n))),
+      );
+      if (get().rowCount === clamped) {
+        return;
+      }
+      set({ rowCount: clamped });
+      await tmetricLiveContractorsLastRowCountApi.write(clamped);
+    },
+  }));
+
+  void tmetricLiveContractorsLastRowCountApi.read().then((stored) => {
+    useTmetricLiveContractorsLastRowCountStore.setState({
+      rowCount: stored,
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -364,6 +407,19 @@ export function createPreferenceService(): PreferenceService {
       const map = { ...((await lastProjectForNewIterationApi.read()) ?? {}) };
       map[scopeKey] = projectId;
       await lastProjectForNewIterationApi.write(map);
+    },
+    useTmetricLiveContractorsPanelLastRowCount: () => {
+      const { rowCount, initialized } =
+        useTmetricLiveContractorsLastRowCountStore();
+      if (!initialized) {
+        return null;
+      }
+      return rowCount;
+    },
+    recordTmetricLiveContractorsPanelLastRowCount: async (rowCount: number) => {
+      await useTmetricLiveContractorsLastRowCountStore
+        .getState()
+        .setRowCount(rowCount);
     },
   };
 }

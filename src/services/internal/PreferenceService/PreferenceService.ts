@@ -70,6 +70,14 @@ export interface PreferenceService {
     scopeKey: string,
     projectId: number,
   ) => Promise<void>;
+  /**
+   * Last successful TMetric live contractors panel row count (persisted).
+   * Used so loading skeletons match the previous list height and avoid layout jump.
+   */
+  useTmetricLiveContractorsPanelLastRowCount: () => number | null;
+  recordTmetricLiveContractorsPanelLastRowCount: (
+    rowCount: number,
+  ) => Promise<void>;
 }
 
 export interface WithPreferenceService {

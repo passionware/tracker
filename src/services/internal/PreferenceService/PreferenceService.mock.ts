@@ -57,5 +57,7 @@ export function createPreferenceService(config: {
     }),
     getLastProjectForNewIteration: async () => null,
     setLastProjectForNewIteration: async () => {},
+    useTmetricLiveContractorsPanelLastRowCount: () => null,
+    recordTmetricLiveContractorsPanelLastRowCount: async () => {},
   };
 }
