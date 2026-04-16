@@ -8,7 +8,6 @@ import {
   ITEM_COLORS,
   RULER_TRACK_OVERFLOW_PX,
   SUB_ROW_HEIGHT,
-  SIDEBAR_WIDTH,
   formatDrawPreviewRange,
   type DrawingPreviewLabelParams,
   type SnapOption,
@@ -38,6 +37,7 @@ import {
   useTimelineSnapTime,
   useTimelineVerticalScrollOffset,
   useTimelineMinimizedLaneIds,
+  useTimelineLaneSidebarWidth,
   useTimelineVisibleLaneRows,
   useTimelineZoom,
 } from "./use-timeline-selectors.ts";
@@ -50,6 +50,7 @@ function DrawingPreview<Data = unknown, TLaneMeta = unknown>({
   containerRef,
   pixelsPerMinute,
   scrollOffset,
+  laneSidebarWidthPx,
   snapTime,
   baseDateZoned,
   snapOption,
@@ -64,6 +65,7 @@ function DrawingPreview<Data = unknown, TLaneMeta = unknown>({
   containerRef: RefObject<HTMLDivElement | null>;
   pixelsPerMinute: number;
   scrollOffset: number;
+  laneSidebarWidthPx: number;
   snapTime: (time: number) => number;
   baseDateZoned: ZonedDateTime;
   snapOption: SnapOption;
@@ -80,7 +82,7 @@ function DrawingPreview<Data = unknown, TLaneMeta = unknown>({
   if (currentMouseX !== null && rect) {
     const containerX = currentMouseX - rect.left;
     currentTime = snapTime(
-      (containerX - SIDEBAR_WIDTH - scrollOffset) / pixelsPerMinute,
+      (containerX - laneSidebarWidthPx - scrollOffset) / pixelsPerMinute,
     );
   } else {
     currentTime = startTime;
@@ -187,13 +189,14 @@ const TimelineGridLines = memo(function TimelineGridLines({
     quarterScaleMarkers,
     baseDateZoned,
   } = useTimelineRulerLayout();
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
 
   return (
     <div className="absolute inset-0 pointer-events-none">
       {timeScale === "hours" && (
         <>
           {quarterMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -211,7 +214,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
           })}
 
           {hourMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -232,7 +235,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
           })}
 
           {dayMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -254,7 +257,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
       {timeScale === "days" && (
         <>
           {dayMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -278,7 +281,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
           })}
 
           {monthMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -300,7 +303,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
       {timeScale === "weeks" && (
         <>
           {weekMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -324,7 +327,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
           })}
 
           {monthMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -346,7 +349,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
       {timeScale === "quarters" && (
         <>
           {quarterScaleMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -369,7 +372,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
             );
           })}
           {yearMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -391,7 +394,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
       {timeScale === "months" && (
         <>
           {monthMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -420,7 +423,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
           })}
 
           {yearMarkers.map((minutes) => {
-            const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+            const x = timeToPixel(minutes) - laneSidebarWidthPx;
             if (
               x < -RULER_TRACK_OVERFLOW_PX ||
               x > tracksContentWidth + RULER_TRACK_OVERFLOW_PX
@@ -477,6 +480,7 @@ function TimelineTracksPanelInner<
   const dragState = useTimelineDragState<Data>();
   const snapTime = useTimelineSnapTime();
   const currentMouseX = useTimelineCurrentMouseX();
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
 
   const drawingPreview =
     dragState &&
@@ -501,10 +505,12 @@ function TimelineTracksPanelInner<
         scrollOffset,
         zoom,
         screenXToContainerX,
+        laneSidebarWidthPx,
       ),
     [
       currentMouseX,
       dragState,
+      laneSidebarWidthPx,
       mergedItems,
       screenXToContainerX,
       scrollOffset,
@@ -558,7 +564,7 @@ function TimelineTracksPanelInner<
     <div
       className="absolute top-14 bottom-0 overflow-hidden"
       style={{
-        left: SIDEBAR_WIDTH,
+        left: laneSidebarWidthPx,
         right: 0,
       }}
       onMouseDown={(e) => handlersRef.current?.onTimelineGridMouseDown(e)}
@@ -616,11 +622,12 @@ function TimelineTracksPanelInner<
                 <DrawingPreview<Data, TLaneMeta>
                   lane={lane}
                   startTime={drawingPreview.startTime}
-                  timeToPixel={(t) => timeToPixel(t) - SIDEBAR_WIDTH}
+                  timeToPixel={(t) => timeToPixel(t) - laneSidebarWidthPx}
                   laneIndex={laneIndex}
                   containerRef={containerRef}
                   pixelsPerMinute={pixelsPerMinute}
                   scrollOffset={scrollOffset}
+                  laneSidebarWidthPx={laneSidebarWidthPx}
                   snapTime={snapTime}
                   baseDateZoned={baseDateZoned}
                   snapOption={snapOption}

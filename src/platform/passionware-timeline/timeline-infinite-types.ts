@@ -9,6 +9,18 @@ import type { UseTimelineInteractionsOptions } from "./use-timeline-interactions
 
 export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
   state: TimelineStateApi<Data, TLaneMeta>;
+  /**
+   * When true, hides the editor toolbar and bottom status bar (e.g. embedded in a popover).
+   */
+  embedded?: boolean;
+  /**
+   * Custom lane label (left sidebar). When omitted, {@link VisibleTimelineLaneRow#name} is shown.
+   */
+  renderLaneLabel?: (lane: VisibleTimelineLaneRow<TLaneMeta>) => ReactNode;
+  /**
+   * When true, hides lane minimize / expand chrome (flat read-only lanes).
+   */
+  hideLaneControls?: boolean;
   interactionOptions?: UseTimelineInteractionsOptions<Data>;
   renderItem?: (props: {
     item: TimelineItem<Data>;

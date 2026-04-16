@@ -1,10 +1,9 @@
 "use client";
 
 import { ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SIDEBAR_WIDTH } from "./passionware-timeline-core.ts";
 import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
 import {
   computeCalculatedPreviewItem,
@@ -19,24 +18,25 @@ import {
   useTimelineScrollOffset,
   useTimelineSnapTime,
   useTimelineVerticalScrollOffset,
+  useTimelineLaneSidebarWidth,
   useTimelineVisibleLaneRows,
   useTimelineZoom,
 } from "./use-timeline-selectors.ts";
 
-const TimelineLaneSidebarMinimizedRow = memo(function TimelineLaneSidebarMinimizedRow<
-  TLaneMeta = unknown,
->({
+const TimelineLaneSidebarMinimizedRow = memo(function TimelineLaneSidebarMinimizedRow({
   lane,
   index,
   rowHeight,
   indentPx,
   toggleLaneMinimized,
+  hideLaneControls,
 }: {
-  lane: VisibleTimelineLaneRow<TLaneMeta>;
+  lane: VisibleTimelineLaneRow<unknown>;
   index: number;
   rowHeight: number;
   indentPx: number;
   toggleLaneMinimized: (laneId: string) => void;
+  hideLaneControls?: boolean;
 }) {
   const zebra =
     index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt";
@@ -66,43 +66,47 @@ const TimelineLaneSidebarMinimizedRow = memo(function TimelineLaneSidebarMinimiz
               {lane.name}
             </span>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-xs"
-            className="absolute top-1.5 right-1.5 shrink-0"
-            aria-label={`Expand track ${lane.name}`}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleLaneMinimized(lane.id);
-            }}
-          >
-            <Maximize2 />
-          </Button>
+          {hideLaneControls ? null : (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-xs"
+              className="absolute top-1.5 right-1.5 shrink-0"
+              aria-label={`Expand track ${lane.name}`}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleLaneMinimized(lane.id);
+              }}
+            >
+              <Maximize2 />
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
 });
 
-const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow<
-  TLaneMeta = unknown,
->({
+const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow({
   lane,
   index,
   rowHeight,
   indentPx,
   toggleLaneExpanded,
   toggleLaneMinimized,
+  renderLaneLabel,
+  hideLaneControls,
 }: {
-  lane: VisibleTimelineLaneRow<TLaneMeta>;
+  lane: VisibleTimelineLaneRow<unknown>;
   index: number;
   rowHeight: number;
   indentPx: number;
   toggleLaneExpanded: (laneId: string) => void;
   toggleLaneMinimized: (laneId: string) => void;
+  renderLaneLabel?: (lane: VisibleTimelineLaneRow<unknown>) => ReactNode;
+  hideLaneControls?: boolean;
 }) {
   const zebra =
     index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt";
@@ -170,6 +174,10 @@ const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow<
               {lane.name}
             </span>
           </button>
+        ) : renderLaneLabel ? (
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-hidden pr-1">
+            {renderLaneLabel(lane)}
+          </div>
         ) : (
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <span
@@ -184,25 +192,27 @@ const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow<
           </div>
         )}
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        className={cn(
-          "absolute top-1.5 right-2 shrink-0 text-muted-foreground",
-          "opacity-0 transition-opacity duration-150",
-          "group-hover:opacity-100 group-focus-within:opacity-100",
-        )}
-        aria-label={`Hide track content for ${lane.name}`}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleLaneMinimized(lane.id);
-        }}
-      >
-        <Minimize2 />
-      </Button>
+      {hideLaneControls ? null : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className={cn(
+            "absolute top-1.5 right-2 shrink-0 text-muted-foreground",
+            "opacity-0 transition-opacity duration-150",
+            "group-hover:opacity-100 group-focus-within:opacity-100",
+          )}
+          aria-label={`Hide track content for ${lane.name}`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleLaneMinimized(lane.id);
+          }}
+        >
+          <Minimize2 />
+        </Button>
+      )}
     </div>
   );
 });
@@ -213,9 +223,13 @@ function TimelineLaneSidebarBlockInner<
 >({
   toggleLaneExpanded,
   toggleLaneMinimized,
+  renderLaneLabel,
+  hideLaneControls,
 }: {
   toggleLaneExpanded: (laneId: string) => void;
   toggleLaneMinimized: (laneId: string) => void;
+  renderLaneLabel?: (lane: VisibleTimelineLaneRow<TLaneMeta>) => ReactNode;
+  hideLaneControls?: boolean;
 }) {
   const { screenXToContainerX } = useTimelineRefs();
   const visibleLaneRows = useTimelineVisibleLaneRows<TLaneMeta>();
@@ -227,6 +241,7 @@ function TimelineLaneSidebarBlockInner<
   const dragState = useTimelineDragState<Data>();
   const snapTime = useTimelineSnapTime();
   const currentMouseX = useTimelineCurrentMouseX();
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
 
   const calculatedPreviewItem = useMemo(
     () =>
@@ -238,10 +253,12 @@ function TimelineLaneSidebarBlockInner<
         scrollOffset,
         zoom,
         screenXToContainerX,
+        laneSidebarWidthPx,
       ),
     [
       currentMouseX,
       dragState,
+      laneSidebarWidthPx,
       mergedItems,
       screenXToContainerX,
       scrollOffset,
@@ -253,7 +270,7 @@ function TimelineLaneSidebarBlockInner<
   return (
     <div
       className="absolute top-14 left-0 bottom-0 bg-card border-r border-border z-10 overflow-hidden"
-      style={{ width: SIDEBAR_WIDTH }}
+      style={{ width: laneSidebarWidthPx }}
     >
       <div
         style={{
@@ -285,6 +302,7 @@ function TimelineLaneSidebarBlockInner<
                 rowHeight={rowHeight}
                 indentPx={indentPx}
                 toggleLaneMinimized={toggleLaneMinimized}
+                hideLaneControls={hideLaneControls}
               />
             );
           }
@@ -297,6 +315,15 @@ function TimelineLaneSidebarBlockInner<
               indentPx={indentPx}
               toggleLaneExpanded={toggleLaneExpanded}
               toggleLaneMinimized={toggleLaneMinimized}
+              renderLaneLabel={
+                renderLaneLabel
+                  ? (laneRow) =>
+                      renderLaneLabel(
+                        laneRow as VisibleTimelineLaneRow<TLaneMeta>,
+                      )
+                  : undefined
+              }
+              hideLaneControls={hideLaneControls}
             />
           );
         })}

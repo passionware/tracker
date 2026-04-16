@@ -163,7 +163,12 @@ type ScrollableMainProps<
   TLaneMeta = unknown,
 > = Pick<
   InfiniteTimelineProps<Data, TLaneMeta>,
-  "renderItem" | "onItemHover" | "isEventSelected" | "renderDrawingPreviewLabel"
+  | "renderItem"
+  | "onItemHover"
+  | "isEventSelected"
+  | "renderDrawingPreviewLabel"
+  | "renderLaneLabel"
+  | "hideLaneControls"
 > & {
   toggleLaneExpanded: (laneId: string) => void;
   toggleLaneMinimized: (laneId: string) => void;
@@ -175,6 +180,17 @@ function TimelineScrollableMainInner<
   TLaneMeta = unknown,
 >(props: ScrollableMainProps<Data, TLaneMeta>) {
   const { previewItemRef, screenXToContainerX } = useTimelineRefs();
+  const {
+    toggleLaneExpanded,
+    toggleLaneMinimized,
+    renderLaneLabel,
+    hideLaneControls,
+    itemActivateTrigger,
+    renderItem,
+    onItemHover,
+    isEventSelected,
+    renderDrawingPreviewLabel,
+  } = props;
 
   return (
     <TimelineScrollSurface>
@@ -184,10 +200,18 @@ function TimelineScrollableMainInner<
       />
       <TimelineScrollHeaders />
       <TimelineLaneSidebarBlock
-        toggleLaneExpanded={props.toggleLaneExpanded}
-        toggleLaneMinimized={props.toggleLaneMinimized}
+        toggleLaneExpanded={toggleLaneExpanded}
+        toggleLaneMinimized={toggleLaneMinimized}
+        renderLaneLabel={renderLaneLabel}
+        hideLaneControls={hideLaneControls}
       />
-      <TimelineTracksPanel {...props} />
+      <TimelineTracksPanel
+        renderItem={renderItem}
+        onItemHover={onItemHover}
+        isEventSelected={isEventSelected}
+        renderDrawingPreviewLabel={renderDrawingPreviewLabel}
+        itemActivateTrigger={itemActivateTrigger}
+      />
       <TimelineNowIndicator />
     </TimelineScrollSurface>
   );
@@ -200,6 +224,7 @@ const TimelineScrollableMain = memo(
 export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
   props: InfiniteTimelineProps<Data, TLaneMeta>,
 ) {
+  const embedded = props.embedded ?? false;
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<CalculatedDrawPreview | null>(null);
   const screenXToContainerX = useCallback((screenX: number) => {
@@ -216,7 +241,7 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
   return (
     <TimelineRefsProvider value={refsValue}>
       <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
-        <TimelineToolbar />
+        {embedded ? null : <TimelineToolbar />}
         <TimelineInteractionBridge
           state={props.state}
           interactionOptions={{
@@ -230,6 +255,8 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
               onItemHover={props.onItemHover}
               isEventSelected={props.isEventSelected}
               renderDrawingPreviewLabel={props.renderDrawingPreviewLabel}
+              renderLaneLabel={props.renderLaneLabel}
+              hideLaneControls={props.hideLaneControls}
               toggleLaneExpanded={props.state.toggleLaneExpanded}
               toggleLaneMinimized={props.state.toggleLaneMinimized}
               itemActivateTrigger={
@@ -238,7 +265,7 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
             />
           </div>
         </TimelineInteractionBridge>
-        <TimelineStatusBar />
+        {embedded ? null : <TimelineStatusBar />}
       </div>
     </TimelineRefsProvider>
   );

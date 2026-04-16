@@ -5,6 +5,7 @@ import { getLocalTimeZone } from "@internationalized/date";
 import type { Lane } from "./timeline-lane-tree.ts";
 import type { TimelineItem } from "./passionware-timeline-core.ts";
 import { expandedLaneIdsToSet } from "./timeline-expanded-lane-set.ts";
+import { SIDEBAR_WIDTH } from "./passionware-timeline-core.ts";
 import type { TimelineStateApi } from "./use-timeline-state.ts";
 
 export interface SyncTimelineAtomsInput<Data, TLaneMeta> {
@@ -13,6 +14,8 @@ export interface SyncTimelineAtomsInput<Data, TLaneMeta> {
   timeZone?: string;
   /** When set, expansion is controlled from React (written on every sync). */
   expandedLaneIds?: ReadonlySet<string> | null;
+  /** Lane label column width (px). Defaults to {@link SIDEBAR_WIDTH}. */
+  laneSidebarWidthPx?: number;
 }
 
 /**
@@ -24,7 +27,8 @@ export function useSyncTimelineAtoms<Data = unknown, TLaneMeta = unknown>(
   input: SyncTimelineAtomsInput<Data, TLaneMeta>,
 ): void {
   const { store, atoms } = state.bundle;
-  const { items, lanes, timeZone, expandedLaneIds } = input;
+  const { items, lanes, timeZone, expandedLaneIds, laneSidebarWidthPx } =
+    input;
 
   useLayoutEffect(() => {
     store.set(atoms.itemsAtom, items);
@@ -38,13 +42,19 @@ export function useSyncTimelineAtoms<Data = unknown, TLaneMeta = unknown>(
         expandedLaneIdsToSet(expandedLaneIds ?? undefined),
       );
     }
+    store.set(
+      atoms.laneSidebarWidthPxAtom,
+      laneSidebarWidthPx ?? SIDEBAR_WIDTH,
+    );
   }, [
     atoms.expandedLaneIdsAtom,
     atoms.itemsAtom,
     atoms.lanesAtom,
+    atoms.laneSidebarWidthPxAtom,
     atoms.timeZoneAtom,
     expandedLaneIds,
     items,
+    laneSidebarWidthPx,
     lanes,
     store,
     timeZone,

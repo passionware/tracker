@@ -3,6 +3,7 @@ import {
   type DragState,
   type TimelineItemInternal,
   LANE_HEIGHT,
+  SIDEBAR_WIDTH,
   SUB_ROW_HEIGHT,
   timelineItemsTimeOverlap,
 } from "./passionware-timeline-core.ts";
@@ -17,16 +18,18 @@ export function layoutTimeToPixel(
   time: number,
   scrollOffset: number,
   zoom: number,
+  laneSidebarWidthPx: number = SIDEBAR_WIDTH,
 ): number {
-  return timeToPixel(time, scrollOffset, zoom);
+  return timeToPixel(time, scrollOffset, zoom, laneSidebarWidthPx);
 }
 
 export function layoutPixelToTime(
   pixel: number,
   scrollOffset: number,
   zoom: number,
+  laneSidebarWidthPx: number = SIDEBAR_WIDTH,
 ): number {
-  return pixelToTime(pixel, scrollOffset, zoom);
+  return pixelToTime(pixel, scrollOffset, zoom, laneSidebarWidthPx);
 }
 
 export function getItemsWithRowsForLane<Data>(
@@ -127,6 +130,7 @@ export function computeCalculatedPreviewItem<Data>(
   scrollOffset: number,
   zoom: number,
   screenXToContainerX: (screenX: number) => number,
+  laneSidebarWidthPx: number = SIDEBAR_WIDTH,
 ): CalculatedDrawPreview | null {
   if (
     !dragState ||
@@ -139,7 +143,9 @@ export function computeCalculatedPreviewItem<Data>(
   }
 
   const containerX = screenXToContainerX(currentMouseX);
-  const currentTime = snapTime(layoutPixelToTime(containerX, scrollOffset, zoom));
+  const currentTime = snapTime(
+    layoutPixelToTime(containerX, scrollOffset, zoom, laneSidebarWidthPx),
+  );
   const previewStart = Math.min(dragState.drawStart, currentTime);
   const previewEnd = Math.max(dragState.drawStart, currentTime);
 

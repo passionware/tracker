@@ -17,6 +17,7 @@ import {
   type TimelineItem,
   type TimelineItemInternal,
   PIXELS_PER_MINUTE,
+  SIDEBAR_WIDTH,
   SNAP_VALUES,
   defaultTimelineBaseZoned,
   toInternalItem,
@@ -63,6 +64,8 @@ export interface TimelineJotaiAtoms<Data, TLaneMeta = unknown> {
   mergedItemAtomFamily: (id: string) => Atom<TimelineItemInternal<Data> | undefined>;
   eventIdsAtom: Atom<string[]>;
   containerWidthAtom: PrimitiveAtom<number>;
+  /** Lane label column width (px); defaults to {@link SIDEBAR_WIDTH}. */
+  laneSidebarWidthPxAtom: PrimitiveAtom<number>;
 }
 
 export interface TimelineJotaiBundle<Data, TLaneMeta = unknown> {
@@ -195,6 +198,7 @@ function createTimelineJotaiAtoms<
   const eventIdsAtom = atom((get) => get(internalItemsAtom).map((i) => i.id));
 
   const containerWidthAtom = atom(1200);
+  const laneSidebarWidthPxAtom = atom(SIDEBAR_WIDTH);
 
   return {
     itemsAtom,
@@ -222,6 +226,7 @@ function createTimelineJotaiAtoms<
     mergedItemAtomFamily,
     eventIdsAtom,
     containerWidthAtom,
+    laneSidebarWidthPxAtom,
   };
 }
 

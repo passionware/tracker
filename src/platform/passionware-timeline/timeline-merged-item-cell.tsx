@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   type TimelineItem,
-  SIDEBAR_WIDTH,
   toExternalItem,
   toInternalItem,
 } from "./passionware-timeline-core.ts";
@@ -19,6 +18,7 @@ import { layoutTimeToPixel } from "./timeline-layout-logic.ts";
 import { pixelsPerMinuteFromZoom } from "./timeline-view-geometry.ts";
 import {
   useTimelineBaseDateZoned,
+  useTimelineLaneSidebarWidth,
   useTimelineMergedItem,
   useTimelineScrollOffset,
   useTimelineSelectedItemId,
@@ -48,6 +48,7 @@ function TimelineMergedItemCellInner<Data = unknown>({
   const baseDateZoned = useTimelineBaseDateZoned();
   const scrollOffset = useTimelineScrollOffset();
   const zoom = useTimelineZoom();
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
   const selectedItemId = useTimelineSelectedItemId();
   const handlersRef = useTimelineHandlersRef();
 
@@ -56,8 +57,9 @@ function TimelineMergedItemCellInner<Data = unknown>({
     [zoom],
   );
   const timeToPixel = useCallback(
-    (t: number) => layoutTimeToPixel(t, scrollOffset, zoom),
-    [scrollOffset, zoom],
+    (t: number) =>
+      layoutTimeToPixel(t, scrollOffset, zoom, laneSidebarWidthPx),
+    [laneSidebarWidthPx, scrollOffset, zoom],
   );
 
   const onItemMouseDown = useCallback(
@@ -81,7 +83,7 @@ function TimelineMergedItemCellInner<Data = unknown>({
 
   if (!item) return null;
 
-  const left = timeToPixel(item.start) - SIDEBAR_WIDTH;
+  const left = timeToPixel(item.start) - laneSidebarWidthPx;
   const naturalWidth = (item.end - item.start) * pixelsPerMinute;
   const MIN_VISIBLE_WIDTH = 3;
   const isMinWidth = naturalWidth < MIN_VISIBLE_WIDTH;

@@ -6,7 +6,6 @@ import type { ZonedDateTime } from "@internationalized/date";
 import type { TimelineTemporal } from "./passionware-timeline-core.ts";
 import {
   minutesToZonedDateTime,
-  SIDEBAR_WIDTH,
   timelineTemporalToZoned,
   zonedDateTimeToMinutes,
 } from "./passionware-timeline-core.ts";
@@ -130,6 +129,11 @@ export function useTimelineContainerWidth(): number {
   return useAtomValue(atoms.containerWidthAtom, { store });
 }
 
+export function useTimelineLaneSidebarWidth(): number {
+  const { store, atoms } = useTimelineStore();
+  return useAtomValue(atoms.laneSidebarWidthPxAtom, { store });
+}
+
 /** Maps last stored screen `currentMouseX` (during draw/drag) into timeline time. */
 export function useTimelinePointerZonedTime(
   screenXToContainerX: (screenX: number) => number,
@@ -137,14 +141,25 @@ export function useTimelinePointerZonedTime(
   const currentMouseX = useTimelineCurrentMouseX();
   const scrollOffset = useTimelineScrollOffset();
   const zoom = useTimelineZoom();
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
   const base = useTimelineBaseDateZoned();
   const snap = useTimelineSnapTime();
   return useMemo(() => {
     if (currentMouseX === null) return null;
     const containerX = screenXToContainerX(currentMouseX);
-    const t = snap(pixelToTime(containerX, scrollOffset, zoom));
+    const t = snap(
+      pixelToTime(containerX, scrollOffset, zoom, laneSidebarWidthPx),
+    );
     return minutesToZonedDateTime(t, base);
-  }, [base, currentMouseX, screenXToContainerX, scrollOffset, snap, zoom]);
+  }, [
+    base,
+    currentMouseX,
+    laneSidebarWidthPx,
+    screenXToContainerX,
+    scrollOffset,
+    snap,
+    zoom,
+  ]);
 }
 
 export interface TimelineHorizontalAxisApi {
@@ -174,6 +189,9 @@ export function useTimelineHorizontalAxis<
   const zoom = useAtomValue(atoms.zoomAtom, { store });
   const baseDateZoned = useAtomValue(atoms.baseDateZonedAtom, { store });
   const timeZone = useAtomValue(atoms.timeZoneAtom, { store });
+  const laneSidebarWidthPx = useAtomValue(atoms.laneSidebarWidthPxAtom, {
+    store,
+  });
 
   const pixelsPerMinute = useMemo(
     () => pixelsPerMinuteFromZoom(zoom),
@@ -185,7 +203,12 @@ export function useTimelineHorizontalAxis<
       zonedDateTimeToMinutes(timelineTemporalToZoned(t, timeZone), baseDateZoned);
 
     const contentX = (minutes: number) =>
-      layoutTimeToPixel(minutes, scrollOffset, zoom) - SIDEBAR_WIDTH;
+      layoutTimeToPixel(
+        minutes,
+        scrollOffset,
+        zoom,
+        laneSidebarWidthPx,
+      ) - laneSidebarWidthPx;
 
     return {
       getPointFromMinutes: (minutes: number) => ({ x: contentX(minutes) }),
@@ -216,7 +239,14 @@ export function useTimelineHorizontalAxis<
       },
       pixelsPerMinute,
     };
-  }, [baseDateZoned, pixelsPerMinute, scrollOffset, timeZone, zoom]);
+  }, [
+    baseDateZoned,
+    laneSidebarWidthPx,
+    pixelsPerMinute,
+    scrollOffset,
+    timeZone,
+    zoom,
+  ]);
 }
 
 export function useViewportVisibleMinutesRange(): {
@@ -227,9 +257,18 @@ export function useViewportVisibleMinutesRange(): {
   const scrollOffset = useAtomValue(atoms.scrollOffsetAtom, { store });
   const zoom = useAtomValue(atoms.zoomAtom, { store });
   const containerWidth = useAtomValue(atoms.containerWidthAtom, { store });
+  const laneSidebarWidthPx = useAtomValue(atoms.laneSidebarWidthPxAtom, {
+    store,
+  });
   return useMemo(
-    () => getVisibleTimeRange(scrollOffset, zoom, containerWidth),
-    [containerWidth, scrollOffset, zoom],
+    () =>
+      getVisibleTimeRange(
+        scrollOffset,
+        zoom,
+        containerWidth,
+        laneSidebarWidthPx,
+      ),
+    [containerWidth, laneSidebarWidthPx, scrollOffset, zoom],
   );
 }
 

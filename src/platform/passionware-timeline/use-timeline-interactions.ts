@@ -22,7 +22,6 @@ import {
   ITEM_COLORS,
   MIN_ITEM_DURATION,
   PIXELS_PER_MINUTE,
-  SIDEBAR_WIDTH,
   TIMELINE_ZOOM_MAX,
   TIMELINE_ZOOM_MIN,
   timelineTemporalRangeToLayoutMinutes,
@@ -30,6 +29,7 @@ import {
 } from "./passionware-timeline-core.ts";
 import {
   normalizeWheelDeltaPixels,
+  pixelsPerMinuteFromZoom,
   verticalScrollMaxOffset,
 } from "./timeline-view-geometry.ts";
 import type { VisibleTimelineLaneRow } from "./timeline-lane-tree.ts";
@@ -158,6 +158,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   const timeZone = useAtomValue(atoms.timeZoneAtom, { store });
   const baseDateZoned = useAtomValue(atoms.baseDateZonedAtom, { store });
   const containerWidth = useAtomValue(atoms.containerWidthAtom, { store });
+  const laneSidebarWidthPx = useAtomValue(atoms.laneSidebarWidthPxAtom, {
+    store,
+  });
 
   const viewportRangeKey = viewportRange
     ? `${viewportTemporalSerializationKey(viewportRange.start)}|${viewportTemporalSerializationKey(viewportRange.end)}`
@@ -191,8 +194,18 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   const pixelToTime = useCallback(
     (pixel: number) =>
-      layoutPixelToTime(pixel, readScrollOffset(), readZoom()),
-    [atoms.scrollOffsetAtom, atoms.zoomAtom, store],
+      layoutPixelToTime(
+        pixel,
+        readScrollOffset(),
+        readZoom(),
+        store.get(atoms.laneSidebarWidthPxAtom),
+      ),
+    [
+      atoms.laneSidebarWidthPxAtom,
+      atoms.scrollOffsetAtom,
+      atoms.zoomAtom,
+      store,
+    ],
   );
 
   useEffect(() => {
@@ -209,13 +222,13 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       );
       minStart = startMinutes;
       maxEnd = endMinutes;
-      fitKey = `vp|${viewportRangeKey}|${timeZone}|${baseDateZoned.toString()}|${containerWidth}`;
+      fitKey = `vp|${viewportRangeKey}|${timeZone}|${baseDateZoned.toString()}|${containerWidth}|${laneSidebarWidthPx}`;
     } else {
       const allItems = store.get(atoms.internalItemsAtom) as TimelineItemInternal<
         Data
       >[];
       if (!allItems || allItems.length === 0) return;
-      fitKey = autoFitSignature;
+      fitKey = `${autoFitSignature}|${laneSidebarWidthPx}`;
       minStart = Math.min(
         ...allItems.map((item: TimelineItemInternal<Data>) => item.start),
       );
@@ -230,12 +243,18 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     if (totalMinutes <= 0) return;
 
     const cw = containerRef.current?.clientWidth || containerWidth || 1200;
-    const availableWidth = Math.max(0, cw - SIDEBAR_WIDTH);
+    const availableWidth = Math.max(0, cw - laneSidebarWidthPx);
 
     const padding = 0.1;
     const requiredPixelsPerMinute =
       (availableWidth * (1 - 2 * padding)) / totalMinutes;
-    const calculatedZoom = requiredPixelsPerMinute / PIXELS_PER_MINUTE;
+    const calculatedZoom = Math.max(
+      TIMELINE_ZOOM_MIN,
+      Math.min(
+        TIMELINE_ZOOM_MAX,
+        requiredPixelsPerMinute / PIXELS_PER_MINUTE,
+      ),
+    );
 
     setZoom(calculatedZoom);
 
@@ -255,6 +274,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     store,
     timeZone,
     viewportRangeKey,
+    laneSidebarWidthPx,
   ]);
 
   const handleWheel = useCallback(
@@ -274,8 +294,10 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       if (e.ctrlKey || e.metaKey) {
         if (!rect) return;
 
-        const mouseX = e.clientX - rect.left - SIDEBAR_WIDTH;
-        const timeAtMouse = (mouseX - scrollOffset) / (PIXELS_PER_MINUTE * zoom);
+        const mouseX =
+          e.clientX - rect.left - store.get(atoms.laneSidebarWidthPxAtom);
+        const ppm = pixelsPerMinuteFromZoom(zoom);
+        const timeAtMouse = (mouseX - scrollOffset) / ppm;
 
         const zoomDelta = Math.abs(dy) >= Math.abs(dx) ? dy : dx;
         const zoomFactor = zoomDelta > 0 ? 0.9 : 1.1;
@@ -283,7 +305,8 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
           TIMELINE_ZOOM_MIN,
           Math.min(TIMELINE_ZOOM_MAX, zoom * zoomFactor),
         );
-        const newScrollOffset = mouseX - timeAtMouse * PIXELS_PER_MINUTE * newZoom;
+        const newScrollOffset =
+          mouseX - timeAtMouse * pixelsPerMinuteFromZoom(newZoom);
 
         setZoom(newZoom);
         setScrollOffset(newScrollOffset);
@@ -334,6 +357,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       setZoom,
       store,
       atoms.visibleLaneRowsAtom,
+      atoms.laneSidebarWidthPxAtom,
       atoms.scrollOffsetAtom,
       atoms.zoomAtom,
       atoms.mergedItemsAtom,

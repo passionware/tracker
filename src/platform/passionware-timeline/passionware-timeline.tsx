@@ -135,6 +135,9 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   onItemHover,
   isEventSelected,
   renderDrawingPreviewLabel,
+  embedded,
+  renderLaneLabel,
+  hideLaneControls,
 }: InfiniteTimelineWithStateProps<Data, TLaneMeta>) {
   const state = useTimelineState<Data, TLaneMeta>({
     onExpandedLaneIdsChange,
@@ -145,6 +148,9 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   return (
     <InfiniteTimeline<Data, TLaneMeta>
       state={state}
+      embedded={embedded}
+      renderLaneLabel={renderLaneLabel}
+      hideLaneControls={hideLaneControls}
       interactionOptions={{
         onItemsChange,
         onDrawComplete,

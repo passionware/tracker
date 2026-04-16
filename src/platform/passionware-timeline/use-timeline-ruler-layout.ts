@@ -7,10 +7,10 @@ import {
 } from "./timeline-view-geometry.ts";
 import { layoutTimeToPixel } from "./timeline-layout-logic.ts";
 import { buildTimelineRulerModel } from "./timeline-ruler-model.ts";
-import { SIDEBAR_WIDTH } from "./passionware-timeline-core.ts";
 import {
   useTimelineBaseDateZoned,
   useTimelineContainerWidth,
+  useTimelineLaneSidebarWidth,
   useTimelineScrollOffset,
   useTimelineTimeZone,
   useTimelineZoom,
@@ -22,20 +22,31 @@ export function useTimelineRulerLayout() {
   const scrollOffset = useTimelineScrollOffset();
   const zoom = useTimelineZoom();
   const containerWidth = useTimelineContainerWidth();
-  const tracksContentWidth = Math.max(0, containerWidth - SIDEBAR_WIDTH);
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
+  const tracksContentWidth = Math.max(
+    0,
+    containerWidth - laneSidebarWidthPx,
+  );
 
   const pixelsPerMinute = useMemo(
     () => pixelsPerMinuteFromZoom(zoom),
     [zoom],
   );
   const timeToPixel = useCallback(
-    (t: number) => layoutTimeToPixel(t, scrollOffset, zoom),
-    [scrollOffset, zoom],
+    (t: number) =>
+      layoutTimeToPixel(t, scrollOffset, zoom, laneSidebarWidthPx),
+    [laneSidebarWidthPx, scrollOffset, zoom],
   );
 
   const { startTime, endTime } = useMemo(
-    () => getVisibleTimeRange(scrollOffset, zoom, containerWidth),
-    [containerWidth, scrollOffset, zoom],
+    () =>
+      getVisibleTimeRange(
+        scrollOffset,
+        zoom,
+        containerWidth,
+        laneSidebarWidthPx,
+      ),
+    [containerWidth, laneSidebarWidthPx, scrollOffset, zoom],
   );
 
   const {

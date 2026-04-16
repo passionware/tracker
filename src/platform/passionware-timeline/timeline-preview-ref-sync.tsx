@@ -23,6 +23,9 @@ export function TimelinePreviewRefSync({
   const scrollOffset = useAtomValue(atoms.scrollOffsetAtom, { store });
   const zoom = useAtomValue(atoms.zoomAtom, { store });
   const snapOption = useAtomValue(atoms.snapOptionAtom, { store });
+  const laneSidebarWidthPx = useAtomValue(atoms.laneSidebarWidthPxAtom, {
+    store,
+  });
 
   const calculated = useMemo(
     () =>
@@ -34,10 +37,12 @@ export function TimelinePreviewRefSync({
         scrollOffset,
         zoom,
         screenXToContainerX,
+        laneSidebarWidthPx,
       ),
     [
       currentMouseX,
       dragState,
+      laneSidebarWidthPx,
       mergedItems,
       screenXToContainerX,
       scrollOffset,

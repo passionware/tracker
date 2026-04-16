@@ -14,11 +14,11 @@ import {
   HEADER_HEIGHT,
   minutesToZonedDateTime,
   RULER_TRACK_OVERFLOW_PX,
-  SIDEBAR_WIDTH,
   timelineZonedNow,
   zonedDateTimeToMinutes,
 } from "./passionware-timeline-core.ts";
 import { useTimelineRulerLayout } from "./use-timeline-ruler-layout.ts";
+import { useTimelineLaneSidebarWidth } from "./use-timeline-selectors.ts";
 
 /** Centered labels use `-translate-x-1/2`; keep while overlapping track ∪ horizontal margin. */
 function centeredRulerLabelVisible(
@@ -42,6 +42,7 @@ const RULER_LABEL_HALF_LOWER = 64;
 const RULER_LABEL_NOWRAP = "whitespace-nowrap shrink-0";
 
 export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
   const {
     timeToPixel,
     tracksContentWidth,
@@ -62,12 +63,12 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
     <>
       <div
         className="absolute top-0 left-0 right-0 h-6 bg-secondary/50 border-b border-border z-20"
-        style={{ paddingLeft: SIDEBAR_WIDTH }}
+        style={{ paddingLeft: laneSidebarWidthPx }}
       >
         <div className="relative h-full min-w-0 w-full overflow-hidden">
           {timeScale === "hours" &&
             dayMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -97,7 +98,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
             })}
           {(timeScale === "days" || timeScale === "weeks") &&
             monthMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -127,7 +128,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
             })}
           {(timeScale === "months" || timeScale === "quarters") &&
             yearMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -160,13 +161,13 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 
       <div
         className="absolute top-6 left-0 right-0 h-8 bg-card border-b border-border z-20"
-        style={{ paddingLeft: SIDEBAR_WIDTH }}
+        style={{ paddingLeft: laneSidebarWidthPx }}
       >
         <div className="relative h-full min-w-0 w-full overflow-hidden">
           {timeScale === "hours" && (
             <>
               {quarterMarkers.map((minutes) => {
-                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const x = timeToPixel(minutes) - laneSidebarWidthPx;
                 if (
                   !centeredRulerLabelVisible(
                     x,
@@ -208,7 +209,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
               })}
 
               {hourMarkers.map((minutes) => {
-                const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+                const x = timeToPixel(minutes) - laneSidebarWidthPx;
                 const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
                 const hourOfDay = Math.floor(normalizedMinutes / 60);
 
@@ -273,7 +274,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 
           {timeScale === "days" &&
             dayMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -318,7 +319,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 
           {timeScale === "weeks" &&
             weekMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -363,7 +364,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 
           {timeScale === "quarters" &&
             quarterScaleMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -406,7 +407,7 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 
           {timeScale === "months" &&
             monthMarkers.map((minutes) => {
-              const x = timeToPixel(minutes) - SIDEBAR_WIDTH;
+              const x = timeToPixel(minutes) - laneSidebarWidthPx;
               if (
                 !centeredRulerLabelVisible(
                   x,
@@ -453,12 +454,13 @@ export const TimelineScrollHeaders = memo(function TimelineScrollHeaders() {
 });
 
 export const TimelineNowIndicator = memo(function TimelineNowIndicator() {
+  const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
   const { timeToPixel, containerWidth, baseDateZoned, timeZone } =
     useTimelineRulerLayout();
   const now = timelineZonedNow(timeZone);
   const nowMinutes = zonedDateTimeToMinutes(now, baseDateZoned);
   const x = timeToPixel(nowMinutes);
-  if (x < SIDEBAR_WIDTH || x > containerWidth) return null;
+  if (x < laneSidebarWidthPx || x > containerWidth) return null;
 
   return (
     <div
