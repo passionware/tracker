@@ -5,31 +5,53 @@ import {
 } from "./reportDefaults.schema";
 
 describe("parseReportDefaults", () => {
-  it("maps snake_case JSON to domain", () => {
+  it("maps nested snake_case JSON to domain", () => {
     expect(
       parseReportDefaults({
-        email_reply_invite_message: "Hi",
-        invoice_email: { title_template: "T1" },
-        reminder_email: { title_template: "T2" },
+        invoice_email: {
+          title_template: "T1",
+          body_markdown_template: "**Hi**",
+        },
+        reminder_email: {
+          title_template: "T2",
+          body_markdown_template: "## Rem",
+        },
       }),
     ).toEqual({
-      emailReplyInviteMessage: "Hi",
-      invoiceEmail: { titleTemplate: "T1" },
-      reminderEmail: { titleTemplate: "T2" },
+      invoiceEmail: { titleTemplate: "T1", bodyMarkdownTemplate: "**Hi**" },
+      reminderEmail: { titleTemplate: "T2", bodyMarkdownTemplate: "## Rem" },
+    });
+  });
+
+  it("ignores deprecated body_html_template in stored JSON", () => {
+    expect(
+      parseReportDefaults({
+        invoice_email: {
+          title_template: "T",
+          body_html_template: "<p>Old</p>",
+        },
+      }),
+    ).toEqual({
+      invoiceEmail: { titleTemplate: "T" },
     });
   });
 });
 
 describe("serializeReportDefaultsForRpc", () => {
-  it("round-trips clearing fields as null", () => {
+  it("emits title and body_markdown_template only", () => {
     const s = serializeReportDefaultsForRpc({
-      emailReplyInviteMessage: "",
-      invoiceEmail: { titleTemplate: "" },
-      reminderEmail: { titleTemplate: "" },
+      invoiceEmail: { titleTemplate: "A", bodyMarkdownTemplate: "# Title" },
+      reminderEmail: { titleTemplate: "B", bodyMarkdownTemplate: "" },
     });
-    expect(s.email_reply_invite_message).toBeNull();
-    expect((s.invoice_email as { title_template: unknown }).title_template).toBe(
-      null,
-    );
+    expect(s).toEqual({
+      invoice_email: {
+        title_template: "A",
+        body_markdown_template: "# Title",
+      },
+      reminder_email: {
+        title_template: "B",
+        body_markdown_template: null,
+      },
+    });
   });
 });

@@ -47,8 +47,8 @@ export interface ProjectPayload {
   /** Days after iteration period end for default billing due date in reconciliation. */
   defaultBillingDueDays: number;
   /**
-   * Cockpit / published-report defaults (email closing, subject templates, …) as JSON.
-   * Persisted in `project.report_defaults`; snapshotted into cube meta on publish.
+   * Cockpit / published-report defaults as JSON (`report_defaults`).
+   * Per email: `invoice_email` / `reminder_email` with `title_template` and `body_markdown_template`.
    */
   reportDefaults: ReportDefaults;
 }

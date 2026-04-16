@@ -17,7 +17,8 @@ export const projectMock = createMockFactory<ProjectBase>(
       .map((x) => x.id),
     defaultBillingDueDays: faker.number.int({ min: 0, max: 30 }),
     reportDefaults: {
-      emailReplyInviteMessage: faker.lorem.sentence(),
+      invoiceEmail: { bodyMarkdownTemplate: faker.lorem.sentence() },
+      reminderEmail: { bodyMarkdownTemplate: faker.lorem.sentence() },
     },
   }),
   [
@@ -31,7 +32,13 @@ export const projectMock = createMockFactory<ProjectBase>(
       workspaceIds: [workspaceMock.static.list[0].id],
       defaultBillingDueDays: 14,
       reportDefaults: {
-        emailReplyInviteMessage: "Please confirm your invoice.",
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
       },
     },
     {
@@ -44,7 +51,13 @@ export const projectMock = createMockFactory<ProjectBase>(
       workspaceIds: [workspaceMock.static.list[1].id],
       defaultBillingDueDays: 14,
       reportDefaults: {
-        emailReplyInviteMessage: "Please confirm your invoice.",
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
       },
     },
     {
@@ -57,7 +70,13 @@ export const projectMock = createMockFactory<ProjectBase>(
       workspaceIds: [workspaceMock.static.list[1].id],
       defaultBillingDueDays: 14,
       reportDefaults: {
-        emailReplyInviteMessage: "Please confirm your invoice.",
+        invoiceEmail: {
+          bodyMarkdownTemplate: "Please **confirm** your invoice.",
+        },
+        reminderEmail: {
+          bodyMarkdownTemplate:
+            "Please **confirm** receipt or ask questions if needed.",
+        },
       },
     },
   ],
