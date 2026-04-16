@@ -28,16 +28,18 @@ function isFormStackEntity(entity: EntityStackItem): boolean {
     entity.type === "report-form" ||
     entity.type === "project-iteration-form" ||
     entity.type === "project-form" ||
+    entity.type === "bulk-create-cost-for-reports" ||
     (entity.type === "project-iteration" && entity.intent === "create")
   );
 }
 
-/** Same shell as `BulkCreateCostDrawer`: flex body + inner scroll, footer outside scroll. */
+/** Same shell as bulk create cost (`BulkCreateCostPanel`): flex body + inner scroll, footer outside scroll. */
 function usesBulkCostDrawerShell(entity: EntityStackItem): boolean {
   return (
     entity.type === "client-form" ||
     entity.type === "workspace-form" ||
-    entity.type === "project-form"
+    entity.type === "project-form" ||
+    entity.type === "bulk-create-cost-for-reports"
   );
 }
 
@@ -66,6 +68,8 @@ function drawerDescriptionForEntity(entity: EntityStackItem): string {
         : "Iteration summary, generated reports, new report import, and reconciliation via the full iteration UI.";
     case "generated-report-reconciliation":
       return "Match generated time to reports, billings, and costs; preview and apply reconciliation.";
+    case "bulk-create-cost-for-reports":
+      return "Create one cost and map selected reports to cost links in one step.";
     default:
       return defaultDrawerDescription;
   }
@@ -150,7 +154,8 @@ export function EntityDetailDrawers() {
             isFormStackEntity(activeEntity) &&
             activeEntity.type !== "client-form" &&
             activeEntity.type !== "workspace-form" &&
-            activeEntity.type !== "project-form" ? (
+            activeEntity.type !== "project-form" &&
+            activeEntity.type !== "bulk-create-cost-for-reports" ? (
               <DrawerDescription className="sr-only">
                 {drawerDescriptionForEntity(activeEntity)}
               </DrawerDescription>
