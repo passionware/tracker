@@ -630,6 +630,8 @@ function ProjectsTimelineChartWithSelection(props: {
                 setTimelineSelection(selectionState.selectNone())
               }
               onDrawComplete={handleTimelineDrawComplete}
+              rangeShadingPreferenceKey="timeline-range-shading:projects"
+              defaultShowRangeShading={false}
               renderDrawingPreviewLabel={(p, lane) => {
                 const projectId = lane.meta?.projectId;
                 if (projectId != null) {

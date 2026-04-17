@@ -431,6 +431,8 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             )}
           >
             <InfiniteTimelineWithState
+              rangeShadingPreferenceKey="timeline-range-shading:costs"
+              defaultShowRangeShading={false}
               items={timeline.items}
               lanes={timeline.lanes}
               isEventSelected={(item) =>

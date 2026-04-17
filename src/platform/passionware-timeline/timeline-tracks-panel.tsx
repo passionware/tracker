@@ -446,10 +446,7 @@ const TimelineGridLines = memo(function TimelineGridLines({
   );
 });
 
-type TracksPanelProps<
-  Data = unknown,
-  TLaneMeta = unknown,
-> = Pick<
+type TracksPanelProps<Data = unknown, TLaneMeta = unknown> = Pick<
   InfiniteTimelineProps<Data, TLaneMeta>,
   | "renderItem"
   | "onItemHover"
@@ -460,10 +457,9 @@ type TracksPanelProps<
   itemActivateTrigger: "mousedown" | "click";
 };
 
-function TimelineTracksPanelInner<
-  Data = unknown,
-  TLaneMeta = unknown,
->(props: TracksPanelProps<Data, TLaneMeta>) {
+function TimelineTracksPanelInner<Data = unknown, TLaneMeta = unknown>(
+  props: TracksPanelProps<Data, TLaneMeta>,
+) {
   const {
     renderItem,
     onItemHover,
@@ -489,17 +485,12 @@ function TimelineTracksPanelInner<
   const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
 
   const drawingPreview =
-    dragState &&
-    dragState.type === "draw" &&
-    dragState.drawStart !== undefined
+    dragState && dragState.type === "draw" && dragState.drawStart !== undefined
       ? { laneId: dragState.laneId, startTime: dragState.drawStart }
       : null;
 
-  const {
-    timeToPixel,
-    pixelsPerMinute,
-    baseDateZoned,
-  } = useTimelineRulerLayout();
+  const { timeToPixel, pixelsPerMinute, baseDateZoned } =
+    useTimelineRulerLayout();
 
   const calculatedPreviewItem = useMemo(
     () =>
@@ -558,11 +549,7 @@ function TimelineTracksPanelInner<
 
   const totalHeight = useMemo(
     () =>
-      totalLanesHeight(
-        visibleLaneRows,
-        calculatedPreviewItem,
-        getLaneHeight,
-      ),
+      totalLanesHeight(visibleLaneRows, calculatedPreviewItem, getLaneHeight),
     [calculatedPreviewItem, getLaneHeight, visibleLaneRows],
   );
 
@@ -582,11 +569,9 @@ function TimelineTracksPanelInner<
         }}
       >
         <TimelineGridLines totalHeight={totalHeight} />
-
         {visibleLaneRows.map((lane, laneIndex) => {
           const previewForLane =
-            calculatedPreviewItem &&
-            calculatedPreviewItem.laneId === lane.id
+            calculatedPreviewItem && calculatedPreviewItem.laneId === lane.id
               ? calculatedPreviewItem
               : undefined;
           const itemsWithRows = getItemsWithRows(lane.id, previewForLane);
@@ -611,6 +596,10 @@ function TimelineTracksPanelInner<
                 handlersRef.current?.handleLaneMouseDown(e, lane.id)
               }
             >
+              <TimelineTimeRangeShadowLayer
+                shadows={timeRangeShadows}
+                totalHeight={totalHeight}
+              />
               {itemsWithRows.map((rowItem) => (
                 <TimelineMergedItemCell<Data>
                   key={rowItem.id}
@@ -637,9 +626,7 @@ function TimelineTracksPanelInner<
                   snapTime={snapTime}
                   baseDateZoned={baseDateZoned}
                   snapOption={snapOption}
-                  previewRow={
-                    previewForLane ? previewForLane.row : undefined
-                  }
+                  previewRow={previewForLane ? previewForLane.row : undefined}
                   existingItems={itemsWithRows}
                   renderDrawingPreviewLabel={renderDrawingPreviewLabel}
                 />
@@ -647,10 +634,6 @@ function TimelineTracksPanelInner<
             </div>
           );
         })}
-        <TimelineTimeRangeShadowLayer
-          shadows={timeRangeShadows}
-          totalHeight={totalHeight}
-        />
       </div>
     </div>
   );

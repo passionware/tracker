@@ -17,6 +17,16 @@ export type TimelineTimeScale =
   | "months"
   | "quarters";
 
+/**
+ * True when {@link buildTimelineRulerModel} collects day markers (hour + day scales).
+ * Week/month/quarter scales use coarser ticks only.
+ */
+export function timelineRulerShowsDayTicks(
+  timeScale: TimelineTimeScale,
+): boolean {
+  return timeScale === "hours" || timeScale === "days";
+}
+
 export interface TimelineRulerModel {
   timeScale: TimelineTimeScale;
   labelInterval: number;

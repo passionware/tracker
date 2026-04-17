@@ -60,8 +60,20 @@ export {
 export { TimelineInfiniteRoot } from "./timeline-infinite-view.tsx";
 export type {
   InfiniteTimelineProps,
+  TimelineTimeRangePaintSegment,
   TimelineTimeRangeShadow,
+  TimelineTimeRangeShadowFixed,
+  TimelineTimeRangeShadowViewport,
+  TimelineViewportRangeContext,
 } from "./timeline-infinite-types.ts";
+export {
+  createDefaultTimelineViewportShadows,
+  type DefaultTimelineViewportShadowOptions,
+} from "./timeline-time-range-shadow-presets.ts";
+export {
+  timelineRulerShowsDayTicks,
+  type TimelineTimeScale,
+} from "./timeline-ruler-model.ts";
 export {
   useSetTimelineTool,
   useSetTimelineSnapOption,
@@ -142,6 +154,9 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   renderLaneLabel,
   hideLaneControls,
   timeRangeShadows,
+  appendDefaultTimeRangeShadows,
+  rangeShadingPreferenceKey,
+  defaultShowRangeShading,
 }: InfiniteTimelineWithStateProps<Data, TLaneMeta>) {
   const state = useTimelineState<Data, TLaneMeta>({
     onExpandedLaneIdsChange,
@@ -170,6 +185,9 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
       isEventSelected={isEventSelected}
       renderDrawingPreviewLabel={renderDrawingPreviewLabel}
       timeRangeShadows={timeRangeShadows}
+      appendDefaultTimeRangeShadows={appendDefaultTimeRangeShadows}
+      rangeShadingPreferenceKey={rangeShadingPreferenceKey}
+      defaultShowRangeShading={defaultShowRangeShading}
     />
   );
 }

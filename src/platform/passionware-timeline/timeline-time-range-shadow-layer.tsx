@@ -8,12 +8,25 @@ import {
   zonedDateTimeToMinutes,
   type TimelineTemporal,
 } from "./passionware-timeline-core.ts";
-import type { TimelineTimeRangeShadow } from "./timeline-infinite-types.ts";
+import type {
+  TimelineTimeRangeShadow,
+  TimelineTimeRangeShadowFixed,
+  TimelineTimeRangeShadowViewport,
+} from "./timeline-infinite-types.ts";
 import { useTimelineRulerLayout } from "./use-timeline-ruler-layout.ts";
-import { useTimelineLaneSidebarWidth } from "./use-timeline-selectors.ts";
+import {
+  useTimelineLaneSidebarWidth,
+  useTimelineZoom,
+} from "./use-timeline-selectors.ts";
 
 /** Enough layout minutes to approximate ±∞ without blowing pixel math. */
 const OPEN_RANGE_MINUTES = 10 * 365 * 24 * 60;
+
+function isViewportShadow(
+  s: TimelineTimeRangeShadow,
+): s is TimelineTimeRangeShadowViewport {
+  return s.kind === "viewport";
+}
 
 function toLayoutMinutes(
   temporal: TimelineTemporal,
@@ -24,8 +37,8 @@ function toLayoutMinutes(
   return zonedDateTimeToMinutes(z, base);
 }
 
-function resolvePaintRange(
-  shadow: TimelineTimeRangeShadow,
+function resolvePaintRangeFixed(
+  shadow: TimelineTimeRangeShadowFixed,
   timeZone: string,
   base: ZonedDateTime,
   visLo: number,
@@ -64,20 +77,52 @@ export const TimelineTimeRangeShadowLayer = memo(function TimelineTimeRangeShado
   shadows: TimelineTimeRangeShadow[] | undefined;
   totalHeight: number;
 }) {
-  const { timeToPixel, baseDateZoned, timeZone, startTime, endTime } =
-    useTimelineRulerLayout();
+  const {
+    timeToPixel,
+    baseDateZoned,
+    timeZone,
+    startTime,
+    endTime,
+    pixelsPerMinute,
+    timeScale: rulerTimeScale,
+  } = useTimelineRulerLayout();
   const laneSidebarWidthPx = useTimelineLaneSidebarWidth();
+  const zoom = useTimelineZoom();
 
   const rects = useMemo(() => {
     if (!shadows?.length) return [];
     const out: { left: number; width: number; className: string }[] = [];
+    const visLo = Math.min(startTime, endTime);
+    const visHi = Math.max(startTime, endTime);
+
     for (const s of shadows) {
-      const range = resolvePaintRange(
+      if (isViewportShadow(s)) {
+        const segs = s.resolve({
+          visibleStartMinutes: startTime,
+          visibleEndMinutes: endTime,
+          zoom,
+          pixelsPerMinute,
+          rulerTimeScale,
+          timeZone,
+          baseDateZoned,
+        });
+        for (const seg of segs) {
+          const leftRaw = timeToPixel(seg.startMinutes) - laneSidebarWidthPx;
+          const rightRaw = timeToPixel(seg.endMinutes) - laneSidebarWidthPx;
+          const left = Math.min(leftRaw, rightRaw);
+          const width = Math.abs(rightRaw - leftRaw);
+          if (!Number.isFinite(width) || width <= 0) continue;
+          out.push({ left, width, className: seg.className });
+        }
+        continue;
+      }
+
+      const range = resolvePaintRangeFixed(
         s,
         timeZone,
         baseDateZoned,
-        startTime,
-        endTime,
+        visLo,
+        visHi,
       );
       if (!range) continue;
       const leftRaw = timeToPixel(range.a) - laneSidebarWidthPx;
@@ -96,13 +141,16 @@ export const TimelineTimeRangeShadowLayer = memo(function TimelineTimeRangeShado
     endTime,
     timeToPixel,
     laneSidebarWidthPx,
+    zoom,
+    pixelsPerMinute,
+    rulerTimeScale,
   ]);
 
   if (rects.length === 0) return null;
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-[1]"
+      className="pointer-events-none absolute inset-x-0 top-0 z-0"
       style={{ height: totalHeight }}
     >
       {rects.map((r, i) => (

@@ -115,7 +115,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 >(({ className, children, checked, variant, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
-    className={cn(itemVariants({ variant }), className)}
+    className={cn(itemVariants({ variant }), "pl-8", className)}
     checked={checked}
     {...props}
   >

@@ -696,6 +696,8 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimelineWithState
+              rangeShadingPreferenceKey="timeline-range-shading:reports"
+              defaultShowRangeShading={false}
               isEventSelected={(item) =>
                 selectionState.isSelected(selection, item.data.id)
               }

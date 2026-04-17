@@ -540,6 +540,8 @@ export function BillingWidget(props: BillingWidgetProps) {
             )}
           >
             <InfiniteTimelineWithState
+              rangeShadingPreferenceKey="timeline-range-shading:billing"
+              defaultShowRangeShading={false}
               items={timeline.items}
               lanes={timeline.lanes}
               isEventSelected={(item) =>

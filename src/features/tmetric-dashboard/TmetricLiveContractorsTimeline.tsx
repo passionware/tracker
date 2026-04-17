@@ -59,6 +59,15 @@ function formatHours(h: number): string {
   return `${Math.round(h)} h`;
 }
 
+function formatRoundedHalfHoursAgo(diffMs: number): string {
+  const safeMs = Number.isFinite(diffMs) ? Math.max(0, diffMs) : 0;
+  const rawHours = safeMs / 3_600_000;
+  const roundedHalf = Math.round(rawHours * 2) / 2;
+  if (roundedHalf <= 0) return "0h";
+  if (Number.isInteger(roundedHalf)) return `${roundedHalf}h`;
+  return `${roundedHalf.toFixed(1)}h`;
+}
+
 /** Safe epoch ms for API / cache-restored values; avoids `fromAbsolute(NaN)` → invalid `Date` in the timeline. */
 function readTimeMs(
   value: Date | string | number | undefined | null,
@@ -258,10 +267,12 @@ function ContractorLaneLabel({
   row,
   clientLine,
   laneDotClass,
+  panelFetchedMs,
 }: {
   row: TmetricLiveContractorRow;
   clientLine: string;
   laneDotClass: string;
+  panelFetchedMs: number;
 }) {
   const rootTaskLabel =
     !row.error && row.currentTimer
@@ -277,6 +288,16 @@ function ContractorLaneLabel({
       : "Copy last task name"
     : "Copy contractor name";
 
+  const latestEndedAtMs =
+    !row.error && !row.currentTimer
+      ? row.recentEntries.reduce<number | null>((maxEndMs, entry) => {
+          const endMs = readTimeMs(entry.endTime);
+          if (endMs == null) return maxEndMs;
+          if (maxEndMs == null) return endMs;
+          return Math.max(maxEndMs, endMs);
+        }, null)
+      : null;
+
   const statusBadge = row.error ? (
     <Badge tone="secondary" variant="destructive" className="shrink-0 scale-90 leading-none">
       Error
@@ -287,7 +308,9 @@ function ContractorLaneLabel({
     </Badge>
   ) : (
     <Badge tone="secondary" variant="neutral" className="shrink-0 scale-90 leading-none">
-      Ended
+      {latestEndedAtMs != null
+        ? `Ended ${formatRoundedHalfHoursAgo(panelFetchedMs - latestEndedAtMs)} ago`
+        : "Ended"}
     </Badge>
   );
 
@@ -416,6 +439,7 @@ export function TmetricLiveContractorsTimeline({
   clientNameFn,
 }: TmetricLiveContractorsTimelineProps) {
   const timeZone = getLocalTimeZone();
+  const panelFetchedMs = readTimeMs(panel.fetchedAt) ?? Date.now();
 
   const { lanes, items } = useMemo(() => {
     const lanesOut: Lane<TmetricLiveLaneMeta>[] = [];
@@ -514,8 +538,18 @@ export function TmetricLiveContractorsTimeline({
     const last24hStartMs = nowMs - 24 * 60 * 60 * 1000;
     const grey = "bg-zinc-500/20";
     return [
-      { start: null, end: fromAbsolute(last24hStartMs, timeZone), className: grey },
-      { start: fromAbsolute(nowMs, timeZone), end: null, className: grey },
+      {
+        kind: "fixed" as const,
+        start: null,
+        end: fromAbsolute(last24hStartMs, timeZone),
+        className: grey,
+      },
+      {
+        kind: "fixed" as const,
+        start: fromAbsolute(nowMs, timeZone),
+        end: null,
+        className: grey,
+      },
     ];
   }, [panel.fetchedAt, timeZone]);
 
@@ -543,6 +577,7 @@ export function TmetricLiveContractorsTimeline({
         row={meta.row}
         clientLine={meta.clientLine}
         laneDotClass={lane.color}
+        panelFetchedMs={panelFetchedMs}
       />
     );
   };

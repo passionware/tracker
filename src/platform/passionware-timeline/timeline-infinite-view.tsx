@@ -1,7 +1,18 @@
 "use client";
 
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
 import {
   Select,
   SelectContent,
@@ -9,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group.tsx";
 import { type SnapOption, formatTime } from "./passionware-timeline-core.ts";
 import type { CalculatedDrawPreview } from "./timeline-layout-logic.ts";
 import {
@@ -32,8 +42,21 @@ import { TimelineNowIndicator, TimelineScrollHeaders } from "./timeline-scroll-h
 import { TimelineScrollSurface } from "./timeline-scroll-surface.tsx";
 import { TimelineTracksPanel } from "./timeline-tracks-panel.tsx";
 import type { InfiniteTimelineProps } from "./timeline-infinite-types.ts";
+import { createDefaultTimelineViewportShadows } from "./timeline-time-range-shadow-presets.ts";
 
-const TimelineToolbar = memo(function TimelineToolbar() {
+const TimelineToolbar = memo(function TimelineToolbar({
+  canToggleRangeShading,
+  showNightRanges,
+  showWeekendRanges,
+  onShowNightRangesChange,
+  onShowWeekendRangesChange,
+}: {
+  canToggleRangeShading: boolean;
+  showNightRanges: boolean;
+  showWeekendRanges: boolean;
+  onShowNightRangesChange: (next: boolean) => void;
+  onShowWeekendRangesChange: (next: boolean) => void;
+}) {
   const snapOption = useTimelineSnapOption();
   const setSnapOption = useSetTimelineSnapOption();
   const currentTool = useTimelineTool();
@@ -44,45 +67,43 @@ const TimelineToolbar = memo(function TimelineToolbar() {
     <div className="flex items-center justify-between px-4 h-14 border-b border-border bg-card">
       <div className="flex items-center gap-4">
         <h2 className="text-sm font-medium text-foreground">Timeline Editor</h2>
-        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Drag to pan</span>
-          <span className="text-border">|</span>
-          <span>Scroll to scroll vertically</span>
-          <span className="text-border">|</span>
-          <span>Shift+Scroll to pan horizontally</span>
-          <span className="text-border">|</span>
-          <span>Ctrl+Scroll to zoom</span>
-          <span className="text-border">|</span>
-          <span>Tool sets default left-drag behavior</span>
-          <span className="text-border">|</span>
-          <span>Ctrl+drag/right-drag selects</span>
-          <span className="text-border">|</span>
-          <span>Cmd+drag or middle-drag draws</span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="xs" className="h-7 text-xs">
+              Instructions
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-3 text-xs">
+            <ul className="space-y-1.5 text-muted-foreground">
+              <li>Drag to pan.</li>
+              <li>Scroll to scroll vertically.</li>
+              <li>Shift + Scroll to pan horizontally.</li>
+              <li>Ctrl + Scroll to zoom.</li>
+              <li>Tool controls default left-drag behavior.</li>
+              <li>Ctrl + drag (or right-drag) selects range.</li>
+              <li>Cmd + drag (or middle-drag) draws.</li>
+            </ul>
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Tool:</span>
-          <ToggleGroup
-            type="single"
+          <Select
             value={currentTool}
-            onValueChange={(value) => {
-              if (value === "") return;
-              setCurrentTool(value as "pan" | "draw" | "select");
-            }}
-            variant="outline"
-            size="sm"
+            onValueChange={(value) =>
+              setCurrentTool(value as "pan" | "draw" | "select")
+            }
           >
-            <ToggleGroupItem value="pan" className="h-7 px-2 text-xs">
-              Pan
-            </ToggleGroupItem>
-            <ToggleGroupItem value="draw" className="h-7 px-2 text-xs">
-              Draw
-            </ToggleGroupItem>
-            <ToggleGroupItem value="select" className="h-7 px-2 text-xs">
-              Select
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <SelectTrigger className="h-7 w-24 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pan">Pan</SelectItem>
+              <SelectItem value="draw">Draw</SelectItem>
+              <SelectItem value="select">Select</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
@@ -104,6 +125,37 @@ const TimelineToolbar = memo(function TimelineToolbar() {
             </SelectContent>
           </Select>
         </div>
+        <div className="h-4 w-px bg-border" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="xs"
+              className="h-7 text-xs"
+              disabled={!canToggleRangeShading}
+            >
+              Ranges
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={showNightRanges}
+              onCheckedChange={(checked) =>
+                onShowNightRangesChange(checked === true)
+              }
+            >
+              Night ranges
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={showWeekendRanges}
+              onCheckedChange={(checked) =>
+                onShowWeekendRangesChange(checked === true)
+              }
+            >
+              Weekend ranges
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
@@ -227,6 +279,110 @@ const TimelineScrollableMain = memo(
 export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
   props: InfiniteTimelineProps<Data, TLaneMeta>,
 ) {
+  const defaultShowRangeShading = props.defaultShowRangeShading ?? true;
+  const [showNightRanges, setShowNightRanges] = useState(defaultShowRangeShading);
+  const [showWeekendRanges, setShowWeekendRanges] = useState(
+    defaultShowRangeShading,
+  );
+
+  useEffect(() => {
+    const key = props.rangeShadingPreferenceKey;
+    const fallback = defaultShowRangeShading;
+    if (!key) {
+      setShowNightRanges(fallback);
+      setShowWeekendRanges(fallback);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw == null) {
+        setShowNightRanges(fallback);
+        setShowWeekendRanges(fallback);
+        return;
+      }
+      if (raw === "1" || raw === "true") {
+        setShowNightRanges(true);
+        setShowWeekendRanges(true);
+        return;
+      }
+      if (raw === "0" || raw === "false") {
+        setShowNightRanges(false);
+        setShowWeekendRanges(false);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      if (
+        typeof parsed === "object" &&
+        parsed != null &&
+        "night" in parsed &&
+        "weekend" in parsed &&
+        typeof (parsed as { night: unknown }).night === "boolean" &&
+        typeof (parsed as { weekend: unknown }).weekend === "boolean"
+      ) {
+        setShowNightRanges((parsed as { night: boolean }).night);
+        setShowWeekendRanges((parsed as { weekend: boolean }).weekend);
+        return;
+      }
+      setShowNightRanges(fallback);
+      setShowWeekendRanges(fallback);
+    } catch {
+      setShowNightRanges(fallback);
+      setShowWeekendRanges(fallback);
+    }
+  }, [defaultShowRangeShading, props.rangeShadingPreferenceKey]);
+
+  const persistRangeShading = useCallback(
+    (night: boolean, weekend: boolean) => {
+      const key = props.rangeShadingPreferenceKey;
+      if (!key) return;
+      try {
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            night,
+            weekend,
+          }),
+        );
+      } catch {
+        // noop: privacy mode / disabled storage
+      }
+    },
+    [props.rangeShadingPreferenceKey],
+  );
+  const handleShowNightRangesChange = useCallback(
+    (next: boolean) => {
+      setShowNightRanges(next);
+      persistRangeShading(next, showWeekendRanges);
+    },
+    [persistRangeShading, showWeekendRanges],
+  );
+  const handleShowWeekendRangesChange = useCallback(
+    (next: boolean) => {
+      setShowWeekendRanges(next);
+      persistRangeShading(showNightRanges, next);
+    },
+    [persistRangeShading, showNightRanges],
+  );
+
+  const mergedTimeRangeShadows = useMemo(() => {
+    const user = props.timeRangeShadows ?? [];
+    if (props.appendDefaultTimeRangeShadows === false) {
+      return user;
+    }
+    return [
+      ...createDefaultTimelineViewportShadows({
+        includeNightHours: showNightRanges,
+        includeWeekend: showWeekendRanges,
+      }),
+      ...user,
+    ];
+  }, [
+    props.appendDefaultTimeRangeShadows,
+    props.timeRangeShadows,
+    showNightRanges,
+    showWeekendRanges,
+  ]);
+
   const embedded = props.embedded ?? false;
   const containerRef = useRef<HTMLDivElement>(null);
   const previewItemRef = useRef<CalculatedDrawPreview | null>(null);
@@ -244,7 +400,15 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
   return (
     <TimelineRefsProvider value={refsValue}>
       <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
-        {embedded ? null : <TimelineToolbar />}
+        {embedded ? null : (
+          <TimelineToolbar
+            canToggleRangeShading={props.appendDefaultTimeRangeShadows !== false}
+            showNightRanges={showNightRanges}
+            showWeekendRanges={showWeekendRanges}
+            onShowNightRangesChange={handleShowNightRangesChange}
+            onShowWeekendRangesChange={handleShowWeekendRangesChange}
+          />
+        )}
         <TimelineInteractionBridge
           state={props.state}
           interactionOptions={{
@@ -260,7 +424,7 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
               renderDrawingPreviewLabel={props.renderDrawingPreviewLabel}
               renderLaneLabel={props.renderLaneLabel}
               hideLaneControls={props.hideLaneControls}
-              timeRangeShadows={props.timeRangeShadows}
+              timeRangeShadows={mergedTimeRangeShadows}
               toggleLaneExpanded={props.state.toggleLaneExpanded}
               toggleLaneMinimized={props.state.toggleLaneMinimized}
               itemActivateTrigger={
