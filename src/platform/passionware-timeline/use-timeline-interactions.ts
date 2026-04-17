@@ -343,18 +343,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
             totalHeight,
             containerHeight,
           );
-          const currentV = readVerticalScroll();
           const noVerticalScroll = maxOffset <= 0;
-          const atTop = currentV <= 0;
-          const atBottom = currentV >= maxOffset - 0.5;
-          const dyWantsUp = dy < 0;
-          const dyWantsDown = dy > 0;
-          const verticalStuck =
-            noVerticalScroll ||
-            (atTop && dyWantsUp) ||
-            (atBottom && dyWantsDown);
 
-          if (verticalStuck) {
+          if (noVerticalScroll) {
             if (!rect) return;
             const mouseX =
               e.clientX - rect.left - store.get(atoms.laneSidebarWidthPxAtom);
@@ -388,7 +379,6 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       atoms.visibleLaneRowsAtom,
       atoms.laneSidebarWidthPxAtom,
       atoms.scrollOffsetAtom,
-      atoms.verticalScrollOffsetAtom,
       atoms.zoomAtom,
       atoms.mergedItemsAtom,
     ],
