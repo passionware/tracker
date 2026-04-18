@@ -11,11 +11,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
 import {
@@ -24,7 +19,9 @@ import {
   pickerOptionRowInnerClassName,
   pickerOptionRowOuterClassName,
 } from "@/features/_common/elements/pickers/_common/picker-command-layout.ts";
+import { PickerPopoverOrSheet } from "@/features/_common/elements/pickers/_common/PickerPopoverOrSheet.tsx";
 import { cn } from "@/lib/utils.ts";
+import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { maybe, Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Overwrite } from "@passionware/platform-ts";
@@ -99,6 +96,7 @@ export function AbstractPicker<Id, Data>(
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const promise = promiseState.useRemoteData();
+  const isMobile = useIsMobile();
 
   const options = rd.useLastWithPlaceholder(config.useItems(query));
   const lastOption = rd.useLastWithPlaceholder(
@@ -172,39 +170,53 @@ export function AbstractPicker<Id, Data>(
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{button}</PopoverTrigger>
-      <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
-        <Command shouldFilter={false}>
-          {searchable && (
-            <CommandInput
-              placeholder={config.searchPlaceholder || "Search item"}
-              value={query}
-              onValueChange={setQuery}
-              endAdornment={
-                allowClear ? (
-                  <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
-                    {maybe.isPresent(value) ? (
-                      <button
-                        type="button"
-                        aria-label="Clear selection"
-                        className={cn(
-                          "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
-                          "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
-                        )}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelect(null)}
-                      >
-                        <X className="size-3.5 shrink-0" />
-                        Clear
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null
-              }
-            />
-          )}
-          <CommandList>
+    <PickerPopoverOrSheet
+      isMobile={isMobile}
+      open={open}
+      onOpenChange={setOpen}
+      trigger={button}
+      align={align}
+      side={side}
+      sheetTitle={
+        placeholder ?? config.placeholder ?? "Select item"
+      }
+    >
+      <Command shouldFilter={false}>
+        {searchable && (
+          <CommandInput
+            placeholder={config.searchPlaceholder || "Search item"}
+            value={query}
+            onValueChange={setQuery}
+            endAdornment={
+              allowClear ? (
+                <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
+                  {maybe.isPresent(value) ? (
+                    <button
+                      type="button"
+                      aria-label="Clear selection"
+                      className={cn(
+                        "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium",
+                        "text-rose-700 hover:bg-rose-100/80 dark:text-rose-200 dark:hover:bg-rose-900/50",
+                      )}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelect(null)}
+                    >
+                      <X className="size-3.5 shrink-0" />
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              ) : null
+            }
+          />
+        )}
+        <CommandList
+          className={
+            isMobile
+              ? "max-h-[min(560px,calc(85dvh-10rem))] overflow-x-hidden"
+              : undefined
+          }
+        >
             <CommandGroup className={pickerCommandGroupClassName}>
               <div className={pickerCommandHeaderSlotClassName}>
                 {allowClear && maybe.isPresent(value) && !searchable && (
@@ -293,9 +305,8 @@ export function AbstractPicker<Id, Data>(
                   });
                 })}
             </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </CommandList>
+      </Command>
+    </PickerPopoverOrSheet>
   );
 }

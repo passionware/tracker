@@ -12,11 +12,6 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
@@ -26,7 +21,9 @@ import {
   pickerOptionRowInnerClassName,
   pickerOptionRowOuterClassName,
 } from "@/features/_common/elements/pickers/_common/picker-command-layout.ts";
+import { PickerPopoverOrSheet } from "@/features/_common/elements/pickers/_common/PickerPopoverOrSheet.tsx";
 import { cn } from "@/lib/utils.ts";
+import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { Maybe, rd, RemoteData } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { Overwrite } from "@passionware/platform-ts";
@@ -132,6 +129,7 @@ export function AbstractMultiPicker<Id, Data>(
     ...rest
   } = _props;
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   /** While pointer is over an option's exclusive strip, other options fade (renderMultiOption only). */
   const [exclusiveHoverKey, setExclusiveHoverKey] = useState<string | null>(
@@ -345,29 +343,38 @@ export function AbstractMultiPicker<Id, Data>(
   );
 
   return (
-    <Popover
+    <PickerPopoverOrSheet
+      isMobile={isMobile}
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) setExclusiveHoverKey(null);
       }}
+      trigger={button}
+      align={align}
+      side={side}
+      sheetTitle={config.placeholder ?? "Select items"}
     >
-      <PopoverTrigger asChild>{button}</PopoverTrigger>
-      <PopoverContent className="max-w-md w-fit p-0" align={align} side={side}>
-        <Command shouldFilter={false}>
-          {searchable ? (
-            <CommandInput
-              placeholder={config.searchPlaceholder || "Search item"}
-              value={query}
-              onValueChange={setQuery}
-              endAdornment={
-                <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
-                  {compactClearButton}
-                </div>
-              }
-            />
-          ) : null}
-          <CommandList>
+      <Command shouldFilter={false}>
+        {searchable ? (
+          <CommandInput
+            placeholder={config.searchPlaceholder || "Search item"}
+            value={query}
+            onValueChange={setQuery}
+            endAdornment={
+              <div className="flex w-[5.5rem] shrink-0 items-center justify-end">
+                {compactClearButton}
+              </div>
+            }
+          />
+        ) : null}
+        <CommandList
+          className={
+            isMobile
+              ? "max-h-[min(560px,calc(85dvh-10rem))] overflow-x-hidden"
+              : undefined
+          }
+        >
             <CommandGroup className={pickerCommandGroupClassName}>
               <div className={pickerCommandHeaderSlotClassName}>
                 {allowUnassigned && (
@@ -505,9 +512,8 @@ export function AbstractMultiPicker<Id, Data>(
                   );
                 })}
             </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </CommandList>
+      </Command>
+    </PickerPopoverOrSheet>
   );
 }
