@@ -40,9 +40,12 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import {
+  createOutsideRangeShadows,
   InfiniteTimelineWithState,
   Lane,
+  nightWeekendViewportShadowsForShadingState,
   TimelineItem,
+  useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import { CostEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { mt, rd } from "@passionware/monads";
@@ -87,6 +90,16 @@ export function CostWidget(props: PotentialCostWidgetProps) {
   >("contractor");
   const { openEntityDrawer } = useEntityDrawerContext();
   const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
+  const { rangeShadingState, onRangeShadingStateChange } =
+    useTimelineRangeShadingFromPreference(
+      props.services.preferenceService,
+      "timeline-range-shading:costs",
+      { night: false, weekend: false },
+    );
+  const nightWeekendLayers = useMemo(
+    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
+    [rangeShadingState],
+  );
 
   const viewModeItems = [
     {
@@ -423,6 +436,35 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             </div>
           );
         }
+        const minStartFromItems = timeline.items.reduce(
+          (min, item) => (item.start.compare(min) < 0 ? item.start : min),
+          timeline.items[0].start,
+        );
+        const maxEndFromItems = timeline.items.reduce(
+          (max, item) => (item.end.compare(max) > 0 ? item.end : max),
+          timeline.items[0].end,
+        );
+        const invoiceDateFilter = query.filters.invoiceDate;
+        const clampStart =
+          invoiceDateFilter?.operator === "between"
+            ? dateToCalendarDate(invoiceDateFilter.value.from)
+            : invoiceDateFilter?.operator === "equal"
+              ? dateToCalendarDate(invoiceDateFilter.value)
+              : minStartFromItems;
+        const clampEnd =
+          invoiceDateFilter?.operator === "between"
+            ? dateToCalendarDate(invoiceDateFilter.value.to)
+            : invoiceDateFilter?.operator === "equal"
+              ? dateToCalendarDate(invoiceDateFilter.value)
+              : maxEndFromItems;
+        const timelineClampShadows = createOutsideRangeShadows(
+          clampStart,
+          clampEnd,
+        );
+        const mergedTimeRangeShadows = [
+          ...nightWeekendLayers,
+          ...timelineClampShadows,
+        ];
         return (
           <div
             className={cn(
@@ -431,8 +473,9 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             )}
           >
             <InfiniteTimelineWithState
-              rangeShadingPreferenceKey="timeline-range-shading:costs"
-              defaultShowRangeShading={false}
+              rangeShadingState={rangeShadingState}
+              onRangeShadingStateChange={onRangeShadingStateChange}
+              timeRangeShadows={mergedTimeRangeShadows}
               items={timeline.items}
               lanes={timeline.lanes}
               isEventSelected={(item) =>

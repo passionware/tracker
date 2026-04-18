@@ -39,6 +39,13 @@ export function createPreferenceService(config: {
       colorBy: "payment-status",
     }),
     setBillingTimelineView: async () => {},
+    useTimelineRangeShading: (_scopeKey, defaults) =>
+      defaults ?? {
+        night: true,
+        weekend: true,
+      },
+    getTimelineRangeShading: async () => null,
+    setTimelineRangeShading: async () => {},
     getBudgetLogSyncState: async () => null,
     setBudgetLogSyncState: async () => {},
     getBulkCreateCostPreferences: async () => ({

@@ -5,7 +5,9 @@
  * with header, left sidebar, main content, and right sidebar
  */
 
-import React from "react";
+import React, { useMemo } from "react";
+import { createStaticAccessor } from "@/services/_common/createStaticAccessor.ts";
+import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
 import {
   CubeBreakdownControl,
   CubeTimeSubrangeControl,
@@ -25,6 +27,10 @@ interface StoryLayoutWrapperProps {
   services?: WithFormatService;
 }
 
+const storyCubeTimelinePreferenceAction = createStaticAccessor<
+  (name: string, ...args: unknown[]) => void
+>(() => {});
+
 export function StoryLayoutWrapper({
   title,
   description,
@@ -35,6 +41,14 @@ export function StoryLayoutWrapper({
   const formatService =
     services?.formatService || createFormatService(() => new Date());
   const servicesWithFormat = { formatService };
+  const cubeTimelinePreferenceService = useMemo(
+    () =>
+      createPreferenceService({
+        dangerMode: createStaticAccessor(false),
+        onAction: storyCubeTimelinePreferenceAction,
+      }),
+    [],
+  );
   const content = (
     <div className="h-full flex flex-col bg-white">
       {/* Header with title */}
@@ -64,7 +78,12 @@ export function StoryLayoutWrapper({
             </>
           }
           rightSidebar={<CubeDimensionExplorer />}
-          bottomSlot={<CubeTimelineView />}
+          bottomSlot={
+            <CubeTimelineView
+              preferenceService={cubeTimelinePreferenceService}
+              rangeShadingScopeKey="timeline-range-shading:cube-storybook"
+            />
+          }
         >
           {children}
         </CubeLayout>

@@ -21,7 +21,12 @@ import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
-import { InfiniteTimelineWithState } from "@/platform/passionware-timeline/passionware-timeline.tsx";
+import {
+  createOutsideRangeShadows,
+  InfiniteTimelineWithState,
+  nightWeekendViewportShadowsForShadingState,
+  useTimelineRangeShadingFromPreference,
+} from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import {
   ClientSpec,
@@ -57,9 +62,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { dateToCalendarDate } from "@/platform/lang/internationalized-date.ts";
 import { cn } from "@/lib/utils";
 
 function DashboardRangeBar({
@@ -212,6 +219,19 @@ export function TmetricDashboardPage(
     iterationRange &&
     start === null &&
     end === null;
+
+  const dashboardTimelineShading = useTimelineRangeShadingFromPreference(
+    services.preferenceService,
+    "timeline-range-shading:tmetric-dashboard",
+    { night: true, weekend: true },
+  );
+  const dashboardNightWeekendLayers = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        dashboardTimelineShading.rangeShadingState,
+      ),
+    [dashboardTimelineShading.rangeShadingState],
+  );
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -409,10 +429,47 @@ export function TmetricDashboardPage(
                   </CardHeader>
                   <CardContent className="flex-1 min-h-[400px]">
                     <div className="w-full h-full min-h-[400px] rounded-md overflow-hidden border border-border">
+                      {(() => {
+                        const minStartFromItems = resolvedTimeline.timelineItems.reduce(
+                          (min, item) =>
+                            item.start.compare(min) < 0 ? item.start : min,
+                          resolvedTimeline.timelineItems[0].start,
+                        );
+                        const maxEndFromItems = resolvedTimeline.timelineItems.reduce(
+                          (max, item) =>
+                            item.end.compare(max) > 0 ? item.end : max,
+                          resolvedTimeline.timelineItems[0].end,
+                        );
+                        const clampStart =
+                          start != null && end != null
+                            ? fromAbsolute(start.getTime(), getLocalTimeZone())
+                            : minStartFromItems;
+                        const clampEnd =
+                          start != null && end != null
+                            ? fromAbsolute(end.getTime(), getLocalTimeZone())
+                            : maxEndFromItems;
+                        const timelineClampShadows = createOutsideRangeShadows(
+                          clampStart,
+                          clampEnd,
+                        );
+                        const mergedTimeRangeShadows = [
+                          ...dashboardNightWeekendLayers,
+                          ...timelineClampShadows,
+                        ];
+                        return (
                       <InfiniteTimelineWithState
                         items={resolvedTimeline.timelineItems}
                         lanes={resolvedTimeline.timelineLanes}
+                        timeRangeShadows={mergedTimeRangeShadows}
+                        rangeShadingState={
+                          dashboardTimelineShading.rangeShadingState
+                        }
+                        onRangeShadingStateChange={
+                          dashboardTimelineShading.onRangeShadingStateChange
+                        }
                       />
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -483,6 +540,14 @@ export function TmetricDashboardPage(
                 report={report}
                 services={services}
                 className="w-full h-full min-h-0"
+                clampRange={
+                  start != null && end != null
+                    ? {
+                        start: dateToCalendarDate(start),
+                        end: dateToCalendarDate(end),
+                      }
+                    : undefined
+                }
               />
             </div>
           ))

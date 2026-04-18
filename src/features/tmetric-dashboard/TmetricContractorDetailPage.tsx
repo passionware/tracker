@@ -10,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
-import { InfiniteTimelineWithState } from "@/platform/passionware-timeline/passionware-timeline.tsx";
+import {
+  createOutsideRangeShadows,
+  InfiniteTimelineWithState,
+  nightWeekendViewportShadowsForShadingState,
+  useTimelineRangeShadingFromPreference,
+} from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -37,6 +42,19 @@ export function TmetricContractorDetailPage(
     contractorIdParam != null && /^\d+$/.test(contractorIdParam)
       ? Number(contractorIdParam)
       : null;
+
+  const contractorDetailRangeShading = useTimelineRangeShadingFromPreference(
+    services.preferenceService,
+    "timeline-range-shading:tmetric-contractor-detail",
+    { night: true, weekend: true },
+  );
+  const contractorDetailNightWeekendLayers = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        contractorDetailRangeShading.rangeShadingState,
+      ),
+    [contractorDetailRangeShading.rangeShadingState],
+  );
 
   const data = useTmetricDashboardData({ services, workspaceId, clientId });
   const {
@@ -308,10 +326,39 @@ export function TmetricContractorDetailPage(
                   </CardHeader>
                   <CardContent className="flex-1 min-h-[280px]">
                     <div className="h-full min-h-[280px] w-full overflow-hidden rounded-md border border-border">
-                      <InfiniteTimelineWithState
-                        items={tFiltered.timelineItems}
-                        lanes={tFiltered.timelineLanes}
-                      />
+                      {(() => {
+                        const minStart = tFiltered.timelineItems.reduce(
+                          (min, item) =>
+                            item.start.compare(min) < 0 ? item.start : min,
+                          tFiltered.timelineItems[0].start,
+                        );
+                        const maxEnd = tFiltered.timelineItems.reduce(
+                          (max, item) =>
+                            item.end.compare(max) > 0 ? item.end : max,
+                          tFiltered.timelineItems[0].end,
+                        );
+                        const timelineClampShadows = createOutsideRangeShadows(
+                          minStart,
+                          maxEnd,
+                        );
+                        const mergedTimeRangeShadows = [
+                          ...contractorDetailNightWeekendLayers,
+                          ...timelineClampShadows,
+                        ];
+                        return (
+                          <InfiniteTimelineWithState
+                            items={tFiltered.timelineItems}
+                            lanes={tFiltered.timelineLanes}
+                            timeRangeShadows={mergedTimeRangeShadows}
+                            rangeShadingState={
+                              contractorDetailRangeShading.rangeShadingState
+                            }
+                            onRangeShadingStateChange={
+                              contractorDetailRangeShading.onRangeShadingStateChange
+                            }
+                          />
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>

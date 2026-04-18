@@ -28,6 +28,12 @@ import {
 import { CubeTimelineView } from "../_common/Cube/CubeTimelineView";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { WithServices } from "@/platform/typescript/services";
+import { createStaticAccessor } from "@/services/_common/createStaticAccessor.ts";
+import { createPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.mock.ts";
+
+const cubeViewerTimelinePreferenceAction = createStaticAccessor<
+  (name: string, ...args: unknown[]) => void
+>(() => {});
 
 interface CubeViewerProps extends WithServices<[WithFormatService]> {
   serializedConfig: any;
@@ -53,6 +59,14 @@ export function CubeViewer({
   extraActions,
   services,
 }: CubeViewerProps) {
+  const cubeTimelinePreferenceService = useMemo(
+    () =>
+      createPreferenceService({
+        dangerMode: createStaticAccessor(false),
+        onAction: cubeViewerTimelinePreferenceAction,
+      }),
+    [],
+  );
   // Create default format service if not provided
   const [viewMode, setViewMode] = useState<"cube" | "json">("cube");
 
@@ -273,7 +287,12 @@ export function CubeViewer({
                 </>
               }
               rightSidebar={<CubeDimensionExplorer />}
-              bottomSlot={<CubeTimelineView />}
+              bottomSlot={
+                <CubeTimelineView
+                  preferenceService={cubeTimelinePreferenceService}
+                  rangeShadingScopeKey="timeline-range-shading:cube-viewer"
+                />
+              }
             >
               <div className="bg-white w-full h-full flex-1 min-h-0 p-4 flex flex-col">
                 <SerializedCubeViewWithSelection

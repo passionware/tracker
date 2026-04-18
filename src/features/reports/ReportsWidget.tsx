@@ -51,10 +51,13 @@ import {
   useSelectionCleanup,
 } from "@/platform/lang/SelectionState.ts";
 import {
+  createOutsideRangeShadows,
   DefaultTimelineItem,
   InfiniteTimelineWithState,
   Lane,
+  nightWeekendViewportShadowsForShadingState,
   TimelineItem,
+  useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline";
 import type { ReportViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import { maybe, mt, rd } from "@passionware/monads";
@@ -125,6 +128,16 @@ export function ReportsWidget(props: ReportsWidgetProps) {
   }, [props.services.preferenceService]);
 
   const scrollEvent = useMemo(() => createSimpleEvent<number>(), []);
+  const { rangeShadingState, onRangeShadingStateChange } =
+    useTimelineRangeShadingFromPreference(
+      props.services.preferenceService,
+      "timeline-range-shading:reports",
+      { night: false, weekend: false },
+    );
+  const nightWeekendLayers = useMemo(
+    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
+    [rangeShadingState],
+  );
 
   // Save preferences when they change
   useEffect(() => {
@@ -687,6 +700,35 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             </div>
           );
         }
+        const minStartFromItems = timeline.items.reduce(
+          (min, item) => (item.start.compare(min) < 0 ? item.start : min),
+          timeline.items[0].start,
+        );
+        const maxEndFromItems = timeline.items.reduce(
+          (max, item) => (item.end.compare(max) > 0 ? item.end : max),
+          timeline.items[0].end,
+        );
+        const periodFilter = query.filters.period;
+        const clampStart =
+          periodFilter?.operator === "between"
+            ? dateToCalendarDate(periodFilter.value.from)
+            : periodFilter?.operator === "equal"
+              ? dateToCalendarDate(periodFilter.value)
+              : minStartFromItems;
+        const clampEnd =
+          periodFilter?.operator === "between"
+            ? dateToCalendarDate(periodFilter.value.to)
+            : periodFilter?.operator === "equal"
+              ? dateToCalendarDate(periodFilter.value)
+              : maxEndFromItems;
+        const timelineClampShadows = createOutsideRangeShadows(
+          clampStart,
+          clampEnd,
+        );
+        const mergedTimeRangeShadows = [
+          ...nightWeekendLayers,
+          ...timelineClampShadows,
+        ];
         return (
           <div
             className={cn(
@@ -696,8 +738,9 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             )}
           >
             <InfiniteTimelineWithState
-              rangeShadingPreferenceKey="timeline-range-shading:reports"
-              defaultShowRangeShading={false}
+              rangeShadingState={rangeShadingState}
+              onRangeShadingStateChange={onRangeShadingStateChange}
+              timeRangeShadows={mergedTimeRangeShadows}
               isEventSelected={(item) =>
                 selectionState.isSelected(selection, item.data.id)
               }

@@ -279,108 +279,70 @@ const TimelineScrollableMain = memo(
 export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
   props: InfiniteTimelineProps<Data, TLaneMeta>,
 ) {
-  const defaultShowRangeShading = props.defaultShowRangeShading ?? true;
-  const [showNightRanges, setShowNightRanges] = useState(defaultShowRangeShading);
-  const [showWeekendRanges, setShowWeekendRanges] = useState(
-    defaultShowRangeShading,
-  );
+  const [internalRangeShading, setInternalRangeShading] = useState({
+    night: true,
+    weekend: true,
+  });
 
   useEffect(() => {
-    const key = props.rangeShadingPreferenceKey;
-    const fallback = defaultShowRangeShading;
-    if (!key) {
-      setShowNightRanges(fallback);
-      setShowWeekendRanges(fallback);
-      return;
+    if (props.rangeShadingState != null) {
+      setInternalRangeShading(props.rangeShadingState);
     }
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw == null) {
-        setShowNightRanges(fallback);
-        setShowWeekendRanges(fallback);
-        return;
-      }
-      if (raw === "1" || raw === "true") {
-        setShowNightRanges(true);
-        setShowWeekendRanges(true);
-        return;
-      }
-      if (raw === "0" || raw === "false") {
-        setShowNightRanges(false);
-        setShowWeekendRanges(false);
-        return;
-      }
-      const parsed = JSON.parse(raw) as unknown;
-      if (
-        typeof parsed === "object" &&
-        parsed != null &&
-        "night" in parsed &&
-        "weekend" in parsed &&
-        typeof (parsed as { night: unknown }).night === "boolean" &&
-        typeof (parsed as { weekend: unknown }).weekend === "boolean"
-      ) {
-        setShowNightRanges((parsed as { night: boolean }).night);
-        setShowWeekendRanges((parsed as { weekend: boolean }).weekend);
-        return;
-      }
-      setShowNightRanges(fallback);
-      setShowWeekendRanges(fallback);
-    } catch {
-      setShowNightRanges(fallback);
-      setShowWeekendRanges(fallback);
-    }
-  }, [defaultShowRangeShading, props.rangeShadingPreferenceKey]);
+  }, [props.rangeShadingState]);
 
-  const persistRangeShading = useCallback(
-    (night: boolean, weekend: boolean) => {
-      const key = props.rangeShadingPreferenceKey;
-      if (!key) return;
-      try {
-        localStorage.setItem(
-          key,
-          JSON.stringify({
-            night,
-            weekend,
-          }),
-        );
-      } catch {
-        // noop: privacy mode / disabled storage
+  const effectiveRangeShading = props.rangeShadingState ?? internalRangeShading;
+
+  const updateRangeShading = useCallback(
+    (next: { night: boolean; weekend: boolean }) => {
+      if (props.onRangeShadingStateChange) {
+        props.onRangeShadingStateChange(next);
+      } else {
+        setInternalRangeShading(next);
       }
     },
-    [props.rangeShadingPreferenceKey],
+    [props.onRangeShadingStateChange],
   );
+
   const handleShowNightRangesChange = useCallback(
     (next: boolean) => {
-      setShowNightRanges(next);
-      persistRangeShading(next, showWeekendRanges);
+      updateRangeShading({
+        night: next,
+        weekend: effectiveRangeShading.weekend,
+      });
     },
-    [persistRangeShading, showWeekendRanges],
+    [effectiveRangeShading.weekend, updateRangeShading],
   );
   const handleShowWeekendRangesChange = useCallback(
     (next: boolean) => {
-      setShowWeekendRanges(next);
-      persistRangeShading(showNightRanges, next);
+      updateRangeShading({
+        night: effectiveRangeShading.night,
+        weekend: next,
+      });
     },
-    [persistRangeShading, showNightRanges],
+    [effectiveRangeShading.night, updateRangeShading],
   );
+
+  const isFullyUncontrolled =
+    props.rangeShadingState == null && props.onRangeShadingStateChange == null;
+  const isPreferenceBacked = props.onRangeShadingStateChange != null;
 
   const mergedTimeRangeShadows = useMemo(() => {
     const user = props.timeRangeShadows ?? [];
-    if (props.appendDefaultTimeRangeShadows === false) {
-      return user;
+    if (isFullyUncontrolled) {
+      return [
+        ...createDefaultTimelineViewportShadows({
+          includeNightHours: effectiveRangeShading.night,
+          includeWeekend: effectiveRangeShading.weekend,
+        }),
+        ...user,
+      ];
     }
-    return [
-      ...createDefaultTimelineViewportShadows({
-        includeNightHours: showNightRanges,
-        includeWeekend: showWeekendRanges,
-      }),
-      ...user,
-    ];
+    return user;
   }, [
-    props.appendDefaultTimeRangeShadows,
+    isFullyUncontrolled,
     props.timeRangeShadows,
-    showNightRanges,
-    showWeekendRanges,
+    effectiveRangeShading.night,
+    effectiveRangeShading.weekend,
   ]);
 
   const embedded = props.embedded ?? false;
@@ -402,9 +364,9 @@ export function TimelineInfiniteRoot<Data = unknown, TLaneMeta = unknown>(
       <div className="flex flex-col h-full bg-background overflow-hidden select-none rounded-md">
         {embedded ? null : (
           <TimelineToolbar
-            canToggleRangeShading={props.appendDefaultTimeRangeShadows !== false}
-            showNightRanges={showNightRanges}
-            showWeekendRanges={showWeekendRanges}
+            canToggleRangeShading={isPreferenceBacked || isFullyUncontrolled}
+            showNightRanges={effectiveRangeShading.night}
+            showWeekendRanges={effectiveRangeShading.weekend}
             onShowNightRangesChange={handleShowNightRangesChange}
             onShowWeekendRangesChange={handleShowWeekendRangesChange}
           />

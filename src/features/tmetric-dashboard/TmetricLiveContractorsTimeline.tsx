@@ -10,17 +10,25 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import {
+  composeRangeLayersToPaintSegments,
   InfiniteTimeline,
+  minuteRangesFromViewportShadow,
+  nightWeekendViewportShadowsForShadingState,
+  TIMELINE_RANGE_LAYER_PRIORITY,
   useSyncTimelineAtoms,
   useTimelineState,
+  useTimelineRangeShadingFromPreference,
   type TimelineItem,
+  type TimelineRangePaintLayer,
   type TimelineTimeRangeShadow,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import {
   ITEM_COLORS,
   SIDEBAR_WIDTH,
   SUB_ROW_HEIGHT,
+  zonedDateTimeToMinutes,
 } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
+import { unionMinuteRanges } from "@/platform/passionware-timeline/timeline-minute-range-set.ts";
 import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
 import type { VisibleTimelineLaneRow } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
 import type {
@@ -28,6 +36,7 @@ import type {
   TmetricLiveContractorsPanelData,
 } from "@/services/front/TmetricDashboardService/TmetricDashboardService";
 import type { DefaultTimelineItemProps } from "@/platform/passionware-timeline/timeline-default-item.tsx";
+import type { PreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { cn } from "@/lib/utils";
 import { Copy } from "lucide-react";
 import { useMemo } from "react";
@@ -432,14 +441,23 @@ function TmetricReadOnlyBar(
 export interface TmetricLiveContractorsTimelineProps {
   panel: TmetricLiveContractorsPanelData;
   clientNameFn: (clientId: number) => string;
+  preferenceService: PreferenceService;
 }
 
 export function TmetricLiveContractorsTimeline({
   panel,
   clientNameFn,
+  preferenceService,
 }: TmetricLiveContractorsTimelineProps) {
   const timeZone = getLocalTimeZone();
   const panelFetchedMs = readTimeMs(panel.fetchedAt) ?? Date.now();
+
+  const { rangeShadingState, onRangeShadingStateChange } =
+    useTimelineRangeShadingFromPreference(
+      preferenceService,
+      "timeline-range-shading:tmetric-live-contractors",
+      { night: true, weekend: true },
+    );
 
   const { lanes, items } = useMemo(() => {
     const lanesOut: Lane<TmetricLiveLaneMeta>[] = [];
@@ -532,26 +550,94 @@ export function TmetricLiveContractorsTimeline({
     };
   }, [panel.fetchedAt, timeZone]);
 
-  /** Dim outside the last-24h “live” window: older than 24h, and future from panel snapshot time. */
+  const clampClass = "bg-zinc-500/20";
+  const nightClass = "bg-zinc-900/5";
+  const weekendClass = "bg-sky-800/15";
+
+  const nightViewportShadowsOnly = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        { night: rangeShadingState.night, weekend: false },
+        { night: nightClass, weekend: weekendClass },
+      ),
+    [rangeShadingState.night, nightClass, weekendClass],
+  );
+
+  const weekendViewportShadowsOnly = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        { night: false, weekend: rangeShadingState.weekend },
+        { night: nightClass, weekend: weekendClass },
+      ),
+    [rangeShadingState.weekend, nightClass, weekendClass],
+  );
+
+  /** Raw producers + {@link composeRangeLayersToPaintSegments}: clamp (24h) > weekend > night. */
   const timeRangeShadows = useMemo((): TimelineTimeRangeShadow[] => {
     const nowMs = readTimeMs(panel.fetchedAt) ?? Date.now();
     const last24hStartMs = nowMs - 24 * 60 * 60 * 1000;
-    const grey = "bg-zinc-500/20";
     return [
       {
-        kind: "fixed" as const,
-        start: null,
-        end: fromAbsolute(last24hStartMs, timeZone),
-        className: grey,
-      },
-      {
-        kind: "fixed" as const,
-        start: fromAbsolute(nowMs, timeZone),
-        end: null,
-        className: grey,
+        kind: "viewport" as const,
+        resolve: (ctx) => {
+          const lo = Math.min(ctx.visibleStartMinutes, ctx.visibleEndMinutes);
+          const hi = Math.max(ctx.visibleStartMinutes, ctx.visibleEndMinutes);
+
+          const nowMinutes = zonedDateTimeToMinutes(
+            fromAbsolute(nowMs, ctx.timeZone),
+            ctx.baseDateZoned,
+          );
+          const last24StartMinutes = zonedDateTimeToMinutes(
+            fromAbsolute(last24hStartMs, ctx.timeZone),
+            ctx.baseDateZoned,
+          );
+
+          const clampRanges = unionMinuteRanges([
+            { start: lo, end: Math.min(last24StartMinutes, hi) },
+            { start: Math.max(nowMinutes, lo), end: hi },
+          ]);
+          const nightRaw = minuteRangesFromViewportShadow(
+            nightViewportShadowsOnly[0],
+            ctx,
+          );
+          const weekendRaw = minuteRangesFromViewportShadow(
+            weekendViewportShadowsOnly[0],
+            ctx,
+          );
+
+          const layers: TimelineRangePaintLayer[] = [
+            {
+              id: "clamp",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.clamp,
+              className: clampClass,
+              ranges: clampRanges,
+            },
+            {
+              id: "weekend",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.weekend,
+              className: weekendClass,
+              ranges: weekendRaw,
+            },
+            {
+              id: "night",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.night,
+              className: nightClass,
+              ranges: nightRaw,
+            },
+          ];
+          return composeRangeLayersToPaintSegments(layers);
+        },
       },
     ];
-  }, [panel.fetchedAt, timeZone]);
+  }, [
+    panel.fetchedAt,
+    timeZone,
+    nightViewportShadowsOnly,
+    weekendViewportShadowsOnly,
+    clampClass,
+    nightClass,
+    weekendClass,
+  ]);
 
   const timelineState = useTimelineState<TmetricLiveBarData, TmetricLiveLaneMeta>({
     defaultSnapOption: "15min",
@@ -602,6 +688,8 @@ export function TmetricLiveContractorsTimeline({
           itemActivateTrigger: "click",
         }}
         timeRangeShadows={timeRangeShadows}
+        rangeShadingState={rangeShadingState}
+        onRangeShadingStateChange={onRangeShadingStateChange}
         renderItem={(itemProps) => <TmetricReadOnlyBar {...itemProps} />}
       />
     </div>

@@ -16,6 +16,11 @@ export interface BillingTimelineViewPreferences {
   colorBy: BillingTimelineColorBy;
 }
 
+export interface TimelineRangeShadingState {
+  night: boolean;
+  weekend: boolean;
+}
+
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
 export interface BudgetLogSyncState {
   lastSyncAt: number;
@@ -52,6 +57,17 @@ export interface PreferenceService {
   getBillingTimelineView: () => Promise<BillingTimelineViewPreferences>;
   setBillingTimelineView: (
     preferences: Partial<BillingTimelineViewPreferences>,
+  ) => Promise<void>;
+  useTimelineRangeShading: (
+    scopeKey: string,
+    defaults?: TimelineRangeShadingState,
+  ) => TimelineRangeShadingState;
+  getTimelineRangeShading: (
+    scopeKey: string,
+  ) => Promise<TimelineRangeShadingState | null>;
+  setTimelineRangeShading: (
+    scopeKey: string,
+    preferences: Partial<TimelineRangeShadingState>,
   ) => Promise<void>;
   getBudgetLogSyncState: () => Promise<BudgetLogSyncState | null>;
   setBudgetLogSyncState: (state: BudgetLogSyncState) => Promise<void>;

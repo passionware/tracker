@@ -1,0 +1,18 @@
+---
+description: Use @internationalized/date types in component and API contracts instead of JS Date
+alwaysApply: true
+---
+
+# Dates in component contracts and public props
+
+**Do not use `Date` in React component props, public widget APIs, or other long-lived “contract” surfaces** when the value represents a calendar day, zoned instant, or date-only filter.
+
+Prefer **`@internationalized/date`** (and project helpers in `@/platform/lang/internationalized-date.ts`):
+
+- **Calendar day (no time of day):** `CalendarDate` — e.g. filters, ranges, clamp bounds keyed by local day.
+- **Wall time in a zone:** `ZonedDateTime` / `CalendarDateTime` as appropriate.
+- **Conversion at boundaries:** `dateToCalendarDate`, `calendarDateToJSDate`, `inclusiveCalendarPeriodToEpochRange`, etc., live next to IO (forms, URL params, network) — not in the middle of generic UI.
+
+**`Date` is fine** inside implementation details (e.g. one-off `new Date()` for “now”, third-party chart APIs, or wrapping a library that only speaks JS `Date`), but **avoid `Date | null` in prop types** when the semantic is a calendar or zoned date; use the matching internationalized type and convert at the edge.
+
+This keeps timeline, filters, and persistence aligned with the rest of the app’s date model and avoids implicit local/UTC mistakes.

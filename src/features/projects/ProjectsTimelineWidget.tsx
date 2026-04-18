@@ -54,8 +54,11 @@ import {
   type TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
 import {
+  createOutsideRangeShadows,
   DefaultTimelineItem,
   InfiniteTimelineWithState,
+  nightWeekendViewportShadowsForShadingState,
+  useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { PointerFollowTooltip } from "@/components/ui/pointer-follow-tooltip.tsx";
 import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
@@ -541,6 +544,31 @@ function ProjectsTimelineChartWithSelection(props: {
     () => indexProjectTimelineLanesById(props.lanes),
     [props.lanes],
   );
+  const { rangeShadingState, onRangeShadingStateChange } =
+    useTimelineRangeShadingFromPreference(
+      props.services.preferenceService,
+      "timeline-range-shading:projects",
+      { night: false, weekend: false },
+    );
+  const nightWeekendLayers = useMemo(
+    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
+    [rangeShadingState],
+  );
+  const timelineClampShadows = useMemo(
+    () =>
+      props.viewportRange
+        ? createOutsideRangeShadows(
+            props.viewportRange.start,
+            props.viewportRange.end,
+          )
+        : [],
+    [props.viewportRange],
+  );
+
+  const mergedTimeRangeShadows = useMemo(
+    () => [...nightWeekendLayers, ...timelineClampShadows],
+    [nightWeekendLayers, timelineClampShadows],
+  );
 
   const handleTimelineDrawComplete = useCallback(
     (drawn: TimelineItem<unknown>) => {
@@ -598,6 +626,9 @@ function ProjectsTimelineChartWithSelection(props: {
               defaultSnapOption="1day"
               itemActivateTrigger="click"
               viewportRange={props.viewportRange}
+              timeRangeShadows={mergedTimeRangeShadows}
+              rangeShadingState={rangeShadingState}
+              onRangeShadingStateChange={onRangeShadingStateChange}
               isEventSelected={(item) =>
                 selectionState.isSelected(
                   timelineSelection,
@@ -630,8 +661,6 @@ function ProjectsTimelineChartWithSelection(props: {
                 setTimelineSelection(selectionState.selectNone())
               }
               onDrawComplete={handleTimelineDrawComplete}
-              rangeShadingPreferenceKey="timeline-range-shading:projects"
-              defaultShowRangeShading={false}
               renderDrawingPreviewLabel={(p, lane) => {
                 const projectId = lane.meta?.projectId;
                 if (projectId != null) {

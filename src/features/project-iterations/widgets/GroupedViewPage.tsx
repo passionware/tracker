@@ -58,7 +58,12 @@ function GroupedViewWithCube({
           </>
         }
         rightSidebar={<CubeDimensionExplorer />}
-        bottomSlot={<CubeTimelineView />}
+        bottomSlot={
+          <CubeTimelineView
+            preferenceService={services.preferenceService}
+            rangeShadingScopeKey={`timeline-range-shading:grouped-view:${String(report.id)}`}
+          />
+        }
       >
         <GroupedViewWidget report={report} services={services} />
       </CubeLayout>

@@ -359,6 +359,7 @@ export function TmetricLiveContractorsPopover(
                           <TmetricLiveContractorsTimeline
                             panel={data}
                             clientNameFn={clientNameFn}
+                            preferenceService={services.preferenceService}
                           />
                         );
                       })

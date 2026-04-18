@@ -60,6 +60,7 @@ export {
 export { TimelineInfiniteRoot } from "./timeline-infinite-view.tsx";
 export type {
   InfiniteTimelineProps,
+  TimelineRangeShadingState,
   TimelineTimeRangePaintSegment,
   TimelineTimeRangeShadow,
   TimelineTimeRangeShadowFixed,
@@ -68,8 +69,21 @@ export type {
 } from "./timeline-infinite-types.ts";
 export {
   createDefaultTimelineViewportShadows,
+  createOutsideRangeShadows,
   type DefaultTimelineViewportShadowOptions,
 } from "./timeline-time-range-shadow-presets.ts";
+export {
+  DEFAULT_TIMELINE_RANGE_SHADING_VISUAL,
+  nightWeekendViewportShadowsForShadingState,
+} from "./timeline-range-shading-composer.ts";
+export {
+  composeRangeLayersToPaintSegments,
+  minuteRangesFromViewportShadow,
+  TIMELINE_RANGE_LAYER_PRIORITY,
+  timelineRangeAlgebra,
+  type TimelineRangePaintLayer,
+} from "./timeline-range-layer-compose.ts";
+export { useTimelineRangeShadingFromPreference } from "./use-timeline-range-shading-preference.ts";
 export {
   timelineRulerShowsDayTicks,
   type TimelineTimeScale,
@@ -154,9 +168,8 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
   renderLaneLabel,
   hideLaneControls,
   timeRangeShadows,
-  appendDefaultTimeRangeShadows,
-  rangeShadingPreferenceKey,
-  defaultShowRangeShading,
+  rangeShadingState,
+  onRangeShadingStateChange,
 }: InfiniteTimelineWithStateProps<Data, TLaneMeta>) {
   const state = useTimelineState<Data, TLaneMeta>({
     onExpandedLaneIdsChange,
@@ -185,9 +198,8 @@ export function InfiniteTimelineWithState<Data = unknown, TLaneMeta = unknown>({
       isEventSelected={isEventSelected}
       renderDrawingPreviewLabel={renderDrawingPreviewLabel}
       timeRangeShadows={timeRangeShadows}
-      appendDefaultTimeRangeShadows={appendDefaultTimeRangeShadows}
-      rangeShadingPreferenceKey={rangeShadingPreferenceKey}
-      defaultShowRangeShading={defaultShowRangeShading}
+      rangeShadingState={rangeShadingState}
+      onRangeShadingStateChange={onRangeShadingStateChange}
     />
   );
 }

@@ -55,6 +55,11 @@ export type TimelineTimeRangeShadow =
   | TimelineTimeRangeShadowFixed
   | TimelineTimeRangeShadowViewport;
 
+export type TimelineRangeShadingState = {
+  night: boolean;
+  weekend: boolean;
+};
+
 export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
   state: TimelineStateApi<Data, TLaneMeta>;
   /**
@@ -100,16 +105,8 @@ export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
    * segments from the visible minute span and zoom (e.g. nights only when zoomed in enough).
    */
   timeRangeShadows?: TimelineTimeRangeShadow[];
-  /**
-   * When `true` (default), prepends preset viewport shadows (weeknights 21:00–24:00 and 00:00–08:00,
-   * weekend full days) before `timeRangeShadows`. Set `false` to disable.
-   */
-  appendDefaultTimeRangeShadows?: boolean;
-  /**
-   * When set, toolbar "Range shading" toggle is persisted under this key in localStorage.
-   * Use distinct keys per page/view type for sticky behavior.
-   */
-  rangeShadingPreferenceKey?: string;
-  /** Initial value for toolbar "Range shading" when no stored preference exists. Default `true`. */
-  defaultShowRangeShading?: boolean;
+  /** Controls toolbar range-shading checkboxes (night/weekend). */
+  rangeShadingState?: TimelineRangeShadingState;
+  /** Called when user toggles toolbar range-shading checkboxes. */
+  onRangeShadingStateChange?: (next: TimelineRangeShadingState) => void;
 }

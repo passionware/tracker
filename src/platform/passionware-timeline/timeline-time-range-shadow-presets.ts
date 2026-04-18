@@ -6,11 +6,12 @@ import {
 } from "@internationalized/date";
 import {
   minutesToZonedDateTime,
+  type TimelineTemporal,
   zonedDateTimeToMinutes,
 } from "./passionware-timeline-core.ts";
 import type {
+  TimelineTimeRangeShadowFixed,
   TimelineTimeRangePaintSegment,
-  TimelineTimeRangeShadow,
   TimelineTimeRangeShadowViewport,
   TimelineViewportRangeContext,
 } from "./timeline-infinite-types.ts";
@@ -202,12 +203,12 @@ export type DefaultTimelineViewportShadowOptions = {
  */
 export function createDefaultTimelineViewportShadows(
   options?: DefaultTimelineViewportShadowOptions,
-): TimelineTimeRangeShadow[] {
+): TimelineTimeRangeShadowViewport[] {
   const night = options?.nightHoursClassName ?? "bg-zinc-900/5";
   const weekend = options?.weekendClassName ?? "bg-sky-800/15";
   const includeNightHours = options?.includeNightHours ?? true;
   const includeWeekend = options?.includeWeekend ?? true;
-  const out: TimelineTimeRangeShadow[] = [];
+  const out: TimelineTimeRangeShadowViewport[] = [];
   if (includeNightHours) {
     out.push(createWeeknightViewportShadow(night));
   }
@@ -220,4 +221,26 @@ export function createDefaultTimelineViewportShadows(
     );
   }
   return out;
+}
+
+/** Paints outside `[start, end]` with fixed clamp bands (left and right open-ended ranges). */
+export function createOutsideRangeShadows(
+  start: TimelineTemporal,
+  end: TimelineTemporal,
+  className = "bg-zinc-500/20",
+): TimelineTimeRangeShadowFixed[] {
+  return [
+    {
+      kind: "fixed",
+      start: null,
+      end: start,
+      className,
+    },
+    {
+      kind: "fixed",
+      start: end,
+      end: null,
+      className,
+    },
+  ];
 }

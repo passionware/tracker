@@ -3,6 +3,7 @@ import {
   BudgetLogSyncState,
   BulkCreateCostPreferences,
   PreferenceService,
+  TimelineRangeShadingState,
   TimelineViewPreferences,
 } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { createLocalStorageApi } from "@/services/internal/PreferenceService/createLocalStorageApi.ts";
@@ -107,6 +108,27 @@ const billingTimelineViewApi = createLocalStorageApi<BillingTimelineViewPreferen
     }
   },
   defaultBillingTimelineViewPreferences,
+);
+
+const timelineRangeShadingStateSchema = z.object({
+  night: z.boolean(),
+  weekend: z.boolean(),
+});
+
+const timelineRangeShadingMapSchema = z.record(
+  z.string(),
+  timelineRangeShadingStateSchema,
+);
+
+const timelineRangeShadingApi = createLocalStorageApi<
+  Record<string, TimelineRangeShadingState>
+>(
+  "timeline-range-shading-preferences-v1",
+  (data) => {
+    const result = timelineRangeShadingMapSchema.safeParse(data);
+    return result.success ? result.data : {};
+  },
+  {},
 );
 
 const appSidebarNavExpandedSectionsSchema = z.object({
@@ -249,6 +271,42 @@ export function createPreferenceService(): PreferenceService {
     }
   });
 
+  const defaultTimelineRangeShadingState: TimelineRangeShadingState = {
+    night: true,
+    weekend: true,
+  };
+  const useTimelineRangeShadingStore = create<{
+    preferencesByKey: Record<string, TimelineRangeShadingState>;
+    initialized: boolean;
+    setPreferences: (
+      scopeKey: string,
+      prefs: Partial<TimelineRangeShadingState>,
+    ) => Promise<void>;
+  }>((set, get) => ({
+    preferencesByKey: {},
+    initialized: false,
+    setPreferences: async (scopeKey, partial) => {
+      const current = get().preferencesByKey[scopeKey] ?? defaultTimelineRangeShadingState;
+      const next: TimelineRangeShadingState = {
+        ...current,
+        ...partial,
+      };
+      const map = {
+        ...get().preferencesByKey,
+        [scopeKey]: next,
+      };
+      set({ preferencesByKey: map });
+      await timelineRangeShadingApi.write(map);
+    },
+  }));
+
+  void timelineRangeShadingApi.read().then((prefs) => {
+    useTimelineRangeShadingStore.setState({
+      preferencesByKey: prefs ?? {},
+      initialized: true,
+    });
+  });
+
   const useBulkCreateCostStore = create<{
     preferences: BulkCreateCostPreferences;
     setPreferences: (
@@ -365,6 +423,23 @@ export function createPreferenceService(): PreferenceService {
       partialPrefs: Partial<BillingTimelineViewPreferences>,
     ) => {
       await useBillingTimelineViewStore.getState().setPreferences(partialPrefs);
+    },
+    useTimelineRangeShading: (scopeKey, defaults) => {
+      const store = useTimelineRangeShadingStore();
+      const fallback = defaults ?? defaultTimelineRangeShadingState;
+      if (!store.initialized) {
+        return fallback;
+      }
+      return store.preferencesByKey[scopeKey] ?? fallback;
+    },
+    getTimelineRangeShading: async (scopeKey) => {
+      const prefs = (await timelineRangeShadingApi.read()) ?? {};
+      return prefs[scopeKey] ?? null;
+    },
+    setTimelineRangeShading: async (scopeKey, partial) => {
+      await useTimelineRangeShadingStore
+        .getState()
+        .setPreferences(scopeKey, partial);
     },
     getBudgetLogSyncState: async () => {
       const v = await budgetLogSyncApi.read();

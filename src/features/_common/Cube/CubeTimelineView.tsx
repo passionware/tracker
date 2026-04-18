@@ -6,18 +6,31 @@
  */
 
 import { useMemo } from "react";
+import type { CalendarDate } from "@internationalized/date";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import {
+  composeRangeLayersToPaintSegments,
   InfiniteTimeline,
+  minuteRangesFromViewportShadow,
+  nightWeekendViewportShadowsForShadingState,
+  TIMELINE_RANGE_LAYER_PRIORITY,
   useSyncTimelineAtoms,
   useTimelineState,
+  useTimelineRangeShadingFromPreference,
   type TimelineItem,
+  type TimelineRangeShadingState,
+  type TimelineRangePaintLayer,
+  type TimelineTimeRangeShadow,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
+import type { PreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { zonedDateTimeToMinutes } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
+import { unionMinuteRanges } from "@/platform/passionware-timeline/timeline-minute-range-set.ts";
 import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree.ts";
 import {
   useCubeContext,
   useCurrentBreakdownDimensionId,
 } from "@/features/_common/Cube/CubeContext.tsx";
+import { inclusiveCalendarPeriodToEpochRange } from "@/platform/lang/internationalized-date.ts";
 import { cn } from "@/lib/utils";
 
 const LANE_COLORS = [
@@ -30,10 +43,31 @@ const LANE_COLORS = [
 
 interface CubeTimelineViewProps {
   className?: string;
+  /** Inclusive calendar days in `timeZone`; converted with timeline-aligned epoch semantics. */
+  clampRange?: {
+    start: CalendarDate | null;
+    end: CalendarDate | null;
+  };
+  preferenceService: PreferenceService;
+  /** Stable key for {@link PreferenceService.useTimelineRangeShading}. */
+  rangeShadingScopeKey: string;
+  rangeShadingDefaults?: TimelineRangeShadingState;
 }
 
-export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
+export function CubeTimelineView({
+  className = "",
+  clampRange,
+  preferenceService,
+  rangeShadingScopeKey,
+  rangeShadingDefaults = { night: true, weekend: true },
+}: CubeTimelineViewProps) {
   const { state } = useCubeContext();
+  const { rangeShadingState, onRangeShadingStateChange } =
+    useTimelineRangeShadingFromPreference(
+      preferenceService,
+      rangeShadingScopeKey,
+      rangeShadingDefaults,
+    );
   const breakdownDimensionId = useCurrentBreakdownDimensionId();
   const dimensions = state.cube.config.dimensions;
   const cube = state.cube;
@@ -279,6 +313,146 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
     return { lanes, items };
   }, [groupedData, createEventLabel, timeZone]);
 
+  const clampBoundsMs = useMemo(() => {
+    const explicitRange =
+      clampRange?.start != null && clampRange?.end != null
+        ? (() => {
+            const a = clampRange.start;
+            const b = clampRange.end;
+            const lo = a.compare(b) <= 0 ? a : b;
+            const hi = a.compare(b) <= 0 ? b : a;
+            const { start, end } = inclusiveCalendarPeriodToEpochRange(
+              lo,
+              hi,
+              timeZone,
+            );
+            return { startMs: start, endMs: end };
+          })()
+        : null;
+
+    const subrangeStartMs = state.timeSubrange
+      ? new Date(state.timeSubrange.start).getTime()
+      : NaN;
+    const subrangeEndMs = state.timeSubrange
+      ? new Date(state.timeSubrange.end).getTime()
+      : NaN;
+    const subrange =
+      Number.isFinite(subrangeStartMs) && Number.isFinite(subrangeEndMs)
+        ? { startMs: subrangeStartMs, endMs: subrangeEndMs }
+        : null;
+
+    const clamp = explicitRange ?? subrange;
+    if (!clamp) {
+      return null;
+    }
+
+    const startMs = Math.min(clamp.startMs, clamp.endMs);
+    const endMs = Math.max(clamp.startMs, clamp.endMs);
+    return { startMs, endMs };
+  }, [
+    clampRange?.start?.toString(),
+    clampRange?.end?.toString(),
+    timeZone,
+    state.timeSubrange,
+  ]);
+
+  const clampClass = "bg-zinc-500/20";
+  const nightClass = "bg-zinc-900/5";
+  const weekendClass = "bg-sky-800/15";
+
+  const nightViewportShadowsOnly = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        { night: rangeShadingState.night, weekend: false },
+        { night: nightClass, weekend: weekendClass },
+      ),
+    [rangeShadingState.night, nightClass, weekendClass],
+  );
+
+  const weekendViewportShadowsOnly = useMemo(
+    () =>
+      nightWeekendViewportShadowsForShadingState(
+        { night: false, weekend: rangeShadingState.weekend },
+        { night: nightClass, weekend: weekendClass },
+      ),
+    [rangeShadingState.weekend, nightClass, weekendClass],
+  );
+
+  const timeRangeShadows = useMemo((): TimelineTimeRangeShadow[] => {
+    return [
+      {
+        kind: "viewport",
+        resolve: (ctx) => {
+          const lo = Math.min(ctx.visibleStartMinutes, ctx.visibleEndMinutes);
+          const hi = Math.max(ctx.visibleStartMinutes, ctx.visibleEndMinutes);
+          const clampRanges =
+            clampBoundsMs == null
+              ? []
+              : unionMinuteRanges([
+                  {
+                    start: lo,
+                    end: Math.min(
+                      zonedDateTimeToMinutes(
+                        fromAbsolute(clampBoundsMs.startMs, ctx.timeZone),
+                        ctx.baseDateZoned,
+                      ),
+                      hi,
+                    ),
+                  },
+                  {
+                    start: Math.max(
+                      zonedDateTimeToMinutes(
+                        fromAbsolute(clampBoundsMs.endMs, ctx.timeZone),
+                        ctx.baseDateZoned,
+                      ),
+                      lo,
+                    ),
+                    end: hi,
+                  },
+                ]);
+
+          const nightRaw = minuteRangesFromViewportShadow(
+            nightViewportShadowsOnly[0],
+            ctx,
+          );
+          const weekendRaw = minuteRangesFromViewportShadow(
+            weekendViewportShadowsOnly[0],
+            ctx,
+          );
+
+          const layers: TimelineRangePaintLayer[] = [
+            {
+              id: "clamp",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.clamp,
+              className: clampClass,
+              ranges: clampRanges,
+            },
+            {
+              id: "weekend",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.weekend,
+              className: weekendClass,
+              ranges: weekendRaw,
+            },
+            {
+              id: "night",
+              priority: TIMELINE_RANGE_LAYER_PRIORITY.night,
+              className: nightClass,
+              ranges: nightRaw,
+            },
+          ];
+          return composeRangeLayersToPaintSegments(layers);
+        },
+      },
+    ];
+  }, [
+    clampBoundsMs,
+    nightViewportShadowsOnly,
+    weekendViewportShadowsOnly,
+    clampClass,
+    nightClass,
+    weekendClass,
+  ]);
+
   const timelineState = useTimelineState();
   useSyncTimelineAtoms(timelineState, { items, lanes, timeZone });
 
@@ -310,7 +484,12 @@ export function CubeTimelineView({ className = "" }: CubeTimelineViewProps) {
         </div>
       )}
       <div className="w-full h-full rounded-md overflow-hidden border border-slate-200">
-        <InfiniteTimeline state={timelineState} />
+        <InfiniteTimeline
+          state={timelineState}
+          timeRangeShadows={timeRangeShadows}
+          rangeShadingState={rangeShadingState}
+          onRangeShadingStateChange={onRangeShadingStateChange}
+        />
       </div>
     </div>
   );
