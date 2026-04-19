@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/form.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { ClientLogoField } from "@/features/clients/ClientLogoField.tsx";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
@@ -126,6 +127,7 @@ export function CockpitPortalClientSettingsPage(props: WithFrontServices) {
     .map(() => (
       <div className="p-6 max-w-2xl space-y-6">
         <div className="flex items-center gap-2">
+          <MobileSidebarTrigger />
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back

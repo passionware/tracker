@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer.tsx";
 import {
   BarChart3,
@@ -112,7 +113,10 @@ export function CubeReportsPage(props: WithFrontServices) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cube Reports</h1>
+          <div className="flex items-center gap-2">
+            <MobileSidebarTrigger />
+            <h1 className="text-3xl font-bold tracking-tight">Cube Reports</h1>
+          </div>
           <p className="text-muted-foreground mt-1">
             View and analyze your data reports
           </p>

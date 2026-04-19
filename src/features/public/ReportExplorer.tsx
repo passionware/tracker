@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { ReportUploader } from "./ReportUploader";
 import { ReportViewer } from "./ReportViewer";
 import { CubeViewer } from "./CubeViewer";
@@ -62,7 +63,10 @@ export function ReportExplorer(props: WithServices<[WithFormatService]>) {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Report Explorer</h1>
+        <div className="flex items-center gap-2">
+          <MobileSidebarTrigger />
+          <h1 className="text-3xl font-bold">Report Explorer</h1>
+        </div>
         <p className="text-muted-foreground">
           Upload and explore JSON report files
         </p>

@@ -4,6 +4,7 @@ import { ProjectIteration } from "@/api/project-iteration/project-iteration.api.
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import {
   ClientSpec,
   WorkspaceSpec,
@@ -111,6 +112,7 @@ export function GroupedViewPage(props: GroupedViewPageProps) {
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <MobileSidebarTrigger />
             <Button
               variant="ghost"
               size="sm"

@@ -1,5 +1,6 @@
 import { ReactNode, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import {
   Card,
   CardContent,
@@ -148,6 +149,7 @@ export function CubeViewer({
         <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <MobileSidebarTrigger />
               {showBackButton && onBack && (
                 <Button
                   variant="ghost"
@@ -206,6 +208,7 @@ export function CubeViewer({
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <MobileSidebarTrigger />
             {showBackButton && onBack && (
               <Button
                 variant="ghost"

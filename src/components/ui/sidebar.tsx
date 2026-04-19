@@ -93,6 +93,12 @@ const SidebarProvider = React.forwardRef<
         : setOpen((open) => !open);
     }, [isMobile, setOpen, setOpenMobile]);
 
+    React.useEffect(() => {
+      if (!isMobile) {
+        setOpenMobile(false);
+      }
+    }, [isMobile]);
+
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -123,15 +129,7 @@ const SidebarProvider = React.forwardRef<
         setOpenMobile,
         toggleSidebar,
       }),
-      [
-        state,
-        open,
-        setOpen,
-        isMobile,
-        openMobile,
-        setOpenMobile,
-        toggleSidebar,
-      ],
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
     );
 
     return (
@@ -197,21 +195,46 @@ const Sidebar = React.forwardRef<
 
     if (isMobile) {
       return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
+        <>
+          {/*
+           * Hidden compatibility shim for the mobile branch:
+           * - Preserves the forwarded `ref` and spread `{...props}` (consumers expect them
+           *   to attach to *some* element on every breakpoint).
+           * - Keeps `group-has-data-[collapsible=...]/sidebar-wrapper:` selectors working
+           *   on mobile (e.g. CommonPageContainer header sizing) by carrying the same
+           *   data-state / data-collapsible / data-variant / data-side attributes the
+           *   real desktop sidebar would expose. The Sheet itself is portaled out of the
+           *   wrapper, so it can't satisfy those `:has()` selectors on its own.
+           */}
+          <div
+            ref={ref}
+            className={cn("hidden", className)}
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
-          >
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
-        </Sheet>
+            data-state={state}
+            data-collapsible={state === "collapsed" ? collapsible : ""}
+            data-variant={variant}
+            data-side={side}
+            aria-hidden
+            {...props}
+          />
+          <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+            <SheetContent
+              forceMount
+              data-sidebar="sidebar"
+              data-mobile="true"
+              className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden data-[state=closed]:hidden"
+              style={
+                {
+                  "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                } as React.CSSProperties
+              }
+              side={side}
+            >
+              <div className="flex h-full w-full flex-col">{children}</div>
+            </SheetContent>
+          </Sheet>
+        </>
       );
     }
 

@@ -32,6 +32,7 @@ import {
   anonymizeByUsage,
 } from "./reportCubeTransformation";
 import { JsonTreeViewer } from "@/features/_common/JsonTreeViewer";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { maybe, rd } from "@passionware/monads";
 import { PublishToCockpitButton } from "./PublishToCockpitButton";
@@ -721,6 +722,7 @@ function ExportBuilderContent({
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <MobileSidebarTrigger />
             <Button
               variant="ghost"
               size="sm"

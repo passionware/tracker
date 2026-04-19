@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { EmailTemplateDialog } from "@/features/_common/emailTemplates/EmailTemplateDialog";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import {
@@ -321,6 +322,7 @@ export function PdfExportBuilderPage(props: WithFrontServices) {
           <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
+                <MobileSidebarTrigger />
                 <Button variant="ghost" size="sm" onClick={handleBack}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back

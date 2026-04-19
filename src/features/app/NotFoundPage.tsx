@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { AppSidebar } from "@/features/app/AppSidebar.tsx";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { myRouting } from "@/routing/myRouting.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { Layout } from "@/layout/AppLayout.tsx";
@@ -23,6 +24,11 @@ export function NotFoundScreen(props: {
           : "relative isolate flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden bg-background px-6 py-12"
       }
     >
+      {!isFullscreen && (
+        <div className="absolute left-3 top-3">
+          <MobileSidebarTrigger />
+        </div>
+      )}
       <div
         aria-hidden
         className={
