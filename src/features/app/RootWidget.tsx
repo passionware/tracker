@@ -31,6 +31,11 @@ import { ProjectsTimelineWidget } from "@/features/projects/ProjectsTimelineWidg
 import { PublicApp } from "@/features/public/PublicApp.tsx";
 import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.tsx";
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
+import { TimeTrackingActivitiesPage } from "@/features/time-tracking/TimeTrackingActivitiesPage.tsx";
+import { TimeTrackingApprovalsPage } from "@/features/time-tracking/TimeTrackingApprovalsPage.tsx";
+import { TimeTrackingMinePage } from "@/features/time-tracking/TimeTrackingMinePage.tsx";
+import { TimeTrackingTasksPage } from "@/features/time-tracking/TimeTrackingTasksPage.tsx";
+import { TimeTrackingTimelinePage } from "@/features/time-tracking/TimeTrackingTimelinePage.tsx";
 import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
 import { TmetricLiveContractorsPage } from "@/features/tmetric-dashboard/TmetricLiveContractorsPage.tsx";
@@ -587,6 +592,114 @@ export function RootWidget(props: WithFrontServices) {
                         services={props.services}
                       />
                     </EntityDrawerRouteLayout>
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Time tracking surface (event-sourced). Each sub-page is a thin
+            placeholder until its dedicated todo lands. */}
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingRoot()}
+          element={
+            <IdResolver services={props.services}>
+              {(workspaceId, clientId) => (
+                <Navigate
+                  replace
+                  to={myRouting
+                    .forWorkspace(workspaceId)
+                    .forClient(clientId)
+                    .timeTrackingMine()}
+                />
+              )}
+            </IdResolver>
+          }
+        />
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingMine()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TimeTrackingMinePage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingTimeline()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TimeTrackingTimelinePage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingTasks()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TimeTrackingTasksPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingActivities()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TimeTrackingActivitiesPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
+                  )}
+                </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forWorkspace().forClient().timeTrackingApprovals()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <IdResolver services={props.services}>
+                  {(workspaceId, clientId) => (
+                    <TimeTrackingApprovalsPage
+                      workspaceId={workspaceId}
+                      clientId={clientId}
+                      services={props.services}
+                    />
                   )}
                 </IdResolver>
               </Layout>

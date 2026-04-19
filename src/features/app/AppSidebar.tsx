@@ -33,6 +33,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   AudioLines,
   BriefcaseBusiness,
+  Clock,
   Grid3X3,
   HandCoins,
   Leaf,
@@ -74,6 +75,33 @@ function useData(
             {
               title: "Closed projects",
               url: routing.closedProjects(),
+            },
+          ],
+        },
+        {
+          title: "Time tracking",
+          url: routing.timeTrackingRoot(),
+          icon: Clock,
+          items: [
+            {
+              title: "My time",
+              url: routing.timeTrackingMine(),
+            },
+            {
+              title: "Timeline",
+              url: routing.timeTrackingTimeline(),
+            },
+            {
+              title: "Tasks",
+              url: routing.timeTrackingTasks(),
+            },
+            {
+              title: "Activities",
+              url: routing.timeTrackingActivities(),
+            },
+            {
+              title: "Approvals",
+              url: routing.timeTrackingApprovals(),
             },
           ],
         },

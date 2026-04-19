@@ -57,6 +57,23 @@ export const myRouting = {
             `/w/${workspaceSlot}/clients/${clientSlot}/projects/closed`,
           projectsTimeline: () =>
             `/w/${workspaceSlot}/clients/${clientSlot}/projects/timeline`,
+          // ---------------------------------------------------------------
+          // Event-sourced time tracking (separate "Time tracking" surface).
+          // Shares the same workspace + client filter slots as the rest of
+          // the app so the sidebar context carries through.
+          // ---------------------------------------------------------------
+          timeTrackingRoot: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking`,
+          timeTrackingMine: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking/mine`,
+          timeTrackingTimeline: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking/timeline`,
+          timeTrackingTasks: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking/tasks`,
+          timeTrackingActivities: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking/activities`,
+          timeTrackingApprovals: () =>
+            `/w/${workspaceSlot}/clients/${clientSlot}/time-tracking/approvals`,
           forProject: (projectId: string | ":projectId" = ":projectId") => {
             const base = `/w/${workspaceSlot}/clients/${clientSlot}/projects/${projectId}`;
             return {
