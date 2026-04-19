@@ -142,14 +142,8 @@ export function CubeTimeSubrangeControl({
               fieldLabel="All time"
               onUpdate={handleDateFilterUpdate}
               rangeOnly={true}
-              disabledDates={
-                availableDateRange
-                  ? [
-                      { before: availableDateRange.from },
-                      { after: availableDateRange.to },
-                    ]
-                  : undefined
-              }
+              minDate={availableDateRange?.from}
+              maxDate={availableDateRange?.to}
             />
           </div>
         </div>
