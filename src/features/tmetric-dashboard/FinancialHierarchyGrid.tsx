@@ -104,7 +104,7 @@ export function FinancialHierarchyGrid({
   return (
     <FinancialHierarchyGridContext.Provider value={value}>
       <div
-        className={`max-w-full min-w-0 overflow-x-auto overflow-y-visible rounded border touch-pan-x ${className}`.trim()}
+        className={`max-w-full min-w-0 shrink-0 overflow-x-auto overflow-y-visible rounded border touch-pan-x ${className}`.trim()}
       >
         <div className="flex w-max min-w-full flex-col pr-2">{children}</div>
       </div>
