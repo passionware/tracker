@@ -42,26 +42,34 @@ dbmate connects directly to Postgres (not via the Supabase REST API). Get the
 URI from **Supabase → Project Settings → Database → Connection string** (URI
 mode, `sslmode=require`).
 
-You must append a `search_path` pin so unqualified table names in migration
-files resolve into the right schema:
-
-```
-postgres://USER:PASS@HOST:5432/postgres?sslmode=require&options=-c%20search_path%3Dtime_dev
-```
-
-(The `%20` is a URL-encoded space; Postgres expects `-c search_path=time_dev`
-as one option string.)
-
 Store the URLs in `.env.local` (gitignored via `*.local`):
 
 ```sh
-TIME_DEV_DATABASE_URL="postgres://...&options=-c%20search_path%3Dtime_dev"
-TIME_PROD_DATABASE_URL="postgres://...&options=-c%20search_path%3Dtime_prod"
+TIME_DEV_DATABASE_URL="postgres://USER:PASS@HOST:5432/postgres?sslmode=require"
+TIME_PROD_DATABASE_URL="postgres://USER:PASS@HOST:5432/postgres?sslmode=require"
 ```
 
-The wrapper script (`scripts/dbmate-time.mjs`) refuses to run if the variable
-is missing or doesn't pin `search_path` to the matching schema — protecting
-you from accidentally applying a migration to the wrong namespace.
+The wrapper script (`scripts/dbmate-time.mjs`) decides which schema to target
+from the CLI argument (`dev` → `time_dev`, `prod` → `time_prod`) and injects
+`SET search_path TO <schema>, public, extensions, pg_catalog;` into every
+migration before passing it to dbmate. The migration files in
+`supabase/time_migrations/` stay schema-agnostic.
+
+> **Why the injection?** Supabase's pooler (Supavisor) silently strips the
+> libpq `options=` URL parameter and the `PGOPTIONS` env var on **both** the
+> session pooler (port 5432) and the transaction pooler (port 6543), so
+> `?options=-c%20search_path%3Dtime_dev` does nothing through `*.pooler.supabase.com`.
+> The only reliable way to set `search_path` over the pooler is to issue
+> `SET search_path TO ...` as an actual SQL statement after connection, which
+> the wrapper does for you. (Direct connections via
+> `db.<PROJECT>.supabase.co:5432` honor `options=`; the wrapper's injection
+> is harmless and idempotent there.)
+
+You can use any of these endpoints — the wrapper works the same way against
+all of them — but **never** pick the transaction pooler (port `6543` /
+`?pgbouncer=true`) because it doesn't support session-level state at all and
+you'll lose `SET search_path` between statements. Use the **session pooler**
+(port `5432`) or the **direct connection**.
 
 ### Workflow
 
@@ -91,6 +99,31 @@ dbmate writes a `schema_migrations(version text pk, applied timestamptz)` table
 
 We pass `--no-dump-schema` so dbmate does **not** create a `db/schema.sql` dump
 on every run; the migration files themselves are the source of truth.
+
+### First-run schema bootstrap
+
+dbmate's first action against a target is to create its own `schema_migrations`
+table inside `--migrations-table-schema`. If the schema itself doesn't exist
+yet, dbmate would fail. To make first-run "just work" the wrapper script
+auto-runs `CREATE SCHEMA IF NOT EXISTS <schema>` via `psql` before invoking
+dbmate (idempotent — no-op once the schema exists).
+
+This means you need `psql` on `PATH` the first time you ever run
+`migrate:time:dev` / `migrate:time:prod` against a fresh database.
+
+- **macOS:** `brew install libpq && brew link --force libpq`
+- **Linux:** `apt install postgresql-client`
+
+If you don't want to install `psql`, run this once in the Supabase SQL editor
+instead:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS time_dev;
+CREATE SCHEMA IF NOT EXISTS time_prod;
+```
+
+After the schema exists, the wrapper's bootstrap step is a no-op — `psql` is
+not needed for subsequent migrations.
 
 ### Conventions for migration files
 
