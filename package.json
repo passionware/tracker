@@ -15,7 +15,12 @@
     "update:dev:passionware": "npx update-by-scope @passionware npm install --tag dev",
     "update:radix": "npx update-by-scope @radix-ui npm install",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "migrate:time:new": "node scripts/dbmate-time.mjs new",
+    "migrate:time:status": "node scripts/dbmate-time.mjs dev status",
+    "migrate:time:dev": "node scripts/dbmate-time.mjs dev up",
+    "migrate:time:prod": "node scripts/confirm-prod.mjs && node scripts/dbmate-time.mjs prod up",
+    "migrate:time:check": "node scripts/dbmate-time.mjs dev status"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
