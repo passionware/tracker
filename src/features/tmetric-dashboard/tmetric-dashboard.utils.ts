@@ -16,6 +16,7 @@ import type { Lane } from "@/platform/passionware-timeline/timeline-lane-tree";
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { rd, type RemoteData } from "@passionware/monads";
 import {
+  addDays,
   endOfDay,
   endOfMonth,
   endOfWeek,
@@ -600,17 +601,20 @@ export function getCumulativeBillingByDay(
     const dayStart = startOfDay(entry.startAt).getTime();
     dayBuckets.set(dayStart, (dayBuckets.get(dayStart) ?? 0) + inIter);
   }
-  const startTs = startOfDay(periodStart).getTime();
-  const endTs = endOfDay(periodEnd).getTime();
-  const days: number[] = [];
-  for (let t = startTs; t <= endTs; t += 24 * 60 * 60 * 1000) {
-    days.push(t);
+  // Walk days using addDays (not + 86_400_000 ms) so DST transitions don't
+  // shift our day keys away from `startOfDay(entry.startAt)`. Otherwise after
+  // a spring-forward day, dayBuckets lookups all miss and cumulative stalls.
+  const startDay = startOfDay(periodStart);
+  const lastDay = startOfDay(periodEnd);
+  const days: Date[] = [];
+  for (let d = startDay; d.getTime() <= lastDay.getTime(); d = addDays(d, 1)) {
+    days.push(d);
   }
   let cumulative = 0;
-  return days.map((dayStart) => {
-    cumulative += dayBuckets.get(dayStart) ?? 0;
+  return days.map((day) => {
+    cumulative += dayBuckets.get(day.getTime()) ?? 0;
     return {
-      date: endOfDay(new Date(dayStart)),
+      date: endOfDay(day),
       cumulativeBilling: cumulative,
     };
   });

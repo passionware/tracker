@@ -196,7 +196,13 @@ export function BudgetTargetLogEditDialog({
       const result = await fetchReportForIterationRange(iteration);
       if (!result) return;
       const periodStart = calendarDateToJSDate(iteration.periodStart);
-      const periodEnd = calendarDateToJSDate(iteration.periodEnd);
+      const iterationEnd = calendarDateToJSDate(iteration.periodEnd);
+      // Cap the regenerated range at today: future days have no real billing
+      // yet and would otherwise be written as flat snapshots equal to today's
+      // cumulative.
+      const today = new Date();
+      const periodEnd =
+        iterationEnd.getTime() < today.getTime() ? iterationEnd : today;
       const byDay = getCumulativeBillingByDay(
         result.reportData,
         iteration.id,
@@ -205,12 +211,41 @@ export function BudgetTargetLogEditDialog({
         iteration.currency,
         result.rateMap,
       );
-      const existingDayKeys = new Set(
-        entries.map((e) => format(e.createdAt, "yyyy-MM-dd")),
-      );
+
+      // Step 1: wipe stale state so the chart truly mirrors what TMetric
+      // currently reports. Pure-snapshot rows (no target) are deleted; rows
+      // that recorded a target change are kept (target history matters) but
+      // their billing snapshot is nullified — the next pass will refill it
+      // from fresh cumulative if the day is in range, otherwise it stays null.
+      const targetRowByDay = new Map<string, (typeof entries)[number]>();
+      for (const e of entries) {
+        if (e.newTargetAmount == null) {
+          await services.mutationService.deleteBudgetTargetLogEntry(e.id);
+        } else {
+          await services.mutationService.updateBudgetTargetLogEntry(e.id, {
+            billingSnapshotAmount: null,
+            billingSnapshotCurrency: null,
+          });
+          targetRowByDay.set(format(e.createdAt, "yyyy-MM-dd"), e);
+        }
+      }
+
+      // Step 2: write fresh snapshots. If a target row already exists for the
+      // day, update it in place (preserves the target value); otherwise
+      // insert a new pure-snapshot row.
       for (const { date, cumulativeBilling } of byDay) {
         const dayKey = format(date, "yyyy-MM-dd");
-        if (existingDayKeys.has(dayKey)) continue;
+        const targetRow = targetRowByDay.get(dayKey);
+        if (targetRow) {
+          await services.mutationService.updateBudgetTargetLogEntry(
+            targetRow.id,
+            {
+              billingSnapshotAmount: cumulativeBilling,
+              billingSnapshotCurrency: iteration.currency,
+            },
+          );
+          continue;
+        }
         await services.mutationService.insertBudgetTargetLogEntry(
           iteration.id,
           {
@@ -220,7 +255,6 @@ export function BudgetTargetLogEditDialog({
             billingSnapshotCurrency: iteration.currency,
           },
         );
-        existingDayKeys.add(dayKey);
       }
       setOpen(false);
     } finally {
