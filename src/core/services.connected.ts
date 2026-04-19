@@ -12,6 +12,10 @@ import { createGeneratedReportSourceApi } from "@/api/generated-report-source/ge
 import { myIterationTriggerApi } from "@/api/iteration-trigger/iteration-trigger.api.connected.ts";
 import { createMutationApi } from "@/api/mutation/mutation.api.http.ts";
 import { myProjectIterationApi } from "@/api/project-iteration/project-iteration.api.connected.ts";
+import { myActivityApi } from "@/api/activity/activity.api.connected.ts";
+import { myProjectRateApi } from "@/api/rate/rate.api.connected.ts";
+import { myTaskDefinitionApi } from "@/api/task-definition/task-definition.api.connected.ts";
+import { myTimeEntryApi } from "@/api/time-entry/time-entry.api.connected.ts";
 import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
@@ -61,10 +65,14 @@ import { createContractorService } from "@/services/io/ContractorService/Contrac
 import { createCostService } from "@/services/io/CostService/CostService.impl.ts";
 import { createGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.impl.ts";
 import { createGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService.impl";
+import { createActivityService } from "@/services/io/ActivityService/ActivityService.impl.ts";
 import { createIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.impl.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
+import { createProjectRateService } from "@/services/io/ProjectRateService/ProjectRateService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
+import { createTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.impl.ts";
+import { createTimeEntryService } from "@/services/io/TimeEntryService/TimeEntryService.impl.ts";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import { createReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService.impl";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
@@ -175,6 +183,26 @@ const iterationTriggerService = createIterationTriggerService({
   api: myIterationTriggerApi,
   client: myQueryClient,
 });
+const timeEntryService = createTimeEntryService({
+  services: { messageService },
+  api: myTimeEntryApi,
+  client: myQueryClient,
+});
+const taskDefinitionService = createTaskDefinitionService({
+  services: { messageService },
+  api: myTaskDefinitionApi,
+  client: myQueryClient,
+});
+const activityService = createActivityService({
+  services: { messageService },
+  api: myActivityApi,
+  client: myQueryClient,
+});
+const projectRateService = createProjectRateService({
+  services: { messageService },
+  api: myProjectRateApi,
+  client: myQueryClient,
+});
 const expressionService = createExpressionService({
   services: {
     variableService,
@@ -273,6 +301,10 @@ export const myServices = {
   expressionService,
   projectIterationService,
   iterationTriggerService,
+  timeEntryService,
+  taskDefinitionService,
+  activityService,
+  projectRateService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
   projectService,
   reportGenerationService: createReportGenerationService({

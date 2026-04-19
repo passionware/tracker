@@ -21,9 +21,13 @@ import { WithCostService } from "@/services/io/CostService/CostService.ts";
 import { WithGeneratedReportSourceService } from "@/services/io/GeneratedReportSourceService/GeneratedReportSourceService.ts";
 import { WithGeneratedReportSourceWriteService } from "@/services/io/GeneratedReportSourceWriteService/GeneratedReportSourceWriteService";
 import { WithMutationService } from "@/services/io/MutationService/MutationService.ts";
+import { WithActivityService } from "@/services/io/ActivityService/ActivityService.ts";
 import { WithIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.ts";
 import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
+import { WithProjectRateService } from "@/services/io/ProjectRateService/ProjectRateService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
+import { WithTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.ts";
+import { WithTimeEntryService } from "@/services/io/TimeEntryService/TimeEntryService.ts";
 import { WithReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService";
 import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
@@ -81,6 +85,10 @@ export type FrontServices = MergeServices<
     WithProjectService,
     WithProjectIterationService,
     WithIterationTriggerService,
+    WithTimeEntryService,
+    WithTaskDefinitionService,
+    WithActivityService,
+    WithProjectRateService,
     WithProjectIterationDisplayService,
     WithReportGenerationService,
     WithGeneratedReportSourceWriteService,
