@@ -54,14 +54,23 @@ export interface ListToolbarActionsMenuProps {
   disabledReason?: string;
   contentClassName?: string;
   triggerClassName?: string;
+  /**
+   * Trigger label. Defaults to “Actions”. Use a per-type label
+   * (e.g. “Reports”, “Costs”) when multiple bulk menus are shown side-by-side
+   * so users can tell which actions apply to which item type.
+   */
+  label?: ReactNode;
+  /** Optional icon override; defaults to {@link Layers}. */
+  icon?: ReactNode;
   children: ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 /**
- * Bulk “Actions” control for list toolbars: always shows a {@link Layers} icon
- * (never label-only). “Actions” text appears from `sm` breakpoint up.
+ * Bulk actions control for list toolbars: shows an icon (defaults to
+ * {@link Layers}) plus a label (defaults to “Actions”). The label is hidden
+ * below the `sm` breakpoint to save space.
  */
 export function ListToolbarActionsMenu({
   selectedCount,
@@ -70,6 +79,8 @@ export function ListToolbarActionsMenu({
   disabledReason,
   contentClassName,
   triggerClassName,
+  label = "Actions",
+  icon,
   children,
   open,
   onOpenChange,
@@ -95,12 +106,12 @@ export function ListToolbarActionsMenu({
           title={triggerTitle}
           aria-label={
             selectedCount > 0
-              ? `Actions for ${selectedCount} selected rows`
+              ? `${typeof label === "string" ? label : "Actions"} for ${selectedCount} selected rows`
               : "Bulk actions"
           }
         >
-          <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          <span className="hidden sm:inline">Actions</span>
+          {icon ?? <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+          <span className="hidden sm:inline">{label}</span>
           {selectedCount > 0 ? (
             <Badge
               variant="secondary"

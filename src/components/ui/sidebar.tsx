@@ -144,6 +144,17 @@ const SidebarProvider = React.forwardRef<
           }
           className={cn(
             "isolate group/sidebar-wrapper flex min-h-svh w-full min-w-0 max-w-full overflow-x-hidden has-data-[variant=inset]:bg-sidebar",
+            // Layout helpers — Radix-style "app content" custom properties any
+            // descendant can read (e.g. floating overlays, centered toolbars).
+            //   --app-content-offset-left      : effective desktop sidebar width
+            //   --app-content-available-width  : viewport minus that offset
+            // Mobile defaults (sidebar lives in a Sheet, takes no flow space):
+            "[--app-content-offset-left:0px] [--app-content-available-width:100vw]",
+            // Desktop overrides driven by the Sidebar's data attributes:
+            "md:has-data-[state=expanded]:[--app-content-offset-left:var(--sidebar-width)]",
+            "md:has-data-[state=expanded]:[--app-content-available-width:calc(100vw-var(--sidebar-width))]",
+            "md:has-data-[collapsible=icon]:[--app-content-offset-left:var(--sidebar-width-icon)]",
+            "md:has-data-[collapsible=icon]:[--app-content-available-width:calc(100vw-var(--sidebar-width-icon))]",
             className,
           )}
           ref={ref}

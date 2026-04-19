@@ -4,6 +4,7 @@ import {
 } from "@/components/ui/dropdown-menu.tsx";
 import { ListToolbarActionsMenu } from "@/features/_common/ListToolbar.tsx";
 import { Banknote, Sparkles, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 
 export interface BillingListBulkActionsProps {
   selectedCount: number;
@@ -11,6 +12,8 @@ export interface BillingListBulkActionsProps {
   onMarkPaid: () => void;
   onMatchPayments: () => void;
   onDeleteRequest: () => void;
+  /** Optional trigger label override (defaults to “Actions”). */
+  label?: ReactNode;
 }
 
 export function BillingListBulkActions({
@@ -19,12 +22,13 @@ export function BillingListBulkActions({
   onMarkPaid,
   onMatchPayments,
   onDeleteRequest,
+  label,
 }: BillingListBulkActionsProps) {
   const noSelection = selectedCount === 0;
   const noUnpaidSelected = selectedUnpaidCount === 0;
 
   return (
-    <ListToolbarActionsMenu selectedCount={selectedCount}>
+    <ListToolbarActionsMenu selectedCount={selectedCount} label={label}>
       <DropdownMenuItem disabled={noSelection} onSelect={onMarkPaid}>
         <Banknote className="h-4 w-4" />
         Mark as paid

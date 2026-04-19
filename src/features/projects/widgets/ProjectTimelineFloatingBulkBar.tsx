@@ -208,8 +208,16 @@ export function ProjectTimelineFloatingBulkBar(
 
   return (
     <>
-      <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 justify-center px-2">
-        <Card className="pointer-events-auto flex max-w-[min(100vw-1rem,48rem)] flex-wrap items-center gap-2 border-border/80 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div
+        className={[
+          "pointer-events-none fixed bottom-6 right-0 z-50 flex justify-center px-2 transition-[left] duration-200",
+          // Wrapper occupies exactly the content area (right of any desktop sidebar)
+          // via the variables exposed by SidebarProvider, so the centered card never
+          // bleeds under the sidebar or off the viewport edge.
+          "left-[var(--app-content-offset-left)]",
+        ].join(" ")}
+      >
+        <Card className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2 border-border/80 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
           <span className="text-sm text-muted-foreground tabular-nums">
             {totalSelected} selected
           </span>
@@ -227,6 +235,7 @@ export function ProjectTimelineFloatingBulkBar(
           {reportIds.length > 0 ? (
             <ListToolbarActionsMenu
               selectedCount={reportIds.length}
+              label="Reports"
               contentClassName="min-w-[11rem]"
             >
               <ReportListBulkMenuItems
@@ -247,6 +256,7 @@ export function ProjectTimelineFloatingBulkBar(
           {iterationIds.length > 0 ? (
             <ListToolbarActionsMenu
               selectedCount={iterationIds.length}
+              label="Iterations"
               open={iterationMenuOpen}
               onOpenChange={setIterationMenuOpen}
               disabled={
@@ -269,6 +279,7 @@ export function ProjectTimelineFloatingBulkBar(
             <BillingListBulkActions
               selectedCount={billingIds.length}
               selectedUnpaidCount={selectedUnpaidBillings.length}
+              label="Billings"
               onMarkPaid={() => setBulkMarkPaidOpen(true)}
               onMatchPayments={() => {
                 setPaymentMatcherUnpaidSnapshot(selectedUnpaidBillings);
@@ -278,7 +289,10 @@ export function ProjectTimelineFloatingBulkBar(
             />
           ) : null}
           {costIds.length > 0 ? (
-            <ListToolbarActionsMenu selectedCount={costIds.length}>
+            <ListToolbarActionsMenu
+              selectedCount={costIds.length}
+              label="Costs"
+            >
               <CostListBulkDeleteMenuItem
                 selectedCount={costIds.length}
                 onDeleteRequest={() => setDeleteCostOpen(true)}
