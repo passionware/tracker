@@ -297,6 +297,7 @@ function ContractorLaneDotLabel({
   panelFetchedMs: number;
 }) {
   const initials = contractorLaneInitials(row.fullName);
+  const dimInactiveDots = !row.error && !row.currentTimer;
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -317,6 +318,8 @@ function ContractorLaneDotLabel({
               "text-[11px] font-semibold leading-none tracking-tight",
               "text-primary-foreground shadow-sm ring-1 ring-black/10 ring-inset dark:ring-white/15",
               laneDotClass,
+              dimInactiveDots &&
+                "opacity-30 saturate-[0.35] transition-[opacity,filter] duration-150",
             )}
             aria-hidden
           >
