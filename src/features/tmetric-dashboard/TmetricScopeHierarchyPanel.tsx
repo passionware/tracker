@@ -21,7 +21,10 @@ import { Link } from "react-router-dom";
 import type { WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { FinancialHierarchyGrid } from "./FinancialHierarchyGrid";
+import {
+  FinancialHierarchyGrid,
+  getFinancialHierarchyRowStyle,
+} from "./FinancialHierarchyGrid";
 import { IterationBudgetDetail } from "./IterationBudgetMeter";
 import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 import {
@@ -467,10 +470,7 @@ export function TmetricScopeHierarchyPanel({
               clientOpen && (
                 <FinancialHierarchyGrid.Subgrid key={`client-${clientId}-sub`}>
                   {iterations.length === 0 ? (
-                    <div
-                      className="col-span-full px-4 py-2 pl-11 text-sm text-muted-foreground"
-                      style={{ gridColumn: "1 / -1" }}
-                    >
+                    <div className="w-full px-4 py-2 pl-11 text-sm text-muted-foreground">
                       No iterations
                     </div>
                   ) : (
@@ -618,10 +618,7 @@ export function TmetricScopeHierarchyPanel({
                               key={`iter-${iteration.id}-sub`}
                               variant="nested"
                             >
-                              <span
-                                className="col-start-2 col-end-3 py-1 pl-6 text-sm text-muted-foreground"
-                                style={{ gridColumn: "2 / 3" }}
-                              >
+                              <span className="block w-full py-1 pl-6 text-sm text-muted-foreground">
                                 Project: {projectName}
                               </span>
                               {hasRates &&
@@ -634,7 +631,12 @@ export function TmetricScopeHierarchyPanel({
                                     );
                                   return (
                                     <>
-                                      <div className="contents border-t border-border/30">
+                                      <div
+                                        className="w-full border-t border-border/30"
+                                        style={getFinancialHierarchyRowStyle(
+                                          "withRates",
+                                        )}
+                                      >
                                         <span
                                           className="w-8 shrink-0"
                                           style={{ gridColumn: "1 / 2" }}
@@ -900,19 +902,13 @@ export function TmetricScopeHierarchyPanel({
               </Label>
             </div>
           </div>
-          <div
-            className="grid gap-4"
-            style={{
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(min(100%, 620px), 1fr))",
-            }}
-          >
+          <div className="grid min-w-0 w-full max-w-full grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
             {scopeHierarchyWithRates.map(({ clientId, iterations }) => {
               const clientTotals = scopeHierarchyTotals!.byClient.get(clientId);
               const reportData = cachedReport?.data ?? null;
               return (
-                <Card key={`by-client-${clientId}`}>
-                  <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
+                <Card key={`by-client-${clientId}`} className="min-w-0">
+                  <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 pb-2">
                     <CardTitle className="text-base shrink min-w-0">
                       <ClientWidget
                         clientId={maybe.of(clientId)}
@@ -926,7 +922,7 @@ export function TmetricScopeHierarchyPanel({
                       {iterations.length !== 1 ? "s" : ""}
                     </span>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="min-w-0">
                     <FinancialHierarchyGrid variant="billingOnly">
                       <FinancialHierarchyGrid.Header />
                       {iterations.flatMap(({ iteration, projectName }) => {
@@ -1088,8 +1084,7 @@ export function TmetricScopeHierarchyPanel({
                           ) : null,
                           <div
                             key={`${rowKey}-detail`}
-                            className="border-t border-border/30 p-3"
-                            style={{ gridColumn: "2 / -1" }}
+                            className="w-full border-t border-border/30 p-3"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <IterationBudgetDetail
