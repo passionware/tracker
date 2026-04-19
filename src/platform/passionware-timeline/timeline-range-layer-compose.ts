@@ -49,14 +49,26 @@ export function minuteRangesFromViewportShadow(
 export function composeRangeLayersToPaintSegments(
   layers: TimelineRangePaintLayer[],
 ): TimelineTimeRangePaintSegment[] {
-  const sorted = [...layers].sort((a, b) => b.priority - a.priority);
+  const sortedDesc = [...layers].sort((a, b) => b.priority - a.priority);
   let blocked: TimelineMinuteRange[] = [];
-  const out: TimelineTimeRangePaintSegment[] = [];
+  const perLayerPaint: {
+    layer: TimelineRangePaintLayer;
+    paint: TimelineMinuteRange[];
+  }[] = [];
 
-  for (const layer of sorted) {
+  for (const layer of sortedDesc) {
     const rawU = unionMinuteRanges(layer.ranges);
     if (rawU.length === 0) continue;
     const paint = differenceMinuteRanges(rawU, blocked);
+    perLayerPaint.push({ layer, paint });
+    blocked = unionMinuteRanges([...blocked, ...rawU]);
+  }
+
+  // Emit lower-priority layers first so higher-priority rects paint later (on top),
+  // but keep each layer's sub-segments in ascending startMinutes order.
+  const out: TimelineTimeRangePaintSegment[] = [];
+  for (let i = perLayerPaint.length - 1; i >= 0; i--) {
+    const { layer, paint } = perLayerPaint[i];
     for (const r of paint) {
       out.push({
         startMinutes: r.start,
@@ -64,10 +76,8 @@ export function composeRangeLayersToPaintSegments(
         className: layer.className,
       });
     }
-    blocked = unionMinuteRanges([...blocked, ...rawU]);
   }
-  // Lower priority first in the list so higher-priority rects paint later (on top).
-  return out.reverse();
+  return out;
 }
 
 /** Named entry points for range math used when composing timeline shadows. */

@@ -32,7 +32,7 @@ function clipSegment(
   return { startMinutes: sa, endMinutes: sb, className };
 }
 
-function createWeeknightViewportShadow(
+function createNightViewportShadow(
   className: string,
 ): TimelineTimeRangeShadowViewport {
   return {
@@ -53,10 +53,10 @@ function createWeeknightViewportShadow(
 
       const out: TimelineTimeRangePaintSegment[] = [];
 
+      // Emit night bands for every day; the weekend layer (higher priority) occludes
+      // the weekend portion at composition time. Keep the layer self-consistent —
+      // "night" means "21:00 → 08:00 on every day" — so consumers can compose freely.
       for (; cal.compare(calEnd) <= 0; cal = cal.add({ days: 1 })) {
-        const dow = getDayOfWeek(cal, "en-US", "sun");
-        if (dow === 0 || dow === 6) continue;
-
         const m0 = zonedDateTimeToMinutes(toZoned(cal, timeZone), baseDateZoned);
         const m8 = zonedDateTimeToMinutes(
           toZoned(
@@ -95,16 +95,10 @@ function createWeeknightViewportShadow(
           baseDateZoned,
         );
 
-        // Mon 00:00–08:00 belongs to the weekend block (Sun 21:00 → Mon 08:00).
-        if (dow >= 2 && dow <= 5) {
-          const seg0 = clipSegment(m0, m8, lo, hi, className);
-          if (seg0) out.push(seg0);
-        }
-        // Fri 21:00–24:00 is part of the weekend band (exclusive with weeknight evening).
-        if (dow >= 1 && dow <= 4) {
-          const seg1 = clipSegment(m21, mNextMid, lo, hi, className);
-          if (seg1) out.push(seg1);
-        }
+        const morning = clipSegment(m0, m8, lo, hi, className);
+        if (morning) out.push(morning);
+        const evening = clipSegment(m21, mNextMid, lo, hi, className);
+        if (evening) out.push(evening);
       }
 
       return out;
@@ -182,9 +176,13 @@ function createWeekendViewportShadow(
 }
 
 export type DefaultTimelineViewportShadowOptions = {
-  /** Tailwind classes for weekday nights outside the weekend band. */
+  /**
+   * Tailwind classes for night bands (21:00 → 08:00 on every day).
+   * The layer covers weekend nights too; rely on `composeRangeLayersToPaintSegments`
+   * to let the weekend layer occlude them.
+   */
   nightHoursClassName?: string;
-  /** Include weekday night bands. Default `true`. */
+  /** Include night bands. Default `true`. */
   includeNightHours?: boolean;
   /** Tailwind classes for weekend bands (Fri 21:00 → Mon 08:00 local). */
   weekendClassName?: string;
@@ -197,9 +195,10 @@ export type DefaultTimelineViewportShadowOptions = {
 };
 
 /**
- * Preset viewport shadows: **weekends** (Fri 21:00 → Mon 08:00 local) and **weeknights**.
- * Night/weekend bands are exclusive (no overlap): weekend contains Fri/Sat/Sun night ranges.
- * Weeknights render only while the ruler is on **hour** or **day** scale (same condition as day ticks).
+ * Preset viewport shadows: **weekends** (Fri 21:00 → Mon 08:00 local) and **nights** (21:00 → 08:00 every day).
+ * Layers may overlap at the source — `composeRangeLayersToPaintSegments` (weekend > night) renders the
+ * exclusive paint segments. Night bands render only while the ruler is on **hour** or **day** scale
+ * (same condition as day ticks).
  */
 export function createDefaultTimelineViewportShadows(
   options?: DefaultTimelineViewportShadowOptions,
@@ -210,7 +209,7 @@ export function createDefaultTimelineViewportShadows(
   const includeWeekend = options?.includeWeekend ?? true;
   const out: TimelineTimeRangeShadowViewport[] = [];
   if (includeNightHours) {
-    out.push(createWeeknightViewportShadow(night));
+    out.push(createNightViewportShadow(night));
   }
   if (includeWeekend) {
     out.push(

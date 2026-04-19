@@ -40,10 +40,9 @@ import {
 } from "@/platform/lang/SelectionState.ts";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
 import {
-  createOutsideRangeShadows,
+  createComposedRangeShadow,
   InfiniteTimelineWithState,
   Lane,
-  nightWeekendViewportShadowsForShadingState,
   TimelineItem,
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline";
@@ -96,11 +95,6 @@ export function CostWidget(props: PotentialCostWidgetProps) {
       "timeline-range-shading:costs",
       { night: false, weekend: false },
     );
-  const nightWeekendLayers = useMemo(
-    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
-    [rangeShadingState],
-  );
-
   const viewModeItems = [
     {
       id: "timeline",
@@ -457,13 +451,11 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             : invoiceDateFilter?.operator === "equal"
               ? dateToCalendarDate(invoiceDateFilter.value)
               : maxEndFromItems;
-        const timelineClampShadows = createOutsideRangeShadows(
-          clampStart,
-          clampEnd,
-        );
         const mergedTimeRangeShadows = [
-          ...nightWeekendLayers,
-          ...timelineClampShadows,
+          createComposedRangeShadow({
+            clamp: { start: clampStart, end: clampEnd },
+            rangeShadingState,
+          }),
         ];
         return (
           <div

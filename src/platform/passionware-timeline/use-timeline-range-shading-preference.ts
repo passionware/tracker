@@ -6,8 +6,8 @@ import type { TimelineRangeShadingState } from "./timeline-infinite-types.ts";
 
 /**
  * Binds timeline range-shading toolbar state to {@link PreferenceService} for a stable scope key.
- * Compose resulting night/weekend layers with view-specific shadows via
- * {@link nightWeekendViewportShadowsForShadingState} in the parent.
+ * Pass the resulting `rangeShadingState` to {@link createComposedRangeShadow} in the parent so
+ * weekend/night/clamp bands occlude each other instead of stacking translucently.
  */
 export function useTimelineRangeShadingFromPreference(
   preferenceService: PreferenceService,

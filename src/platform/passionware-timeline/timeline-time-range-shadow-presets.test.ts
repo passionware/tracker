@@ -35,7 +35,7 @@ describe("createDefaultTimelineViewportShadows", () => {
   /** Monday 2025-06-02 00:00 in UTC — aligns with ruler weekday logic (Sun=0 … Sat=6). */
   const baseMonday = toZoned(new CalendarDate(2025, 6, 2), timeZone);
 
-  it("resolves two weeks of weeknight and weekend bands on day ruler scale", () => {
+  it("resolves two weeks of night and weekend bands on day ruler scale", () => {
     const [nightShadow, weekendShadow] = createDefaultTimelineViewportShadows({
       nightHoursClassName: "night",
       weekendClassName: "weekend",
@@ -47,10 +47,11 @@ describe("createDefaultTimelineViewportShadows", () => {
     const nights = nightShadow.resolve(ctx);
     const weekends = weekendShadow.resolve(ctx);
 
-    // With exclusive weekend blocks (Fri 21:00 -> Mon 08:00):
-    // - night segments within this window are Tue-Fri mornings + Mon-Thu evenings (8 per week => 16).
-    // - weekend includes a clipped carry-over at range start plus 2 in-range weekend blocks (3 total).
-    expect(nights.length).toBe(16);
+    // Night layer covers EVERY day (morning 0:00-8:00 + evening 21:00-24:00).
+    // For [Mon Jun 2 00:00, Mon Jun 16 00:00) the iterator emits up to Jun 17,
+    // so we get 14 mornings + 14 evenings = 28 segments
+    // (Jun 16 morning starts at the exclusive end and clips to zero; Jun 17 falls outside).
+    expect(nights.length).toBe(28);
     expect(weekends.length).toBe(3);
 
     expect(nights.every((s) => s.className === "night")).toBe(true);
@@ -67,16 +68,21 @@ describe("createDefaultTimelineViewportShadows", () => {
       expect(s.endMinutes - s.startMinutes).toBeGreaterThan(0);
     }
 
-    // Exclusive guarantee: no overlap between night and weekend bands.
-    for (const n of nights) {
-      for (const w of weekends) {
-        const overlap = Math.min(n.endMinutes, w.endMinutes) - Math.max(n.startMinutes, w.startMinutes);
-        expect(overlap <= 0).toBe(true);
-      }
-    }
+    // Source layers are intentionally NOT exclusive any more — every weekend night
+    // is also a "night" segment. The exclusive paint output is produced downstream
+    // by composeRangeLayersToPaintSegments (see timeline-range-layer-compose.test.ts).
+    const overlapped = nights.some((n) =>
+      weekends.some(
+        (w) =>
+          Math.min(n.endMinutes, w.endMinutes) -
+            Math.max(n.startMinutes, w.startMinutes) >
+          0,
+      ),
+    );
+    expect(overlapped).toBe(true);
   });
 
-  it("marks no weeknights when ruler is coarser than day ticks", () => {
+  it("marks no nights when ruler is coarser than day ticks", () => {
     const [nightShadow, weekendShadow] = createDefaultTimelineViewportShadows({
       nightHoursClassName: "night",
       weekendClassName: "weekend",

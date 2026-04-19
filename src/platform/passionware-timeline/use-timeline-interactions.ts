@@ -154,6 +154,20 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   /** Element that called `setPointerCapture` for the active pan, if any. */
   const panPointerCaptureElRef = useRef<HTMLElement | null>(null);
 
+  /** Active touch pointers on the container, used to detect two-finger pinch zoom. */
+  const pinchPointersRef = useRef<Map<number, { x: number; y: number }>>(
+    new Map(),
+  );
+  /** Snapshot of the current pinch gesture; updated on each pointermove until one finger lifts. */
+  const pinchStateRef = useRef<{
+    pointerA: number;
+    pointerB: number;
+    startDistance: number;
+    startZoom: number;
+    /** Layout time (minutes) at the initial pinch midpoint; held constant during the gesture. */
+    startTimeAtCenter: number;
+  } | null>(null);
+
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -454,6 +468,150 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     }
     panPointerCaptureElRef.current = null;
   }, []);
+
+  /**
+   * Two-finger pinch zoom for touch devices. Listens at container/window level since the
+   * scroll surface uses `touch-action: none` (no native pinch). Centers zoom on the midpoint
+   * between the two touches and follows midpoint translation so it doubles as a pan-zoom.
+   */
+  const beginPinchGesture = useCallback(() => {
+    const ids = Array.from(pinchPointersRef.current.keys());
+    if (ids.length < 2) return;
+    const [idA, idB] = ids;
+    const a = pinchPointersRef.current.get(idA);
+    const b = pinchPointersRef.current.get(idB);
+    if (!a || !b) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const sidebarWidth = store.get(atoms.laneSidebarWidthPxAtom);
+    const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+    const centerClientX = (a.x + b.x) / 2;
+    const centerContainerX = centerClientX - rect.left - sidebarWidth;
+    const zoom = readZoom();
+    const scrollOffset = readScrollOffset();
+    const ppm = pixelsPerMinuteFromZoom(zoom);
+    const startTimeAtCenter = (centerContainerX - scrollOffset) / ppm;
+    pinchStateRef.current = {
+      pointerA: idA,
+      pointerB: idB,
+      startDistance: distance,
+      startZoom: zoom,
+      startTimeAtCenter,
+    };
+
+    const existingPan = readPanState();
+    if (existingPan?.pointerId !== undefined) {
+      releasePanPointerCapture(existingPan.pointerId);
+    }
+    if (existingPan) {
+      setPanState(null);
+    }
+    const drag = readDragState();
+    if (drag) {
+      setDragState(null);
+      setCurrentMouseX(null);
+      setDragModifications(new Map());
+      previewItemRef.current = null;
+    }
+  }, [
+    atoms.laneSidebarWidthPxAtom,
+    containerRef,
+    previewItemRef,
+    releasePanPointerCapture,
+    setCurrentMouseX,
+    setDragModifications,
+    setDragState,
+    setPanState,
+    store,
+  ]);
+
+  const updatePinchGesture = useCallback(() => {
+    const pinch = pinchStateRef.current;
+    if (!pinch) return;
+    const a = pinchPointersRef.current.get(pinch.pointerA);
+    const b = pinchPointersRef.current.get(pinch.pointerB);
+    if (!a || !b) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const sidebarWidth = store.get(atoms.laneSidebarWidthPxAtom);
+    const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+    const ratio = distance / pinch.startDistance;
+    const newZoom = Math.max(
+      TIMELINE_ZOOM_MIN,
+      Math.min(TIMELINE_ZOOM_MAX, pinch.startZoom * ratio),
+    );
+    const centerContainerX =
+      (a.x + b.x) / 2 - rect.left - sidebarWidth;
+    const newPpm = pixelsPerMinuteFromZoom(newZoom);
+    const newScrollOffset =
+      centerContainerX - pinch.startTimeAtCenter * newPpm;
+    setZoom(newZoom);
+    setScrollOffset(newScrollOffset);
+  }, [
+    atoms.laneSidebarWidthPxAtom,
+    containerRef,
+    setScrollOffset,
+    setZoom,
+    store,
+  ]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      pinchPointersRef.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+      if (pinchPointersRef.current.size === 2 && !pinchStateRef.current) {
+        beginPinchGesture();
+      } else if (pinchPointersRef.current.size > 2 && pinchStateRef.current) {
+        // Re-anchor when a third finger arrives so the existing pinch stays consistent.
+        beginPinchGesture();
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!pinchPointersRef.current.has(e.pointerId)) return;
+      pinchPointersRef.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+      if (pinchStateRef.current) {
+        e.preventDefault();
+        updatePinchGesture();
+      }
+    };
+
+    const endTouch = (e: PointerEvent) => {
+      if (!pinchPointersRef.current.has(e.pointerId)) return;
+      pinchPointersRef.current.delete(e.pointerId);
+      const pinch = pinchStateRef.current;
+      if (
+        pinch &&
+        (e.pointerId === pinch.pointerA || e.pointerId === pinch.pointerB)
+      ) {
+        pinchStateRef.current = null;
+        if (pinchPointersRef.current.size >= 2) {
+          // Continue pinching with whichever two pointers remain.
+          beginPinchGesture();
+        }
+      }
+    };
+
+    container.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointerup", endTouch);
+    window.addEventListener("pointercancel", endTouch);
+    return () => {
+      container.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", endTouch);
+      window.removeEventListener("pointercancel", endTouch);
+    };
+  }, [containerRef, beginPinchGesture, updatePinchGesture]);
 
   const handleContainerPointerDown = useCallback(
     (e: globalThis.PointerEvent) => {

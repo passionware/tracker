@@ -12,9 +12,8 @@ import { ContractorWidget } from "@/features/_common/elements/pickers/Contractor
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import {
-  createOutsideRangeShadows,
+  createComposedRangeShadow,
   InfiniteTimelineWithState,
-  nightWeekendViewportShadowsForShadingState,
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import {
@@ -48,13 +47,6 @@ export function TmetricContractorDetailPage(
     services.preferenceService,
     "timeline-range-shading:tmetric-contractor-detail",
     { night: true, weekend: true },
-  );
-  const contractorDetailNightWeekendLayers = useMemo(
-    () =>
-      nightWeekendViewportShadowsForShadingState(
-        contractorDetailRangeShading.rangeShadingState,
-      ),
-    [contractorDetailRangeShading.rangeShadingState],
   );
 
   const data = useTmetricDashboardData({ services, workspaceId, clientId });
@@ -341,13 +333,12 @@ export function TmetricContractorDetailPage(
                             item.end.compare(max) > 0 ? item.end : max,
                           tFiltered.timelineItems[0].end,
                         );
-                        const timelineClampShadows = createOutsideRangeShadows(
-                          minStart,
-                          maxEnd,
-                        );
                         const mergedTimeRangeShadows = [
-                          ...contractorDetailNightWeekendLayers,
-                          ...timelineClampShadows,
+                          createComposedRangeShadow({
+                            clamp: { start: minStart, end: maxEnd },
+                            rangeShadingState:
+                              contractorDetailRangeShading.rangeShadingState,
+                          }),
                         ];
                         return (
                           <InfiniteTimelineWithState

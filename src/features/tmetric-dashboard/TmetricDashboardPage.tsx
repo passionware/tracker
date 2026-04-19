@@ -23,9 +23,8 @@ import { ContractorWidget } from "@/features/_common/elements/pickers/Contractor
 import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
 import {
-  createOutsideRangeShadows,
+  createComposedRangeShadow,
   InfiniteTimelineWithState,
-  nightWeekendViewportShadowsForShadingState,
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
@@ -66,7 +65,7 @@ import {
 import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
 import { endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date.ts";
 import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { cn } from "@/lib/utils";
@@ -230,13 +229,6 @@ export function TmetricDashboardPage(
     services.preferenceService,
     "timeline-range-shading:tmetric-dashboard",
     { night: true, weekend: true },
-  );
-  const dashboardNightWeekendLayers = useMemo(
-    () =>
-      nightWeekendViewportShadowsForShadingState(
-        dashboardTimelineShading.rangeShadingState,
-      ),
-    [dashboardTimelineShading.rangeShadingState],
   );
 
   const isMobile = useIsMobile();
@@ -501,13 +493,12 @@ export function TmetricDashboardPage(
                           start != null && end != null
                             ? fromAbsolute(end.getTime(), getLocalTimeZone())
                             : maxEndFromItems;
-                        const timelineClampShadows = createOutsideRangeShadows(
-                          clampStart,
-                          clampEnd,
-                        );
                         const mergedTimeRangeShadows = [
-                          ...dashboardNightWeekendLayers,
-                          ...timelineClampShadows,
+                          createComposedRangeShadow({
+                            clamp: { start: clampStart, end: clampEnd },
+                            rangeShadingState:
+                              dashboardTimelineShading.rangeShadingState,
+                          }),
                         ];
                         return (
                       <InfiniteTimelineWithState

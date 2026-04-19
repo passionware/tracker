@@ -74,7 +74,10 @@ export {
 } from "./timeline-time-range-shadow-presets.ts";
 export {
   DEFAULT_TIMELINE_RANGE_SHADING_VISUAL,
+  createComposedRangeShadow,
   nightWeekendViewportShadowsForShadingState,
+  type ComposedRangeShadowOptions,
+  type TimelineRangeShadowClamp,
 } from "./timeline-range-shading-composer.ts";
 export {
   composeRangeLayersToPaintSegments,

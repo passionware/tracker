@@ -54,10 +54,9 @@ import {
   type TimelineItem,
 } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
 import {
-  createOutsideRangeShadows,
+  createComposedRangeShadow,
   DefaultTimelineItem,
   InfiniteTimelineWithState,
-  nightWeekendViewportShadowsForShadingState,
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { PointerFollowTooltip } from "@/components/ui/pointer-follow-tooltip.tsx";
@@ -550,24 +549,19 @@ function ProjectsTimelineChartWithSelection(props: {
       "timeline-range-shading:projects",
       { night: false, weekend: false },
     );
-  const nightWeekendLayers = useMemo(
-    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
-    [rangeShadingState],
-  );
-  const timelineClampShadows = useMemo(
-    () =>
-      props.viewportRange
-        ? createOutsideRangeShadows(
-            props.viewportRange.start,
-            props.viewportRange.end,
-          )
-        : [],
-    [props.viewportRange],
-  );
-
   const mergedTimeRangeShadows = useMemo(
-    () => [...nightWeekendLayers, ...timelineClampShadows],
-    [nightWeekendLayers, timelineClampShadows],
+    () => [
+      createComposedRangeShadow({
+        clamp: props.viewportRange
+          ? {
+              start: props.viewportRange.start,
+              end: props.viewportRange.end,
+            }
+          : null,
+        rangeShadingState,
+      }),
+    ],
+    [props.viewportRange, rangeShadingState],
   );
 
   const handleTimelineDrawComplete = useCallback(

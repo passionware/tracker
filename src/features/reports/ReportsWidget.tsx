@@ -51,11 +51,10 @@ import {
   useSelectionCleanup,
 } from "@/platform/lang/SelectionState.ts";
 import {
-  createOutsideRangeShadows,
+  createComposedRangeShadow,
   DefaultTimelineItem,
   InfiniteTimelineWithState,
   Lane,
-  nightWeekendViewportShadowsForShadingState,
   TimelineItem,
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline";
@@ -134,11 +133,6 @@ export function ReportsWidget(props: ReportsWidgetProps) {
       "timeline-range-shading:reports",
       { night: false, weekend: false },
     );
-  const nightWeekendLayers = useMemo(
-    () => nightWeekendViewportShadowsForShadingState(rangeShadingState),
-    [rangeShadingState],
-  );
-
   // Save preferences when they change
   useEffect(() => {
     void props.services.preferenceService.setTimelineView({
@@ -721,13 +715,11 @@ export function ReportsWidget(props: ReportsWidgetProps) {
             : periodFilter?.operator === "equal"
               ? dateToCalendarDate(periodFilter.value)
               : maxEndFromItems;
-        const timelineClampShadows = createOutsideRangeShadows(
-          clampStart,
-          clampEnd,
-        );
         const mergedTimeRangeShadows = [
-          ...nightWeekendLayers,
-          ...timelineClampShadows,
+          createComposedRangeShadow({
+            clamp: { start: clampStart, end: clampEnd },
+            rangeShadingState,
+          }),
         ];
         return (
           <div
