@@ -25,6 +25,13 @@ export interface TimelineRangeShadingState {
 export type TmetricLiveLaneLegendMode = "full" | "dots";
 
 /**
+ * Section visibility on the dedicated `/tmetric-live` full page. Lets users
+ * turn the live timeline / custom KPI cards on or off (e.g. on a phone they may
+ * only want to see live timers).
+ */
+export type TmetricLivePageViewMode = "both" | "timeline" | "kpis";
+
+/**
  * User-defined KPI shown as a card on a dashboard. Stored in localStorage so each
  * user can build their own little set of metrics on top of the shared dashboard data.
  */
@@ -123,6 +130,12 @@ export interface PreferenceService {
   setTmetricLiveContractorsLaneLegendModeCompact: (
     mode: TmetricLiveLaneLegendMode,
   ) => Promise<void>;
+  /**
+   * Which sections are shown on the standalone `/tmetric-live` page.
+   * Defaults to `"both"`.
+   */
+  useTmetricLivePageViewMode: () => TmetricLivePageViewMode;
+  setTmetricLivePageViewMode: (mode: TmetricLivePageViewMode) => Promise<void>;
   /** User-defined KPI cards on the dashboard overview. */
   useCustomDashboardKpis: () => CustomDashboardKpi[];
   getCustomDashboardKpis: () => Promise<CustomDashboardKpi[]>;

@@ -214,6 +214,19 @@ const tmetricLiveLaneLegendModeCompactApi = createLocalStorageApi<
   "dots",
 );
 
+const tmetricLivePageViewModeSchema = z.enum(["both", "timeline", "kpis"]);
+
+const tmetricLivePageViewModeApi = createLocalStorageApi<
+  "both" | "timeline" | "kpis"
+>(
+  "tmetric-live-page-view-mode-v1",
+  (data) => {
+    const result = tmetricLivePageViewModeSchema.safeParse(data);
+    return result.success ? result.data : "both";
+  },
+  "both",
+);
+
 const customDashboardKpiSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -479,6 +492,30 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useTmetricLivePageViewModeStore = create<{
+    mode: "both" | "timeline" | "kpis";
+    initialized: boolean;
+    setMode: (m: "both" | "timeline" | "kpis") => Promise<void>;
+  }>((set, get) => ({
+    mode: "both",
+    initialized: false,
+    setMode: async (m) => {
+      const next = tmetricLivePageViewModeSchema.parse(m);
+      if (get().mode === next) {
+        return;
+      }
+      set({ mode: next });
+      await tmetricLivePageViewModeApi.write(next);
+    },
+  }));
+
+  void tmetricLivePageViewModeApi.read().then((stored) => {
+    useTmetricLivePageViewModeStore.setState({
+      mode: stored ?? "both",
+      initialized: true,
+    });
+  });
+
   const useCustomDashboardKpisStore = create<{
     kpis: CustomDashboardKpi[];
     initialized: boolean;
@@ -627,6 +664,16 @@ export function createPreferenceService(): PreferenceService {
     },
     setTmetricLiveContractorsLaneLegendModeCompact: async (nextMode) => {
       await useTmetricLiveLaneLegendModeCompactStore.getState().setMode(nextMode);
+    },
+    useTmetricLivePageViewMode: () => {
+      const { mode, initialized } = useTmetricLivePageViewModeStore();
+      if (!initialized) {
+        return "both";
+      }
+      return mode;
+    },
+    setTmetricLivePageViewMode: async (nextMode) => {
+      await useTmetricLivePageViewModeStore.getState().setMode(nextMode);
     },
     useCustomDashboardKpis: () => {
       const { kpis } = useCustomDashboardKpisStore();

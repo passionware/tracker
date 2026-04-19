@@ -1,11 +1,28 @@
 import { clientQueryUtils } from "@/api/clients/clients.api";
 import { dashboardQueryUtils } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { workspaceQueryUtils } from "@/api/workspace/workspace.api";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { WithFrontServices } from "@/core/frontServices";
 import { myQueryClient } from "@/core/query.connected";
+import { CustomKpiCards } from "@/features/tmetric-dashboard/custom-kpis/CustomKpiCards";
+import { useTmetricDashboardData } from "@/features/tmetric-dashboard/useTmetricDashboardData";
 import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger";
 import { TmetricLiveContractorsTimeline } from "@/features/tmetric-dashboard/TmetricLiveContractorsTimeline";
 import { cn } from "@/lib/utils";
@@ -13,8 +30,17 @@ import { idSpecUtils } from "@/platform/lang/IdSpec";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
 import { myRouting } from "@/routing/myRouting";
 import { rd } from "@passionware/monads";
-import { formatDistanceToNow, isValid } from "date-fns";
-import { RefreshCw, Timer } from "lucide-react";
+import { format, formatDistanceToNow, isValid } from "date-fns";
+import {
+  Columns2,
+  Database,
+  ExternalLink,
+  Gauge,
+  MoreVertical,
+  RefreshCw,
+  Rows3,
+  Timer,
+} from "lucide-react";
 import qs from "qs";
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -100,6 +126,25 @@ function LiveSummarySkeleton() {
       <Skeleton className="h-[0.875rem] w-14 rounded-full" />
       <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
       <Skeleton className="h-[0.875rem] w-[4.75rem] rounded-full" />
+    </div>
+  );
+}
+
+function CustomKpiSectionSkeleton() {
+  return (
+    <div className="flex flex-col gap-2" aria-busy>
+      <Skeleton className="h-4 w-24" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="min-w-0">
+            <CardContent className="flex min-w-0 flex-col gap-1.5 p-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-7 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
@@ -202,98 +247,294 @@ export function TmetricLiveContractorsPage(props: WithFrontServices) {
     <LiveSummarySkeleton />
   ) : null;
 
+  // Reuse the dashboard data pipeline (cached TMetric report → contractor summary
+  // + contractor name map) so we can render the same Custom KPI cards on this page.
+  // Scope is global (all workspaces / all clients) and uses the default dashboard
+  // query params (today preset, all active iterations).
+  const dashboardData = useTmetricDashboardData({
+    services,
+    workspaceId: idSpecUtils.ofAll(),
+    clientId: idSpecUtils.ofAll(),
+  });
+  const {
+    contractorsSummary,
+    contractorNameMap,
+    handleRefresh,
+    isRefreshing,
+    canLoadOrRefresh,
+    cachedReportQuery,
+    start: kpiStart,
+    end: kpiEnd,
+  } = dashboardData;
+
+  const kpiPeriodLabel =
+    kpiStart && kpiEnd
+      ? `${format(kpiStart, "dd MMM")} – ${format(kpiEnd, "dd MMM yyyy")}`
+      : null;
+
+  const viewMode = services.preferenceService.useTmetricLivePageViewMode();
+  const showTimeline = viewMode === "both" || viewMode === "timeline";
+  const showKpis = viewMode === "both" || viewMode === "kpis";
+  const timelineFillsViewport = viewMode === "timeline";
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background/50">
-      <div className="flex-shrink-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-3 py-3 sm:px-6 sm:py-4">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <MobileSidebarTrigger />
-              <Timer className="h-5 w-5 shrink-0 text-primary" />
-              <h1 className="text-lg font-bold tracking-tight sm:text-2xl">
-                TMetric live
-              </h1>
-              <Badge variant="secondary">BETA</Badge>
+      <div className="flex-shrink-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-3 py-2 sm:px-6 sm:py-3">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <MobileSidebarTrigger />
+            <Timer className="h-5 w-5 shrink-0 text-primary" />
+            <h1 className="min-w-0 truncate text-base font-bold tracking-tight sm:text-xl">
+              TMetric live
+            </h1>
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <TooltipProvider delayDuration={300}>
+                <ToggleGroup
+                  type="single"
+                  size="sm"
+                  value={viewMode}
+                  onValueChange={(value) => {
+                    if (
+                      value === "both" ||
+                      value === "timeline" ||
+                      value === "kpis"
+                    ) {
+                      void services.preferenceService.setTmetricLivePageViewMode(
+                        value,
+                      );
+                    }
+                  }}
+                  className="h-8 shrink-0 rounded-lg border border-border/60 bg-background/70 p-0.5 shadow-sm backdrop-blur-sm"
+                  aria-label="Live page sections"
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="timeline"
+                        aria-label="Show only the live timeline"
+                        className="h-7 px-2 text-xs"
+                      >
+                        <Rows3 className="size-3.5" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Timeline only</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="both"
+                        aria-label="Show timeline and KPI cards"
+                        className="h-7 px-2 text-xs"
+                      >
+                        <Columns2 className="size-3.5" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Timeline + KPIs
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="kpis"
+                        aria-label="Show only the custom KPI cards"
+                        className="h-7 px-2 text-xs"
+                      >
+                        <Gauge className="size-3.5" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">KPIs only</TooltipContent>
+                  </Tooltip>
+                </ToggleGroup>
+              </TooltipProvider>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 rounded-lg"
+                    aria-label="More actions"
+                  >
+                    <MoreVertical className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    disabled={!showTimeline}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      invalidateLive();
+                    }}
+                  >
+                    <RefreshCw
+                      className={cn(
+                        "size-4",
+                        rd.isPending(liveQuery) &&
+                          liveData == null &&
+                          "animate-spin",
+                      )}
+                    />
+                    <span>Refresh live timers</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={isRefreshing || !canLoadOrRefresh || !showKpis}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      handleRefresh();
+                    }}
+                  >
+                    <Database
+                      className={cn(
+                        "size-4",
+                        isRefreshing && "animate-pulse",
+                      )}
+                    />
+                    <span>Refresh KPI source data</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={tmetricCubeExplorerHref}>
+                      <ExternalLink className="size-4" />
+                      <span>Open TMetric cube</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <p className="mt-1 hidden text-pretty text-sm text-muted-foreground sm:block">
-              One lane per contractor — last 24h of TMetric time on the tracks,
-              with status and clients in each lane label.
-            </p>
-            <Link
-              to={tmetricCubeExplorerHref}
-              className="mt-1 inline-flex max-w-full flex-wrap items-baseline gap-x-1 rounded-md py-0.5 text-xs font-medium text-primary underline-offset-4 transition-colors hover:bg-primary/5 hover:underline"
-            >
-              Open TMetric cube
-              <span className="font-normal text-muted-foreground no-underline">
-                · all workspaces · all clients · today
-              </span>
-            </Link>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            {summaryPill}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="h-8 shrink-0 gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm"
-              onClick={() => invalidateLive()}
-            >
-              <RefreshCw
-                className={cn(
-                  "size-3.5 opacity-80",
-                  rd.isPending(liveQuery) && liveData == null && "animate-spin",
-                )}
-              />
-              Refresh
-            </Button>
-          </div>
+          {summaryPill ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {summaryPill}
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col px-3 py-3 sm:px-6 sm:py-4">
-        {rd
-          .journey(workspaces)
-          .wait(<ContractorRowsSkeleton count={listSkeletonDisplayCount} />)
-          .catch((e) => (
-            <p className="px-1 py-4 text-sm text-destructive">
-              <ErrorMessageRenderer error={e} />
-            </p>
-          ))
-          .map(() =>
-            ids != null && ids.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
-                No workspaces available.
-              </p>
-            ) : (
-              rd
-                .journey(liveQuery)
-                .wait(
-                  <ContractorRowsSkeleton count={listSkeletonDisplayCount} />,
-                )
-                .catch((e) => (
-                  <p className="px-2 py-3 text-sm text-destructive">
-                    <ErrorMessageRenderer error={e} />
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col gap-4 px-3 py-3 sm:px-6 sm:py-4",
+          timelineFillsViewport ? "overflow-hidden" : "overflow-y-auto",
+        )}
+      >
+        {showTimeline ? (
+          <div
+            className={cn(
+              "flex min-w-0 flex-col",
+              timelineFillsViewport
+                ? "min-h-0 flex-1"
+                : "min-h-[18rem] sm:min-h-[22rem]",
+            )}
+          >
+            {rd
+              .journey(workspaces)
+              .wait(
+                <ContractorRowsSkeleton count={listSkeletonDisplayCount} />,
+              )
+              .catch((e) => (
+                <p className="px-1 py-4 text-sm text-destructive">
+                  <ErrorMessageRenderer error={e} />
+                </p>
+              ))
+              .map(() =>
+                ids != null && ids.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
+                    No workspaces available.
                   </p>
-                ))
-                .map((data) => {
-                  if (!clientNameFn) {
-                    return (
+                ) : (
+                  rd
+                    .journey(liveQuery)
+                    .wait(
                       <ContractorRowsSkeleton
                         count={listSkeletonDisplayCount}
-                      />
+                      />,
+                    )
+                    .catch((e) => (
+                      <p className="px-2 py-3 text-sm text-destructive">
+                        <ErrorMessageRenderer error={e} />
+                      </p>
+                    ))
+                    .map((data) => {
+                      if (!clientNameFn) {
+                        return (
+                          <ContractorRowsSkeleton
+                            count={listSkeletonDisplayCount}
+                          />
+                        );
+                      }
+                      return (
+                        <TmetricLiveContractorsTimeline
+                          panel={data}
+                          clientNameFn={clientNameFn}
+                          preferenceService={services.preferenceService}
+                          timelineFillViewport={timelineFillsViewport}
+                        />
+                      );
+                    })
+                ),
+              )}
+          </div>
+        ) : null}
+
+        {showKpis ? (
+          <section
+            aria-label="Custom KPIs"
+            className="flex min-w-0 flex-col gap-2"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Custom KPIs
+              </h2>
+              {kpiPeriodLabel ? (
+                <span className="text-[10px] tabular-nums text-muted-foreground/80">
+                  {kpiPeriodLabel}
+                </span>
+              ) : null}
+            </div>
+            {rd
+              .journey(rd.combine({ contractorsSummary, contractorNameMap }))
+              .wait(<CustomKpiSectionSkeleton />)
+              .catch((error) => (
+                <Card className="border-destructive">
+                  <CardContent className="pt-6 text-destructive">
+                    <ErrorMessageRenderer error={error} />
+                  </CardContent>
+                </Card>
+              ))
+              .map(
+                ({
+                  contractorsSummary: resolvedContractorsSummary,
+                  contractorNameMap: resolvedContractorNameMap,
+                }) => {
+                  if (rd.isPending(cachedReportQuery)) {
+                    return <CustomKpiSectionSkeleton />;
+                  }
+                  const cached = rd.tryGet(cachedReportQuery);
+                  if (cached == null) {
+                    return (
+                      <Card className="border-dashed">
+                        <CardContent className="flex flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
+                          <p>
+                            No cached TMetric data yet. Click &quot;Refresh
+                            KPIs&quot; to fetch{" "}
+                            {kpiPeriodLabel ?? "today's"} data.
+                          </p>
+                        </CardContent>
+                      </Card>
                     );
                   }
                   return (
-                    <TmetricLiveContractorsTimeline
-                      panel={data}
-                      clientNameFn={clientNameFn}
-                      preferenceService={services.preferenceService}
-                      timelineFillViewport
+                    <CustomKpiCards
+                      services={services}
+                      contractorsSummary={resolvedContractorsSummary}
+                      contractorNameMap={resolvedContractorNameMap}
                     />
                   );
-                })
-            ),
-          )}
+                },
+              )}
+          </section>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-muted/25 px-4 py-2 text-[10px] text-muted-foreground sm:px-6">

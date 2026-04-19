@@ -57,19 +57,117 @@ import { TmetricScopeHierarchyPanel } from "./TmetricScopeHierarchyPanel";
 import { useBudgetLogSync } from "./useBudgetLogSync";
 import { useTmetricDashboardData } from "./useTmetricDashboardData";
 import type { TimePreset } from "./tmetric-dashboard.utils";
-import { Calendar } from "@/components/ui/calendar";
+import {
+  AriaCalendarBody,
+  AriaCalendarHeader,
+} from "@/components/ui/aria-calendar.tsx";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { fromAbsolute, getLocalTimeZone } from "@internationalized/date";
-import { endOfDay, startOfDay } from "date-fns";
-import type { DateRange } from "react-day-picker";
-import { useEffect, useState } from "react";
-import { dateToCalendarDate } from "@/platform/lang/internationalized-date.ts";
+import {
+  calendarDateToJSDate,
+  dateToCalendarDate,
+} from "@/platform/lang/internationalized-date.ts";
 import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { cn } from "@/lib/utils";
+import {
+  CalendarDate,
+  fromAbsolute,
+  getLocalTimeZone,
+} from "@internationalized/date";
+import {
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subDays,
+  subMonths,
+} from "date-fns";
+import { useState } from "react";
+import { RangeCalendar } from "react-aria-components";
+
+interface RangePreset {
+  id: string;
+  label: string;
+  range: () => { start: Date; end: Date };
+}
+
+const RANGE_PRESETS: RangePreset[] = [
+  {
+    id: "today",
+    label: "Today",
+    range: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }),
+  },
+  {
+    id: "yesterday",
+    label: "Yesterday",
+    range: () => {
+      const y = subDays(new Date(), 1);
+      return { start: startOfDay(y), end: endOfDay(y) };
+    },
+  },
+  {
+    id: "last7",
+    label: "Last 7 days",
+    range: () => ({
+      start: startOfDay(subDays(new Date(), 6)),
+      end: endOfDay(new Date()),
+    }),
+  },
+  {
+    id: "last30",
+    label: "Last 30 days",
+    range: () => ({
+      start: startOfDay(subDays(new Date(), 29)),
+      end: endOfDay(new Date()),
+    }),
+  },
+  {
+    id: "this_week",
+    label: "This week",
+    range: () => ({
+      start: startOfWeek(new Date(), { weekStartsOn: 1 }),
+      end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+    }),
+  },
+  {
+    id: "last_week",
+    label: "Last week",
+    range: () => {
+      const ref = subDays(new Date(), 7);
+      return {
+        start: startOfWeek(ref, { weekStartsOn: 1 }),
+        end: endOfWeek(ref, { weekStartsOn: 1 }),
+      };
+    },
+  },
+  {
+    id: "this_month",
+    label: "This month",
+    range: () => ({
+      start: startOfMonth(new Date()),
+      end: endOfMonth(new Date()),
+    }),
+  },
+  {
+    id: "last_month",
+    label: "Last month",
+    range: () => {
+      const ref = subMonths(new Date(), 1);
+      return { start: startOfMonth(ref), end: endOfMonth(ref) };
+    },
+  },
+];
 
 function DashboardRangeBar({
   start,
@@ -82,59 +180,164 @@ function DashboardRangeBar({
 }) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
-  const [range, setRange] = useState<DateRange | undefined>(() =>
-    start && end ? { from: startOfDay(start), to: endOfDay(end) } : undefined,
-  );
 
-  useEffect(() => {
-    if (open && start && end) {
-      setRange({ from: startOfDay(start), to: endOfDay(end) });
-    }
-  }, [open, start, end]);
+  const ariaRange =
+    start && end
+      ? {
+          start: dateToCalendarDate(start),
+          end: dateToCalendarDate(end),
+        }
+      : null;
 
-  const handleSelect = (r: DateRange | undefined) => {
-    setRange(r);
-    if (r?.from && r?.to) {
-      onRangeSelect(startOfDay(r.from), endOfDay(r.to));
-      setOpen(false);
-    }
+  const handleAriaRangeChange = (
+    r: { start: CalendarDate; end: CalendarDate } | null,
+  ) => {
+    if (!r) return;
+    onRangeSelect(
+      startOfDay(calendarDateToJSDate(r.start)),
+      endOfDay(calendarDateToJSDate(r.end)),
+    );
+    setOpen(false);
+  };
+
+  const handlePreset = (preset: RangePreset) => {
+    const { start: s, end: e } = preset.range();
+    onRangeSelect(s, e);
+    setOpen(false);
   };
 
   const label =
     start && end
-      ? `${format(start, "dd MMM yyyy")} – ${format(end, "dd MMM yyyy")}`
+      ? start.getTime() === startOfDay(start).getTime() &&
+        end.getTime() === endOfDay(start).getTime()
+        ? format(start, "dd MMM yyyy")
+        : `${format(start, "dd MMM yyyy")} – ${format(end, "dd MMM yyyy")}`
       : "—";
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+  const trigger = (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex h-9 min-w-0 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs transition-colors sm:px-3 sm:text-sm",
+        "hover:bg-accent hover:text-accent-foreground",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "w-auto shrink-0 justify-center whitespace-nowrap sm:min-w-[220px]",
+      )}
+      aria-label="Select date range"
+    >
+      <CalendarRange className="h-4 w-4 shrink-0 opacity-70" />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+
+  const presetRail = (
+    <ul
+      className={cn(
+        "flex shrink-0 gap-1 text-xs",
+        isMobile
+          ? "flex-row flex-nowrap overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "w-32 flex-col border-r border-border pr-3",
+      )}
+      role="list"
+    >
+      {RANGE_PRESETS.map((preset) => {
+        const r = preset.range();
+        const isActive =
+          start &&
+          end &&
+          startOfDay(start).getTime() === startOfDay(r.start).getTime() &&
+          endOfDay(end).getTime() === endOfDay(r.end).getTime();
+        return (
+          <li key={preset.id} className="shrink-0">
+            <button
+              type="button"
+              onClick={() => handlePreset(preset)}
+              className={cn(
+                "w-full whitespace-nowrap rounded-md px-2 py-1.5 text-left transition-colors",
+                "hover:bg-accent hover:text-accent-foreground",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive
+                  ? "bg-accent font-medium text-accent-foreground"
+                  : "text-foreground",
+              )}
+            >
+              {preset.label}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const calendarPanel = (
+    <RangeCalendar
+      value={ariaRange}
+      onChange={(r) =>
+        handleAriaRangeChange(
+          r as { start: CalendarDate; end: CalendarDate } | null,
+        )
+      }
+      visibleDuration={{ months: isMobile ? 1 : 2 }}
+      autoFocus
+      className="select-none"
+    >
+      <AriaCalendarHeader large={isMobile} />
+      <div className={cn("flex", isMobile ? "flex-col" : "gap-6")}>
+        <AriaCalendarBody isRange large={isMobile} />
+        {!isMobile && (
+          <AriaCalendarBody isRange large={isMobile} offset={{ months: 1 }} />
+        )}
+      </div>
+    </RangeCalendar>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen}>
         <button
           type="button"
           className={cn(
-            "inline-flex h-9 min-w-0 items-center gap-1.5 rounded-md border border-input px-2 text-xs sm:px-3 sm:text-sm",
+            "inline-flex h-9 min-w-0 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs transition-colors",
             "hover:bg-accent hover:text-accent-foreground",
-            "w-auto shrink-0 justify-center whitespace-nowrap sm:min-w-[200px]",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "w-auto shrink-0 justify-center whitespace-nowrap",
           )}
+          aria-label="Select date range"
+          onClick={() => setOpen(true)}
         >
           <CalendarRange className="h-4 w-4 shrink-0 opacity-70" />
           <span className="truncate">{label}</span>
         </button>
-      </PopoverTrigger>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>Select date range</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col gap-3 px-4 pb-6">
+            {presetRail}
+            <div className="flex justify-center">{calendarPanel}</div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
-        className="w-[min(100vw-1.5rem,36rem)] max-w-[calc(100vw-1.5rem)] p-0 sm:w-auto sm:max-w-none"
+        className="w-auto max-w-[calc(100vw-1.5rem)] overflow-x-auto p-3"
         align="start"
+        sideOffset={6}
       >
-        <Calendar
-          mode="range"
-          selected={range}
-          onSelect={handleSelect}
-          numberOfMonths={isMobile ? 1 : 2}
-          defaultMonth={start ?? end ?? new Date()}
-        />
+        <div className="flex gap-3">
+          {presetRail}
+          {calendarPanel}
+        </div>
       </PopoverContent>
     </Popover>
   );
 }
+
 
 function DashboardNavButton({
   direction,
