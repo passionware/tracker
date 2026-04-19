@@ -3,6 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "workers/*"
+  ],
+  "overrides": {
+    "@vitest/expect": "^4.1.4",
+    "@vitest/spy": "^4.1.4",
+    "@vitest/utils": "^4.1.4",
+    "@vitest/runner": "^4.1.4",
+    "@vitest/snapshot": "^4.1.4"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -20,7 +30,10 @@
     "migrate:time:status": "node scripts/dbmate-time.mjs dev status",
     "migrate:time:dev": "node scripts/dbmate-time.mjs dev up",
     "migrate:time:prod": "node scripts/confirm-prod.mjs && node scripts/dbmate-time.mjs prod up",
-    "migrate:time:check": "node scripts/dbmate-time.mjs dev status"
+    "migrate:time:check": "node scripts/dbmate-time.mjs dev status",
+    "worker:time-events:dev": "npm run dev -w workers/time-events",
+    "worker:time-events:test": "npm test -w workers/time-events",
+    "worker:time-events:deploy:dev": "npm run deploy:dev -w workers/time-events"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -129,7 +142,7 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react-swc": "^4.1.0",
-    "@vitest/ui": "^3.2.4",
+    "@vitest/ui": "^4.1.4",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -143,7 +156,7 @@
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.44.1",
     "vite": "^7.1.7",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.4"
   },
   "eslintConfig": {
     "extends": [

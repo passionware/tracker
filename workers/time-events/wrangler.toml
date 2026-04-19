@@ -1,0 +1,24 @@
+name = "tracker-time-events-dev"
+main = "src/index.ts"
+compatibility_date = "2026-04-19"
+compatibility_flags = ["nodejs_compat"]
+
+# Default (dev) environment. Production is opted into explicitly via `--env prod`.
+[vars]
+TIME_SCHEMA = "time_dev"
+LOG_LEVEL = "debug"
+
+# Secrets (set via `wrangler secret put …`):
+#   SUPABASE_URL                — e.g. https://<project>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY   — required so the Worker can append rows past RLS
+#   SUPABASE_ANON_JWT_SECRET    — used to verify caller identity (HS256)
+
+# ─── prod env ────────────────────────────────────────────────────────────────
+# Wired but not deployable until we explicitly run `worker:time-events:deploy:prod`
+# with appropriate secrets and a name reservation in CF.
+[env.prod]
+name = "tracker-time-events-prod"
+
+[env.prod.vars]
+TIME_SCHEMA = "time_prod"
+LOG_LEVEL = "info"
