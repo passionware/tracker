@@ -33,6 +33,7 @@ import { ReportEditModalWidget } from "@/features/reports/ReportEditModalWidget.
 import { ReportsWidget } from "@/features/reports/ReportsWidget.tsx";
 import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/TmetricContractorDetailPage";
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
+import { TmetricLiveContractorsPage } from "@/features/tmetric-dashboard/TmetricLiveContractorsPage.tsx";
 import { ClientsManageWidget } from "@/features/clients/ClientsManageWidget.tsx";
 import { WorkspacesManageWidget } from "@/features/workspaces/WorkspacesManageWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
@@ -433,6 +434,16 @@ export function RootWidget(props: WithFrontServices) {
               to={myRouting.forGlobal().manageWorkspaces()}
               replace
             />
+          }
+        />
+        <Route
+          path={myRouting.forGlobal().tmetricLiveContractors()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <TmetricLiveContractorsPage services={props.services} />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route

@@ -124,6 +124,7 @@ export const myRouting = {
     configuration: () => "/configuration",
     manageClients: () => "/configuration/clients",
     manageWorkspaces: () => "/configuration/workspaces",
+    tmetricLiveContractors: () => "/tmetric-live",
   }),
 
   forClientCockpit: () => ({

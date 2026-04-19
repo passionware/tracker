@@ -37,6 +37,7 @@ import {
   HandCoins,
   Leaf,
   PieChart,
+  Timer,
 } from "lucide-react";
 import { ComponentProps, useMemo } from "react";
 
@@ -155,6 +156,11 @@ function useData(
         // },
       ],
       projects: [
+        {
+          name: "TMetric live",
+          url: myRouting.forGlobal().tmetricLiveContractors(),
+          icon: Timer,
+        },
         {
           name: "TMetric dashboard",
           url: routing.tmetricDashboard(),
