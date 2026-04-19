@@ -70,5 +70,8 @@ export function createPreferenceService(config: {
     setTmetricLiveContractorsLaneLegendMode: async () => {},
     useTmetricLiveContractorsLaneLegendModeCompact: () => "dots",
     setTmetricLiveContractorsLaneLegendModeCompact: async () => {},
+    useCustomDashboardKpis: () => [],
+    getCustomDashboardKpis: async () => [],
+    setCustomDashboardKpis: async () => {},
   };
 }

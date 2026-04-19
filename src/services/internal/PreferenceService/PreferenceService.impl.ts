@@ -2,6 +2,7 @@ import {
   BillingTimelineViewPreferences,
   BudgetLogSyncState,
   BulkCreateCostPreferences,
+  CustomDashboardKpi,
   PreferenceService,
   TimelineRangeShadingState,
   TimelineViewPreferences,
@@ -211,6 +212,25 @@ const tmetricLiveLaneLegendModeCompactApi = createLocalStorageApi<
     return result.success ? result.data : "dots";
   },
   "dots",
+);
+
+const customDashboardKpiSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  formula: z.string(),
+  contractorIds: z.array(z.number()).optional(),
+  display: z.enum(["currency", "number", "hours", "percent"]),
+  baseCurrency: z.string().min(1),
+});
+
+const customDashboardKpisApi = createLocalStorageApi<CustomDashboardKpi[]>(
+  "custom-dashboard-kpis-v1",
+  (data) => {
+    const result = z.array(customDashboardKpiSchema).safeParse(data);
+    return result.success ? result.data : [];
+  },
+  [],
 );
 
 export function createPreferenceService(): PreferenceService {
@@ -459,6 +479,26 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useCustomDashboardKpisStore = create<{
+    kpis: CustomDashboardKpi[];
+    initialized: boolean;
+    setKpis: (kpis: CustomDashboardKpi[]) => Promise<void>;
+  }>((set) => ({
+    kpis: [],
+    initialized: false,
+    setKpis: async (kpis) => {
+      set({ kpis });
+      await customDashboardKpisApi.write(kpis);
+    },
+  }));
+
+  void customDashboardKpisApi.read().then((stored) => {
+    useCustomDashboardKpisStore.setState({
+      kpis: stored ?? [],
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -587,6 +627,16 @@ export function createPreferenceService(): PreferenceService {
     },
     setTmetricLiveContractorsLaneLegendModeCompact: async (nextMode) => {
       await useTmetricLiveLaneLegendModeCompactStore.getState().setMode(nextMode);
+    },
+    useCustomDashboardKpis: () => {
+      const { kpis } = useCustomDashboardKpisStore();
+      return kpis;
+    },
+    getCustomDashboardKpis: async () => {
+      return (await customDashboardKpisApi.read()) ?? [];
+    },
+    setCustomDashboardKpis: async (kpis) => {
+      await useCustomDashboardKpisStore.getState().setKpis(kpis);
     },
   };
 }

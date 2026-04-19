@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ByContractorHierarchyView } from "./ByContractorHierarchyView";
+import { CustomKpiCards } from "./custom-kpis/CustomKpiCards";
 import { TmetricContractorDashboard } from "./TmetricContractorDashboard";
 import { TmetricCubeExplorer } from "./TmetricCubeExplorer";
 import { TmetricHoursPieChart } from "./TmetricHoursPieChart";
@@ -597,6 +598,38 @@ export function TmetricDashboardPage(
           ))
       ) : (
         <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col space-y-6 overflow-x-hidden overflow-y-auto">
+          {rd
+            .journey(rd.combine({ contractorsSummary, contractorNameMap }))
+            .wait(() => (
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-24" />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i} className="min-w-0">
+                      <CardContent className="flex min-w-0 flex-col gap-1.5 p-4">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-7 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))
+            .catch(() => null)
+            .map(
+              ({
+                contractorsSummary: resolvedContractorsSummary,
+                contractorNameMap: resolvedContractorNameMap,
+              }) => (
+                <CustomKpiCards
+                  services={services}
+                  contractorsSummary={resolvedContractorsSummary}
+                  contractorNameMap={resolvedContractorNameMap}
+                />
+              ),
+            )}
+
           {rd
             .journey(cachedReportQuery)
             .wait(() =>

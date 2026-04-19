@@ -24,6 +24,20 @@ export interface TimelineRangeShadingState {
 /** Lane label column for TMetric live contractors timeline (popover / sheet). */
 export type TmetricLiveLaneLegendMode = "full" | "dots";
 
+/**
+ * User-defined KPI shown as a card on a dashboard. Stored in localStorage so each
+ * user can build their own little set of metrics on top of the shared dashboard data.
+ */
+export interface CustomDashboardKpi {
+  id: string;
+  name: string;
+  description?: string;
+  formula: string;
+  contractorIds?: number[];
+  display: "currency" | "number" | "hours" | "percent";
+  baseCurrency: string;
+}
+
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
 export interface BudgetLogSyncState {
   lastSyncAt: number;
@@ -109,6 +123,10 @@ export interface PreferenceService {
   setTmetricLiveContractorsLaneLegendModeCompact: (
     mode: TmetricLiveLaneLegendMode,
   ) => Promise<void>;
+  /** User-defined KPI cards on the dashboard overview. */
+  useCustomDashboardKpis: () => CustomDashboardKpi[];
+  getCustomDashboardKpis: () => Promise<CustomDashboardKpi[]>;
+  setCustomDashboardKpis: (kpis: CustomDashboardKpi[]) => Promise<void>;
 }
 
 export interface WithPreferenceService {
