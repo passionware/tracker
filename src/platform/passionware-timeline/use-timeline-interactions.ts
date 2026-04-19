@@ -481,21 +481,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     const a = pinchPointersRef.current.get(idA);
     const b = pinchPointersRef.current.get(idB);
     if (!a || !b) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sidebarWidth = store.get(atoms.laneSidebarWidthPxAtom);
     const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-    const centerClientX = (a.x + b.x) / 2;
-    const centerContainerX = centerClientX - rect.left - sidebarWidth;
-    const zoom = readZoom();
-    const scrollOffset = readScrollOffset();
-    const ppm = pixelsPerMinuteFromZoom(zoom);
-    const startTimeAtCenter = (centerContainerX - scrollOffset) / ppm;
+    const midClientX = (a.x + b.x) / 2;
+    const xFull = screenXToContainerX(midClientX);
+    const startTimeAtCenter = pixelToTime(xFull);
     pinchStateRef.current = {
       pointerA: idA,
       pointerB: idB,
       startDistance: distance,
-      startZoom: zoom,
+      startZoom: readZoom(),
       startTimeAtCenter,
     };
 
@@ -514,10 +508,10 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       previewItemRef.current = null;
     }
   }, [
-    atoms.laneSidebarWidthPxAtom,
-    containerRef,
+    pixelToTime,
     previewItemRef,
     releasePanPointerCapture,
+    screenXToContainerX,
     setCurrentMouseX,
     setDragModifications,
     setDragState,
@@ -531,8 +525,6 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     const a = pinchPointersRef.current.get(pinch.pointerA);
     const b = pinchPointersRef.current.get(pinch.pointerB);
     if (!a || !b) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
     const sidebarWidth = store.get(atoms.laneSidebarWidthPxAtom);
     const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
     const ratio = distance / pinch.startDistance;
@@ -540,16 +532,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       TIMELINE_ZOOM_MIN,
       Math.min(TIMELINE_ZOOM_MAX, pinch.startZoom * ratio),
     );
-    const centerContainerX =
-      (a.x + b.x) / 2 - rect.left - sidebarWidth;
+    const xFull = screenXToContainerX((a.x + b.x) / 2);
     const newPpm = pixelsPerMinuteFromZoom(newZoom);
     const newScrollOffset =
-      centerContainerX - pinch.startTimeAtCenter * newPpm;
+      xFull - sidebarWidth - pinch.startTimeAtCenter * newPpm;
     setZoom(newZoom);
     setScrollOffset(newScrollOffset);
   }, [
     atoms.laneSidebarWidthPxAtom,
-    containerRef,
+    screenXToContainerX,
     setScrollOffset,
     setZoom,
     store,
@@ -601,12 +592,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       }
     };
 
-    container.addEventListener("pointerdown", onPointerDown);
+    container.addEventListener("pointerdown", onPointerDown, {
+      capture: true,
+    });
     window.addEventListener("pointermove", onPointerMove, { passive: false });
     window.addEventListener("pointerup", endTouch);
     window.addEventListener("pointercancel", endTouch);
     return () => {
-      container.removeEventListener("pointerdown", onPointerDown);
+      container.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      });
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", endTouch);
       window.removeEventListener("pointercancel", endTouch);
@@ -623,9 +618,12 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         if (resolvePointerAction(e, "grid") !== "pan") {
           return;
         }
+        if (e.pointerType === "touch" && pinchPointersRef.current.size >= 2) {
+          return;
+        }
         e.preventDefault();
         const container = containerRef.current;
-        if (container) {
+        if (container && e.pointerType !== "touch") {
           try {
             container.setPointerCapture(e.pointerId);
             panPointerCaptureElRef.current = container;
@@ -867,6 +865,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       setCurrentMouseX(e.clientX);
       setSelectedItemId(null);
     } else if (pointerAction === "pan" && !readDragState() && !readPanState()) {
+      if (e.pointerType === "touch" && pinchPointersRef.current.size >= 2) {
+        return;
+      }
       const target = e.target as HTMLElement;
       if (target.closest("[data-timeline-item]")) {
         return;
@@ -874,7 +875,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       e.preventDefault();
       e.stopPropagation();
       const laneEl = e.currentTarget;
-      if (laneEl instanceof HTMLElement) {
+      if (laneEl instanceof HTMLElement && e.pointerType !== "touch") {
         try {
           laneEl.setPointerCapture(e.pointerId);
           panPointerCaptureElRef.current = laneEl;
@@ -1148,13 +1149,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         return;
       }
       if (pointerAction === "pan" && !readDragState() && !readPanState()) {
+        if (e.pointerType === "touch" && pinchPointersRef.current.size >= 2) {
+          return;
+        }
         if (isPanExemptPointerTarget(e.target)) {
           return;
         }
         e.preventDefault();
         e.stopPropagation();
         const gridEl = e.currentTarget;
-        if (gridEl instanceof HTMLElement) {
+        if (gridEl instanceof HTMLElement && e.pointerType !== "touch") {
           try {
             gridEl.setPointerCapture(e.pointerId);
             panPointerCaptureElRef.current = gridEl;
