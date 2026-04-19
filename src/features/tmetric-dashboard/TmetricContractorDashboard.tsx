@@ -47,20 +47,20 @@ export function TmetricContractorDashboard({
       }),
     )
     .wait(() => (
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-96 mt-2" />
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="min-w-0 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
         </CardContent>
       </Card>
     ))
     .catch(() => (
-      <Card>
-        <CardContent className="pt-6 flex flex-col items-center gap-4 text-muted-foreground">
+      <Card className="min-w-0">
+        <CardContent className="min-w-0 pt-6 flex flex-col items-center gap-4 text-muted-foreground">
           <p>
             Report data is not loaded yet. Click below to fetch from TMetric.
           </p>
@@ -89,14 +89,14 @@ export function TmetricContractorDashboard({
       }) => {
         if (!breakdown || breakdown.length === 0) {
           return (
-            <Card>
+            <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Contractor dashboard</CardTitle>
                 <CardDescription>
                   Hours, cost, billing, and profit per contractor
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-muted-foreground">
+              <CardContent className="min-w-0 text-muted-foreground">
                 No contractor data in the selected range. Load report and choose
                 a time range that includes time entries.
               </CardContent>
@@ -114,8 +114,8 @@ export function TmetricContractorDashboard({
         const excludedCount = breakdown.length - displayed.length;
 
         return (
-          <div className="space-y-6">
-            <Card>
+          <div className="min-w-0 space-y-6">
+            <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Contractor dashboard</CardTitle>
                 <CardDescription>
@@ -123,7 +123,7 @@ export function TmetricContractorDashboard({
                   to see breakdown by iteration.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {excludedCount > 0 && (
                   <p className="mb-4 text-sm text-muted-foreground">
                     {excludedCount} contractor(s) in cached data are no longer

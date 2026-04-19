@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { WithFrontServices } from "@/core/frontServices";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import {
   createOutsideRangeShadows,
   InfiniteTimelineWithState,
@@ -118,13 +119,16 @@ export function TmetricContractorDetailPage(
   return (
     <div className="flex h-full flex-col p-6">
       <div className="flex-shrink-0 space-y-4">
-        <Link
-          to={backUrl}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to contractors
-        </Link>
+        <div className="flex items-center gap-2">
+          <MobileSidebarTrigger />
+          <Link
+            to={backUrl}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to contractors
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
           <ContractorWidget
             contractorId={maybe.of(contractorId)}

@@ -54,11 +54,11 @@ export function ByContractorHierarchyView({
             open={open}
             onToggle={() => toggleContractor(c.contractorId)}
             label={
-              <>
+              <span className="flex w-full min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                 {getContractorDetailUrl ? (
                   <Link
                     to={getContractorDetailUrl(c.contractorId)}
-                    className="hover:underline focus:outline-none focus:underline"
+                    className="min-w-0 hover:underline focus:outline-none focus:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ContractorWidget
@@ -77,11 +77,11 @@ export function ByContractorHierarchyView({
                   />
                 )}
                 {hasIterations && (
-                  <span className="text-muted-foreground shrink-0">
+                  <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
                     {c.byIteration.length} iteration(s)
                   </span>
                 )}
-              </>
+              </span>
             }
             size="md"
           >

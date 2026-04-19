@@ -21,6 +21,9 @@ export interface TimelineRangeShadingState {
   weekend: boolean;
 }
 
+/** Lane label column for TMetric live contractors timeline (popover / sheet). */
+export type TmetricLiveLaneLegendMode = "full" | "dots";
+
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
 export interface BudgetLogSyncState {
   lastSyncAt: number;
@@ -93,6 +96,18 @@ export interface PreferenceService {
   useTmetricLiveContractorsPanelLastRowCount: () => number | null;
   recordTmetricLiveContractorsPanelLastRowCount: (
     rowCount: number,
+  ) => Promise<void>;
+  useTmetricLiveContractorsLaneLegendMode: () => TmetricLiveLaneLegendMode;
+  setTmetricLiveContractorsLaneLegendMode: (
+    mode: TmetricLiveLaneLegendMode,
+  ) => Promise<void>;
+  /**
+   * Lane legend for the TMetric live panel in compact (e.g. full-screen mobile) layout.
+   * Defaults to `"dots"`; independent from the desktop/popover preference.
+   */
+  useTmetricLiveContractorsLaneLegendModeCompact: () => TmetricLiveLaneLegendMode;
+  setTmetricLiveContractorsLaneLegendModeCompact: (
+    mode: TmetricLiveLaneLegendMode,
   ) => Promise<void>;
 }
 

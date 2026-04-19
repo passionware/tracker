@@ -189,6 +189,30 @@ const tmetricLiveContractorsLastRowCountApi = createLocalStorageApi<
   null,
 );
 
+const tmetricLiveLaneLegendModeSchema = z.enum(["full", "dots"]);
+
+const tmetricLiveLaneLegendModeApi = createLocalStorageApi<
+  "full" | "dots"
+>(
+  "tmetric-live-contractors-lane-legend-mode-v1",
+  (data) => {
+    const result = tmetricLiveLaneLegendModeSchema.safeParse(data);
+    return result.success ? result.data : "full";
+  },
+  "full",
+);
+
+const tmetricLiveLaneLegendModeCompactApi = createLocalStorageApi<
+  "full" | "dots"
+>(
+  "tmetric-live-contractors-lane-legend-compact-v1",
+  (data) => {
+    const result = tmetricLiveLaneLegendModeSchema.safeParse(data);
+    return result.success ? result.data : "dots";
+  },
+  "dots",
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -387,6 +411,54 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useTmetricLiveLaneLegendModeStore = create<{
+    mode: "full" | "dots";
+    initialized: boolean;
+    setMode: (m: "full" | "dots") => Promise<void>;
+  }>((set, get) => ({
+    mode: "full",
+    initialized: false,
+    setMode: async (m) => {
+      const next = tmetricLiveLaneLegendModeSchema.parse(m);
+      if (get().mode === next) {
+        return;
+      }
+      set({ mode: next });
+      await tmetricLiveLaneLegendModeApi.write(next);
+    },
+  }));
+
+  void tmetricLiveLaneLegendModeApi.read().then((stored) => {
+    useTmetricLiveLaneLegendModeStore.setState({
+      mode: stored ?? "full",
+      initialized: true,
+    });
+  });
+
+  const useTmetricLiveLaneLegendModeCompactStore = create<{
+    mode: "full" | "dots";
+    initialized: boolean;
+    setMode: (m: "full" | "dots") => Promise<void>;
+  }>((set, get) => ({
+    mode: "dots",
+    initialized: false,
+    setMode: async (m) => {
+      const next = tmetricLiveLaneLegendModeSchema.parse(m);
+      if (get().mode === next) {
+        return;
+      }
+      set({ mode: next });
+      await tmetricLiveLaneLegendModeCompactApi.write(next);
+    },
+  }));
+
+  void tmetricLiveLaneLegendModeCompactApi.read().then((stored) => {
+    useTmetricLiveLaneLegendModeCompactStore.setState({
+      mode: stored ?? "dots",
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -495,6 +567,26 @@ export function createPreferenceService(): PreferenceService {
       await useTmetricLiveContractorsLastRowCountStore
         .getState()
         .setRowCount(rowCount);
+    },
+    useTmetricLiveContractorsLaneLegendMode: () => {
+      const { mode, initialized } = useTmetricLiveLaneLegendModeStore();
+      if (!initialized) {
+        return "full";
+      }
+      return mode;
+    },
+    setTmetricLiveContractorsLaneLegendMode: async (nextMode) => {
+      await useTmetricLiveLaneLegendModeStore.getState().setMode(nextMode);
+    },
+    useTmetricLiveContractorsLaneLegendModeCompact: () => {
+      const { mode, initialized } = useTmetricLiveLaneLegendModeCompactStore();
+      if (!initialized) {
+        return "dots";
+      }
+      return mode;
+    },
+    setTmetricLiveContractorsLaneLegendModeCompact: async (nextMode) => {
+      await useTmetricLiveLaneLegendModeCompactStore.getState().setMode(nextMode);
     },
   };
 }

@@ -79,15 +79,15 @@ export function TmetricIterationBarChart({
   if (chartData.length === 0) return null;
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Cost, billing & profit by iteration</CardTitle>
         <CardDescription>
           Financial breakdown per iteration (converted to {targetCurrency})
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-[280px] w-full">
+      <CardContent className="min-w-0">
+        <div className="h-[280px] w-full min-w-0">
           <BarChart
             dataset={chartData}
             xAxis={[

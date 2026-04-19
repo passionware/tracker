@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PieChart } from "@mui/x-charts/PieChart";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ContractorIterationBreakdown } from "./tmetric-dashboard.utils";
 
 const PIE_COLORS = [
@@ -36,9 +37,29 @@ export function TmetricHoursPieChart({
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
+  const total = data.reduce((s, x) => s + x.value, 0);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(300);
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      setChartWidth(Math.max(220, Math.min(440, Math.floor(w))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (data.length === 0) return null;
 
-  const total = data.reduce((s, x) => s + x.value, 0);
+  const chartHeight = Math.round(Math.min(260, chartWidth * 0.52));
+  const outerRadius = Math.round(Math.min(78, chartWidth * 0.2));
+  const legendNarrow = chartWidth < 380;
+
   const series = [
     {
       data: data.map((d, i) => {
@@ -54,7 +75,7 @@ export function TmetricHoursPieChart({
         };
       }),
       innerRadius: 0,
-      outerRadius: 80,
+      outerRadius,
       paddingAngle: 2,
       arcLabel: "label" as const,
       arcLabelMinAngle: 35,
@@ -62,22 +83,27 @@ export function TmetricHoursPieChart({
   ];
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Hours by contractor</CardTitle>
         <CardDescription>
           Distribution of tracked hours across contractors
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
+      <CardContent className="min-w-0 px-3 sm:px-6">
+        <div
+          ref={wrapRef}
+          className="mx-auto flex w-full min-w-0 max-w-full flex-col items-center justify-center gap-2"
+        >
           <PieChart
             series={series}
-            width={420}
-            height={220}
+            width={chartWidth}
+            height={chartHeight}
             slotProps={{
               legend: {
-                position: { vertical: "middle", horizontal: "end" },
+                position: legendNarrow
+                  ? { vertical: "bottom", horizontal: "center" }
+                  : { vertical: "middle", horizontal: "end" },
               },
             }}
           />

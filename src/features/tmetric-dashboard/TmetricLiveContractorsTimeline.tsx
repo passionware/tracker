@@ -8,6 +8,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import {
   composeRangeLayersToPaintSegments,
@@ -38,8 +45,10 @@ import type {
 import type { DefaultTimelineItemProps } from "@/platform/passionware-timeline/timeline-default-item.tsx";
 import type { PreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
 import { cn } from "@/lib/utils";
-import { Copy } from "lucide-react";
-import { useMemo } from "react";
+import { getInitials } from "@/platform/lang/getInitials.ts";
+import { useIsMobile } from "@/platform/react/use-mobile.tsx";
+import { Circle, Copy, List } from "lucide-react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export type TmetricLiveBarData = {
@@ -107,9 +116,7 @@ function formatInstantInZone(ms: number, timeZone: string): string {
   }
 }
 
-function buildBarSummaryText(
-  item: TimelineItem<TmetricLiveBarData>,
-): string {
+function buildBarSummaryText(item: TimelineItem<TmetricLiveBarData>): string {
   const d = item.data;
   const lines: string[] = [
     d.kind === "timer" ? "Active timer" : "TMetric time entry",
@@ -145,7 +152,9 @@ function CopyableField({
         <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </div>
-        <p className="break-words text-xs leading-snug text-foreground">{value}</p>
+        <p className="break-words text-xs leading-snug text-foreground">
+          {value}
+        </p>
       </div>
       <Button
         type="button"
@@ -193,8 +202,12 @@ function TmetricBarPopoverBody({
       </div>
 
       <div className="space-y-1 text-xs">
-        <p className="font-medium leading-tight text-foreground">{d.contractorName}</p>
-        <p className="text-[11px] leading-snug text-muted-foreground">{d.clientLine}</p>
+        <p className="font-medium leading-tight text-foreground">
+          {d.contractorName}
+        </p>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          {d.clientLine}
+        </p>
       </div>
 
       <Separator />
@@ -272,6 +285,68 @@ function TmetricBarPopoverBody({
   );
 }
 
+function ContractorLaneDotLabel({
+  row,
+  clientLine,
+  laneDotClass,
+  panelFetchedMs,
+}: {
+  row: TmetricLiveContractorRow;
+  clientLine: string;
+  laneDotClass: string;
+  panelFetchedMs: number;
+}) {
+  const initials = contractorLaneInitials(row.fullName);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Show ${row.fullName} details`}
+          className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center rounded-sm",
+            "outline-none transition-colors hover:bg-muted/40",
+            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+          )}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <span
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-full",
+              "text-[11px] font-semibold leading-none tracking-tight",
+              "text-primary-foreground shadow-sm ring-1 ring-black/10 ring-inset dark:ring-white/15",
+              laneDotClass,
+            )}
+            aria-hidden
+          >
+            {initials}
+          </span>
+          <span className="sr-only">{row.fullName}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="right"
+        align="start"
+        sideOffset={6}
+        className={cn(
+          "w-[min(20rem,calc(100vw-2rem))] p-3",
+          "max-h-[var(--radix-popover-content-available-height)] overflow-y-auto",
+        )}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <ContractorLaneLabel
+          row={row}
+          clientLine={clientLine}
+          laneDotClass={laneDotClass}
+          panelFetchedMs={panelFetchedMs}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function ContractorLaneLabel({
   row,
   clientLine,
@@ -308,15 +383,27 @@ function ContractorLaneLabel({
       : null;
 
   const statusBadge = row.error ? (
-    <Badge tone="secondary" variant="destructive" className="shrink-0 scale-90 leading-none">
+    <Badge
+      tone="secondary"
+      variant="destructive"
+      className="shrink-0 scale-90 leading-none"
+    >
       Error
     </Badge>
   ) : row.currentTimer ? (
-    <Badge tone="secondary" variant="success" className="shrink-0 scale-90 leading-none">
+    <Badge
+      tone="secondary"
+      variant="success"
+      className="shrink-0 scale-90 leading-none"
+    >
       Active
     </Badge>
   ) : (
-    <Badge tone="secondary" variant="neutral" className="shrink-0 scale-90 leading-none">
+    <Badge
+      tone="secondary"
+      variant="neutral"
+      className="shrink-0 scale-90 leading-none"
+    >
       {latestEndedAtMs != null
         ? `Ended ${formatRoundedHalfHoursAgo(panelFetchedMs - latestEndedAtMs)} ago`
         : "Ended"}
@@ -326,15 +413,15 @@ function ContractorLaneLabel({
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <div className="flex min-w-0 items-start gap-1.5">
-        <span
-          className={cn(
-            "mt-0.5 size-2 shrink-0 rounded-full ring-1 ring-border/40 ring-inset",
-            laneDotClass,
-          )}
-          aria-hidden
-        />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span
+              className={cn(
+                "size-2 shrink-0 rounded-full ring-1 ring-border/40 ring-inset",
+                laneDotClass,
+              )}
+              aria-hidden
+            />
             <span className="min-w-0 truncate text-xs font-semibold leading-tight tracking-tight">
               {row.fullName}
             </span>
@@ -388,43 +475,74 @@ function ContractorLaneLabel({
   );
 }
 
-function entryBarLabel(entry: TmetricLiveContractorRow["recentEntries"][number]): string {
+function entryBarLabel(
+  entry: TmetricLiveContractorRow["recentEntries"][number],
+): string {
   return entry.projectName
     ? `${entry.label} · ${entry.projectName}`
     : entry.label;
 }
 
+const tmetricBarDetailSheetClass = cn(
+  "flex w-full flex-col gap-0 overflow-hidden rounded-t-2xl border-0 p-0 shadow-xl",
+  "max-h-[min(92dvh,720px)] pb-[env(safe-area-inset-bottom,0px)] pt-10",
+  "[&>button]:right-3 [&>button]:top-3",
+);
+
 function TmetricReadOnlyBar(
   props: DefaultTimelineItemProps<TmetricLiveBarData>,
 ) {
   const { item, left, width } = props;
+  const isMobile = useIsMobile();
+
+  const trigger = (
+    <div
+      data-timeline-item
+      role="button"
+      tabIndex={0}
+      className={cn(
+        "pointer-events-auto absolute flex cursor-pointer items-center overflow-hidden rounded-md border border-black/10 px-1 text-left text-primary-foreground shadow-sm outline-none ring-offset-background hover:brightness-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        item.color ?? "bg-primary",
+      )}
+      style={{
+        left,
+        width: Math.max(width, 6),
+        top: 8 + (item.row ?? 0) * SUB_ROW_HEIGHT,
+        height: SUB_ROW_HEIGHT - 4,
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <span className="min-w-0 flex-1 truncate px-0.5 text-[10px] font-medium leading-tight">
+        {item.label}
+      </span>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>{trigger}</SheetTrigger>
+        <SheetContent
+          side="bottom"
+          className={tmetricBarDetailSheetClass}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Time entry details</SheetTitle>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <TmetricBarPopoverBody item={item} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <div
-          data-timeline-item
-          role="button"
-          tabIndex={0}
-          className={cn(
-            "pointer-events-auto absolute flex cursor-pointer items-center overflow-hidden rounded-md border border-black/10 px-1 text-left text-primary-foreground shadow-sm outline-none ring-offset-background hover:brightness-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-            item.color ?? "bg-primary",
-          )}
-          style={{
-            left,
-            width: Math.max(width, 6),
-            top: 8 + (item.row ?? 0) * SUB_ROW_HEIGHT,
-            height: SUB_ROW_HEIGHT - 4,
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <span className="min-w-0 flex-1 truncate px-0.5 text-[10px] font-medium leading-tight">
-            {item.label}
-          </span>
-        </div>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         side="top"
         align="center"
@@ -442,15 +560,70 @@ export interface TmetricLiveContractorsTimelineProps {
   panel: TmetricLiveContractorsPanelData;
   clientNameFn: (clientId: number) => string;
   preferenceService: PreferenceService;
+  /** When true, timeline grows to fill a flex parent (e.g. full-screen mobile sheet). */
+  timelineFillViewport?: boolean;
+}
+
+const MIN_TIMELINE_TRACKS_PX = 120;
+/** Lane column width in dots mode: fits initials avatar + padding. */
+const LANE_LEGEND_DOTS_WIDTH_PX = 52;
+
+function contractorLaneInitials(fullName: string): string {
+  const fromLatin = getInitials(fullName);
+  if (fromLatin.length > 0) {
+    return fromLatin.slice(0, 2);
+  }
+  const trimmed = fullName.trim();
+  const first = trimmed.match(/\p{L}/u)?.[0];
+  return first ? first.toLocaleUpperCase() : "?";
 }
 
 export function TmetricLiveContractorsTimeline({
   panel,
   clientNameFn,
   preferenceService,
+  timelineFillViewport = false,
 }: TmetricLiveContractorsTimelineProps) {
   const timeZone = getLocalTimeZone();
   const panelFetchedMs = readTimeMs(panel.fetchedAt) ?? Date.now();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const laneLegendModeDesktop =
+    preferenceService.useTmetricLiveContractorsLaneLegendMode();
+  const laneLegendModeCompact =
+    preferenceService.useTmetricLiveContractorsLaneLegendModeCompact();
+  const laneLegendMode = timelineFillViewport
+    ? laneLegendModeCompact
+    : laneLegendModeDesktop;
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (typeof w === "number" && Number.isFinite(w)) {
+        setContainerWidth(Math.round(w));
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const laneSidebarWidthPx = useMemo(() => {
+    if (laneLegendMode === "dots") {
+      return LANE_LEGEND_DOTS_WIDTH_PX;
+    }
+    const fullMax = SIDEBAR_WIDTH * 2;
+    const minFullSidebar = 180;
+    if (containerWidth <= 0) {
+      return Math.min(fullMax, 280);
+    }
+    const maxSidebar = Math.max(
+      minFullSidebar,
+      containerWidth - MIN_TIMELINE_TRACKS_PX,
+    );
+    return Math.min(fullMax, maxSidebar);
+  }, [containerWidth, laneLegendMode]);
 
   const { rangeShadingState, onRangeShadingStateChange } =
     useTimelineRangeShadingFromPreference(
@@ -467,7 +640,9 @@ export function TmetricLiveContractorsTimeline({
     panel.rows.forEach((row, rowIndex) => {
       const laneId = String(row.contractorId);
       const color = ITEM_COLORS[rowIndex % ITEM_COLORS.length];
-      const clientLine = row.clientIds.map((id) => clientNameFn(id)).join(" · ");
+      const clientLine = row.clientIds
+        .map((id) => clientNameFn(id))
+        .join(" · ");
 
       lanesOut.push({
         id: laneId,
@@ -639,7 +814,10 @@ export function TmetricLiveContractorsTimeline({
     weekendClass,
   ]);
 
-  const timelineState = useTimelineState<TmetricLiveBarData, TmetricLiveLaneMeta>({
+  const timelineState = useTimelineState<
+    TmetricLiveBarData,
+    TmetricLiveLaneMeta
+  >({
     defaultSnapOption: "15min",
   });
 
@@ -648,14 +826,28 @@ export function TmetricLiveContractorsTimeline({
     lanes,
     timeZone,
     expandedLaneIds: null,
-    laneSidebarWidthPx: SIDEBAR_WIDTH * 2,
+    laneSidebarWidthPx,
   });
 
-  const renderLaneLabel = (lane: VisibleTimelineLaneRow<TmetricLiveLaneMeta>) => {
+  const renderLaneLabel = (
+    lane: VisibleTimelineLaneRow<TmetricLiveLaneMeta>,
+  ) => {
     const meta = lane.meta;
     if (!meta) {
       return (
-        <span className="truncate text-xs text-muted-foreground">{lane.name}</span>
+        <span className="truncate text-xs text-muted-foreground">
+          {lane.name}
+        </span>
+      );
+    }
+    if (laneLegendMode === "dots") {
+      return (
+        <ContractorLaneDotLabel
+          row={meta.row}
+          clientLine={meta.clientLine}
+          laneDotClass={lane.color}
+          panelFetchedMs={panelFetchedMs}
+        />
       );
     }
     return (
@@ -677,21 +869,76 @@ export function TmetricLiveContractorsTimeline({
   }
 
   return (
-    <div className="h-[min(65vh,26rem)] min-h-[16rem] w-full overflow-hidden rounded-lg border border-border/60 bg-background">
-      <InfiniteTimeline<TmetricLiveBarData, TmetricLiveLaneMeta>
-        state={timelineState}
-        embedded
-        hideLaneControls
-        renderLaneLabel={renderLaneLabel}
-        interactionOptions={{
-          viewportRange,
-          itemActivateTrigger: "click",
-        }}
-        timeRangeShadows={timeRangeShadows}
-        rangeShadingState={rangeShadingState}
-        onRangeShadingStateChange={onRangeShadingStateChange}
-        renderItem={(itemProps) => <TmetricReadOnlyBar {...itemProps} />}
-      />
+    <div
+      ref={containerRef}
+      className={cn(
+        "flex w-full flex-col overflow-hidden rounded-lg border border-border/60 bg-background",
+        timelineFillViewport
+          ? "min-h-0 flex-1"
+          : "h-[min(65vh,29rem)] min-h-[16rem]",
+      )}
+    >
+      <div className="flex shrink-0 items-center justify-end gap-1 border-b border-border/50 bg-muted/15 px-2 py-1">
+        <span className="mr-auto hidden text-[10px] text-muted-foreground sm:inline">
+          Contractor lane
+        </span>
+        <Button
+          type="button"
+          variant={laneLegendMode === "full" ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 px-2 text-[10px]"
+          aria-pressed={laneLegendMode === "full"}
+          aria-label="Show full lane labels"
+          onClick={() =>
+            void (timelineFillViewport
+              ? preferenceService.setTmetricLiveContractorsLaneLegendModeCompact(
+                  "full",
+                )
+              : preferenceService.setTmetricLiveContractorsLaneLegendMode(
+                  "full",
+                ))
+          }
+        >
+          <List className="size-3.5 shrink-0 opacity-80" />
+          Labels
+        </Button>
+        <Button
+          type="button"
+          variant={laneLegendMode === "dots" ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 px-2 text-[10px]"
+          aria-pressed={laneLegendMode === "dots"}
+          aria-label="Show colored dots only in lane column"
+          onClick={() =>
+            void (timelineFillViewport
+              ? preferenceService.setTmetricLiveContractorsLaneLegendModeCompact(
+                  "dots",
+                )
+              : preferenceService.setTmetricLiveContractorsLaneLegendMode(
+                  "dots",
+                ))
+          }
+        >
+          <Circle className="size-3.5 shrink-0 opacity-80" />
+          Dots
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <InfiniteTimeline<TmetricLiveBarData, TmetricLiveLaneMeta>
+          state={timelineState}
+          embedded
+          hideLaneControls
+          renderLaneLabel={renderLaneLabel}
+          interactionOptions={{
+            viewportRange,
+            itemActivateTrigger: "click",
+          }}
+          timeRangeShadows={timeRangeShadows}
+          rangeShadingState={rangeShadingState}
+          onRangeShadingStateChange={onRangeShadingStateChange}
+          renderItem={(itemProps) => <TmetricReadOnlyBar {...itemProps} />}
+        />
+      </div>
     </div>
   );
 }

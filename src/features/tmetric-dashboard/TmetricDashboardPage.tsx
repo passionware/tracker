@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
+import { MobileSidebarTrigger } from "@/features/_common/MobileSidebarTrigger.tsx";
 import { SimpleArrayPicker } from "@/features/_common/elements/pickers/SimpleArrayPicker";
 import {
   createOutsideRangeShadows,
@@ -67,6 +68,7 @@ import { endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { useEffect, useMemo, useState } from "react";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date.ts";
+import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { cn } from "@/lib/utils";
 
 function DashboardRangeBar({
@@ -78,6 +80,7 @@ function DashboardRangeBar({
   end: Date | null;
   onRangeSelect: (from: Date, to: Date) => void;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>(() =>
     start && end ? { from: startOfDay(start), to: endOfDay(end) } : undefined,
@@ -108,21 +111,24 @@ function DashboardRangeBar({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm",
+            "inline-flex h-9 min-w-0 items-center gap-1.5 rounded-md border border-input px-2 text-xs sm:px-3 sm:text-sm",
             "hover:bg-accent hover:text-accent-foreground",
-            "min-w-[200px] justify-center",
+            "w-auto shrink-0 justify-center whitespace-nowrap sm:min-w-[200px]",
           )}
         >
           <CalendarRange className="h-4 w-4 shrink-0 opacity-70" />
           <span className="truncate">{label}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-[min(100vw-1.5rem,36rem)] max-w-[calc(100vw-1.5rem)] p-0 sm:w-auto sm:max-w-none"
+        align="start"
+      >
         <Calendar
           mode="range"
           selected={range}
           onSelect={handleSelect}
-          numberOfMonths={2}
+          numberOfMonths={isMobile ? 1 : 2}
           defaultMonth={start ?? end ?? new Date()}
         />
       </PopoverContent>
@@ -233,50 +239,66 @@ export function TmetricDashboardPage(
     [dashboardTimelineShading.rangeShadingState],
   );
 
+  const isMobile = useIsMobile();
+
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden p-3 sm:p-6">
       {/* Header + tabs row */}
-      <div className="flex-shrink-0 space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">
+      <div className="flex-shrink-0 space-y-2 sm:space-y-4">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <MobileSidebarTrigger />
+              <h1 className="text-lg font-bold tracking-tight sm:text-2xl">
                 TMetric Dashboard
               </h1>
               <Badge variant="secondary">BETA</Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="hidden text-pretty text-sm text-muted-foreground sm:block sm:text-base">
               Cross-workspace time tracking insights. Click Refresh to fetch
               from TMetric.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={timePreset}
-              onValueChange={(v) => setTimePreset(v as TimePreset)}
+          <div
+            className={cn(
+              "flex w-full min-w-0 gap-2",
+              "flex-row flex-nowrap items-center overflow-x-auto overflow-y-hidden pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              "sm:w-auto sm:max-w-full sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0",
+            )}
+          >
+            <div className="flex shrink-0 items-center gap-1.5 sm:contents">
+              <Select
+                value={timePreset}
+                onValueChange={(v) => setTimePreset(v as TimePreset)}
+              >
+                <SelectTrigger className="h-9 w-[140px] shrink-0 sm:h-10 sm:w-[160px]">
+                  <SelectValue placeholder="Time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="this_week">This week</SelectItem>
+                  <SelectItem value="last_week">Last week</SelectItem>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="unscoped">
+                    Unscoped (whole iterations)
+                  </SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <DashboardRangeBar
+                start={start}
+                end={end}
+                onRangeSelect={(from, to) => setCustomRange(from, to)}
+              />
+            </div>
+
+            <div
+              className={cn(
+                "flex shrink-0 items-center justify-center gap-0.5 rounded-md border bg-muted/50 sm:w-auto sm:justify-start",
+                isMobile ? "px-0 py-0" : "p-0.5",
+              )}
             >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="this_week">This week</SelectItem>
-                <SelectItem value="last_week">Last week</SelectItem>
-                <SelectItem value="month">Month</SelectItem>
-                <SelectItem value="unscoped">
-                  Unscoped (whole iterations)
-                </SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DashboardRangeBar
-              start={start}
-              end={end}
-              onRangeSelect={(from, to) => setCustomRange(from, to)}
-            />
-
-            <div className="flex items-center gap-0.5 border rounded-md p-0.5 bg-muted/50">
               <DashboardNavButton
                 direction="prev"
                 unit="day"
@@ -318,6 +340,7 @@ export function TmetricDashboardPage(
             </div>
 
             <SimpleArrayPicker
+              className="min-w-[min(18rem,85vw)] max-w-[min(22rem,90vw)] shrink-0 sm:max-w-md"
               items={iterationPickerItems}
               value={selectedIterationIds.map(String)}
               onSelect={(ids) =>
@@ -332,31 +355,41 @@ export function TmetricDashboardPage(
               itemOverflowMessage={(value) => `${value.length} iterations`}
             />
 
-            <Button
-              onClick={() => syncBudgetLogNow()}
-              disabled={
-                isSyncingBudgetLog ||
-                !canLoadOrRefresh ||
-                iterationsForScope.length === 0
-              }
-              variant="outline"
-              title="Sync budget target log from TMetric (today and missing days)"
-            >
-              <Database
-                className={`mr-2 h-4 w-4 ${isSyncingBudgetLog ? "animate-pulse" : ""}`}
-              />
-              Sync budget log
-            </Button>
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing || !canLoadOrRefresh}
-              variant="default"
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              Refresh from TMetric
-            </Button>
+            <div className="flex shrink-0 items-center gap-1.5 sm:contents sm:flex sm:w-auto sm:flex-row sm:flex-wrap sm:gap-2">
+              <Button
+                className="h-9 shrink-0 whitespace-nowrap px-2 text-xs sm:h-10 sm:w-auto sm:px-4 sm:text-sm"
+                onClick={() => syncBudgetLogNow()}
+                disabled={
+                  isSyncingBudgetLog ||
+                  !canLoadOrRefresh ||
+                  iterationsForScope.length === 0
+                }
+                variant="outline"
+                title="Sync budget target log from TMetric (today and missing days)"
+              >
+                <Database
+                  className={`mr-1.5 h-4 w-4 shrink-0 sm:mr-2 ${isSyncingBudgetLog ? "animate-pulse" : ""}`}
+                />
+                <span className="truncate sm:hidden">Sync log</span>
+                <span className="hidden truncate sm:inline">
+                  Sync budget log
+                </span>
+              </Button>
+              <Button
+                className="h-9 shrink-0 whitespace-nowrap px-2 text-xs sm:h-10 sm:w-auto sm:px-4 sm:text-sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || !canLoadOrRefresh}
+                variant="default"
+              >
+                <RefreshCw
+                  className={`mr-1.5 h-4 w-4 shrink-0 sm:mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                <span className="truncate sm:hidden">Refresh</span>
+                <span className="hidden truncate sm:inline">
+                  Refresh from TMetric
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -375,22 +408,42 @@ export function TmetricDashboardPage(
             else navigate(routing.tmetricDashboard());
           }}
         >
-          <TabsList>
-            <TabsTrigger value="overview">
-              <TrendingUp className="h-4 w-4 mr-2" />
+          <TabsList
+            className="w-full min-w-0 justify-start gap-1 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-8 [&::-webkit-scrollbar]:hidden"
+            size="sm"
+          >
+            <TabsTrigger
+              value="overview"
+              className="shrink-0 gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-1 sm:py-4 sm:text-sm"
+              size="sm"
+            >
+              <TrendingUp className="h-4 w-4 shrink-0 sm:mr-0.5" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="timeline">
-              <CalendarRange className="h-4 w-4 mr-2" />
+            <TabsTrigger
+              value="timeline"
+              className="shrink-0 gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-1 sm:py-4 sm:text-sm"
+              size="sm"
+            >
+              <CalendarRange className="h-4 w-4 shrink-0 sm:mr-0.5" />
               Timeline
             </TabsTrigger>
-            <TabsTrigger value="contractor">
-              <Users className="h-4 w-4 mr-2" />
+            <TabsTrigger
+              value="contractor"
+              className="shrink-0 gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-1 sm:py-4 sm:text-sm"
+              size="sm"
+            >
+              <Users className="h-4 w-4 shrink-0 sm:mr-0.5" />
               Contractor
             </TabsTrigger>
-            <TabsTrigger value="cube">
-              <Grid3X3 className="h-4 w-4 mr-2" />
-              Cube Explorer
+            <TabsTrigger
+              value="cube"
+              className="shrink-0 gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-1 sm:py-4 sm:text-sm"
+              size="sm"
+            >
+              <Grid3X3 className="h-4 w-4 shrink-0 sm:mr-0.5" />
+              Cube
+              <span className="hidden sm:inline"> Explorer</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -417,18 +470,18 @@ export function TmetricDashboardPage(
           .map(({ timeline: resolvedTimeline }) =>
             resolvedTimeline.timelineItems.length > 0 ? (
               <div
-                className="flex-1 min-h-0 flex flex-col mt-4"
+                className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col"
                 key="timeline-tab"
               >
-                <Card className="flex-1 min-h-0 flex flex-col">
+                <Card className="flex min-h-0 min-w-0 flex-1 flex-col">
                   <CardHeader>
                     <CardTitle>Tasks over time</CardTitle>
                     <CardDescription>
                       Timeline view of time entries
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-1 min-h-[400px]">
-                    <div className="w-full h-full min-h-[400px] rounded-md overflow-hidden border border-border">
+                  <CardContent className="flex min-h-0 flex-1 flex-col p-3 sm:p-6">
+                    <div className="h-full min-h-[min(22rem,55svh)] w-full min-w-0 flex-1 overflow-hidden rounded-md border border-border sm:min-h-[28rem]">
                       {(() => {
                         const minStartFromItems = resolvedTimeline.timelineItems.reduce(
                           (min, item) =>
@@ -486,7 +539,7 @@ export function TmetricDashboardPage(
             ),
           )
       ) : activeTab === "contractor" ? (
-        <div className="flex-1 overflow-auto mt-4">
+        <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
           {periodDoesNotOverlapIterations ? (
             <TmetricNoOverlapMessage className="mx-auto" />
           ) : (
@@ -535,7 +588,7 @@ export function TmetricDashboardPage(
             </div>
           ))
           .map((report) => (
-            <div className="flex-1 min-h-0 mt-4" key="cube">
+            <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col" key="cube">
               <TmetricCubeExplorer
                 report={report}
                 services={services}
@@ -552,7 +605,7 @@ export function TmetricDashboardPage(
             </div>
           ))
       ) : (
-        <div className="flex-1 overflow-auto space-y-6 mt-4">
+        <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col space-y-6 overflow-x-hidden overflow-y-auto">
           {rd
             .journey(cachedReportQuery)
             .wait(() =>
@@ -698,19 +751,14 @@ export function TmetricDashboardPage(
             )
             .wait(() =>
               periodDoesNotOverlapIterations ? null : (
-                <div
-                  className="grid gap-4"
-                  style={{
-                    gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
-                  }}
-                >
+                <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <Skeleton className="h-4 w-32" />
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <Skeleton className="h-8 w-24" />
-                      <div className="grid grid-cols-3 gap-4 pt-4">
+                      <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-3">
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
@@ -746,20 +794,14 @@ export function TmetricDashboardPage(
                 contractorNameMap: resolvedContractorNameMap,
               }) =>
                 !_report ? null : (
-                  <div
-                    className="grid gap-4"
-                    style={{
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(480px, 1fr))",
-                    }}
-                  >
+                  <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
                     {resolvedContractorsSummary &&
                     resolvedContractorsSummary.contractors.length > 0 &&
                     !(
                       resolvedContractorIterationBreakdown &&
                       resolvedContractorIterationBreakdown.length > 0
                     ) ? (
-                      <Card>
+                      <Card className="min-w-0">
                         <CardHeader>
                           <CardTitle>By contractor</CardTitle>
                           <CardDescription>
@@ -767,7 +809,7 @@ export function TmetricDashboardPage(
                             only)
                           </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="min-w-0">
                           {(() => {
                             const integratedIds = new Set(
                               integrationStatus?.integratedContractorIds ?? [],
@@ -862,7 +904,7 @@ export function TmetricDashboardPage(
                         resolvedContractorIterationBreakdown &&
                         resolvedContractorIterationBreakdown.length > 0
                       ) ? (
-                      <Card>
+                      <Card className="min-w-0">
                         <CardHeader>
                           <CardTitle>By contractor</CardTitle>
                           <CardDescription>
@@ -915,15 +957,15 @@ export function TmetricDashboardPage(
                     {/* By contractor with iteration breakdown (when iteration mode) */}
                     {resolvedContractorIterationBreakdown &&
                       resolvedContractorIterationBreakdown.length > 0 && (
-                        <Card className="col-span-full">
-                          <CardHeader>
+                        <Card className="col-span-full min-w-0">
+                          <CardHeader className="min-w-0 space-y-1">
                             <CardTitle>By contractor</CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-pretty">
                               Cost, billing, and profit per contractor with
                               breakdown by iteration (integrated only)
                             </CardDescription>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="min-w-0 px-3 sm:px-6">
                             {(() => {
                               const integratedIds = new Set(
                                 integrationStatus?.integratedContractorIds ??

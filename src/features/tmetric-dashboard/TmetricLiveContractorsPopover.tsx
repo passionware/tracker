@@ -10,6 +10,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover.tsx";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet.tsx";
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -141,10 +148,16 @@ export function TmetricLiveContractorsPopover(
   const { isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
 
+  const onLivePanelOpenChange = (next: boolean) => {
+    setOpen(next);
+  };
+
   const workspaces = services.workspaceService.useWorkspaces(
     workspaceQueryUtils.ofDefault(),
   );
-  const clients = services.clientService.useClients(clientQueryUtils.ofDefault());
+  const clients = services.clientService.useClients(
+    clientQueryUtils.ofDefault(),
+  );
 
   const workspaceIds = useMemo(
     () =>
@@ -196,8 +209,7 @@ export function TmetricLiveContractorsPopover(
     const clList = rd.tryGet(clients);
     if (clList == null) return null;
     const clMap = new Map(clList.map((c) => [c.id, c.name]));
-    return (clientId: number) =>
-      clMap.get(clientId) ?? `Client ${clientId}`;
+    return (clientId: number) => clMap.get(clientId) ?? `Client ${clientId}`;
   }, [clients]);
 
   /** While clients load after live rows exist, match skeleton count to row count to avoid shrink. */
@@ -211,9 +223,7 @@ export function TmetricLiveContractorsPopover(
   const listAreaReserveMinHeight =
     open &&
     (listBodyLoading ||
-      (liveData != null &&
-        clientNameFn == null &&
-        liveData.rows.length > 0));
+      (liveData != null && clientNameFn == null && liveData.rows.length > 0));
 
   const listMinHeightStyle =
     listAreaReserveMinHeight && listSkeletonDisplayCount > 0
@@ -242,159 +252,197 @@ export function TmetricLiveContractorsPopover(
     });
   };
 
+  const liveMenuTrigger = (
+    <SidebarMenuButton
+      size="lg"
+      tooltip={{ children: "TMetric live — timers & last 24h" }}
+      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+    >
+      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+        <Timer className="size-4" />
+      </div>
+      <div className="grid flex-1 text-left text-sm leading-tight">
+        <span className="truncate font-semibold">TMetric live</span>
+        <span className="truncate text-xs text-muted-foreground">
+          Timers & 24h activity
+        </span>
+      </div>
+    </SidebarMenuButton>
+  );
+
+  const livePanelBody = (
+    <>
+      <div className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-4 py-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-x-4 sm:gap-y-2">
+          <div className="min-w-0">
+            <p className="text-base font-semibold tracking-tight text-foreground">
+              Contractors
+            </p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+              One lane per contractor — last 24h of TMetric time on the tracks,
+              with status and clients in each lane label.
+            </p>
+          </div>
+          <div className="flex min-h-9 items-center sm:justify-self-end">
+            {liveData ? (
+              <div className="inline-flex min-h-9 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/50 bg-background/70 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground shadow-sm backdrop-blur-sm">
+                <span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {formatHours(liveData.summary.totalHoursLast24h)}
+                  </span>{" "}
+                  / 24h
+                </span>
+                <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
+                <span>{liveData.summary.activeTimers} active</span>
+                <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
+                <span>{liveData.summary.integratedContractors} people</span>
+              </div>
+            ) : showLiveSummaryPlaceholder ? (
+              <LiveSummarySkeleton />
+            ) : null}
+          </div>
+          <div className="min-w-0 sm:col-span-2">
+            <Link
+              to={tmetricCubeExplorerHref}
+              className="inline-flex max-w-full flex-wrap items-baseline gap-x-1 rounded-md py-0.5 text-xs font-medium text-primary underline-offset-4 transition-colors hover:bg-primary/5 hover:underline"
+              onClick={() => setOpen(false)}
+            >
+              Open TMetric cube
+              <span className="font-normal text-muted-foreground no-underline">
+                · all workspaces · all clients · today
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "px-3 py-3 bg-background/50",
+          isMobile
+            ? cn(
+                "flex min-h-0 flex-1 flex-col",
+                liveData != null && clientNameFn != null
+                  ? "overflow-hidden"
+                  : "overflow-y-auto",
+              )
+            : liveData != null && clientNameFn != null
+              ? "overflow-hidden"
+              : "max-h-[min(70vh,30rem)] overflow-y-auto",
+        )}
+        style={listMinHeightStyle}
+      >
+        {!open
+          ? null
+          : rd
+              .journey(workspaces)
+              .wait(<ContractorRowsSkeleton count={listSkeletonDisplayCount} />)
+              .catch((e) => (
+                <p className="px-1 py-4 text-sm text-destructive">
+                  {e.message}
+                </p>
+              ))
+              .map(() =>
+                ids != null && ids.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
+                    No workspaces available.
+                  </p>
+                ) : (
+                  rd
+                    .journey(liveQuery)
+                    .wait(
+                      <ContractorRowsSkeleton
+                        count={listSkeletonDisplayCount}
+                      />,
+                    )
+                    .catch((e) => (
+                      <p className="px-2 py-3 text-sm text-destructive">
+                        {e.message}
+                      </p>
+                    ))
+                    .map((data) => {
+                      if (!clientNameFn) {
+                        return (
+                          <ContractorRowsSkeleton
+                            count={listSkeletonDisplayCount}
+                          />
+                        );
+                      }
+                      return (
+                        <TmetricLiveContractorsTimeline
+                          panel={data}
+                          clientNameFn={clientNameFn}
+                          preferenceService={services.preferenceService}
+                          timelineFillViewport={isMobile}
+                        />
+                      );
+                    })
+                ),
+              )}
+      </div>
+
+      {open ? (
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/25 px-4 py-2.5 text-[10px] text-muted-foreground">
+          {liveData ? (
+            <span className="flex min-h-4 min-w-0 items-center truncate text-[10px] leading-snug">
+              Updated{" "}
+              {livePanelFetchedAt && isValid(livePanelFetchedAt)
+                ? formatDistanceToNow(livePanelFetchedAt, {
+                    addSuffix: true,
+                  })
+                : "—"}
+            </span>
+          ) : (
+            <Skeleton className="h-2.5 min-h-4 w-36 max-w-[55%] self-center rounded-md" />
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm"
+            onClick={() => invalidateLive()}
+          >
+            <RefreshCw className="size-3.5 opacity-80" />
+            Refresh
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
+
+  const mobileLiveSheetSurfaceClass = cn(
+    "z-[60] flex w-full flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-xl",
+    "h-[100dvh] max-h-[100dvh]",
+    "pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]",
+    "[&>button]:right-3 [&>button]:top-3 [&>button]:z-50",
+  );
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <Popover
-          open={open}
-          onOpenChange={setOpen}
-        >
-          <PopoverTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={{ children: "TMetric live — timers & last 24h" }}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+        {isMobile ? (
+          <Sheet open={open} onOpenChange={onLivePanelOpenChange}>
+            <SheetTrigger asChild>{liveMenuTrigger}</SheetTrigger>
+            <SheetContent side="bottom" className={mobileLiveSheetSurfaceClass}>
+              <SheetHeader className="sr-only">
+                <SheetTitle>TMetric live contractors</SheetTitle>
+              </SheetHeader>
+              {livePanelBody}
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Popover open={open} onOpenChange={onLivePanelOpenChange}>
+            <PopoverTrigger asChild>{liveMenuTrigger}</PopoverTrigger>
+            <PopoverContent
+              className="w-[min(100vw-2rem,77rem)] max-w-[min(100vw-2rem,77rem)] overflow-hidden rounded-xl border border-border/60 p-0 shadow-xl ring-1 ring-black/5 dark:ring-white/10"
+              side="right"
+              align="start"
+              sideOffset={10}
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Timer className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">TMetric live</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  Timers & 24h activity
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[min(100vw-2rem,77rem)] max-w-[min(100vw-2rem,77rem)] overflow-hidden rounded-xl border border-border/60 p-0 shadow-xl ring-1 ring-black/5 dark:ring-white/10"
-            side={isMobile ? "bottom" : "right"}
-            align="start"
-            sideOffset={10}
-          >
-            <div className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 px-4 py-3">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-x-4 sm:gap-y-2">
-                <div className="min-w-0">
-                  <p className="text-base font-semibold tracking-tight text-foreground">
-                    Contractors
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                    One lane per contractor — last 24h of TMetric time on the tracks, with
-                    status and clients in each lane label.
-                  </p>
-                </div>
-                <div className="flex min-h-9 items-center sm:justify-self-end">
-                  {liveData ? (
-                    <div className="inline-flex min-h-9 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/50 bg-background/70 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground shadow-sm backdrop-blur-sm">
-                      <span>
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {formatHours(liveData.summary.totalHoursLast24h)}
-                        </span>{" "}
-                        / 24h
-                      </span>
-                      <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
-                      <span>
-                        {liveData.summary.activeTimers} active
-                      </span>
-                      <span className="h-1 w-1 shrink-0 rounded-full bg-border" />
-                      <span>{liveData.summary.integratedContractors} people</span>
-                    </div>
-                  ) : showLiveSummaryPlaceholder ? (
-                    <LiveSummarySkeleton />
-                  ) : null}
-                </div>
-                <div className="min-w-0 sm:col-span-2">
-                  <Link
-                    to={tmetricCubeExplorerHref}
-                    className="inline-flex max-w-full flex-wrap items-baseline gap-x-1 rounded-md py-0.5 text-xs font-medium text-primary underline-offset-4 transition-colors hover:bg-primary/5 hover:underline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Open TMetric cube
-                    <span className="font-normal text-muted-foreground no-underline">
-                      · all workspaces · all clients · today
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "px-3 py-3",
-                liveData != null && clientNameFn != null
-                  ? "overflow-hidden bg-background/50"
-                  : "max-h-[min(70vh,30rem)] overflow-y-auto bg-background/50",
-              )}
-              style={listMinHeightStyle}
-            >
-              {!open ? null : rd
-                .journey(workspaces)
-                .wait(<ContractorRowsSkeleton count={listSkeletonDisplayCount} />)
-                .catch((e) => (
-                  <p className="px-1 py-4 text-sm text-destructive">{e.message}</p>
-                ))
-                .map(() =>
-                  ids != null && ids.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
-                      No workspaces available.
-                    </p>
-                  ) : (
-                    rd
-                      .journey(liveQuery)
-                      .wait(<ContractorRowsSkeleton count={listSkeletonDisplayCount} />)
-                      .catch((e) => (
-                        <p className="px-2 py-3 text-sm text-destructive">
-                          {e.message}
-                        </p>
-                      ))
-                      .map((data) => {
-                        if (!clientNameFn) {
-                          return (
-                            <ContractorRowsSkeleton
-                              count={listSkeletonDisplayCount}
-                            />
-                          );
-                        }
-                        return (
-                          <TmetricLiveContractorsTimeline
-                            panel={data}
-                            clientNameFn={clientNameFn}
-                            preferenceService={services.preferenceService}
-                          />
-                        );
-                      })
-                  )
-                )}
-            </div>
-
-            {open ? (
-              <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/25 px-4 py-2.5 text-[10px] text-muted-foreground">
-                {liveData ? (
-                  <span className="flex min-h-4 min-w-0 items-center truncate text-[10px] leading-snug">
-                    Updated{" "}
-                    {livePanelFetchedAt && isValid(livePanelFetchedAt)
-                      ? formatDistanceToNow(livePanelFetchedAt, {
-                          addSuffix: true,
-                        })
-                      : "—"}
-                  </span>
-                ) : (
-                  <Skeleton className="h-2.5 min-h-4 w-36 max-w-[55%] self-center rounded-md" />
-                )}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 shrink-0 gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm"
-                  onClick={() => invalidateLive()}
-                >
-                  <RefreshCw className="size-3.5 opacity-80" />
-                  Refresh
-                </Button>
-              </div>
-            ) : null}
-          </PopoverContent>
-        </Popover>
+              {livePanelBody}
+            </PopoverContent>
+          </Popover>
+        )}
       </SidebarMenuItem>
     </SidebarMenu>
   );

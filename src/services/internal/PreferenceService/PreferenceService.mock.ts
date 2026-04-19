@@ -66,5 +66,9 @@ export function createPreferenceService(config: {
     setLastProjectForNewIteration: async () => {},
     useTmetricLiveContractorsPanelLastRowCount: () => null,
     recordTmetricLiveContractorsPanelLastRowCount: async () => {},
+    useTmetricLiveContractorsLaneLegendMode: () => "full",
+    setTmetricLiveContractorsLaneLegendMode: async () => {},
+    useTmetricLiveContractorsLaneLegendModeCompact: () => "dots",
+    setTmetricLiveContractorsLaneLegendModeCompact: async () => {},
   };
 }
