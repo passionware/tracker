@@ -16,6 +16,8 @@ import { myActivityApi } from "@/api/activity/activity.api.connected.ts";
 import { myProjectRateApi } from "@/api/rate/rate.api.connected.ts";
 import { myTaskDefinitionApi } from "@/api/task-definition/task-definition.api.connected.ts";
 import { myTimeEntryApi } from "@/api/time-entry/time-entry.api.connected.ts";
+import { createConnectedEventQueueStorage } from "@/api/time-event-queue/event-queue-storage.connected.ts";
+import { myTimeEventsWorkerClient } from "@/api/time-event-queue/time-events-worker-client.connected.ts";
 import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
 import { myProjectApi } from "@/api/project/project.api.connected.ts";
 import { createReportsApi } from "@/api/reports/reports.api.http.ts";
@@ -69,6 +71,7 @@ import { createActivityService } from "@/services/io/ActivityService/ActivitySer
 import { createIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.impl.ts";
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
+import { createEventQueueService } from "@/services/io/EventQueueService/EventQueueService.impl.ts";
 import { createProjectRateService } from "@/services/io/ProjectRateService/ProjectRateService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.impl.ts";
@@ -203,6 +206,22 @@ const projectRateService = createProjectRateService({
   api: myProjectRateApi,
   client: myQueryClient,
 });
+
+/**
+ * The offline event queue: durable IndexedDB FIFO + per-stream flush
+ * worker. The schema tag scopes the IDB database name so dev / prod
+ * queues never collide. The actor user id is read lazily from the shared
+ * Supabase session each submit (so it's always the currently-signed-in
+ * user, even after a refresh).
+ */
+const eventQueueService = createEventQueueService({
+  services: { messageService },
+  storage: createConnectedEventQueueStorage({
+    schemaTag: import.meta.env.VITE_APP_TIME_DB_SCHEMA ?? "time_dev",
+  }),
+  workerClient: myTimeEventsWorkerClient,
+  actorUserId: () => "anonymous",
+});
 const expressionService = createExpressionService({
   services: {
     variableService,
@@ -305,6 +324,7 @@ export const myServices = {
   taskDefinitionService,
   activityService,
   projectRateService,
+  eventQueueService,
   projectIterationDisplayService: createProjectIterationDisplayService(),
   projectService,
   reportGenerationService: createReportGenerationService({

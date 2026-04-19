@@ -24,6 +24,7 @@ import { WithMutationService } from "@/services/io/MutationService/MutationServi
 import { WithActivityService } from "@/services/io/ActivityService/ActivityService.ts";
 import { WithIterationTriggerService } from "@/services/io/IterationTriggerService/IterationTriggerService.ts";
 import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.ts";
+import { WithEventQueueService } from "@/services/io/EventQueueService/EventQueueService.ts";
 import { WithProjectRateService } from "@/services/io/ProjectRateService/ProjectRateService.ts";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.ts";
@@ -89,6 +90,7 @@ export type FrontServices = MergeServices<
     WithTaskDefinitionService,
     WithActivityService,
     WithProjectRateService,
+    WithEventQueueService,
     WithProjectIterationDisplayService,
     WithReportGenerationService,
     WithGeneratedReportSourceWriteService,
