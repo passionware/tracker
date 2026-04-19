@@ -44,7 +44,7 @@ export const TimelineScrollSurface = memo(function TimelineScrollSurface({
   return (
     <div
       ref={containerRef}
-      className="min-h-0 min-w-0 w-full flex-1 relative overflow-hidden"
+      className="min-h-0 min-w-0 w-full flex-1 relative overflow-hidden touch-none select-none"
       style={{
         cursor: panState
           ? "grabbing"

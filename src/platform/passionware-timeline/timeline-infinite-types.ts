@@ -1,5 +1,9 @@
 import type { ZonedDateTime } from "@internationalized/date";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
 import type {
   DrawingPreviewLabelParams,
   TimelineItem,
@@ -84,14 +88,17 @@ export interface InfiniteTimelineProps<Data = unknown, TLaneMeta = unknown> {
     isMinWidth: boolean;
     /** Resolved lane track height for this item’s lane (for full-height custom content). */
     laneTrackHeightPx?: number;
-    onMouseDown: (
-      e: ReactMouseEvent,
+    onPointerDown: (
+      e: ReactPointerEvent,
       item: TimelineItem<Data>,
       type: "move" | "resize-start" | "resize-end",
     ) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
-    onClick?: (e: ReactMouseEvent, item: TimelineItem<Data>) => void;
+    onClick?: (
+      e: ReactMouseEvent | ReactPointerEvent,
+      item: TimelineItem<Data>,
+    ) => void;
   }) => ReactNode;
   onItemHover?: (item: TimelineItem<Data>) => void;
   isEventSelected?: (item: TimelineItem<Data>) => boolean;

@@ -27,7 +27,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const noopMouseDown: TimelineMilestoneDiamondProps["onMouseDown"] = () => {};
+const noopPointerDown: TimelineMilestoneDiamondProps["onPointerDown"] =
+  () => {};
 const noop = () => {};
 
 const itemViolet = {
@@ -57,7 +58,7 @@ export const Violet: Story = {
     isSelected: false,
     selected: false,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },
@@ -83,7 +84,7 @@ export const OrangeSelected: Story = {
     isSelected: true,
     selected: true,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },
@@ -114,7 +115,7 @@ export const BillingWithIterationPeriod: Story = {
     isSelected: false,
     selected: false,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },
@@ -145,7 +146,7 @@ export const CostLinkedReportBands: Story = {
     isSelected: false,
     selected: false,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },
@@ -179,7 +180,7 @@ export const BillingPaidHoverIteration: Story = {
     isSelected: false,
     selected: false,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },
@@ -206,7 +207,7 @@ export const BillingUnpaid: Story = {
     isSelected: false,
     selected: false,
     isHovered: false,
-    onMouseDown: noopMouseDown,
+    onPointerDown: noopPointerDown,
     onMouseEnter: noop,
     onMouseLeave: noop,
   },

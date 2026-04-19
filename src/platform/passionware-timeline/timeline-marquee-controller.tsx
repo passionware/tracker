@@ -1,7 +1,15 @@
 "use client";
 
 import { Portal } from "@radix-ui/react-portal";
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import type { JotaiVanillaStore } from "./timeline-jotai-atoms.ts";
 import type { TimelineItem } from "./passionware-timeline-core.ts";
 import { toExternalItem } from "./passionware-timeline-core.ts";
@@ -80,7 +88,11 @@ export interface UseTimelineMarqueeControllerOptions<
 
 export interface TimelineMarqueeControllerApi {
   tryBeginMarquee: (
-    e: React.MouseEvent | globalThis.MouseEvent,
+    e:
+      | ReactMouseEvent
+      | ReactPointerEvent
+      | globalThis.MouseEvent
+      | globalThis.PointerEvent,
     options?: {
       /**
        * When false, Shift+starting on a selected item still uses subtractive mode
@@ -128,6 +140,7 @@ export function useTimelineMarqueeController<Data, TLaneMeta = unknown>(
     extend: boolean;
     subtract: boolean;
     isDragging: boolean;
+    pointerId?: number;
   } | null>(null);
 
   const suppressContextMenuRef = useRef(false);
@@ -199,7 +212,11 @@ export function useTimelineMarqueeController<Data, TLaneMeta = unknown>(
 
   const tryBeginMarquee = useCallback(
     (
-      e: React.MouseEvent | globalThis.MouseEvent,
+      e:
+        | ReactMouseEvent
+        | ReactPointerEvent
+        | globalThis.MouseEvent
+        | globalThis.PointerEvent,
       options?: {
         allowSubtractiveFromTarget?: boolean;
         force?: boolean;
@@ -239,17 +256,29 @@ export function useTimelineMarqueeController<Data, TLaneMeta = unknown>(
       }
       const extend = shift && !subtract;
 
+      const pointerId =
+        "pointerId" in e && typeof e.pointerId === "number"
+          ? e.pointerId
+          : undefined;
+
       sessionRef.current = {
         start: new DOMVector(e.clientX, e.clientY, 0, 0),
         extend,
         subtract,
         isDragging: false,
+        pointerId,
       };
       suppressContextMenuRef.current = true;
 
-      const onMove = (ev: globalThis.MouseEvent) => {
+      const onMove = (ev: globalThis.PointerEvent) => {
         const sess = sessionRef.current;
         if (!sess) return;
+        if (
+          sess.pointerId !== undefined &&
+          ev.pointerId !== sess.pointerId
+        ) {
+          return;
+        }
         const deltaX = ev.clientX - sess.start.x;
         const deltaY = ev.clientY - sess.start.y;
         const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
@@ -262,9 +291,17 @@ export function useTimelineMarqueeController<Data, TLaneMeta = unknown>(
         );
       };
 
-      const onUp = (ev: globalThis.MouseEvent) => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
+      const onUp = (ev: globalThis.PointerEvent) => {
+        const sessBefore = sessionRef.current;
+        if (
+          sessBefore?.pointerId !== undefined &&
+          ev.pointerId !== sessBefore.pointerId
+        ) {
+          return;
+        }
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
         window.removeEventListener("contextmenu", onCtxMenu);
         cleanupRef.current = null;
 
@@ -291,12 +328,14 @@ export function useTimelineMarqueeController<Data, TLaneMeta = unknown>(
         }
       };
 
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
       window.addEventListener("contextmenu", onCtxMenu);
       cleanupRef.current = () => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
         window.removeEventListener("contextmenu", onCtxMenu);
       };
 

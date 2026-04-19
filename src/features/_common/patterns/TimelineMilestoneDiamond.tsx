@@ -3,7 +3,12 @@
 import { cn } from "@/lib/utils.ts";
 import type { TimelineItem } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
 import { SUB_ROW_HEIGHT } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
-import { useRef, type MouseEvent as ReactMouseEvent, type Ref } from "react";
+import {
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type Ref,
+} from "react";
 
 /** Outer hit target (px); inner rotated square is slightly smaller. */
 const HIT_BOX = 24;
@@ -73,8 +78,8 @@ export type TimelineMilestoneDiamondProps<Data = unknown> = {
   selected: boolean;
   /** @deprecated Hover ring uses CSS `:hover`; kept for Storybook / spread compatibility. */
   isHovered?: boolean;
-  onMouseDown: (
-    e: ReactMouseEvent,
+  onPointerDown: (
+    e: ReactPointerEvent,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: TimelineItem<any>,
     type: "move" | "resize-start" | "resize-end",
@@ -82,7 +87,7 @@ export type TimelineMilestoneDiamondProps<Data = unknown> = {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   onClick?: (
-    e: ReactMouseEvent,
+    e: ReactMouseEvent | ReactPointerEvent,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: TimelineItem<any>,
   ) => void;
@@ -104,7 +109,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
   isSelected,
   selected = isSelected,
   isHovered: _legacyIsHovered,
-  onMouseDown,
+  onPointerDown,
   onMouseEnter,
   onMouseLeave,
   onClick,
@@ -123,16 +128,17 @@ export function TimelineMilestoneDiamond<Data = unknown>({
   const rowInnerH = SUB_ROW_HEIGHT - 4;
   const top = rowTop + (rowInnerH - HIT_BOX) / 2;
 
-  const handleMouseDown = (e: ReactMouseEvent) => {
+  const handlePointerDown = (e: ReactPointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
     hasDraggedRef.current = false;
-    onMouseDown(e, item, "move");
+    onPointerDown(e, item, "move");
 
     const handleMove = () => {
       hasDraggedRef.current = true;
     };
 
-    const handleUp = (upEvent: globalThis.MouseEvent) => {
+    const handleUp = (upEvent: globalThis.PointerEvent) => {
       if (mouseDownPosRef.current && onClick) {
         const deltaX = Math.abs(upEvent.clientX - mouseDownPosRef.current.x);
         const deltaY = Math.abs(upEvent.clientY - mouseDownPosRef.current.y);
@@ -142,18 +148,20 @@ export function TimelineMilestoneDiamond<Data = unknown>({
       }
       mouseDownPosRef.current = null;
       hasDraggedRef.current = false;
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
     };
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
   };
 
   const unpaidBilling = variant === "billing-unpaid";
 
   const markerRingClass = cn(
-    "flex cursor-grab items-center justify-center rounded-sm transition-shadow",
+    "flex cursor-grab touch-manipulation items-center justify-center rounded-sm transition-shadow",
     isSelected &&
       "ring-2 ring-foreground ring-offset-2 ring-offset-background",
     selected &&
@@ -227,7 +235,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
             data-timeline-item-id={item.id}
             data-billing-unpaid=""
             aria-hidden
-            onMouseDown={handleMouseDown}
+            onPointerDown={handlePointerDown}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseOver={onMouseOver}
@@ -246,7 +254,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
             showDiamondHoverGreen && "peer",
           )}
           style={diamondHostStyle}
-          onMouseDown={handleMouseDown}
+          onPointerDown={handlePointerDown}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
           onMouseOver={onMouseOver}
@@ -287,7 +295,7 @@ export function TimelineMilestoneDiamond<Data = unknown>({
         height: HIT_BOX,
         transform: "translateX(-50%)",
       }}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onMouseOver={onMouseOver}

@@ -75,7 +75,7 @@ export function ProjectTimelineIterationBudgetBar(
         top,
         height: barHeight,
       }}
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         e.stopPropagation();
       }}
       onClick={(e) => {

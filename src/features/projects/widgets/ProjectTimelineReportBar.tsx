@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { CircleAlert, CircleCheck, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import type { DefaultTimelineItemProps } from "@/platform/passionware-timeline/timeline-default-item.tsx";
@@ -57,7 +57,7 @@ function reportCostStatusIcon(
  * (main color shows through) and the status icon; label sits on the solid-colored tail.
  */
 export function ProjectTimelineReportBar(props: Props) {
-  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef(false);
 
   const d = props.item.data;
@@ -72,7 +72,7 @@ export function ProjectTimelineReportBar(props: Props) {
     isSelected,
     selected = isSelected,
     isMinWidth,
-    onMouseDown,
+    onPointerDown,
     onMouseEnter,
     onMouseLeave,
     onClick,
@@ -93,31 +93,34 @@ export function ProjectTimelineReportBar(props: Props) {
     );
   }
 
-  const handleMouseDown = (e: ReactMouseEvent) => {
-    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+  const handlePointerDown = (e: ReactPointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
     hasDraggedRef.current = false;
-    onMouseDown(e, item, "move");
+    onPointerDown(e, item, "move");
 
     const handleMove = () => {
       hasDraggedRef.current = true;
     };
 
-    const handleUp = (upEvent: globalThis.MouseEvent) => {
-      if (mouseDownPosRef.current && onClick) {
-        const deltaX = Math.abs(upEvent.clientX - mouseDownPosRef.current.x);
-        const deltaY = Math.abs(upEvent.clientY - mouseDownPosRef.current.y);
+    const handleUp = (upEvent: globalThis.PointerEvent) => {
+      if (pointerDownPosRef.current && onClick) {
+        const deltaX = Math.abs(upEvent.clientX - pointerDownPosRef.current.x);
+        const deltaY = Math.abs(upEvent.clientY - pointerDownPosRef.current.y);
         if (deltaX < 5 && deltaY < 5 && !hasDraggedRef.current) {
           onClick(e, item);
         }
       }
-      mouseDownPosRef.current = null;
+      pointerDownPosRef.current = null;
       hasDraggedRef.current = false;
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
     };
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
   };
 
   return (
@@ -127,7 +130,7 @@ export function ProjectTimelineReportBar(props: Props) {
       data-timeline-item
       data-timeline-item-id={item.id}
       className={cn(
-        "absolute flex flex-row overflow-hidden rounded transition-shadow cursor-grab group",
+        "absolute flex flex-row overflow-hidden rounded transition-shadow cursor-grab group touch-manipulation",
         item.color || "bg-primary",
         isSelected &&
           "ring-2 ring-foreground ring-offset-1 ring-offset-background",
@@ -142,14 +145,21 @@ export function ProjectTimelineReportBar(props: Props) {
         top: 8 + (item.row || 0) * SUB_ROW_HEIGHT,
         height: SUB_ROW_HEIGHT - 4,
       }}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onMouseOver={onMouseOver}
     >
       <div
-        className="absolute left-0 top-0 bottom-0 z-[1] w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-l transition-opacity"
-        onMouseDown={(e) => onMouseDown(e, item, "resize-start")}
+        className={cn(
+          "absolute left-0 top-0 bottom-0 z-[1] w-3 cursor-ew-resize rounded-l transition-opacity",
+          "opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-45 [@media(pointer:coarse)]:active:opacity-100",
+          "hover:bg-foreground/30",
+        )}
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          onPointerDown(e, item, "resize-start");
+        }}
       />
 
       <div
@@ -172,8 +182,15 @@ export function ProjectTimelineReportBar(props: Props) {
         </div>
 
         <div
-          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-foreground/30 rounded-r transition-opacity"
-          onMouseDown={(e) => onMouseDown(e, item, "resize-end")}
+          className={cn(
+            "absolute right-0 top-0 bottom-0 z-[1] w-3 cursor-ew-resize rounded-r transition-opacity",
+            "opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-45 [@media(pointer:coarse)]:active:opacity-100",
+            "hover:bg-foreground/30",
+          )}
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            onPointerDown(e, item, "resize-end");
+          }}
         />
       </div>
     </div>

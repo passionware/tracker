@@ -12,6 +12,7 @@ import {
   useEffect,
   useRef,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
 import {
@@ -47,6 +48,22 @@ import {
 
 function viewportTemporalSerializationKey(t: TimelineTemporal): string {
   return t instanceof CalendarDate ? `cal:${t.toString()}` : `zdt:${t.toString()}`;
+}
+
+function isTimelineLaneSidebarTarget(target: EventTarget | null): boolean {
+  const el = target instanceof HTMLElement ? target : null;
+  return Boolean(el?.closest("[data-timeline-lane-sidebar]"));
+}
+
+/** Pointer targets where we must not start container pan (see native `pointerdown` on scroll surface). */
+function isPanExemptPointerTarget(target: EventTarget | null): boolean {
+  const el = target instanceof HTMLElement ? target : null;
+  if (!el) return false;
+  return Boolean(
+    el.closest("[data-timeline-item]") ||
+      el.closest("[data-timeline-lane]") ||
+      el.closest("[data-timeline-lane-sidebar]"),
+  );
 }
 
 export interface UseTimelineInteractionsOptions<Data = unknown> {
@@ -134,6 +151,8 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   });
 
   const lastHorizontalFitKeyRef = useRef<string | null>(null);
+  /** Element that called `setPointerCapture` for the active pan, if any. */
+  const panPointerCaptureElRef = useRef<HTMLElement | null>(null);
 
   const generateId = () =>
     `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -279,7 +298,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
-      e.preventDefault();
+      const overLaneSidebar = isTimelineLaneSidebarTarget(e.target);
 
       const rect = containerRef.current?.getBoundingClientRect();
       const cw = rect?.width ?? 1200;
@@ -290,6 +309,38 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       const scrollOffset = readScrollOffset();
       const zoom = readZoom();
       const visibleLaneRows = readVisibleLaneRows();
+
+      if (overLaneSidebar) {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || dy === 0) {
+          return;
+        }
+        const containerHeight = containerRef.current?.clientHeight || 0;
+        const preview = previewItemRef.current;
+        const merged = readMergedItems();
+        const totalHeight = totalLanesHeight(
+          visibleLaneRows,
+          preview,
+          (laneId, p) => {
+            const laneRow = visibleLaneRows.find((l) => l.id === laneId);
+            return getLaneHeightForPreview(
+              merged,
+              laneId,
+              p,
+              laneRow?.minTrackHeightPx,
+              readMinimizedLaneIds(),
+            );
+          },
+        );
+        const maxOffset = verticalScrollMaxOffset(totalHeight, containerHeight);
+        if (maxOffset <= 0) return;
+        e.preventDefault();
+        setVerticalScrollOffset((prev) =>
+          Math.max(0, Math.min(maxOffset, prev + dy)),
+        );
+        return;
+      }
+
+      e.preventDefault();
 
       if (e.ctrlKey || e.metaKey) {
         if (!rect) return;
@@ -392,25 +443,44 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel, containerRef]);
 
-  const handleMouseDown = useCallback(
-    (e: globalThis.MouseEvent) => {
-      if (e.button === 0 && !readDragState() && !readPanState()) {
+  const releasePanPointerCapture = useCallback((pointerId: number) => {
+    const el = panPointerCaptureElRef.current;
+    if (el?.hasPointerCapture?.(pointerId)) {
+      try {
+        el.releasePointerCapture(pointerId);
+      } catch {
+        /* capture may already be released */
+      }
+    }
+    panPointerCaptureElRef.current = null;
+  }, []);
+
+  const handleContainerPointerDown = useCallback(
+    (e: globalThis.PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (!readDragState() && !readPanState()) {
+        if (isPanExemptPointerTarget(e.target)) {
+          return;
+        }
         if (resolvePointerAction(e, "grid") !== "pan") {
           return;
         }
-        const target = e.target as HTMLElement;
-        if (
-          target.closest("[data-timeline-item]") ||
-          target.closest("[data-timeline-lane]")
-        ) {
-          return;
-        }
         e.preventDefault();
+        const container = containerRef.current;
+        if (container) {
+          try {
+            container.setPointerCapture(e.pointerId);
+            panPointerCaptureElRef.current = container;
+          } catch {
+            panPointerCaptureElRef.current = null;
+          }
+        }
         setPanState({
           startX: e.clientX,
           startY: e.clientY,
           startScrollOffset: readScrollOffset(),
           startVerticalScrollOffset: readVerticalScroll(),
+          pointerId: e.pointerId,
         });
       }
     },
@@ -419,6 +489,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       atoms.panStateAtom,
       atoms.scrollOffsetAtom,
       atoms.verticalScrollOffsetAtom,
+      containerRef,
       setPanState,
       store,
       resolvePointerAction,
@@ -426,9 +497,15 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   );
 
   const handlePanMove = useCallback(
-    (e: globalThis.MouseEvent) => {
+    (e: globalThis.PointerEvent) => {
       const panState = readPanState();
       if (!panState) return;
+      if (
+        panState.pointerId !== undefined &&
+        e.pointerId !== panState.pointerId
+      ) {
+        return;
+      }
 
       const deltaX = e.clientX - panState.startX;
       const deltaY = e.clientY - panState.startY;
@@ -468,35 +545,53 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     ],
   );
 
-  const handlePanUp = useCallback(() => {
-    setPanState(null);
-  }, [setPanState]);
+  const handlePanUp = useCallback(
+    (e: globalThis.PointerEvent) => {
+      const pan = store.get(atoms.panStateAtom);
+      if (pan?.pointerId !== undefined && e.pointerId !== pan.pointerId) {
+        return;
+      }
+      if (pan?.pointerId !== undefined) {
+        releasePanPointerCapture(e.pointerId);
+      }
+      setPanState(null);
+    },
+    [atoms.panStateAtom, releasePanPointerCapture, setPanState, store],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    container.addEventListener("mousedown", handleMouseDown);
-    const preventContextMenu = (e: MouseEvent) => e.preventDefault();
-    if (panState) {
-      window.addEventListener("mousemove", handlePanMove);
-      window.addEventListener("mouseup", handlePanUp);
-      window.addEventListener("contextmenu", preventContextMenu);
-    }
-
+    container.addEventListener("pointerdown", handleContainerPointerDown);
     return () => {
-      container.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handlePanMove);
-      window.removeEventListener("mouseup", handlePanUp);
+      container.removeEventListener(
+        "pointerdown",
+        handleContainerPointerDown,
+      );
+    };
+  }, [handleContainerPointerDown, containerRef]);
+
+  useEffect(() => {
+    if (!panState) return;
+    const preventContextMenu = (ev: MouseEvent) => ev.preventDefault();
+    window.addEventListener("pointermove", handlePanMove);
+    window.addEventListener("pointerup", handlePanUp);
+    window.addEventListener("pointercancel", handlePanUp);
+    window.addEventListener("contextmenu", preventContextMenu);
+    return () => {
+      window.removeEventListener("pointermove", handlePanMove);
+      window.removeEventListener("pointerup", handlePanUp);
+      window.removeEventListener("pointercancel", handlePanUp);
       window.removeEventListener("contextmenu", preventContextMenu);
     };
-  }, [handleMouseDown, handlePanMove, handlePanUp, panState, containerRef]);
+  }, [handlePanMove, handlePanUp, panState]);
 
   const beginItemDrag = useCallback(
     (
       clientX: number,
       item: TimelineItemInternal<Data>,
       type: "move" | "resize-start" | "resize-end",
+      pointerId?: number,
     ) => {
       const containerX = screenXToContainerX(clientX);
       setSelectedItemId(item.id);
@@ -507,6 +602,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         startTime: pixelToTime(containerX),
         originalItem: { ...item },
         hasCrossedThreshold: false,
+        pointerId,
       });
       const externalItem = toExternalItem(item, readBaseDateZoned());
       if (itemActivateTrigger === "mousedown") {
@@ -526,7 +622,10 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   );
 
   const activateItemOnClick = useCallback(
-    (_e: ReactMouseEvent, externalItem: TimelineItem<Data>) => {
+    (
+      _e: ReactMouseEvent | ReactPointerEvent,
+      externalItem: TimelineItem<Data>,
+    ) => {
       if (_e.shiftKey) {
         return;
       }
@@ -548,10 +647,11 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   );
 
   const handleItemMouseDown = (
-    e: ReactMouseEvent,
+    e: ReactPointerEvent,
     item: TimelineItemInternal<Data>,
     type: "move" | "resize-start" | "resize-end",
   ) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     if (type === "move" && e.button === 0 && e.shiftKey && onEventSelect) {
       e.stopPropagation();
       e.preventDefault();
@@ -574,10 +674,11 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     if (pointerAction !== "pan") return;
 
     e.stopPropagation();
-    beginItemDrag(e.clientX, item, type);
+    beginItemDrag(e.clientX, item, type, e.pointerId);
   };
 
-  const handleLaneMouseDown = (e: ReactMouseEvent, laneId: string) => {
+  const handleLaneMouseDown = (e: ReactPointerEvent, laneId: string) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     const pointerAction = resolvePointerAction(e, "lane");
 
     if (
@@ -603,6 +704,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         startX: e.clientX,
         startTime: time,
         drawStart: time,
+        pointerId: e.pointerId,
       });
       setCurrentMouseX(e.clientX);
       setSelectedItemId(null);
@@ -613,19 +715,35 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
       }
       e.preventDefault();
       e.stopPropagation();
+      const laneEl = e.currentTarget;
+      if (laneEl instanceof HTMLElement) {
+        try {
+          laneEl.setPointerCapture(e.pointerId);
+          panPointerCaptureElRef.current = laneEl;
+        } catch {
+          panPointerCaptureElRef.current = null;
+        }
+      }
       setPanState({
         startX: e.clientX,
         startY: e.clientY,
         startScrollOffset: readScrollOffset(),
         startVerticalScrollOffset: readVerticalScroll(),
+        pointerId: e.pointerId,
       });
     }
   };
 
-  const handleMouseMove = useCallback(
-    (e: globalThis.MouseEvent) => {
+  const handleDragPointerMove = useCallback(
+    (e: globalThis.PointerEvent) => {
       const dragState = readDragState();
       if (!dragState) return;
+      if (
+        dragState.pointerId !== undefined &&
+        e.pointerId !== dragState.pointerId
+      ) {
+        return;
+      }
 
       const containerX = screenXToContainerX(e.clientX);
       const currentTime = pixelToTime(containerX);
@@ -693,10 +811,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
     ],
   );
 
-  const handleMouseUp = useCallback(
-    (e: globalThis.MouseEvent) => {
+  const handleDragPointerUp = useCallback(
+    (e: globalThis.PointerEvent) => {
       const dragState = readDragState();
       if (!dragState) return;
+      if (
+        dragState.pointerId !== undefined &&
+        e.pointerId !== dragState.pointerId
+      ) {
+        return;
+      }
 
       const wasDrawing =
         dragState.type === "draw" &&
@@ -788,14 +912,16 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
 
   useEffect(() => {
     if (dragState) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("pointermove", handleDragPointerMove);
+      window.addEventListener("pointerup", handleDragPointerUp);
+      window.addEventListener("pointercancel", handleDragPointerUp);
       return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("pointermove", handleDragPointerMove);
+        window.removeEventListener("pointerup", handleDragPointerUp);
+        window.removeEventListener("pointercancel", handleDragPointerUp);
       };
     }
-  }, [dragState, handleMouseMove, handleMouseUp]);
+  }, [dragState, handleDragPointerMove, handleDragPointerUp]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -846,8 +972,9 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         }
       : null;
 
-  const onTimelineGridMouseDown = useCallback(
-    (e: ReactMouseEvent) => {
+  const onTimelineGridPointerDown = useCallback(
+    (e: ReactPointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       const pointerAction = resolvePointerAction(e, "grid");
       if (
         onRangeSelect &&
@@ -863,20 +990,26 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
         return;
       }
       if (pointerAction === "pan" && !readDragState() && !readPanState()) {
-        const target = e.target as HTMLElement;
-        if (
-          target.closest("[data-timeline-item]") ||
-          target.closest("[data-timeline-lane]")
-        ) {
+        if (isPanExemptPointerTarget(e.target)) {
           return;
         }
         e.preventDefault();
         e.stopPropagation();
+        const gridEl = e.currentTarget;
+        if (gridEl instanceof HTMLElement) {
+          try {
+            gridEl.setPointerCapture(e.pointerId);
+            panPointerCaptureElRef.current = gridEl;
+          } catch {
+            panPointerCaptureElRef.current = null;
+          }
+        }
         setPanState({
           startX: e.clientX,
           startY: e.clientY,
           startScrollOffset: readScrollOffset(),
           startVerticalScrollOffset: readVerticalScroll(),
+          pointerId: e.pointerId,
         });
       }
     },
@@ -896,7 +1029,7 @@ export function useTimelineInteractions<Data, TLaneMeta = unknown>({
   return {
     handleItemMouseDown,
     handleLaneMouseDown,
-    onTimelineGridMouseDown,
+    onTimelineGridPointerDown,
     drawingPreview,
     activateItemOnClick,
     itemActivateTrigger,

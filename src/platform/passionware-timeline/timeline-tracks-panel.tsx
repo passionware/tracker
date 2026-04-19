@@ -560,7 +560,9 @@ function TimelineTracksPanelInner<Data = unknown, TLaneMeta = unknown>(
         left: laneSidebarWidthPx,
         right: 0,
       }}
-      onMouseDown={(e) => handlersRef.current?.onTimelineGridMouseDown(e)}
+      onPointerDown={(e) =>
+        handlersRef.current?.onTimelineGridPointerDown(e)
+      }
     >
       <div
         style={{
@@ -592,13 +594,13 @@ function TimelineTracksPanelInner<Data = unknown, TLaneMeta = unknown>(
                 top: yOffset,
                 height: laneHeight,
               }}
-              onMouseDown={(e) =>
+              onPointerDown={(e) =>
                 handlersRef.current?.handleLaneMouseDown(e, lane.id)
               }
             >
               <TimelineTimeRangeShadowLayer
                 shadows={timeRangeShadows}
-                totalHeight={totalHeight}
+                totalHeight={laneHeight}
               />
               {itemsWithRows.map((rowItem) => (
                 <TimelineMergedItemCell<Data>

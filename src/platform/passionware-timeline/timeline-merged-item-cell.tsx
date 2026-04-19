@@ -5,6 +5,7 @@ import {
   useCallback,
   useMemo,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
   type TimelineItem,
@@ -62,9 +63,9 @@ function TimelineMergedItemCellInner<Data = unknown>({
     [laneSidebarWidthPx, scrollOffset, zoom],
   );
 
-  const onItemMouseDown = useCallback(
+  const onItemPointerDown = useCallback(
     (
-      e: ReactMouseEvent,
+      e: ReactPointerEvent,
       external: TimelineItem<Data>,
       type: "move" | "resize-start" | "resize-end",
     ) => {
@@ -75,7 +76,10 @@ function TimelineMergedItemCellInner<Data = unknown>({
   );
 
   const onItemClick = useCallback(
-    (e: ReactMouseEvent, clicked: TimelineItem<Data>) => {
+    (
+      e: ReactMouseEvent | ReactPointerEvent,
+      clicked: TimelineItem<Data>,
+    ) => {
       handlersRef.current?.activateItemOnClick(e, clicked);
     },
     [handlersRef],
@@ -103,11 +107,11 @@ function TimelineMergedItemCellInner<Data = unknown>({
     selected,
     isMinWidth,
     laneTrackHeightPx,
-    onMouseDown: onItemMouseDown,
+    onPointerDown: onItemPointerDown,
     onMouseOver: onItemHover ? () => onItemHover(externalItem) : undefined,
     onClick:
       itemActivateTrigger === "click"
-        ? (e: ReactMouseEvent, clicked: TimelineItem<Data>) =>
+        ? (e: ReactMouseEvent | ReactPointerEvent, clicked: TimelineItem<Data>) =>
             onItemClick(e, clicked)
         : undefined,
   };

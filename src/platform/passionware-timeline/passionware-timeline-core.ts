@@ -124,6 +124,8 @@ export interface DragState<Data = unknown> {
   originalItem?: TimelineItemInternal<Data>;
   drawStart?: number;
   hasCrossedThreshold?: boolean;
+  /** When set, drag/draw follow-up ignores other pointers (multi-touch). */
+  pointerId?: number;
 }
 
 export type SnapOption = "none" | "5min" | "15min" | "30min" | "1hour" | "1day";

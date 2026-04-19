@@ -110,8 +110,11 @@ const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow({
 }) {
   const zebra =
     index % 2 === 0 ? "bg-timeline-lane" : "bg-timeline-lane-alt";
-  const rowInnerClass =
-    "flex h-full min-h-0 min-w-0 w-full max-w-full items-center gap-1 py-2 pr-10 text-left";
+  const rowInnerClass = cn(
+    "flex h-full min-h-0 min-w-0 w-full max-w-full items-center gap-1 py-2 text-left",
+    hideLaneControls ? "pr-1" : "pr-10",
+  );
+  const showChevronSpacer = lane.hasChildren || !hideLaneControls;
 
   return (
     <div
@@ -145,9 +148,9 @@ const TimelineLaneSidebarRow = memo(function TimelineLaneSidebarRow({
               )}
             />
           </Button>
-        ) : (
+        ) : showChevronSpacer ? (
           <span className="size-6 shrink-0" aria-hidden />
-        )}
+        ) : null}
         {lane.hasChildren ? (
           <button
             type="button"
@@ -269,7 +272,8 @@ function TimelineLaneSidebarBlockInner<
 
   return (
     <div
-      className="absolute top-14 left-0 bottom-0 bg-card border-r border-border z-10 overflow-hidden"
+      data-timeline-lane-sidebar
+      className="absolute top-14 left-0 bottom-0 z-10 cursor-auto touch-auto overflow-hidden border-r border-border bg-card"
       style={{ width: laneSidebarWidthPx }}
     >
       <div

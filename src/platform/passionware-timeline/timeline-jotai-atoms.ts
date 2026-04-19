@@ -32,6 +32,8 @@ export type TimelinePanState = {
   startY: number;
   startScrollOffset: number;
   startVerticalScrollOffset: number;
+  /** Present when pan was started via Pointer Events (touch/pen); used to ignore multi-touch. */
+  pointerId?: number;
 };
 
 export type TimelineTool = "pan" | "draw" | "select";
