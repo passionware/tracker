@@ -53,7 +53,8 @@ export interface CreateTaskCommand {
   name: string;
   description?: string;
   externalLinks?: ExternalLink[];
-  assignees?: string[];
+  /** `contractor.id` values — see project-event.schema.ts TaskCreated. */
+  assignees?: number[];
   estimate?: { quantity: number; unit: string };
 }
 
@@ -108,13 +109,13 @@ export const buildTaskExternalLinkRemovedPayload = (
 
 export const buildTaskAssignedPayload = (
   taskId: string,
-  userId: string,
-): ProjectEventPayload => ({ type: "TaskAssigned", taskId, userId });
+  contractorId: number,
+): ProjectEventPayload => ({ type: "TaskAssigned", taskId, contractorId });
 
 export const buildTaskUnassignedPayload = (
   taskId: string,
-  userId: string,
-): ProjectEventPayload => ({ type: "TaskUnassigned", taskId, userId });
+  contractorId: number,
+): ProjectEventPayload => ({ type: "TaskUnassigned", taskId, contractorId });
 
 export const buildTaskEstimateSetPayload = (
   taskId: string,

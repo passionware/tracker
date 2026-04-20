@@ -19,7 +19,7 @@ export const taskDefinition$ = z.object({
   name: z.string(),
   description: z.string().nullable(),
   external_links: z.array(externalLink$),
-  assignees: z.array(z.string().uuid()),
+  assignees: z.array(z.coerce.number().int().positive()),
   estimate_quantity: z.coerce.number().nullable(),
   estimate_unit: z.string().nullable(),
   completed_at: z.coerce.date().nullable(),

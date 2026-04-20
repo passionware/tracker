@@ -38,7 +38,13 @@ export interface TaskState {
   name: string;
   description: string | null;
   externalLinks: ExternalLink[];
-  assignees: string[];
+  /**
+   * `contractor.id` (bigint) values, NOT auth user uids. The mapping from a
+   * Supabase auth user to their contractor row lives on `contractor.auth_user_id`
+   * so contractor history survives login churn and contractors can exist
+   * before they ever sign in.
+   */
+  assignees: number[];
   estimate: { quantity: number; unit: string } | null;
   completedAt: string | null;
   completedByUserId: string | null;
@@ -225,14 +231,15 @@ export function applyProjectEvent(
       case "TaskAssigned": {
         const t = draft.tasks[payload.taskId];
         if (!t) throw new Error(`apply: unknown task ${payload.taskId}`);
-        if (!t.assignees.includes(payload.userId)) t.assignees.push(payload.userId);
+        if (!t.assignees.includes(payload.contractorId))
+          t.assignees.push(payload.contractorId);
         t.version += 1;
         return;
       }
       case "TaskUnassigned": {
         const t = draft.tasks[payload.taskId];
         if (!t) throw new Error(`apply: unknown task ${payload.taskId}`);
-        t.assignees = t.assignees.filter((u) => u !== payload.userId);
+        t.assignees = t.assignees.filter((id) => id !== payload.contractorId);
         t.version += 1;
         return;
       }
@@ -482,18 +489,21 @@ export function validateProjectEvent(
       if (!t) return fail(err("task.not_found", "task not found"));
       if (t.archivedAt !== null)
         return fail(err("task.already_archived", "task is archived"));
-      if (t.assignees.includes(payload.userId))
+      if (t.assignees.includes(payload.contractorId))
         return fail(
-          err("task.assignee_already_present", "user is already assigned"),
+          err(
+            "task.assignee_already_present",
+            "contractor is already assigned",
+          ),
         );
       return ok();
     }
     case "TaskUnassigned": {
       const t = state.tasks[payload.taskId];
       if (!t) return fail(err("task.not_found", "task not found"));
-      if (!t.assignees.includes(payload.userId))
+      if (!t.assignees.includes(payload.contractorId))
         return fail(
-          err("task.assignee_not_present", "user is not assigned"),
+          err("task.assignee_not_present", "contractor is not assigned"),
         );
       return ok();
     }

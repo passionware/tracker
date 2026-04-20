@@ -16,7 +16,7 @@ export interface TaskDefinitionService {
    * assigned to this contractor. Optionally constrained to one project.
    */
   useSuggestionsForContractor: (
-    contractorAuthUid: Maybe<string>,
+    contractorId: Maybe<Contractor["id"]>,
     opts?: { projectId?: Project["id"]; limit?: number },
   ) => RemoteData<TaskDefinition[]>;
   useTaskActuals: (taskId: Maybe<string>) => RemoteData<TaskActuals | null>;

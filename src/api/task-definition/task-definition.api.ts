@@ -17,8 +17,12 @@ export interface TaskDefinition {
   description: Nullable<string>;
   /** Linear/GitLab/Bitbucket/git-branch/url links. See `ExternalLink`. */
   externalLinks: ExternalLink[];
-  /** auth.uid() values of contractors who can see this task as a suggestion. Empty = unassigned. */
-  assignees: string[];
+  /**
+   * `contractor.id` values of contractors who can see this task as a
+   * suggestion. Empty = unassigned (every contractor sees it). Mapped to the
+   * currently-signed-in user via `contractor.auth_user_id`.
+   */
+  assignees: number[];
   /** Estimated quantity in {@link estimateUnit}; used for the `% over estimate` UI. */
   estimateQuantity: Nullable<number>;
   estimateUnit: Nullable<string>;
@@ -51,7 +55,7 @@ export interface TaskDefinitionQuery {
   projectId?: Project["id"];
   clientId?: Client["id"];
   /** Restrict to tasks assigned to this contractor (used for suggestion menus). */
-  assignedToUserId?: string;
+  assignedToContractorId?: Contractor["id"];
   /** Default false — completed tasks are usually noise in pickers. */
   includeCompleted?: boolean;
   /** Default false — archived tasks are hidden from normal lists. */
@@ -69,7 +73,7 @@ export interface TaskDefinitionApi {
    * suggestion list.
    */
   getSuggestionsForContractor: (
-    contractorAuthUid: string,
+    contractorId: Contractor["id"],
     opts?: { projectId?: Project["id"]; limit?: number },
   ) => Promise<TaskDefinition[]>;
   getTaskActuals: (taskId: string) => Promise<Nullable<TaskActuals>>;

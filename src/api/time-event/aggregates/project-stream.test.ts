@@ -65,10 +65,10 @@ describe("applyProjectEvent — task lifecycle", () => {
 
   it("assigns and unassigns idempotently", () => {
     let s = applyProjectEvent(emptyProjectStreamState, taskCreated(), meta("task", uuid(1)));
-    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), userId: uuid(50) }, meta("task", uuid(1)));
-    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), userId: uuid(50) }, meta("task", uuid(1)));
-    expect(s.tasks[uuid(1)].assignees).toEqual([uuid(50)]);
-    s = applyProjectEvent(s, { type: "TaskUnassigned", taskId: uuid(1), userId: uuid(50) }, meta("task", uuid(1)));
+    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), contractorId: 50 }, meta("task", uuid(1)));
+    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), contractorId: 50 }, meta("task", uuid(1)));
+    expect(s.tasks[uuid(1)].assignees).toEqual([50]);
+    s = applyProjectEvent(s, { type: "TaskUnassigned", taskId: uuid(1), contractorId: 50 }, meta("task", uuid(1)));
     expect(s.tasks[uuid(1)].assignees).toEqual([]);
   });
 
@@ -119,8 +119,8 @@ describe("validateProjectEvent — task rules", () => {
 
   it("rejects double-assign", () => {
     let s = applyProjectEvent(emptyProjectStreamState, taskCreated(), meta("task", uuid(1)));
-    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), userId: uuid(50) }, meta("task", uuid(1)));
-    const r = validateProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), userId: uuid(50) }, ctx);
+    s = applyProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), contractorId: 50 }, meta("task", uuid(1)));
+    const r = validateProjectEvent(s, { type: "TaskAssigned", taskId: uuid(1), contractorId: 50 }, ctx);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors[0].code).toBe("task.assignee_already_present");
   });

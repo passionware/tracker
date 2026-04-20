@@ -1,3 +1,4 @@
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import type { TaskDefinition } from "@/api/task-definition/task-definition.api.ts";
 import type {
   ExternalLink,
@@ -328,34 +329,45 @@ function AssigneesSection({
   task: TaskDefinition;
   onSubmit: Submit;
 } & WithFrontServices) {
-  // Until we wire a contractor → auth.users mapping, the picker accepts a
-  // raw Supabase auth UUID. One affordance that does work: assigning
-  // yourself from the currently-signed-in session's auth uid, which
-  // covers the common "I'll pick up this task" gesture without asking
-  // the user to copy-paste UUIDs.
-  const auth = services.authService.useAuth();
-  const currentUserId = rd.tryGet(auth)?.id ?? null;
-  const [pickedUuid, setPickedUuid] = useState("");
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    pickedUuid.trim(),
+  // TODO(commit-B): use `useCurrentContractor()` once the admin UI for
+  // mapping `contractor.auth_user_id` lands. Today the tracker-bar
+  // "track time as" selector is the only contractor-for-me signal.
+  const currentContractorId =
+    services.preferenceService.useTrackerActiveContractorId();
+  const contractors = services.contractorService.useContractors(
+    contractorQueryUtils.ofEmpty(),
   );
+  const contractorList = rd.tryGet(contractors) ?? [];
+  const contractorById = new Map(contractorList.map((c) => [c.id, c]));
+  const [picked, setPicked] = useState<string>("");
+
+  const pickedId = picked === "" ? null : Number(picked);
+  const canAdd =
+    pickedId !== null &&
+    Number.isFinite(pickedId) &&
+    !task.assignees.includes(pickedId);
+
   const handleAssign = async () => {
-    if (!isUuid) return;
+    if (pickedId === null || !canAdd) return;
     const ok = await onSubmit(
-      buildTaskAssignedPayload(task.id, pickedUuid.trim()),
+      buildTaskAssignedPayload(task.id, pickedId),
       "Assigned",
     );
-    if (ok) setPickedUuid("");
+    if (ok) setPicked("");
   };
 
   const isAssignedToMe =
-    currentUserId !== null && task.assignees.includes(currentUserId);
+    currentContractorId !== null && task.assignees.includes(currentContractorId);
+
+  const assignable = contractorList.filter(
+    (c) => !task.assignees.includes(c.id),
+  );
 
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label>Assignees</Label>
-        {currentUserId !== null ? (
+        {currentContractorId !== null ? (
           isAssignedToMe ? (
             <Button
               size="sm"
@@ -363,7 +375,7 @@ function AssigneesSection({
               className="h-6 px-2 text-[11px]"
               onClick={() =>
                 onSubmit(
-                  buildTaskUnassignedPayload(task.id, currentUserId),
+                  buildTaskUnassignedPayload(task.id, currentContractorId),
                   "Unassigned yourself",
                 )
               }
@@ -377,7 +389,7 @@ function AssigneesSection({
               className="h-6 px-2 text-[11px]"
               onClick={() =>
                 onSubmit(
-                  buildTaskAssignedPayload(task.id, currentUserId),
+                  buildTaskAssignedPayload(task.id, currentContractorId),
                   "Assigned to you",
                 )
               }
@@ -389,38 +401,43 @@ function AssigneesSection({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <AssigneeChips
+          services={services}
           assignees={task.assignees}
-          currentUserId={currentUserId}
+          currentContractorId={currentContractorId}
           maxVisible={6}
         />
       </div>
       {task.assignees.length > 0 ? (
         <ul className="flex flex-col divide-y divide-border rounded-md border">
-          {task.assignees.map((authUserId) => (
-            <li
-              key={authUserId}
-              className="flex items-center justify-between gap-2 px-2 py-1 text-xs"
-            >
-              <span className="font-mono">
-                {authUserId === currentUserId
-                  ? `${authUserId.slice(0, 8)} · you`
-                  : authUserId}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px]"
-                onClick={() =>
-                  onSubmit(
-                    buildTaskUnassignedPayload(task.id, authUserId),
-                    "Unassigned",
-                  )
-                }
+          {task.assignees.map((contractorId) => {
+            const c = contractorById.get(contractorId);
+            return (
+              <li
+                key={contractorId}
+                className="flex items-center justify-between gap-2 px-2 py-1 text-xs"
               >
-                <X className="size-3" />
-              </Button>
-            </li>
-          ))}
+                <span>
+                  {c?.fullName ?? `Contractor #${contractorId}`}
+                  {contractorId === currentContractorId ? (
+                    <span className="ml-1 text-emerald-700">· you</span>
+                  ) : null}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() =>
+                    onSubmit(
+                      buildTaskUnassignedPayload(task.id, contractorId),
+                      "Unassigned",
+                    )
+                  }
+                >
+                  <X className="size-3" />
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-xs text-muted-foreground">
@@ -428,16 +445,28 @@ function AssigneesSection({
         </p>
       )}
       <div className="flex items-center gap-2">
-        <Input
-          value={pickedUuid}
-          onChange={(e) => setPickedUuid(e.target.value)}
-          placeholder="auth.users.id (UUID)"
-          className="font-mono text-xs"
-        />
+        <Select value={picked} onValueChange={setPicked}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Pick a contractor…" />
+          </SelectTrigger>
+          <SelectContent>
+            {assignable.length === 0 ? (
+              <div className="px-2 py-1 text-xs text-muted-foreground">
+                All known contractors are already assigned.
+              </div>
+            ) : (
+              assignable.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.fullName}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
         <Button
           size="sm"
           variant="outline"
-          disabled={!isUuid || task.assignees.includes(pickedUuid.trim())}
+          disabled={!canAdd}
           onClick={handleAssign}
         >
           Add

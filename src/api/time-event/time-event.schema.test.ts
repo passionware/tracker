@@ -251,7 +251,7 @@ describe("project event — TaskCreated", () => {
             url: "https://linear.app/x/issue/ENG-123",
           },
         ],
-        assignees: [uuid(51)],
+        assignees: [51],
         estimate: { quantity: 8, unit: "h" },
       },
     });

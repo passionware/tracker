@@ -93,8 +93,11 @@ export function TimeTrackingTasksPage(
     props.services.taskDefinitionService.useTaskActualsForTasks(taskIds);
   const burndown =
     props.services.taskDefinitionService.useTaskBurndownSeries(taskIds, 14);
-  const auth = props.services.authService.useAuth();
-  const currentUserId = rd.tryGet(auth)?.id ?? null;
+  // TODO(commit-B): replace with `useCurrentContractor()` once the admin UI
+  // for mapping `contractor.auth_user_id` lands. For now the "track time as"
+  // selector in the tracker bar is the only contractor-for-me signal we have.
+  const currentContractorId =
+    props.services.preferenceService.useTrackerActiveContractorId();
 
   return (
     <CommonPageContainer
@@ -154,11 +157,12 @@ export function TimeTrackingTasksPage(
             .catch(renderError)
             .map((list) => (
               <TasksTable
+                services={props.services}
                 tasks={filterTasks(list, search)}
                 projects={rd.tryGet(projects) ?? []}
                 actuals={rd.tryGet(actuals) ?? new Map()}
                 burndown={rd.tryGet(burndown) ?? new Map()}
-                currentUserId={currentUserId}
+                currentContractorId={currentContractorId}
                 onEdit={setEditingTaskId}
               />
             ))}
@@ -199,11 +203,12 @@ function filterTasks(
 }
 
 function TasksTable(props: {
+  services: WithFrontServices["services"];
   tasks: TaskDefinition[];
   projects: Project[];
   actuals: Map<string, TaskActuals>;
   burndown: Map<string, TaskBurndownPoint[]>;
-  currentUserId: string | null;
+  currentContractorId: number | null;
   onEdit: (taskId: string) => void;
 }) {
   const projectMap = useMemo(
@@ -241,11 +246,12 @@ function TasksTable(props: {
             return (
               <TaskRow
                 key={task.id}
+                services={props.services}
                 task={task}
                 project={project}
                 actuals={actuals}
                 series={series}
-                currentUserId={props.currentUserId}
+                currentContractorId={props.currentContractorId}
                 onEdit={props.onEdit}
               />
             );
@@ -257,11 +263,12 @@ function TasksTable(props: {
 }
 
 function TaskRow(props: {
+  services: WithFrontServices["services"];
   task: TaskDefinition;
   project: Project | null;
   actuals: TaskActuals | null;
   series: TaskBurndownPoint[];
-  currentUserId: string | null;
+  currentContractorId: number | null;
   onEdit: (taskId: string) => void;
 }) {
   const { task, actuals } = props;
@@ -299,8 +306,9 @@ function TaskRow(props: {
       </td>
       <td className="py-2 pr-4 align-top">
         <AssigneeChips
+          services={props.services}
           assignees={task.assignees}
-          currentUserId={props.currentUserId}
+          currentContractorId={props.currentContractorId}
           size="xs"
           maxVisible={3}
         />

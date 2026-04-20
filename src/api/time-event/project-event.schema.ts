@@ -85,8 +85,13 @@ const taskCreatedPayloadSchema = z.object({
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(10_000).optional(),
   externalLinks: z.array(externalLinkSchema).max(20).default([]),
-  /** Initial assignees (Supabase user UUIDs). May be empty. */
-  assignees: z.array(uuidSchema).max(50).default([]),
+  /**
+   * Initial assignees as `contractor.id` (bigints). May be empty.
+   * Mapping a Supabase auth user back to a contractor id is the admin's job;
+   * see `contractor.auth_user_id`. We deliberately do NOT key on auth uids
+   * so contractors can exist (and own task history) before they ever log in.
+   */
+  assignees: z.array(positiveBigIntId).max(50).default([]),
   estimate: estimateSchema.optional(),
 });
 
@@ -119,13 +124,15 @@ const taskExternalLinkRemovedPayloadSchema = z.object({
 const taskAssignedPayloadSchema = z.object({
   type: z.literal("TaskAssigned"),
   taskId: uuidSchema,
-  userId: uuidSchema,
+  /** `contractor.id` (bigint), not an auth uid — see `TaskCreated.assignees`. */
+  contractorId: positiveBigIntId,
 });
 
 const taskUnassignedPayloadSchema = z.object({
   type: z.literal("TaskUnassigned"),
   taskId: uuidSchema,
-  userId: uuidSchema,
+  /** `contractor.id` (bigint), not an auth uid — see `TaskCreated.assignees`. */
+  contractorId: positiveBigIntId,
 });
 
 const taskEstimateSetPayloadSchema = z.object({

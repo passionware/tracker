@@ -56,15 +56,15 @@ export function createTaskDefinitionService({
           client,
         ),
       ),
-    useSuggestionsForContractor: (contractorAuthUid, opts) =>
+    useSuggestionsForContractor: (contractorId, opts) =>
       ensureIdleQuery(
-        contractorAuthUid,
+        contractorId,
         useQuery(
           {
-            enabled: !!contractorAuthUid,
-            queryKey: [ROOT_KEY, "suggestions", contractorAuthUid, opts] as const,
+            enabled: contractorId !== null && contractorId !== undefined,
+            queryKey: [ROOT_KEY, "suggestions", contractorId, opts] as const,
             queryFn: () =>
-              api.getSuggestionsForContractor(contractorAuthUid!, opts),
+              api.getSuggestionsForContractor(contractorId!, opts),
           },
           client,
         ),

@@ -28,8 +28,8 @@ export function createTaskDefinitionApi(
         request = request.eq("client_id", query.clientId);
       if (!query.includeArchived) request = request.eq("is_archived", false);
       if (!query.includeCompleted) request = request.is("completed_at", null);
-      if (query.assignedToUserId !== undefined)
-        request = request.contains("assignees", [query.assignedToUserId]);
+      if (query.assignedToContractorId !== undefined)
+        request = request.contains("assignees", [query.assignedToContractorId]);
       const { data, error } = await request;
       if (error) throw error;
       return parseWithDataError(z.array(taskDefinition$), data ?? []).map(
@@ -46,13 +46,13 @@ export function createTaskDefinitionApi(
       if (!data) return null;
       return taskDefinitionFromHttp(parseWithDataError(taskDefinition$, data));
     },
-    getSuggestionsForContractor: async (contractorAuthUid, opts) => {
+    getSuggestionsForContractor: async (contractorId, opts) => {
       let request = client
         .from("task_current")
         .select("*")
         .eq("is_archived", false)
         .is("completed_at", null)
-        .contains("assignees", [contractorAuthUid])
+        .contains("assignees", [contractorId])
         .order("name", { ascending: true })
         .limit(opts?.limit ?? DEFAULT_SUGGESTIONS_LIMIT);
       if (opts?.projectId !== undefined)
