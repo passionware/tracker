@@ -69,6 +69,7 @@ export function projectContractorFromHttp(
       name: contractor.name,
       fullName: contractor.fullName,
       createdAt: contractor.createdAt,
+      authUserId: contractor.userId,
       projectIds: [], // Not needed for this use case
     },
     workspaceId: row.workspace_id,

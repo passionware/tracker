@@ -148,6 +148,10 @@ function useData(
               title: "Workspaces",
               url: myRouting.forGlobal().manageWorkspaces(),
             },
+            {
+              title: "Contractors",
+              url: myRouting.forGlobal().manageContractors(),
+            },
             // {
             //   title: "Get Started",
             //   url: "#",

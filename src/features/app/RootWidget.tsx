@@ -40,6 +40,7 @@ import { TmetricContractorDetailPage } from "@/features/tmetric-dashboard/Tmetri
 import { TmetricDashboardPage } from "@/features/tmetric-dashboard/TmetricDashboardPage.tsx";
 import { TmetricLiveContractorsPage } from "@/features/tmetric-dashboard/TmetricLiveContractorsPage.tsx";
 import { ClientsManageWidget } from "@/features/clients/ClientsManageWidget.tsx";
+import { ContractorsManageWidget } from "@/features/contractors/ContractorsManageWidget.tsx";
 import { WorkspacesManageWidget } from "@/features/workspaces/WorkspacesManageWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
@@ -495,6 +496,16 @@ export function RootWidget(props: WithFrontServices) {
                     </EntityDrawerRouteLayout>
                   )}
                 </IdResolver>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forGlobal().manageContractors()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <ContractorsManageWidget services={props.services} />
               </Layout>
             </ProtectedRoute>
           }

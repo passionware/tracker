@@ -94,6 +94,9 @@ function globalManagementRemountTarget(
   if (pathnameMatchesPathOrNested(pathname, global.manageClients())) {
     return global.manageClients;
   }
+  if (pathnameMatchesPathOrNested(pathname, global.manageContractors())) {
+    return global.manageContractors;
+  }
   return null;
 }
 

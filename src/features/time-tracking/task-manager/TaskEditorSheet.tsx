@@ -329,11 +329,18 @@ function AssigneesSection({
   task: TaskDefinition;
   onSubmit: Submit;
 } & WithFrontServices) {
-  // TODO(commit-B): use `useCurrentContractor()` once the admin UI for
-  // mapping `contractor.auth_user_id` lands. Today the tracker-bar
-  // "track time as" selector is the only contractor-for-me signal.
-  const currentContractorId =
+  // "Assign me" needs a concrete contractor id. Prefer the auth-user ↔
+  // contractor mapping (admin-set), fall back to the tracker-bar "track
+  // as" override when no mapping exists yet — keeps the button usable
+  // for unpaired dev accounts without silently pretending the override
+  // is the user's identity.
+  const authInfo = rd.tryGet(services.authService.useAuth());
+  const myContractor = rd.tryGet(
+    services.contractorService.useMyContractor(authInfo?.id ?? null),
+  );
+  const trackerContractorId =
     services.preferenceService.useTrackerActiveContractorId();
+  const currentContractorId = myContractor?.id ?? trackerContractorId;
   const contractors = services.contractorService.useContractors(
     contractorQueryUtils.ofEmpty(),
   );

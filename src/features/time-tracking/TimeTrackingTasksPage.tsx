@@ -93,11 +93,18 @@ export function TimeTrackingTasksPage(
     props.services.taskDefinitionService.useTaskActualsForTasks(taskIds);
   const burndown =
     props.services.taskDefinitionService.useTaskBurndownSeries(taskIds, 14);
-  // TODO(commit-B): replace with `useCurrentContractor()` once the admin UI
-  // for mapping `contractor.auth_user_id` lands. For now the "track time as"
-  // selector in the tracker bar is the only contractor-for-me signal we have.
-  const currentContractorId =
+  // "Who is 'me' on this page?" Resolves to the contractor row paired
+  // with the current Supabase auth user (via the admin mapping UI). Falls
+  // back to the tracker-bar "track as" override so admins or unpaired
+  // dev users still get a usable Assign-me button; the mapping is the
+  // source of truth once it exists.
+  const authInfo = rd.tryGet(props.services.authService.useAuth());
+  const myContractor = rd.tryGet(
+    props.services.contractorService.useMyContractor(authInfo?.id ?? null),
+  );
+  const trackerContractorId =
     props.services.preferenceService.useTrackerActiveContractorId();
+  const currentContractorId = myContractor?.id ?? trackerContractorId;
 
   return (
     <CommonPageContainer

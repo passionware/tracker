@@ -10,6 +10,7 @@ export const contractorMock = createMockFactory<Contractor>(
     name: faker.hacker.verb(),
     fullName: faker.person.fullName(),
     projectIds: [],
+    authUserId: null,
   }),
   [
     {
@@ -18,6 +19,7 @@ export const contractorMock = createMockFactory<Contractor>(
       createdAt: new Date("2021-01-01"),
       fullName: "John Doe",
       projectIds: [projectMock.static.list[0].id],
+      authUserId: null,
     },
     {
       id: 1,
@@ -25,6 +27,7 @@ export const contractorMock = createMockFactory<Contractor>(
       createdAt: new Date("2021-01-02"),
       fullName: "Jane Doe",
       projectIds: [projectMock.static.list[0].id],
+      authUserId: null,
     },
     {
       id: 2,
@@ -32,6 +35,7 @@ export const contractorMock = createMockFactory<Contractor>(
       createdAt: new Date("2021-01-03"),
       fullName: "Jack Sparrow",
       projectIds: [],
+      authUserId: null,
     },
   ],
 );

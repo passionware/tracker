@@ -17,5 +17,19 @@ export function createContractorService(): ContractorService {
           ),
         rd.ofIdle(),
       ),
+    useMyContractor: (authUserId) =>
+      maybe.mapOrElse(
+        authUserId,
+        (uid) =>
+          rd.of(
+            contractorMock.static.list.find((c) => c.authUserId === uid) ??
+              null,
+          ),
+        rd.ofIdle(),
+      ),
+    setContractorAuthUser: async () => {
+      // no-op in mock
+    },
+    useAuthUserDirectory: () => rd.of([]),
   };
 }

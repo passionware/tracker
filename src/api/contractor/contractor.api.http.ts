@@ -57,5 +57,25 @@ export function createContractorApi(client: SupabaseClient): ContractorApi {
       }
       return contractorFromHttp(parseWithDataError(contractor$, data[0]));
     },
+    setContractorAuthUser: async ({ contractorId, authUserId }) => {
+      const { error } = await client.rpc("set_contractor_user", {
+        p_contractor_id: contractorId,
+        p_user_id: authUserId,
+      });
+      if (error) throw error;
+    },
+    listAuthUserDirectory: async () => {
+      const { data, error } = await client.rpc("list_auth_user_directory");
+      if (error) throw error;
+      return parseWithDataError(
+        z.array(
+          z.object({
+            id: z.string().uuid(),
+            email: z.string().nullable(),
+          }),
+        ),
+        data ?? [],
+      );
+    },
   };
 }
