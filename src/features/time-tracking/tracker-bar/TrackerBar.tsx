@@ -32,6 +32,7 @@ import {
 } from "@/features/time-tracking/_common/trackerCommands.ts";
 import { TrackerBarContractorPicker } from "@/features/time-tracking/tracker-bar/TrackerBarContractorPicker.tsx";
 import { TrackerBarIdlePrompt } from "@/features/time-tracking/tracker-bar/TrackerBarIdlePrompt.tsx";
+import { TrackerBarJumpOnPopover } from "@/features/time-tracking/tracker-bar/TrackerBarJumpOnPopover.tsx";
 import { TrackerBarPendingSheet } from "@/features/time-tracking/tracker-bar/TrackerBarPendingSheet.tsx";
 import { TrackerBarStartPopover } from "@/features/time-tracking/tracker-bar/TrackerBarStartPopover.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -41,7 +42,7 @@ import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { myRouting } from "@/routing/myRouting.ts";
 import { rd } from "@passionware/monads";
 import { AlertCircle, Pause, Timer, UserCog } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -53,8 +54,9 @@ import { toast } from "sonner";
  *      (persisted via PreferenceService).
  *   2. **Idle** (identity picked, nothing running) → Start popover.
  *   3. **Running** (primary entry in flight) → live elapsed clock + Stop
- *      button. The "return-to" chip slot will surface here once jump-on
- *      lineage exists; for now we render the running entry's project.
+ *      button, plus a "Jump on…" CTA that opens a side-quest picker.
+ *      When a jump-on is already running, a second amber lane appears
+ *      underneath with its own Stop button and a "returns to" hint.
  *
  * The bar is render-cheap: it folds the contractor's offline queue tail
  * onto the server's projection (`useOptimisticContractorBundle`) so the
@@ -166,6 +168,17 @@ function ActiveTrackerArea(
                 contractorId={props.contractorId}
                 entry={bundle.runningPrimary}
                 serverState={bundle.serverState}
+                lane="primary"
+                jumpOnAction={
+                  bundle.runningJumpOn === null ? (
+                    <TrackerBarJumpOnPopover
+                      services={props.services}
+                      contractorId={props.contractorId}
+                      primaryEntry={bundle.runningPrimary}
+                      serverSnapshot={bundle.serverState}
+                    />
+                  ) : null
+                }
               />
               <RunningIdleSlot
                 services={props.services}
@@ -173,6 +186,16 @@ function ActiveTrackerArea(
                 entry={bundle.runningPrimary}
                 serverState={bundle.serverState}
               />
+              {bundle.runningJumpOn !== null ? (
+                <RunningRow
+                  services={props.services}
+                  contractorId={props.contractorId}
+                  entry={bundle.runningJumpOn}
+                  serverState={bundle.serverState}
+                  lane="jump-on"
+                  returnsTo={bundle.runningPrimary}
+                />
+              ) : null}
             </>
           ) : (
             <IdleRow
@@ -181,9 +204,6 @@ function ActiveTrackerArea(
               serverState={bundle.serverState}
             />
           )}
-          {bundle.runningJumpOn !== null ? (
-            <ReturnToChip entry={bundle.runningJumpOn} />
-          ) : null}
         </div>
       );
     });
@@ -245,12 +265,29 @@ function RunningRow(
     contractorId: number;
     entry: EntryState;
     serverState: ContractorStreamState;
+    /**
+     * Visual lane the entry belongs to. The "jump-on" lane is rendered
+     * below the primary with amber accents and a "returns to" subtitle
+     * so it's unmistakable that stopping it brings the user back to the
+     * primary timer (which never paused).
+     */
+    lane: "primary" | "jump-on";
+    /** When present (primary lane only), rendered next to Stop. */
+    jumpOnAction?: ReactNode;
+    /** The primary entry this jump-on will return to (jump-on lane only). */
+    returnsTo?: EntryState;
   },
 ) {
   const seconds = useElapsedSeconds(props.entry.startedAt);
   const project = props.services.projectService.useProject(props.entry.projectId);
   const projectName =
     rd.tryGet(project)?.name ?? `Project ${props.entry.projectId}`;
+  const returnsToProject = props.services.projectService.useProject(
+    props.returnsTo?.projectId,
+  );
+  const returnsToProjectName =
+    rd.tryGet(returnsToProject)?.name ??
+    (props.returnsTo ? `Project ${props.returnsTo.projectId}` : null);
   const [stopping, setStopping] = useState(false);
 
   const handleStop = async () => {
@@ -273,17 +310,40 @@ function RunningRow(
         );
         return;
       }
-      toast.success("Timer stopped");
+      toast.success(
+        props.lane === "jump-on" && returnsToProjectName
+          ? `Side quest done — back on ${returnsToProjectName}`
+          : "Timer stopped",
+      );
     } finally {
       setStopping(false);
     }
   };
 
+  const isJumpOn = props.lane === "jump-on";
   return (
-    <div className="flex flex-col gap-1.5">
+    <div
+      className={cn(
+        "flex flex-col gap-1.5",
+        isJumpOn &&
+          "rounded-md border border-amber-200 bg-amber-50/70 px-2 py-1.5",
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col min-w-0">
-          <span className="truncate text-sm font-medium">{projectName}</span>
+          <span
+            className={cn(
+              "truncate text-sm font-medium",
+              isJumpOn && "text-amber-900",
+            )}
+          >
+            {isJumpOn ? (
+              <span className="mr-1 inline-flex items-center gap-1 rounded-sm bg-amber-200 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-900">
+                Jump-on
+              </span>
+            ) : null}
+            {projectName}
+          </span>
           {props.entry.description ? (
             <span className="truncate text-[11px] text-muted-foreground">
               {props.entry.description}
@@ -291,17 +351,30 @@ function RunningRow(
           ) : props.entry.isPlaceholder ? (
             <span className="text-[11px] text-amber-700">Needs detail</span>
           ) : null}
+          {isJumpOn && returnsToProjectName ? (
+            <span className="truncate text-[10px] text-amber-800/80">
+              Returns to {returnsToProjectName} when stopped
+            </span>
+          ) : null}
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 font-mono text-xs text-emerald-900 tabular-nums">
+            <span
+              className={cn(
+                "rounded-md px-1.5 py-0.5 font-mono text-xs tabular-nums",
+                isJumpOn
+                  ? "bg-amber-200 text-amber-900"
+                  : "bg-emerald-100 text-emerald-900",
+              )}
+            >
               {formatElapsedSeconds(seconds ?? 0)}
             </span>
           </TooltipTrigger>
           <TooltipContent>Started {props.entry.startedAt}</TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-1.5">
+        {props.jumpOnAction}
         <Button
           size="sm"
           variant="destructive"
@@ -392,13 +465,3 @@ function NeedsDetailBadge(
   );
 }
 
-function ReturnToChip(props: { entry: EntryState }) {
-  return (
-    <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
-      You're on a side quest — returns to your previous timer when stopped.
-      <div className="mt-0.5 text-[10px] opacity-70">
-        Side: {props.entry.entryId.slice(0, 8)}…
-      </div>
-    </div>
-  );
-}
