@@ -45,7 +45,9 @@ import {
   ESTIMATE_UNITS,
   EXTERNAL_LINK_PROVIDERS,
 } from "@/features/time-tracking/_common/projectCommands.ts";
+import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
 import { newUuid } from "@/features/time-tracking/_common/trackerCommands.ts";
+import { formatElapsedSeconds } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
 import { rd } from "@passionware/monads";
 import {
   Archive,
@@ -136,6 +138,7 @@ export function TaskEditorSheet(props: TaskEditorSheetProps) {
           <RenameSection task={task} onSubmit={submit} />
           <DescriptionSection task={task} onSubmit={submit} />
           <EstimateSection task={task} onSubmit={submit} />
+          <BurndownSection task={task} services={props.services} />
           <AssigneesSection task={task} onSubmit={submit} />
           <ExternalLinksSection task={task} onSubmit={submit} />
         </div>
@@ -600,4 +603,87 @@ function ArchiveButton({
       Archive
     </Button>
   );
+}
+
+function BurndownSection({
+  task,
+  services,
+}: {
+  task: TaskDefinition;
+} & WithFrontServices) {
+  const taskIds = [task.id];
+  const burndown = services.taskDefinitionService.useTaskBurndownSeries(
+    taskIds,
+    30,
+  );
+  const series = rd.tryGet(burndown)?.get(task.id) ?? [];
+  const estimateSeconds = estimateToSeconds(task);
+  const lastPoint = series.length > 0 ? series[series.length - 1]! : null;
+  const overage =
+    estimateSeconds !== null &&
+    estimateSeconds > 0 &&
+    lastPoint !== null
+      ? lastPoint.cumulativeSeconds / estimateSeconds
+      : null;
+
+  return (
+    <section className="flex flex-col gap-1.5">
+      <Label>30-day burn-up</Label>
+      <div className="flex items-center gap-3 rounded-md border border-border bg-muted/30 p-2">
+        <TaskBurndownSparkline
+          points={series}
+          estimateSeconds={estimateSeconds}
+          width={180}
+          height={40}
+        />
+        <div className="flex flex-col text-xs tabular-nums">
+          <span className="font-medium">
+            {lastPoint !== null
+              ? formatElapsedSeconds(lastPoint.cumulativeSeconds)
+              : "0h"}
+          </span>
+          <span className="text-muted-foreground">
+            {estimateSeconds !== null
+              ? `of ${formatElapsedSeconds(estimateSeconds)}`
+              : "no estimate"}
+          </span>
+          {overage !== null ? (
+            <span
+              className={
+                overage > 1.1
+                  ? "text-red-600"
+                  : overage > 0.85
+                    ? "text-amber-600"
+                    : "text-emerald-700"
+              }
+            >
+              {Math.round(overage * 100)}%
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function estimateToSeconds(task: TaskDefinition): number | null {
+  if (task.estimateQuantity === null) return null;
+  switch ((task.estimateUnit ?? "h").toLowerCase()) {
+    case "h":
+    case "hour":
+    case "hours":
+      return task.estimateQuantity * 3600;
+    case "m":
+    case "min":
+    case "mins":
+    case "minute":
+    case "minutes":
+      return task.estimateQuantity * 60;
+    case "d":
+    case "day":
+    case "days":
+      return task.estimateQuantity * 8 * 3600;
+    default:
+      return null;
+  }
 }

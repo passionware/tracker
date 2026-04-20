@@ -81,6 +81,8 @@ export interface TimeEntryQuery {
   clientId?: Client["id"];
   workspaceId?: Workspace["id"];
   taskId?: string;
+  /** Alternative to `taskId` — fetches entries belonging to any of the listed tasks. */
+  taskIds?: string[];
   activityId?: string;
   approvalState?: TimeEntryApprovalState | TimeEntryApprovalState[];
   /** Inclusive lower bound on `startedAt`. */

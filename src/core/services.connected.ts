@@ -197,6 +197,7 @@ const timeEntryService = createTimeEntryService({
 const taskDefinitionService = createTaskDefinitionService({
   services: { messageService },
   api: myTaskDefinitionApi,
+  timeEntryApi: myTimeEntryApi,
   client: myQueryClient,
 });
 const activityService = createActivityService({

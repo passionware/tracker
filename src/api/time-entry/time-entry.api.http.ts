@@ -72,6 +72,8 @@ function applyEntryFilters<Q extends QueryWithFilters>(
   if (query.workspaceId !== undefined)
     q = q.eq("workspace_id", query.workspaceId) as Q;
   if (query.taskId !== undefined) q = q.eq("task_id", query.taskId) as Q;
+  if (query.taskIds !== undefined && query.taskIds.length > 0)
+    q = q.in("task_id", query.taskIds) as Q;
   if (query.activityId !== undefined)
     q = q.eq("activity_id", query.activityId) as Q;
   if (query.approvalState !== undefined) {

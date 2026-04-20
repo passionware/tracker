@@ -23,10 +23,28 @@ export interface TaskDefinitionService {
   useTaskActualsForTasks: (
     taskIds: readonly string[],
   ) => RemoteData<Map<string, TaskActuals>>;
+  /**
+   * Per-task daily burndown: returns, for each task, an array of
+   * `{ day, cumulativeSeconds }` points covering the last `days` days
+   * (inclusive of today). Used by the sparkline on the Tasks page.
+   *
+   * Tasks with no activity in the window get an empty series.
+   */
+  useTaskBurndownSeries: (
+    taskIds: readonly string[],
+    days: number,
+  ) => RemoteData<Map<string, TaskBurndownPoint[]>>;
   /** "What is X currently working on?" — the basis of the jump-on quick row. */
   useActiveTaskForContractor: (
     contractorId: Maybe<Contractor["id"]>,
   ) => RemoteData<TaskDefinition | null>;
+}
+
+export interface TaskBurndownPoint {
+  /** Local-day key, format `yyyy-MM-dd`. */
+  day: string;
+  /** Cumulative seconds spent on this task up to and including `day`. */
+  cumulativeSeconds: number;
 }
 
 export interface WithTaskDefinitionService {

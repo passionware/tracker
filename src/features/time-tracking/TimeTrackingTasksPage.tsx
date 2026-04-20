@@ -23,8 +23,10 @@ import type {
   TaskDefinition,
   TaskDefinitionQuery,
 } from "@/api/task-definition/task-definition.api.ts";
+import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
 import { TaskCreateDialog } from "@/features/time-tracking/task-manager/TaskCreateDialog.tsx";
 import { TaskEditorSheet } from "@/features/time-tracking/task-manager/TaskEditorSheet.tsx";
+import type { TaskBurndownPoint } from "@/services/io/TaskDefinitionService/TaskDefinitionService.ts";
 import { rd } from "@passionware/monads";
 import {
   CheckCircle2,
@@ -85,6 +87,8 @@ export function TimeTrackingTasksPage(
   );
   const actuals =
     props.services.taskDefinitionService.useTaskActualsForTasks(taskIds);
+  const burndown =
+    props.services.taskDefinitionService.useTaskBurndownSeries(taskIds, 14);
 
   return (
     <CommonPageContainer
@@ -137,6 +141,7 @@ export function TimeTrackingTasksPage(
                 tasks={filterTasks(list, search)}
                 projects={rd.tryGet(projects) ?? []}
                 actuals={rd.tryGet(actuals) ?? new Map()}
+                burndown={rd.tryGet(burndown) ?? new Map()}
                 onEdit={setEditingTaskId}
               />
             ))}
@@ -180,6 +185,7 @@ function TasksTable(props: {
   tasks: TaskDefinition[];
   projects: Project[];
   actuals: Map<string, TaskActuals>;
+  burndown: Map<string, TaskBurndownPoint[]>;
   onEdit: (taskId: string) => void;
 }) {
   const projectMap = useMemo(
@@ -205,6 +211,7 @@ function TasksTable(props: {
             <th className="py-2 pr-4 font-medium">Estimate</th>
             <th className="py-2 pr-4 font-medium">Actual</th>
             <th className="py-2 pr-4 font-medium">Δ</th>
+            <th className="py-2 pr-4 font-medium">14d trend</th>
             <th className="py-2 pr-4 font-medium">Links</th>
           </tr>
         </thead>
@@ -212,12 +219,14 @@ function TasksTable(props: {
           {props.tasks.map((task) => {
             const actuals = props.actuals.get(task.id) ?? null;
             const project = projectMap.get(task.projectId) ?? null;
+            const series = props.burndown.get(task.id) ?? [];
             return (
               <TaskRow
                 key={task.id}
                 task={task}
                 project={project}
                 actuals={actuals}
+                series={series}
                 onEdit={props.onEdit}
               />
             );
@@ -232,6 +241,7 @@ function TaskRow(props: {
   task: TaskDefinition;
   project: Project | null;
   actuals: TaskActuals | null;
+  series: TaskBurndownPoint[];
   onEdit: (taskId: string) => void;
 }) {
   const { task, actuals } = props;
@@ -296,6 +306,12 @@ function TaskRow(props: {
             {Math.round(overage * 100)}%
           </span>
         )}
+      </td>
+      <td className="py-2 pr-4 align-top">
+        <TaskBurndownSparkline
+          points={props.series}
+          estimateSeconds={estimateSeconds}
+        />
       </td>
       <td className="py-2 pr-4 align-top">
         <div className="flex flex-wrap gap-1">
