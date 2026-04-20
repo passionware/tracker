@@ -182,11 +182,20 @@ export function createEventQueueService(
     for (const row of pendingForKey(key)) {
       if (row.streamKind !== "contractor") continue;
       const env = row.envelope as ContractorEventEnvelope;
-      state = applyContractorEvent(
-        state,
-        row.payload as ContractorEventPayload,
-        { contractorId: env.contractorId, occurredAt: env.occurredAt },
-      );
+      try {
+        state = applyContractorEvent(
+          state,
+          row.payload as ContractorEventPayload,
+          { contractorId: env.contractorId, occurredAt: env.occurredAt },
+        );
+      } catch {
+        // The caller can pass a partial `serverSnapshot` (e.g. just the
+        // entry the EntryEditor drawer is editing). If the queued tail
+        // references entries outside that subset, applying those events
+        // would throw with `apply: unknown <entryId>`. Skip them — the
+        // worker is authoritative and the queue's own flush re-validates
+        // on the server. Matches the try/catch in useOptimisticEntries.
+      }
     }
     return state;
   }
@@ -195,16 +204,24 @@ export function createEventQueueService(
     base: ProjectStreamState | null | undefined,
     key: QueuedStreamKey,
   ): ProjectStreamState {
+    // See foldContractorPending above for the rationale behind the
+    // per-event try/catch.
     let state = base ?? emptyProjectStreamState;
     for (const row of pendingForKey(key)) {
       if (row.streamKind !== "project") continue;
       const env = row.envelope as ProjectEventEnvelope;
-      state = applyProjectEvent(state, row.payload as ProjectEventPayload, {
-        projectId: env.projectId,
-        aggregateKind: env.aggregateKind,
-        aggregateId: env.aggregateId,
-        occurredAt: env.occurredAt,
-      });
+      try {
+        state = applyProjectEvent(state, row.payload as ProjectEventPayload, {
+          projectId: env.projectId,
+          aggregateKind: env.aggregateKind,
+          aggregateId: env.aggregateId,
+          occurredAt: env.occurredAt,
+        });
+      } catch {
+        // Skip pending events referencing aggregates outside the partial
+        // snapshot — the worker is authoritative; the queue flush
+        // re-validates server-side.
+      }
     }
     return state;
   }

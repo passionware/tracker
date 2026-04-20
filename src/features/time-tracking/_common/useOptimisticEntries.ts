@@ -122,7 +122,15 @@ export function useOptimisticEntries(
   });
 }
 
-function rebuildStateFromServerEntries(
+/**
+ * Rehydrate a `ContractorStreamState` from the server projection rows so
+ * the pre-flight validator sees "this entry exists" when a caller (the
+ * editor drawer, the active-entry optimistic bundle, etc.) submits a
+ * mutation event. Exported so features outside this hook can build a
+ * snapshot covering the entry they're about to edit without duplicating
+ * the projection→state mapping.
+ */
+export function rebuildStateFromServerEntries(
   contractorId: number,
   entries: ReadonlyArray<TimeEntry>,
 ): ContractorStreamState {
@@ -132,8 +140,6 @@ function rebuildStateFromServerEntries(
     entries: {},
     importedTmetricIds: {},
   };
-  // We mutate a draft locally and return — the function is private and the
-  // caller treats the result as immutable.
   for (const e of entries) {
     state.entries[e.id] = {
       entryId: e.id,

@@ -1,6 +1,11 @@
 import type { Activity } from "@/api/activity/activity.api.ts";
 import { projectQueryUtils } from "@/api/project/project.api.ts";
 import type { TaskDefinition } from "@/api/task-definition/task-definition.api.ts";
+import {
+  emptyContractorStreamState,
+  type ContractorStreamState,
+  type EntryState,
+} from "@/api/time-event/aggregates";
 import type { ContractorEventPayload } from "@/api/time-event/time-event.api.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -92,6 +97,19 @@ export function EntryEditorSheet(props: EntryEditorSheetProps) {
     if (props.open) setCorrelationId(newUuid());
   }, [props.open, entry.entryId]);
 
+  // The pre-flight validator folds queued events onto `serverSnapshot`.
+  // Without a snapshot it starts from an empty stream and rejects every
+  // entry-targeted mutation (e.g. EntryTaskAssigned) with `entry.not_found`.
+  // We don't have the full contractor stream here, but the validator only
+  // needs to see the entry being edited — derive a minimal snapshot from
+  // the projected row the drawer is rendering. Neighbours are included so
+  // that merge/split operations (which reference adjacent entries) also
+  // validate cleanly.
+  const serverSnapshot = useMemo(
+    () => buildEntrySnapshot(entry.contractorId, entry, props.neighbours),
+    [entry, props.neighbours],
+  );
+
   const submit = async (
     payload: ContractorEventPayload,
     successMsg: string,
@@ -103,6 +121,7 @@ export function EntryEditorSheet(props: EntryEditorSheetProps) {
     const outcome = await props.services.eventQueueService.submitContractorEvent(
       envelope,
       payload,
+      { serverSnapshot },
     );
     if (outcome.kind === "rejected_locally") {
       toast.error(
@@ -221,6 +240,54 @@ type Submit = (
   payload: ContractorEventPayload,
   successMsg: string,
 ) => Promise<boolean>;
+
+/**
+ * Stuff the drawer's entry + its neighbour entries into a
+ * `ContractorStreamState` so the pre-flight validator can look them up by
+ * id. We strip the optimistic-overlay fields (`isPending` / `isFailed`) —
+ * they're UI-only and not part of the aggregate state.
+ */
+function buildEntrySnapshot(
+  contractorId: number,
+  entry: OptimisticEntry,
+  neighbours: ReadonlyArray<OptimisticEntry>,
+): ContractorStreamState {
+  const toEntryState = (o: OptimisticEntry): EntryState => ({
+    entryId: o.entryId,
+    contractorId: o.contractorId,
+    clientId: o.clientId,
+    workspaceId: o.workspaceId,
+    projectId: o.projectId,
+    taskId: o.taskId,
+    taskVersion: o.taskVersion,
+    activityId: o.activityId,
+    activityVersion: o.activityVersion,
+    startedAt: o.startedAt,
+    stoppedAt: o.stoppedAt,
+    description: o.description,
+    tags: [...o.tags],
+    rate: o.rate,
+    isPlaceholder: o.isPlaceholder,
+    approvalState: o.approvalState,
+    interruptedEntryId: o.interruptedEntryId,
+    resumedFromEntryId: o.resumedFromEntryId,
+    deletedAt: o.deletedAt,
+    lineage: [...o.lineage],
+  });
+
+  const entries: Record<string, EntryState> = {};
+  entries[entry.entryId] = toEntryState(entry);
+  for (const n of neighbours) {
+    if (!entries[n.entryId]) entries[n.entryId] = toEntryState(n);
+  }
+
+  return {
+    ...emptyContractorStreamState,
+    contractorId,
+    entries,
+    importedTmetricIds: {},
+  };
+}
 
 function ApprovalChip({ state }: { state: OptimisticEntry["approvalState"] }) {
   switch (state) {
