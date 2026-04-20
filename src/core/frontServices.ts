@@ -30,6 +30,7 @@ import { WithProjectRateService } from "@/services/io/ProjectRateService/Project
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService.ts";
 import { WithTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.ts";
 import { WithTimeEntryService } from "@/services/io/TimeEntryService/TimeEntryService.ts";
+import { WithTimeRoleService } from "@/services/io/TimeRoleService/TimeRoleService.ts";
 import { WithReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService";
 import { WithReportService } from "@/services/io/ReportService/ReportService.ts";
 import { WithVariableService } from "@/services/io/VariableService/VariableService.ts";
@@ -90,6 +91,7 @@ export type FrontServices = MergeServices<
     WithTimeEntryService,
     WithTaskDefinitionService,
     WithActivityService,
+    WithTimeRoleService,
     WithProjectRateService,
     WithEventQueueService,
     WithIdleDetectionService,

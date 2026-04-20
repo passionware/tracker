@@ -19,6 +19,7 @@ import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
 import { TmetricLiveContractorsPopover } from "@/features/tmetric-dashboard/TmetricLiveContractorsPopover.tsx";
+import { deriveAdminScope } from "@/features/time-tracking/TimeTrackingApprovalsPage.tsx";
 import { TrackerBar } from "@/features/time-tracking/tracker-bar/TrackerBar.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { MergeServices } from "@/platform/typescript/services.ts";
@@ -41,9 +42,11 @@ import { ComponentProps, useMemo } from "react";
 // This is sample data.
 function useData(
   services: MergeServices<[WithLocationService]>,
+  options: { canReviewApprovals: boolean },
 ) {
   const currentClientId = services.locationService.useCurrentClientId();
   const currentWorkspaceId = services.locationService.useCurrentWorkspaceId();
+  const { canReviewApprovals } = options;
 
   return useMemo(() => {
     const routing = myRouting
@@ -95,10 +98,14 @@ function useData(
               title: "Activities",
               url: routing.timeTrackingActivities(),
             },
-            {
-              title: "Approvals",
-              url: routing.timeTrackingApprovals(),
-            },
+            ...(canReviewApprovals
+              ? [
+                  {
+                    title: "Approvals",
+                    url: routing.timeTrackingApprovals(),
+                  },
+                ]
+              : []),
           ],
         },
         {
@@ -202,7 +209,7 @@ function useData(
         },
       ],
     };
-  }, [currentClientId, currentWorkspaceId]);
+  }, [currentClientId, currentWorkspaceId, canReviewApprovals]);
 }
 
 export function AppSidebar({
@@ -218,7 +225,14 @@ export function AppSidebar({
     services.locationService.useCurrentClientId() ?? idSpecUtils.ofAll();
   const currentWorkspaceId =
     services.locationService.useCurrentWorkspaceId() ?? idSpecUtils.ofAll();
-  const data = useData(services);
+  const authInfo = rd.tryGet(auth);
+  const rolesRd = services.timeRoleService.useMyRoles(authInfo?.id ?? null);
+  const canReviewApprovals = useMemo(() => {
+    const roles = rd.tryGet(rolesRd);
+    if (!roles) return false;
+    return deriveAdminScope(roles).kind !== "none";
+  }, [rolesRd]);
+  const data = useData(services, { canReviewApprovals });
   const sidebarNavExpansion = services.preferenceService.useAppSidebarNavExpansion();
   return (
     <Sidebar collapsible="icon" {...props}>

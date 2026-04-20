@@ -189,6 +189,32 @@ export const buildEntryDeletedPayload = (
   reason,
 });
 
+export const buildTimeApprovedPayload = (
+  entryIds: ReadonlyArray<string>,
+  approverUserId: string,
+  note?: string,
+  approvedAt = new Date().toISOString(),
+): ContractorEventPayload => ({
+  type: "TimeApproved",
+  entryIds: [...entryIds],
+  approvedAt,
+  approverUserId,
+  note,
+});
+
+export const buildTimeRejectedPayload = (
+  entryIds: ReadonlyArray<string>,
+  rejectedByUserId: string,
+  reason: string,
+  rejectedAt = new Date().toISOString(),
+): ContractorEventPayload => ({
+  type: "TimeRejected",
+  entryIds: [...entryIds],
+  rejectedAt,
+  rejectedByUserId,
+  reason,
+});
+
 export const buildEntryRevertedToDraftPayload = (
   entryId: string,
   revertedByUserId: string,

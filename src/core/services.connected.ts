@@ -16,6 +16,7 @@ import { myActivityApi } from "@/api/activity/activity.api.connected.ts";
 import { myProjectRateApi } from "@/api/rate/rate.api.connected.ts";
 import { myTaskDefinitionApi } from "@/api/task-definition/task-definition.api.connected.ts";
 import { myTimeEntryApi } from "@/api/time-entry/time-entry.api.connected.ts";
+import { myTimeRoleApi } from "@/api/time-role/time-role.api.connected.ts";
 import { createConnectedEventQueueStorage } from "@/api/time-event-queue/event-queue-storage.connected.ts";
 import { myTimeEventsWorkerClient } from "@/api/time-event-queue/time-events-worker-client.connected.ts";
 import { ProjectQuery, projectQuerySchema } from "@/api/project/project.api";
@@ -77,6 +78,7 @@ import { createProjectRateService } from "@/services/io/ProjectRateService/Proje
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.impl.ts";
 import { createTimeEntryService } from "@/services/io/TimeEntryService/TimeEntryService.impl.ts";
+import { createTimeRoleService } from "@/services/io/TimeRoleService/TimeRoleService.impl.ts";
 import { createTmetricPlugin } from "@/services/io/ReportGenerationService/plugins/tmetric/TmetricPlugin";
 import { createReportGenerationService } from "@/services/io/ReportGenerationService/ReportGenerationService.impl";
 import { createReportService } from "@/services/io/ReportService/ReportService.impl.ts";
@@ -202,6 +204,11 @@ const activityService = createActivityService({
   api: myActivityApi,
   client: myQueryClient,
 });
+const timeRoleService = createTimeRoleService({
+  services: { messageService },
+  api: myTimeRoleApi,
+  client: myQueryClient,
+});
 const projectRateService = createProjectRateService({
   services: { messageService },
   api: myProjectRateApi,
@@ -324,6 +331,7 @@ export const myServices = {
   timeEntryService,
   taskDefinitionService,
   activityService,
+  timeRoleService,
   projectRateService,
   eventQueueService,
   idleDetectionService: createIdleDetectionService(),
