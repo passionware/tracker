@@ -45,6 +45,7 @@ import {
   ESTIMATE_UNITS,
   EXTERNAL_LINK_PROVIDERS,
 } from "@/features/time-tracking/_common/projectCommands.ts";
+import { AssigneeChips } from "@/features/time-tracking/_common/AssigneeChips.tsx";
 import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
 import { newUuid } from "@/features/time-tracking/_common/trackerCommands.ts";
 import { formatElapsedSeconds } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
@@ -139,7 +140,11 @@ export function TaskEditorSheet(props: TaskEditorSheetProps) {
           <DescriptionSection task={task} onSubmit={submit} />
           <EstimateSection task={task} onSubmit={submit} />
           <BurndownSection task={task} services={props.services} />
-          <AssigneesSection task={task} onSubmit={submit} />
+          <AssigneesSection
+            task={task}
+            onSubmit={submit}
+            services={props.services}
+          />
           <ExternalLinksSection task={task} onSubmit={submit} />
         </div>
 
@@ -318,13 +323,18 @@ function EstimateSection({
 function AssigneesSection({
   task,
   onSubmit,
+  services,
 }: {
   task: TaskDefinition;
   onSubmit: Submit;
-}) {
+} & WithFrontServices) {
   // Until we wire a contractor → auth.users mapping, the picker accepts a
-  // raw Supabase auth UUID. The task page footer already shows assignee
-  // chips so admins can verify what they pasted is correct.
+  // raw Supabase auth UUID. One affordance that does work: assigning
+  // yourself from the currently-signed-in session's auth uid, which
+  // covers the common "I'll pick up this task" gesture without asking
+  // the user to copy-paste UUIDs.
+  const auth = services.authService.useAuth();
+  const currentUserId = rd.tryGet(auth)?.id ?? null;
   const [pickedUuid, setPickedUuid] = useState("");
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     pickedUuid.trim(),
@@ -338,41 +348,85 @@ function AssigneesSection({
     if (ok) setPickedUuid("");
   };
 
+  const isAssignedToMe =
+    currentUserId !== null && task.assignees.includes(currentUserId);
+
   return (
-    <section className="flex flex-col gap-1.5">
-      <Label>Assignees</Label>
-      <div className="flex flex-wrap gap-1">
-        {task.assignees.length === 0 && (
-          <span className="text-xs text-muted-foreground">
-            Unassigned — every contractor sees this task in their picker.
-          </span>
-        )}
-        {task.assignees.map((authUserId) => (
-          <Badge
-            key={authUserId}
-            tone="secondary"
-            variant="neutral"
-            className="gap-1 pr-1"
-          >
-            <span className="font-mono text-[10px]">
-              {authUserId.slice(0, 8)}
-            </span>
-            <button
-              type="button"
-              aria-label="Unassign"
-              className="ml-0.5 rounded-full p-0.5 hover:bg-foreground/10"
+    <section className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <Label>Assignees</Label>
+        {currentUserId !== null ? (
+          isAssignedToMe ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[11px]"
               onClick={() =>
                 onSubmit(
-                  buildTaskUnassignedPayload(task.id, authUserId),
-                  "Unassigned",
+                  buildTaskUnassignedPayload(task.id, currentUserId),
+                  "Unassigned yourself",
                 )
               }
             >
-              <X className="size-3" />
-            </button>
-          </Badge>
-        ))}
+              Unassign me
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[11px]"
+              onClick={() =>
+                onSubmit(
+                  buildTaskAssignedPayload(task.id, currentUserId),
+                  "Assigned to you",
+                )
+              }
+            >
+              Assign me
+            </Button>
+          )
+        ) : null}
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <AssigneeChips
+          assignees={task.assignees}
+          currentUserId={currentUserId}
+          maxVisible={6}
+        />
+      </div>
+      {task.assignees.length > 0 ? (
+        <ul className="flex flex-col divide-y divide-border rounded-md border">
+          {task.assignees.map((authUserId) => (
+            <li
+              key={authUserId}
+              className="flex items-center justify-between gap-2 px-2 py-1 text-xs"
+            >
+              <span className="font-mono">
+                {authUserId === currentUserId
+                  ? `${authUserId.slice(0, 8)} · you`
+                  : authUserId}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px]"
+                onClick={() =>
+                  onSubmit(
+                    buildTaskUnassignedPayload(task.id, authUserId),
+                    "Unassigned",
+                  )
+                }
+              >
+                <X className="size-3" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Unassigned — every contractor sees this task in their picker.
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <Input
           value={pickedUuid}

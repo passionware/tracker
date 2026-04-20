@@ -6,7 +6,9 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Label } from "@/components/ui/label.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx";
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
@@ -23,6 +25,7 @@ import type {
   TaskDefinition,
   TaskDefinitionQuery,
 } from "@/api/task-definition/task-definition.api.ts";
+import { AssigneeChips } from "@/features/time-tracking/_common/AssigneeChips.tsx";
 import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
 import { TaskCreateDialog } from "@/features/time-tracking/task-manager/TaskCreateDialog.tsx";
 import { TaskEditorSheet } from "@/features/time-tracking/task-manager/TaskEditorSheet.tsx";
@@ -54,6 +57,7 @@ export function TimeTrackingTasksPage(
   },
 ) {
   const [search, setSearch] = useState("");
+  const [showCompleted, setShowCompleted] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const projectsQuery = useMemo(
@@ -74,10 +78,10 @@ export function TimeTrackingTasksPage(
         undefined,
       ),
       includeArchived: false,
-      includeCompleted: true,
+      includeCompleted: showCompleted,
       limit: 500,
     }),
-    [props.clientId],
+    [props.clientId, showCompleted],
   );
   const tasks = props.services.taskDefinitionService.useTasks(taskQuery);
 
@@ -89,6 +93,8 @@ export function TimeTrackingTasksPage(
     props.services.taskDefinitionService.useTaskActualsForTasks(taskIds);
   const burndown =
     props.services.taskDefinitionService.useTaskBurndownSeries(taskIds, 14);
+  const auth = props.services.authService.useAuth();
+  const currentUserId = rd.tryGet(auth)?.id ?? null;
 
   return (
     <CommonPageContainer
@@ -108,7 +114,17 @@ export function TimeTrackingTasksPage(
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-sm font-medium">Project tasks</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Switch
+                id="show-completed"
+                checked={showCompleted}
+                onCheckedChange={setShowCompleted}
+              />
+              <Label htmlFor="show-completed" className="text-xs">
+                Show completed
+              </Label>
+            </div>
             <div className="relative w-64">
               <Search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
               <Input
@@ -142,6 +158,7 @@ export function TimeTrackingTasksPage(
                 projects={rd.tryGet(projects) ?? []}
                 actuals={rd.tryGet(actuals) ?? new Map()}
                 burndown={rd.tryGet(burndown) ?? new Map()}
+                currentUserId={currentUserId}
                 onEdit={setEditingTaskId}
               />
             ))}
@@ -186,6 +203,7 @@ function TasksTable(props: {
   projects: Project[];
   actuals: Map<string, TaskActuals>;
   burndown: Map<string, TaskBurndownPoint[]>;
+  currentUserId: string | null;
   onEdit: (taskId: string) => void;
 }) {
   const projectMap = useMemo(
@@ -227,6 +245,7 @@ function TasksTable(props: {
                 project={project}
                 actuals={actuals}
                 series={series}
+                currentUserId={props.currentUserId}
                 onEdit={props.onEdit}
               />
             );
@@ -242,6 +261,7 @@ function TaskRow(props: {
   project: Project | null;
   actuals: TaskActuals | null;
   series: TaskBurndownPoint[];
+  currentUserId: string | null;
   onEdit: (taskId: string) => void;
 }) {
   const { task, actuals } = props;
@@ -277,10 +297,13 @@ function TaskRow(props: {
       <td className="py-2 pr-4 align-top text-xs text-muted-foreground">
         {props.project?.name ?? `Project ${task.projectId}`}
       </td>
-      <td className="py-2 pr-4 align-top text-xs">
-        {task.assignees.length === 0
-          ? "—"
-          : `${task.assignees.length} assigned`}
+      <td className="py-2 pr-4 align-top">
+        <AssigneeChips
+          assignees={task.assignees}
+          currentUserId={props.currentUserId}
+          size="xs"
+          maxVisible={3}
+        />
       </td>
       <td className="py-2 pr-4 align-top text-xs tabular-nums">
         {task.estimateQuantity !== null

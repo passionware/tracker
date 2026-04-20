@@ -454,13 +454,31 @@ function TaskActivitySection({
   );
 }
 
+/**
+ * Grace window during which completed tasks still appear in the
+ * suggestion dropdown. Time entries are frequently attributed to a task
+ * a few days after it's marked done (final review, commit cleanup,
+ * writeup), so hiding them the moment `completedAt` is set is too
+ * aggressive. Beyond this window the task is only visible if it's
+ * already the selected value on the entry being edited.
+ */
+const COMPLETED_TASK_GRACE_DAYS = 14;
+
 function TaskPicker(props: {
   tasks: TaskDefinition[];
   value: string | null;
   onChange: (next: string | null) => void;
   disabled: boolean;
 }) {
-  if (props.tasks.length === 0) {
+  const now = Date.now();
+  const cutoffMs = now - COMPLETED_TASK_GRACE_DAYS * 24 * 3600 * 1000;
+  const visible = props.tasks.filter((t) => {
+    if (t.id === props.value) return true;
+    if (t.completedAt === null) return true;
+    return t.completedAt.getTime() >= cutoffMs;
+  });
+  const hiddenCompleted = props.tasks.length - visible.length;
+  if (visible.length === 0) {
     return (
       <div className="rounded-md border px-2 py-2 text-xs text-muted-foreground">
         No tasks in this project.
@@ -477,15 +495,30 @@ function TaskPicker(props: {
         <SelectValue placeholder="Task…" />
       </SelectTrigger>
       <SelectContent>
-        {props.tasks
+        {visible
           .slice()
-          .sort((a, b) => a.name.localeCompare(b.name))
+          .sort((a, b) => {
+            // Open tasks first, then by name — keeps the dropdown's top
+            // rows actionable even when there are a few recently-done
+            // ones still hanging around.
+            if ((a.completedAt === null) !== (b.completedAt === null)) {
+              return a.completedAt === null ? -1 : 1;
+            }
+            return a.name.localeCompare(b.name);
+          })
           .map((t) => (
             <SelectItem key={t.id} value={t.id}>
               {t.name}
               {t.completedAt !== null ? " · done" : null}
             </SelectItem>
           ))}
+        {hiddenCompleted > 0 ? (
+          <div className="px-2 py-1 text-[10px] text-muted-foreground">
+            {hiddenCompleted} older completed task
+            {hiddenCompleted === 1 ? "" : "s"} hidden — open the Tasks
+            page to reopen one.
+          </div>
+        ) : null}
       </SelectContent>
     </Select>
   );
