@@ -100,6 +100,51 @@ export function buildEntryStoppedPayload(
   return { type: "EntryStopped", entryId, stoppedAt };
 }
 
+/**
+ * Payload builder for the admin TMetric backfill flow. Emits a single
+ * completed entry from a TMetric time entry — no live timer semantics,
+ * no lineage. The reducer dedupes by `tmetricEntryId` so repeat
+ * backfills of the same window are idempotent.
+ */
+export interface ImportFromTmetricCommand {
+  entryId?: string;
+  tmetricEntryId: string;
+  clientId: number;
+  workspaceId: number;
+  projectId: number;
+  startedAt: string;
+  stoppedAt: string;
+  description?: string;
+  tags?: string[];
+  rate: RateSnapshot;
+  /** Both required together for non-placeholder imports. */
+  task?: { taskId: string; taskVersion: number };
+  activity?: { activityId: string; activityVersion: number };
+  /** Default: true (entries come in as drafts for admin/user review). */
+  isPlaceholder?: boolean;
+}
+
+export function buildEntryImportedFromTmetricPayload(
+  cmd: ImportFromTmetricCommand,
+): ContractorEventPayload {
+  return {
+    type: "EntryImportedFromTmetric",
+    entryId: cmd.entryId ?? newUuid(),
+    tmetricEntryId: cmd.tmetricEntryId,
+    clientId: cmd.clientId,
+    workspaceId: cmd.workspaceId,
+    projectId: cmd.projectId,
+    task: cmd.task,
+    activity: cmd.activity,
+    startedAt: cmd.startedAt,
+    stoppedAt: cmd.stoppedAt,
+    description: cmd.description,
+    tags: cmd.tags,
+    rate: cmd.rate,
+    isPlaceholder: cmd.isPlaceholder ?? true,
+  };
+}
+
 export function buildSubmitForApprovalPayload(
   entryIds: ReadonlyArray<string>,
   note?: string,
