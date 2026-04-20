@@ -27,6 +27,7 @@ import type {
 } from "@/api/task-definition/task-definition.api.ts";
 import { AssigneeChips } from "@/features/time-tracking/_common/AssigneeChips.tsx";
 import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
+import { useCurrentContractor } from "@/features/time-tracking/_common/useCurrentContractor.ts";
 import { TaskCreateDialog } from "@/features/time-tracking/task-manager/TaskCreateDialog.tsx";
 import { TaskEditorSheet } from "@/features/time-tracking/task-manager/TaskEditorSheet.tsx";
 import type { TaskBurndownPoint } from "@/services/io/TaskDefinitionService/TaskDefinitionService.ts";
@@ -93,18 +94,13 @@ export function TimeTrackingTasksPage(
     props.services.taskDefinitionService.useTaskActualsForTasks(taskIds);
   const burndown =
     props.services.taskDefinitionService.useTaskBurndownSeries(taskIds, 14);
-  // "Who is 'me' on this page?" Resolves to the contractor row paired
-  // with the current Supabase auth user (via the admin mapping UI). Falls
-  // back to the tracker-bar "track as" override so admins or unpaired
-  // dev users still get a usable Assign-me button; the mapping is the
-  // source of truth once it exists.
-  const authInfo = rd.tryGet(props.services.authService.useAuth());
-  const myContractor = rd.tryGet(
-    props.services.contractorService.useMyContractor(authInfo?.id ?? null),
+  // "Who is 'me' on this page?" Delegates to the shared
+  // {@link useCurrentContractor} — tracker-bar impersonation override
+  // (for admins) wins over the auth-user ↔ contractor mapping, matching
+  // how the tracker bar itself behaves.
+  const { contractorId: currentContractorId } = useCurrentContractor(
+    props.services,
   );
-  const trackerContractorId =
-    props.services.preferenceService.useTrackerActiveContractorId();
-  const currentContractorId = myContractor?.id ?? trackerContractorId;
 
   return (
     <CommonPageContainer

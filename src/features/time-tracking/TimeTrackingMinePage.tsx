@@ -14,6 +14,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { useCurrentContractor } from "@/features/time-tracking/_common/useCurrentContractor.ts";
 import {
   formatElapsedSeconds,
   useElapsedSeconds,
@@ -60,8 +61,7 @@ export function TimeTrackingMinePage(
     clientId: ClientSpec;
   },
 ) {
-  const contractorId =
-    props.services.preferenceService.useTrackerActiveContractorId();
+  const { contractorId } = useCurrentContractor(props.services);
 
   return (
     <CommonPageContainer

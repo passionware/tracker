@@ -28,6 +28,7 @@ import {
   formatElapsedSeconds,
   useElapsedSeconds,
 } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
+import { useCurrentContractor } from "@/features/time-tracking/_common/useCurrentContractor.ts";
 import { useOptimisticContractorBundle } from "@/features/time-tracking/_common/useOptimisticActiveEntry.ts";
 import {
   buildContractorEnvelope,
@@ -81,8 +82,9 @@ import { toast } from "sonner";
 export function TrackerBar(props: WithFrontServices) {
   const { state: sidebarState } = useSidebar();
   const collapsed = sidebarState === "collapsed";
-  const contractorId =
-    props.services.preferenceService.useTrackerActiveContractorId();
+  const { contractorId, isImpersonating } = useCurrentContractor(
+    props.services,
+  );
   const bundle = useOptimisticContractorBundle(props, contractorId);
 
   if (collapsed) {
@@ -95,6 +97,20 @@ export function TrackerBar(props: WithFrontServices) {
         <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           <Timer className="size-3.5" />
           Tracker
+          {isImpersonating ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-900">
+                  <UserCog className="size-3" />
+                  Impersonating
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Tracking on behalf of another contractor. Use the picker
+                below to switch back.
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
         </div>
         <div className="flex items-center gap-1.5">
           {contractorId !== null ? (
