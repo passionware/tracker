@@ -39,6 +39,7 @@ export type ValidationCode =
   // ── approval workflow ─────────────────────────────────────────────────────
   | "approval.entry_not_in_state"
   | "approval.entry_running"
+  | "approval.entry_is_placeholder"
   | "approval.entry_belongs_to_other_contractor"
   // ── project stream / task ─────────────────────────────────────────────────
   | "task.not_found"

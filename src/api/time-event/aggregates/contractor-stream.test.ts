@@ -245,6 +245,37 @@ describe("validateContractorEvent — approval & locks", () => {
     if (!r.ok) expect(r.errors[0].code).toBe("entry.locked_by_approval_state");
   });
 
+  it("refuses to submit placeholder entries for approval", () => {
+    const s = replayContractorStream(42, [
+      {
+        payload: startedPayload({ isPlaceholder: true, task: undefined, activity: undefined }),
+        occurredAt: t("2026-04-19T08:00:00Z"),
+      },
+      {
+        payload: {
+          type: "EntryStopped",
+          entryId: uuid(1),
+          stoppedAt: t("2026-04-19T09:00:00Z"),
+        },
+        occurredAt: t("2026-04-19T09:00:00Z"),
+      },
+    ]);
+    const r = validateContractorEvent(
+      s,
+      {
+        type: "TimeSubmittedForApproval",
+        entryIds: [uuid(1)],
+        submittedAt: t("2026-04-19T09:05:00Z"),
+      },
+      ctx,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.map((e) => e.code)).toContain(
+        "approval.entry_is_placeholder",
+      );
+  });
+
   it("rejects start inside a locked period", () => {
     const r = validateContractorEvent(
       emptyContractorStreamState,

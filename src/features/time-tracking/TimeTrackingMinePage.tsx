@@ -130,8 +130,20 @@ function MineForContractor(
   const selectableIds = useMemo(
     () =>
       entries
-        .filter((e) => e.approvalState === "draft" && e.stoppedAt !== null)
+        .filter(
+          (e) =>
+            e.approvalState === "draft" &&
+            e.stoppedAt !== null &&
+            !e.isPlaceholder,
+        )
         .map((e) => e.entryId),
+    [entries],
+  );
+  const placeholderEntries = useMemo(
+    () =>
+      entries.filter(
+        (e) => e.isPlaceholder && e.deletedAt === null,
+      ),
     [entries],
   );
   const allSelected =
@@ -182,6 +194,14 @@ function MineForContractor(
 
   return (
     <div className="flex flex-col gap-4">
+      {placeholderEntries.length > 0 ? (
+        <PlaceholderBanner
+          count={placeholderEntries.length}
+          onJumpToFirst={() =>
+            setEditingEntryId(placeholderEntries[0].entryId)
+          }
+        />
+      ) : null}
       {selected.size > 0 ? (
         <Card>
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-end">
@@ -316,7 +336,9 @@ function EntriesList(
                   onToggle={() => props.onToggleOne(entry.entryId)}
                   onEdit={() => props.onEdit(entry.entryId)}
                   selectable={
-                    entry.approvalState === "draft" && entry.stoppedAt !== null
+                    entry.approvalState === "draft" &&
+                    entry.stoppedAt !== null &&
+                    !entry.isPlaceholder
                   }
                 />
               ))}
@@ -437,6 +459,34 @@ function ApprovalBadge(props: { state: OptimisticEntry["approvalState"] }) {
         <Chip className="border-red-200 bg-red-50 text-red-700">Rejected</Chip>
       );
   }
+}
+
+function PlaceholderBanner(props: {
+  count: number;
+  onJumpToFirst: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      <AlertCircle className="size-4 shrink-0" />
+      <div className="flex-1">
+        <span className="font-medium">
+          {props.count} {props.count === 1 ? "entry needs" : "entries need"} detail
+        </span>
+        <span className="ml-1 opacity-80">
+          — fill in task and activity before they can be submitted for
+          approval.
+        </span>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 border-amber-300 bg-white text-xs hover:bg-amber-100"
+        onClick={props.onJumpToFirst}
+      >
+        Open first
+      </Button>
+    </div>
+  );
 }
 
 function Chip(props: {

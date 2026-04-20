@@ -37,9 +37,12 @@ import { TrackerBarStartPopover } from "@/features/time-tracking/tracker-bar/Tra
 import { cn } from "@/lib/utils.ts";
 import type { ContractorStreamState, EntryState } from "@/api/time-event/aggregates";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
+import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
+import { myRouting } from "@/routing/myRouting.ts";
 import { rd } from "@passionware/monads";
-import { Pause, Timer, UserCog } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, Pause, Timer, UserCog } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 /**
@@ -76,7 +79,15 @@ export function TrackerBar(props: WithFrontServices) {
           <Timer className="size-3.5" />
           Tracker
         </div>
-        <TrackerBarPendingSheet services={props.services} />
+        <div className="flex items-center gap-1.5">
+          {contractorId !== null ? (
+            <NeedsDetailBadge
+              services={props.services}
+              contractorId={contractorId}
+            />
+          ) : null}
+          <TrackerBarPendingSheet services={props.services} />
+        </div>
       </div>
       {contractorId === null ? (
         <TrackerBarContractorPicker services={props.services} />
@@ -333,6 +344,51 @@ function RunningIdleSlot(
       secondsSinceActivity={idle.secondsSinceActivity}
       lastActivityAt={idle.lastActivityAt}
     />
+  );
+}
+
+/**
+ * Amber pill that counts how many of the contractor's entries still need
+ * task/activity filled in. Placeholder entries can't be submitted for
+ * approval — surfacing this number in the always-visible bar stops them
+ * from silently piling up. The pill is a link straight to the Mine page
+ * so the user is one click away from the editor sheet.
+ */
+function NeedsDetailBadge(
+  props: WithFrontServices & { contractorId: number },
+) {
+  const query = useMemo(
+    () => ({
+      contractorId: props.contractorId,
+      onlyPlaceholders: true,
+      limit: 50,
+    }),
+    [props.contractorId],
+  );
+  const entries = props.services.timeEntryService.useEntries(query);
+  const count = rd.tryGet(entries)?.length ?? 0;
+  if (count === 0) return null;
+  const href = myRouting
+    .forWorkspace(idSpecUtils.ofAll())
+    .forClient(idSpecUtils.ofAll())
+    .timeTrackingMine();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          to={href}
+          className="inline-flex h-5 items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-[10px] font-medium text-amber-800 hover:bg-amber-100"
+        >
+          <AlertCircle className="size-3" />
+          <span className="tabular-nums">{count}</span>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent>
+        {count === 1
+          ? "1 entry needs detail — click to fix"
+          : `${count} entries need detail — click to fix`}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -758,6 +758,19 @@ export function validateContractorEvent(
             ),
           );
         }
+        // Placeholder entries are "needs detail" — task / activity must be
+        // filled in before they can be reviewed. Blocking here keeps the
+        // downstream approval queue, exports, and billing reports from
+        // ever seeing half-formed rows.
+        if (e.isPlaceholder) {
+          errors.push(
+            err(
+              "approval.entry_is_placeholder",
+              `entry ${id} is a placeholder — fill in task and activity before submitting`,
+              { entryId: id },
+            ),
+          );
+        }
       }
       return errors.length ? fail(...errors) : ok();
     }
