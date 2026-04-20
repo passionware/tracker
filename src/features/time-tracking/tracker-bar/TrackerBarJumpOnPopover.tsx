@@ -1,13 +1,16 @@
 import type { Activity } from "@/api/activity/activity.api.ts";
-import type { Project } from "@/api/project/project.api.ts";
-import { projectQueryUtils } from "@/api/project/project.api.ts";
+import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import type {
   ContractorStreamState,
   EntryState,
 } from "@/api/time-event/aggregates";
+import type { TimeEntry } from "@/api/time-entry/time-entry.api.ts";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Checkbox } from "@/components/ui/checkbox.tsx";
-import { Label } from "@/components/ui/label.tsx";
 import {
   Popover,
   PopoverContent,
@@ -22,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
 import { renderError } from "@/features/_common/renderError.tsx";
 import {
@@ -32,30 +34,27 @@ import {
   buildEntryStartedPayload,
   newUuid,
 } from "@/features/time-tracking/_common/trackerCommands.ts";
-import { rd } from "@passionware/monads";
+import { rd, type RemoteData } from "@passionware/monads";
 import { Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 /**
- * "Jump on…" flow — starts a side-quest entry that runs in parallel with
- * the primary timer (the primary is NOT stopped; the validator enforces
- * the one-running-jump-on-per-contractor invariant).
+ * "Jump on" flow, teammate-first: show the contractors who are currently
+ * tracking time, let the user pick one, then start a side-quest entry on
+ * that teammate's project tagged with a `jump_on` activity.
  *
- * Project defaults to the primary entry's project so "quick help on a
- * teammate's PR in the same codebase" is one click. The activity picker
- * filters to `kinds @> {jump_on}` by default — that's the whole point of
- * the `jump_on` kind tag on activities: it lets us surface a curated
- * short-list (e.g. "Code review", "Pairing", "Quick help") instead of
- * the full project activity catalogue. A "show all" toggle is available
- * for projects that haven't classified their activities yet.
+ * Activity resolution:
+ *   - 0 jump_on activities on the project → fall back to a plain
+ *     placeholder start (still links `interruptedEntryId`).
+ *   - 1 jump_on activity → auto-pick it, no extra click.
+ *   - 2+ → inline selector, first one preselected.
  *
- * Submission is a two-event gesture sharing a `correlationId`:
- *   1. `EntryStarted` (placeholder, interruptedEntryId = primary.entryId)
- *   2. `EntryActivityAssigned` (only when an activity was picked)
- *
- * Keeping step (2) optional means a user can start a jump-on immediately
- * with just a description and classify it later via the EntryEditor.
+ * Submission is the same two-event gesture as the start flow: an
+ * `EntryStarted` (placeholder, with `interruptedEntryId = primary.entryId`
+ * and the teammate's projectId / clientId / workspaceId) followed by an
+ * optional `EntryActivityAssigned`. Both share one `correlationId` so
+ * audit replay shows them as a single UI gesture.
  */
 export interface TrackerBarJumpOnPopoverProps extends WithFrontServices {
   contractorId: number;
@@ -65,94 +64,164 @@ export interface TrackerBarJumpOnPopoverProps extends WithFrontServices {
 
 export function TrackerBarJumpOnPopover(props: TrackerBarJumpOnPopoverProps) {
   const [open, setOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(
-    props.primaryEntry.projectId,
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 px-2 text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100"
+        >
+          <Zap className="size-3.5" />
+          Jump on
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80">
+        <PopoverHeader>Jump on a teammate</PopoverHeader>
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Your primary timer keeps running. Stopping this side-quest
+            returns you to it.
+          </p>
+          {open ? (
+            <TeammateList {...props} onDone={() => setOpen(false)} />
+          ) : null}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
+}
+
+function TeammateList(
+  props: TrackerBarJumpOnPopoverProps & { onDone: () => void },
+) {
+  const activeEntriesQuery = useMemo(
+    () => ({ onlyActive: true, limit: 50 }),
+    [],
+  );
+  const activeEntries =
+    props.services.timeEntryService.useEntries(activeEntriesQuery);
+  const contractors = props.services.contractorService.useContractors(
+    useMemo(() => contractorQueryUtils.ofEmpty(), []),
+  );
+
+  return rd
+    .journey(rd.combine({ entries: activeEntries, contractors }))
+    .wait(<TeammateListSkeleton />)
+    .catch(renderError)
+    .map(({ entries, contractors }) => {
+      // Exclude the caller's own running timer — jump-on is a "side quest
+      // with someone else". Also skip entries that don't reference a real
+      // teammate row (shouldn't normally happen, defensive).
+      const teammates = entries
+        .filter((e) => e.contractorId !== props.contractorId)
+        .map((e) => ({
+          entry: e,
+          contractor: contractors.find((c) => c.id === e.contractorId),
+        }))
+        .filter(
+          (x): x is { entry: TimeEntry; contractor: NonNullable<typeof x.contractor> } =>
+            !!x.contractor,
+        );
+
+      if (teammates.length === 0) {
+        return (
+          <div className="rounded border border-dashed border-border/60 bg-muted/40 px-3 py-2 text-center text-xs text-muted-foreground">
+            No teammates are tracking right now.
+          </div>
+        );
+      }
+
+      return (
+        <ul className="flex flex-col gap-1">
+          {teammates.map(({ entry, contractor }) => (
+            <li key={entry.id}>
+              <TeammateRow
+                services={props.services}
+                contractorId={props.contractorId}
+                primaryEntry={props.primaryEntry}
+                serverSnapshot={props.serverSnapshot}
+                teammate={contractor}
+                teammateEntry={entry}
+                onDone={props.onDone}
+              />
+            </li>
+          ))}
+        </ul>
+      );
+    });
+}
+
+function TeammateListSkeleton() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+    </div>
+  );
+}
+
+interface TeammateRowProps extends WithFrontServices {
+  contractorId: number;
+  primaryEntry: EntryState;
+  serverSnapshot: ContractorStreamState;
+  teammate: { id: number; fullName: string; name: string };
+  teammateEntry: TimeEntry;
+  onDone: () => void;
+}
+
+function TeammateRow(props: TeammateRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
     null,
   );
-  const [showAllActivities, setShowAllActivities] = useState(false);
-  const [description, setDescription] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
-  // Reset transient selections whenever the popover closes so the next
-  // open starts fresh against the *current* primary (otherwise a user
-  // who cancels, stops, and re-starts a different primary would see
-  // stale state).
-  useEffect(() => {
-    if (!open) {
-      setSelectedProjectId(props.primaryEntry.projectId);
-      setSelectedActivityId(null);
-      setShowAllActivities(false);
-      setDescription("");
-    }
-  }, [open, props.primaryEntry.projectId]);
-
-  const projects = props.services.projectService.useProjects(
+  const activities = props.services.activityService.useActivities(
     useMemo(
-      () =>
-        projectQueryUtils
-          .transform(projectQueryUtils.ofDefault())
-          .build((x) => [
-            x.withFilter("status", { operator: "oneOf", value: ["active"] }),
-          ]),
-      [],
+      () => ({
+        projectId: props.teammateEntry.projectId,
+        kind: "jump_on",
+        limit: 20,
+      }),
+      [props.teammateEntry.projectId],
     ),
   );
 
-  const activitiesQuery = useMemo(
-    () => ({
-      projectId: selectedProjectId,
-      kind: showAllActivities ? undefined : "jump_on",
-      limit: 50,
-    }),
-    [selectedProjectId, showAllActivities],
+  const project = props.services.projectService.useProject(
+    props.teammateEntry.projectId,
   );
-  const activities =
-    props.services.activityService.useActivities(activitiesQuery);
+  const projectName =
+    rd.tryGet(project)?.name ?? `Project ${props.teammateEntry.projectId}`;
+  const initials = (props.teammate.fullName ?? "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
-  // If the current activity choice no longer belongs to the freshly
-  // filtered list (project change, or "show all" toggle hiding the old
-  // list), clear it so the Start button isn't wedged on a stale id.
-  useEffect(() => {
-    const list = rd.tryGet(activities);
-    if (!list || selectedActivityId === null) return;
-    if (!list.some((a) => a.id === selectedActivityId)) {
-      setSelectedActivityId(null);
-    }
-  }, [activities, selectedActivityId]);
-
-  const handleStart = async () => {
-    const project = rd
-      .tryGet(projects)
-      ?.find((p) => p.id === selectedProjectId);
-    if (!project) {
-      toast.error("Pick a project first");
-      return;
-    }
-    const chosenActivity = selectedActivityId
-      ? rd.tryGet(activities)?.find((a) => a.id === selectedActivityId)
-      : null;
-
+  const handleStart = async (activity: Activity | null) => {
     setSubmitting(true);
     try {
-      // Both events share a correlationId so audit replay shows them as
-      // one UI gesture. The queue will submit them in order; the
-      // optimistic fold applies them sequentially for the UI.
       const correlationId = newUuid();
+      const jumpOnEntryId = newUuid();
       const startEnvelope = buildContractorEnvelope({
         contractorId: props.contractorId,
         correlationId,
       });
-      const jumpOnEntryId = newUuid();
+      // Use the teammate's routing verbatim — that's the whole point of
+      // "jump on": I'm joining their project. The EntryEditor still lets
+      // me re-route later via EntryRoutingChanged if the guess is wrong.
       const startPayload = buildEntryStartedPayload({
         entryId: jumpOnEntryId,
-        clientId: project.clientId,
-        workspaceId: project.workspaceIds[0] ?? 0,
-        projectId: project.id,
+        clientId: props.teammateEntry.clientId,
+        workspaceId: props.teammateEntry.workspaceId,
+        projectId: props.teammateEntry.projectId,
         rate: PLACEHOLDER_RATE,
         isPlaceholder: true,
-        description: description.trim() || undefined,
+        description: `Jumping on ${props.teammate.fullName}`,
         interruptedEntryId: props.primaryEntry.entryId,
       });
 
@@ -171,18 +240,14 @@ export function TrackerBarJumpOnPopover(props: TrackerBarJumpOnPopoverProps) {
         return;
       }
 
-      if (chosenActivity) {
-        // EntryActivityAssigned doesn't require a task, so it's safe to
-        // tag the placeholder with the chosen jump_on activity. The
-        // projection keeps `is_placeholder = true` until a task is
-        // added later (see contractor-stream reducer).
+      if (activity) {
         const tagEnvelope = buildContractorEnvelope({
           contractorId: props.contractorId,
           correlationId,
         });
         const tagPayload = buildEntryActivityAssignedPayload(jumpOnEntryId, {
-          activityId: chosenActivity.id,
-          activityVersion: chosenActivity.version,
+          activityId: activity.id,
+          activityVersion: activity.version,
         });
         const tagOutcome =
           await props.services.eventQueueService.submitContractorEvent(
@@ -191,8 +256,6 @@ export function TrackerBarJumpOnPopover(props: TrackerBarJumpOnPopoverProps) {
             { serverSnapshot: props.serverSnapshot },
           );
         if (tagOutcome.kind === "rejected_locally") {
-          // The entry exists (start succeeded); just surface a non-fatal
-          // warning so the user can re-tag from the editor.
           toast.warning(
             `Started — but couldn't tag activity: ${tagOutcome.errors
               .map((e) => e.message)
@@ -200,184 +263,162 @@ export function TrackerBarJumpOnPopover(props: TrackerBarJumpOnPopoverProps) {
           );
         }
       }
-
-      setOpen(false);
       toast.success(
-        chosenActivity
-          ? `Jumped on ${project.name} (${chosenActivity.name})`
-          : `Jumped on ${project.name}`,
+        activity
+          ? `Jumped on ${props.teammate.fullName} (${activity.name})`
+          : `Jumped on ${props.teammate.fullName}`,
       );
+      props.onDone();
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Auto-start path: one jump_on activity = zero friction. Wrapped in a
+  // click handler rather than an effect to preserve user intent (the user
+  // must physically press the row). If the activity list is still
+  // loading, we fall back to the "select activity" path the moment it
+  // resolves.
+  const onRowClick = async () => {
+    if (submitting) return;
+    const list = rd.tryGet(activities);
+    if (list === undefined) {
+      // Still loading — surface the expanded state so the user sees why
+      // nothing happened. The list skeleton will appear inline.
+      setExpanded(true);
+      return;
+    }
+    if (list.length === 0) {
+      // No jump_on activities — start with a bare placeholder so the
+      // user can still classify "I'm helping teammate X" later via the
+      // editor sheet.
+      await handleStart(null);
+      return;
+    }
+    if (list.length === 1) {
+      await handleStart(list[0]);
+      return;
+    }
+    // Multiple → show the inline selector, preselect the first.
+    setSelectedActivityId((prev) => prev ?? list[0].id);
+    setExpanded(true);
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1.5 px-2 text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100"
-        >
-          <Zap className="size-3.5" />
-          Jump on
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
-        <PopoverHeader>Jump on a side task</PopoverHeader>
-        <div className="flex flex-col gap-3">
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            Your primary timer keeps running. Stopping this side-quest
-            returns you to it.
-          </p>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tracker-bar-jumpon-project">Project</Label>
-            {rd
-              .journey(projects)
-              .wait(<Skeleton className="h-9 w-full" />)
-              .catch(renderError)
-              .map((list) => (
-                <ProjectSelect
-                  projects={list}
-                  value={selectedProjectId}
-                  onChange={(next) => {
-                    setSelectedProjectId(next);
-                    setSelectedActivityId(null);
-                  }}
-                />
-              ))}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="tracker-bar-jumpon-activity">Activity</Label>
-              <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Checkbox
-                  checked={showAllActivities}
-                  onCheckedChange={(v) => setShowAllActivities(v === true)}
-                />
-                Show all
-              </label>
-            </div>
-            {rd
-              .journey(activities)
-              .wait(<Skeleton className="h-9 w-full" />)
-              .catch(renderError)
-              .map((list) => (
-                <ActivitySelect
-                  activities={list}
-                  value={selectedActivityId}
-                  onChange={setSelectedActivityId}
-                  emptyHint={
-                    showAllActivities
-                      ? "No activities for this project yet."
-                      : "No jump-on activities — toggle Show all."
-                  }
-                />
-              ))}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tracker-bar-jumpon-description">
-              Description (optional)
-            </Label>
-            <Textarea
-              id="tracker-bar-jumpon-description"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. helping Ada with the billing bug"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setOpen(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleStart} disabled={submitting}>
-              {submitting ? "Starting…" : "Jump on"}
-            </Button>
-          </div>
+    <div className="rounded-md border border-border/60 bg-background hover:border-amber-300">
+      <button
+        type="button"
+        onClick={onRowClick}
+        disabled={submitting}
+        className="flex w-full items-center gap-2 px-2 py-1.5 text-left disabled:opacity-60"
+      >
+        <Avatar className="size-7 shrink-0">
+          <AvatarImage alt="" />
+          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+        </Avatar>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm font-medium">
+            {props.teammate.fullName}
+          </span>
+          <span className="truncate text-[11px] text-muted-foreground">
+            {props.teammateEntry.description?.trim()
+              ? props.teammateEntry.description
+              : projectName}
+          </span>
         </div>
-      </PopoverContent>
-    </Popover>
+        <Zap className="size-3.5 text-amber-600" />
+      </button>
+      {expanded ? (
+        <ExpandedPicker
+          activities={activities}
+          selectedActivityId={selectedActivityId}
+          onChange={setSelectedActivityId}
+          submitting={submitting}
+          onCancel={() => setExpanded(false)}
+          onConfirm={async () => {
+            const list = rd.tryGet(activities);
+            if (!list || list.length === 0) {
+              await handleStart(null);
+              return;
+            }
+            const chosen =
+              list.find((a) => a.id === selectedActivityId) ?? list[0];
+            await handleStart(chosen);
+          }}
+        />
+      ) : null}
+    </div>
   );
 }
 
-function ProjectSelect(props: {
-  projects: Project[];
-  value: number;
-  onChange: (next: number) => void;
+function ExpandedPicker(props: {
+  activities: RemoteData<Activity[]>;
+  selectedActivityId: string | null;
+  onChange: (id: string | null) => void;
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => Promise<void> | void;
 }) {
-  const sorted = useMemo(
-    () => [...props.projects].sort((a, b) => a.name.localeCompare(b.name)),
-    [props.projects],
-  );
-  if (sorted.length === 0) {
-    return (
-      <div className="text-xs text-muted-foreground">
-        No active projects in scope.
-      </div>
-    );
-  }
   return (
-    <Select
-      value={String(props.value)}
-      onValueChange={(v) => props.onChange(Number(v))}
-    >
-      <SelectTrigger id="tracker-bar-jumpon-project" className="h-9 text-sm">
-        <SelectValue placeholder="Pick a project…" />
-      </SelectTrigger>
-      <SelectContent>
-        {sorted.map((p) => (
-          <SelectItem key={p.id} value={String(p.id)}>
-            {p.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function ActivitySelect(props: {
-  activities: Activity[];
-  value: string | null;
-  onChange: (next: string | null) => void;
-  emptyHint: string;
-}) {
-  const sorted = useMemo(
-    () =>
-      [...props.activities].sort((a, b) => a.name.localeCompare(b.name)),
-    [props.activities],
-  );
-  if (sorted.length === 0) {
-    return (
-      <div className="text-xs text-muted-foreground">{props.emptyHint}</div>
-    );
-  }
-  return (
-    <Select
-      value={props.value ?? ""}
-      onValueChange={(v) => props.onChange(v === "" ? null : v)}
-    >
-      <SelectTrigger id="tracker-bar-jumpon-activity" className="h-9 text-sm">
-        <SelectValue placeholder="Pick an activity (optional)…" />
-      </SelectTrigger>
-      <SelectContent>
-        {sorted.map((a) => (
-          <SelectItem key={a.id} value={a.id}>
-            {a.name}
-            {a.kinds.length > 0 && (
-              <span className="ml-2 text-[10px] text-muted-foreground">
-                {a.kinds.join(", ")}
-              </span>
-            )}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="border-t border-border/60 px-2 py-1.5">
+      {rd
+        .journey(props.activities)
+        .wait(<Skeleton className="h-8 w-full" />)
+        .catch(renderError)
+        .map((list) => {
+          if (list.length === 0) {
+            return (
+              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                No jump-on activities configured for this project — will
+                start as a bare placeholder.
+                <Button
+                  size="sm"
+                  onClick={() => props.onConfirm()}
+                  disabled={props.submitting}
+                >
+                  Start
+                </Button>
+              </div>
+            );
+          }
+          const sorted = [...list].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
+          return (
+            <div className="flex items-center gap-2">
+              <Select
+                value={props.selectedActivityId ?? sorted[0].id}
+                onValueChange={(v) => props.onChange(v)}
+              >
+                <SelectTrigger className="h-8 flex-1 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sorted.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={props.onCancel}
+                disabled={props.submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => props.onConfirm()}
+                disabled={props.submitting}
+              >
+                {props.submitting ? "Starting…" : "Start"}
+              </Button>
+            </div>
+          );
+        })}
+    </div>
   );
 }
