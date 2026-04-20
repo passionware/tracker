@@ -141,8 +141,8 @@ describe("applyContractorEvent — split / merge / import", () => {
   });
 });
 
-describe("validateContractorEvent — concurrent-timer policy", () => {
-  it("rejects a 2nd primary EntryStarted while one is running", () => {
+describe("validateContractorEvent — single-running-entry policy", () => {
+  it("rejects a 2nd EntryStarted while one is running", () => {
     const s = applyContractorEvent(
       emptyContractorStreamState,
       startedPayload(),
@@ -158,7 +158,7 @@ describe("validateContractorEvent — concurrent-timer policy", () => {
       expect(r.errors[0].code).toBe("entry.concurrent_timer");
   });
 
-  it("allows a jump-on EntryStarted while a primary is running", () => {
+  it("rejects a jump-on EntryStarted while another entry is still running (must stop first)", () => {
     const s = applyContractorEvent(
       emptyContractorStreamState,
       startedPayload(),
@@ -173,10 +173,12 @@ describe("validateContractorEvent — concurrent-timer policy", () => {
       }),
       ctx,
     );
-    expect(r.ok).toBe(true);
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors[0].code).toBe("entry.concurrent_timer");
   });
 
-  it("rejects a 2nd jump-on while another jump-on is running", () => {
+  it("accepts a jump-on EntryStarted once the interrupted entry has been stopped (stop-then-start pivot)", () => {
     let s = applyContractorEvent(
       emptyContractorStreamState,
       startedPayload(),
@@ -184,25 +186,33 @@ describe("validateContractorEvent — concurrent-timer policy", () => {
     );
     s = applyContractorEvent(
       s,
-      startedPayload({
-        entryId: uuid(2),
-        startedAt: t("2026-04-19T08:30:00Z"),
-        interruptedEntryId: uuid(1),
-      }),
+      { type: "EntryStopped", entryId: uuid(1), stoppedAt: t("2026-04-19T08:30:00Z") },
       { contractorId: 42, occurredAt: t("2026-04-19T08:30:00Z") },
     );
     const r = validateContractorEvent(
       s,
       startedPayload({
-        entryId: uuid(3),
-        startedAt: t("2026-04-19T08:45:00Z"),
+        entryId: uuid(2),
+        startedAt: t("2026-04-19T08:30:00Z"),
         interruptedEntryId: uuid(1),
       }),
       ctx,
     );
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects a jump-on whose interruptedEntryId points at a missing entry", () => {
+    const r = validateContractorEvent(
+      { ...emptyContractorStreamState, contractorId: 42 },
+      startedPayload({
+        entryId: uuid(2),
+        startedAt: t("2026-04-19T08:30:00Z"),
+        interruptedEntryId: uuid(999),
+      }),
+      ctx,
+    );
     expect(r.ok).toBe(false);
-    if (!r.ok)
-      expect(r.errors[0].code).toBe("entry.concurrent_timer");
+    if (!r.ok) expect(r.errors[0].code).toBe("entry.not_found");
   });
 });
 

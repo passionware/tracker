@@ -63,7 +63,7 @@ describe("day-in-the-life scenario — project + contractor streams", () => {
           url: "https://linear.app/acme/issue/ENG-101",
         },
       ],
-      assignees: [FIXTURE_ACTOR_USER_ID],
+      assignees: [FIXTURE_CONTRACTOR_ID],
       version: 1,
     });
     expect(projectState.tasks[FIXTURE_TASK_B_ID]).toMatchObject({
@@ -149,11 +149,20 @@ describe("day-in-the-life scenario — project + contractor streams", () => {
   it("jump-on entry links back to primary and is approved", () => {
     const jumpOn = contractorState.entries[FIXTURE_JUMP_ON_ENTRY_ID];
     expect(jumpOn).toBeDefined();
+    // `interruptedEntryId` is a lineage pointer only — the primary was
+    // stopped before the jump-on started (one-running-entry invariant).
     expect(jumpOn.interruptedEntryId).toBe(FIXTURE_PRIMARY_ENTRY_ID);
-    expect(jumpOn.stoppedAt).toBe("2026-04-19T09:30:00Z");
+    expect(jumpOn.startedAt).toBe("2026-04-19T10:30:00Z");
+    expect(jumpOn.stoppedAt).toBe("2026-04-19T11:00:00Z");
     expect(jumpOn.approvalState).toBe("approved");
     // The jump-on is routed to the same project but a different task.
     expect(jumpOn.taskId).toBe(FIXTURE_TASK_B_ID);
+    // Primary was already stopped by the time the jump-on started.
+    const primary = contractorState.entries[FIXTURE_PRIMARY_ENTRY_ID];
+    expect(primary.stoppedAt).toBe("2026-04-19T10:30:00Z");
+    expect(Date.parse(primary.stoppedAt!)).toBeLessThanOrEqual(
+      Date.parse(jumpOn.startedAt),
+    );
   });
 
   it("cross-stream: validator rejects a new start inside the locked March window", () => {
@@ -205,17 +214,6 @@ describe("day-in-the-life scenario — project + contractor streams", () => {
         },
         {
           "approvalState": "approved",
-          "description": null,
-          "entryId": "00000000-0000-4000-8000-000000000502",
-          "interruptedEntryId": "00000000-0000-4000-8000-000000000501",
-          "isPlaceholder": false,
-          "projectId": 7,
-          "startedAt": "2026-04-19T09:00:00Z",
-          "stoppedAt": "2026-04-19T09:30:00Z",
-          "taskId": "00000000-0000-4000-8000-000000000102",
-        },
-        {
-          "approvalState": "approved",
           "description": "afternoon wrap",
           "entryId": "00000000-0000-4000-8000-000000000504",
           "interruptedEntryId": null,
@@ -224,6 +222,17 @@ describe("day-in-the-life scenario — project + contractor streams", () => {
           "startedAt": "2026-04-19T09:55:00.000Z",
           "stoppedAt": "2026-04-19T10:30:00Z",
           "taskId": "00000000-0000-4000-8000-000000000101",
+        },
+        {
+          "approvalState": "approved",
+          "description": null,
+          "entryId": "00000000-0000-4000-8000-000000000502",
+          "interruptedEntryId": "00000000-0000-4000-8000-000000000501",
+          "isPlaceholder": false,
+          "projectId": 7,
+          "startedAt": "2026-04-19T10:30:00Z",
+          "stoppedAt": "2026-04-19T11:00:00Z",
+          "taskId": "00000000-0000-4000-8000-000000000102",
         },
       ]
     `);

@@ -137,20 +137,22 @@ function isRunning(entry: EntryState): boolean {
   return entry.stoppedAt === null && entry.deletedAt === null;
 }
 
-function isPrimary(entry: EntryState): boolean {
-  return entry.interruptedEntryId === null;
-}
-
-function findRunningPrimary(state: ContractorStreamState): EntryState | undefined {
+/**
+ * A contractor is allowed AT MOST ONE running entry at a time — no
+ * "primary + jump-on in parallel" lanes. The `interruptedEntryId` field
+ * on a running entry is therefore a pure lineage pointer (a jump-on
+ * remembers *where it came from* so the UI can offer "come back"), not
+ * a signal that two entries are live together.
+ *
+ * This invariant is enforced both here (in `validateContractorEvent`)
+ * and in SQL (partial unique index on `entry(contractor_id) WHERE
+ * stopped_at IS NULL AND deleted_at IS NULL`) — belt + suspenders.
+ */
+function findRunningEntry(
+  state: ContractorStreamState,
+): EntryState | undefined {
   for (const entry of Object.values(state.entries)) {
-    if (isRunning(entry) && isPrimary(entry)) return entry;
-  }
-  return undefined;
-}
-
-function findRunningJumpOn(state: ContractorStreamState): EntryState | undefined {
-  for (const entry of Object.values(state.entries)) {
-    if (isRunning(entry) && !isPrimary(entry)) return entry;
+    if (isRunning(entry)) return entry;
   }
   return undefined;
 }
@@ -507,42 +509,34 @@ export function validateContractorEvent(
           ),
         );
       }
-      // One-running policy: depends on jump-on lineage.
-      if (payload.interruptedEntryId === undefined) {
-        const running = findRunningPrimary(state);
-        if (running) {
-          errors.push(
-            err(
-              "entry.concurrent_timer",
-              "another primary timer is already running; stop it before starting a new one",
-              { runningEntryId: running.entryId },
-            ),
-          );
-        }
-      } else {
+      // Single-running-entry policy: any non-stopped, non-deleted entry
+      // blocks a new start. Jump-on is no longer a parallel lane — the
+      // client is expected to send `EntryStopped(prior)` immediately
+      // before this event (same correlationId) so replay sees the
+      // two-event pivot as one gesture.
+      const running = findRunningEntry(state);
+      if (running) {
+        errors.push(
+          err(
+            "entry.concurrent_timer",
+            "another timer is already running; stop it before starting a new one",
+            { runningEntryId: running.entryId },
+          ),
+        );
+      }
+      // `interruptedEntryId` is now a pure lineage pointer ("where the
+      // user came from"), so the only thing we validate is that the
+      // referenced entry actually exists in the stream. It should be
+      // stopped by the time we see this event — but we don't enforce
+      // that here to keep the replay order-forgiving; the partial
+      // unique index in SQL is the hard guarantee.
+      if (payload.interruptedEntryId !== undefined) {
         const interrupted = state.entries[payload.interruptedEntryId];
         if (!interrupted) {
           errors.push(
             err(
               "entry.not_found",
               `interruptedEntryId ${payload.interruptedEntryId} not found`,
-            ),
-          );
-        } else if (!isRunning(interrupted)) {
-          errors.push(
-            err(
-              "entry.not_stopped",
-              "interrupted entry must be currently running to start a jump-on",
-            ),
-          );
-        }
-        const otherJumpOn = findRunningJumpOn(state);
-        if (otherJumpOn && otherJumpOn.entryId !== payload.entryId) {
-          errors.push(
-            err(
-              "entry.concurrent_timer",
-              "another jump-on is already running; stop it first",
-              { runningEntryId: otherJumpOn.entryId },
             ),
           );
         }

@@ -82,7 +82,7 @@ export const FIXTURE_PROJECT_EVENTS: ReadonlyArray<ProjectFixtureEvent> = [
           url: "https://linear.app/acme/issue/ENG-101",
         },
       ],
-      assignees: [FIXTURE_ACTOR_USER_ID],
+      assignees: [FIXTURE_CONTRACTOR_ID],
     },
     occurredAt: "2026-04-18T07:30:00Z",
     aggregateKind: "task",
@@ -157,7 +157,7 @@ export const FIXTURE_PROJECT_EVENTS: ReadonlyArray<ProjectFixtureEvent> = [
 
 export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
   [
-    // 08:00 — start primary on task A + dev activity
+    // 08:00 — start the primary entry on task A with the dev activity.
     {
       payload: {
         type: "EntryStarted",
@@ -173,8 +173,21 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
       },
       occurredAt: "2026-04-19T08:00:00Z",
     },
-    // 09:00 — jump-on interrupts primary (primary keeps running in the
-    // background, per the concurrent-timer rule that allows a jump-on).
+    // 10:30 — stop the primary. One-running-entry invariant: the jump-on
+    // below can't start until this Stop has landed. The UI enforces the
+    // atomic "stop-then-start" pivot via one correlation id; here we
+    // just simulate the two resulting events in order.
+    {
+      payload: {
+        type: "EntryStopped",
+        entryId: FIXTURE_PRIMARY_ENTRY_ID,
+        stoppedAt: "2026-04-19T10:30:00Z",
+      },
+      occurredAt: "2026-04-19T10:30:00Z",
+    },
+    // 10:30 — jump onto task B. `interruptedEntryId` is a pure lineage
+    // pointer ("I came from the primary") so the tracker UI can offer a
+    // "come back" button on stop. The two entries never overlap.
     {
       payload: {
         type: "EntryStarted",
@@ -187,34 +200,27 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
           activityId: FIXTURE_ACTIVITY_JUMP_ON_ID,
           activityVersion: 1,
         },
-        startedAt: "2026-04-19T09:00:00Z",
+        startedAt: "2026-04-19T10:30:00Z",
         rate: RATE_SNAPSHOT,
         isPlaceholder: false,
         interruptedEntryId: FIXTURE_PRIMARY_ENTRY_ID,
       },
-      occurredAt: "2026-04-19T09:00:00Z",
+      occurredAt: "2026-04-19T10:30:00Z",
     },
-    // 09:30 — stop jump-on
+    // 11:00 — stop the jump-on.
     {
       payload: {
         type: "EntryStopped",
         entryId: FIXTURE_JUMP_ON_ENTRY_ID,
-        stoppedAt: "2026-04-19T09:30:00Z",
+        stoppedAt: "2026-04-19T11:00:00Z",
       },
-      occurredAt: "2026-04-19T09:30:00Z",
+      occurredAt: "2026-04-19T11:00:00Z",
     },
-    // 10:30 — stop primary
-    {
-      payload: {
-        type: "EntryStopped",
-        entryId: FIXTURE_PRIMARY_ENTRY_ID,
-        stoppedAt: "2026-04-19T10:30:00Z",
-      },
-      occurredAt: "2026-04-19T10:30:00Z",
-    },
-    // 10:40 — split the primary at 09:45 with a 10-min coffee gap. Produces
-    // two draft children ([08:00, 09:45] and [09:55, 10:30]) and marks the
-    // source deleted.
+    // 10:40 — split the (already stopped) primary at 09:45 with a 10-min
+    // coffee gap. Produces two draft children ([08:00, 09:45] and
+    // [09:55, 10:30]) and marks the source deleted. Split operates on a
+    // stopped entry, so it's perfectly fine to run after the jump-on has
+    // started — the two lineages are independent.
     {
       payload: {
         type: "EntrySplit",
@@ -224,7 +230,7 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
         leftEntryId: FIXTURE_SPLIT_LEFT_ID,
         rightEntryId: FIXTURE_SPLIT_RIGHT_ID,
       },
-      occurredAt: "2026-04-19T10:40:00Z",
+      occurredAt: "2026-04-19T11:10:00Z",
     },
     // describe the two splits BEFORE submitting — EntryDescriptionChanged is
     // rejected by the validator once the entry is submitted / approved.
@@ -234,7 +240,7 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
         entryId: FIXTURE_SPLIT_LEFT_ID,
         description: "morning focus",
       },
-      occurredAt: "2026-04-19T10:41:00Z",
+      occurredAt: "2026-04-19T11:11:00Z",
     },
     {
       payload: {
@@ -242,7 +248,7 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
         entryId: FIXTURE_SPLIT_RIGHT_ID,
         description: "afternoon wrap",
       },
-      occurredAt: "2026-04-19T10:42:00Z",
+      occurredAt: "2026-04-19T11:12:00Z",
     },
     {
       payload: {
@@ -252,9 +258,9 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
           FIXTURE_SPLIT_RIGHT_ID,
           FIXTURE_JUMP_ON_ENTRY_ID,
         ],
-        submittedAt: "2026-04-19T10:45:00Z",
+        submittedAt: "2026-04-19T11:15:00Z",
       },
-      occurredAt: "2026-04-19T10:45:00Z",
+      occurredAt: "2026-04-19T11:15:00Z",
     },
     {
       payload: {
@@ -264,9 +270,9 @@ export const FIXTURE_CONTRACTOR_EVENTS: ReadonlyArray<ContractorFixtureEvent> =
           FIXTURE_SPLIT_RIGHT_ID,
           FIXTURE_JUMP_ON_ENTRY_ID,
         ],
-        approvedAt: "2026-04-19T11:00:00Z",
+        approvedAt: "2026-04-19T11:30:00Z",
         approverUserId: FIXTURE_ACTOR_USER_ID,
       },
-      occurredAt: "2026-04-19T11:00:00Z",
+      occurredAt: "2026-04-19T11:30:00Z",
     },
   ];

@@ -32,6 +32,7 @@ import {
   buildContractorEnvelope,
   buildEntryActivityAssignedPayload,
   buildEntryStartedPayload,
+  buildEntryStoppedPayload,
   newUuid,
 } from "@/features/time-tracking/_common/trackerCommands.ts";
 import { rd, type RemoteData } from "@passionware/monads";
@@ -44,21 +45,32 @@ import { toast } from "sonner";
  * tracking time, let the user pick one, then start a side-quest entry on
  * that teammate's project tagged with a `jump_on` activity.
  *
+ * Works in two modes:
+ *   - With a running primary (`primaryEntry !== null`): the new entry is a
+ *     classic side-quest — `interruptedEntryId` points back at the primary,
+ *     stopping the jump-on surfaces a "resume primary?" prompt. The primary
+ *     keeps running in parallel in its own lane.
+ *   - Idle (`primaryEntry === null`): the new entry is a standalone start —
+ *     same teammate-first UX and `jump_on`-tagged activity routing, but
+ *     nothing to return to afterwards. This lets you "hop into someone's
+ *     thing" directly without first starting your own timer.
+ *
  * Activity resolution:
  *   - 0 jump_on activities on the project → fall back to a plain
- *     placeholder start (still links `interruptedEntryId`).
+ *     placeholder start (still links `interruptedEntryId` when relevant).
  *   - 1 jump_on activity → auto-pick it, no extra click.
  *   - 2+ → inline selector, first one preselected.
  *
- * Submission is the same two-event gesture as the start flow: an
- * `EntryStarted` (placeholder, with `interruptedEntryId = primary.entryId`
- * and the teammate's projectId / clientId / workspaceId) followed by an
- * optional `EntryActivityAssigned`. Both share one `correlationId` so
- * audit replay shows them as a single UI gesture.
+ * Submission is a two-event gesture sharing one `correlationId`: an
+ * `EntryStarted` (placeholder, teammate's routing) followed by an optional
+ * `EntryActivityAssigned`.
  */
 export interface TrackerBarJumpOnPopoverProps extends WithFrontServices {
   contractorId: number;
-  primaryEntry: EntryState;
+  /** Non-null when the user already has a primary running — the new entry
+   *  will link `interruptedEntryId` back to it. Null when jumping on from
+   *  an idle state. */
+  primaryEntry: EntryState | null;
   serverSnapshot: ContractorStreamState;
 }
 
@@ -81,8 +93,9 @@ export function TrackerBarJumpOnPopover(props: TrackerBarJumpOnPopoverProps) {
         <PopoverHeader>Jump on a teammate</PopoverHeader>
         <div className="flex flex-col gap-2">
           <p className="text-[11px] leading-snug text-muted-foreground">
-            Your primary timer keeps running. Stopping this side-quest
-            returns you to it.
+            {props.primaryEntry !== null
+              ? "Your current timer will be paused — one-running-entry rule. Stop the jump-on to resume it."
+              : "No timer is running — starting a jump-on will begin a standalone entry on the teammate's project."}
           </p>
           {open ? (
             <TeammateList {...props} onDone={() => setOpen(false)} />
@@ -164,7 +177,7 @@ function TeammateListSkeleton() {
 
 interface TeammateRowProps extends WithFrontServices {
   contractorId: number;
-  primaryEntry: EntryState;
+  primaryEntry: EntryState | null;
   serverSnapshot: ContractorStreamState;
   teammate: { id: number; fullName: string; name: string };
   teammateEntry: TimeEntry;
@@ -205,8 +218,41 @@ function TeammateRow(props: TeammateRowProps) {
   const handleStart = async (activity: Activity | null) => {
     setSubmitting(true);
     try {
+      // One correlationId for the whole gesture: optional stop + start
+      // + optional activity assignment. Replay can reconstruct the
+      // "I paused primary and jumped on a teammate" intent from this
+      // tuple.
       const correlationId = newUuid();
       const jumpOnEntryId = newUuid();
+
+      // If a primary entry is currently running, stop it first. The
+      // single-running-entry invariant (reducer + SQL partial unique
+      // index) rejects `EntryStarted` while any entry is live, so
+      // this stop has to land before the start does.
+      if (props.primaryEntry !== null) {
+        const stopEnvelope = buildContractorEnvelope({
+          contractorId: props.contractorId,
+          correlationId,
+        });
+        const stopPayload = buildEntryStoppedPayload(
+          props.primaryEntry.entryId,
+        );
+        const stopOutcome =
+          await props.services.eventQueueService.submitContractorEvent(
+            stopEnvelope,
+            stopPayload,
+            { serverSnapshot: props.serverSnapshot },
+          );
+        if (stopOutcome.kind === "rejected_locally") {
+          toast.error(
+            `Couldn't pause current timer: ${stopOutcome.errors
+              .map((e) => e.message)
+              .join("; ")}`,
+          );
+          return;
+        }
+      }
+
       const startEnvelope = buildContractorEnvelope({
         contractorId: props.contractorId,
         correlationId,
@@ -222,7 +268,11 @@ function TeammateRow(props: TeammateRowProps) {
         rate: PLACEHOLDER_RATE,
         isPlaceholder: true,
         description: `Jumping on ${props.teammate.fullName}`,
-        interruptedEntryId: props.primaryEntry.entryId,
+        // Lineage pointer only — the primary is already stopped by the
+        // line above. On stop of this jump-on the tracker bar offers
+        // "Resume <primary project>" which starts a fresh entry with
+        // `resumedFromEntryId` pointing back at the same primary.
+        interruptedEntryId: props.primaryEntry?.entryId,
       });
 
       const startOutcome =

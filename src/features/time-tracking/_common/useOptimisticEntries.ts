@@ -85,41 +85,53 @@ export function useOptimisticEntries(
     return map;
   }, [queueState.events]);
 
-  return rd.useMemoMap(serverEntries, (server) => {
-    if (!query) return [];
-    const contractorIds = new Set<number>();
-    for (const entry of server) contractorIds.add(entry.contractorId);
-    if (query.contractorId !== undefined) contractorIds.add(query.contractorId);
-    for (const cid of pendingByContractor.keys()) contractorIds.add(cid);
+  // Deps (`pendingByContractor`, `failedSeqByEntryId`, `query`) must be
+  // passed explicitly — `rd.useMemoMap` only recomputes on RemoteData
+  // identity change + its trailing deps. Omitting them causes the overlay
+  // to silently drop queue changes that arrive without a server refetch.
+  return rd.useMemoMap(
+    serverEntries,
+    (server, pendingMap, failedMap, q) => {
+      if (!q) return [];
+      const contractorIds = new Set<number>();
+      for (const entry of server) contractorIds.add(entry.contractorId);
+      if (q.contractorId !== undefined) contractorIds.add(q.contractorId);
+      for (const cid of pendingMap.keys()) contractorIds.add(cid);
 
-    const merged: OptimisticEntry[] = [];
-    const seen = new Set<string>();
+      const merged: OptimisticEntry[] = [];
+      const seen = new Set<string>();
 
-    for (const contractorId of contractorIds) {
-      const baseState = rebuildStateFromServerEntries(
-        contractorId,
-        server.filter((e) => e.contractorId === contractorId),
-      );
-      const queuedForContractor = pendingByContractor.get(contractorId) ?? [];
-      const folded = foldPendingOnto(baseState, queuedForContractor, contractorId);
+      for (const contractorId of contractorIds) {
+        const baseState = rebuildStateFromServerEntries(
+          contractorId,
+          server.filter((e) => e.contractorId === contractorId),
+        );
+        const queuedForContractor = pendingMap.get(contractorId) ?? [];
+        const folded = foldPendingOnto(baseState, queuedForContractor, contractorId);
 
-      for (const entry of Object.values(folded.entries)) {
-        if (entry.deletedAt !== null && !query.includeDeleted) continue;
-        if (!matchesFilters(entry, query)) continue;
-        if (seen.has(entry.entryId)) continue;
-        seen.add(entry.entryId);
-        merged.push({
-          ...entry,
-          isPending: queuedForContractor.some((q) => entryIdOf(q) === entry.entryId),
-          isFailed: failedSeqByEntryId.has(entry.entryId),
-        });
+        for (const entry of Object.values(folded.entries)) {
+          if (entry.deletedAt !== null && !q.includeDeleted) continue;
+          if (!matchesFilters(entry, q)) continue;
+          if (seen.has(entry.entryId)) continue;
+          seen.add(entry.entryId);
+          merged.push({
+            ...entry,
+            isPending: queuedForContractor.some(
+              (ev) => entryIdOf(ev) === entry.entryId,
+            ),
+            isFailed: failedMap.has(entry.entryId),
+          });
+        }
       }
-    }
-    merged.sort(
-      (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt),
-    );
-    return merged;
-  });
+      merged.sort(
+        (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt),
+      );
+      return merged;
+    },
+    pendingByContractor,
+    failedSeqByEntryId,
+    query,
+  );
 }
 
 /**

@@ -21,9 +21,10 @@ import { useMemo } from "react";
  * ContractorStreamState}) folded with this contractor's pending tail from
  * the offline queue.
  *
- * Returns a single bundle so the bar can derive *all* views (running
- * primary, running jump-on, base snapshot for re-validation) from one
- * memoised computation rather than re-folding three times.
+ * Under the one-running-entry invariant (enforced by the reducer and by
+ * a partial unique index in SQL), a contractor has at most one
+ * `stoppedAt === null` entry. The bundle exposes that single entry plus
+ * the base snapshots the tracker bar needs for re-validation.
  */
 export interface OptimisticActiveBundle {
   /** State after folding pending events onto the projected snapshot. */
@@ -32,10 +33,14 @@ export interface OptimisticActiveBundle {
    *  `serverSnapshot` ctx when re-submitting commands so the queue's
    *  pre-flight validator re-folds *its own* tail (avoids double-fold). */
   serverState: ContractorStreamState;
-  /** Currently running primary entry (`interruptedEntryId === null`). */
-  runningPrimary: EntryState | null;
-  /** Currently running jump-on entry (`interruptedEntryId !== null`). */
-  runningJumpOn: EntryState | null;
+  /**
+   * The contractor's currently running entry, if any. When `null` the
+   * contractor is idle. A running entry with `interruptedEntryId !== null`
+   * is a "jump-on": conceptually the user paused a previous entry (now
+   * stopped) and is planning to come back to it — the tracker bar offers
+   * a "Resume <previous project>" affordance on Stop.
+   */
+  runningEntry: EntryState | null;
 }
 
 export function useOptimisticContractorBundle(
@@ -60,35 +65,36 @@ export function useOptimisticContractorBundle(
       .sort((a, b) => a.seq - b.seq);
   }, [queueState.events, contractorId]);
 
-  return rd.useMemoMap(serverActive, (server) => {
-    if (contractorId === undefined || contractorId === null) return null;
-    const serverState = serverActiveToState(server, contractorId);
-    const state = foldPendingOnto(serverState, pending, contractorId);
-    return {
-      state,
-      serverState,
-      runningPrimary: findRunning(state, "primary"),
-      runningJumpOn: findRunning(state, "jump-on"),
-    };
-  });
+  // `pending` and `contractorId` must be passed as explicit deps: without
+  // them, `rd.useMemoMap` only recomputes when the RemoteData identity
+  // changes and keeps using stale closure values. That was the reason the
+  // tracker bar said "Not tracking" while "My entries" already showed a
+  // just-started (queue-pending) entry — the bundle never re-folded the
+  // queue tail.
+  return rd.useMemoMap(
+    serverActive,
+    (server, pendingDep, contractorIdDep) => {
+      if (contractorIdDep === undefined || contractorIdDep === null) return null;
+      const serverState = serverActiveToState(server, contractorIdDep);
+      const state = foldPendingOnto(serverState, pendingDep, contractorIdDep);
+      return {
+        state,
+        serverState,
+        runningEntry: findRunning(state),
+      };
+    },
+    pending,
+    contractorId,
+  );
 }
 
-/** Convenience hook returning just the running primary entry. */
+/** Convenience hook returning just the single running entry. */
 export function useOptimisticActiveEntry(
   props: WithFrontServices,
   contractorId: Maybe<number>,
 ): RemoteData<EntryState | null> {
   const bundle = useOptimisticContractorBundle(props, contractorId);
-  return rd.useMemoMap(bundle, (b) => b?.runningPrimary ?? null);
-}
-
-/** Convenience hook returning just the running jump-on entry. */
-export function useOptimisticActiveJumpOn(
-  props: WithFrontServices,
-  contractorId: Maybe<number>,
-): RemoteData<EntryState | null> {
-  const bundle = useOptimisticContractorBundle(props, contractorId);
-  return rd.useMemoMap(bundle, (b) => b?.runningJumpOn ?? null);
+  return rd.useMemoMap(bundle, (b) => b?.runningEntry ?? null);
 }
 
 /**
@@ -165,15 +171,10 @@ function foldPendingOnto(
   return state;
 }
 
-function findRunning(
-  state: ContractorStreamState,
-  kind: "primary" | "jump-on",
-): EntryState | null {
+function findRunning(state: ContractorStreamState): EntryState | null {
   for (const entry of Object.values(state.entries)) {
     if (entry.stoppedAt !== null || entry.deletedAt !== null) continue;
-    const isJumpOn = entry.interruptedEntryId !== null;
-    if (kind === "primary" && !isJumpOn) return entry;
-    if (kind === "jump-on" && isJumpOn) return entry;
+    return entry;
   }
   return null;
 }

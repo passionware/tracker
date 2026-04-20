@@ -1,13 +1,8 @@
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Popover,
@@ -45,12 +40,23 @@ import { TrackerBarJumpOnPopover } from "@/features/time-tracking/tracker-bar/Tr
 import { TrackerBarPendingSheet } from "@/features/time-tracking/tracker-bar/TrackerBarPendingSheet.tsx";
 import { TrackerBarStartPopover } from "@/features/time-tracking/tracker-bar/TrackerBarStartPopover.tsx";
 import { cn } from "@/lib/utils.ts";
-import type { ContractorStreamState, EntryState } from "@/api/time-event/aggregates";
+import type {
+  ContractorStreamState,
+  EntryState,
+} from "@/api/time-event/aggregates";
+import type { ContractorEventPayload } from "@/api/time-event/time-event.api.ts";
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { myRouting } from "@/routing/myRouting.ts";
 import { rd } from "@passionware/monads";
-import { AlertCircle, AlertTriangle, Pause, Timer, UserCog } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Pause,
+  Timer,
+  Undo2,
+  UserCog,
+} from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -118,7 +124,7 @@ function CollapsedTrackerBar(
     bundle: ReturnType<typeof useOptimisticContractorBundle>;
   },
 ) {
-  const running = rd.tryGet(props.bundle)?.runningPrimary ?? null;
+  const running = rd.tryGet(props.bundle)?.runningEntry ?? null;
   const seconds = useElapsedSeconds(running?.startedAt ?? null);
   return (
     <SidebarMenu>
@@ -136,7 +142,10 @@ function CollapsedTrackerBar(
           )}
         >
           <Timer
-            className={cn("size-4", running && "text-emerald-600 animate-pulse")}
+            className={cn(
+              "size-4",
+              running && "text-emerald-600 animate-pulse",
+            )}
           />
           <span>{running ? "Running" : "Tracker"}</span>
         </SidebarMenuButton>
@@ -170,42 +179,28 @@ function ActiveTrackerArea(
             services={props.services}
             contractorId={props.contractorId}
           />
-          {bundle.runningPrimary !== null ? (
+          {bundle.runningEntry !== null ? (
             <>
               <RunningRow
                 services={props.services}
                 contractorId={props.contractorId}
-                entry={bundle.runningPrimary}
+                entry={bundle.runningEntry}
                 serverState={bundle.serverState}
-                lane="primary"
-                sideQuest={bundle.runningJumpOn}
                 jumpOnAction={
-                  bundle.runningJumpOn === null ? (
-                    <TrackerBarJumpOnPopover
-                      services={props.services}
-                      contractorId={props.contractorId}
-                      primaryEntry={bundle.runningPrimary}
-                      serverSnapshot={bundle.serverState}
-                    />
-                  ) : null
+                  <TrackerBarJumpOnPopover
+                    services={props.services}
+                    contractorId={props.contractorId}
+                    primaryEntry={bundle.runningEntry}
+                    serverSnapshot={bundle.serverState}
+                  />
                 }
               />
               <RunningIdleSlot
                 services={props.services}
                 contractorId={props.contractorId}
-                entry={bundle.runningPrimary}
+                entry={bundle.runningEntry}
                 serverState={bundle.serverState}
               />
-              {bundle.runningJumpOn !== null ? (
-                <RunningRow
-                  services={props.services}
-                  contractorId={props.contractorId}
-                  entry={bundle.runningJumpOn}
-                  serverState={bundle.serverState}
-                  lane="jump-on"
-                  returnsTo={bundle.runningPrimary}
-                />
-              ) : null}
             </>
           ) : (
             <IdleRow
@@ -240,7 +235,9 @@ function ContractorChip(props: WithFrontServices & { contractorId: number }) {
               {(name ?? "?").slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate">{name ?? `Contractor ${props.contractorId}`}</span>
+          <span className="truncate">
+            {name ?? `Contractor ${props.contractorId}`}
+          </span>
           <UserCog className="ml-auto size-3.5 opacity-60" />
         </button>
       </PopoverTrigger>
@@ -260,12 +257,26 @@ function IdleRow(
 ) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-muted-foreground">Not tracking</span>
-      <TrackerBarStartPopover
-        services={props.services}
-        contractorId={props.contractorId}
-        serverSnapshot={props.serverState}
-      />
+      {/* <span className="text-xs text-muted-foreground">Not tracking</span> */}
+      <div className="flex items-center gap-1">
+        {/*
+          Jump-on is available from idle too: hopping into what a teammate
+          is doing is often the reason you open the tracker in the first
+          place. Without a primary to return to, the new entry is just a
+          standalone start on the teammate's project.
+        */}
+        <TrackerBarJumpOnPopover
+          services={props.services}
+          contractorId={props.contractorId}
+          primaryEntry={null}
+          serverSnapshot={props.serverState}
+        />
+        <TrackerBarStartPopover
+          services={props.services}
+          contractorId={props.contractorId}
+          serverSnapshot={props.serverState}
+        />
+      </div>
     </div>
   );
 }
@@ -277,53 +288,53 @@ function IdleRow(
  */
 const JUMP_ON_LONG_RUN_THRESHOLD_SECONDS = 30 * 60;
 
+/**
+ * Single running row. Under the one-running-entry invariant the tracker
+ * never shows two parallel lanes — a jump-on is just the current running
+ * entry that happens to carry an `interruptedEntryId` pointer, so on stop
+ * we can offer "Resume <prior project>" which fires a stop-then-start
+ * pivot (same correlationId) and lands the user back on the interrupted
+ * routing in a brand-new entry (`resumedFromEntryId`).
+ */
 function RunningRow(
   props: WithFrontServices & {
     contractorId: number;
     entry: EntryState;
     serverState: ContractorStreamState;
-    /**
-     * Visual lane the entry belongs to. The "jump-on" lane is rendered
-     * below the primary with amber accents and a "returns to" subtitle
-     * so it's unmistakable that stopping it brings the user back to the
-     * primary timer (which never paused).
-     */
-    lane: "primary" | "jump-on";
-    /** When present (primary lane only), rendered next to Stop. */
+    /** Rendered next to Stop (jump-on CTA). */
     jumpOnAction?: ReactNode;
-    /** The primary entry this jump-on will return to (jump-on lane only). */
-    returnsTo?: EntryState;
-    /**
-     * Running jump-on that depends on this primary (primary lane only).
-     * When present, stopping the primary pops a guard dialog so the user
-     * can decide whether to stop both or leave the side-quest running.
-     */
-    sideQuest?: EntryState | null;
   },
 ) {
   const seconds = useElapsedSeconds(props.entry.startedAt);
-  const project = props.services.projectService.useProject(props.entry.projectId);
+  const project = props.services.projectService.useProject(
+    props.entry.projectId,
+  );
   const projectName =
     rd.tryGet(project)?.name ?? `Project ${props.entry.projectId}`;
+
+  const isJumpOn = props.entry.interruptedEntryId !== null;
+  // For a jump-on, resolve the entry it returns to (a stopped entry, so
+  // we can't rely on the `active entry` projection — fetch by id).
+  const returnsToEntry = props.services.timeEntryService.useEntry(
+    isJumpOn ? props.entry.interruptedEntryId : undefined,
+  );
+  const returnsToEntryValue = rd.tryGet(returnsToEntry) ?? null;
   const returnsToProject = props.services.projectService.useProject(
-    props.returnsTo?.projectId,
+    returnsToEntryValue?.projectId,
   );
   const returnsToProjectName =
     rd.tryGet(returnsToProject)?.name ??
-    (props.returnsTo ? `Project ${props.returnsTo.projectId}` : null);
-  const sideQuestProject = props.services.projectService.useProject(
-    props.sideQuest?.projectId,
-  );
-  const sideQuestProjectName =
-    rd.tryGet(sideQuestProject)?.name ??
-    (props.sideQuest ? `Project ${props.sideQuest.projectId}` : null);
-  const [stopping, setStopping] = useState(false);
-  const [guardOpen, setGuardOpen] = useState(false);
+    (returnsToEntryValue ? `Project ${returnsToEntryValue.projectId}` : null);
 
-  const stopOne = async (entryId: string): Promise<boolean> => {
+  const [stopping, setStopping] = useState(false);
+
+  const stopOne = async (
+    entryId: string,
+    correlationId: string,
+  ): Promise<boolean> => {
     const envelope = buildContractorEnvelope({
       contractorId: props.contractorId,
-      correlationId: newUuid(),
+      correlationId,
     });
     const payload = buildEntryStoppedPayload(entryId);
     const outcome =
@@ -342,21 +353,13 @@ function RunningRow(
   };
 
   const handleStop = async () => {
-    // Guard: the primary's Stop is intercepted when a side-quest is
-    // running so the user doesn't accidentally leave an orphaned jump-on
-    // behind. The dialog's actions re-enter via stopPrimaryOnly /
-    // stopBoth, bypassing the guard.
-    if (props.lane === "primary" && props.sideQuest) {
-      setGuardOpen(true);
-      return;
-    }
     setStopping(true);
     try {
-      const ok = await stopOne(props.entry.entryId);
+      const ok = await stopOne(props.entry.entryId, newUuid());
       if (!ok) return;
       toast.success(
-        props.lane === "jump-on" && returnsToProjectName
-          ? `Side quest done — back on ${returnsToProjectName}`
+        isJumpOn && returnsToProjectName
+          ? `Side quest done — ${returnsToProjectName} is waiting`
           : "Timer stopped",
       );
     } finally {
@@ -364,38 +367,81 @@ function RunningRow(
     }
   };
 
-  const stopPrimaryOnly = async () => {
-    setGuardOpen(false);
+  /**
+   * Stop the current jump-on and immediately start a fresh entry whose
+   * routing is copied from the interrupted entry (the one the user
+   * jumped away from). Both events share a correlationId so audit
+   * replay sees the pivot as one gesture. The new entry's
+   * `resumedFromEntryId` points at the original interrupted entry so
+   * downstream reports can reconstruct the "jump-on → come back"
+   * lineage.
+   */
+  const handleResume = async () => {
+    if (!returnsToEntryValue) {
+      toast.error("Couldn't find the previous entry to return to");
+      return;
+    }
     setStopping(true);
     try {
-      const ok = await stopOne(props.entry.entryId);
-      if (!ok) return;
-      toast.success("Primary stopped — side-quest still running");
+      const correlationId = newUuid();
+      const stopped = await stopOne(props.entry.entryId, correlationId);
+      if (!stopped) return;
+      const startEnvelope = buildContractorEnvelope({
+        contractorId: props.contractorId,
+        correlationId,
+      });
+      const startPayload: ContractorEventPayload = {
+        type: "EntryStarted",
+        entryId: newUuid(),
+        clientId: returnsToEntryValue.clientId,
+        workspaceId: returnsToEntryValue.workspaceId,
+        projectId: returnsToEntryValue.projectId,
+        task:
+          returnsToEntryValue.taskId !== null &&
+          returnsToEntryValue.taskVersion !== null
+            ? {
+                taskId: returnsToEntryValue.taskId,
+                taskVersion: returnsToEntryValue.taskVersion,
+              }
+            : undefined,
+        activity:
+          returnsToEntryValue.activityId !== null &&
+          returnsToEntryValue.activityVersion !== null
+            ? {
+                activityId: returnsToEntryValue.activityId,
+                activityVersion: returnsToEntryValue.activityVersion,
+              }
+            : undefined,
+        startedAt: new Date().toISOString(),
+        rate: returnsToEntryValue.rateSnapshot,
+        // If task/activity are missing we ship a placeholder so the
+        // "needs detail" badge shows up — lets the user disambiguate
+        // before submission.
+        isPlaceholder:
+          returnsToEntryValue.taskId === null ||
+          returnsToEntryValue.activityId === null,
+        resumedFromEntryId: returnsToEntryValue.id,
+      };
+      const outcome =
+        await props.services.eventQueueService.submitContractorEvent(
+          startEnvelope,
+          startPayload,
+          { serverSnapshot: props.serverState },
+        );
+      if (outcome.kind === "rejected_locally") {
+        toast.error(
+          `Couldn't resume: ${outcome.errors.map((e) => e.message).join("; ")}`,
+        );
+        return;
+      }
+      toast.success(
+        returnsToProjectName ? `Back on ${returnsToProjectName}` : "Resumed",
+      );
     } finally {
       setStopping(false);
     }
   };
 
-  const stopBoth = async () => {
-    setGuardOpen(false);
-    if (!props.sideQuest) return;
-    setStopping(true);
-    try {
-      // Stop the jump-on first so the primary's stop doesn't need to
-      // re-evaluate lineage invariants in the presence of a running
-      // dependent. The queue still respects per-aggregate ordering via
-      // optimistic concurrency, so a failure on step 1 aborts step 2.
-      const jumpOnStopped = await stopOne(props.sideQuest.entryId);
-      if (!jumpOnStopped) return;
-      const primaryStopped = await stopOne(props.entry.entryId);
-      if (!primaryStopped) return;
-      toast.success("Both timers stopped");
-    } finally {
-      setStopping(false);
-    }
-  };
-
-  const isJumpOn = props.lane === "jump-on";
   const isLongRunningJumpOn =
     isJumpOn && (seconds ?? 0) >= JUMP_ON_LONG_RUN_THRESHOLD_SECONDS;
   return (
@@ -428,10 +474,24 @@ function RunningRow(
           ) : props.entry.isPlaceholder ? (
             <span className="text-[11px] text-amber-700">Needs detail</span>
           ) : null}
+          {/*
+            Lineage hint. Kept intentionally short — the Resume button
+            below is the primary affordance, so this line just reassures
+            the user that "come back" is available without eating the
+            narrow sidebar column. Tooltip carries the full name.
+          */}
           {isJumpOn && returnsToProjectName ? (
-            <span className="truncate text-[10px] text-amber-800/80">
-              Returns to {returnsToProjectName} when stopped
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex max-w-full items-center gap-1 truncate text-[10px] text-amber-800/80">
+                  <Undo2 className="size-3 shrink-0" />
+                  <span className="truncate">{returnsToProjectName}</span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Came from {returnsToProjectName} — stop or resume to come back
+              </TooltipContent>
+            </Tooltip>
           ) : null}
         </div>
         <div className="flex items-center gap-1.5">
@@ -470,12 +530,44 @@ function RunningRow(
           </Tooltip>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-1.5">
+      {/*
+        Action row: flex-wrap so we don't clip when the sidebar is narrow
+        (up to three buttons can appear when a jump-on is active and the
+        user wants to jump again).
+      */}
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
         {props.jumpOnAction}
+        {isJumpOn && returnsToEntryValue ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-7 w-7 shrink-0 px-0"
+                onClick={handleResume}
+                disabled={stopping}
+                aria-label={
+                  returnsToProjectName
+                    ? `Resume ${returnsToProjectName}`
+                    : "Resume previous entry"
+                }
+              >
+                <Undo2 className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {stopping
+                ? "Resuming…"
+                : returnsToProjectName
+                  ? `Resume ${returnsToProjectName}`
+                  : "Resume previous entry"}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
         <Button
           size="sm"
           variant="destructive"
-          className="h-7 gap-1.5 px-2"
+          className="h-7 shrink-0 gap-1.5 px-2"
           onClick={handleStop}
           disabled={stopping}
         >
@@ -483,41 +575,6 @@ function RunningRow(
           {stopping ? "Stopping…" : "Stop"}
         </Button>
       </div>
-      {props.lane === "primary" && props.sideQuest ? (
-        <AlertDialog open={guardOpen} onOpenChange={setGuardOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Your side-quest is still running
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {sideQuestProjectName
-                  ? `A jump-on timer is running on ${sideQuestProjectName}. What do you want to do?`
-                  : "A jump-on timer is still running. What do you want to do?"}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2 sm:justify-end">
-              <AlertDialogCancel disabled={stopping}>Cancel</AlertDialogCancel>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={stopPrimaryOnly}
-                disabled={stopping}
-              >
-                Stop primary only
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={stopBoth}
-                disabled={stopping}
-              >
-                Stop both
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : null}
     </div>
   );
 }
@@ -559,9 +616,7 @@ function RunningIdleSlot(
  * from silently piling up. The pill is a link straight to the Mine page
  * so the user is one click away from the editor sheet.
  */
-function NeedsDetailBadge(
-  props: WithFrontServices & { contractorId: number },
-) {
+function NeedsDetailBadge(props: WithFrontServices & { contractorId: number }) {
   const query = useMemo(
     () => ({
       contractorId: props.contractorId,
@@ -596,4 +651,3 @@ function NeedsDetailBadge(
     </Tooltip>
   );
 }
-
