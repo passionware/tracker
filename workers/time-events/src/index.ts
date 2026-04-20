@@ -2,11 +2,15 @@
  * Cloudflare Worker entry point — Hono app for the time-events service.
  *
  * Wiring:
- *   - In production / `wrangler dev` with secrets: builds a Supabase-backed
- *     `TimeEventStore` (TODO: not yet implemented; see store.supabase.ts
- *     placeholder).
- *   - In tests: tests use `buildApp(deps)` directly and pass an
- *     `InMemoryTimeEventStore`. They never hit Supabase.
+ *   - With `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set (prod / properly
+ *     configured `wrangler dev`): builds a Supabase-backed `TimeEventStore`
+ *     so events land in `time_dev.contractor_event` / `project_event` and
+ *     AFTER INSERT triggers materialise the projection tables.
+ *   - Without those secrets: falls back to `InMemoryTimeEventStore`. Nothing
+ *     is persisted, but the worker still boots, which is handy when you
+ *     just want to test the HTTP surface.
+ *   - In tests: tests call `buildApp(deps)` directly and pass their own
+ *     in-memory store.
  *
  * Routes:
  *   GET  /health
@@ -156,9 +160,29 @@ async function resolveActorOr401(
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
-    // Default deps: in-memory store (so `wrangler dev` works out of the box)
-    // until the Supabase-backed store ships.
-    const store = new InMemoryTimeEventStore();
+    // Prefer the Supabase-backed store when the service-role secret is
+    // configured; fall back to the in-memory one so `wrangler dev` still
+    // boots on a fresh checkout (with a loud log so it isn't a silent
+    // data-loss mode).
+    // Lazy-load the Supabase store so the tests that exercise `buildApp`
+    // directly never pull in `@supabase/supabase-js` (whose CJS build
+    // trips up the `@cloudflare/vitest-pool-workers` bundler).
+    let store: TimeEventStore;
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+      const { createSupabaseTimeEventStore } = await import(
+        "./store.supabase.ts"
+      );
+      store = createSupabaseTimeEventStore({
+        supabaseUrl: env.SUPABASE_URL,
+        serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+        schema: env.TIME_SCHEMA,
+      });
+    } else {
+      console.warn(
+        "[time-events] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set — using InMemoryTimeEventStore. Events will NOT be persisted.",
+      );
+      store = new InMemoryTimeEventStore();
+    }
     const resolveActor = async (request: Request) => {
       if (!env.SUPABASE_ANON_JWT_SECRET) {
         // Dev convenience: when no secret is configured, accept a synthetic

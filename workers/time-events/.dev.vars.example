@@ -7,6 +7,14 @@
 # Must match the project that issued the access token sent by the SPA.
 SUPABASE_ANON_JWT_SECRET=replace-me
 
-# ─── Optional: only needed once we swap InMemoryTimeEventStore → Supabase ────
-# SUPABASE_URL=https://<project>.supabase.co
-# SUPABASE_SERVICE_ROLE_KEY=replace-me
+# ─── Supabase event store (REQUIRED for events to actually land in the DB) ──
+# Without these two the worker falls back to InMemoryTimeEventStore: every
+# request spins up a fresh in-RAM store so POSTed events disappear the
+# moment the isolate finishes, and tasks/entries created via the UI never
+# show up. Grab the values from Supabase Dashboard → Project Settings → API:
+#   SUPABASE_URL              = "Project URL"
+#   SUPABASE_SERVICE_ROLE_KEY = the "service_role" secret (NOT the anon key).
+# The service role bypasses RLS and is strictly server-only — never ship it
+# to the browser.
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=replace-me
