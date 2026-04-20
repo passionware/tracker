@@ -246,6 +246,23 @@ const customDashboardKpisApi = createLocalStorageApi<CustomDashboardKpi[]>(
   [],
 );
 
+/**
+ * Persisted "I'm tracking time as contractor X" identity used by the global
+ * TrackerBar. Stored as a positive integer (matching `contractor.id`); any
+ * other shape resets to `null` so a stale value can't keep the bar pinned to
+ * an unknown contractor after a database swap.
+ */
+const trackerActiveContractorIdSchema = z.number().int().positive();
+
+const trackerActiveContractorIdApi = createLocalStorageApi<number | null>(
+  "tracker-active-contractor-id-v1",
+  (data) => {
+    const result = trackerActiveContractorIdSchema.safeParse(data);
+    return result.success ? result.data : null;
+  },
+  null,
+);
+
 export function createPreferenceService(): PreferenceService {
   const usePreferences = create<Store>((set) => {
     return {
@@ -536,6 +553,70 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useTrackerActiveContractorIdStore = create<{
+    contractorId: number | null;
+    initialized: boolean;
+    setContractorId: (id: number | null) => Promise<void>;
+  }>((set, get) => ({
+    contractorId: null,
+    initialized: false,
+    setContractorId: async (id) => {
+      const next = id !== null ? trackerActiveContractorIdSchema.parse(id) : null;
+      if (get().contractorId === next) return;
+      set({ contractorId: next });
+      await trackerActiveContractorIdApi.write(next);
+    },
+  }));
+
+  void trackerActiveContractorIdApi.read().then((stored) => {
+    useTrackerActiveContractorIdStore.setState({
+      contractorId: stored ?? null,
+      initialized: true,
+    });
+  });
+
+  /**
+   * "Time until idle prompt" preference. Capped at [30s, 60min] to avoid
+   * absurd values; default is 5 minutes which matches the typical
+   * tmetric / toggl out-of-the-box behaviour.
+   */
+  const TRACKER_IDLE_DEFAULT_SECONDS = 5 * 60;
+  const trackerIdleThresholdSchema = z
+    .number()
+    .int()
+    .min(30)
+    .max(60 * 60);
+  const trackerIdleThresholdApi = createLocalStorageApi<number>(
+    "tracker-idle-threshold-seconds-v1",
+    (data) => {
+      const result = trackerIdleThresholdSchema.safeParse(data);
+      return result.success ? result.data : TRACKER_IDLE_DEFAULT_SECONDS;
+    },
+    TRACKER_IDLE_DEFAULT_SECONDS,
+  );
+
+  const useTrackerIdleThresholdStore = create<{
+    seconds: number;
+    initialized: boolean;
+    setSeconds: (next: number) => Promise<void>;
+  }>((set, get) => ({
+    seconds: TRACKER_IDLE_DEFAULT_SECONDS,
+    initialized: false,
+    setSeconds: async (next) => {
+      const parsed = trackerIdleThresholdSchema.parse(next);
+      if (get().seconds === parsed) return;
+      set({ seconds: parsed });
+      await trackerIdleThresholdApi.write(parsed);
+    },
+  }));
+
+  void trackerIdleThresholdApi.read().then((stored) => {
+    useTrackerIdleThresholdStore.setState({
+      seconds: stored ?? TRACKER_IDLE_DEFAULT_SECONDS,
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -684,6 +765,20 @@ export function createPreferenceService(): PreferenceService {
     },
     setCustomDashboardKpis: async (kpis) => {
       await useCustomDashboardKpisStore.getState().setKpis(kpis);
+    },
+    useTrackerActiveContractorId: () => {
+      const { contractorId, initialized } = useTrackerActiveContractorIdStore();
+      return initialized ? contractorId : null;
+    },
+    setTrackerActiveContractorId: async (id) => {
+      await useTrackerActiveContractorIdStore.getState().setContractorId(id);
+    },
+    useTrackerIdleThresholdSeconds: () => {
+      const { seconds, initialized } = useTrackerIdleThresholdStore();
+      return initialized ? seconds : TRACKER_IDLE_DEFAULT_SECONDS;
+    },
+    setTrackerIdleThresholdSeconds: async (seconds) => {
+      await useTrackerIdleThresholdStore.getState().setSeconds(seconds);
     },
   };
 }

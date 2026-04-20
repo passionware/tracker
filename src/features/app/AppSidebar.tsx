@@ -19,15 +19,11 @@ import { NavProjects } from "@/features/app/nav-projects.tsx";
 import { NavUser } from "@/features/app/nav-user.tsx";
 import { WorkspaceSwitcher } from "@/features/app/WorkspaceSwitcher.tsx";
 import { TmetricLiveContractorsPopover } from "@/features/tmetric-dashboard/TmetricLiveContractorsPopover.tsx";
+import { TrackerBar } from "@/features/time-tracking/tracker-bar/TrackerBar.tsx";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import { MergeServices, WithServices } from "@/platform/typescript/services.ts";
+import { MergeServices } from "@/platform/typescript/services.ts";
+import { WithFrontServices } from "@/core/frontServices.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
-import { WithPreferenceService } from "@/services/internal/PreferenceService/PreferenceService.ts";
-import { WithAuthService } from "@/services/io/AuthService/AuthService.ts";
-import { WithClientService } from "@/services/io/ClientService/ClientService.ts";
-import { WithCockpitAuthService } from "@/services/io/CockpitAuthService/CockpitAuthService.ts";
-import { WithTmetricDashboardService } from "@/services/front/TmetricDashboardService/TmetricDashboardService.ts";
-import { WithWorkspaceService } from "@/services/WorkspaceService/WorkspaceService.ts";
 import { maybe, rd } from "@passionware/monads";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
@@ -212,18 +208,7 @@ function useData(
 export function AppSidebar({
   services,
   ...props
-}: WithServices<
-  [
-    WithAuthService,
-    WithCockpitAuthService,
-    WithClientService,
-    WithLocationService,
-    WithPreferenceService,
-    WithTmetricDashboardService,
-    WithWorkspaceService,
-  ]
-> &
-  ComponentProps<typeof Sidebar>) {
+}: WithFrontServices & ComponentProps<typeof Sidebar>) {
   const auth = services.authService.useAuth();
   const clients = services.clientService.useClients(clientQueryUtils.ofDefault());
   const workspaces = services.workspaceService.useWorkspaces(
@@ -283,6 +268,7 @@ export function AppSidebar({
         </div>
         <SidebarDevDatabaseBanner />
         <TmetricLiveContractorsPopover services={services} />
+        <TrackerBar services={services} />
         {rd
           .journey(auth)
           .wait(<Skeleton className="w-20 h-4" />)

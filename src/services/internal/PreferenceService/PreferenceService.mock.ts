@@ -75,5 +75,9 @@ export function createPreferenceService(config: {
     useCustomDashboardKpis: () => [],
     getCustomDashboardKpis: async () => [],
     setCustomDashboardKpis: async () => {},
+    useTrackerActiveContractorId: () => null,
+    setTrackerActiveContractorId: async () => {},
+    useTrackerIdleThresholdSeconds: () => 5 * 60,
+    setTrackerIdleThresholdSeconds: async () => {},
   };
 }

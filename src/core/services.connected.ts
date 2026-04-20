@@ -72,6 +72,7 @@ import { createIterationTriggerService } from "@/services/io/IterationTriggerSer
 import { createMutationService } from "@/services/io/MutationService/MutationService.impl.ts";
 import { createProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService.impl.ts";
 import { createEventQueueService } from "@/services/io/EventQueueService/EventQueueService.impl.ts";
+import { createIdleDetectionService } from "@/services/internal/IdleDetectionService/IdleDetectionService.impl.ts";
 import { createProjectRateService } from "@/services/io/ProjectRateService/ProjectRateService.impl.ts";
 import { createProjectService } from "@/services/io/ProjectService/ProjectService.impl.ts";
 import { createTaskDefinitionService } from "@/services/io/TaskDefinitionService/TaskDefinitionService.impl.ts";
@@ -325,6 +326,7 @@ export const myServices = {
   activityService,
   projectRateService,
   eventQueueService,
+  idleDetectionService: createIdleDetectionService(),
   projectIterationDisplayService: createProjectIterationDisplayService(),
   projectService,
   reportGenerationService: createReportGenerationService({

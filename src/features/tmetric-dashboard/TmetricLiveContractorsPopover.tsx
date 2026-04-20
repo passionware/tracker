@@ -411,7 +411,7 @@ export function TmetricLiveContractorsPopover(
   );
 
   const mobileLiveSheetSurfaceClass = cn(
-    "z-[60] flex w-full flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-xl",
+    "flex w-full flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-xl",
     "h-[100dvh] max-h-[100dvh]",
     "pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]",
     "[&>button]:right-3 [&>button]:top-3 [&>button]:z-50",

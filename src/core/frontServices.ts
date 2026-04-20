@@ -7,6 +7,7 @@ import { WithGeneratedReportViewService } from "@/services/front/GeneratedReport
 import { WithProjectIterationDisplayService } from "@/services/front/ProjectIterationDisplayService/ProjectIterationDisplayService.ts";
 import { WithReconciliationService } from "@/services/front/ReconciliationService/ReconciliationService.ts";
 import { WithReportDisplayService } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import { WithIdleDetectionService } from "@/services/internal/IdleDetectionService/IdleDetectionService.ts";
 import { WithLocationService } from "@/services/internal/LocationService/LocationService.ts";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService.ts";
 import { WithNavigationService } from "@/services/internal/NavigationService/NavigationService.ts";
@@ -91,6 +92,7 @@ export type FrontServices = MergeServices<
     WithActivityService,
     WithProjectRateService,
     WithEventQueueService,
+    WithIdleDetectionService,
     WithProjectIterationDisplayService,
     WithReportGenerationService,
     WithGeneratedReportSourceWriteService,

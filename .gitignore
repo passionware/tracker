@@ -24,3 +24,15 @@ dist-ssr
 *.sw?
 
 *storybook.log
+
+# Cloudflare Workers (wrangler dev state + local secrets)
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Test coverage
+coverage/
+
+# dbmate schema dumps (we run with --no-dump-schema; catch accidental dumps)
+db/schema.sql

@@ -140,6 +140,28 @@ export interface PreferenceService {
   useCustomDashboardKpis: () => CustomDashboardKpi[];
   getCustomDashboardKpis: () => Promise<CustomDashboardKpi[]>;
   setCustomDashboardKpis: (kpis: CustomDashboardKpi[]) => Promise<void>;
+  /**
+   * Identity of the contractor whose timer the global TrackerBar drives. Set
+   * by the user via the bar's "Track time as…" picker; persisted in
+   * localStorage so a refresh keeps the same identity. Returns `null` when
+   * the user has not yet picked a contractor (the bar then renders the
+   * picker prompt).
+   *
+   * Long-term this will be replaced by an `auth.uid() → contractor.id`
+   * mapping derived server-side, but until that exists the picker keeps the
+   * tracker bar usable for any signed-in admin who needs to record time
+   * against multiple contractor identities.
+   */
+  useTrackerActiveContractorId: () => number | null;
+  setTrackerActiveContractorId: (contractorId: number | null) => Promise<void>;
+  /**
+   * Seconds of inactivity after which the global TrackerBar shows its
+   * "still working?" prompt while a timer is running. Persisted so power
+   * users who prefer a tighter (60s) or looser (15min) window keep their
+   * preference between sessions.
+   */
+  useTrackerIdleThresholdSeconds: () => number;
+  setTrackerIdleThresholdSeconds: (seconds: number) => Promise<void>;
 }
 
 export interface WithPreferenceService {
