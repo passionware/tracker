@@ -1,5 +1,6 @@
 import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import type { TaskDefinition } from "@/api/task-definition/task-definition.api.ts";
+import { parseExternalLinkUrl } from "@/api/time-event/external-link-parser.ts";
 import type {
   ExternalLink,
   ProjectEventPayload,
@@ -49,6 +50,7 @@ import {
 import { AssigneeChips } from "@/features/time-tracking/_common/AssigneeChips.tsx";
 import { TaskBurndownSparkline } from "@/features/time-tracking/_common/TaskBurndownSparkline.tsx";
 import { newUuid } from "@/features/time-tracking/_common/trackerCommands.ts";
+import { useCurrentContractor } from "@/features/time-tracking/_common/useCurrentContractor.ts";
 import { formatElapsedSeconds } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
 import { rd } from "@passionware/monads";
 import {
@@ -60,7 +62,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /**
@@ -329,18 +331,11 @@ function AssigneesSection({
   task: TaskDefinition;
   onSubmit: Submit;
 } & WithFrontServices) {
-  // "Assign me" needs a concrete contractor id. Prefer the auth-user ↔
-  // contractor mapping (admin-set), fall back to the tracker-bar "track
-  // as" override when no mapping exists yet — keeps the button usable
-  // for unpaired dev accounts without silently pretending the override
-  // is the user's identity.
-  const authInfo = rd.tryGet(services.authService.useAuth());
-  const myContractor = rd.tryGet(
-    services.contractorService.useMyContractor(authInfo?.id ?? null),
-  );
-  const trackerContractorId =
-    services.preferenceService.useTrackerActiveContractorId();
-  const currentContractorId = myContractor?.id ?? trackerContractorId;
+  // "Assign me" uses the unified tracker-bar identity: the impersonation
+  // override wins (admins picking a teammate), otherwise the
+  // auth-user ↔ contractor mapping, otherwise null (neither paired nor
+  // picked → the button hides).
+  const { contractorId: currentContractorId } = useCurrentContractor(services);
   const contractors = services.contractorService.useContractors(
     contractorQueryUtils.ofEmpty(),
   );
@@ -494,8 +489,41 @@ function ExternalLinksSection({
   const [externalId, setExternalId] = useState("");
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
+  // When a teammate pastes a Linear/GitHub/GitLab/Bitbucket/Jira URL we
+  // auto-fill the provider + external id + label. They can still override
+  // the provider after the fact (e.g. force "other") or correct the id;
+  // we only overwrite fields the user hasn't manually typed into.
+  const lastAutoFill = useRef<{
+    externalId: string;
+    label: string;
+  } | null>(null);
+  const autoFillFromUrl = (next: string) => {
+    setUrl(next);
+    const parsed = parseExternalLinkUrl(next);
+    if (parsed === null) return;
+    const prev = lastAutoFill.current;
+    const canReplaceId =
+      externalId === "" || (prev !== null && externalId === prev.externalId);
+    const canReplaceLabel =
+      label === "" || (prev !== null && label === prev.label);
+    if (canReplaceId) setExternalId(parsed.externalId);
+    if (canReplaceLabel) setLabel(parsed.label ?? "");
+    setProvider(parsed.provider);
+    lastAutoFill.current = {
+      externalId: parsed.externalId,
+      label: parsed.label ?? "",
+    };
+  };
+
+  const isDuplicate = task.externalLinks.some(
+    (l) =>
+      l.provider === provider &&
+      l.externalId.toLowerCase() === externalId.trim().toLowerCase(),
+  );
   const canAdd =
-    externalId.trim().length > 0 && /^https?:\/\//.test(url.trim());
+    externalId.trim().length > 0 &&
+    /^https?:\/\//.test(url.trim()) &&
+    !isDuplicate;
 
   const handleAdd = async () => {
     const link: ExternalLink = {
@@ -512,6 +540,7 @@ function ExternalLinksSection({
       setExternalId("");
       setUrl("");
       setLabel("");
+      lastAutoFill.current = null;
     }
   };
 
@@ -592,8 +621,8 @@ function ExternalLinksSection({
         />
         <Input
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
+          onChange={(e) => autoFillFromUrl(e.target.value)}
+          placeholder="Paste a Linear / GitHub / GitLab / Bitbucket URL…"
           className="col-span-2"
         />
         <Input
@@ -606,6 +635,11 @@ function ExternalLinksSection({
           variant="outline"
           disabled={!canAdd}
           onClick={handleAdd}
+          title={
+            isDuplicate
+              ? "This provider + id pair is already attached"
+              : undefined
+          }
         >
           Add link
         </Button>
