@@ -17,6 +17,21 @@ export interface TimeEntryService {
   useActiveEntry: (
     contractorId: Maybe<Contractor["id"]>,
   ) => RemoteData<TimeEntry | null>;
+  /**
+   * Per-contractor tag suggestions derived from recent entries, ordered
+   * by usage count (descending). The window is bounded server-side to
+   * keep the payload small; callers can further trim with `limit`.
+   */
+  useContractorTagSuggestions: (
+    contractorId: Maybe<Contractor["id"]>,
+    options?: { days?: number; limit?: number },
+  ) => RemoteData<TagSuggestion[]>;
+}
+
+export interface TagSuggestion {
+  tag: string;
+  count: number;
+  lastUsedAt: Date;
 }
 
 export interface WithTimeEntryService {

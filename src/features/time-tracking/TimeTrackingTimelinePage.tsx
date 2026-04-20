@@ -19,6 +19,7 @@ import { CommonPageContainer } from "@/features/_common/CommonPageContainer.tsx"
 import { ClientBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/ClientBreadcrumbLink.tsx";
 import { WorkspaceBreadcrumbLink } from "@/features/_common/elements/breadcrumbs/WorkspaceBreadcrumbLink.tsx";
 import { renderError } from "@/features/_common/renderError.tsx";
+import { TagMultiSelect } from "@/features/time-tracking/_common/TagMultiSelect.tsx";
 import { formatElapsedSeconds } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
 import { cn } from "@/lib/utils.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
@@ -47,7 +48,6 @@ const HOUR_PX = 32; // narrow but readable; 24 * 32 = 768px wide ribbon
  * Out of scope (separate todos):
  *   - week / month range zoom (timeline_and_tasks_pages will follow up)
  *   - jump-on lineage chips (`jump_on_mode`)
- *   - tag filters (`entry_tags`)
  */
 export function TimeTrackingTimelinePage(
   props: WithFrontServices & {
@@ -56,8 +56,10 @@ export function TimeTrackingTimelinePage(
   },
 ) {
   const [day, setDay] = useState(() => startOfLocalDay(new Date()));
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [tagMode, setTagMode] = useState<"any" | "all">("any");
 
-  const query = useMemo(() => {
+  const baseQuery = useMemo(() => {
     const startedTo = new Date(day);
     startedTo.setDate(startedTo.getDate() + 1);
     return {
@@ -77,10 +79,42 @@ export function TimeTrackingTimelinePage(
     };
   }, [day, props.workspaceId, props.clientId]);
 
-  const entries = props.services.timeEntryService.useEntries(query);
+  const filteredQuery = useMemo(
+    () => ({
+      ...baseQuery,
+      tags: tagFilter.length > 0 ? tagFilter : undefined,
+      tagsMode: tagFilter.length > 0 ? tagMode : undefined,
+    }),
+    [baseQuery, tagFilter, tagMode],
+  );
+
+  // Two queries: the visible entries (tag-filtered) and the suggestion
+  // pool (unfiltered for the same day) so the popover always shows
+  // every tag logged that day, not just the ones still visible.
+  const entries = props.services.timeEntryService.useEntries(filteredQuery);
+  const dayEntries = props.services.timeEntryService.useEntries(baseQuery);
   const contractors = props.services.contractorService.useContractors(
     contractorQueryUtils.ofEmpty(),
   );
+  const availableTags = useMemo(() => {
+    const list = rd.tryGet(dayEntries) ?? [];
+    const counts = new Map<string, { count: number; lastUsedAt: Date }>();
+    for (const e of list) {
+      if (e.deletedAt !== null) continue;
+      for (const t of e.tags) {
+        const existing = counts.get(t);
+        if (existing) {
+          existing.count += 1;
+          if (e.startedAt > existing.lastUsedAt) existing.lastUsedAt = e.startedAt;
+        } else {
+          counts.set(t, { count: 1, lastUsedAt: e.startedAt });
+        }
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([tag, v]) => ({ tag, count: v.count, lastUsedAt: v.lastUsedAt }))
+      .sort((a, b) => b.count - a.count);
+  }, [dayEntries]);
 
   return (
     <CommonPageContainer
@@ -98,11 +132,20 @@ export function TimeTrackingTimelinePage(
       ]}
     >
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="text-sm font-medium">
-            {format(day, "EEEE, d MMMM yyyy")}
-          </CardTitle>
-          <DayNav day={day} onChange={setDay} />
+        <CardHeader className="flex flex-col gap-2 space-y-0">
+          <div className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-sm font-medium">
+              {format(day, "EEEE, d MMMM yyyy")}
+            </CardTitle>
+            <DayNav day={day} onChange={setDay} />
+          </div>
+          <TagFilterRow
+            value={tagFilter}
+            onChange={setTagFilter}
+            mode={tagMode}
+            onModeChange={setTagMode}
+            available={availableTags}
+          />
         </CardHeader>
         <CardContent>
           {rd
@@ -125,6 +168,63 @@ export function TimeTrackingTimelinePage(
         </CardContent>
       </Card>
     </CommonPageContainer>
+  );
+}
+
+function TagFilterRow(props: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  mode: "any" | "all";
+  onModeChange: (next: "any" | "all") => void;
+  available: import("@/services/io/TimeEntryService/TimeEntryService.ts").TagSuggestion[];
+}) {
+  const hasAnyTagsToday = props.available.length > 0;
+  const hasSelection = props.value.length > 0;
+  if (!hasAnyTagsToday && !hasSelection) {
+    return null;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Filter by tags:</span>
+      <TagMultiSelect
+        value={props.value}
+        onChange={props.onChange}
+        suggestions={props.available}
+        showHelp={false}
+        placeholder="Filter tag…"
+        max={16}
+      />
+      {props.value.length > 1 ? (
+        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+          <Button
+            size="sm"
+            variant={props.mode === "any" ? "secondary" : "ghost"}
+            className="h-6 px-2 text-[11px]"
+            onClick={() => props.onModeChange("any")}
+          >
+            Any
+          </Button>
+          <Button
+            size="sm"
+            variant={props.mode === "all" ? "secondary" : "ghost"}
+            className="h-6 px-2 text-[11px]"
+            onClick={() => props.onModeChange("all")}
+          >
+            All
+          </Button>
+        </div>
+      ) : null}
+      {hasSelection ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 px-2 text-[11px]"
+          onClick={() => props.onChange([])}
+        >
+          Clear
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

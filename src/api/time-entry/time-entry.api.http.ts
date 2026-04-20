@@ -90,6 +90,13 @@ function applyEntryFilters<Q extends QueryWithFilters>(
   if (!query.includeDeleted) q = q.is("deleted_at", null) as Q;
   if (query.onlyPlaceholders) q = q.eq("is_placeholder", true) as Q;
   if (query.onlyActive) q = q.is("stopped_at", null) as Q;
+  if (query.tags !== undefined && query.tags.length > 0) {
+    q = (
+      query.tagsMode === "all"
+        ? q.contains("tags", query.tags)
+        : q.overlaps("tags", query.tags)
+    ) as Q;
+  }
   return q;
 }
 
@@ -99,4 +106,6 @@ interface QueryWithFilters {
   is: (column: string, value: unknown) => unknown;
   gte: (column: string, value: unknown) => unknown;
   lt: (column: string, value: unknown) => unknown;
+  contains: (column: string, value: readonly unknown[]) => unknown;
+  overlaps: (column: string, value: readonly unknown[]) => unknown;
 }

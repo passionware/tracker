@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sheet.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import type { WithFrontServices } from "@/core/frontServices.ts";
+import { TagMultiSelect } from "@/features/time-tracking/_common/TagMultiSelect.tsx";
 import { formatElapsedSeconds } from "@/features/time-tracking/_common/useElapsedSeconds.ts";
 import type { OptimisticEntry } from "@/features/time-tracking/_common/useOptimisticEntries.ts";
 import {
@@ -46,7 +47,6 @@ import {
   RotateCcw,
   Scissors,
   Trash2,
-  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -173,6 +173,7 @@ export function EntryEditorSheet(props: EntryEditorSheetProps) {
             entry={entry}
             disabled={!canMutate || entry.deletedAt !== null}
             onSubmit={submit}
+            services={props.services}
           />
           {isStopped ? (
             <SplitSection
@@ -580,92 +581,39 @@ function DescriptionSection({
 // Tags
 // ---------------------------------------------------------------------------
 
-const TAG_REGEX = /^[a-z0-9][a-z0-9_-]*$/i;
-
 function TagsSection({
   entry,
   disabled,
   onSubmit,
+  services,
 }: {
   entry: OptimisticEntry;
   disabled: boolean;
   onSubmit: Submit;
-}) {
+} & WithFrontServices) {
   const [tags, setTags] = useState<string[]>(entry.tags);
-  const [draft, setDraft] = useState("");
   useEffect(() => setTags(entry.tags), [entry.tags]);
+
+  const suggestionsRd = services.timeEntryService.useContractorTagSuggestions(
+    entry.contractorId,
+    { days: 60, limit: 50 },
+  );
+  const suggestions = rd.tryGet(suggestionsRd) ?? [];
 
   const dirty =
     tags.length !== entry.tags.length ||
     tags.some((t, i) => t !== entry.tags[i]);
 
-  const canAdd = (() => {
-    const v = draft.trim().toLowerCase();
-    if (v.length === 0 || v.length > 40) return false;
-    if (!TAG_REGEX.test(v)) return false;
-    if (tags.includes(v)) return false;
-    return tags.length < 16;
-  })();
-
-  const addTag = () => {
-    if (!canAdd) return;
-    setTags([...tags, draft.trim().toLowerCase()]);
-    setDraft("");
-  };
-  const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
-
   return (
     <section className="flex flex-col gap-1.5">
       <Label>Tags</Label>
-      <div className="flex flex-wrap gap-1">
-        {tags.length === 0 ? (
-          <span className="text-xs text-muted-foreground">
-            No tags. Use lowercase slugs (e.g. <code>frontend</code>,{" "}
-            <code>hotfix</code>) — up to 16.
-          </span>
-        ) : null}
-        {tags.map((t) => (
-          <Badge
-            key={t}
-            tone="secondary"
-            variant="neutral"
-            className="gap-1 pr-1"
-          >
-            <span className="font-mono text-[10px]">{t}</span>
-            <button
-              type="button"
-              aria-label={`Remove ${t}`}
-              className="rounded-full p-0.5 hover:bg-foreground/10 disabled:opacity-50"
-              disabled={disabled}
-              onClick={() => removeTag(t)}
-            >
-              <X className="size-3" />
-            </button>
-          </Badge>
-        ))}
-      </div>
+      <TagMultiSelect
+        value={tags}
+        onChange={setTags}
+        suggestions={suggestions}
+        disabled={disabled}
+      />
       <div className="flex items-center gap-2">
-        <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addTag();
-            }
-          }}
-          placeholder="tag-slug…"
-          disabled={disabled || tags.length >= 16}
-          className="font-mono text-xs"
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={disabled || !canAdd}
-          onClick={addTag}
-        >
-          Add
-        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -676,6 +624,16 @@ function TagsSection({
         >
           Save
         </Button>
+        {dirty ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setTags(entry.tags)}
+            disabled={disabled}
+          >
+            Revert
+          </Button>
+        ) : null}
       </div>
     </section>
   );

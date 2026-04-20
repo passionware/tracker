@@ -2,8 +2,12 @@ import type { TimeEntryApi } from "@/api/time-entry/time-entry.api";
 import { WithServices } from "@/platform/typescript/services";
 import { WithMessageService } from "@/services/internal/MessageService/MessageService";
 import { ensureIdleQuery } from "@/services/io/_common/ensureIdleQuery";
-import type { TimeEntryService } from "@/services/io/TimeEntryService/TimeEntryService";
+import type {
+  TagSuggestion,
+  TimeEntryService,
+} from "@/services/io/TimeEntryService/TimeEntryService";
 import { QueryClient, useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 const ROOT_KEY = "time-entry";
 
@@ -64,5 +68,65 @@ export function createTimeEntryService({
           client,
         ),
       ),
+    useContractorTagSuggestions: (contractorId, options) => {
+      const days = options?.days ?? 60;
+      const limit = options?.limit ?? 25;
+      const startedFrom = useMemo(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - (days - 1));
+        return d;
+      }, [days]);
+      return ensureIdleQuery(
+        contractorId,
+        useQuery(
+          {
+            enabled: contractorId !== undefined && contractorId !== null,
+            queryKey: [
+              ROOT_KEY,
+              "tag-suggestions",
+              contractorId,
+              days,
+              limit,
+            ] as const,
+            queryFn: async () => {
+              const list = await api.getEntries({
+                contractorId: contractorId!,
+                startedFrom,
+                limit: 1000,
+              });
+              return aggregateTagSuggestions(list, limit);
+            },
+          },
+          client,
+        ),
+      );
+    },
   };
+}
+
+function aggregateTagSuggestions(
+  entries: { tags: string[]; startedAt: Date; deletedAt: Date | null }[],
+  limit: number,
+): TagSuggestion[] {
+  const counts = new Map<string, { count: number; lastUsedAt: Date }>();
+  for (const e of entries) {
+    if (e.deletedAt !== null) continue;
+    for (const tag of e.tags) {
+      const existing = counts.get(tag);
+      if (existing) {
+        existing.count += 1;
+        if (e.startedAt > existing.lastUsedAt) existing.lastUsedAt = e.startedAt;
+      } else {
+        counts.set(tag, { count: 1, lastUsedAt: e.startedAt });
+      }
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([tag, v]) => ({ tag, count: v.count, lastUsedAt: v.lastUsedAt }))
+    .sort((a, b) => {
+      if (a.count !== b.count) return b.count - a.count;
+      return b.lastUsedAt.getTime() - a.lastUsedAt.getTime();
+    })
+    .slice(0, limit);
 }

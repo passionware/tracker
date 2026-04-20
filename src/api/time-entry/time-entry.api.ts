@@ -95,6 +95,13 @@ export interface TimeEntryQuery {
   onlyPlaceholders?: boolean;
   /** Set true to only include entries with `stoppedAt IS NULL` (active timers). */
   onlyActive?: boolean;
+  /**
+   * Filter by tags using the GIN index on `entry.tags`. Default semantics
+   * are OR (any-of) — matching one tag is enough. Pass `tagsMode: "all"`
+   * to require every listed tag.
+   */
+  tags?: string[];
+  tagsMode?: "any" | "all";
   /** Hard cap; defaults to 200 server-side. */
   limit?: number;
 }
