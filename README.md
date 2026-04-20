@@ -80,6 +80,7 @@ you'll lose `SET search_path` between statements. Use the **session pooler**
 | `npm run migrate:time:dev`         | Applies all pending migrations to `time_dev`.                                                                         |
 | `npm run migrate:time:prod`        | Applies to `time_prod` — **gated**: requires `TIME_MIGRATE_CONFIRM=yes` in the environment.                           |
 | `npm run migrate:time:check`       | Sanity check: probes dbmate availability and shows `time_dev` status (handy in CI).                                   |
+| `npm run projection:equivalence:dev` | Replays the `day-scenario` fixture through both the TS reducers and the SQL projection triggers in `time_dev`, and diffs the two. Wipes and reseeds only the fixture's contractor/project slice, so it's safe to re-run and won't touch other streams. |
 
 Production example:
 

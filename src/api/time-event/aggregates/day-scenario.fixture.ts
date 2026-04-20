@@ -6,9 +6,14 @@
  * jump-on interruption, split with gap, description edits, submit, approve.
  *
  * Used by:
- *   - `day-scenario.test.ts`                    — TS reducer replay & assertions
- *   - `scripts/projection-equivalence.mjs` (TBD) — SQL trigger replay &
- *                                                   equivalence check
+ *   - `day-scenario.test.ts`                         — TS reducer replay &
+ *                                                      inline-snapshot assertions
+ *   - `scripts/projection-equivalence-time.ts`       — SQL trigger replay via
+ *                                                      the `append_*_event`
+ *                                                      RPCs and equivalence
+ *                                                      check against the TS
+ *                                                      golden. Runs via
+ *                                                      `npm run projection:equivalence:dev`.
  *
  * Because both runners consume the same fixture, any drift between the TS
  * reducers in `contractor-stream.ts` / `project-stream.ts` and the SQL
