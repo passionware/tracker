@@ -474,3 +474,43 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+
+.with-styled-scrollbars {
+  scrollbar-width: thin;
+  --bg: var(--color-sidebar-background, var(--color-background, transparent));
+  --thumb: color-mix(in srgb, var(--color-sidebar-accent, var(--color-accent, var(--color-gray-800))) 50%, transparent);
+  --track-border: var(--color-sidebar-border, var(--color-border, transparent));
+
+  scrollbar-color: var(--thumb) var(--bg);
+
+  /* WebKit: Styled with design system vars */
+  &::-webkit-scrollbar {
+    width: 1rem;
+    height: 1rem;
+  }
+  &::-webkit-scrollbar-track {
+    background: var(--bg);
+    border-left: 1px solid var(--track-border);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--thumb);
+    border-radius: 0.75rem;
+    min-height: 1.75rem;
+    margin: 0 0.125rem;
+
+    /* Safari hack using design system colors */
+    background-color: var(--thumb);
+    border: 0.125rem solid transparent;
+    border-radius: 0.5625rem;
+    background-clip: content-box;
+  }
+  &::-webkit-scrollbar-corner {
+    background: var(--bg);
+  }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
