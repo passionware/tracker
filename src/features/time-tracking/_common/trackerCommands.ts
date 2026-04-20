@@ -128,3 +128,119 @@ export const PLACEHOLDER_RATE: RateSnapshot = {
   billingCurrency: "PLN",
   exchangeRate: 1,
 };
+
+// ---------------------------------------------------------------------------
+// Entry mutation payload builders (EntryEditor drawer)
+// ---------------------------------------------------------------------------
+
+export const buildEntryDescriptionChangedPayload = (
+  entryId: string,
+  description: string | null,
+): ContractorEventPayload => ({
+  type: "EntryDescriptionChanged",
+  entryId,
+  description,
+});
+
+export const buildEntryTaskAssignedPayload = (
+  entryId: string,
+  task: { taskId: string; taskVersion: number },
+  activity: { activityId: string; activityVersion: number },
+): ContractorEventPayload => ({
+  type: "EntryTaskAssigned",
+  entryId,
+  task,
+  activity,
+});
+
+export const buildEntryActivityAssignedPayload = (
+  entryId: string,
+  activity: { activityId: string; activityVersion: number },
+): ContractorEventPayload => ({
+  type: "EntryActivityAssigned",
+  entryId,
+  activity,
+});
+
+export const buildEntryRoutingChangedPayload = (
+  entryId: string,
+  routing: { clientId: number; workspaceId: number; projectId: number },
+): ContractorEventPayload => ({
+  type: "EntryRoutingChanged",
+  entryId,
+  ...routing,
+});
+
+export const buildEntryTagsChangedPayload = (
+  entryId: string,
+  tags: string[],
+): ContractorEventPayload => ({
+  type: "EntryTagsChanged",
+  entryId,
+  tags,
+});
+
+export const buildEntryDeletedPayload = (
+  entryId: string,
+  reason?: string,
+): ContractorEventPayload => ({
+  type: "EntryDeleted",
+  entryId,
+  reason,
+});
+
+export const buildEntryRevertedToDraftPayload = (
+  entryId: string,
+  revertedByUserId: string,
+  reason?: string,
+  revertedAt = new Date().toISOString(),
+): ContractorEventPayload => ({
+  type: "EntryRevertedToDraft",
+  entryId,
+  revertedAt,
+  revertedByUserId,
+  reason,
+});
+
+export interface SplitEntryCommand {
+  sourceEntryId: string;
+  splitAt: string;
+  gapSeconds: number;
+  leftEntryId?: string;
+  rightEntryId?: string;
+}
+
+export function buildEntrySplitPayload(
+  cmd: SplitEntryCommand,
+): { payload: ContractorEventPayload; leftEntryId: string; rightEntryId: string } {
+  const leftEntryId = cmd.leftEntryId ?? newUuid();
+  const rightEntryId = cmd.rightEntryId ?? newUuid();
+  return {
+    leftEntryId,
+    rightEntryId,
+    payload: {
+      type: "EntrySplit",
+      sourceEntryId: cmd.sourceEntryId,
+      splitAt: cmd.splitAt,
+      gapSeconds: cmd.gapSeconds,
+      leftEntryId,
+      rightEntryId,
+    },
+  };
+}
+
+export function buildEntryMergedPayload(
+  leftEntryId: string,
+  rightEntryId: string,
+  mergedEntryId: string = newUuid(),
+): { payload: ContractorEventPayload; mergedEntryId: string } {
+  return {
+    mergedEntryId,
+    payload: {
+      type: "EntryMerged",
+      leftEntryId,
+      rightEntryId,
+      mergedEntryId,
+    },
+  };
+}

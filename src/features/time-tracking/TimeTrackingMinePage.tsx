@@ -27,6 +27,7 @@ import {
   type OptimisticEntry,
   useOptimisticEntries,
 } from "@/features/time-tracking/_common/useOptimisticEntries.ts";
+import { EntryEditorSheet } from "@/features/time-tracking/entry-editor/EntryEditorSheet.tsx";
 import { TrackerBarContractorPicker } from "@/features/time-tracking/tracker-bar/TrackerBarContractorPicker.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
@@ -116,8 +117,16 @@ function MineForContractor(
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
   const entries = rd.tryGet(entriesRd) ?? [];
+  const editingEntry = useMemo(
+    () =>
+      editingEntryId !== null
+        ? entries.find((e) => e.entryId === editingEntryId) ?? null
+        : null,
+    [editingEntryId, entries],
+  );
   const selectableIds = useMemo(
     () =>
       entries
@@ -218,10 +227,31 @@ function MineForContractor(
             onToggleAll={toggleAll}
             allSelected={allSelected}
             anySelectable={selectableIds.length > 0}
+            onEdit={setEditingEntryId}
           />
         ))}
+
+      {editingEntry ? (
+        <EntryEditorSheet
+          services={props.services}
+          entry={editingEntry}
+          neighbours={entries.filter(
+            (e) =>
+              e.entryId !== editingEntry.entryId &&
+              sameLocalDay(e.startedAt, editingEntry.startedAt),
+          )}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingEntryId(null);
+          }}
+        />
+      ) : null}
     </div>
   );
+}
+
+function sameLocalDay(isoA: string, isoB: string): boolean {
+  return format(new Date(isoA), "yyyy-MM-dd") === format(new Date(isoB), "yyyy-MM-dd");
 }
 
 function EntriesList(
@@ -232,8 +262,16 @@ function EntriesList(
     onToggleAll: () => void;
     allSelected: boolean;
     anySelectable: boolean;
+    onEdit: (entryId: string) => void;
   },
 ) {
+  const projectIds = useMemo(
+    () => Array.from(new Set(props.entries.map((e) => e.projectId))),
+    [props.entries],
+  );
+  const projectLookup = useProjectLookup(props, projectIds);
+  const groups = useMemo(() => groupByDay(props.entries), [props.entries]);
+
   if (props.entries.length === 0) {
     return (
       <Card>
@@ -244,16 +282,6 @@ function EntriesList(
       </Card>
     );
   }
-
-  // Stable lookup of all unique project IDs in the visible window so we
-  // can colour the project chip without N+1 fetches.
-  const projectIds = useMemo(
-    () => Array.from(new Set(props.entries.map((e) => e.projectId))),
-    [props.entries],
-  );
-  const projectLookup = useProjectLookup(props, projectIds);
-
-  const groups = useMemo(() => groupByDay(props.entries), [props.entries]);
 
   return (
     <Card>
@@ -286,6 +314,7 @@ function EntriesList(
                   project={projectLookup.get(entry.projectId) ?? null}
                   selected={props.selected.has(entry.entryId)}
                   onToggle={() => props.onToggleOne(entry.entryId)}
+                  onEdit={() => props.onEdit(entry.entryId)}
                   selectable={
                     entry.approvalState === "draft" && entry.stoppedAt !== null
                   }
@@ -304,6 +333,7 @@ function EntryRow(props: {
   project: Project | null;
   selected: boolean;
   onToggle: () => void;
+  onEdit: () => void;
   selectable: boolean;
 }) {
   const { entry } = props;
@@ -323,15 +353,22 @@ function EntryRow(props: {
   return (
     <li
       className={cn(
-        "flex items-center gap-3 py-2",
-        entry.deletedAt !== null && "opacity-50",
+        "flex items-center gap-3 py-2 -mx-2 px-2 rounded-md transition-colors hover:bg-muted/50 cursor-pointer",
+        entry.deletedAt !== null && "opacity-50 cursor-not-allowed",
       )}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("[data-no-edit]")) return;
+        if (entry.deletedAt === null) props.onEdit();
+      }}
     >
-      <Checkbox
-        checked={props.selected}
-        disabled={!props.selectable}
-        onCheckedChange={() => props.onToggle()}
-      />
+      <span data-no-edit className="contents">
+        <Checkbox
+          checked={props.selected}
+          disabled={!props.selectable}
+          onCheckedChange={() => props.onToggle()}
+        />
+      </span>
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm">
           <span className="font-medium truncate">
