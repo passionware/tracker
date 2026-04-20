@@ -12,6 +12,10 @@ import { Nullable } from "@/platform/typescript/Nullable";
 export interface ProjectRate {
   projectId: Project["id"];
   contractorId: Contractor["id"];
+  /** UUID of the rate aggregate on the project stream. Stable across
+   * `RateSet` updates, reused by `RateUnset`, needed by the admin UI to
+   * address the correct aggregate when updating or retiring a rate. */
+  rateAggregateId: string;
   /** Reuses the same nested shape as a time entry's rate snapshot. */
   rate: RateSnapshot;
   /** When this rate became effective. Earlier rates remain in event history. */

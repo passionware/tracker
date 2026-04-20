@@ -59,7 +59,7 @@ export const taskActuals$ = z.object({
   entry_count_active: z.coerce.number(),
   total_seconds: z.coerce.number(),
   total_net_value: z.coerce.number(),
-  billing_currency: z.string().nullable(),
+  currency: z.string().nullable(),
   first_started_at: z.coerce.date().nullable(),
   last_stopped_at: z.coerce.date().nullable(),
 });
@@ -72,7 +72,7 @@ export function taskActualsFromHttp(row: TaskActuals$): TaskActuals {
     entryCountActive: row.entry_count_active,
     totalSeconds: row.total_seconds,
     totalNetValue: row.total_net_value,
-    billingCurrency: row.billing_currency,
+    currency: row.currency,
     firstStartedAt: row.first_started_at,
     lastStoppedAt: row.last_stopped_at,
   };

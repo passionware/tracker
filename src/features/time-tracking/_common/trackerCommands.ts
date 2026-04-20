@@ -169,9 +169,6 @@ export const PLACEHOLDER_RATE: RateSnapshot = {
   unit: "h",
   unitPrice: 0,
   currency: "PLN",
-  billingUnitPrice: 0,
-  billingCurrency: "PLN",
-  exchangeRate: 1,
 };
 
 // ---------------------------------------------------------------------------

@@ -5,13 +5,11 @@ import { z } from "zod";
 export const projectRate$ = z.object({
   project_id: z.number(),
   contractor_id: z.number(),
+  rate_aggregate_id: z.string().uuid(),
   rate_unit: z.string(),
   rate_quantity: z.coerce.number(),
   rate_unit_price: z.coerce.number(),
   rate_currency: z.string(),
-  rate_billing_unit_price: z.coerce.number(),
-  rate_billing_currency: z.string(),
-  rate_exchange_rate: z.coerce.number(),
   effective_from: z.coerce.date(),
   version: z.number(),
   last_event_id: z.string().uuid().nullable(),
@@ -25,9 +23,6 @@ function rateSnapshotFromRow(row: ProjectRate$): RateSnapshot {
     quantity: row.rate_quantity,
     unitPrice: row.rate_unit_price,
     currency: row.rate_currency,
-    billingUnitPrice: row.rate_billing_unit_price,
-    billingCurrency: row.rate_billing_currency,
-    exchangeRate: row.rate_exchange_rate,
   };
 }
 
@@ -35,6 +30,7 @@ export function projectRateFromHttp(row: ProjectRate$): ProjectRate {
   return {
     projectId: row.project_id,
     contractorId: row.contractor_id,
+    rateAggregateId: row.rate_aggregate_id,
     rate: rateSnapshotFromRow(row),
     effectiveFrom: row.effective_from,
     version: row.version,

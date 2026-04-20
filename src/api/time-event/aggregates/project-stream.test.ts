@@ -25,9 +25,6 @@ const RATE: RateDefinition = {
   unit: "h",
   unitPrice: 100,
   currency: "PLN",
-  billingUnitPrice: 30,
-  billingCurrency: "EUR",
-  exchangeRate: 4.3,
 };
 
 const meta = (

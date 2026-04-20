@@ -4,6 +4,7 @@ import {
   type ProjectEventPayload,
   type ProjectAggregateKind,
   type ExternalLink,
+  type RateDefinition,
 } from "@/api/time-event/time-event.api.ts";
 import { newUuid } from "@/features/time-tracking/_common/trackerCommands.ts";
 
@@ -151,6 +152,46 @@ export const buildTaskArchivedPayload = (
 export const buildTaskUnarchivedPayload = (
   taskId: string,
 ): ProjectEventPayload => ({ type: "TaskUnarchived", taskId });
+
+// ---------------------------------------------------------------------------
+// Rate payload builders
+// ---------------------------------------------------------------------------
+
+export interface SetRateCommand {
+  /** Omit to mint a fresh aggregate (first rate for this contractor); pass
+   *  the existing id to update-in-place. The reducer rejects setting a new
+   *  aggregate while another one is already active for the same contractor. */
+  rateAggregateId?: string;
+  contractorId: number;
+  /** `YYYY-MM-DD`. On update, must be strictly after the previous value. */
+  effectiveFrom: string;
+  rate: RateDefinition;
+}
+
+export function buildRateSetPayload(
+  cmd: SetRateCommand,
+): { payload: ProjectEventPayload; rateAggregateId: string } {
+  const rateAggregateId = cmd.rateAggregateId ?? newUuid();
+  return {
+    rateAggregateId,
+    payload: {
+      type: "RateSet",
+      rateAggregateId,
+      contractorId: cmd.contractorId,
+      effectiveFrom: cmd.effectiveFrom,
+      rate: cmd.rate,
+    },
+  };
+}
+
+export const buildRateUnsetPayload = (
+  rateAggregateId: string,
+  effectiveFrom: string,
+): ProjectEventPayload => ({
+  type: "RateUnset",
+  rateAggregateId,
+  effectiveFrom,
+});
 
 // ---------------------------------------------------------------------------
 // Activity payload builders

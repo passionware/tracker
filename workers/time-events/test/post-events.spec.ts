@@ -11,9 +11,6 @@ const RATE: RateSnapshot = {
   unit: "h",
   unitPrice: 100,
   currency: "PLN",
-  billingUnitPrice: 30,
-  billingCurrency: "EUR",
-  exchangeRate: 4.3,
 };
 
 describe("POST /events - health & happy path", () => {

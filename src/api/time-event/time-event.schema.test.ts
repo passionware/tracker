@@ -23,9 +23,6 @@ const sampleRate = {
   unit: "h",
   unitPrice: 100,
   currency: "PLN",
-  billingUnitPrice: 30,
-  billingCurrency: "EUR",
-  exchangeRate: 4.3,
 };
 
 describe("rate snapshot schema", () => {
@@ -43,8 +40,8 @@ describe("rate snapshot schema", () => {
     expect(r.success).toBe(false);
   });
 
-  it("rejects a zero exchange rate", () => {
-    const r = rateSnapshotSchema.safeParse({ ...sampleRate, exchangeRate: 0 });
+  it("rejects a negative unit price", () => {
+    const r = rateSnapshotSchema.safeParse({ ...sampleRate, unitPrice: -1 });
     expect(r.success).toBe(false);
   });
 

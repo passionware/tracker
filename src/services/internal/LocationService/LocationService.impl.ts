@@ -97,6 +97,9 @@ function globalManagementRemountTarget(
   if (pathnameMatchesPathOrNested(pathname, global.manageContractors())) {
     return global.manageContractors;
   }
+  if (pathnameMatchesPathOrNested(pathname, global.manageProjectRates())) {
+    return global.manageProjectRates;
+  }
   if (pathnameMatchesPathOrNested(pathname, global.tmetricBackfill())) {
     return global.tmetricBackfill;
   }

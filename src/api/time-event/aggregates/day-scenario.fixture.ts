@@ -54,9 +54,6 @@ const RATE_DEF: RateDefinition = {
   unit: "h",
   unitPrice: 120,
   currency: "PLN",
-  billingUnitPrice: 28,
-  billingCurrency: "EUR",
-  exchangeRate: 4.3,
 };
 
 const RATE_SNAPSHOT: RateSnapshot = { ...RATE_DEF };

@@ -173,10 +173,7 @@ function rateAttributesEqual(a: RateSnapshot, b: RateSnapshot): boolean {
   return (
     a.unit === b.unit &&
     a.unitPrice === b.unitPrice &&
-    a.currency === b.currency &&
-    a.billingUnitPrice === b.billingUnitPrice &&
-    a.billingCurrency === b.billingCurrency &&
-    a.exchangeRate === b.exchangeRate
+    a.currency === b.currency
   );
 }
 

@@ -29,9 +29,6 @@ export const timeEntry$ = z.object({
   rate_quantity: z.coerce.number(),
   rate_unit_price: z.coerce.number(),
   rate_currency: z.string(),
-  rate_billing_unit_price: z.coerce.number(),
-  rate_billing_currency: z.string(),
-  rate_exchange_rate: z.coerce.number(),
   rate_net_value: z.coerce.number(),
   is_placeholder: z.boolean(),
   approval_state: approvalState$,
@@ -50,7 +47,7 @@ export const timeEntry$ = z.object({
 });
 export type TimeEntry$ = z.infer<typeof timeEntry$>;
 
-/** Pull the 8 flat `rate_*` projection columns into a nested {@link RateSnapshot}. */
+/** Pull the flat `rate_*` projection columns into a nested {@link RateSnapshot}. */
 function rateFromRow(row: TimeEntry$): RateSnapshot {
   // Cast: `unit` is constrained to RateUnitSchema in the worker, but the
   // projection stores text; we trust the worker to have validated on write.
@@ -59,9 +56,6 @@ function rateFromRow(row: TimeEntry$): RateSnapshot {
     quantity: row.rate_quantity,
     unitPrice: row.rate_unit_price,
     currency: row.rate_currency,
-    billingUnitPrice: row.rate_billing_unit_price,
-    billingCurrency: row.rate_billing_currency,
-    exchangeRate: row.rate_exchange_rate,
     netValue: row.rate_net_value,
   };
 }

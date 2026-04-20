@@ -29,17 +29,29 @@ import {
   buildEntryImportedFromTmetricPayload,
   newUuid,
 } from "@/features/time-tracking/_common/trackerCommands.ts";
+import {
+  buildProjectEnvelope,
+  buildTaskCreatedPayload,
+} from "@/features/time-tracking/_common/projectCommands.ts";
 import { deriveAdminScope } from "@/features/time-tracking/TimeTrackingApprovalsPage.tsx";
 import { WithFrontServices } from "@/core/frontServices.ts";
 import type { ProjectRate } from "@/api/rate/rate.api.ts";
 import type { RateSnapshot } from "@/api/time-event/time-event.api.ts";
+import type { TaskDefinition } from "@/api/task-definition/task-definition.api.ts";
 import { createTMetricClient } from "@/services/io/ReportGenerationService/plugins/tmetric/_private/TmetricClient.ts";
 import type {
   TMetricAuthConfig,
   TMetricTimeEntry,
 } from "@/services/io/ReportGenerationService/plugins/tmetric/_private/TmetricSchemas.ts";
 import { rd, type RemoteData } from "@passionware/monads";
-import { CheckCircle2, Download, ShieldAlert, TriangleAlert, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  ShieldAlert,
+  Sparkles,
+  TriangleAlert,
+  XCircle,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -52,9 +64,13 @@ import { toast } from "sonner";
  *
  * Scope for the first version:
  *   - One contractor + client + workspace + target project per run.
- *   - All entries come in as placeholders (`isPlaceholder: true`) — task
- *     and activity mapping is left for a follow-up; admins can route
- *     individual entries in the entry editor once they're imported.
+ *   - TMetric `task.name` (usually a git branch) is used as a natural
+ *     identifier: existing project tasks are matched case-insensitively
+ *     by trimmed name; unknown names spawn a fresh `TaskCreated` event
+ *     so rerunning the same window is stable across attempts.
+ *   - Entries stay `isPlaceholder: true` — activity routing is not yet
+ *     part of the backfill; admins can flip them to final via the entry
+ *     editor once imported.
  *   - Rate snapshot is read from `rate_current` for the chosen
  *     (project, contractor) pair; if no rate is set we surface a clear
  *     blocker instead of silently importing at zero.
@@ -116,7 +132,15 @@ interface ImportRow {
   startedAt: string;
   stoppedAt: string;
   description: string | null;
+  taskName: string | null;
   status: RowStatus;
+}
+
+interface TaskResolutionRow {
+  name: string;
+  taskId: string;
+  status: "reused" | "created" | "failed";
+  reason?: string;
 }
 
 function BackfillPanel(props: WithFrontServices) {
@@ -136,7 +160,10 @@ function BackfillPanel(props: WithFrontServices) {
     new Date().toISOString().slice(0, 10),
   );
   const [rows, setRows] = useState<ImportRow[]>([]);
-  const [busy, setBusy] = useState<"idle" | "fetching" | "importing">("idle");
+  const [taskRows, setTaskRows] = useState<TaskResolutionRow[]>([]);
+  const [busy, setBusy] = useState<
+    "idle" | "fetching" | "resolving_tasks" | "importing"
+  >("idle");
   const [blocker, setBlocker] = useState<string | null>(null);
 
   // Reference data for the pickers.
@@ -154,10 +181,21 @@ function BackfillPanel(props: WithFrontServices) {
   );
 
   const contractorIdNum = parseIntOrNull(contractorId);
+  const projectIdNum = parseIntOrNull(projectId);
   const rateRd = props.services.projectRateService.useCurrentRate(
-    parseIntOrNull(projectId),
+    projectIdNum,
     contractorIdNum,
   );
+  // Existing tasks on the target project — drives the "reuse vs create"
+  // decision for each TMetric task name we encounter. Before a project is
+  // picked we query with a sentinel `projectId: 0` which no real row has,
+  // so the API returns `[]` and the hook settles into an empty success.
+  const tasksRd = props.services.taskDefinitionService.useTasks({
+    projectId: projectIdNum ?? 0,
+    includeArchived: true,
+    includeCompleted: true,
+    limit: 1000,
+  });
 
   const canSubmit =
     contractorIdNum !== null &&
@@ -171,6 +209,7 @@ function BackfillPanel(props: WithFrontServices) {
   const runBackfill = async () => {
     setBlocker(null);
     setRows([]);
+    setTaskRows([]);
 
     const resolvedContractorId = parseIntOrNull(contractorId);
     const resolvedClientId = parseIntOrNull(clientId);
@@ -259,14 +298,96 @@ function BackfillPanel(props: WithFrontServices) {
       startedAt: e.startTime,
       stoppedAt: e.endTime ?? e.startTime,
       description: e.note ?? null,
+      taskName: e.task?.name?.trim() ? e.task.name.trim() : null,
       status: { kind: "pending" },
     }));
     setRows(pendingRows);
-    setBusy("importing");
 
     // Shared correlation id so the outbox/events-viewer groups the whole
-    // backfill as one admin gesture.
+    // backfill as one admin gesture (task-creation + entry imports).
     const correlationId = newUuid();
+
+    // Step 1: resolve TMetric task names to our project tasks, emitting
+    // TaskCreated events for any names not already present. We match by
+    // trimmed, case-insensitive name — contractors on TMetric tend to
+    // write the same branch name with mixed case ("Foo-Bar" vs "foo-bar")
+    // and we'd rather reuse than duplicate.
+    setBusy("resolving_tasks");
+    const existingTasks: TaskDefinition[] = rd.tryGet(tasksRd) ?? [];
+    const existingByName = new Map<string, TaskDefinition>();
+    for (const t of existingTasks) {
+      existingByName.set(t.name.trim().toLowerCase(), t);
+    }
+
+    const uniqueTaskNames = Array.from(
+      new Set(
+        entries
+          .map((e) => e.task?.name?.trim())
+          .filter((v): v is string => typeof v === "string" && v.length > 0),
+      ),
+    );
+
+    const taskResolution = new Map<
+      string,
+      { taskId: string; taskVersion: number }
+    >();
+    const taskLog: TaskResolutionRow[] = [];
+
+    // Tasks live under a client, and that client must match the project's
+    // own clientId (not necessarily the TMetric client picked above for
+    // config resolution). Pull it from the projects list we already have.
+    const projectsList = rd.tryGet(projectsRd) ?? [];
+    const targetProject = projectsList.find((p) => p.id === resolvedProjectId);
+    const taskClientId = targetProject?.clientId ?? resolvedClientId;
+
+    for (const name of uniqueTaskNames) {
+      const existing = existingByName.get(name.toLowerCase());
+      if (existing) {
+        taskResolution.set(name, {
+          taskId: existing.id,
+          taskVersion: existing.version,
+        });
+        taskLog.push({ name, taskId: existing.id, status: "reused" });
+        continue;
+      }
+      const { payload, taskId } = buildTaskCreatedPayload({
+        clientId: taskClientId,
+        name,
+      });
+      const envelope = buildProjectEnvelope({
+        projectId: resolvedProjectId,
+        correlationId,
+        aggregateKind: "task",
+        aggregateId: taskId,
+      });
+      try {
+        const outcome =
+          await props.services.eventQueueService.submitProjectEvent(
+            envelope,
+            payload,
+          );
+        if (outcome.kind === "rejected_locally") {
+          taskLog.push({
+            name,
+            taskId,
+            status: "failed",
+            reason: outcome.errors.map((e) => e.message).join("; "),
+          });
+          continue;
+        }
+        taskResolution.set(name, { taskId, taskVersion: 1 });
+        taskLog.push({ name, taskId, status: "created" });
+      } catch (e) {
+        taskLog.push({
+          name,
+          taskId,
+          status: "failed",
+          reason: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+    setTaskRows(taskLog);
+    setBusy("importing");
 
     let queued = 0;
     let duplicate = 0;
@@ -278,11 +399,17 @@ function BackfillPanel(props: WithFrontServices) {
         contractorId: resolvedContractorId,
         correlationId,
       });
+      const taskName = entry.task?.name?.trim();
+      const resolvedTask = taskName ? taskResolution.get(taskName) : undefined;
+      // Stay `isPlaceholder: true` even when we have a task — until activity
+      // routing is available via the backfill UI, the reducer needs it to
+      // accept the import (non-placeholder requires BOTH task and activity).
       const payload = buildEntryImportedFromTmetricPayload({
         tmetricEntryId: String(entry.id),
         clientId: resolvedClientId,
         workspaceId: resolvedWorkspaceId,
         projectId: resolvedProjectId,
+        task: resolvedTask,
         startedAt: entry.startTime,
         stoppedAt: entry.endTime!,
         description: entry.note || undefined,
@@ -441,16 +568,76 @@ function BackfillPanel(props: WithFrontServices) {
               <Download className="size-4" />
               {busy === "fetching"
                 ? "Fetching from TMetric…"
-                : busy === "importing"
-                  ? "Importing…"
-                  : "Run backfill"}
+                : busy === "resolving_tasks"
+                  ? "Resolving tasks…"
+                  : busy === "importing"
+                    ? "Importing…"
+                    : "Run backfill"}
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      {taskRows.length > 0 ? <TaskLog rows={taskRows} /> : null}
       {rows.length > 0 ? <RowList rows={rows} /> : null}
     </div>
+  );
+}
+
+function TaskLog(props: { rows: TaskResolutionRow[] }) {
+  const summary = useMemo(() => {
+    let reused = 0;
+    let created = 0;
+    let failed = 0;
+    for (const r of props.rows) {
+      if (r.status === "reused") reused += 1;
+      else if (r.status === "created") created += 1;
+      else failed += 1;
+    }
+    return { reused, created, failed };
+  }, [props.rows]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          Tasks ({props.rows.length} unique · {summary.reused} reused ·{" "}
+          {summary.created} created
+          {summary.failed > 0 ? ` · ${summary.failed} failed` : ""})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ul className="divide-y text-sm">
+          {props.rows.map((row, i) => (
+            <li
+              key={`${row.taskId}-${i}`}
+              className="flex items-start gap-3 px-4 py-2"
+            >
+              {row.status === "created" ? (
+                <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+              ) : row.status === "reused" ? (
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-sky-600" />
+              ) : (
+                <XCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{row.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {row.status === "created"
+                    ? `Created · ${row.taskId.slice(0, 8)}`
+                    : row.status === "reused"
+                      ? `Reused · ${row.taskId.slice(0, 8)}`
+                      : "Failed to create"}
+                </div>
+                {row.reason ? (
+                  <div className="text-xs text-destructive">{row.reason}</div>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -497,9 +684,7 @@ function RateHint(props: {
       const snap = rate.rate;
       return (
         <p className="text-xs text-muted-foreground">
-          Will snapshot rate: {snap.unitPrice} {snap.currency}/{snap.unit} →{" "}
-          {snap.billingUnitPrice} {snap.billingCurrency}/{snap.unit} (fx{" "}
-          {snap.exchangeRate}).
+          Will snapshot rate: {snap.unitPrice} {snap.currency}/{snap.unit}.
         </p>
       );
     });
@@ -545,6 +730,11 @@ function RowList(props: { rows: ImportRow[] }) {
                   <span className="text-xs text-muted-foreground">
                     {formatRange(row.startedAt, row.stoppedAt)}
                   </span>
+                  {row.taskName ? (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {row.taskName}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="truncate">
                   {row.description ?? (

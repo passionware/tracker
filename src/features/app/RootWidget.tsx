@@ -42,6 +42,7 @@ import { TmetricLiveContractorsPage } from "@/features/tmetric-dashboard/Tmetric
 import { ClientsManageWidget } from "@/features/clients/ClientsManageWidget.tsx";
 import { ContractorsManageWidget } from "@/features/contractors/ContractorsManageWidget.tsx";
 import { TmetricBackfillWidget } from "@/features/contractors/TmetricBackfillWidget.tsx";
+import { ProjectRatesManageWidget } from "@/features/configuration/ProjectRatesManageWidget.tsx";
 import { WorkspacesManageWidget } from "@/features/workspaces/WorkspacesManageWidget.tsx";
 import { VariableEditModalWidget } from "@/features/variables/VariableEditModalWidget.tsx";
 import { VariableWidget } from "@/features/variables/VariableWidget.tsx";
@@ -517,6 +518,16 @@ export function RootWidget(props: WithFrontServices) {
             <ProtectedRoute services={props.services}>
               <Layout sidebarSlot={<AppSidebar services={props.services} />}>
                 <TmetricBackfillWidget services={props.services} />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={myRouting.forGlobal().manageProjectRates()}
+          element={
+            <ProtectedRoute services={props.services}>
+              <Layout sidebarSlot={<AppSidebar services={props.services} />}>
+                <ProjectRatesManageWidget services={props.services} />
               </Layout>
             </ProtectedRoute>
           }

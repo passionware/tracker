@@ -38,7 +38,9 @@ export interface TaskDefinition {
 
 /**
  * One row in the `task_actuals` view. Aggregates over `entry` per task.
- * `billingCurrency` is null when entries on the task mix billing currencies.
+ * `currency` is null when entries on the task mix rate currencies (time
+ * tracking no longer carries a separate billing currency; any FX concerns
+ * belong to the downstream reports/billing system).
  */
 export interface TaskActuals {
   taskId: string;
@@ -46,7 +48,7 @@ export interface TaskActuals {
   entryCountActive: number;
   totalSeconds: number;
   totalNetValue: number;
-  billingCurrency: Nullable<string>;
+  currency: Nullable<string>;
   firstStartedAt: Nullable<Date>;
   lastStoppedAt: Nullable<Date>;
 }

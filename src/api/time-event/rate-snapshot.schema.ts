@@ -1,13 +1,16 @@
 /**
  * Rate snapshot schema — the shape persisted on every time entry and on every
- * RateSet event. Mirrors the per-unit pricing fields from the existing
- * `ReportPayload` (src/api/reports/reports.api.ts) so reports/billing can use
- * the entry directly without re-deriving prices.
+ * `RateSet` event. Time tracking intentionally carries only the "what did the
+ * contractor agree to be paid per unit of work" shape; the downstream
+ * reports/billing system (see `src/api/reports/**`) layers its own
+ * cost-to-billing, FX, and invoice-currency concerns on top, so we do *not*
+ * duplicate them here. Keeping this narrow means a time entry never has to
+ * answer "what does this mean in EUR?" — reports do that when they need to.
  *
  * Two related shapes:
  *   - `rateDefinitionSchema`  — per-unit pricing only (used in `rate_current`
- *                                and the `RateSet` event payload). No quantity
- *                                or net value.
+ *                                and the `RateSet` event payload). No
+ *                                quantity or net value.
  *   - `rateSnapshotSchema`    — extends the definition with the realised
  *                                `quantity` and `netValue`. Used on the
  *                                `entry` read model and inside `EntryStarted`.
@@ -46,11 +49,6 @@ export const rateDefinitionSchema = z.object({
     .nonnegative("unit price must be ≥ 0")
     .finite(),
   currency: currencyCodeSchema,
-  billingUnitPrice: z.number().nonnegative().finite(),
-  billingCurrency: currencyCodeSchema,
-  // FX rate that converts `currency` into `billingCurrency` at snapshot time.
-  // 1 means same currency; cannot be 0 or negative.
-  exchangeRate: z.number().positive("exchange rate must be > 0").finite(),
 });
 
 export type RateDefinition = z.infer<typeof rateDefinitionSchema>;

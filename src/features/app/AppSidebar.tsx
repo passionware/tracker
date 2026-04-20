@@ -153,6 +153,10 @@ function useData(
               url: myRouting.forGlobal().manageContractors(),
             },
             {
+              title: "Project rates",
+              url: myRouting.forGlobal().manageProjectRates(),
+            },
+            {
               title: "TMetric backfill",
               url: myRouting.forGlobal().tmetricBackfill(),
             },
