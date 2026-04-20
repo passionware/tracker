@@ -1,3 +1,12 @@
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -41,7 +50,7 @@ import { contractorQueryUtils } from "@/api/contractor/contractor.api.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { myRouting } from "@/routing/myRouting.ts";
 import { rd } from "@passionware/monads";
-import { AlertCircle, Pause, Timer, UserCog } from "lucide-react";
+import { AlertCircle, AlertTriangle, Pause, Timer, UserCog } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -169,6 +178,7 @@ function ActiveTrackerArea(
                 entry={bundle.runningPrimary}
                 serverState={bundle.serverState}
                 lane="primary"
+                sideQuest={bundle.runningJumpOn}
                 jumpOnAction={
                   bundle.runningJumpOn === null ? (
                     <TrackerBarJumpOnPopover
@@ -260,6 +270,13 @@ function IdleRow(
   );
 }
 
+/**
+ * Threshold (in seconds) after which a jump-on is considered "suspicious"
+ * and we surface a "still on your side quest?" nudge. Deliberately a
+ * constant for now — promote to PreferenceService if users ask to tune it.
+ */
+const JUMP_ON_LONG_RUN_THRESHOLD_SECONDS = 30 * 60;
+
 function RunningRow(
   props: WithFrontServices & {
     contractorId: number;
@@ -276,6 +293,12 @@ function RunningRow(
     jumpOnAction?: ReactNode;
     /** The primary entry this jump-on will return to (jump-on lane only). */
     returnsTo?: EntryState;
+    /**
+     * Running jump-on that depends on this primary (primary lane only).
+     * When present, stopping the primary pops a guard dialog so the user
+     * can decide whether to stop both or leave the side-quest running.
+     */
+    sideQuest?: EntryState | null;
   },
 ) {
   const seconds = useElapsedSeconds(props.entry.startedAt);
@@ -288,28 +311,49 @@ function RunningRow(
   const returnsToProjectName =
     rd.tryGet(returnsToProject)?.name ??
     (props.returnsTo ? `Project ${props.returnsTo.projectId}` : null);
+  const sideQuestProject = props.services.projectService.useProject(
+    props.sideQuest?.projectId,
+  );
+  const sideQuestProjectName =
+    rd.tryGet(sideQuestProject)?.name ??
+    (props.sideQuest ? `Project ${props.sideQuest.projectId}` : null);
   const [stopping, setStopping] = useState(false);
+  const [guardOpen, setGuardOpen] = useState(false);
+
+  const stopOne = async (entryId: string): Promise<boolean> => {
+    const envelope = buildContractorEnvelope({
+      contractorId: props.contractorId,
+      correlationId: newUuid(),
+    });
+    const payload = buildEntryStoppedPayload(entryId);
+    const outcome =
+      await props.services.eventQueueService.submitContractorEvent(
+        envelope,
+        payload,
+        { serverSnapshot: props.serverState },
+      );
+    if (outcome.kind === "rejected_locally") {
+      toast.error(
+        `Couldn't stop: ${outcome.errors.map((e) => e.message).join("; ")}`,
+      );
+      return false;
+    }
+    return true;
+  };
 
   const handleStop = async () => {
+    // Guard: the primary's Stop is intercepted when a side-quest is
+    // running so the user doesn't accidentally leave an orphaned jump-on
+    // behind. The dialog's actions re-enter via stopPrimaryOnly /
+    // stopBoth, bypassing the guard.
+    if (props.lane === "primary" && props.sideQuest) {
+      setGuardOpen(true);
+      return;
+    }
     setStopping(true);
     try {
-      const envelope = buildContractorEnvelope({
-        contractorId: props.contractorId,
-        correlationId: newUuid(),
-      });
-      const payload = buildEntryStoppedPayload(props.entry.entryId);
-      const outcome =
-        await props.services.eventQueueService.submitContractorEvent(
-          envelope,
-          payload,
-          { serverSnapshot: props.serverState },
-        );
-      if (outcome.kind === "rejected_locally") {
-        toast.error(
-          `Couldn't stop: ${outcome.errors.map((e) => e.message).join("; ")}`,
-        );
-        return;
-      }
+      const ok = await stopOne(props.entry.entryId);
+      if (!ok) return;
       toast.success(
         props.lane === "jump-on" && returnsToProjectName
           ? `Side quest done — back on ${returnsToProjectName}`
@@ -320,7 +364,40 @@ function RunningRow(
     }
   };
 
+  const stopPrimaryOnly = async () => {
+    setGuardOpen(false);
+    setStopping(true);
+    try {
+      const ok = await stopOne(props.entry.entryId);
+      if (!ok) return;
+      toast.success("Primary stopped — side-quest still running");
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const stopBoth = async () => {
+    setGuardOpen(false);
+    if (!props.sideQuest) return;
+    setStopping(true);
+    try {
+      // Stop the jump-on first so the primary's stop doesn't need to
+      // re-evaluate lineage invariants in the presence of a running
+      // dependent. The queue still respects per-aggregate ordering via
+      // optimistic concurrency, so a failure on step 1 aborts step 2.
+      const jumpOnStopped = await stopOne(props.sideQuest.entryId);
+      if (!jumpOnStopped) return;
+      const primaryStopped = await stopOne(props.entry.entryId);
+      if (!primaryStopped) return;
+      toast.success("Both timers stopped");
+    } finally {
+      setStopping(false);
+    }
+  };
+
   const isJumpOn = props.lane === "jump-on";
+  const isLongRunningJumpOn =
+    isJumpOn && (seconds ?? 0) >= JUMP_ON_LONG_RUN_THRESHOLD_SECONDS;
   return (
     <div
       className={cn(
@@ -357,21 +434,41 @@ function RunningRow(
             </span>
           ) : null}
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              className={cn(
-                "rounded-md px-1.5 py-0.5 font-mono text-xs tabular-nums",
-                isJumpOn
-                  ? "bg-amber-200 text-amber-900"
-                  : "bg-emerald-100 text-emerald-900",
-              )}
-            >
-              {formatElapsedSeconds(seconds ?? 0)}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>Started {props.entry.startedAt}</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1.5">
+          {isLongRunningJumpOn ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 animate-pulse"
+                  aria-label="Long-running side-quest"
+                >
+                  <AlertTriangle className="size-3" />
+                  Don't forget
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {returnsToProjectName
+                  ? `You've been on this side-quest for ${formatElapsedSeconds(seconds ?? 0)} — consider returning to ${returnsToProjectName}.`
+                  : `You've been on this side-quest for ${formatElapsedSeconds(seconds ?? 0)}.`}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "rounded-md px-1.5 py-0.5 font-mono text-xs tabular-nums",
+                  isJumpOn
+                    ? "bg-amber-200 text-amber-900"
+                    : "bg-emerald-100 text-emerald-900",
+                )}
+              >
+                {formatElapsedSeconds(seconds ?? 0)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Started {props.entry.startedAt}</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
       <div className="flex items-center justify-end gap-1.5">
         {props.jumpOnAction}
@@ -386,6 +483,41 @@ function RunningRow(
           {stopping ? "Stopping…" : "Stop"}
         </Button>
       </div>
+      {props.lane === "primary" && props.sideQuest ? (
+        <AlertDialog open={guardOpen} onOpenChange={setGuardOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Your side-quest is still running
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {sideQuestProjectName
+                  ? `A jump-on timer is running on ${sideQuestProjectName}. What do you want to do?`
+                  : "A jump-on timer is still running. What do you want to do?"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2 sm:justify-end">
+              <AlertDialogCancel disabled={stopping}>Cancel</AlertDialogCancel>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={stopPrimaryOnly}
+                disabled={stopping}
+              >
+                Stop primary only
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={stopBoth}
+                disabled={stopping}
+              >
+                Stop both
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
     </div>
   );
 }
