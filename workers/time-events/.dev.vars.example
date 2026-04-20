@@ -1,0 +1,12 @@
+# Copy this file to `.dev.vars` (git-ignored) and fill in the values.
+# Wrangler auto-loads it when running `wrangler dev` locally — these appear as
+# `env.*` bindings in `src/index.ts`.
+
+# ─── Required to verify caller JWTs ──────────────────────────────────────────
+# Supabase Dashboard → Project Settings → API → "JWT Settings" → JWT Secret.
+# Must match the project that issued the access token sent by the SPA.
+SUPABASE_ANON_JWT_SECRET=replace-me
+
+# ─── Optional: only needed once we swap InMemoryTimeEventStore → Supabase ────
+# SUPABASE_URL=https://<project>.supabase.co
+# SUPABASE_SERVICE_ROLE_KEY=replace-me

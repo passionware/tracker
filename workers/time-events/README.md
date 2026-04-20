@@ -49,9 +49,24 @@ npm run worker:time-events:test
 ```
 
 By default `wrangler dev` uses `InMemoryTimeEventStore` (no Supabase
-required). For curling without a JWT, send the header
-`x-debug-actor: <uuid>` — the dev resolver falls back to it whenever
-`SUPABASE_ANON_JWT_SECRET` is unset.
+required). There are two auth modes for local dev:
+
+1. **With a real Supabase JWT (what the SPA does).** Copy
+   `.dev.vars.example` → `.dev.vars` (git-ignored) and set
+   `SUPABASE_ANON_JWT_SECRET` to the value from Supabase Dashboard →
+   Project Settings → API → "JWT Settings" → JWT Secret. Wrangler will
+   load it automatically on the next `wrangler dev` restart. The worker
+   then HS256-verifies the `Authorization: Bearer …` header sent by
+   `time-events-worker-client.http.ts`.
+
+2. **Curl shortcut.** Leave `SUPABASE_ANON_JWT_SECRET` unset and send
+   `x-debug-actor: <uuid>` instead — the dev resolver in `src/index.ts`
+   falls back to that header. Useful for ad-hoc curl, but the SPA won't
+   hit this path because it always sends `Authorization`.
+
+If you see `SUPABASE_ANON_JWT_SECRET not configured` in the browser,
+you're hitting path (1) without the secret set — copy the
+`.dev.vars.example` file and restart the worker.
 
 ## Production wiring (TODO, not in this round)
 
