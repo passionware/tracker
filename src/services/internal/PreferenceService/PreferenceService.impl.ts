@@ -7,6 +7,7 @@ import {
   TimelineRangeShadingState,
   TimelineViewPreferences,
 } from "@/services/internal/PreferenceService/PreferenceService.ts";
+import { customDashboardKpisSchema } from "@/features/tmetric-dashboard/custom-kpis/customKpi.types";
 import { createLocalStorageApi } from "@/services/internal/PreferenceService/createLocalStorageApi.ts";
 import { z } from "zod";
 import { create } from "zustand";
@@ -227,20 +228,10 @@ const tmetricLivePageViewModeApi = createLocalStorageApi<
   "both",
 );
 
-const customDashboardKpiSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().optional(),
-  formula: z.string(),
-  contractorIds: z.array(z.number()).optional(),
-  display: z.enum(["currency", "number", "hours", "percent"]),
-  baseCurrency: z.string().min(1),
-});
-
 const customDashboardKpisApi = createLocalStorageApi<CustomDashboardKpi[]>(
   "custom-dashboard-kpis-v1",
   (data) => {
-    const result = z.array(customDashboardKpiSchema).safeParse(data);
+    const result = customDashboardKpisSchema.safeParse(data);
     return result.success ? result.data : [];
   },
   [],

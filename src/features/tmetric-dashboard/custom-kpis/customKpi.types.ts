@@ -8,6 +8,9 @@ export const CUSTOM_KPI_DISPLAYS = [
 ] as const;
 export type CustomKpiDisplay = (typeof CUSTOM_KPI_DISPLAYS)[number];
 
+export const CUSTOM_KPI_CONTENT_MODES = ["scalar", "markdown"] as const;
+export type CustomKpiContentMode = (typeof CUSTOM_KPI_CONTENT_MODES)[number];
+
 /**
  * Variables exposed to formulas.
  * - "scoped" variables respect the optional `contractorIds` filter on the KPI.
@@ -55,10 +58,16 @@ export interface CustomDashboardKpi {
   id: string;
   name: string;
   description?: string;
+  /** Single arithmetic expression (scalar mode) or Markdown with `{{ }}` templates (markdown mode). */
   formula: string;
   contractorIds?: number[];
   display: CustomKpiDisplay;
   baseCurrency: string;
+  /**
+   * `scalar`: `formula` is one expression (legacy).
+   * `markdown`: `formula` is Markdown; use `{{ expr }}` or `{{ format(expr, 'currency', 'eur') }}` and optional ` ```kpi` blocks for large figures.
+   */
+  contentMode?: CustomKpiContentMode;
 }
 
 export const customDashboardKpiSchema = z.object({
@@ -69,6 +78,7 @@ export const customDashboardKpiSchema = z.object({
   contractorIds: z.array(z.number()).optional(),
   display: z.enum(CUSTOM_KPI_DISPLAYS),
   baseCurrency: z.string().min(1),
+  contentMode: z.enum(CUSTOM_KPI_CONTENT_MODES).optional().default("scalar"),
 });
 
 export const customDashboardKpisSchema = z.array(customDashboardKpiSchema);

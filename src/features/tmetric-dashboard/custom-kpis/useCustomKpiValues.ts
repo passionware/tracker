@@ -10,10 +10,17 @@ import {
   type CustomKpiVariable,
 } from "./customKpi.types";
 import { evaluateKpi, type EvaluateResult } from "./customKpiExpression";
+import {
+  collectMarkdownKpiFxRatePairs,
+  markdownTemplateNeedsFxRates,
+  renderCustomKpiMarkdown,
+} from "./customKpiMarkdownTemplate";
 
 export interface CustomKpiEvaluation {
   kpi: CustomDashboardKpi;
   result: EvaluateResult;
+  /** Rendered Markdown body when `contentMode` is `markdown` and `result.ok`. */
+  markdownHtml?: string;
 }
 
 /**
@@ -37,6 +44,11 @@ export function useCustomKpiValues(
   kpis: CustomDashboardKpi[],
   contractorsSummary: ContractorsSummaryScoped | null,
 ): CustomKpiEvaluation[] {
+  const markdownFxPairs = useMemo(
+    () => collectMarkdownKpiFxRatePairs(kpis),
+    [kpis],
+  );
+
   const exchangePairs = useMemo(() => {
     if (!contractorsSummary) return [];
     const baseCurrencies = new Set(
@@ -49,13 +61,24 @@ export function useCustomKpiValues(
       for (const v of c.earningsBudget) sourceCurrencies.add(v.currency.toUpperCase());
     }
     const pairs: { from: string; to: string }[] = [];
+    const seen = new Set<string>();
+    const add = (from: string, to: string) => {
+      if (from === to) return;
+      const key = `${from}->${to}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      pairs.push({ from, to });
+    };
     for (const to of baseCurrencies) {
       for (const from of sourceCurrencies) {
-        if (from !== to) pairs.push({ from, to });
+        add(from, to);
       }
     }
+    for (const p of markdownFxPairs) {
+      add(p.from, p.to);
+    }
     return pairs;
-  }, [kpis, contractorsSummary]);
+  }, [kpis, contractorsSummary, markdownFxPairs]);
 
   const exchangeRates = services.exchangeService.useExchangeRates(exchangePairs);
 
@@ -104,13 +127,40 @@ export function useCustomKpiValues(
       const ratesReady = exchangePairs.every((p) =>
         rateMap.has(`${p.from}->${p.to}`),
       );
-      const usesCurrency = Array.from(CUSTOM_KPI_CURRENCY_VARIABLES).some(
-        (name) => kpi.formula.includes(name),
-      );
+      const markdownMode = kpi.contentMode === "markdown";
+      const usesCurrency = markdownMode
+        ? markdownTemplateNeedsFxRates(kpi.formula, kpi.baseCurrency)
+        : Array.from(CUSTOM_KPI_CURRENCY_VARIABLES).some((name) =>
+            kpi.formula.includes(name),
+          );
       if (usesCurrency && !ratesReady) {
         return {
           kpi,
           result: { ok: true as const, value: null },
+        };
+      }
+
+      if (markdownMode) {
+        const md = renderCustomKpiMarkdown(
+          kpi.formula,
+          vars,
+          kpi.display,
+          kpi.baseCurrency,
+          {
+            expressionBaseCurrency: kpi.baseCurrency,
+            rateMap,
+          },
+        );
+        if (!md.ok) {
+          return {
+            kpi,
+            result: { ok: false as const, error: md.error, position: 0 },
+          };
+        }
+        return {
+          kpi,
+          result: { ok: true as const, value: null },
+          markdownHtml: md.html,
         };
       }
 

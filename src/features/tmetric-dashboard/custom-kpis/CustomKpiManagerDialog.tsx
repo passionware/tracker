@@ -25,13 +25,16 @@ import type { ContractorsSummaryScoped } from "@/features/tmetric-dashboard/tmet
 import { Plus, Trash2, ChevronLeft, Pencil, Check, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CUSTOM_KPI_CONTENT_MODES,
   CUSTOM_KPI_DISPLAYS,
   CUSTOM_KPI_VARIABLES,
   VARIABLE_DESCRIPTIONS,
   type CustomDashboardKpi,
+  type CustomKpiContentMode,
   type CustomKpiDisplay,
 } from "./customKpi.types";
 import { validateKpi } from "./customKpiExpression";
+import { validateCustomKpiMarkdownTemplate } from "./customKpiMarkdownTemplate";
 import { useCustomKpiValues } from "./useCustomKpiValues";
 import { formatKpiValue } from "./customKpiFormat";
 
@@ -53,6 +56,7 @@ function emptyKpi(): CustomDashboardKpi {
     contractorIds: [],
     display: "currency",
     baseCurrency: "PLN",
+    contentMode: "scalar",
   };
 }
 
@@ -61,13 +65,11 @@ export function CustomKpiManagerDialog({
   onOpenChange,
   services,
   contractorsSummary,
-  contractorNameMap,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   services: WithFrontServices["services"];
   contractorsSummary: ContractorsSummaryScoped | null;
-  contractorNameMap: Map<number, string>;
 }) {
   const kpis = services.preferenceService.useCustomDashboardKpis();
   const [editing, setEditing] = useState<CustomDashboardKpi | null>(null);
@@ -103,7 +105,6 @@ export function CustomKpiManagerDialog({
             kpi={editing}
             services={services}
             contractorsSummary={contractorsSummary}
-            contractorNameMap={contractorNameMap}
             onCancel={() => setEditing(null)}
             onSave={handleSave}
           />
@@ -112,8 +113,9 @@ export function CustomKpiManagerDialog({
             <DialogHeader>
               <DialogTitle>Custom KPIs</DialogTitle>
               <DialogDescription>
-                Build dashboard cards from formulas over the current scope.
-                Stored locally in your browser.
+                Build dashboard cards from a single formula or a Markdown
+                template with <code className="rounded bg-muted px-1">{"{{ }}"}</code>{" "}
+                expressions. Stored locally in your browser.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto">
@@ -133,6 +135,11 @@ export function CustomKpiManagerDialog({
                         <Badge variant="secondary" className="text-[10px]">
                           {kpi.display}
                         </Badge>
+                        {kpi.contentMode === "markdown" && (
+                          <Badge variant="neutral" className="text-[10px]">
+                            Markdown
+                          </Badge>
+                        )}
                         {(kpi.contractorIds?.length ?? 0) > 0 && (
                           <Badge variant="neutral" className="text-[10px]">
                             {kpi.contractorIds!.length} contractor(s)
@@ -192,24 +199,26 @@ function KpiEditor({
   kpi: initial,
   services,
   contractorsSummary,
-  contractorNameMap: _contractorNameMap,
   onCancel,
   onSave,
 }: {
   kpi: CustomDashboardKpi;
   services: WithFrontServices["services"];
   contractorsSummary: ContractorsSummaryScoped | null;
-  contractorNameMap: Map<number, string>;
   onCancel: () => void;
   onSave: (kpi: CustomDashboardKpi) => void;
 }) {
   const [draft, setDraft] = useState<CustomDashboardKpi>(initial);
   const formulaRef = useRef<HTMLTextAreaElement>(null);
 
-  const validation = useMemo(
-    () => validateKpi(draft.formula, KNOWN_NAMES),
-    [draft.formula],
-  );
+  const markdownMode = draft.contentMode === "markdown";
+
+  const validation = useMemo(() => {
+    if (markdownMode) {
+      return validateCustomKpiMarkdownTemplate(draft.formula, KNOWN_NAMES);
+    }
+    return validateKpi(draft.formula, KNOWN_NAMES);
+  }, [draft.formula, markdownMode]);
 
   const previewKpis = useMemo(() => [draft], [draft]);
   const previewEvaluation = useCustomKpiValues(
@@ -222,18 +231,19 @@ function KpiEditor({
     setDraft((d) => ({ ...d, ...partial }));
 
   const insertVariable = (name: string) => {
+    const insert = markdownMode ? `{{${name}}}` : name;
     const ta = formulaRef.current;
     if (!ta) {
-      update({ formula: draft.formula + name });
+      update({ formula: draft.formula + insert });
       return;
     }
     const start = ta.selectionStart ?? draft.formula.length;
     const end = ta.selectionEnd ?? draft.formula.length;
-    const next = draft.formula.slice(0, start) + name + draft.formula.slice(end);
+    const next = draft.formula.slice(0, start) + insert + draft.formula.slice(end);
     update({ formula: next });
     requestAnimationFrame(() => {
       ta.focus();
-      const caret = start + name.length;
+      const caret = start + insert.length;
       ta.setSelectionRange(caret, caret);
     });
   };
@@ -241,7 +251,8 @@ function KpiEditor({
   const canSave =
     draft.name.trim().length > 0 &&
     draft.baseCurrency.trim().length > 0 &&
-    validation.ok;
+    validation.ok &&
+    (!markdownMode || draft.formula.trim().length > 0);
 
   return (
     <>
@@ -284,22 +295,105 @@ function KpiEditor({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="kpi-formula">Formula</Label>
+            <Label htmlFor="kpi-content-mode">Content</Label>
+            <Select
+              value={draft.contentMode ?? "scalar"}
+              onValueChange={(v) =>
+                update({ contentMode: v as CustomKpiContentMode })
+              }
+            >
+              <SelectTrigger id="kpi-content-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CUSTOM_KPI_CONTENT_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m === "scalar" ? "Single formula" : "Markdown"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="kpi-formula">
+              {markdownMode ? "Markdown template" : "Formula"}
+            </Label>
             <Textarea
               id="kpi-formula"
               ref={formulaRef}
               value={draft.formula}
               onChange={(e) => update({ formula: e.target.value })}
-              placeholder="e.g. totalBilling / totalHours"
+              placeholder={
+                markdownMode
+                  ? "# Title\n{{ format(cost + totalProfit, 'currency', 'eur') }}\n```kpi\n{{ format(hours, 'hours') }}\n```"
+                  : "e.g. totalBilling / totalHours"
+              }
               className="font-mono text-sm"
-              rows={3}
+              rows={markdownMode ? 12 : 3}
             />
-            {draft.formula.trim().length === 0 ? (
+            {markdownMode ? (
+              <p className="text-xs text-muted-foreground">
+                Use{" "}
+                <code className="rounded bg-muted px-0.5">
+                  {"{{ hours }}"}
+                </code>{" "}
+                (uses the display mode and base currency below) or{" "}
+                <code className="rounded bg-muted px-0.5">
+                  {"{{ format(expr, 'currency', 'eur') }}"}
+                </code>
+                . Amounts are in the KPI base currency; a different ISO code
+                converts using live rates. Shorthand:{" "}
+                <code className="rounded bg-muted px-0.5">
+                  {"{{ convert(expr, 'eur') }}"}
+                </code>
+                . Optional{" "}
+                <code className="rounded bg-muted px-0.5">```kpi</code> fences
+                render a large figure line.
+              </p>
+            ) : draft.formula.trim().length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Use + - * / and parentheses. Click variables on the right to
                 insert them.
               </p>
-            ) : validation.ok ? (
+            ) : null}
+            {draft.formula.trim().length === 0 && !markdownMode ? null : !validation.ok ? (
+              <div className="flex items-start gap-1.5 text-xs text-destructive">
+                <X className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>
+                  {validation.error} (at position {validation.position + 1})
+                </span>
+              </div>
+            ) : markdownMode ? (
+              previewEvaluation &&
+              previewEvaluation.result.ok &&
+              "markdownHtml" in previewEvaluation ? (
+                <div className="space-y-1.5 rounded-md border bg-muted/20 p-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    Preview
+                  </div>
+                  <div
+                    className="custom-kpi-md max-h-48 overflow-y-auto text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: previewEvaluation.markdownHtml ?? "",
+                    }}
+                  />
+                </div>
+              ) : previewEvaluation && !previewEvaluation.result.ok ? (
+                <div className="flex items-start gap-1.5 text-xs text-destructive">
+                  <X className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    {previewEvaluation.result.ok === false
+                      ? previewEvaluation.result.error
+                      : ""}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Waiting for dashboard data to preview…</span>
+                </div>
+              )
+            ) : (
               <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                 <Check className="h-3.5 w-3.5" />
                 <span>
@@ -313,13 +407,6 @@ function KpiEditor({
                         )
                       : "—"}
                   </strong>
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-start gap-1.5 text-xs text-destructive">
-                <X className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <span>
-                  {validation.error} (at position {validation.position + 1})
                 </span>
               </div>
             )}

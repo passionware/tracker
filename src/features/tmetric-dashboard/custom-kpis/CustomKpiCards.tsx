@@ -53,7 +53,6 @@ export function CustomKpiCards({
           onOpenChange={setOpen}
           services={services}
           contractorsSummary={contractorsSummary}
-          contractorNameMap={contractorNameMap}
         />
       </>
     );
@@ -77,9 +76,10 @@ export function CustomKpiCards({
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {evaluations.map(({ kpi, result }) => {
+          {evaluations.map(({ kpi, result, markdownHtml }) => {
             const error = !result.ok ? result.error : null;
             const value = result.ok ? result.value : null;
+            const markdownMode = kpi.contentMode === "markdown";
             const filterCount = kpi.contractorIds?.length ?? 0;
             const filterLabel =
               filterCount > 0
@@ -108,9 +108,28 @@ export function CustomKpiCards({
                       </TooltipProvider>
                     )}
                   </div>
-                  <div className="truncate text-2xl font-semibold tabular-nums">
-                    {error ? "—" : formatKpiValue(value, kpi.display, kpi.baseCurrency)}
-                  </div>
+                  {markdownMode ? (
+                    <div className="min-w-0">
+                      {error ? (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      ) : markdownHtml ? (
+                        <div
+                          className="custom-kpi-md min-w-0 max-w-full text-sm [&_a]:break-all"
+                          dangerouslySetInnerHTML={{ __html: markdownHtml ?? "" }}
+                        />
+                      ) : (
+                        <p className="text-2xl font-semibold tabular-nums text-muted-foreground">
+                          —
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="truncate text-2xl font-semibold tabular-nums">
+                      {error
+                        ? "—"
+                        : formatKpiValue(value, kpi.display, kpi.baseCurrency)}
+                    </div>
+                  )}
                   <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     {filterLabel && (
                       <Badge variant="secondary" className="max-w-full truncate">
@@ -123,9 +142,11 @@ export function CustomKpiCards({
                       </span>
                     )}
                   </div>
-                  <code className="min-w-0 truncate text-[10px] text-muted-foreground/70">
-                    {kpi.formula}
-                  </code>
+                  {!markdownMode && (
+                    <code className="min-w-0 truncate text-[10px] text-muted-foreground/70">
+                      {kpi.formula}
+                    </code>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -137,7 +158,6 @@ export function CustomKpiCards({
         onOpenChange={setOpen}
         services={services}
         contractorsSummary={contractorsSummary}
-        contractorNameMap={contractorNameMap}
       />
     </>
   );

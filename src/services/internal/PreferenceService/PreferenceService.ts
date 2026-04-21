@@ -43,6 +43,8 @@ export interface CustomDashboardKpi {
   contractorIds?: number[];
   display: "currency" | "number" | "hours" | "percent";
   baseCurrency: string;
+  /** When `"markdown"`, `formula` is Markdown with `{{ }}` expressions (see custom KPI docs in UI). */
+  contentMode?: "scalar" | "markdown";
 }
 
 /** Stored state for "last budget log sync" (skip auto-sync if recent and same iterations). */
