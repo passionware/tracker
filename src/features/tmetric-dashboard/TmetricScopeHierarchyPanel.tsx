@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
@@ -47,8 +48,17 @@ export interface TmetricScopeHierarchyPanelProps {
   projectsData: RemoteData<Project[]>;
   iterationsForScope: ProjectIteration[];
   projectsMap: Map<number, { name: string }>;
-  /** When present (cached report loaded), contractor rates per project are shown. */
-  cachedReport?: { data: GenericReport } | null;
+  /**
+   * Dashboard report for the selected time range (Financial overview).
+   * Pass `rd.ofIdle()` when not loading that report.
+   */
+  cachedReport: RemoteData<GenericReport>;
+  /**
+   * Full-iteration-range report for the “By client” section (same scope as
+   * dashboard, union of iteration calendar periods). Pass `rd.ofIdle()` when not
+   * loading a report for that section.
+   */
+  byClientCachedReport: RemoteData<GenericReport>;
   /** When set, expand/collapse state is persisted to localStorage under this key (e.g. workspaceId-clientId). */
   persistenceKey?: string;
   /** When set, iteration labels become nav links to the iteration detail page (clientId comes from each by-client card). */
@@ -60,7 +70,8 @@ export function TmetricScopeHierarchyPanel({
   projectsData,
   iterationsForScope,
   projectsMap,
-  cachedReport = null,
+  cachedReport,
+  byClientCachedReport,
   persistenceKey,
   workspaceId,
 }: TmetricScopeHierarchyPanelProps) {
@@ -70,13 +81,14 @@ export function TmetricScopeHierarchyPanel({
   );
 
   const scopeHierarchyWithRates = useMemo(() => {
+    const data = rd.tryGet(cachedReport);
     return scopeHierarchy.map((client) => ({
       ...client,
       iterations: client.iterations.map((row) => ({
         ...row,
-        contractorsWithRates: cachedReport?.data
+        contractorsWithRates: data
           ? getContractorRatesForIterationProject(
-              cachedReport.data,
+              data,
               row.iteration.id,
               row.iteration.projectId,
             )
@@ -86,11 +98,14 @@ export function TmetricScopeHierarchyPanel({
   }, [scopeHierarchy, cachedReport]);
 
   const scopeHierarchyTotals = useMemo(() => {
-    if (!cachedReport?.data) return null;
-    return getScopeHierarchyTotals(cachedReport.data, scopeHierarchyWithRates);
+    const data = rd.tryGet(cachedReport);
+    if (!data) return null;
+    return getScopeHierarchyTotals(data, scopeHierarchyWithRates);
   }, [cachedReport, scopeHierarchyWithRates]);
 
   const targetCurrency = "EUR";
+  const cachedReportResolved = rd.tryGet(cachedReport);
+
   const allCurrenciesForExchange = useMemo(() => {
     const set = new Set<string>();
     if (scopeHierarchyTotals) {
@@ -101,10 +116,11 @@ export function TmetricScopeHierarchyPanel({
         for (const v of [...rec.cost, ...rec.billing])
           set.add(v.currency.toUpperCase());
     }
-    if (cachedReport?.data)
+    const cachedData = rd.tryGet(cachedReport);
+    if (cachedData)
       for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations)) {
         const totals = getContractorIterationTotals(
-          cachedReport.data,
+          cachedData,
           row.iteration.id,
         );
         for (const t of totals) {
@@ -123,7 +139,7 @@ export function TmetricScopeHierarchyPanel({
 
   const rateMap = useMemo(() => {
     const map = new Map<string, number>();
-    const rates = rd.tryMap(exchangeRates, (x) => x) ?? [];
+    const rates = rd.tryGet(exchangeRates) ?? [];
     for (const r of rates)
       map.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate);
     return map;
@@ -156,14 +172,11 @@ export function TmetricScopeHierarchyPanel({
   }, [scopeHierarchyTotals, rateMap]);
 
   const contractorProfitInTarget = useMemo(() => {
-    if (!cachedReport?.data || rateMap.size === 0)
-      return new Map<string, number>();
+    const data = rd.tryGet(cachedReport);
+    if (!data || rateMap.size === 0) return new Map<string, number>();
     const m = new Map<string, number>();
     for (const row of scopeHierarchyWithRates.flatMap((c) => c.iterations)) {
-      const totals = getContractorIterationTotals(
-        cachedReport.data,
-        row.iteration.id,
-      );
+      const totals = getContractorIterationTotals(data, row.iteration.id);
       for (const t of totals) {
         const billingInTarget = sumCurrencyValuesInTarget(
           [{ amount: t.totalBilling, currency: t.billingCurrency }],
@@ -183,6 +196,54 @@ export function TmetricScopeHierarchyPanel({
     }
     return m;
   }, [cachedReport, scopeHierarchyWithRates, rateMap]);
+
+  const byClientScopeHierarchyTotalsRd = rd.useMemoMap(
+    byClientCachedReport,
+    (report) => getScopeHierarchyTotals(report, scopeHierarchy),
+  );
+
+  const byClientAllCurrenciesForExchange = useMemo(() => {
+    const set = new Set<string>();
+    const scopeTotals = rd.tryGet(byClientScopeHierarchyTotalsRd);
+    const report = rd.tryGet(byClientCachedReport);
+    if (scopeTotals) {
+      for (const [, rec] of scopeTotals.byClient)
+        for (const v of [...rec.cost, ...rec.billing])
+          set.add(v.currency.toUpperCase());
+      for (const [, rec] of scopeTotals.byIteration)
+        for (const v of [...rec.cost, ...rec.billing])
+          set.add(v.currency.toUpperCase());
+    }
+    if (report)
+      for (const row of scopeHierarchy.flatMap((c) => c.iterations)) {
+        const totals = getContractorIterationTotals(report, row.iteration.id);
+        for (const t of totals) {
+          set.add(t.costCurrency.toUpperCase());
+          set.add(t.billingCurrency.toUpperCase());
+        }
+      }
+    for (const row of scopeHierarchy.flatMap((c) => c.iterations))
+      set.add(row.iteration.currency.toUpperCase());
+    return set.size ? Array.from(set) : ["EUR"];
+  }, [byClientScopeHierarchyTotalsRd, scopeHierarchy, byClientCachedReport]);
+
+  const byClientExchangeRates = services.exchangeService.useExchangeRates(
+    byClientAllCurrenciesForExchange.map((from) => ({
+      from,
+      to: targetCurrency,
+    })),
+  );
+
+  const byClientRateMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const rates = rd.tryGet(byClientExchangeRates) ?? [];
+    for (const r of rates)
+      map.set(`${r.from.toUpperCase()}->${r.to.toUpperCase()}`, r.rate);
+    return map;
+  }, [byClientExchangeRates]);
+
+  const byClientTotalsResolved = rd.tryGet(byClientScopeHierarchyTotalsRd);
+  const byClientReportResolved = rd.tryGet(byClientCachedReport);
 
   const allClientIds = useMemo(
     () => scopeHierarchyWithRates.map((c) => c.clientId),
@@ -393,7 +454,6 @@ export function TmetricScopeHierarchyPanel({
                             : []
                         }
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -408,7 +468,6 @@ export function TmetricScopeHierarchyPanel({
                             : []
                         }
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -419,7 +478,6 @@ export function TmetricScopeHierarchyPanel({
                       <CurrencyValueWidget
                         values={client.cost}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -430,7 +488,6 @@ export function TmetricScopeHierarchyPanel({
                       <CurrencyValueWidget
                         values={client.billing}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -455,7 +512,6 @@ export function TmetricScopeHierarchyPanel({
                           <CurrencyValueWidget
                             values={client.profit}
                             services={services}
-                            exchangeService={services.exchangeService}
                             colorize
                             className="font-medium"
                           />
@@ -530,7 +586,6 @@ export function TmetricScopeHierarchyPanel({
                                         : []
                                     }
                                     services={services}
-                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -548,7 +603,6 @@ export function TmetricScopeHierarchyPanel({
                                         : []
                                     }
                                     services={services}
-                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -559,7 +613,6 @@ export function TmetricScopeHierarchyPanel({
                                   <CurrencyValueWidget
                                     values={iter.cost}
                                     services={services}
-                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -570,7 +623,6 @@ export function TmetricScopeHierarchyPanel({
                                   <CurrencyValueWidget
                                     values={iter.billing}
                                     services={services}
-                                    exchangeService={services.exchangeService}
                                     className="font-medium"
                                   />
                                 </FinancialHierarchyGrid.Cell>
@@ -599,9 +651,6 @@ export function TmetricScopeHierarchyPanel({
                                       <CurrencyValueWidget
                                         values={iter.profit}
                                         services={services}
-                                        exchangeService={
-                                          services.exchangeService
-                                        }
                                         colorize
                                         className="font-medium"
                                       />
@@ -622,11 +671,11 @@ export function TmetricScopeHierarchyPanel({
                                 Project: {projectName}
                               </span>
                               {hasRates &&
-                                cachedReport?.data &&
+                                cachedReportResolved &&
                                 (() => {
                                   const contractorTotals =
                                     getContractorIterationTotals(
-                                      cachedReport.data,
+                                      cachedReportResolved,
                                       iteration.id,
                                     );
                                   return (
@@ -813,7 +862,6 @@ export function TmetricScopeHierarchyPanel({
                 <CurrencyValueWidget
                   values={footerTotals.avgCostRate}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </FinancialHierarchyGrid.Cell>
               <FinancialHierarchyGrid.Cell
@@ -823,7 +871,6 @@ export function TmetricScopeHierarchyPanel({
                 <CurrencyValueWidget
                   values={footerTotals.avgBillingRate}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </FinancialHierarchyGrid.Cell>
               <FinancialHierarchyGrid.Cell
@@ -833,7 +880,6 @@ export function TmetricScopeHierarchyPanel({
                 <CurrencyValueWidget
                   values={footerTotals.totalCost}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </FinancialHierarchyGrid.Cell>
               <FinancialHierarchyGrid.Cell
@@ -843,7 +889,6 @@ export function TmetricScopeHierarchyPanel({
                 <CurrencyValueWidget
                   values={footerTotals.totalBilling}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </FinancialHierarchyGrid.Cell>
               <FinancialHierarchyGrid.Cell
@@ -866,7 +911,6 @@ export function TmetricScopeHierarchyPanel({
                     <CurrencyValueWidget
                       values={footerTotals.totalProfit}
                       services={services}
-                      exchangeService={services.exchangeService}
                       colorize
                       className="font-medium"
                     />
@@ -878,14 +922,15 @@ export function TmetricScopeHierarchyPanel({
         </FinancialHierarchyGrid>
       )}
 
-      {scopeHierarchyTotals != null && scopeHierarchyWithRates.length > 0 && (
+      {scopeHierarchy.length > 0 && (
         <div className="mt-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold">By client</h3>
               <p className="text-sm text-muted-foreground">
-                Billing breakdown per client: iterations and totals (hours,
-                billing rate, billing).
+                Billing per client for each iteration’s full period (not the
+                dashboard date range). Hours, billing rate, billing, and budget
+                used.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -902,253 +947,256 @@ export function TmetricScopeHierarchyPanel({
               </Label>
             </div>
           </div>
-          <div className="grid min-w-0 w-full max-w-full grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-            {scopeHierarchyWithRates.map(({ clientId, iterations }) => {
-              const clientTotals = scopeHierarchyTotals!.byClient.get(clientId);
-              const reportData = cachedReport?.data ?? null;
-              return (
-                <Card key={`by-client-${clientId}`} className="min-w-0">
-                  <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 pb-2">
-                    <CardTitle className="text-base shrink min-w-0">
-                      <ClientWidget
-                        clientId={maybe.of(clientId)}
-                        services={services}
-                        layout="full"
-                        size="sm"
-                      />
-                    </CardTitle>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {iterations.length} iteration
-                      {iterations.length !== 1 ? "s" : ""}
-                    </span>
-                  </CardHeader>
-                  <CardContent className="min-w-0">
-                    <FinancialHierarchyGrid variant="billingOnly">
-                      <FinancialHierarchyGrid.Header />
-                      {iterations.flatMap(({ iteration, projectName }) => {
-                        const iter = scopeHierarchyTotals!.byIteration.get(
-                          iteration.id,
-                        );
-                        const totals = iter ?? {
-                          billing: [],
-                          cost: [],
-                          profit: [],
-                          hours: 0,
-                        };
-                        const startDate = calendarDateToJSDate(
-                          iteration.periodStart,
-                        );
-                        const endDate = calendarDateToJSDate(
-                          iteration.periodEnd,
-                        );
-                        const contractorTotals =
-                          reportData != null
-                            ? getContractorIterationTotals(
-                                reportData,
-                                iteration.id,
-                              )
-                            : [];
-                        const rowKey = `by-client-${clientId}-iter-${iteration.id}`;
-                        return [
-                          <FinancialHierarchyGrid.Row
-                            key={`${rowKey}-row`}
-                            label={
-                              <div className="flex flex-col gap-1 min-w-0">
-                                {workspaceId != null ? (
-                                  <Link
-                                    to={myRouting
-                                      .forWorkspace(workspaceId)
-                                      .forClient(clientId)
-                                      .forProject(
-                                        iteration.projectId.toString(),
-                                      )
-                                      .forIteration(iteration.id.toString())
-                                      .root()}
-                                    className="text-sm font-medium whitespace-nowrap shrink-0 text-primary hover:underline underline-offset-2"
-                                  >
-                                    {projectName} #{iteration.ordinalNumber}
-                                  </Link>
-                                ) : (
-                                  <span className="text-sm font-medium whitespace-nowrap shrink-0">
-                                    {projectName} #{iteration.ordinalNumber}
-                                  </span>
+          {!byClientTotalsResolved ? (
+            <div className="rounded-md border border-border/60 p-6 space-y-2">
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full max-w-lg" />
+            </div>
+          ) : (
+            <div className="grid min-w-0 w-full max-w-full grid-cols-1 gap-4 lg:grid-cols-[repeat(auto-fit,minmax(min(100%,44rem),1fr))]">
+              {scopeHierarchyWithRates.map(({ clientId, iterations }) => {
+                const clientTotals =
+                  byClientTotalsResolved.byClient.get(clientId);
+                const reportData = byClientReportResolved;
+                return (
+                  <Card key={`by-client-${clientId}`} className="min-w-0">
+                    <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 pb-2">
+                      <CardTitle className="text-base shrink min-w-0">
+                        <ClientWidget
+                          clientId={maybe.of(clientId)}
+                          services={services}
+                          layout="full"
+                          size="sm"
+                        />
+                      </CardTitle>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {iterations.length} iteration
+                        {iterations.length !== 1 ? "s" : ""}
+                      </span>
+                    </CardHeader>
+                    <CardContent className="min-w-0">
+                      <FinancialHierarchyGrid variant="billingOnly">
+                        <FinancialHierarchyGrid.Header />
+                        {iterations.flatMap(({ iteration, projectName }) => {
+                          const iter = byClientTotalsResolved.byIteration.get(
+                            iteration.id,
+                          );
+                          const totals = iter ?? {
+                            billing: [],
+                            cost: [],
+                            profit: [],
+                            hours: 0,
+                          };
+                          const startDate = calendarDateToJSDate(
+                            iteration.periodStart,
+                          );
+                          const endDate = calendarDateToJSDate(
+                            iteration.periodEnd,
+                          );
+                          const contractorTotals =
+                            reportData != null
+                              ? getContractorIterationTotals(
+                                  reportData,
+                                  iteration.id,
+                                )
+                              : [];
+                          const rowKey = `by-client-${clientId}-iter-${iteration.id}`;
+                          return [
+                            <FinancialHierarchyGrid.Row
+                              key={`${rowKey}-row`}
+                              label={
+                                <div className="flex flex-col gap-1 min-w-0">
+                                  {workspaceId != null ? (
+                                    <Link
+                                      to={myRouting
+                                        .forWorkspace(workspaceId)
+                                        .forClient(clientId)
+                                        .forProject(
+                                          iteration.projectId.toString(),
+                                        )
+                                        .forIteration(iteration.id.toString())
+                                        .root()}
+                                      className="text-sm font-medium whitespace-nowrap shrink-0 text-primary hover:underline underline-offset-2"
+                                    >
+                                      {projectName} #{iteration.ordinalNumber}
+                                    </Link>
+                                  ) : (
+                                    <span className="text-sm font-medium whitespace-nowrap shrink-0">
+                                      {projectName} #{iteration.ordinalNumber}
+                                    </span>
+                                  )}
+                                </div>
+                              }
+                            >
+                              <FinancialHierarchyGrid.Cell
+                                col={1}
+                                className="py-1.5 px-2 text-xs text-left text-muted-foreground tabular-nums"
+                              >
+                                {services.formatService.temporal.range.long(
+                                  startDate,
+                                  endDate,
                                 )}
-                              </div>
-                            }
-                          >
+                              </FinancialHierarchyGrid.Cell>
+                              <FinancialHierarchyGrid.Cell
+                                col={2}
+                                className="py-1.5 text-xs text-right tabular-nums"
+                              >
+                                {totals.hours.toFixed(1)}
+                              </FinancialHierarchyGrid.Cell>
+                              <FinancialHierarchyGrid.Cell
+                                col={3}
+                                className="py-1.5 text-xs text-right tabular-nums"
+                              >
+                                <CurrencyValueWidget
+                                  values={
+                                    totals.hours > 0
+                                      ? divideCurrencyValues(
+                                          totals.billing,
+                                          totals.hours,
+                                        )
+                                      : []
+                                  }
+                                  services={services}
+                                />
+                              </FinancialHierarchyGrid.Cell>
+                              <FinancialHierarchyGrid.Cell
+                                col={4}
+                                className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                              >
+                                <CurrencyValueWidget
+                                  values={totals.billing}
+                                  services={services}
+                                />
+                              </FinancialHierarchyGrid.Cell>
+                            </FinancialHierarchyGrid.Row>,
+                            contractorTotals.length > 0 ? (
+                              <FinancialHierarchyGrid.Subgrid
+                                key={`by-client-${clientId}-iter-${iteration.id}-contractors`}
+                                variant="nested"
+                              >
+                                {contractorTotals.map((row) => (
+                                  <FinancialHierarchyGrid.Row
+                                    key={`by-client-${clientId}-iter-${iteration.id}-c-${row.contractorId}`}
+                                    label={
+                                      <ContractorWidget
+                                        contractorId={maybe.of(
+                                          row.contractorId,
+                                        )}
+                                        services={services}
+                                        layout="full"
+                                        size="sm"
+                                      />
+                                    }
+                                  >
+                                    <FinancialHierarchyGrid.Cell
+                                      col={1}
+                                      className="py-1 text-muted-foreground"
+                                    >
+                                      {null}
+                                    </FinancialHierarchyGrid.Cell>
+                                    <FinancialHierarchyGrid.Cell
+                                      col={2}
+                                      className="py-1 text-xs text-right tabular-nums"
+                                    >
+                                      {row.hours.toFixed(1)}
+                                    </FinancialHierarchyGrid.Cell>
+                                    <FinancialHierarchyGrid.Cell
+                                      col={3}
+                                      className="py-1 text-xs text-right tabular-nums"
+                                    >
+                                      <CurrencyValueWidget
+                                        values={[
+                                          {
+                                            amount: row.avgBillingRate,
+                                            currency: row.billingCurrency,
+                                          },
+                                        ]}
+                                        services={services}
+                                      />
+                                    </FinancialHierarchyGrid.Cell>
+                                    <FinancialHierarchyGrid.Cell
+                                      col={4}
+                                      className="py-1 pr-2 text-xs text-right tabular-nums"
+                                    >
+                                      <CurrencyValueWidget
+                                        values={[
+                                          {
+                                            amount: row.totalBilling,
+                                            currency: row.billingCurrency,
+                                          },
+                                        ]}
+                                        services={services}
+                                      />
+                                    </FinancialHierarchyGrid.Cell>
+                                  </FinancialHierarchyGrid.Row>
+                                ))}
+                              </FinancialHierarchyGrid.Subgrid>
+                            ) : null,
+                            <div
+                              key={`${rowKey}-detail`}
+                              className="w-full border-t border-border/30 p-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <IterationBudgetDetail
+                                iteration={iteration}
+                                billingValues={totals.billing}
+                                rateMap={byClientRateMap}
+                                targetCurrency={targetCurrency}
+                                services={services}
+                                editMode={byClientEditMode}
+                              />
+                            </div>,
+                          ].filter(Boolean);
+                        })}
+                        {clientTotals != null && (
+                          <FinancialHierarchyGrid.Footer label="Total">
                             <FinancialHierarchyGrid.Cell
                               col={1}
-                              className="py-1.5 px-2 text-xs text-left text-muted-foreground tabular-nums"
+                              className="py-2 text-muted-foreground"
                             >
-                              {services.formatService.temporal.range.long(
-                                startDate,
-                                endDate,
-                              )}
+                              {null}
                             </FinancialHierarchyGrid.Cell>
                             <FinancialHierarchyGrid.Cell
                               col={2}
-                              className="py-1.5 text-xs text-right tabular-nums"
+                              className="py-2 text-right tabular-nums"
                             >
-                              {totals.hours.toFixed(1)}
+                              {clientTotals.hours.toFixed(1)}
                             </FinancialHierarchyGrid.Cell>
                             <FinancialHierarchyGrid.Cell
                               col={3}
-                              className="py-1.5 text-xs text-right tabular-nums"
+                              className="py-2 text-right tabular-nums"
                             >
                               <CurrencyValueWidget
                                 values={
-                                  totals.hours > 0
+                                  clientTotals.hours > 0
                                     ? divideCurrencyValues(
-                                        totals.billing,
-                                        totals.hours,
+                                        clientTotals.billing,
+                                        clientTotals.hours,
                                       )
                                     : []
                                 }
                                 services={services}
-                                exchangeService={services.exchangeService}
                               />
                             </FinancialHierarchyGrid.Cell>
                             <FinancialHierarchyGrid.Cell
                               col={4}
-                              className="py-1.5 pr-2 text-xs text-right tabular-nums"
+                              className="py-2 pr-2 text-right tabular-nums"
                             >
                               <CurrencyValueWidget
-                                values={totals.billing}
+                                values={clientTotals.billing}
                                 services={services}
-                                exchangeService={services.exchangeService}
                               />
                             </FinancialHierarchyGrid.Cell>
-                          </FinancialHierarchyGrid.Row>,
-                          contractorTotals.length > 0 ? (
-                            <FinancialHierarchyGrid.Subgrid
-                              key={`by-client-${clientId}-iter-${iteration.id}-contractors`}
-                              variant="nested"
-                            >
-                              {contractorTotals.map((row) => (
-                                <FinancialHierarchyGrid.Row
-                                  key={`by-client-${clientId}-iter-${iteration.id}-c-${row.contractorId}`}
-                                  label={
-                                    <ContractorWidget
-                                      contractorId={maybe.of(row.contractorId)}
-                                      services={services}
-                                      layout="full"
-                                      size="sm"
-                                    />
-                                  }
-                                >
-                                  <FinancialHierarchyGrid.Cell
-                                    col={1}
-                                    className="py-1 text-muted-foreground"
-                                  >
-                                    {null}
-                                  </FinancialHierarchyGrid.Cell>
-                                  <FinancialHierarchyGrid.Cell
-                                    col={2}
-                                    className="py-1 text-xs text-right tabular-nums"
-                                  >
-                                    {row.hours.toFixed(1)}
-                                  </FinancialHierarchyGrid.Cell>
-                                  <FinancialHierarchyGrid.Cell
-                                    col={3}
-                                    className="py-1 text-xs text-right tabular-nums"
-                                  >
-                                    <CurrencyValueWidget
-                                      values={[
-                                        {
-                                          amount: row.avgBillingRate,
-                                          currency: row.billingCurrency,
-                                        },
-                                      ]}
-                                      services={services}
-                                      exchangeService={services.exchangeService}
-                                    />
-                                  </FinancialHierarchyGrid.Cell>
-                                  <FinancialHierarchyGrid.Cell
-                                    col={4}
-                                    className="py-1 pr-2 text-xs text-right tabular-nums"
-                                  >
-                                    <CurrencyValueWidget
-                                      values={[
-                                        {
-                                          amount: row.totalBilling,
-                                          currency: row.billingCurrency,
-                                        },
-                                      ]}
-                                      services={services}
-                                      exchangeService={services.exchangeService}
-                                    />
-                                  </FinancialHierarchyGrid.Cell>
-                                </FinancialHierarchyGrid.Row>
-                              ))}
-                            </FinancialHierarchyGrid.Subgrid>
-                          ) : null,
-                          <div
-                            key={`${rowKey}-detail`}
-                            className="w-full border-t border-border/30 p-3"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <IterationBudgetDetail
-                              iteration={iteration}
-                              billingValues={totals.billing}
-                              rateMap={rateMap}
-                              targetCurrency={targetCurrency}
-                              iterationLabel={`${projectName} #${iteration.ordinalNumber}`}
-                              projectName={projectName}
-                              services={services}
-                              editMode={byClientEditMode}
-                            />
-                          </div>,
-                        ].filter(Boolean);
-                      })}
-                      {clientTotals != null && (
-                        <FinancialHierarchyGrid.Footer label="Total">
-                          <FinancialHierarchyGrid.Cell
-                            col={1}
-                            className="py-2 text-muted-foreground"
-                          >
-                            {null}
-                          </FinancialHierarchyGrid.Cell>
-                          <FinancialHierarchyGrid.Cell
-                            col={2}
-                            className="py-2 text-right tabular-nums"
-                          >
-                            {clientTotals.hours.toFixed(1)}
-                          </FinancialHierarchyGrid.Cell>
-                          <FinancialHierarchyGrid.Cell
-                            col={3}
-                            className="py-2 text-right tabular-nums"
-                          >
-                            <CurrencyValueWidget
-                              values={
-                                clientTotals.hours > 0
-                                  ? divideCurrencyValues(
-                                      clientTotals.billing,
-                                      clientTotals.hours,
-                                    )
-                                  : []
-                              }
-                              services={services}
-                              exchangeService={services.exchangeService}
-                            />
-                          </FinancialHierarchyGrid.Cell>
-                          <FinancialHierarchyGrid.Cell
-                            col={4}
-                            className="py-2 pr-2 text-right tabular-nums"
-                          >
-                            <CurrencyValueWidget
-                              values={clientTotals.billing}
-                              services={services}
-                              exchangeService={services.exchangeService}
-                            />
-                          </FinancialHierarchyGrid.Cell>
-                        </FinancialHierarchyGrid.Footer>
-                      )}
-                    </FinancialHierarchyGrid>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                          </FinancialHierarchyGrid.Footer>
+                        )}
+                      </FinancialHierarchyGrid>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </>
