@@ -46,6 +46,8 @@ export type BillingListProps = WithServices<
         // this will be connected to local promiseState
         track: (promise: Promise<void>) => Promise<void>,
       ) => ReactNode;
+      onRowClick?: (row: BillingViewEntry) => void;
+      caption?: ReactNode;
     }
   >;
 
@@ -71,6 +73,8 @@ export function BillingList(props: BillingListProps) {
       ].filter(maybe.isPresent)}
       query={props.query}
       onQueryChange={props.onQueryChange}
+      onRowClick={props.onRowClick}
+      caption={props.caption}
       getRowId={(x) => x.id}
     />
   );

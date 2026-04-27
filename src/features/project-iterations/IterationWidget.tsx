@@ -13,13 +13,11 @@ import { EventsWidget } from "@/features/project-iterations/widgets/EventsWidget
 import { GeneratedReportDetail } from "@/features/project-iterations/widgets/GeneratedReportDetail.tsx";
 import { GeneratedReportList } from "@/features/project-iterations/widgets/GeneratedReportList.tsx";
 import { IterationTabs } from "@/features/project-iterations/widgets/IterationTabs.tsx";
+import { LinkedBillingList } from "@/features/project-iterations/widgets/LinkedBillingList.tsx";
 import { LinkedReportList } from "@/features/project-iterations/widgets/LinkedReportList.tsx";
 import { PositionList } from "@/features/project-iterations/widgets/PositionList.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/routing/routingUtils.ts";
+import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { Route, Routes } from "react-router-dom";
 import { GeneratedReportIdResolver } from "../app/RootWidget.idResolvers";
 
@@ -83,13 +81,10 @@ export function IterationWidget(
           />
           <Route
             path={makeRelativePath(basePath, forIteration.billings())}
-            element={<div>Billings</div>}
+            element={<LinkedBillingList {...props} />}
           />
           <Route
-            path={makeRelativePath(
-              basePath,
-              forIteration.generatedReports(),
-            )}
+            path={makeRelativePath(basePath, forIteration.generatedReports())}
             element={
               <GeneratedReportList
                 projectIterationId={props.projectIterationId}

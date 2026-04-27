@@ -16,15 +16,13 @@ import { GenerateReportPopover } from "@/features/project-iterations/widgets/Gen
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/routing/routingUtils.ts";
+import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { maybe, rd } from "@passionware/monads";
 import { Slot } from "@radix-ui/react-slot";
 import { Link2 } from "lucide-react";
 import { Route, Routes } from "react-router-dom";
 import { reportQueryUtils } from "@/api/reports/reports.api";
+import { billingIdsLinkedToIterationReports } from "@/features/project-iterations/widgets/iterationLinkedBillingIds.ts";
 
 export function IterationTabs(
   props: WithFrontServices & {
@@ -159,7 +157,10 @@ export function IterationTabs(
         >
           Billings
           <Badge variant="accent1" size="sm">
-            1
+            {rd.tryMap(
+              linkedReports,
+              (r) => billingIdsLinkedToIterationReports(r.entries).length,
+            )}
           </Badge>
         </TabsTrigger>
         <Routes>
@@ -179,7 +180,10 @@ export function IterationTabs(
               ))}
           />
           <Route
-            path={makeRelativePath(forIteration.root(), forIteration.positions())}
+            path={makeRelativePath(
+              forIteration.root(),
+              forIteration.positions(),
+            )}
             element={rd
               .journey(iteration)
               .wait(<Skeleton className="w-20 h-4" />)
