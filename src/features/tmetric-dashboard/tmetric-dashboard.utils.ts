@@ -783,6 +783,35 @@ export function getScopeHierarchyTotals(
   };
 }
 
+/**
+ * Distinct currency codes needed for exchange-rate pairs (e.g. → EUR) in
+ * TMetric scope hierarchy / By client panels: totals, contractor rows, and
+ * iteration currencies.
+ */
+export function collectTmetricScopeHierarchyExchangeCurrencies(
+  scopeTotals: ScopeHierarchyTotals,
+  report: GenericReport,
+  scopeHierarchy: ScopeHierarchyClient[],
+): string[] {
+  const set = new Set<string>();
+  for (const [, rec] of scopeTotals.byClient)
+    for (const v of [...rec.cost, ...rec.billing])
+      set.add(v.currency.toUpperCase());
+  for (const [, rec] of scopeTotals.byIteration)
+    for (const v of [...rec.cost, ...rec.billing])
+      set.add(v.currency.toUpperCase());
+  for (const row of scopeHierarchy.flatMap((c) => c.iterations)) {
+    const totals = getContractorIterationTotals(report, row.iteration.id);
+    for (const t of totals) {
+      set.add(t.costCurrency.toUpperCase());
+      set.add(t.billingCurrency.toUpperCase());
+    }
+  }
+  for (const row of scopeHierarchy.flatMap((c) => c.iterations))
+    set.add(row.iteration.currency.toUpperCase());
+  return set.size ? Array.from(set) : ["EUR"];
+}
+
 // --- Entry-to-iteration matching and breakdowns ---
 
 export function findMatchingIteration(

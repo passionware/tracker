@@ -1061,9 +1061,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1176,9 +1173,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1274,9 +1268,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1482,9 +1473,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1503,9 +1491,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1569,9 +1554,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>
@@ -1591,9 +1573,6 @@ export function ReconciliationView(
                                         },
                                       ]}
                                       services={props.services}
-                                      exchangeService={
-                                        props.services.exchangeService
-                                      }
                                     />
                                   </span>
                                 </div>

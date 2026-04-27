@@ -71,6 +71,13 @@ export interface UseTmetricDashboardDataResult {
   cachedReportQuery: ReturnType<
     WithFrontServices["services"]["tmetricDashboardService"]["useCached"]
   >;
+  /**
+   * Same scope as the dashboard, but period = union of all in-scope iterations’
+   * calendar periods. Used only for the “By client” billing cards (not Financial overview).
+   */
+  byClientCachedReportQuery: ReturnType<
+    WithFrontServices["services"]["tmetricDashboardService"]["useCached"]
+  >;
   handleRefresh: () => void;
   isRefreshing: boolean;
   refreshMutation: ReturnType<typeof promiseState.useMutation>;
@@ -380,13 +387,27 @@ export function useTmetricDashboardData({
     periodEnd: end,
   });
 
+  const byClientCachedReportQuery = services.tmetricDashboardService.useCached({
+    scope,
+    periodStart: iterationRange?.start ?? null,
+    periodEnd: iterationRange?.end ?? null,
+  });
+
   const refreshMutation = promiseState.useMutation(async () => {
     if (!canLoadOrRefresh) return null;
-    return services.tmetricDashboardService.refreshAndCache({
+    const main = await services.tmetricDashboardService.refreshAndCache({
       scope,
-      periodStart: start,
-      periodEnd: end,
+      periodStart: start!,
+      periodEnd: end!,
     });
+    if (iterationRange != null) {
+      await services.tmetricDashboardService.refreshAndCache({
+        scope,
+        periodStart: iterationRange.start,
+        periodEnd: iterationRange.end,
+      });
+    }
+    return main;
   });
 
   const handleRefresh = useCallback(() => {
@@ -516,6 +537,7 @@ export function useTmetricDashboardData({
     navigatePrev,
     navigateNext,
     cachedReportQuery,
+    byClientCachedReportQuery,
     handleRefresh,
     isRefreshing: mt.isInProgress(refreshMutation.state),
     refreshMutation,

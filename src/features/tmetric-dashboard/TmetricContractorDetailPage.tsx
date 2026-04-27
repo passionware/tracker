@@ -262,7 +262,6 @@ export function TmetricContractorDetailPage(
                     <CurrencyValueWidget
                       values={data.total.billing}
                       services={services}
-                      exchangeService={services.exchangeService}
                       className="text-2xl font-bold"
                     />
                   </CardContent>
@@ -275,7 +274,6 @@ export function TmetricContractorDetailPage(
                     <CurrencyValueWidget
                       values={data.total.cost}
                       services={services}
-                      exchangeService={services.exchangeService}
                       className="text-2xl font-bold"
                     />
                   </CardContent>
@@ -288,7 +286,6 @@ export function TmetricContractorDetailPage(
                     <CurrencyValueWidget
                       values={data.total.profit}
                       services={services}
-                      exchangeService={services.exchangeService}
                       className={`text-2xl font-bold ${profitColorClass}`}
                     />
                   </CardContent>

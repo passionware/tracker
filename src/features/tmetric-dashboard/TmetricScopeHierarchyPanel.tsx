@@ -30,6 +30,7 @@ import { IterationBudgetDetail } from "./IterationBudgetMeter";
 import { ProfitBreakdownWidget } from "./ProfitBreakdownWidget";
 import {
   buildScopeHierarchy,
+  collectTmetricScopeHierarchyExchangeCurrencies,
   divideCurrencyValues,
   getContractorIterationTotals,
   getContractorRatesForIterationProject,
@@ -79,6 +80,8 @@ export function TmetricScopeHierarchyPanel({
     () => buildScopeHierarchy(projectsData, iterationsForScope, projectsMap),
     [projectsData, iterationsForScope, projectsMap],
   );
+
+  const scopeHierarchyRd = useMemo(() => rd.of(scopeHierarchy), [scopeHierarchy]);
 
   const scopeHierarchyWithRates = useMemo(() => {
     const data = rd.tryGet(cachedReport);
@@ -202,36 +205,27 @@ export function TmetricScopeHierarchyPanel({
     (report) => getScopeHierarchyTotals(report, scopeHierarchy),
   );
 
-  const byClientAllCurrenciesForExchange = useMemo(() => {
-    const set = new Set<string>();
-    const scopeTotals = rd.tryGet(byClientScopeHierarchyTotalsRd);
-    const report = rd.tryGet(byClientCachedReport);
-    if (scopeTotals) {
-      for (const [, rec] of scopeTotals.byClient)
-        for (const v of [...rec.cost, ...rec.billing])
-          set.add(v.currency.toUpperCase());
-      for (const [, rec] of scopeTotals.byIteration)
-        for (const v of [...rec.cost, ...rec.billing])
-          set.add(v.currency.toUpperCase());
-    }
-    if (report)
-      for (const row of scopeHierarchy.flatMap((c) => c.iterations)) {
-        const totals = getContractorIterationTotals(report, row.iteration.id);
-        for (const t of totals) {
-          set.add(t.costCurrency.toUpperCase());
-          set.add(t.billingCurrency.toUpperCase());
-        }
-      }
-    for (const row of scopeHierarchy.flatMap((c) => c.iterations))
-      set.add(row.iteration.currency.toUpperCase());
-    return set.size ? Array.from(set) : ["EUR"];
-  }, [byClientScopeHierarchyTotalsRd, scopeHierarchy, byClientCachedReport]);
+  const byClientExchangeCurrenciesRd = rd.useMemoMap(
+    rd.combine({
+      totals: byClientScopeHierarchyTotalsRd,
+      report: byClientCachedReport,
+      hierarchy: scopeHierarchyRd,
+    }),
+    ({ totals, report, hierarchy }) =>
+      collectTmetricScopeHierarchyExchangeCurrencies(
+        totals,
+        report,
+        hierarchy,
+      ),
+  );
 
   const byClientExchangeRates = services.exchangeService.useExchangeRates(
-    byClientAllCurrenciesForExchange.map((from) => ({
-      from,
-      to: targetCurrency,
-    })),
+    rd.mapOrElse(
+      byClientExchangeCurrenciesRd,
+      (currencies) =>
+        currencies.map((from) => ({ from, to: targetCurrency })),
+      [],
+    ),
   );
 
   const byClientRateMap = useMemo(() => {

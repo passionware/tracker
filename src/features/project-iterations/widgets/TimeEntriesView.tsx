@@ -153,7 +153,6 @@ export function TimeEntriesView(
                 <CurrencyValueWidget
                   values={basicInfo.statistics.totalCostBudget}
                   services={props.services}
-                  exchangeService={props.services.exchangeService}
                 />
               )}
             </div>
@@ -195,7 +194,6 @@ export function TimeEntriesView(
                             <CurrencyValueWidget
                               values={role.costBudget}
                               services={props.services}
-                              exchangeService={props.services.exchangeService}
                             />
                           )}
                         </div>
@@ -245,7 +243,6 @@ export function TimeEntriesView(
                           <CurrencyValueWidget
                             values={contractor.costBudget}
                             services={props.services}
-                            exchangeService={props.services.exchangeService}
                           />
                         )}
                       </div>

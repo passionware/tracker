@@ -28,10 +28,7 @@ import {
   useTimelineRangeShadingFromPreference,
 } from "@/platform/passionware-timeline/passionware-timeline.tsx";
 import { ErrorMessageRenderer } from "@/platform/react/ErrorMessageRenderer";
-import {
-  ClientSpec,
-  WorkspaceSpec,
-} from "@/routing/routingUtils.ts";
+import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import { maybe, mt, rd } from "@passionware/monads";
 import { format } from "date-fns";
 import {
@@ -338,7 +335,6 @@ function DashboardRangeBar({
   );
 }
 
-
 function DashboardNavButton({
   direction,
   unit,
@@ -398,6 +394,7 @@ export function TmetricDashboardPage(
     navigatePrev,
     navigateNext,
     cachedReportQuery,
+    byClientCachedReportQuery,
     handleRefresh,
     isRefreshing,
     refreshMutation,
@@ -428,6 +425,15 @@ export function TmetricDashboardPage(
     iterationRange &&
     start === null &&
     end === null;
+
+  const dashboardReportRd = rd.useMemoMap(
+    cachedReportQuery,
+    (entry) => entry.data,
+  );
+  const byClientReportRd = rd.useMemoMap(
+    byClientCachedReportQuery,
+    (entry) => entry.data,
+  );
 
   const dashboardTimelineShading = useTimelineRangeShadingFromPreference(
     services.preferenceService,
@@ -679,16 +685,18 @@ export function TmetricDashboardPage(
                   <CardContent className="flex min-h-0 flex-1 flex-col p-3 sm:p-6">
                     <div className="h-full min-h-[min(22rem,55svh)] w-full min-w-0 flex-1 overflow-hidden rounded-md border border-border sm:min-h-[28rem]">
                       {(() => {
-                        const minStartFromItems = resolvedTimeline.timelineItems.reduce(
-                          (min, item) =>
-                            item.start.compare(min) < 0 ? item.start : min,
-                          resolvedTimeline.timelineItems[0].start,
-                        );
-                        const maxEndFromItems = resolvedTimeline.timelineItems.reduce(
-                          (max, item) =>
-                            item.end.compare(max) > 0 ? item.end : max,
-                          resolvedTimeline.timelineItems[0].end,
-                        );
+                        const minStartFromItems =
+                          resolvedTimeline.timelineItems.reduce(
+                            (min, item) =>
+                              item.start.compare(min) < 0 ? item.start : min,
+                            resolvedTimeline.timelineItems[0].start,
+                          );
+                        const maxEndFromItems =
+                          resolvedTimeline.timelineItems.reduce(
+                            (max, item) =>
+                              item.end.compare(max) > 0 ? item.end : max,
+                            resolvedTimeline.timelineItems[0].end,
+                          );
                         const clampStart =
                           start != null && end != null
                             ? fromAbsolute(start.getTime(), getLocalTimeZone())
@@ -705,17 +713,17 @@ export function TmetricDashboardPage(
                           }),
                         ];
                         return (
-                      <InfiniteTimelineWithState
-                        items={resolvedTimeline.timelineItems}
-                        lanes={resolvedTimeline.timelineLanes}
-                        timeRangeShadows={mergedTimeRangeShadows}
-                        rangeShadingState={
-                          dashboardTimelineShading.rangeShadingState
-                        }
-                        onRangeShadingStateChange={
-                          dashboardTimelineShading.onRangeShadingStateChange
-                        }
-                      />
+                          <InfiniteTimelineWithState
+                            items={resolvedTimeline.timelineItems}
+                            lanes={resolvedTimeline.timelineLanes}
+                            timeRangeShadows={mergedTimeRangeShadows}
+                            rangeShadingState={
+                              dashboardTimelineShading.rangeShadingState
+                            }
+                            onRangeShadingStateChange={
+                              dashboardTimelineShading.onRangeShadingStateChange
+                            }
+                          />
                         );
                       })()}
                     </div>
@@ -783,7 +791,10 @@ export function TmetricDashboardPage(
             </div>
           ))
           .map((report) => (
-            <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col" key="cube">
+            <div
+              className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col"
+              key="cube"
+            >
               <TmetricCubeExplorer
                 report={report}
                 services={services}
@@ -850,14 +861,15 @@ export function TmetricDashboardPage(
               ),
             )
             .catch(() => null)
-            .map((reportData) => (
+            .map(() => (
               <TmetricScopeHierarchyPanel
                 key="scope-panel"
                 services={services}
                 projectsData={projectsData}
                 iterationsForScope={iterationsForScope}
                 projectsMap={projectsMap}
-                cachedReport={reportData}
+                cachedReport={dashboardReportRd}
+                byClientCachedReport={byClientReportRd}
                 persistenceKey={`${String(workspaceId)}-${String(clientId)}`}
                 workspaceId={workspaceId}
               />
@@ -1080,9 +1092,6 @@ export function TmetricDashboardPage(
                                           <CurrencyValueWidget
                                             values={c.costBudget}
                                             services={services}
-                                            exchangeService={
-                                              services.exchangeService
-                                            }
                                             className="font-medium"
                                           />
                                         </div>
@@ -1093,9 +1102,6 @@ export function TmetricDashboardPage(
                                           <CurrencyValueWidget
                                             values={c.billingBudget}
                                             services={services}
-                                            exchangeService={
-                                              services.exchangeService
-                                            }
                                             className="font-medium"
                                           />
                                         </div>
@@ -1107,9 +1113,6 @@ export function TmetricDashboardPage(
                                             <CurrencyValueWidget
                                               values={c.earningsBudget}
                                               services={services}
-                                              exchangeService={
-                                                services.exchangeService
-                                              }
                                               className="text-inherit"
                                             />
                                           </Badge>

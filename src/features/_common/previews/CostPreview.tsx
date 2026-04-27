@@ -61,7 +61,6 @@ export function CostPreview({ services, costId }: CostPreviewProps) {
                   },
                 ]}
                 services={services}
-                exchangeService={services.exchangeService}
               />
             </span>
           </div>
@@ -78,7 +77,6 @@ export function CostPreview({ services, costId }: CostPreviewProps) {
                     },
                   ]}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </span>
             </div>

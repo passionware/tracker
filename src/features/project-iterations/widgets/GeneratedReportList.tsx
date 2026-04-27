@@ -182,7 +182,6 @@ export function GeneratedReportList(
               <CurrencyValueWidget
                 values={billing}
                 services={props.services}
-                exchangeService={props.services.exchangeService}
                 className="text-sm"
               />
             );

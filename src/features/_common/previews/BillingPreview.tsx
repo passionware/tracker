@@ -50,7 +50,6 @@ export function BillingPreview({ services, billingId }: BillingPreviewProps) {
                     },
                   ]}
                   services={services}
-                  exchangeService={services.exchangeService}
                 />
               </span>
             </div>
@@ -67,7 +66,6 @@ export function BillingPreview({ services, billingId }: BillingPreviewProps) {
                       },
                     ]}
                     services={services}
-                    exchangeService={services.exchangeService}
                   />
                 </span>
               </div>

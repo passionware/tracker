@@ -110,11 +110,10 @@ function BudgetUsedVsElapsedBar({
 
 export interface IterationBudgetDetailProps extends WithFrontServices {
   iteration: ProjectIteration;
+  /** Billing totals for budget meter (caller should use full-iteration report). */
   billingValues: { amount: number; currency: string }[];
   rateMap: Map<string, number>;
   targetCurrency: string;
-  iterationLabel: string;
-  projectName: string;
   /** When true, show the "set new target" form; when false, hide it. */
   editMode?: boolean;
 }
@@ -187,7 +186,8 @@ function UpdateBudgetTargetForm({
   /** "toolbar" = single compact row (label + input + button), no vertical stack */
   variant?: "default" | "toolbar";
 }) {
-  const fetchReportForIterationPeriod = useFetchReportForIterationPeriod(services);
+  const fetchReportForIterationPeriod =
+    useFetchReportForIterationPeriod(services);
   const [targetInput, setTargetInput] = useState(
     currentTarget != null ? String(currentTarget) : "",
   );
@@ -303,7 +303,8 @@ function IterationBudgetDetailContent({
   services: WithFrontServices["services"];
   editMode?: boolean;
 }) {
-  const fetchReportForIterationPeriod = useFetchReportForIterationPeriod(services);
+  const fetchReportForIterationPeriod =
+    useFetchReportForIterationPeriod(services);
   const logEntries = services.iterationTriggerService.useBudgetTargetLog(
     iteration.id,
   );

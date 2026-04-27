@@ -70,7 +70,6 @@ export function ReportPreview({ services, reportId }: ReportPreviewProps) {
                   },
                 ]}
                 services={services}
-                exchangeService={services.exchangeService}
               />
             </span>
           </div>

@@ -84,7 +84,6 @@ export function CostToBillingWidget({
         <CurrencyValueWidget
           values={cost}
           services={services}
-          exchangeService={services.exchangeService}
           className="text-inherit"
         />
       </Badge>
@@ -93,7 +92,6 @@ export function CostToBillingWidget({
         <CurrencyValueWidget
           values={billing}
           services={services}
-          exchangeService={services.exchangeService}
           className="text-inherit"
         />
       </Badge>

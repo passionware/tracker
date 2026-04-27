@@ -74,7 +74,6 @@ function GeneratedReportRow(props: {
                 <CurrencyValueWidget
                   values={totalBilling}
                   services={props.services}
-                  exchangeService={props.services.exchangeService}
                   className="text-xs text-muted-foreground"
                 />
               </span>

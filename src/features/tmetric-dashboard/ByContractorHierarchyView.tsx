@@ -98,7 +98,6 @@ export function ByContractorHierarchyView({
               <CurrencyValueWidget
                 values={avgCostRate}
                 services={services}
-                exchangeService={services.exchangeService}
                 className="font-medium"
               />
             </FinancialHierarchyGrid.Cell>
@@ -109,7 +108,6 @@ export function ByContractorHierarchyView({
               <CurrencyValueWidget
                 values={avgBillingRate}
                 services={services}
-                exchangeService={services.exchangeService}
                 className="font-medium"
               />
             </FinancialHierarchyGrid.Cell>
@@ -120,7 +118,6 @@ export function ByContractorHierarchyView({
               <CurrencyValueWidget
                 values={c.total.cost}
                 services={services}
-                exchangeService={services.exchangeService}
                 className="font-medium"
               />
             </FinancialHierarchyGrid.Cell>
@@ -131,7 +128,6 @@ export function ByContractorHierarchyView({
               <CurrencyValueWidget
                 values={c.total.billing}
                 services={services}
-                exchangeService={services.exchangeService}
                 className="font-medium"
               />
             </FinancialHierarchyGrid.Cell>
@@ -142,7 +138,6 @@ export function ByContractorHierarchyView({
               <CurrencyValueWidget
                 values={c.total.profit}
                 services={services}
-                exchangeService={services.exchangeService}
                 colorize
                 className="font-medium"
               />
@@ -185,7 +180,6 @@ export function ByContractorHierarchyView({
                       <CurrencyValueWidget
                         values={iterAvgCostRate}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -196,7 +190,6 @@ export function ByContractorHierarchyView({
                       <CurrencyValueWidget
                         values={iterAvgBillingRate}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -207,7 +200,6 @@ export function ByContractorHierarchyView({
                       <CurrencyValueWidget
                         values={iter.cost}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -218,7 +210,6 @@ export function ByContractorHierarchyView({
                       <CurrencyValueWidget
                         values={iter.billing}
                         services={services}
-                        exchangeService={services.exchangeService}
                         className="font-medium"
                       />
                     </FinancialHierarchyGrid.Cell>
@@ -229,7 +220,6 @@ export function ByContractorHierarchyView({
                       <CurrencyValueWidget
                         values={iter.profit}
                         services={services}
-                        exchangeService={services.exchangeService}
                         colorize
                         className="font-medium"
                       />

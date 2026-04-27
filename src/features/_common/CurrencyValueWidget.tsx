@@ -3,7 +3,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip.tsx";
 import { WithServices } from "@/platform/typescript/services.ts";
 import {
   CurrencyValue,
-  ExchangeService,
+  WithExchangeService,
 } from "@/services/ExchangeService/ExchangeService.ts";
 import { WithFormatService } from "@/services/FormatService/FormatService.ts";
 import { rd } from "@passionware/monads";
@@ -16,8 +16,7 @@ function colorClassForAmount(amount: number, colorize: boolean): string {
 }
 
 export interface CurrencyValueWidgetProps
-  extends WithServices<[WithFormatService]> {
-  exchangeService: ExchangeService;
+  extends WithServices<[WithFormatService, WithExchangeService]> {
   values: CurrencyValue[];
   targetCurrency?: string;
   showApproximation?: boolean;
@@ -34,7 +33,6 @@ export function CurrencyValueWidget({
   showSumInOriginalCurrencies = true,
   colorize = false,
   services,
-  exchangeService,
   className,
 }: CurrencyValueWidgetProps) {
   // Helper function to get unique currencies from values
@@ -47,7 +45,7 @@ export function CurrencyValueWidget({
   const safeValues =
     values.length > 0 ? values : [{ amount: 0, currency: "USD" }];
 
-  const exchangeRates = exchangeService.useExchangeRates(
+  const exchangeRates = services.exchangeService.useExchangeRates(
     safeValues.map((value) => ({
       from: value.currency,
       to: targetCurrency,
@@ -55,7 +53,7 @@ export function CurrencyValueWidget({
   );
 
   // For single currency conversion (always call hook, but with conditional values)
-  const singleCurrencyConversion = exchangeService.useExchange(
+  const singleCurrencyConversion = services.exchangeService.useExchange(
     safeValues.length === 1 ? safeValues[0].currency : "USD",
     targetCurrency,
     safeValues.length === 1 ? safeValues[0].amount : 0,
@@ -92,7 +90,7 @@ export function CurrencyValueWidget({
 
   // Pre-calculate conversions for all unique currencies to avoid conditional hooks
   const uniqueCurrencies = getUniqueCurrencies(safeValues);
-  const currencyConversionRates = exchangeService.useExchangeRates(
+  const currencyConversionRates = services.exchangeService.useExchangeRates(
     uniqueCurrencies.map((currency) => ({
       from: targetCurrency,
       to: currency,

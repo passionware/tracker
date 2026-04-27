@@ -378,7 +378,6 @@ function BasicInformationView(
                     <CurrencyValueWidget
                       values={basicInfo.statistics.totalCostBudget}
                       services={props.services}
-                      exchangeService={props.services.exchangeService}
                       className="text-inherit"
                     />
                   </Badge>
@@ -387,7 +386,6 @@ function BasicInformationView(
                     <CurrencyValueWidget
                       values={basicInfo.statistics.totalBillingBudget}
                       services={props.services}
-                      exchangeService={props.services.exchangeService}
                       className="text-inherit"
                     />
                   </Badge>
@@ -401,7 +399,6 @@ function BasicInformationView(
                   <CurrencyValueWidget
                     values={basicInfo.statistics.totalEarningsBudget}
                     services={props.services}
-                    exchangeService={props.services.exchangeService}
                     className="text-inherit"
                   />
                 </Badge>
