@@ -75,6 +75,7 @@ import {
 } from "@/platform/lang/internationalized-date.ts";
 import { useIsMobile } from "@/platform/react/use-mobile.tsx";
 import { cn } from "@/lib/utils";
+import { getDimmedClasses } from "@/features/_common/DimmedContainer";
 import {
   CalendarDate,
   fromAbsolute,
@@ -442,6 +443,7 @@ export function TmetricDashboardPage(
   );
 
   const isMobile = useIsMobile();
+  const isRefreshInProgress = mt.isInProgress(refreshMutation.state);
 
   return (
     <div className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden p-3 sm:p-6">
@@ -836,11 +838,13 @@ export function TmetricDashboardPage(
                 contractorsSummary: resolvedContractorsSummary,
                 contractorNameMap: resolvedContractorNameMap,
               }) => (
-                <CustomKpiCards
-                  services={services}
-                  contractorsSummary={resolvedContractorsSummary}
-                  contractorNameMap={resolvedContractorNameMap}
-                />
+                <div className={getDimmedClasses(isRefreshInProgress)}>
+                  <CustomKpiCards
+                    services={services}
+                    contractorsSummary={resolvedContractorsSummary}
+                    contractorNameMap={resolvedContractorNameMap}
+                  />
+                </div>
               ),
             )}
 
