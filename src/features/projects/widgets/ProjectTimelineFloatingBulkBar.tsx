@@ -11,28 +11,219 @@ import { ProjectIterationBulkStatusSubmenu } from "@/features/_common/bulk/Proje
 import { ReportListBulkMenuItems } from "@/features/_common/bulk/ReportListBulkMenuItems.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ListToolbarActionsMenu } from "@/features/_common/ListToolbar.tsx";
+import { Summary } from "@/features/_common/Summary.tsx";
+import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
 import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
+import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
 import { idSpecUtils } from "@/platform/lang/IdSpec.ts";
-import type { BillingViewEntry } from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
+import type {
+  BillingView,
+  BillingViewEntry,
+} from "@/services/front/ReportDisplayService/ReportDisplayService.ts";
 import type { TimelineItem } from "@/platform/passionware-timeline/passionware-timeline-core.ts";
 import {
   selectionState,
   type SelectionState,
 } from "@/platform/lang/SelectionState.ts";
 import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
-import { maybe, mt, rd, type Maybe } from "@passionware/monads";
+import {
+  maybe,
+  mt,
+  rd,
+  type Maybe,
+  type RemoteData,
+} from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { capitalize } from "lodash";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   projectTimelineSelectionKeyFromItem,
   type ProjectTimelineItemData,
 } from "./projectTimelineModel.ts";
+
+/** Strip layout aligned with toolbar row (centered metrics, start-aligned group). */
+const bulkStatsSummaryClassName =
+  "min-w-0 flex-1 flex-wrap items-center justify-start gap-x-2 sm:gap-x-3 md:gap-x-4";
+
+function ProjectTimelineEntityStatsRow(props: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex shrink-0 items-center text-[10px] font-semibold uppercase leading-none tracking-wide text-muted-foreground sm:h-8 sm:w-22">
+        {props.label}
+      </div>
+      <div className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-x-1">
+        {props.children}
+      </div>
+    </div>
+  );
+}
+
+function ProjectTimelineBillingBulkStatsStrip(props: {
+  services: WithFrontServices["services"];
+  billingViewRd: RemoteData<BillingView>;
+}) {
+  const summary = rd.tryMap(props.billingViewRd, (view) => {
+    const totals = view.totalSelected ?? view.total;
+    const rows = [
+      { label: "Charged", value: totals.netAmount },
+      { label: "Reconciled", value: totals.matchedAmount },
+      { label: "To reconcile", value: totals.remainingAmount },
+    ];
+    return (
+      <Summary variant="strip" className={bulkStatsSummaryClassName}>
+        {rows.map((item) => (
+          <SummaryCurrencyGroup
+            key={item.label}
+            label={item.label}
+            group={item.value}
+            services={props.services}
+            variant="strip"
+          />
+        ))}
+      </Summary>
+    );
+  });
+
+  return (
+    <>
+      {summary ??
+        (rd.isPending(props.billingViewRd) ? (
+          <Loader2
+            className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+            aria-label="Loading billing totals"
+          />
+        ) : null)}
+    </>
+  );
+}
+
+/** Cost totals for the bulk bar (same metrics as the costs list caption). */
+function ProjectTimelineCostBulkStatsSummary(
+  props: WithFrontServices & {
+    workspaceId: WorkspaceSpec;
+    clientId: ClientSpec;
+    costIds: number[];
+  },
+) {
+  const costQuery = useMemo(
+    () => costQueryUtils.ofDefault(props.workspaceId, props.clientId),
+    [props.workspaceId, props.clientId],
+  );
+  const costViewRd = props.services.reportDisplayService.useCostView(
+    maybe.of(costQuery),
+    props.costIds,
+  );
+
+  const summary = rd.tryMap(costViewRd, (view) => {
+    const totals = view.totalSelected ?? view.total;
+    const rows = [
+      { label: "Net total", value: totals.netAmount },
+      { label: "Total matched", value: totals.matchedAmount },
+      { label: "Total remaining", value: totals.remainingAmount },
+    ];
+    return (
+      <Summary variant="strip" className={bulkStatsSummaryClassName}>
+        {rows.map((item) => (
+          <SummaryCurrencyGroup
+            key={item.label}
+            label={item.label}
+            group={item.value}
+            services={props.services}
+            variant="strip"
+          />
+        ))}
+      </Summary>
+    );
+  });
+
+  return (
+    <>
+      {summary ??
+        (rd.isPending(costViewRd) ? (
+          <Loader2
+            className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+            aria-label="Loading cost totals"
+          />
+        ) : null)}
+    </>
+  );
+}
+
+/** Report financial totals for the bulk bar (same metrics as the reports list caption). */
+function ProjectTimelineReportBulkStatsSummary(
+  props: WithFrontServices & {
+    reportQuery: Maybe<ReportQuery>;
+    reportIds: number[];
+  },
+) {
+  const reportViewRd = props.services.reportDisplayService.useReportView(
+    props.reportQuery,
+    props.reportIds,
+  );
+
+  const summary = rd.tryMap(reportViewRd, (view) => {
+    const totals = view.totalSelected ?? view.total;
+    const billingDetails = [
+      {
+        label: "Reported",
+        description: "Total value of reported work",
+        value: totals.netAmount,
+      },
+      {
+        label: "Billed",
+        description: "How much billed value is linked to reports",
+        value: totals.chargedAmount,
+      },
+      {
+        label: "To link",
+        description:
+          "Report amount that is not yet linked to any billing",
+        value: totals.toChargeAmount,
+      },
+      { label: "To pay", value: totals.toCompensateAmount },
+      { label: "Paid", value: totals.compensatedAmount },
+      {
+        label: "To compensate",
+        value: totals.toFullyCompensateAmount,
+      },
+    ];
+
+    return (
+      <Summary variant="strip" className={bulkStatsSummaryClassName}>
+        {billingDetails.map((item) => (
+          <SummaryCurrencyGroup
+            key={item.label}
+            label={item.label}
+            description={item.description}
+            group={item.value}
+            services={props.services}
+            variant="strip"
+          />
+        ))}
+      </Summary>
+    );
+  });
+
+  return (
+    <>
+      {summary ??
+        (rd.isPending(reportViewRd) ? (
+          <Loader2
+            className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+            aria-label="Loading report totals"
+          />
+        ) : null)}
+    </>
+  );
+}
 
 function parseTimelineKey(
   k: string,
@@ -206,6 +397,11 @@ export function ProjectTimelineFloatingBulkBar(
     return null;
   }
 
+  const hasFinancialStats =
+    reportIds.length > 0 ||
+    billingIds.length > 0 ||
+    costIds.length > 0;
+
   return (
     <>
       <div
@@ -217,88 +413,130 @@ export function ProjectTimelineFloatingBulkBar(
           "left-[var(--app-content-offset-left)]",
         ].join(" ")}
       >
-        <Card className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2 border-border/80 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {totalSelected} selected
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2"
-            onClick={() => props.onSelectionChange(selectionState.selectNone())}
-          >
-            <X className="h-3.5 w-3.5" aria-hidden />
-            Clear
-          </Button>
-          <div className="h-6 w-px bg-border" aria-hidden />
-          {reportIds.length > 0 ? (
-            <ListToolbarActionsMenu
-              selectedCount={reportIds.length}
-              label="Reports"
-              contentClassName="min-w-[11rem]"
+        <Card
+          className={[
+            "pointer-events-auto flex max-w-full flex-wrap items-center gap-3 border-border/80 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm",
+            hasFinancialStats ? "sm:gap-4" : "",
+          ].join(" ")}
+        >
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {totalSelected} selected
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2"
+              onClick={() =>
+                props.onSelectionChange(selectionState.selectNone())
+              }
             >
-              <ReportListBulkMenuItems
+              <X className="h-3.5 w-3.5" aria-hidden />
+              Clear
+            </Button>
+            <div className="h-6 w-px bg-border" aria-hidden />
+            {reportIds.length > 0 ? (
+              <ListToolbarActionsMenu
                 selectedCount={reportIds.length}
-                onCreateCost={() =>
-                  openEntityDrawer({
-                    type: "bulk-create-cost-for-reports",
-                    reportIds,
-                    afterCreate: () =>
-                      props.onSelectionChange(selectionState.selectNone()),
-                  })
+                label="Reports"
+                contentClassName="min-w-[11rem]"
+              >
+                <ReportListBulkMenuItems
+                  selectedCount={reportIds.length}
+                  onCreateCost={() =>
+                    openEntityDrawer({
+                      type: "bulk-create-cost-for-reports",
+                      reportIds,
+                      afterCreate: () =>
+                        props.onSelectionChange(selectionState.selectNone()),
+                    })
+                  }
+                  onDeleteRequest={() => setDeleteReportOpen(true)}
+                  deleteLabel="Delete reports"
+                />
+              </ListToolbarActionsMenu>
+            ) : null}
+            {iterationIds.length > 0 ? (
+              <ListToolbarActionsMenu
+                selectedCount={iterationIds.length}
+                label="Iterations"
+                open={iterationMenuOpen}
+                onOpenChange={setIterationMenuOpen}
+                disabled={
+                  iterationIds.length === 0 ||
+                  mt.isInProgress(bulkIterationMutation.state)
                 }
-                onDeleteRequest={() => setDeleteReportOpen(true)}
-                deleteLabel="Delete reports"
+                disabledReason={
+                  mt.isInProgress(bulkIterationMutation.state)
+                    ? "Updating iteration status…"
+                    : undefined
+                }
+              >
+                <ProjectIterationBulkStatusSubmenu
+                  mutationInProgress={mt.isInProgress(
+                    bulkIterationMutation.state,
+                  )}
+                  onStatusChange={handleBulkIteration}
+                />
+              </ListToolbarActionsMenu>
+            ) : null}
+            {billingIds.length > 0 ? (
+              <BillingListBulkActions
+                selectedCount={billingIds.length}
+                selectedUnpaidCount={selectedUnpaidBillings.length}
+                label="Billings"
+                onMarkPaid={() => setBulkMarkPaidOpen(true)}
+                onMatchPayments={() => {
+                  setPaymentMatcherUnpaidSnapshot(selectedUnpaidBillings);
+                  setPaymentMatcherOpen(true);
+                }}
+                onDeleteRequest={() => setDeleteBillingOpen(true)}
               />
-            </ListToolbarActionsMenu>
-          ) : null}
-          {iterationIds.length > 0 ? (
-            <ListToolbarActionsMenu
-              selectedCount={iterationIds.length}
-              label="Iterations"
-              open={iterationMenuOpen}
-              onOpenChange={setIterationMenuOpen}
-              disabled={
-                iterationIds.length === 0 ||
-                mt.isInProgress(bulkIterationMutation.state)
-              }
-              disabledReason={
-                mt.isInProgress(bulkIterationMutation.state)
-                  ? "Updating iteration status…"
-                  : undefined
-              }
-            >
-              <ProjectIterationBulkStatusSubmenu
-                mutationInProgress={mt.isInProgress(bulkIterationMutation.state)}
-                onStatusChange={handleBulkIteration}
-              />
-            </ListToolbarActionsMenu>
-          ) : null}
-          {billingIds.length > 0 ? (
-            <BillingListBulkActions
-              selectedCount={billingIds.length}
-              selectedUnpaidCount={selectedUnpaidBillings.length}
-              label="Billings"
-              onMarkPaid={() => setBulkMarkPaidOpen(true)}
-              onMatchPayments={() => {
-                setPaymentMatcherUnpaidSnapshot(selectedUnpaidBillings);
-                setPaymentMatcherOpen(true);
-              }}
-              onDeleteRequest={() => setDeleteBillingOpen(true)}
-            />
-          ) : null}
-          {costIds.length > 0 ? (
-            <ListToolbarActionsMenu
-              selectedCount={costIds.length}
-              label="Costs"
-            >
-              <CostListBulkDeleteMenuItem
+            ) : null}
+            {costIds.length > 0 ? (
+              <ListToolbarActionsMenu
                 selectedCount={costIds.length}
-                onDeleteRequest={() => setDeleteCostOpen(true)}
-                label="Delete costs"
-              />
-            </ListToolbarActionsMenu>
+                label="Costs"
+              >
+                <CostListBulkDeleteMenuItem
+                  selectedCount={costIds.length}
+                  onDeleteRequest={() => setDeleteCostOpen(true)}
+                  label="Delete costs"
+                />
+              </ListToolbarActionsMenu>
+            ) : null}
+          </div>
+          {hasFinancialStats ? (
+            <div className="flex min-h-0 min-w-0 flex-1 basis-full flex-col gap-3 border-t border-border/60 pt-3 sm:basis-0 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+              {reportIds.length > 0 ? (
+                <ProjectTimelineEntityStatsRow label="Reports">
+                  <ProjectTimelineReportBulkStatsSummary
+                    services={props.services}
+                    reportQuery={props.reportQuery}
+                    reportIds={reportIds}
+                  />
+                </ProjectTimelineEntityStatsRow>
+              ) : null}
+              {billingIds.length > 0 ? (
+                <ProjectTimelineEntityStatsRow label="Billings">
+                  <ProjectTimelineBillingBulkStatsStrip
+                    services={props.services}
+                    billingViewRd={billingViewRd}
+                  />
+                </ProjectTimelineEntityStatsRow>
+              ) : null}
+              {costIds.length > 0 ? (
+                <ProjectTimelineEntityStatsRow label="Costs">
+                  <ProjectTimelineCostBulkStatsSummary
+                    services={props.services}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    costIds={costIds}
+                  />
+                </ProjectTimelineEntityStatsRow>
+              ) : null}
+            </div>
           ) : null}
         </Card>
       </div>
