@@ -32,8 +32,10 @@ import {
   SplitViewLayout,
   ViewMode,
 } from "@/features/_common/SplitViewLayout.tsx";
-import { Summary } from "@/features/_common/Summary.tsx";
-import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import {
+  getReportViewTotalsStripRows,
+  TotalsSummaryStrip,
+} from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { BulkDeleteAlertDialog } from "@/features/_common/bulk/BulkDeleteAlertDialog.tsx";
 import { ReportListBulkMenuItems } from "@/features/_common/bulk/ReportListBulkMenuItems.tsx";
 import { ReportForm } from "@/features/reports/ReportForm.tsx";
@@ -848,45 +850,12 @@ export function ReportsWidget(props: ReportsWidgetProps) {
           }
           caption={rd.tryMap(finalReports, (view) => {
             const totals = view.totalSelected ?? view.total;
-
-            const billingDetails = [
-              {
-                label: "Reported",
-                description: "Total value of reported work",
-                value: totals.netAmount,
-              },
-              {
-                label: "Billed",
-                description: "How much billed value is linked to reports",
-                value: totals.chargedAmount,
-              },
-              {
-                label: "To link",
-                description:
-                  "Report amount that is not yet linked to any billing",
-                value: totals.toChargeAmount,
-              },
-              { label: "To pay", value: totals.toCompensateAmount },
-              { label: "Paid", value: totals.compensatedAmount },
-              {
-                label: "To compensate",
-                value: totals.toFullyCompensateAmount,
-              },
-            ];
-
             return (
-              <Summary variant="strip" className="w-full gap-x-2 sm:gap-x-3 md:gap-x-4">
-                {billingDetails.map((item) => (
-                  <SummaryCurrencyGroup
-                    key={item.label}
-                    label={item.label}
-                    description={item.description}
-                    group={item.value}
-                    services={props.services}
-                    variant="strip"
-                  />
-                ))}
-              </Summary>
+              <TotalsSummaryStrip
+                rows={getReportViewTotalsStripRows(totals)}
+                formatContext={props.services}
+                summaryClassName="gap-x-2 sm:gap-x-3 md:gap-x-4"
+              />
             );
           })}
         />

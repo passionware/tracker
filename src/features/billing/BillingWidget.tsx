@@ -20,8 +20,10 @@ import {
   SplitViewLayout,
   ViewMode,
 } from "@/features/_common/SplitViewLayout.tsx";
-import { Summary } from "@/features/_common/Summary.tsx";
-import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import {
+  getBillingViewTotalsStripRows,
+  TotalsSummaryStrip,
+} from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingForm } from "@/features/billing/BillingForm.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
@@ -663,25 +665,11 @@ export function BillingWidget(props: BillingWidgetProps) {
           }
           caption={rd.tryMap(finalBillings, (view) => {
             const totals = view.totalSelected ?? view.total;
-
-            const billingDetails = [
-              { label: "Charged", value: totals.netAmount },
-              { label: "Reconciled", value: totals.matchedAmount },
-              { label: "To reconcile", value: totals.remainingAmount },
-            ];
-
             return (
-              <Summary variant="strip" className="w-full">
-                {billingDetails.map((item) => (
-                  <SummaryCurrencyGroup
-                    key={item.label}
-                    label={item.label}
-                    group={item.value}
-                    services={props.services}
-                    variant="strip"
-                  />
-                ))}
-              </Summary>
+              <TotalsSummaryStrip
+                rows={getBillingViewTotalsStripRows(totals)}
+                formatContext={props.services}
+              />
             );
           })}
         />

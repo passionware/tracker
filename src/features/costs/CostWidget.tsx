@@ -24,8 +24,10 @@ import {
   SplitViewLayout,
   ViewMode,
 } from "@/features/_common/SplitViewLayout.tsx";
-import { Summary } from "@/features/_common/Summary.tsx";
-import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import {
+  getCostViewTotalsStripRows,
+  TotalsSummaryStrip,
+} from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { BulkDeleteAlertDialog } from "@/features/_common/bulk/BulkDeleteAlertDialog.tsx";
 import { CostListBulkDeleteMenuItem } from "@/features/_common/bulk/CostListBulkDeleteMenuItem.tsx";
 import { CostForm } from "@/features/costs/CostForm.tsx";
@@ -550,28 +552,11 @@ export function CostWidget(props: PotentialCostWidgetProps) {
             finalCosts,
             (view) => {
               const totals = view.totalSelected ?? view.total;
-
-              const billingDetails = [
-                { label: "Net total", value: totals.netAmount },
-                { label: "Total matched", value: totals.matchedAmount },
-                {
-                  label: "Total remaining",
-                  value: totals.remainingAmount,
-                },
-              ];
-
               return (
-                <Summary variant="strip" className="w-full">
-                  {billingDetails.map((item) => (
-                    <SummaryCurrencyGroup
-                      key={item.label}
-                      label={item.label}
-                      group={item.value}
-                      services={props.services}
-                      variant="strip"
-                    />
-                  ))}
-                </Summary>
+                <TotalsSummaryStrip
+                  rows={getCostViewTotalsStripRows(totals)}
+                  formatContext={props.services}
+                />
               );
             },
             <div className="grid grid-flow-col gap-3">

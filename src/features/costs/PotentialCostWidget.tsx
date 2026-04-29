@@ -10,8 +10,10 @@ import { CostQueryBar } from "@/features/_common/elements/query/CostQueryBar.tsx
 import { InlinePopoverForm } from "@/features/_common/InlinePopoverForm.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { renderSmallError } from "@/features/_common/renderError.tsx";
-import { Summary } from "@/features/_common/Summary.tsx";
-import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import {
+  getCostViewTotalsStripRows,
+  TotalsSummaryStrip,
+} from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { CostForm } from "@/features/costs/CostForm.tsx";
 import { useColumns } from "@/features/costs/CostWidget.columns.tsx";
 import { PotentialCostWidgetProps } from "@/features/costs/CostWidget.types.tsx";
@@ -159,31 +161,12 @@ export function PotentialCostWidget(props: PotentialCostWidgetProps) {
         }}
         caption={rd.mapOrElse(
           costs,
-          (view) => {
-            const billingDetails = [
-              { label: "Net total", value: view.total.netAmount },
-              // { label: "Charged gross", value: view.total.grossAmount },
-              { label: "Total matched", value: view.total.matchedAmount },
-              {
-                label: "Total remaining",
-                value: view.total.remainingAmount,
-              },
-            ];
-
-            return (
-              <Summary variant="strip" className="w-full">
-                {billingDetails.map((item) => (
-                  <SummaryCurrencyGroup
-                    key={item.label}
-                    label={item.label}
-                    group={item.value}
-                    services={props.services}
-                    variant="strip"
-                  />
-                ))}
-              </Summary>
-            );
-          },
+          (view) => (
+            <TotalsSummaryStrip
+              rows={getCostViewTotalsStripRows(view.total)}
+              formatContext={props.services}
+            />
+          ),
           <div className="grid grid-flow-col gap-3">
             <Skeleton className="w-full h-10" />
             <Skeleton className="w-full h-10" />

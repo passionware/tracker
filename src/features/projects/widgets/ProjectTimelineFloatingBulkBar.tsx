@@ -11,8 +11,12 @@ import { ProjectIterationBulkStatusSubmenu } from "@/features/_common/bulk/Proje
 import { ReportListBulkMenuItems } from "@/features/_common/bulk/ReportListBulkMenuItems.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import { ListToolbarActionsMenu } from "@/features/_common/ListToolbar.tsx";
-import { Summary } from "@/features/_common/Summary.tsx";
-import { SummaryCurrencyGroup } from "@/features/_common/SummaryCurrencyGroup.tsx";
+import {
+  getBillingViewTotalsStripRows,
+  getCostViewTotalsStripRows,
+  getReportViewTotalsStripRows,
+  TotalsSummaryStrip,
+} from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
@@ -72,23 +76,12 @@ function ProjectTimelineBillingBulkStatsStrip(props: {
 }) {
   const summary = rd.tryMap(props.billingViewRd, (view) => {
     const totals = view.totalSelected ?? view.total;
-    const rows = [
-      { label: "Charged", value: totals.netAmount },
-      { label: "Reconciled", value: totals.matchedAmount },
-      { label: "To reconcile", value: totals.remainingAmount },
-    ];
     return (
-      <Summary variant="strip" className={bulkStatsSummaryClassName}>
-        {rows.map((item) => (
-          <SummaryCurrencyGroup
-            key={item.label}
-            label={item.label}
-            group={item.value}
-            services={props.services}
-            variant="strip"
-          />
-        ))}
-      </Summary>
+      <TotalsSummaryStrip
+        rows={getBillingViewTotalsStripRows(totals)}
+        formatContext={props.services}
+        summaryClassName={bulkStatsSummaryClassName}
+      />
     );
   });
 
@@ -124,23 +117,12 @@ function ProjectTimelineCostBulkStatsSummary(
 
   const summary = rd.tryMap(costViewRd, (view) => {
     const totals = view.totalSelected ?? view.total;
-    const rows = [
-      { label: "Net total", value: totals.netAmount },
-      { label: "Total matched", value: totals.matchedAmount },
-      { label: "Total remaining", value: totals.remainingAmount },
-    ];
     return (
-      <Summary variant="strip" className={bulkStatsSummaryClassName}>
-        {rows.map((item) => (
-          <SummaryCurrencyGroup
-            key={item.label}
-            label={item.label}
-            group={item.value}
-            services={props.services}
-            variant="strip"
-          />
-        ))}
-      </Summary>
+      <TotalsSummaryStrip
+        rows={getCostViewTotalsStripRows(totals)}
+        formatContext={props.services}
+        summaryClassName={bulkStatsSummaryClassName}
+      />
     );
   });
 
@@ -171,44 +153,12 @@ function ProjectTimelineReportBulkStatsSummary(
 
   const summary = rd.tryMap(reportViewRd, (view) => {
     const totals = view.totalSelected ?? view.total;
-    const billingDetails = [
-      {
-        label: "Reported",
-        description: "Total value of reported work",
-        value: totals.netAmount,
-      },
-      {
-        label: "Billed",
-        description: "How much billed value is linked to reports",
-        value: totals.chargedAmount,
-      },
-      {
-        label: "To link",
-        description:
-          "Report amount that is not yet linked to any billing",
-        value: totals.toChargeAmount,
-      },
-      { label: "To pay", value: totals.toCompensateAmount },
-      { label: "Paid", value: totals.compensatedAmount },
-      {
-        label: "To compensate",
-        value: totals.toFullyCompensateAmount,
-      },
-    ];
-
     return (
-      <Summary variant="strip" className={bulkStatsSummaryClassName}>
-        {billingDetails.map((item) => (
-          <SummaryCurrencyGroup
-            key={item.label}
-            label={item.label}
-            description={item.description}
-            group={item.value}
-            services={props.services}
-            variant="strip"
-          />
-        ))}
-      </Summary>
+      <TotalsSummaryStrip
+        rows={getReportViewTotalsStripRows(totals)}
+        formatContext={props.services}
+        summaryClassName={bulkStatsSummaryClassName}
+      />
     );
   });
 
