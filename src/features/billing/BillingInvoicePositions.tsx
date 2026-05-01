@@ -225,6 +225,15 @@ export function BillingInvoicePositions({
 
   const billingCurrency = billing.netAmount.currency;
 
+  const invoiceNumberLabel =
+    (billing.invoiceNumber && billing.invoiceNumber.trim()) ||
+    `#${billing.id}`;
+
+  const dueDateDisplay =
+    billing.dueDate == null
+      ? "—"
+      : services.formatService.temporal.single.compact(billing.dueDate);
+
   const totals = useMemo(() => {
     let sumAmount = 0;
     let sumHours = 0;
@@ -248,79 +257,102 @@ export function BillingInvoicePositions({
       <PanelSectionLabel icon={ListOrdered}>
         Invoice positions
       </PanelSectionLabel>
-      <SurfaceCard className="select-text" data-vaul-no-drag="">
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No report-linked lines on this invoice yet.
-          </p>
-        ) : (
-          <>
-            <div className="mb-2 grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>Contractor</span>
-              <span className="text-right">Hours</span>
-              <span className="text-right">Rate</span>
-              <span className="text-right">Line total</span>
+      <SurfaceCard className="select-text overflow-hidden p-0" data-vaul-no-drag="">
+        <div className="border-b border-border bg-muted/30 px-5 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Invoice no.
+              </p>
+              <p className="font-mono text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {invoiceNumberLabel}
+              </p>
             </div>
-            <div className="-mx-1">
-              {rows.map((row) => (
-                <InvoicePositionRow
-                  key={row.link.id}
-                  row={row}
-                  billingCurrency={billingCurrency}
-                  services={services}
-                  onOpenReportDetails={onOpenReportDetails}
-                />
-              ))}
+            <div className="shrink-0 space-y-1 sm:text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Due date
+              </p>
+              <div className="text-base font-medium tabular-nums text-foreground sm:text-lg">
+                {dueDateDisplay}
+              </div>
             </div>
-            <div
-              className="mt-3 grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 border-t border-border pt-3"
-              aria-label="Invoice positions totals"
-            >
-              <span className="self-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Total
-              </span>
-              <div className="flex justify-end">
-                {totals.linesWithHours === 0 ? (
-                  <span className="self-center text-sm text-muted-foreground">
-                    —
-                  </span>
-                ) : (
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 pt-4 sm:px-6">
+          {rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No report-linked lines on this invoice yet.
+            </p>
+          ) : (
+            <>
+              <div className="mb-2 grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span>Contractor</span>
+                <span className="text-right">Hours</span>
+                <span className="text-right">Rate</span>
+                <span className="text-right">Line total</span>
+              </div>
+              <div className="-mx-1">
+                {rows.map((row) => (
+                  <InvoicePositionRow
+                    key={row.link.id}
+                    row={row}
+                    billingCurrency={billingCurrency}
+                    services={services}
+                    onOpenReportDetails={onOpenReportDetails}
+                  />
+                ))}
+              </div>
+              <div
+                className="mt-3 grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 border-t border-border pt-3"
+                aria-label="Invoice positions totals"
+              >
+                <span className="self-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Total
+                </span>
+                <div className="flex justify-end">
+                  {totals.linesWithHours === 0 ? (
+                    <span className="self-center text-sm text-muted-foreground">
+                      —
+                    </span>
+                  ) : (
+                    <CopyableNumber
+                      copyText={formatPlainDecimal(totals.sumHours)}
+                      ariaLabel="Copy total hours"
+                      display={
+                        <span className="inline-flex flex-col items-end gap-0.5 font-semibold text-foreground">
+                          <span>{formatPlainDecimal(totals.sumHours)}</span>
+                          {totals.partialHours ? (
+                            <span className="text-[10px] font-normal leading-none text-muted-foreground">
+                              {totals.linesWithHours}/{rows.length} lines
+                            </span>
+                          ) : null}
+                        </span>
+                      }
+                    />
+                  )}
+                </div>
+                <span className="self-center text-right text-sm text-muted-foreground">
+                  —
+                </span>
+                <div className="flex justify-end">
                   <CopyableNumber
-                    copyText={formatPlainDecimal(totals.sumHours)}
-                    ariaLabel="Copy total hours"
+                    copyText={formatPlainDecimal(totals.sumAmount)}
+                    ariaLabel="Copy total linked billing amount"
                     display={
-                      <span className="inline-flex flex-col items-end gap-0.5 font-semibold text-foreground">
-                        <span>{formatPlainDecimal(totals.sumHours)}</span>
-                        {totals.partialHours ? (
-                          <span className="text-[10px] font-normal leading-none text-muted-foreground">
-                            {totals.linesWithHours}/{rows.length} lines
-                          </span>
-                        ) : null}
+                      <span className="font-mono font-semibold text-foreground">
+                        {services.formatService.financial.amountText(
+                          totals.sumAmount,
+                          billingCurrency,
+                        )}
                       </span>
                     }
                   />
-                )}
+                </div>
               </div>
-              <span className="self-center text-right text-sm text-muted-foreground">
-                —
-              </span>
-              <div className="flex justify-end">
-                <CopyableNumber
-                  copyText={formatPlainDecimal(totals.sumAmount)}
-                  ariaLabel="Copy total linked billing amount"
-                  display={
-                    <span className="font-mono font-semibold text-foreground">
-                      {services.formatService.financial.amountText(
-                        totals.sumAmount,
-                        billingCurrency,
-                      )}
-                    </span>
-                  }
-                />
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </SurfaceCard>
     </section>
   );
