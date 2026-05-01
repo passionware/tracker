@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/collapsible.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { PanelSectionLabel } from "./PanelSectionLabel.tsx";
@@ -65,8 +65,8 @@ export function ExpandablePanelSection({
         <PanelSectionLabel icon={icon} className="mb-0 min-w-0">
           {label}
         </PanelSectionLabel>
-        <ChevronDown
-          className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
+        <ChevronRight
+          className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90"
           aria-hidden
         />
       </CollapsibleTrigger>
