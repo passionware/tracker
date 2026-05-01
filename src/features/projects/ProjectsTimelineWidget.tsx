@@ -246,6 +246,10 @@ export function ProjectsTimelineWidget(props: ProjectsTimelineWidgetProps) {
   const [groupBy, setGroupBy] = useState<ProjectTimelineGroupBy>("client");
   const timelinePrefs = props.services.preferenceService.useTimelineView();
 
+  const projectsRdForTimeline = rd.useLastWithPlaceholder(
+    projectsRdForIterations,
+  );
+
   const timelineTools = (
     <>
       <ProjectQueryBar
@@ -332,7 +336,7 @@ export function ProjectsTimelineWidget(props: ProjectsTimelineWidgetProps) {
   return (
     <ProjectsTimelineLayout {...props} tools={timelineTools}>
       {rd
-        .journey(projectsRdForIterations)
+        .journey(projectsRdForTimeline)
         .wait(<Skeleton className="min-h-0 flex-1 w-full rounded-md" />)
         .catch(renderError)
         .map((projects) => {
@@ -424,7 +428,9 @@ function ProjectsTimelineLoaded(props: {
       iterationsQuery,
     );
 
-  const iterationsList = rd.tryGet(iterationsRd);
+  const iterationsRdWithPlaceholder = rd.useLastWithPlaceholder(iterationsRd);
+
+  const iterationsList = rd.tryGet(iterationsRdWithPlaceholder);
 
   const reportsQuery = useMemo(() => {
     if (!iterationsList || iterationsList.length === 0) {
@@ -472,7 +478,7 @@ function ProjectsTimelineLoaded(props: {
     );
 
   return rd
-    .journey(iterationsRd)
+    .journey(iterationsRdWithPlaceholder)
     .wait(<Skeleton className="min-h-0 flex-1 w-full rounded-md" />)
     .catch(renderError)
     .map((iterations) => {
@@ -1098,8 +1104,12 @@ function ProjectsTimelineWithReports(props: {
     generated: props.generatedReportsRd,
   });
 
+  const reportsAndGeneratedWithPlaceholder = rd.useLastWithPlaceholder(
+    reportsAndGeneratedRd,
+  );
+
   return rd
-    .journey(reportsAndGeneratedRd)
+    .journey(reportsAndGeneratedWithPlaceholder)
     .wait(<Skeleton className="min-h-0 flex-1 w-full rounded-md" />)
     .catch(renderError)
     .map(({ reports, generated }) => {
