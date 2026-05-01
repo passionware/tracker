@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   ActionMenu,
   ActionMenuCopyItem,
@@ -17,8 +17,10 @@ import type {
   DrawerDescriptorServices,
 } from "../DrawerDescriptor";
 import { DrawerContextEntityStrip } from "@/features/_common/patterns/DrawerContextEntityStrip.tsx";
+import { ExpandablePanelSection } from "@/features/_common/patterns/ExpandablePanelSection.tsx";
 import { DrawerMainInfoGrid } from "../DrawerMainInfoGrid.tsx";
 import { useEntityDrawerContext } from "../entityDrawerContext.tsx";
+import { FileText } from "lucide-react";
 
 export type BillingSpec = { type: "billing"; id: number };
 
@@ -212,25 +214,41 @@ function BillingDrawerContent({
       </div>,
     )
     .catch(renderSmallError("min-h-24 w-full"))
-    .map((billing) => (
-      <>
-        <DrawerContextEntityStrip
-          services={services}
-          workspace={billing.workspace}
-          client={billing.client}
-          onOpenClientDetails={(clientId) =>
-            pushEntityDrawer({ type: "client", id: clientId })
-          }
-        />
-        <ChargeInfo
-          billing={billing}
-          services={services}
-          onOpenReportDetails={(reportId) =>
-            pushEntityDrawer({ type: "report", id: reportId })
-          }
-        />
-      </>
-    ));
+    .map((billing) => {
+      const descriptionText = billing.description?.trim() ?? "";
+      return (
+        <div className="space-y-4">
+          <DrawerContextEntityStrip
+            services={services}
+            workspace={billing.workspace}
+            client={billing.client}
+            onOpenClientDetails={(clientId) =>
+              pushEntityDrawer({ type: "client", id: clientId })
+            }
+          />
+          <ChargeInfo
+            billing={billing}
+            services={services}
+            onOpenReportDetails={(reportId) =>
+              pushEntityDrawer({ type: "report", id: reportId })
+            }
+          />
+          {descriptionText ? (
+            <ExpandablePanelSection
+              label="Description"
+              icon={FileText}
+              defaultOpen={false}
+              dataVaulNoDrag
+              selectableContent
+            >
+              <p className="min-w-0 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
+                {billing.description}
+              </p>
+            </ExpandablePanelSection>
+          ) : null}
+        </div>
+      );
+    });
 }
 
 export const billingDrawerDescriptor: DrawerDescriptor<BillingSpec> = {

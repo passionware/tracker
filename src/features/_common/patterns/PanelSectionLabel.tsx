@@ -12,11 +12,13 @@ export function PanelSectionLabel({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-3 flex items-center gap-2 text-muted-foreground", className)}>
+    <span
+      className={cn("mb-3 flex items-center gap-2 text-muted-foreground", className)}
+    >
       {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
       <span className="text-xs font-semibold uppercase tracking-wide">
         {children}
       </span>
-    </div>
+    </span>
   );
 }
