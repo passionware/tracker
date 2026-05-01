@@ -12,6 +12,7 @@ import {
 } from "@/features/_common/ListToolbar.tsx";
 import { ListView } from "@/features/_common/ListView.tsx";
 import { ProjectIterationBulkStatusSubmenu } from "@/features/_common/bulk/ProjectIterationBulkStatusSubmenu.tsx";
+import { CloseAndCreateNextIterationMenuItem } from "@/features/project-iterations/widgets/CloseAndCreateNextIterationMenuItem.tsx";
 import {
   selectionState,
   SelectionState,
@@ -25,7 +26,7 @@ import { maybe, mt, rd } from "@passionware/monads";
 import { promiseState } from "@passionware/platform-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { capitalize } from "lodash";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export interface ProjectIterationsProps extends WithFrontServices {
@@ -90,6 +91,13 @@ export function ProjectIterations(props: ProjectIterationsProps) {
       );
     },
   );
+
+  const soleSelectedIteration = useMemo(() => {
+    if (selectedIterationIds.length !== 1) return null;
+    const id = selectedIterationIds[0];
+    const list = rd.tryGet(projectIterations);
+    return list?.find((i) => i.id === id) ?? null;
+  }, [projectIterations, selectedIterationIds]);
 
   const handleBulkStatusChange = async (
     status: "draft" | "active" | "closed",
@@ -199,6 +207,26 @@ export function ProjectIterations(props: ProjectIterationsProps) {
                   onStatusChange={handleBulkStatusChange}
                   busyItemLabels
                 />
+                {soleSelectedIteration ? (
+                  <CloseAndCreateNextIterationMenuItem
+                    services={props.services}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    iteration={soleSelectedIteration}
+                    onSuccess={(newIterationId) => {
+                      setSelection(selectionState.selectNone());
+                      setDropdownOpen(false);
+                      props.services.navigationService.navigate(
+                        myRouting
+                          .forWorkspace(props.workspaceId)
+                          .forClient(props.clientId)
+                          .forProject(props.projectId.toString())
+                          .forIteration(newIterationId.toString())
+                          .root(),
+                      );
+                    }}
+                  />
+                ) : null}
               </ListToolbarActionsMenu>
             </div>
           </ListToolbar>

@@ -28,6 +28,8 @@ export function createIterationTriggerService({
   );
   return {
     getLogEntries: (iterationId) => api.getLog(iterationId),
+    getCurrentBudgetTarget: (iterationId) =>
+      api.getCurrentBudgetTarget(iterationId),
     useBudgetTargetLog: (iterationId) =>
       ensureIdleQuery(
         iterationId,

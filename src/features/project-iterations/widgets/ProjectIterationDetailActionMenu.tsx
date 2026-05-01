@@ -10,6 +10,7 @@ import {
   ActionMenuDeleteItem,
   ActionMenuEditItem,
 } from "@/features/_common/ActionMenu.tsx";
+import { CloseAndCreateNextIterationMenuItem } from "@/features/project-iterations/widgets/CloseAndCreateNextIterationMenuItem.tsx";
 import { useEntityDrawerContext } from "@/features/_common/drawers/entityDrawerContext.tsx";
 import {
   ClientSpec,
@@ -82,6 +83,12 @@ export function ProjectIterationDetailActionMenu(
           >
             Edit iteration
           </ActionMenuEditItem>
+          <CloseAndCreateNextIterationMenuItem
+            services={props.services}
+            workspaceId={props.workspaceId}
+            clientId={props.clientId}
+            iteration={iter}
+          />
         </>
       ))}
     </ActionMenu>

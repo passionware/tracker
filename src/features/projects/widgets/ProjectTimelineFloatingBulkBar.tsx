@@ -19,6 +19,7 @@ import {
 } from "@/features/_common/listTotalsSummaryStrip.tsx";
 import { BillingBulkDialogs } from "@/features/billing/BillingBulkDialogs.tsx";
 import { BillingListBulkActions } from "@/features/billing/BillingListBulkActions.tsx";
+import { CloseAndCreateNextIterationMenuItem } from "@/features/project-iterations/widgets/CloseAndCreateNextIterationMenuItem.tsx";
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { costQueryUtils } from "@/api/cost/cost.api.ts";
 import { expressionContextUtils } from "@/services/front/ExpressionService/ExpressionService.ts";
@@ -32,6 +33,7 @@ import {
   selectionState,
   type SelectionState,
 } from "@/platform/lang/SelectionState.ts";
+import { myRouting } from "@/routing/myRouting.ts";
 import { ClientSpec, WorkspaceSpec } from "@/routing/routingUtils.ts";
 import {
   maybe,
@@ -248,6 +250,11 @@ export function ProjectTimelineFloatingBulkBar(
     return { reportIds, billingIds, costIds, iterationIds };
   }, [selectedKeys]);
 
+  const soleTimelineIteration = useMemo(() => {
+    if (iterationIds.length !== 1) return null;
+    return props.iterations.find((i) => i.id === iterationIds[0]!) ?? null;
+  }, [iterationIds, props.iterations]);
+
   const totalSelected = selectedKeys.length;
   const hasSelection = totalSelected > 0;
 
@@ -429,6 +436,27 @@ export function ProjectTimelineFloatingBulkBar(
                   )}
                   onStatusChange={handleBulkIteration}
                 />
+                {soleTimelineIteration ? (
+                  <CloseAndCreateNextIterationMenuItem
+                    services={props.services}
+                    workspaceId={props.workspaceId}
+                    clientId={props.clientId}
+                    iteration={soleTimelineIteration}
+                    onSuccess={(newIterationId) => {
+                      props.onSelectionChange(selectionState.selectNone());
+                      props.services.navigationService.navigate(
+                        myRouting
+                          .forWorkspace(props.workspaceId)
+                          .forClient(props.clientId)
+                          .forProject(
+                            soleTimelineIteration.projectId.toString(),
+                          )
+                          .forIteration(newIterationId.toString())
+                          .root(),
+                      );
+                    }}
+                  />
+                ) : null}
               </ListToolbarActionsMenu>
             ) : null}
             {billingIds.length > 0 ? (

@@ -9,6 +9,7 @@ import { rd } from "@passionware/monads";
 export function createIterationTriggerService(): IterationTriggerService {
   return {
     getLogEntries: () => Promise.resolve([]),
+    getCurrentBudgetTarget: () => Promise.resolve(null),
     useBudgetTargetLog: () => rd.of([]),
     useBudgetTargetLogsForIterations: () => rd.of(new Map()),
     useCurrentBudgetTarget: () => rd.of(null),
