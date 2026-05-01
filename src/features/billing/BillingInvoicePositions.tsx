@@ -12,6 +12,7 @@ import type { BillingViewEntry } from "@/services/front/ReportDisplayService/Rep
 import { maybe } from "@passionware/monads";
 import { ListOrdered } from "lucide-react";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 function formatPlainDecimal(n: number, maxDecimals = 6): string {
@@ -224,6 +225,24 @@ export function BillingInvoicePositions({
 
   const billingCurrency = billing.netAmount.currency;
 
+  const totals = useMemo(() => {
+    let sumAmount = 0;
+    let sumHours = 0;
+    let linesWithHours = 0;
+    for (const row of rows) {
+      const m = deriveBillingInvoicePosition(row);
+      if (!m) continue;
+      sumAmount += m.sum;
+      if (m.hours != null) {
+        sumHours += m.hours;
+        linesWithHours += 1;
+      }
+    }
+    const partialHours =
+      linesWithHours > 0 && linesWithHours < rows.length;
+    return { sumAmount, sumHours, linesWithHours, partialHours };
+  }, [rows]);
+
   return (
     <section className="space-y-0" aria-label="Invoice positions">
       <PanelSectionLabel icon={ListOrdered}>
@@ -252,6 +271,53 @@ export function BillingInvoicePositions({
                   onOpenReportDetails={onOpenReportDetails}
                 />
               ))}
+            </div>
+            <div
+              className="mt-3 grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 border-t border-border pt-3"
+              aria-label="Invoice positions totals"
+            >
+              <span className="self-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Total
+              </span>
+              <div className="flex justify-end">
+                {totals.linesWithHours === 0 ? (
+                  <span className="self-center text-sm text-muted-foreground">
+                    —
+                  </span>
+                ) : (
+                  <CopyableNumber
+                    copyText={formatPlainDecimal(totals.sumHours)}
+                    ariaLabel="Copy total hours"
+                    display={
+                      <span className="inline-flex flex-col items-end gap-0.5 font-semibold text-foreground">
+                        <span>{formatPlainDecimal(totals.sumHours)}</span>
+                        {totals.partialHours ? (
+                          <span className="text-[10px] font-normal leading-none text-muted-foreground">
+                            {totals.linesWithHours}/{rows.length} lines
+                          </span>
+                        ) : null}
+                      </span>
+                    }
+                  />
+                )}
+              </div>
+              <span className="self-center text-right text-sm text-muted-foreground">
+                —
+              </span>
+              <div className="flex justify-end">
+                <CopyableNumber
+                  copyText={formatPlainDecimal(totals.sumAmount)}
+                  ariaLabel="Copy total linked billing amount"
+                  display={
+                    <span className="font-mono font-semibold text-foreground">
+                      {services.formatService.financial.amountText(
+                        totals.sumAmount,
+                        billingCurrency,
+                      )}
+                    </span>
+                  }
+                />
+              </div>
             </div>
           </>
         )}
