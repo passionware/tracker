@@ -9,6 +9,7 @@ import {
   ActionMenuMarkPaidMenuItem,
 } from "@/features/_common/ActionMenu.tsx";
 import { ChargeInfo } from "@/features/_common/info/ChargeInfo.tsx";
+import { BillingInvoicePositions } from "@/features/billing/BillingInvoicePositions.tsx";
 import { CommitStatusBadge } from "@/features/_common/elements/CommitStatusBadge.tsx";
 import { renderSmallError } from "@/features/_common/renderError";
 import { rd } from "@passionware/monads";
@@ -123,7 +124,10 @@ function BillingSmallPreview({
                   },
                 ]
               : []),
-            { label: "Status", value: renderBillingStatusBadge(billing.status) },
+            {
+              label: "Status",
+              value: renderBillingStatusBadge(billing.status),
+            },
           ]}
         />
       );
@@ -226,6 +230,7 @@ function BillingDrawerContent({
               pushEntityDrawer({ type: "client", id: clientId })
             }
           />
+
           <ChargeInfo
             billing={billing}
             services={services}
@@ -246,6 +251,13 @@ function BillingDrawerContent({
               </p>
             </ExpandablePanelSection>
           ) : null}
+          <BillingInvoicePositions
+            billing={billing}
+            services={services}
+            onOpenReportDetails={(reportId) =>
+              pushEntityDrawer({ type: "report", id: reportId })
+            }
+          />
         </div>
       );
     });
