@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/collapsible.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { PanelSectionLabel } from "./PanelSectionLabel.tsx";
