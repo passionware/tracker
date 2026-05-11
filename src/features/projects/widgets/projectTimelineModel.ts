@@ -81,8 +81,10 @@ export type ProjectTimelineItemData =
       totalNet: number;
       totalGross: number;
       currency: string;
-      /** Used in tooltip as due/invoice date (no separate due date on billing). */
+      /** Invoice date (timeline position and "Billing · <date>" range in tooltip). */
       invoiceDate: CalendarDate;
+      /** Payment due date for tooltip "Due"; null for legacy rows without a due date. */
+      dueDate: CalendarDate | null;
       /** Iteration whose report links this billing (billing lane highlights this period). */
       iterationId: ProjectIteration["id"];
       periodStart: CalendarDate;
@@ -96,6 +98,8 @@ export type ProjectTimelineItemData =
       currency: string;
       invoiceDate: CalendarDate;
       invoiceNumber: string | null;
+      /** Display name of the linked report's contractor; empty when not resolvable. */
+      contractorLabel: string;
       /** Report calendar periods that link this cost (shown on cost-lane diamond hover). */
       linkedReportPeriods: readonly {
         periodStart: CalendarDate;
@@ -628,6 +632,7 @@ export function buildProjectTimelineLanesAndItems(
           totalGross: b.totalGross,
           currency: b.currency,
           invoiceDate: b.invoiceDate,
+          dueDate: b.dueDate,
           iterationId,
           periodStart,
           periodEnd,
@@ -666,6 +671,7 @@ export function buildProjectTimelineLanesAndItems(
             typeof c.invoiceNumber === "string" && c.invoiceNumber.trim()
               ? c.invoiceNumber.trim()
               : null,
+          contractorLabel,
           linkedReportPeriods: periodsSorted.map(
             ({ periodStart, periodEnd }) => ({
               periodStart,

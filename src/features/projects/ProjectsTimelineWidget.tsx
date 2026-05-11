@@ -780,7 +780,9 @@ function ProjectsTimelineChartWithSelection(props: {
                         <p className="text-[10px]">
                           <span className="text-muted-foreground">Due · </span>
                           <span className="font-medium text-foreground">
-                            {fmt.temporal.date(d.invoiceDate)}
+                            {d.dueDate
+                              ? fmt.temporal.date(d.dueDate)
+                              : "\u2014"}
                           </span>
                         </p>
                         {d.unpaid && (
@@ -934,6 +936,16 @@ function ProjectsTimelineChartWithSelection(props: {
                             d.invoiceDate,
                           )}
                         </div>
+                        {d.contractorLabel.length > 0 && (
+                          <p className="text-[10px]">
+                            <span className="text-muted-foreground">
+                              Contractor ·{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {d.contractorLabel}
+                            </span>
+                          </p>
+                        )}
                         <p className="text-[10px]">
                           <span className="text-muted-foreground">
                             Net ·{" "}
