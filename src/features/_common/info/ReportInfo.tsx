@@ -1,6 +1,9 @@
 import { billingQueryUtils } from "@/api/billing/billing.api.ts";
 import { LinkBillingReport } from "@/api/link-billing-report/link-billing-report.api.ts";
-import { Report } from "@/api/reports/reports.api.ts";
+import {
+  Report,
+  ReportValidation,
+} from "@/api/reports/reports.api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -13,6 +16,7 @@ import {
 import { sharedColumns } from "@/features/_common/columns/_common/sharedColumns.tsx";
 import { billingColumns } from "@/features/_common/columns/billing.tsx";
 import { InlineBillingSearch } from "@/features/_common/elements/inline-search/InlineBillingSearch.tsx";
+import { DrawerMainInfoGrid } from "@/features/_common/drawers/DrawerMainInfoGrid.tsx";
 import { LinkPopover } from "@/features/_common/filters/LinkPopover.tsx";
 import { CenteredBar } from "@/features/_common/info/_common/CenteredBar.tsx";
 import { InfoHeaderSection } from "@/features/_common/info/_common/InfoHeaderSection.tsx";
@@ -21,6 +25,7 @@ import {
   InfoPopoverContent,
 } from "@/features/_common/info/_common/InfoLayout.tsx";
 import { InlineBillingClarify } from "@/features/_common/inline-search/InlineBillingClarify.tsx";
+import { ExpandablePanelSection } from "@/features/_common/patterns/ExpandablePanelSection.tsx";
 import {
   ListToolbar,
   ListToolbarButton,
@@ -58,7 +63,7 @@ import { promiseState } from "@passionware/platform-react";
 import { mapKeys } from "@passionware/platform-ts";
 import { createColumnHelper } from "@tanstack/react-table";
 import { max } from "lodash";
-import { Check, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
+import { Check, ClipboardList, Link2, Loader2, Shuffle, Trash2 } from "lucide-react";
 import { ReactElement, useState } from "react";
 import { toast } from "sonner";
 
@@ -132,11 +137,82 @@ export function ReportInfo({
     await deleteMutation.track(void 0);
   }
 
+  const reportAmountLabel = services.formatService.financial.amount(
+    report.netAmount.amount,
+    report.netAmount.currency,
+  );
+  const descriptionText = report.description.trim();
+  const source = report.originalReport;
+  const hasQuantityBreakdown = ReportValidation.hasDetailedBreakdown(source);
+  const reportDetailItems = [
+    {
+      label: "Amount",
+      value: (
+        <span className="text-base font-semibold tabular-nums tracking-tight">
+          {reportAmountLabel}
+        </span>
+      ),
+    },
+    ...(hasQuantityBreakdown
+      ? [
+          {
+            label: "Quantity",
+            value: (
+              <span className="inline-flex items-center gap-1 font-mono text-xs tabular-nums">
+                <span>{source.quantity}</span>
+                <span className="rounded-sm bg-sky-50 px-1.5 py-0.5 font-medium text-sky-900">
+                  {source.unit}
+                </span>
+              </span>
+            ),
+          },
+          {
+            label: "Unit rate",
+            value: (
+              <span className="inline-flex flex-wrap items-baseline gap-x-1 font-mono text-xs tabular-nums">
+                {services.formatService.financial.currency({
+                  amount: source.unitPrice!,
+                  currency: source.currency,
+                })}
+                <span className="font-sans text-muted-foreground">
+                  /{source.unit}
+                </span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <InfoLayout
       header={
-        <InfoHeaderSection
-          title="Linked billing"
+        <div className="w-full flex flex-col gap-3" data-vaul-no-drag>
+          <ExpandablePanelSection
+            label="Report details"
+            icon={ClipboardList}
+            defaultOpen={false}
+            dataVaulNoDrag
+            selectableContent
+          >
+            <div className="space-y-4">
+              <DrawerMainInfoGrid items={reportDetailItems} />
+              <div className="border-t border-border pt-4">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Description
+                </div>
+                {descriptionText ? (
+                  <p className="min-w-0 text-sm leading-relaxed text-foreground whitespace-pre-wrap wrap-break-word">
+                    {descriptionText}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No description</p>
+                )}
+              </div>
+            </div>
+          </ExpandablePanelSection>
+          <InfoHeaderSection
+            title="Linked billing"
           transfer={
             <TransferView
               fromAmount={report.remainingAmount}
@@ -313,6 +389,7 @@ export function ReportInfo({
             ) : undefined
           }
         />
+        </div>
       }
     >
       <ListView
