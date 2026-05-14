@@ -271,6 +271,7 @@ export function createLocationService(
         iterations: forProject.iterations() + "/*",
         details: forProject.details() + "/*",
         contractors: forProject.contractors() + "/*",
+        tmetricMapping: forProject.tmetricMapping() + "/*",
       });
       return matchWon?.key;
     },

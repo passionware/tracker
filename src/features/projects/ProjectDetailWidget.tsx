@@ -10,6 +10,7 @@ import { ProjectContractors } from "@/features/projects/widgets/ProjectContracto
 import { ProjectDetails } from "@/features/projects/widgets/ProjectDetails.tsx";
 import { ProjectIterations } from "@/features/projects/widgets/ProjectIterations.tsx";
 import { ProjectTabs } from "@/features/projects/widgets/ProjectTabs.tsx";
+import { ProjectTmetricMappingPanel } from "@/features/projects/widgets/ProjectTmetricMappingPanel.tsx";
 import { makeRelativePath } from "@/platform/lang/makeRelativePath.ts";
 import {
   ClientSpec,
@@ -93,6 +94,22 @@ export function ProjectDetailWidget(props: ProjectDetailWidgetProps) {
             <ProjectContractors
               workspaceId={props.workspaceId}
               clientId={props.clientId}
+              projectId={props.projectId}
+              services={props.services}
+            />
+          }
+        />
+        <Route
+          path={makeRelativePath(
+            basePath,
+            myRouting
+              .forWorkspace()
+              .forClient()
+              .forProject()
+              .tmetricMapping(),
+          )}
+          element={
+            <ProjectTmetricMappingPanel
               projectId={props.projectId}
               services={props.services}
             />

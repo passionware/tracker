@@ -95,6 +95,16 @@ export function ProjectTabs(
             {rd.tryGet(numContractors)}
           </Badge>
         </TabsTrigger>
+        <TabsTrigger
+          value="tmetricMapping"
+          onClick={() =>
+            props.services.navigationService.navigate(
+              forProject.tmetricMapping(),
+            )
+          }
+        >
+          TMetric
+        </TabsTrigger>
         <div className="ml-auto flex flex-row gap-2 items-center">
           <Routes>
             <Route

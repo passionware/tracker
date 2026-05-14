@@ -15,7 +15,9 @@ export interface LocationService {
   useCurrentWorkspaceId: () => Maybe<WorkspaceSpec>;
   // maybe - we can be in the route which neither specific client nor all clients
   useCurrentProjectId: () => Maybe<Project["id"]>;
-  useCurrentProjectTab: () => Maybe<"iterations" | "details" | "contractors">;
+  useCurrentProjectTab: () => Maybe<
+    "iterations" | "details" | "contractors" | "tmetricMapping"
+  >;
   useCurrentProjectIterationStatus: () => Maybe<"all" | "active" | "closed">;
   useCurrentProjectIterationId: () => Maybe<ProjectIteration["id"]>;
   useCurrentProjectIterationTab: () => Maybe<
