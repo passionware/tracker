@@ -342,10 +342,11 @@ export const myServices = {
     services: {
       reportService,
       generatedReportSourceWriteService,
+      projectIterationService,
     },
     plugins: {
       tmetric: createTmetricPlugin({
-        services: { expressionService },
+        services: { expressionService, variableService },
       }),
     },
   }),
@@ -364,6 +365,7 @@ export const myServices = {
       projectService,
       projectIterationService,
       expressionService,
+      variableService,
     },
   }),
 } satisfies FrontServices;

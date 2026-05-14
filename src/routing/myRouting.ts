@@ -83,6 +83,7 @@ export const myRouting = {
               ) => `${base}/iterations/${status}`,
               details: () => `${base}/details`,
               contractors: () => `${base}/contractors`,
+              tmetricMapping: () => `${base}/tmetric-mapping`,
               forIteration: (iterationId: string | ":iterationId" = ":iterationId") => {
                 const base2 = `${base}/iteration/${iterationId}`;
                 return {

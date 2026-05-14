@@ -226,6 +226,7 @@ export function ReportGenerationWidget({
           workspaceId: contractorWorkspaceIds.get(contractor.id) ?? 0,
           clientId: projData.clientId,
           iterationId: projectIterationId,
+          projectId: projData.id,
         })),
       });
 
