@@ -43,6 +43,8 @@ export interface ActivityTypeDefinition {
 
 export interface RoleRateWithContractor {
   contractorId: string;
+  /** When set, rates are applied only to this `iter_*_contractor_*` role key (merged reports). */
+  roleId?: string;
   rate: RoleRate;
 }
 

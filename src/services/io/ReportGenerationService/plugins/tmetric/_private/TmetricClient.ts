@@ -15,11 +15,6 @@ async function get<T>(
   token: string,
   schema: z.ZodType<T>,
 ): Promise<T> {
-  console.log(`TMetric API Request: ${url}`);
-  console.log(
-    `Authorization: Bearer ${token ? token.substring(0, 10) + "..." : "undefined"}`,
-  );
-
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -29,8 +24,6 @@ async function get<T>(
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`TMetric API Error: ${res.status} ${res.statusText}`);
-    console.error(`Response: ${errorText}`);
     throw new Error(
       `TMetric GET failed: ${res.status} ${res.statusText} ${errorText}`,
     );
@@ -71,9 +64,12 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
       // Match the working curl command format exactly
       const qs = new URLSearchParams();
 
-      if (userIds && userIds.length > 0) {
-        qs.set("userId", userIds.join(","));
+      if (userIds.length === 0) {
+        throw new Error(
+          "TMetric listTimeEntries: at least one user id is required.",
+        );
       }
+      qs.set("userId", userIds.join(","));
 
       qs.set("startDate", startDate);
       qs.set("endDate", endDate);
@@ -87,19 +83,23 @@ export function createTMetricClient(config: TMetricAuthConfig): TMetricClient {
 
       const data = await get(url, config.token, zTMetricEntriesResponse);
 
-      // Keep running entries (endTime null); adapter maps them to a provisional end time.
       let filteredData = data.map((e) => ({
         ...e,
         note: e.note ?? "",
         tags: e.tags ?? [],
       }));
 
-      // Client-side filtering by project IDs if specified
-      if (projectIds && projectIds.length > 0) {
-        filteredData = filteredData.filter(
-          (entry) =>
-            entry.project && projectIds.includes(entry.project.id.toString()),
-        );
+      if (projectIds.length > 0) {
+        filteredData = filteredData.filter((entry) => {
+          const pid = entry.project?.id;
+          if (pid == null) {
+            console.warn(
+              `[TMetric] Skipping time entry ${entry.id}: no project on entry; cannot match explicit project filter.`,
+            );
+            return false;
+          }
+          return projectIds.includes(String(pid));
+        });
       }
 
       return filteredData;

@@ -54,13 +54,13 @@ export function getMatchingRate(
   }
 
   // Find all matching rates
-  const matchingRates = roleType.rates.filter((rate) =>
+  const matchingRates = (roleType.rates ?? []).filter((rate) =>
     rateMatchesEntry(rate, entry),
   );
 
   if (matchingRates.length === 0) {
     throw new Error(
-      `No matching rate found for entry (roleId: ${entry.roleId}, activityId: ${entry.activityId}, taskId: ${entry.taskId}, projectId: ${entry.projectId}). Available rates: ${roleType.rates.length}`,
+      `No matching rate found for entry (roleId: ${entry.roleId}, activityId: ${entry.activityId}, taskId: ${entry.taskId}, projectId: ${entry.projectId}). Available rates: ${(roleType.rates ?? []).length}`,
     );
   }
 

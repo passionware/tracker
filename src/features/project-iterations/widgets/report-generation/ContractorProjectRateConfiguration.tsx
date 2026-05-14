@@ -45,6 +45,7 @@ export function ContractorProjectRateConfiguration({
     return prefilledRates.flatMap((prefilled) =>
       prefilled.rates.map((rate) => ({
         contractorId: prefilled.contractorId.toString(),
+        roleId: prefilled.roleId,
         rate,
       })),
     );
@@ -54,17 +55,23 @@ export function ContractorProjectRateConfiguration({
   useEffect(() => {
     const groupedRates = roleRates.reduce(
       (acc, roleRate) => {
-        const contractorId = parseInt(roleRate.contractorId);
-        if (!acc[contractorId]) {
-          acc[contractorId] = {
-            contractorId,
+        const roleId = roleRate.roleId;
+        if (roleId == null) {
+          throw new Error(
+            "ContractorProjectRateConfiguration: rate row is missing roleId (required for TMetric prefilled rates).",
+          );
+        }
+        if (!acc[roleId]) {
+          acc[roleId] = {
+            roleId,
+            contractorId: parseInt(roleRate.contractorId, 10),
             rates: [],
           };
         }
-        acc[contractorId].rates.push(roleRate.rate);
+        acc[roleId].rates.push(roleRate.rate);
         return acc;
       },
-      {} as Record<number, PrefilledRateResult[number]>,
+      {} as Record<string, PrefilledRateResult[number]>,
     );
 
     onRatesConfigured(Object.values(groupedRates));

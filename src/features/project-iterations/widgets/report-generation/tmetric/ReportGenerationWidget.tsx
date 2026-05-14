@@ -24,7 +24,6 @@ import {
   TableHeader,
 } from "@/components/ui/table";
 import { GenericReport } from "@/services/io/_common/GenericReport";
-import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import { ContractorProjectRateConfiguration } from "../ContractorProjectRateConfiguration";
 import {
   extractPrefilledRatesFromGenericReport,
@@ -41,7 +40,7 @@ import { determineContractorWorkspaces } from "@/services/front/ReconciliationSe
 
 /**
  * Applies configured rates to a GenericReport by updating the roleTypes rates.
- * Role keys are scoped as iter_${iterationId}_contractor_${contractorId}; we apply rates to every role key that matches the contractor.
+ * Prefilled items are keyed by `iter_${iterationId}_contractor_${contractorId}` roleId.
  */
 function applyConfiguredRatesToReport(
   report: GenericReport,
@@ -55,22 +54,16 @@ function applyConfiguredRatesToReport(
     },
   };
 
-  for (const contractorRate of configuredRates) {
-    let applied = false;
-    for (const [roleId, roleType] of Object.entries(
-      updatedReport.definitions.roleTypes,
-    )) {
-      if (getContractorIdFromRoleKey(roleId) === contractorRate.contractorId) {
-        updatedReport.definitions.roleTypes[roleId] = {
-          ...roleType,
-          rates: contractorRate.rates,
-        };
-        applied = true;
-      }
-    }
-    if (!applied) {
+  for (const item of configuredRates) {
+    const roleType = updatedReport.definitions.roleTypes[item.roleId];
+    if (roleType) {
+      updatedReport.definitions.roleTypes[item.roleId] = {
+        ...roleType,
+        rates: item.rates,
+      };
+    } else {
       console.warn(
-        `No role type found for contractor ${contractorRate.contractorId} in report definitions. Skipping rates.`,
+        `No role type "${item.roleId}" in report definitions. Skipping rates.`,
       );
     }
   }

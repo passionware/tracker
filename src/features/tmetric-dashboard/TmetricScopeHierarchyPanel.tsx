@@ -664,14 +664,18 @@ export function TmetricScopeHierarchyPanel({
                               <span className="block w-full py-1 pl-6 text-sm text-muted-foreground">
                                 Project: {projectName}
                               </span>
-                              {hasRates &&
-                                cachedReportResolved &&
+                              {cachedReportResolved &&
                                 (() => {
                                   const contractorTotals =
                                     getContractorIterationTotals(
                                       cachedReportResolved,
                                       iteration.id,
                                     );
+                                  const showContractorFinancialRows =
+                                    hasRates || contractorTotals.length > 0;
+                                  if (!showContractorFinancialRows) {
+                                    return null;
+                                  }
                                   return (
                                     <>
                                       <div

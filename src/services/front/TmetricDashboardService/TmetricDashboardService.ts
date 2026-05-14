@@ -8,6 +8,8 @@ export interface ContractorInScope {
   contractorId: number;
   workspaceId: number;
   clientId: number;
+  /** Tracker project when the row was resolved from a project assignment. */
+  trackerProjectId?: number;
 }
 
 /** Result of resolving contractors in scope: flat list and per-iteration breakdown. */
@@ -39,7 +41,8 @@ export interface TmetricDashboardService {
 
   /**
    * Resolves contractors in scope and splits them by TMetric integration status.
-   * Contractors without `tmetric_user` variable are considered non-integrated.
+   * A contractor is integrated when `vars.tmetric_user` resolves and the Tracker
+   * project's TMetric const variable maps at least one TMetric project id for them.
    */
   getContractorsInScopeWithIntegrationStatus: (
     scope: TmetricDashboardCacheScope,

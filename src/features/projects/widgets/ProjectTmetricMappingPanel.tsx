@@ -1,5 +1,4 @@
 import { Project } from "@/api/project/project.api.ts";
-import type { VariablePayload } from "@/api/variable/variable.api.ts";
 import { variableQueryUtils } from "@/api/variable/variable.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -23,6 +22,8 @@ import { renderError } from "@/features/_common/renderError.tsx";
 import { parseSimpleRate } from "@/services/io/ReportGenerationService/plugins/_common/parseRateConfiguration.ts";
 import {
   emptyProjectTmetricConfigurationV1,
+  findEffectiveProjectTmetricConfigurationVariable,
+  persistProjectTmetricConfigurationVariable,
   projectTmetricConfigurationVariableName,
   projectTmetricConfigurationV1Schema,
   tryParseProjectTmetricConfiguration,
@@ -469,14 +470,12 @@ function ProjectTmetricMappingEditor(
   const serverTmetricVariableValueRd = rd.useMemoMap(
     variablesRd,
     (list, projectId, wsId, clientId) => {
-      const name = projectTmetricConfigurationVariableName(projectId);
-      const row = list.find(
-        (v) =>
-          v.name === name &&
-          v.contractorId == null &&
-          v.workspaceId === wsId &&
-          v.clientId === clientId,
-      );
+      if (wsId == null) return null;
+      const row = findEffectiveProjectTmetricConfigurationVariable(list, {
+        projectId,
+        workspaceId: wsId,
+        clientId,
+      });
       return row?.value ?? null;
     },
     props.project.id,
@@ -518,32 +517,15 @@ function ProjectTmetricMappingEditor(
         toast.error(validated.error.message);
         return;
       }
-      const query = variableQueryUtils.ofDefault(ws, props.project.clientId);
-      const list = await props.services.variableService.ensureVariables(query);
-      const name = projectTmetricConfigurationVariableName(props.project.id);
-      const storedVar = list.find(
-        (v) =>
-          v.name === name &&
-          v.contractorId == null &&
-          v.workspaceId === ws &&
-          v.clientId === props.project.clientId,
+      await persistProjectTmetricConfigurationVariable(
+        props.services.variableService,
+        {
+          workspaceId: ws,
+          clientId: props.project.clientId,
+          projectId: props.project.id,
+        },
+        validated.data,
       );
-      const payload: VariablePayload = {
-        name,
-        type: "const",
-        value: JSON.stringify(validated.data),
-        workspaceId: ws,
-        clientId: props.project.clientId,
-        contractorId: null,
-      };
-      if (storedVar) {
-        await props.services.variableService.updateVariable(
-          storedVar.id,
-          payload,
-        );
-      } else {
-        await props.services.variableService.createVariable(payload);
-      }
       toast.success("TMetric mapping saved");
       setDirty(false);
     },

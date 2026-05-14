@@ -251,40 +251,93 @@ export function findReportProjectIdByName(
   return entry ? entry[0] : null;
 }
 
+function projectTypeParamsMatchTrackerProject(
+  params: Record<string, unknown>,
+  projectId: number,
+): boolean {
+  const raw = params.projectId;
+  if (raw === projectId) return true;
+  if (raw == null || raw === "") return false;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return !Number.isNaN(n) && n === projectId;
+}
+
+function projectTypeParamsMatchIteration(
+  params: Record<string, unknown>,
+  iterationId: number,
+): boolean {
+  const ids = params.iterationIds;
+  if (Array.isArray(ids)) {
+    for (const x of ids) {
+      if (Number(x) === iterationId) return true;
+    }
+  }
+  const one = params.iterationId;
+  if (one == null || one === "") return false;
+  return Number(one) === iterationId;
+}
+
+/**
+ * Report project type ids whose parameters match the Tracker project and iteration.
+ * Explicit TMetric config can define several logical report projects on one Tracker
+ * project; the plugin stamps the same `projectId` + `iterationId` on each
+ * {@link GenericReport} project type, so callers must consider every match, not only the first.
+ */
+export function findReportProjectIdsByIterationAndProject(
+  report: GenericReport,
+  iterationId: number,
+  projectId: number,
+): string[] {
+  return Object.entries(report.definitions.projectTypes)
+    .filter(([, pt]) => {
+      const params = pt.parameters ?? {};
+      return (
+        projectTypeParamsMatchTrackerProject(params, projectId) &&
+        projectTypeParamsMatchIteration(params, iterationId)
+      );
+    })
+    .map(([id]) => id);
+}
+
 /**
  * Resolve report project type id by iteration + project (from project type parameters).
  * Uses parameters.iterationId/iterationIds and parameters.projectId so lookup does not rely on project name.
+ * Prefer {@link findReportProjectIdsByIterationAndProject} when multiple explicit report projects exist.
  */
 export function findReportProjectIdByIterationAndProject(
   report: GenericReport,
   iterationId: number,
   projectId: number,
 ): string | null {
-  const entry = Object.entries(report.definitions.projectTypes).find(
-    ([, pt]) => {
-      const params = pt.parameters ?? {};
-      const matchesProject =
-        (params.projectId as number | undefined) === projectId;
-      const matchesIteration =
-        (params.iterationIds as number[] | undefined)?.includes(iterationId) ||
-        (params.iterationId as number | undefined) === iterationId;
-      return matchesProject && matchesIteration;
-    },
+  const ids = findReportProjectIdsByIterationAndProject(
+    report,
+    iterationId,
+    projectId,
   );
-  return entry ? entry[0] : null;
+  return ids[0] ?? null;
 }
 
 /** Get the best matching rate for a project: project-specific first, then default (empty projectIds). */
 export function getBestRateForProject(
   rates: RoleRate[],
-  reportProjectId: string | null,
+  reportProjectId: string | null | readonly string[],
 ): RoleRate | null {
   if (rates.length === 0) return null;
+  const ids =
+    reportProjectId == null
+      ? []
+      : Array.isArray(reportProjectId)
+        ? [...reportProjectId]
+        : [reportProjectId];
+  if (ids.length === 0) {
+    const fallback = rates.filter((r) => r.projectIds.length === 0);
+    return fallback[0] ?? null;
+  }
+  const idSet = new Set(ids);
   const withProject = rates.filter(
     (r) =>
       r.projectIds.length > 0 &&
-      reportProjectId != null &&
-      r.projectIds.includes(reportProjectId),
+      r.projectIds.some((pid) => idSet.has(pid)),
   );
   const fallback = rates.filter((r) => r.projectIds.length === 0);
   return withProject[0] ?? fallback[0] ?? null;
@@ -329,12 +382,14 @@ export function getContractorRatesForIterationProject(
   iterationId: number,
   projectId: number,
 ): ContractorRateInProject[] {
-  const reportProjectId = findReportProjectIdByIterationAndProject(
+  const reportProjectIds = findReportProjectIdsByIterationAndProject(
     report,
     iterationId,
     projectId,
   );
-  if (reportProjectId == null) return [];
+  if (reportProjectIds.length === 0) {
+    return [];
+  }
   const result: ContractorRateInProject[] = [];
   for (const [roleKey, roleType] of Object.entries(
     report.definitions.roleTypes,
@@ -342,7 +397,7 @@ export function getContractorRatesForIterationProject(
     if (getIterationIdFromRoleKey(roleKey) !== iterationId) continue;
     const contractorId = getContractorIdFromRoleKey(roleKey);
     if (contractorId == null) continue;
-    const rate = getBestRateForProject(roleType.rates, reportProjectId);
+    const rate = getBestRateForProject(roleType.rates, reportProjectIds);
     if (!rate) continue;
     result.push({
       contractorId,

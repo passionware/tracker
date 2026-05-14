@@ -23,14 +23,20 @@ import {
   PrefilledRateResult,
 } from "@/services/io/ReportGenerationService/plugins/_common/extractPrefilledRates";
 import { GenericReport } from "@/services/io/_common/GenericReport";
-import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
 import {
   ExpressionContext,
   ExpressionService,
   WithExpressionService,
 } from "@/services/front/ExpressionService/ExpressionService";
+import {
+  getExplicitTmetricProjectIdsForContractor,
+  ensureProjectTmetricConfigurationFromVariables,
+  type ProjectTmetricConfigurationV1,
+} from "@/services/io/ReportGenerationService/plugins/_common/projectTmetricConfiguration";
 import { WithProjectIterationService } from "@/services/io/ProjectIterationService/ProjectIterationService";
 import { WithProjectService } from "@/services/io/ProjectService/ProjectService";
+import type { VariableService } from "@/services/io/VariableService/VariableService";
+import { WithVariableService } from "@/services/io/VariableService/VariableService";
 import {
   ContractorInScope,
   ContractorsInScopeResult,
@@ -105,7 +111,12 @@ function getCacheQueryKey(
 }
 
 export type TmetricDashboardServiceConfig = WithServices<
-  [WithProjectService, WithProjectIterationService, WithExpressionService]
+  [
+    WithProjectService,
+    WithProjectIterationService,
+    WithExpressionService,
+    WithVariableService,
+  ]
 > & {
   cacheApi: TmetricDashboardCacheApi;
   projectIterationApi: ProjectIterationApi;
@@ -149,6 +160,7 @@ async function fetchLiveContractorsPanelData(
   const { integrated } = await filterContractorsByTmetricIntegration(
     all,
     config.services.expressionService,
+    config.services.variableService,
   );
 
   const contextsByContractor = new Map<number, ContractorInScope[]>();
@@ -186,6 +198,27 @@ async function fetchLiveContractorsPanelData(
   async function fetchEntriesForContext(
     ctx: ContractorInScope,
   ): Promise<TMetricTimeEntry[]> {
+    if (ctx.trackerProjectId == null) {
+      throw new Error(
+        "TMetric live panel requires a Tracker project id on the contractor context.",
+      );
+    }
+    const cfg = await ensureProjectTmetricConfigurationFromVariables(
+      config.services.variableService,
+      {
+        workspaceId: ctx.workspaceId,
+        clientId: ctx.clientId,
+        projectId: ctx.trackerProjectId,
+      },
+      {
+        contractorId: ctx.contractorId,
+        contractorLabel: fullNameById.get(ctx.contractorId),
+      },
+    );
+    const projectIds = getExplicitTmetricProjectIdsForContractor(
+      cfg,
+      ctx.contractorId,
+    );
     const resolvedList = await resolveTmetricReportPayload(
       { expressionService: config.services.expressionService },
       {
@@ -199,6 +232,7 @@ async function fetchLiveContractorsPanelData(
           },
         ],
       },
+      [projectIds],
     );
     const resolved = resolvedList[0];
     if (!resolved) {
@@ -346,17 +380,13 @@ function applyPrefilledRatesToReport(
       roleTypes: { ...report.definitions.roleTypes },
     },
   };
-  for (const contractorRate of prefilledRates) {
-    // Apply rates to every role type key that belongs to this contractor (scoped keys)
-    for (const [roleId, roleType] of Object.entries(
-      updated.definitions.roleTypes,
-    )) {
-      if (getContractorIdFromRoleKey(roleId) === contractorRate.contractorId) {
-        updated.definitions.roleTypes[roleId] = {
-          ...roleType,
-          rates: contractorRate.rates,
-        };
-      }
+  for (const item of prefilledRates) {
+    const roleType = updated.definitions.roleTypes[item.roleId];
+    if (roleType) {
+      updated.definitions.roleTypes[item.roleId] = {
+        ...roleType,
+        rates: item.rates,
+      };
     }
   }
   return updated;
@@ -529,10 +559,11 @@ async function resolveContractorsInScope(
         contractorId: cid,
         workspaceId: pc.workspaceId,
         clientId: project.clientId,
+        trackerProjectId: project.id,
       };
       projectList.push(entry);
 
-      const key = `${cid}:${pc.workspaceId}:${project.clientId}`;
+      const key = `${cid}:${pc.workspaceId}:${project.clientId}:${project.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
       all.push(entry);
@@ -549,16 +580,46 @@ async function resolveContractorsInScope(
   return { byIteration, all };
 }
 
-const TMETRIC_REQUIRED_VARS = [
-  "vars.tmetric_user",
-  "vars.new_hour_cost_rate",
-  "vars.new_hour_billing_rate",
-] as const;
+const TMETRIC_REQUIRED_EXPRESSIONS = ["vars.tmetric_user"] as const;
 
 async function filterContractorsByTmetricIntegration(
   contractors: ContractorInScope[],
   expressionService: Pick<ExpressionService, "ensureExpressionValue">,
+  variableService: Pick<VariableService, "ensureVariables">,
 ): Promise<ContractorsWithIntegrationStatus> {
+  type CfgResult =
+    | { ok: true; cfg: ProjectTmetricConfigurationV1 }
+    | { ok: false };
+
+  const cfgByProjectKey = new Map<string, CfgResult | Promise<CfgResult>>();
+
+  async function getProjectConfig(
+    workspaceId: number,
+    clientId: number,
+    projectId: number,
+  ): Promise<CfgResult> {
+    const key = `${projectId}|${workspaceId}|${clientId}`;
+    const existing = cfgByProjectKey.get(key);
+    if (existing != null) {
+      return await Promise.resolve(existing);
+    }
+    const pending = (async (): Promise<CfgResult> => {
+      try {
+        const cfg = await ensureProjectTmetricConfigurationFromVariables(
+          variableService,
+          { workspaceId, clientId, projectId },
+        );
+        return { ok: true, cfg };
+      } catch {
+        return { ok: false };
+      }
+    })();
+    cfgByProjectKey.set(key, pending);
+    const resolved = await pending;
+    cfgByProjectKey.set(key, resolved);
+    return resolved;
+  }
+
   const integrated: ContractorInScope[] = [];
   const nonIntegrated: ContractorInScope[] = [];
 
@@ -568,8 +629,31 @@ async function filterContractorsByTmetricIntegration(
       clientId: c.clientId,
       contractorId: c.contractorId,
     };
+    if (c.trackerProjectId == null) {
+      nonIntegrated.push(c);
+      continue;
+    }
+    const loaded = await getProjectConfig(
+      c.workspaceId,
+      c.clientId,
+      c.trackerProjectId,
+    );
+    if (!loaded.ok) {
+      nonIntegrated.push(c);
+      continue;
+    }
+    const hasExplicitMapping =
+      getExplicitTmetricProjectIdsForContractor(
+        loaded.cfg,
+        c.contractorId,
+      ).length > 0;
+    if (!hasExplicitMapping) {
+      nonIntegrated.push(c);
+      continue;
+    }
+
     let hasAllVars = true;
-    for (const expr of TMETRIC_REQUIRED_VARS) {
+    for (const expr of TMETRIC_REQUIRED_EXPRESSIONS) {
       try {
         await expressionService.ensureExpressionValue(context, expr, {});
       } catch {
@@ -635,6 +719,7 @@ async function performRefreshAndCache(
       await filterContractorsByTmetricIntegration(
         contractors,
         services.expressionService,
+        services.variableService,
       );
     perIterationIntegrated.push({
       iteration: iter,
@@ -691,14 +776,17 @@ async function performRefreshAndCache(
   if (allIntegrated.length === 0) {
     if (totalNonIntegrated > 0) {
       throw new Error(
-        `No contractors with TMetric integration in scope. ${totalNonIntegrated} contractor(s) are not integrated (missing tmetric_user, new_hour_cost_rate, or new_hour_billing_rate).`,
+        `No contractors with TMetric integration in scope. ${totalNonIntegrated} contractor(s) are not integrated (missing vars.tmetric_user or project TMetric mapping).`,
       );
     }
     throw new Error("No contractors in scope. Adjust filters.");
   }
 
   const tmetricPlugin = createTmetricPlugin({
-    services: { expressionService: services.expressionService },
+    services: {
+      expressionService: services.expressionService,
+      variableService: services.variableService,
+    },
   });
 
   const { reportData } = await tmetricPlugin.getReport({ reports });
@@ -740,6 +828,7 @@ export function createTmetricDashboardService(
       return filterContractorsByTmetricIntegration(
         all,
         services.expressionService,
+        services.variableService,
       );
     },
 

@@ -1,9 +1,25 @@
 import { WithExpressionService } from "@/services/front/ExpressionService/ExpressionService";
 import { GenericReport, RoleRate } from "@/services/io/_common/GenericReport";
-import { parseRateConfiguration } from "@/services/io/ReportGenerationService/plugins/_common/parseRateConfiguration";
-import { getTmetricProjectIdForContractor } from "@/services/io/ReportGenerationService/plugins/_common/tmetricProjectIdFromParams";
+import { getContractorIdFromRoleKey } from "@/services/io/_common/roleKeyUtils";
+import {
+  REPORT_PROJECT_RATE_SOURCE_EXPLICIT,
+  scopeTmetricReportProjectId,
+} from "@/services/io/ReportGenerationService/plugins/_common/projectTmetricConfiguration";
 
+function explicitScopedProjectIdFromParameters(
+  parameters: Record<string, unknown> | undefined,
+): string | null {
+  const trackerId = parameters?.trackerProjectId;
+  const reportProjectId = parameters?.reportProjectId;
+  if (typeof trackerId === "number" && typeof reportProjectId === "string") {
+    return scopeTmetricReportProjectId(trackerId, reportProjectId);
+  }
+  return null;
+}
+
+/** One entry per `iter_*_contractor_*` role key so merged reports stay correct. */
 export type PrefilledRateResult = Array<{
+  roleId: string;
   contractorId: number;
   rates: RoleRate[];
 }>;
@@ -28,13 +44,14 @@ export type ExtractPrefilledRatesOptions = {
  */
 export async function extractPrefilledRatesFromGenericReport(
   report: GenericReport,
-  expressionService: WithExpressionService["expressionService"],
+  _expressionService: WithExpressionService["expressionService"],
   options?: ExtractPrefilledRatesOptions,
 ): Promise<PrefilledRateResult> {
   // Extract unique projects from GenericReport
-  // Project IDs are strings (short IDs from SharedIdMap)
-  // TMetric project ID per contractor in parameters.tmetricProjectIdByContractor (or legacy originalProjectId)
-  // workspaceId and clientId from parameters (projectIteration->project context)
+  // TMetric uses explicit mapping: report project ids are scoped with
+  // {@link scopeTmetricReportProjectId} (ASCII 0x1f between tracker id and JSON id).
+  // Merged reports list every project type; a contractor may only have explicit rate
+  // rows for some of them — skip pairs with no row unless a time entry needs that project.
   const projects = Object.entries(report.definitions.projectTypes).map(
     ([projectId, projectType]) => ({
       id: projectId,
@@ -51,75 +68,70 @@ export async function extractPrefilledRatesFromGenericReport(
     contractorIds.add(id);
   }
 
-  // Pre-fill rates for each contractor-project combination found in data
   const prefilled: PrefilledRateResult = [];
 
-  for (const contractorId of contractorIds) {
+  for (const roleId of Object.keys(report.definitions.roleTypes)) {
+    const contractorId = getContractorIdFromRoleKey(roleId);
+    if (contractorId == null || !contractorIds.has(contractorId)) {
+      continue;
+    }
+
+    const ratesForRole: RoleRate[] = [];
+
     for (const project of projects) {
       const workspaceId = project.parameters?.workspaceId as number | undefined;
       const clientId = project.parameters?.clientId as number | undefined;
       if (workspaceId == null || clientId == null) {
-        continue;
+        throw new Error(
+          `TMetric prefilled rates: project "${project.id}" is missing workspaceId or clientId on parameters (required for explicit reports).`,
+        );
       }
-      const expressionContext = {
-        workspaceId,
-        clientId,
-        contractorId,
-      };
 
-      try {
-        const costRateString = await expressionService.ensureExpressionValue(
-          expressionContext,
-          `vars.new_hour_cost_rate`,
-          {},
-        );
+      const isExplicit =
+        project.parameters?.rateSource ===
+        REPORT_PROJECT_RATE_SOURCE_EXPLICIT;
 
-        const billingRateString = await expressionService.ensureExpressionValue(
-          expressionContext,
-          `vars.new_hour_billing_rate`,
-          { fallback: costRateString }, // fallback to cost rate
+      if (!isExplicit) {
+        throw new Error(
+          `TMetric reports require explicit rate configuration (rateSource "${REPORT_PROJECT_RATE_SOURCE_EXPLICIT}" on project "${project.id}"). Legacy vars.new_hour_* rates are no longer supported.`,
         );
+      }
 
-        // Use TMetric project ID for this contractor (each can have own TMetric instance)
-        const tmetricProjectId = getTmetricProjectIdForContractor(
-          project.parameters,
-          contractorId,
-          project.id,
+      const scopedFromParameters = explicitScopedProjectIdFromParameters(
+        project.parameters,
+      );
+      const fromRole = report.definitions.roleTypes[roleId]?.rates.find(
+        (r) =>
+          r.projectIds.includes(project.id) ||
+          (scopedFromParameters != null &&
+            r.projectIds.includes(scopedFromParameters)) ||
+          r.projectIds[0] === project.id ||
+          (scopedFromParameters != null &&
+            r.projectIds[0] === scopedFromParameters),
+      );
+      if (!fromRole) {
+        const hasEntryOnProject = report.timeEntries.some(
+          (e) =>
+            e.roleId === roleId &&
+            e.contractorId === contractorId &&
+            e.projectId === project.id,
         );
-        const costRate = parseRateConfiguration(
-          String(costRateString),
-          tmetricProjectId,
-        );
-        const billingRate = parseRateConfiguration(
-          String(billingRateString),
-          tmetricProjectId,
-        );
-
-        const existingContractorConfig = prefilled.find(
-          (c) => c.contractorId === contractorId,
-        );
-        const roleRate: RoleRate = {
-          billing: "hourly",
-          activityTypes: [],
-          taskTypes: [],
-          projectIds: [project.id], // Single project-specific rate
-          costRate: costRate.rate,
-          costCurrency: costRate.currency,
-          billingRate: billingRate.rate,
-          billingCurrency: billingRate.currency,
-        };
-        if (existingContractorConfig) {
-          existingContractorConfig.rates.push(roleRate);
-        } else {
-          prefilled.push({
-            contractorId: contractorId,
-            rates: [roleRate],
-          });
+        if (hasEntryOnProject) {
+          throw new Error(
+            `TMetric prefilled rates: no explicit rate row for contractor ${contractorId} on project "${project.id}" (role ${roleId}).`,
+          );
         }
-      } catch {
-        // Contractor may not be defined for this project (workspace/client); skip this combination
         continue;
       }
+      ratesForRole.push({ ...fromRole });
+    }
+
+    if (ratesForRole.length > 0) {
+      prefilled.push({
+        roleId,
+        contractorId,
+        rates: ratesForRole,
+      });
     }
   }
 

@@ -1,6 +1,6 @@
 /**
- * Shared rate parsing for expression variables (e.g. vars.new_hour_cost_rate, vars.new_hour_billing_rate).
- * Supports:
+ * Shared rate parsing for expression-backed rate strings (e.g. "100 EUR" or JSON arrays
+ * with per-project entries). Supports:
  * - Simple string: "100 EUR"
  * - JSON array with per-project rates: [{ projectIds: ['id1'], rate: '123 eur' }, { projectIds: [], rate: '100 eur' }]
  *   (empty projectIds = fallback/default rate)

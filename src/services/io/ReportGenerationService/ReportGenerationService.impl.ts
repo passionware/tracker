@@ -3,13 +3,18 @@ import { idSpecUtils } from "@/platform/lang/IdSpec";
 import { WithServices } from "@/platform/typescript/services";
 import { maybe } from "@passionware/monads";
 import { WithGeneratedReportSourceWriteService } from "../GeneratedReportSourceWriteService/GeneratedReportSourceWriteService";
+import { WithProjectIterationService } from "../ProjectIterationService/ProjectIterationService";
 import { WithReportService } from "../ReportService/ReportService";
 import { AbstractPlugin } from "./plugins/AbstractPlugin";
 import { ReportGenerationService } from "./ReportGenerationService";
 
 export interface ReportGenerationServiceConfig
   extends WithServices<
-    [WithReportService, WithGeneratedReportSourceWriteService]
+    [
+      WithReportService,
+      WithGeneratedReportSourceWriteService,
+      WithProjectIterationService,
+    ]
   > {
   plugins: Record<string, AbstractPlugin>;
 }
@@ -19,6 +24,12 @@ export function createReportGenerationService(
 ): ReportGenerationService {
   return {
     generateReport: async (payload) => {
+      const iteration =
+        await config.services.projectIterationService.ensureProjectIterationDetail(
+          payload.projectIterationId,
+        );
+      const trackerProjectId = iteration.projectId;
+
       const trackerReports = await config.services.reportService.ensureReports(
         reportQueryUtils
           .getBuilder(idSpecUtils.ofAll(), idSpecUtils.ofAll())
@@ -40,6 +51,7 @@ export function createReportGenerationService(
             workspaceId: trackerReport.workspaceId,
             clientId: trackerReport.clientId,
             iterationId: payload.projectIterationId,
+            projectId: trackerProjectId,
           })),
         });
 
