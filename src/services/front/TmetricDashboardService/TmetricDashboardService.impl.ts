@@ -706,6 +706,11 @@ async function performRefreshAndCache(
   const prefilledRates = await extractPrefilledRatesFromGenericReport(
     reportData,
     services.expressionService,
+    {
+      additionalContractorIds: [
+        ...new Set(reports.map((r) => r.contractorId)),
+      ],
+    },
   );
 
   const reportWithRates = applyPrefilledRatesToReport(

@@ -8,6 +8,14 @@ export type PrefilledRateResult = Array<{
   rates: RoleRate[];
 }>;
 
+export type ExtractPrefilledRatesOptions = {
+  /**
+   * Contractors to include even when they have no time entries in `report`
+   * (e.g. assigned to the iteration/project). Duplicates time-entry contractors are ignored.
+   */
+  additionalContractorIds?: readonly number[];
+};
+
 /**
  * Extracts prefilled rates from a GenericReport by resolving expression variables.
  * Workspace and client for expression evaluation are taken from each project's
@@ -15,11 +23,13 @@ export type PrefilledRateResult = Array<{
  *
  * @param report - The GenericReport to extract rates from (project types should have workspaceId, clientId in parameters)
  * @param expressionService - Service to resolve expression variables
+ * @param options - Optional `additionalContractorIds` merged with contractors found on time entries
  * @returns Prefilled rates grouped by contractor
  */
 export async function extractPrefilledRatesFromGenericReport(
   report: GenericReport,
   expressionService: WithExpressionService["expressionService"],
+  options?: ExtractPrefilledRatesOptions,
 ): Promise<PrefilledRateResult> {
   // Extract unique projects from GenericReport
   // Project IDs are strings (short IDs from SharedIdMap)
@@ -33,10 +43,12 @@ export async function extractPrefilledRatesFromGenericReport(
     }),
   );
 
-  // Extract unique contractors from time entries
   const contractorIds = new Set<number>();
   for (const entry of report.timeEntries) {
     contractorIds.add(entry.contractorId);
+  }
+  for (const id of options?.additionalContractorIds ?? []) {
+    contractorIds.add(id);
   }
 
   // Pre-fill rates for each contractor-project combination found in data

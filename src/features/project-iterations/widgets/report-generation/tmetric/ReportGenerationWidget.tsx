@@ -240,6 +240,7 @@ export function ReportGenerationWidget({
       const prefilledRates = await extractPrefilledRatesFromGenericReport(
         result.reportData,
         services.expressionService,
+        { additionalContractorIds: contractors.map((c) => c.id) },
       );
 
       return {
