@@ -251,13 +251,7 @@ function BillingDrawerContent({
               </p>
             </ExpandablePanelSection>
           ) : null}
-          <BillingInvoicePositions
-            billing={billing}
-            services={services}
-            onOpenReportDetails={(reportId) =>
-              pushEntityDrawer({ type: "report", id: reportId })
-            }
-          />
+          <BillingInvoicePositions billing={billing} services={services} />
         </div>
       );
     });

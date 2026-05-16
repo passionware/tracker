@@ -79,5 +79,10 @@ export function createPreferenceService(config: {
     setTrackerActiveContractorId: async () => {},
     useTrackerIdleThresholdSeconds: () => 5 * 60,
     setTrackerIdleThresholdSeconds: async () => {},
+    useBillingInvoicePositionsPreferences: () => ({
+      groupByRate: false,
+      rateGroupNames: {},
+    }),
+    setBillingInvoicePositionsPreferences: async () => {},
   };
 }

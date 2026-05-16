@@ -1,4 +1,5 @@
 import {
+  BillingInvoicePositionsProjectPreferences,
   BillingTimelineViewPreferences,
   BudgetLogSyncState,
   BulkCreateCostPreferences,
@@ -252,6 +253,33 @@ const trackerActiveContractorIdApi = createLocalStorageApi<number | null>(
     return result.success ? result.data : null;
   },
   null,
+);
+
+const billingInvoicePositionsProjectPrefsSchema = z.object({
+  groupByRate: z.boolean(),
+  rateGroupNames: z.record(z.string(), z.string()),
+});
+
+const billingInvoicePositionsByProjectSchema = z.record(
+  z.string(),
+  billingInvoicePositionsProjectPrefsSchema,
+);
+
+const defaultBillingInvoicePositionsProjectPreferences: BillingInvoicePositionsProjectPreferences =
+  {
+    groupByRate: false,
+    rateGroupNames: {},
+  };
+
+const billingInvoicePositionsByProjectApi = createLocalStorageApi<
+  Record<string, BillingInvoicePositionsProjectPreferences>
+>(
+  "billing-invoice-positions-by-project-v1",
+  (data) => {
+    const result = billingInvoicePositionsByProjectSchema.safeParse(data);
+    return result.success ? result.data : {};
+  },
+  {},
 );
 
 export function createPreferenceService(): PreferenceService {
@@ -608,6 +636,48 @@ export function createPreferenceService(): PreferenceService {
     });
   });
 
+  const useBillingInvoicePositionsStore = create<{
+    preferencesByProjectId: Record<
+      string,
+      BillingInvoicePositionsProjectPreferences
+    >;
+    initialized: boolean;
+    setPreferences: (
+      projectId: number,
+      partial: Partial<BillingInvoicePositionsProjectPreferences>,
+    ) => Promise<void>;
+  }>((set, get) => ({
+    preferencesByProjectId: {},
+    initialized: false,
+    setPreferences: async (projectId, partial) => {
+      const key = String(projectId);
+      const current =
+        get().preferencesByProjectId[key] ??
+        defaultBillingInvoicePositionsProjectPreferences;
+      const next: BillingInvoicePositionsProjectPreferences = {
+        ...current,
+        ...partial,
+        rateGroupNames: {
+          ...current.rateGroupNames,
+          ...(partial.rateGroupNames ?? {}),
+        },
+      };
+      const map = {
+        ...get().preferencesByProjectId,
+        [key]: next,
+      };
+      set({ preferencesByProjectId: map });
+      await billingInvoicePositionsByProjectApi.write(map);
+    },
+  }));
+
+  void billingInvoicePositionsByProjectApi.read().then((stored) => {
+    useBillingInvoicePositionsStore.setState({
+      preferencesByProjectId: stored ?? {},
+      initialized: true,
+    });
+  });
+
   return {
     getIsDangerMode: () => usePreferences.getState().preferences.dangerMode,
     setIsDangerMode: (value: boolean) =>
@@ -770,6 +840,25 @@ export function createPreferenceService(): PreferenceService {
     },
     setTrackerIdleThresholdSeconds: async (seconds) => {
       await useTrackerIdleThresholdStore.getState().setSeconds(seconds);
+    },
+    useBillingInvoicePositionsPreferences: (projectId) => {
+      const store = useBillingInvoicePositionsStore();
+      if (projectId == null || projectId <= 0) {
+        return defaultBillingInvoicePositionsProjectPreferences;
+      }
+      if (!store.initialized) {
+        return defaultBillingInvoicePositionsProjectPreferences;
+      }
+      return (
+        store.preferencesByProjectId[String(projectId)] ??
+        defaultBillingInvoicePositionsProjectPreferences
+      );
+    },
+    setBillingInvoicePositionsPreferences: async (projectId, partial) => {
+      if (projectId <= 0) return;
+      await useBillingInvoicePositionsStore
+        .getState()
+        .setPreferences(projectId, partial);
     },
   };
 }

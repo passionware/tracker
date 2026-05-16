@@ -60,6 +60,13 @@ export interface BulkCreateCostPreferences {
   vatPercent: number;
 }
 
+/** Billing drawer invoice positions table, keyed per project in storage. */
+export interface BillingInvoicePositionsProjectPreferences {
+  groupByRate: boolean;
+  /** Display names for rate groups (`rateGroupKey` → label). */
+  rateGroupNames: Record<string, string>;
+}
+
 /** Persisted app sidebar: which top-level nav sections stay expanded (by section title). */
 export interface AppSidebarNavExpansion {
   initialized: boolean;
@@ -164,6 +171,13 @@ export interface PreferenceService {
    */
   useTrackerIdleThresholdSeconds: () => number;
   setTrackerIdleThresholdSeconds: (seconds: number) => Promise<void>;
+  useBillingInvoicePositionsPreferences: (
+    projectId: number | null,
+  ) => BillingInvoicePositionsProjectPreferences;
+  setBillingInvoicePositionsPreferences: (
+    projectId: number,
+    preferences: Partial<BillingInvoicePositionsProjectPreferences>,
+  ) => Promise<void>;
 }
 
 export interface WithPreferenceService {
