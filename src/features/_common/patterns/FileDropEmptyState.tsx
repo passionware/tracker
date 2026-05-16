@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils.ts";
 import { Upload } from "lucide-react";
-import type { DragEvent, ReactNode } from "react";
+import type { ClipboardEvent, DragEvent, ReactNode } from "react";
 
 export interface FileDropEmptyStateProps {
   inputId: string;
@@ -12,6 +12,7 @@ export interface FileDropEmptyStateProps {
   onDragLeave?: (e: DragEvent<HTMLLabelElement>) => void;
   onDragOver?: (e: DragEvent<HTMLLabelElement>) => void;
   onDrop?: (e: DragEvent<HTMLLabelElement>) => void;
+  onPaste?: (e: ClipboardEvent<HTMLLabelElement>) => void;
 }
 
 /**
@@ -28,20 +29,24 @@ export function FileDropEmptyState({
   onDragLeave,
   onDragOver,
   onDrop,
+  onPaste,
 }: FileDropEmptyStateProps) {
   return (
     <label
       htmlFor={inputId}
+      tabIndex={onPaste ? 0 : undefined}
       className={cn(
-        "group flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/90 bg-muted/15 px-6 py-12 text-center transition-colors",
+        "group flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/90 bg-muted/15 px-6 py-12 text-center transition-colors outline-none",
         "hover:border-primary/45 hover:bg-muted/30",
         "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+        onPaste && "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         className,
       )}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       onDragOver={onDragOver}
       onDrop={onDrop}
+      onPaste={onPaste}
     >
       <span className="text-muted-foreground transition-colors group-hover:text-primary [&_svg]:mx-auto [&_svg]:block">
         {icon}

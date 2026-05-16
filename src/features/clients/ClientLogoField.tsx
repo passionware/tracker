@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label.tsx";
 import { FileDropEmptyState } from "@/features/_common/patterns/FileDropEmptyState.tsx";
 import { SelectedUploadCard } from "@/features/_common/patterns/SelectedUploadCard.tsx";
 import { UploadDropCard } from "@/features/_common/patterns/UploadDropCard.tsx";
+import { useFileDropZone } from "@/features/_common/patterns/useFileDropZone.ts";
 import {
   fetchImageUrlAsDataUrl,
   readImageFileAsDataUrl,
@@ -24,20 +25,9 @@ export interface ClientLogoFieldProps {
 
 export function ClientLogoField(props: ClientLogoFieldProps) {
   const inputId = useId();
-  const [dragActive, setDragActive] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  }, []);
 
   const applyFile = useCallback(
     async (file: File) => {
@@ -55,18 +45,13 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
     [props],
   );
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragActive(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) {
-        void applyFile(file);
-      }
-    },
-    [applyFile],
-  );
+  const disabled = Boolean(props.disabled || busy);
+
+  const fileZone = useFileDropZone({
+    onFile: (file) => void applyFile(file),
+    disabled,
+    unnamedFileBase: "pasted-logo",
+  });
 
   const loadFromUrl = useCallback(async () => {
     setUrlError(null);
@@ -86,7 +71,7 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
     }
   }, [props, urlDraft]);
 
-  const disabled = Boolean(props.disabled || busy);
+  const dragActive = fileZone.dragActive;
 
   return (
     <div
@@ -97,14 +82,13 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
         title={props.title ?? "Logo"}
         description={
           props.description ??
-          "PNG, JPG, or SVG — drag, browse, or use an image URL below."
+          "Any image — drag, browse, paste (⌘V), or use an image URL below."
         }
         bodyClassName="min-h-[min(240px,40vh)] lg:min-h-[220px]"
       >
         <input
           id={inputId}
           type="file"
-          accept="image/*"
           className="sr-only"
           disabled={disabled}
           onChange={(e) => {
@@ -119,14 +103,16 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
         {props.value ? (
           <div
             className={cn(
-              "flex flex-1 flex-col rounded-xl transition-[box-shadow] duration-150",
+              "flex flex-1 flex-col rounded-xl outline-none transition-[box-shadow] duration-150",
               dragActive &&
                 "ring-2 ring-primary ring-offset-2 ring-offset-background",
             )}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
+            tabIndex={0}
+            onDragEnter={fileZone.onDragEnter}
+            onDragLeave={fileZone.onDragLeave}
+            onDragOver={fileZone.onDragOver}
+            onDrop={fileZone.onDrop}
+            onPaste={fileZone.onPaste}
           >
             <SelectedUploadCard
               leading={
@@ -165,7 +151,7 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
           <FileDropEmptyState
             inputId={inputId}
             title="Choose an image"
-            description="Or drag a file here — PNG, JPG, or SVG"
+            description="Or drag here, or paste a screenshot (⌘V)"
             className={cn(
               dragActive && "border-primary/70 bg-primary/5",
             )}
@@ -175,10 +161,11 @@ export function ClientLogoField(props: ClientLogoFieldProps) {
                 aria-hidden
               />
             }
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
+            onDragEnter={fileZone.onDragEnter}
+            onDragLeave={fileZone.onDragLeave}
+            onDragOver={fileZone.onDragOver}
+            onDrop={fileZone.onDrop}
+            onPaste={fileZone.onPaste}
           />
         )}
       </UploadDropCard>

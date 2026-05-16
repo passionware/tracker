@@ -44,7 +44,7 @@ function buildDocumentPrompt(
   );
   const bJson = JSON.stringify(invoiceRows);
   const nameHint = fileName ? `File name: ${fileName}\n` : "";
-  return `You are given an attached bank statement or export (${nameHint}PDF, CSV, or plain text). Below is a JSON array of unpaid client invoices for the same business.
+  return `You are given an attached bank statement or export (${nameHint}PDF, CSV, plain text, spreadsheet, or image/screenshot of a statement). Below is a JSON array of unpaid client invoices for the same business.
 
 INVOICES (unpaid) — each element is a row in column order [id, client, net, gross, currency, issuedDate] (same order for every row). Use the first value (id) for **billingId** and **unmatchedBillingIds** in your JSON output.
 ${bJson}
@@ -102,6 +102,11 @@ function normalizeMimeType(file: BankDocumentPayload): string {
   if (n.endsWith(".pdf")) return "application/pdf";
   if (n.endsWith(".csv")) return "text/csv";
   if (n.endsWith(".txt")) return "text/plain";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".gif")) return "image/gif";
+  if (n.endsWith(".heic")) return "image/heic";
   return "application/octet-stream";
 }
 

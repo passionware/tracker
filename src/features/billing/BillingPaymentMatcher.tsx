@@ -46,6 +46,7 @@ import { PanelSectionLabel } from "@/features/_common/patterns/PanelSectionLabel
 import { SelectedUploadCard } from "@/features/_common/patterns/SelectedUploadCard.tsx";
 import { SurfaceCard } from "@/features/_common/patterns/SurfaceCard.tsx";
 import { UploadDropCard } from "@/features/_common/patterns/UploadDropCard.tsx";
+import { useFileDropZone } from "@/features/_common/patterns/useFileDropZone.ts";
 import { formatBytes } from "@/platform/lang/formatBytes.ts";
 import { cn } from "@/lib/utils.ts";
 import { dateToCalendarDate } from "@/platform/lang/internationalized-date";
@@ -275,6 +276,27 @@ export function BillingPaymentMatcherDialog({
 
   const aiRunning = step === "upload" && mt.isInProgress(aiMutation.state);
 
+  const applyBankFile = useCallback(async (file: File) => {
+    setFileMeta({ name: file.name, size: file.size });
+    try {
+      const dataBase64 = await readFileAsBase64(file);
+      setFilePayload({
+        dataBase64,
+        mimeType: guessMimeType(file),
+        fileName: file.name,
+      });
+      setFileLabel(file.name);
+    } catch {
+      toast.error("Could not read file.");
+    }
+  }, []);
+
+  const bankFileZone = useFileDropZone({
+    onFile: (file) => void applyBankFile(file),
+    disabled: aiRunning,
+    unnamedFileBase: "pasted-export",
+  });
+
   const matchHigh = useMemo(
     () => matches.filter((m) => m.confidence === "high"),
     [matches],
@@ -336,8 +358,9 @@ export function BillingPaymentMatcherDialog({
             <DrawerDescription className="text-sm leading-relaxed">
               {step === "upload" ? (
                 <>
-                  Upload a bank export (CSV, PDF, plain text) as exported from
-                  your bank. Only unpaid rows from your current table selection
+                  Upload a bank export (CSV, PDF, image, or any file) as from
+                  your bank — drop, browse, or paste (⌘V). Only unpaid rows
+                  from your current table selection
                   are sent to the model. The API key is read from Variables (
                   <span className="font-mono text-foreground">
                     {GEMINI_API_KEY_VARIABLE_NAME}
@@ -370,31 +393,30 @@ export function BillingPaymentMatcherDialog({
                   className="lg:row-span-2 lg:h-full lg:min-h-0"
                   icon={<Upload aria-hidden />}
                   title="Bank export"
-                  description="Drop your file or browse — no need to clean or edit the file first."
+                  description="Drop, browse, or paste (⌘V) — no need to clean or edit the file first."
                 >
+                  <div
+                    className={cn(
+                      "flex min-h-0 flex-1 flex-col outline-none",
+                      bankFileZone.dragActive &&
+                        "rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    )}
+                    tabIndex={filePayload ? 0 : undefined}
+                    onDragEnter={bankFileZone.onDragEnter}
+                    onDragLeave={bankFileZone.onDragLeave}
+                    onDragOver={bankFileZone.onDragOver}
+                    onDrop={bankFileZone.onDrop}
+                    onPaste={filePayload ? bankFileZone.onPaste : undefined}
+                  >
                   <input
                     ref={fileInputRef}
                     id="bank-file-input"
                     type="file"
-                    accept=".csv,.pdf,.txt,text/csv,application/pdf,text/plain"
                     className="sr-only"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      setFileMeta({ name: file.name, size: file.size });
-                      void (async () => {
-                        try {
-                          const dataBase64 = await readFileAsBase64(file);
-                          setFilePayload({
-                            dataBase64,
-                            mimeType: guessMimeType(file),
-                            fileName: file.name,
-                          });
-                          setFileLabel(file.name);
-                        } catch {
-                          toast.error("Could not read file.");
-                        }
-                      })();
+                      void applyBankFile(file);
                     }}
                   />
 
@@ -429,9 +451,11 @@ export function BillingPaymentMatcherDialog({
                     <FileDropEmptyState
                       inputId="bank-file-input"
                       title="Choose a bank file"
-                      description="CSV, PDF, or TXT — same as from your bank"
+                      description="Any file type — or paste a screenshot (⌘V)"
+                      onPaste={bankFileZone.onPaste}
                     />
                   )}
+                  </div>
                 </UploadDropCard>
 
                 <SurfaceCard className="flex h-full min-h-0 flex-col">

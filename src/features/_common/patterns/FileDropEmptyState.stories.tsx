@@ -25,7 +25,7 @@ export const Default = {
   args: {
     inputId: "story-file-drop",
     title: "Choose a file",
-    description: "CSV, PDF, or plain text",
+    description: "Drop, browse, or paste (⌘V)",
   },
   render: function DefaultRender(args) {
     const id = useId();
@@ -52,7 +52,7 @@ export const CustomIcon = {
     const id = useId();
     return (
       <div className="flex h-[280px] w-full max-w-md flex-col">
-        <input id={id} type="file" accept="image/*" className="sr-only" />
+        <input id={id} type="file" className="sr-only" />
         <FileDropEmptyState {...args} inputId={id} />
       </div>
     );

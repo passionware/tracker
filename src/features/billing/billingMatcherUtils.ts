@@ -42,6 +42,14 @@ export function guessMimeType(file: File): string {
   if (n.endsWith(".pdf")) return "application/pdf";
   if (n.endsWith(".csv")) return "text/csv";
   if (n.endsWith(".txt")) return "text/plain";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".gif")) return "image/gif";
+  if (n.endsWith(".heic")) return "image/heic";
+  if (n.endsWith(".xlsx"))
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (n.endsWith(".xls")) return "application/vnd.ms-excel";
   return "application/octet-stream";
 }
 
