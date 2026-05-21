@@ -72,14 +72,10 @@ export function fillTargetSteps(
   }));
 }
 
-/**
- * Linear regression: forecast value at endDate from points (date, billing).
- */
-export function computeForecastValueAt(
+function computeRegressionForecastAt(
   points: Array<{ date: number; billing: number }>,
   endDate: number,
 ): number | null {
-  if (points.length < 1) return null;
   const n = points.length;
   let sumX = 0;
   let sumY = 0;
@@ -94,9 +90,50 @@ export function computeForecastValueAt(
   const denom = n * sumXX - sumX * sumX;
   const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
   const intercept = (sumY - slope * sumX) / n;
-  const lastBilling = points[points.length - 1]!.billing;
-  const regression = Math.max(0, slope * endDate + intercept);
-  return monotonicCumulativeBilling(lastBilling, regression);
+  return Math.max(0, slope * endDate + intercept);
+}
+
+/**
+ * Extrapolate from the last point using average burn rate from first to last.
+ * Stable for cumulative series; avoids flat forecasts when regression dips near period end.
+ */
+function computeBurnRateExtrapolationAt(
+  points: Array<{ date: number; billing: number }>,
+  endDate: number,
+): number | null {
+  if (points.length < 1) return null;
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  const elapsedMs = last.date - first.date;
+  if (elapsedMs <= 0 || endDate <= last.date) return last.billing;
+  const ratePerMs = (last.billing - first.billing) / elapsedMs;
+  if (ratePerMs <= 0) return last.billing;
+  return last.billing + ratePerMs * (endDate - last.date);
+}
+
+/**
+ * Forecast cumulative billing at endDate. Never below the last observed point; when
+ * regression under-shoots (recent slowdown), fall back to iteration-average burn rate.
+ */
+export function computeForecastValueAt(
+  points: Array<{ date: number; billing: number }>,
+  endDate: number,
+): number | null {
+  if (points.length < 1) return null;
+  const last = points[points.length - 1]!;
+  if (endDate <= last.date) return last.billing;
+
+  const regression = computeRegressionForecastAt(points, endDate);
+  const burnRate = computeBurnRateExtrapolationAt(points, endDate);
+
+  let forecast = last.billing;
+  if (regression != null) {
+    forecast = monotonicCumulativeBilling(forecast, regression);
+  }
+  if (burnRate != null) {
+    forecast = monotonicCumulativeBilling(forecast, burnRate);
+  }
+  return forecast;
 }
 
 /**

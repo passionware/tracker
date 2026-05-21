@@ -36,16 +36,22 @@ describe("logEntriesToRawData", () => {
 });
 
 describe("computeForecastValueAt", () => {
+  const scenarioPoints = [
+    { date: Date.parse("2026-04-25"), billing: 0 },
+    { date: Date.parse("2026-05-10"), billing: 10_000 },
+    { date: Date.parse("2026-05-21"), billing: 19_269 },
+  ];
+  const scenarioEnd = Date.parse("2026-05-25");
+
   it("never forecasts below the last observed cumulative billing", () => {
-    const points = [
-      { date: Date.parse("2026-04-25"), billing: 0 },
-      { date: Date.parse("2026-05-10"), billing: 10_000 },
-      { date: Date.parse("2026-05-21"), billing: 19_269 },
-    ];
-    const endDate = Date.parse("2026-05-25");
-    const forecast = computeForecastValueAt(points, endDate);
+    const forecast = computeForecastValueAt(scenarioPoints, scenarioEnd);
     expect(forecast).not.toBeNull();
     expect(forecast!).toBeGreaterThanOrEqual(19_269);
+  });
+
+  it("continues upward when regression would flatten at the last point", () => {
+    const forecast = computeForecastValueAt(scenarioPoints, scenarioEnd);
+    expect(forecast!).toBeGreaterThan(19_269);
   });
 });
 
