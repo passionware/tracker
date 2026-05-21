@@ -1,6 +1,7 @@
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api";
 import type { TmetricDashboardCacheScope } from "@/api/tmetric-dashboard-cache/tmetric-dashboard-cache.api";
 import { WithFrontServices } from "@/core/frontServices";
+import { monotonicCumulativeBilling } from "@/features/_common/budget-target/BudgetTargetHistoryChart.utils";
 import {
   getCumulativeBillingByDay,
   getReportBillingCurrencies,
@@ -220,9 +221,11 @@ export function useBudgetLogSync({
         entries.map((e) => [format(new Date(e.createdAt), "yyyy-MM-dd"), e]),
       );
 
+      let peak = base;
       for (const { date, cumulativeBilling } of byDay) {
         /** Store monotonic value: previous total + report cumulative for this period. */
-        const amount = base + cumulativeBilling;
+        peak = monotonicCumulativeBilling(peak, base + cumulativeBilling);
+        const amount = peak;
         const dayKey = format(date, "yyyy-MM-dd");
         const existing = entriesByDay.get(dayKey);
         if (existing) {

@@ -13,17 +13,32 @@ export type ChartDatum = {
   forecast?: number | null;
 };
 
+/** Cumulative billing snapshots must never decrease. */
+export function monotonicCumulativeBilling(
+  previousPeak: number | null | undefined,
+  value: number,
+): number {
+  return Math.max(previousPeak ?? 0, value);
+}
+
 /**
  * Map log entries to raw chart rows. Carries forward last known billing when snapshot is null.
+ * Billing is enforced monotonic (non-decreasing) for burn-up display.
  */
 export function logEntriesToRawData(
   entries: BudgetTargetLogEntry[],
   iterationCurrency: string,
 ): Omit<ChartDatum, "forecast">[] {
+  const sorted = [...entries].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
   let lastBilling: number | null = null;
-  return entries.map((e) => {
-    const billing = e.billingSnapshotAmount ?? lastBilling ?? 0;
+  let peak = 0;
+  return sorted.map((e) => {
+    const raw = e.billingSnapshotAmount ?? lastBilling ?? 0;
     if (e.billingSnapshotAmount != null) lastBilling = e.billingSnapshotAmount;
+    const billing = monotonicCumulativeBilling(peak, raw);
+    peak = billing;
     return {
       date: e.createdAt.getTime(),
       dateLabel: format(e.createdAt, "MMM d, HH:mm"),
@@ -79,7 +94,9 @@ export function computeForecastValueAt(
   const denom = n * sumXX - sumX * sumX;
   const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
   const intercept = (sumY - slope * sumX) / n;
-  return Math.max(0, slope * endDate + intercept);
+  const lastBilling = points[points.length - 1]!.billing;
+  const regression = Math.max(0, slope * endDate + intercept);
+  return monotonicCumulativeBilling(lastBilling, regression);
 }
 
 /**

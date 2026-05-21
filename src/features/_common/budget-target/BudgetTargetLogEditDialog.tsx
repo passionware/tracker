@@ -3,6 +3,7 @@ import type { ProjectIteration } from "@/api/project-iteration/project-iteration
 import { Button } from "@/components/ui/button";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
+import { monotonicCumulativeBilling } from "@/features/_common/budget-target/BudgetTargetHistoryChart.utils";
 import { getCumulativeBillingByDay } from "@/features/tmetric-dashboard/tmetric-dashboard.utils";
 import {
   Dialog,
@@ -233,14 +234,16 @@ export function BudgetTargetLogEditDialog({
       // Step 2: write fresh snapshots. If a target row already exists for the
       // day, update it in place (preserves the target value); otherwise
       // insert a new pure-snapshot row.
+      let peak = 0;
       for (const { date, cumulativeBilling } of byDay) {
+        peak = monotonicCumulativeBilling(peak, cumulativeBilling);
         const dayKey = format(date, "yyyy-MM-dd");
         const targetRow = targetRowByDay.get(dayKey);
         if (targetRow) {
           await services.mutationService.updateBudgetTargetLogEntry(
             targetRow.id,
             {
-              billingSnapshotAmount: cumulativeBilling,
+              billingSnapshotAmount: peak,
               billingSnapshotCurrency: iteration.currency,
             },
           );
@@ -251,7 +254,7 @@ export function BudgetTargetLogEditDialog({
           {
             createdAt: date,
             newTargetAmount: null,
-            billingSnapshotAmount: cumulativeBilling,
+            billingSnapshotAmount: peak,
             billingSnapshotCurrency: iteration.currency,
           },
         );

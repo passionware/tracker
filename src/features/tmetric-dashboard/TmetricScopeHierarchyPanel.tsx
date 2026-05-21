@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WithFrontServices } from "@/core/frontServices";
 import { CurrencyValueWidget } from "@/features/_common/CurrencyValueWidget";
 import { ClientWidget } from "@/features/_common/elements/pickers/ClientView";
-import { ContractorWidget } from "@/features/_common/elements/pickers/ContractorView";
+import { ContractorIterationRowLabel } from "./ContractorIterationRowLabel";
 import type { GenericReport } from "@/services/io/_common/GenericReport";
 import { calendarDateToJSDate } from "@/platform/lang/internationalized-date";
 import { maybe, rd, type RemoteData } from "@passionware/monads";
@@ -32,6 +32,8 @@ import {
   buildScopeHierarchy,
   collectTmetricScopeHierarchyExchangeCurrencies,
   divideCurrencyValues,
+  contractorIdsWithMultipleRateRows,
+  contractorIterationTotalsRowKey,
   getContractorIterationTotals,
   getContractorRatesForIterationProject,
   getScopeHierarchyTotals,
@@ -192,7 +194,7 @@ export function TmetricScopeHierarchyPanel({
           targetCurrency,
         );
         m.set(
-          `${row.iteration.id}-${t.contractorId}`,
+          `${row.iteration.id}-${contractorIterationTotalsRowKey(t)}`,
           billingInTarget - costInTarget,
         );
       }
@@ -671,6 +673,10 @@ export function TmetricScopeHierarchyPanel({
                                       cachedReportResolved,
                                       iteration.id,
                                     );
+                                  const multiRateContractorIds =
+                                    contractorIdsWithMultipleRateRows(
+                                      contractorTotals,
+                                    );
                                   const showContractorFinancialRows =
                                     hasRates || contractorTotals.length > 0;
                                   if (!showContractorFinancialRows) {
@@ -732,25 +738,25 @@ export function TmetricScopeHierarchyPanel({
                                         </span>
                                       </div>
                                       {contractorTotals.map((row) => {
+                                        const rowKey =
+                                          contractorIterationTotalsRowKey(row);
                                         const profitEur =
                                           contractorProfitInTarget.get(
-                                            `${iteration.id}-${row.contractorId}`,
+                                            `${iteration.id}-${rowKey}`,
                                           );
                                         const profitValue =
                                           profitEur ??
                                           row.totalBilling - row.totalCost;
                                         return (
                                           <FinancialHierarchyGrid.Row
-                                            key={row.contractorId}
+                                            key={rowKey}
                                             label={
-                                              <ContractorWidget
-                                                contractorId={maybe.of(
+                                              <ContractorIterationRowLabel
+                                                row={row}
+                                                showRateGroup={multiRateContractorIds.has(
                                                   row.contractorId,
                                                 )}
                                                 services={services}
-                                                layout="full"
-                                                size="sm"
-                                                className="min-w-0"
                                               />
                                             }
                                             size="sm"
@@ -999,6 +1005,8 @@ export function TmetricScopeHierarchyPanel({
                                   iteration.id,
                                 )
                               : [];
+                          const multiRateContractorIds =
+                            contractorIdsWithMultipleRateRows(contractorTotals);
                           const rowKey = `by-client-${clientId}-iter-${iteration.id}`;
                           return [
                             <FinancialHierarchyGrid.Row
@@ -1075,15 +1083,14 @@ export function TmetricScopeHierarchyPanel({
                               >
                                 {contractorTotals.map((row) => (
                                   <FinancialHierarchyGrid.Row
-                                    key={`by-client-${clientId}-iter-${iteration.id}-c-${row.contractorId}`}
+                                    key={`by-client-${clientId}-iter-${iteration.id}-c-${contractorIterationTotalsRowKey(row)}`}
                                     label={
-                                      <ContractorWidget
-                                        contractorId={maybe.of(
+                                      <ContractorIterationRowLabel
+                                        row={row}
+                                        showRateGroup={multiRateContractorIds.has(
                                           row.contractorId,
                                         )}
                                         services={services}
-                                        layout="full"
-                                        size="sm"
                                       />
                                     }
                                   >
@@ -1106,7 +1113,7 @@ export function TmetricScopeHierarchyPanel({
                                       <CurrencyValueWidget
                                         values={[
                                           {
-                                            amount: row.avgBillingRate,
+                                            amount: row.billingRate,
                                             currency: row.billingCurrency,
                                           },
                                         ]}

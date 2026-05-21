@@ -226,6 +226,67 @@ export interface ContractorIterationTotals {
   totalProfit: number;
   hours: number;
   entriesCount: number;
+  /** TMetric report project name(s) tied to this rate row, when known. */
+  rateProjectLabel: string | null;
+}
+
+/** Contractor ids that appear on more than one rate row in the same iteration. */
+export function contractorIdsWithMultipleRateRows(
+  totals: ContractorIterationTotals[],
+): Set<number> {
+  const counts = new Map<number, number>();
+  for (const row of totals) {
+    counts.set(row.contractorId, (counts.get(row.contractorId) ?? 0) + 1);
+  }
+  return new Set(
+    [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id),
+  );
+}
+
+/** Stable key for lists when one contractor has multiple rate rows in an iteration. */
+export function contractorIterationTotalsRowKey(
+  row: Pick<
+    ContractorIterationTotals,
+    | "contractorId"
+    | "costRate"
+    | "costCurrency"
+    | "billingRate"
+    | "billingCurrency"
+  >,
+): string {
+  return `${row.contractorId}:${row.costRate}:${row.costCurrency}:${row.billingRate}:${row.billingCurrency}`;
+}
+
+function contractorRateGroupKey(
+  contractorId: number,
+  rate: Pick<
+    RoleRate,
+    "costRate" | "costCurrency" | "billingRate" | "billingCurrency"
+  >,
+): string {
+  return `${contractorId}|${rate.costRate}|${rate.costCurrency}|${rate.billingRate}|${rate.billingCurrency}`;
+}
+
+/** Names of TMetric report projects that scope or receive time for this rate group. */
+export function resolveRateGroupProjectLabel(
+  report: GenericReport,
+  rateProjectIds: readonly string[],
+  entryProjectIds: Iterable<string>,
+): string | null {
+  const names = new Set<string>();
+  if (rateProjectIds.length > 0) {
+    for (const id of rateProjectIds) {
+      const name = report.definitions.projectTypes[id]?.name?.trim();
+      if (name) names.add(name);
+    }
+  } else {
+    for (const id of entryProjectIds) {
+      const name = report.definitions.projectTypes[id]?.name?.trim();
+      if (name) names.add(name);
+    }
+  }
+  if (names.size === 0) return null;
+  return [...names].sort((a, b) => a.localeCompare(b)).join(", ");
 }
 
 export interface ScopeHierarchyIterationRow {
@@ -411,20 +472,23 @@ export function getContractorRatesForIterationProject(
 }
 
 /**
- * Per-contractor totals and rates for an iteration: sums time entries by contractor,
- * returns hourly rates, weighted average rates (total/hours), and totals.
+ * Per-contractor totals and rates for an iteration: sums time entries by contractor
+ * and matched rate (cost + billing). Multiple rows per contractor when rates differ.
  */
 export function getContractorIterationTotals(
   report: GenericReport,
   iterationId: number,
 ): ContractorIterationTotals[] {
-  const byContractor = new Map<
-    number,
+  const byContractorRate = new Map<
+    string,
     {
+      contractorId: number;
       costRate: number;
       costCurrency: string;
       billingRate: number;
       billingCurrency: string;
+      rateProjectIds: string[];
+      entryProjectIds: Set<string>;
       totalCost: number;
       totalBilling: number;
       hours: number;
@@ -447,41 +511,64 @@ export function getContractorIterationTotals(
     const cost = hours * rate.costRate;
     const billing = hours * rate.billingRate;
 
-    if (!byContractor.has(contractorId)) {
-      byContractor.set(contractorId, {
+    const groupKey = contractorRateGroupKey(contractorId, rate);
+    if (!byContractorRate.has(groupKey)) {
+      byContractorRate.set(groupKey, {
+        contractorId,
         costRate: rate.costRate,
         costCurrency: rate.costCurrency,
         billingRate: rate.billingRate,
         billingCurrency: rate.billingCurrency,
+        rateProjectIds: [...rate.projectIds],
+        entryProjectIds: new Set<string>(),
         totalCost: 0,
         totalBilling: 0,
         hours: 0,
         entriesCount: 0,
       });
     }
-    const row = byContractor.get(contractorId)!;
+    const row = byContractorRate.get(groupKey)!;
+    row.entryProjectIds.add(entry.projectId);
     row.totalCost += cost;
     row.totalBilling += billing;
     row.hours += hours;
     row.entriesCount += 1;
   }
 
-  return Array.from(byContractor.entries()).map(
-    ([contractorId, row]) => ({
-      contractorId,
+  return Array.from(byContractorRate.values())
+    .map((row) => ({
+      contractorId: row.contractorId,
       costRate: row.costRate,
       costCurrency: row.costCurrency,
       billingRate: row.billingRate,
       billingCurrency: row.billingCurrency,
       avgCostRate: row.hours > 0 ? row.totalCost / row.hours : row.costRate,
-      avgBillingRate: row.hours > 0 ? row.totalBilling / row.hours : row.billingRate,
+      avgBillingRate:
+        row.hours > 0 ? row.totalBilling / row.hours : row.billingRate,
       totalCost: row.totalCost,
       totalBilling: row.totalBilling,
       totalProfit: row.totalBilling - row.totalCost,
       hours: row.hours,
       entriesCount: row.entriesCount,
-    }),
-  );
+      rateProjectLabel: resolveRateGroupProjectLabel(
+        report,
+        row.rateProjectIds,
+        row.entryProjectIds,
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.contractorId !== b.contractorId) {
+        return a.contractorId - b.contractorId;
+      }
+      const costCmp =
+        a.costCurrency.localeCompare(b.costCurrency) ||
+        a.costRate - b.costRate;
+      if (costCmp !== 0) return costCmp;
+      return (
+        a.billingCurrency.localeCompare(b.billingCurrency) ||
+        a.billingRate - b.billingRate
+      );
+    });
 }
 
 /**
