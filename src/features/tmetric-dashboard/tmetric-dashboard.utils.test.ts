@@ -1,5 +1,22 @@
 import type { GenericReport } from "@/services/io/_common/GenericReport";
 import { describe, expect, it } from "vitest";
+
+function testTimeEntry(
+  fields: Pick<
+    GenericReport["timeEntries"][number],
+    "roleId" | "projectId" | "activityId" | "taskId" | "startAt" | "endAt"
+  > & { id?: string; contractorId?: number },
+): GenericReport["timeEntries"][number] {
+  const { startAt } = fields;
+  return {
+    id: fields.id ?? "test-entry",
+    note: null,
+    contractorId: fields.contractorId ?? 0,
+    createdAt: startAt,
+    updatedAt: startAt,
+    ...fields,
+  };
+}
 import {
   formatContractorRateGroupFallbackCaption,
 } from "./ContractorIterationRowLabel";
@@ -96,14 +113,14 @@ describe("getContractorIterationTotals", () => {
         },
       },
       timeEntries: [
-        {
+        testTimeEntry({
           roleId: "iter_29_contractor_3",
           projectId: "p1",
           activityId: "a1",
           taskId: "t1",
           startAt: start,
           endAt: end,
-        },
+        }),
       ],
     };
 
@@ -151,22 +168,22 @@ describe("getContractorIterationTotals", () => {
         },
       },
       timeEntries: [
-        {
+        testTimeEntry({
           roleId: "iter_29_contractor_3",
           projectId: "p1",
           activityId: "a1",
           taskId: "standard",
           startAt: new Date("2026-05-01T09:00:00Z"),
           endAt: new Date("2026-05-01T11:00:00Z"),
-        },
-        {
+        }),
+        testTimeEntry({
           roleId: "iter_29_contractor_3",
           projectId: "p1",
           activityId: "a1",
           taskId: "premium",
           startAt: new Date("2026-05-02T09:00:00Z"),
           endAt: new Date("2026-05-02T12:30:00Z"),
-        },
+        }),
       ],
     };
 
@@ -233,30 +250,30 @@ describe("getContractorIterationTotals", () => {
           },
         },
         timeEntries: [
-          {
+          testTimeEntry({
             roleId: "iter_1_contractor_1",
             projectId: "p",
             activityId: "a",
             taskId: "a",
             startAt: new Date("2026-05-01T09:00:00Z"),
             endAt: new Date("2026-05-01T10:00:00Z"),
-          },
-          {
+          }),
+          testTimeEntry({
             roleId: "iter_1_contractor_1",
             projectId: "p",
             activityId: "a",
             taskId: "x",
             startAt: new Date("2026-05-01T11:00:00Z"),
             endAt: new Date("2026-05-01T12:00:00Z"),
-          },
-          {
+          }),
+          testTimeEntry({
             roleId: "iter_1_contractor_2",
             projectId: "p",
             activityId: "a",
             taskId: "a",
             startAt: new Date("2026-05-01T09:00:00Z"),
             endAt: new Date("2026-05-01T10:00:00Z"),
-          },
+          }),
         ],
       },
       1,
@@ -353,14 +370,14 @@ describe("getContractorIterationTotals rateProjectLabel", () => {
         },
       },
       timeEntries: [
-        {
+        testTimeEntry({
           roleId: "iter_29_contractor_1",
           projectId: "p1",
           activityId: "a",
           taskId: "t",
           startAt: new Date("2026-05-01T09:00:00Z"),
           endAt: new Date("2026-05-01T10:00:00Z"),
-        },
+        }),
       ],
     };
     expect(getContractorIterationTotals(report, 29)[0].rateProjectLabel).toBe(

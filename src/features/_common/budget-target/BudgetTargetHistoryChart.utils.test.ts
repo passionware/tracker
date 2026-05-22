@@ -1,7 +1,6 @@
 import type { BudgetTargetLogEntry } from "@/api/iteration-trigger/iteration-trigger.api";
 import { describe, expect, it } from "vitest";
 import {
-  appendForecastIfNeeded,
   buildChartData,
   computeForecastValueAt,
   logEntriesToRawData,
@@ -13,7 +12,7 @@ function entry(
 ): BudgetTargetLogEntry {
   return {
     id: createdAt.getTime(),
-    iterationId: 1,
+    projectIterationId: 1,
     createdAt,
     newTargetAmount: null,
     billingSnapshotAmount,

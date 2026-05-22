@@ -1,6 +1,5 @@
 "use client";
 
-import type { Billing } from "@/api/billing/billing.api.ts";
 import { LinkValidation, ReportDisplay } from "@/api/reports/reports.api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
