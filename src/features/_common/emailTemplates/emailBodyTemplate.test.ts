@@ -4,6 +4,7 @@ import {
   escapeHtml,
   resolveReminderEmailBodyHtml,
   reminderBodyInterpolationVars,
+  shouldSuggestAdvanceWireForDueDate,
 } from "./emailBodyTemplate";
 
 describe("escapeHtml", () => {
@@ -14,11 +15,75 @@ describe("escapeHtml", () => {
   });
 });
 
+describe("shouldSuggestAdvanceWireForDueDate", () => {
+  it("is true for Saturday, Sunday, and Monday", () => {
+    expect(shouldSuggestAdvanceWireForDueDate(new Date(2026, 3, 4))).toBe(true); // Sat
+    expect(shouldSuggestAdvanceWireForDueDate(new Date(2026, 3, 5))).toBe(true); // Sun
+    expect(shouldSuggestAdvanceWireForDueDate(new Date(2026, 3, 6))).toBe(true); // Mon
+  });
+
+  it("is false on a weekday other than Monday", () => {
+    expect(shouldSuggestAdvanceWireForDueDate(new Date(2026, 3, 7))).toBe(false); // Tue
+    expect(shouldSuggestAdvanceWireForDueDate(new Date(2026, 3, 9))).toBe(false); // Thu
+  });
+});
+
 describe("buildReminderPaymentParagraphHtml", () => {
   it("wraps due date in strong", () => {
     const html = buildReminderPaymentParagraphHtml("30.04.2026", "in 14 days");
     expect(html).toContain("<strong>in 14 days</strong>");
     expect(html).toContain("30.04.2026");
+  });
+
+  it("asks to wire by Thursday when due on Saturday", () => {
+    const html = buildReminderPaymentParagraphHtml(
+      "04.04.2026",
+      "in 3 days",
+      new Date(2026, 3, 4),
+    );
+    expect(html).toContain("on a Saturday");
+    expect(html).toContain("by Thursday");
+    expect(html).not.toContain("by Friday");
+  });
+
+  it("asks to wire by Thursday when due on Sunday", () => {
+    const html = buildReminderPaymentParagraphHtml(
+      "05.04.2026",
+      "in 4 days",
+      new Date(2026, 3, 5),
+    );
+    expect(html).toContain("on a Sunday");
+    expect(html).toContain("by Thursday");
+  });
+
+  it("asks to wire by Friday when due on Monday", () => {
+    const html = buildReminderPaymentParagraphHtml(
+      "06.04.2026",
+      "in 3 days",
+      new Date(2026, 3, 6),
+    );
+    expect(html).toContain("on a Monday");
+    expect(html).toContain("by Friday");
+    expect(html).not.toContain("by Thursday");
+  });
+
+  it("omits advance-wire note on a regular weekday", () => {
+    const html = buildReminderPaymentParagraphHtml(
+      "08.04.2026",
+      "in 5 days",
+      new Date(2026, 3, 8),
+    );
+    expect(html).not.toContain("by Thursday");
+    expect(html).not.toContain("by Friday");
+  });
+
+  it("omits advance-wire note when payment is overdue", () => {
+    const html = buildReminderPaymentParagraphHtml(
+      "06.04.2026",
+      "overdue",
+      new Date(2026, 3, 6),
+    );
+    expect(html).not.toContain("on a Monday");
   });
 });
 

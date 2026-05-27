@@ -1,9 +1,44 @@
+import { getDay } from "date-fns";
 import {
   DEFAULT_EMAIL_REPLY_INVITE_INVOICE,
   DEFAULT_EMAIL_REPLY_INVITE_REMINDER,
 } from "./emailReplyInviteCopy";
 import { markdownEmailBodyToHtml } from "./emailBodyMarkdown";
 import { interpolateEmailSubject } from "./emailSubjectTemplate";
+
+const reminderParagraphStyle = 'style="margin:0 0 8px 0"';
+
+export type DueDateAdvanceWireKind = "saturday" | "sunday" | "monday";
+
+export function getDueDateAdvanceWireKind(
+  dueDate: Date,
+): DueDateAdvanceWireKind | null {
+  const day = getDay(dueDate);
+  if (day === 6) return "saturday";
+  if (day === 0) return "sunday";
+  if (day === 1) return "monday";
+  return null;
+}
+
+/** Due on Sat/Sun/Mon — banks may not clear in time without an earlier transfer. */
+export function shouldSuggestAdvanceWireForDueDate(dueDate: Date): boolean {
+  return getDueDateAdvanceWireKind(dueDate) !== null;
+}
+
+const ADVANCE_WIRE_NOTE_BY_KIND: Record<DueDateAdvanceWireKind, string> = {
+  saturday:
+    "As the due date is on a Saturday, we would kindly suggest wiring the transfer by Thursday so it clears in time.",
+  sunday:
+    "As the due date is on a Sunday, we would kindly suggest wiring the transfer by Thursday so it clears in time.",
+  monday:
+    "As the due date is on a Monday, we would kindly suggest wiring the transfer by Friday so it clears in time.",
+};
+
+function buildAdvanceWireNoteHtml(dueDate: Date): string {
+  const kind = getDueDateAdvanceWireKind(dueDate);
+  if (!kind) return "";
+  return `<p ${reminderParagraphStyle}>${escapeHtml(ADVANCE_WIRE_NOTE_BY_KIND[kind])}</p>`;
+}
 
 export function escapeHtml(text: string): string {
   return text
@@ -20,17 +55,26 @@ export function escapeHtml(text: string): string {
 export function buildReminderPaymentParagraphHtml(
   dueDateFormatted: string,
   relativeDateText: string,
+  dueDate?: Date | null,
 ): string {
   if (!dueDateFormatted) return "";
   const dueEsc = escapeHtml(dueDateFormatted);
   const relEsc = escapeHtml(relativeDateText);
+  let mainParagraph: string;
   if (relativeDateText === "overdue") {
-    return `<p style="margin:0 0 8px 0">We would appreciate receiving the payment that was due on <strong>${dueEsc}</strong>.</p>`;
+    mainParagraph = `<p ${reminderParagraphStyle}>We would appreciate receiving the payment that was due on <strong>${dueEsc}</strong>.</p>`;
+  } else if (relativeDateText) {
+    mainParagraph = `<p ${reminderParagraphStyle}>We would be happy to receive the payment <strong>${relEsc}</strong> (${dueEsc}).</p>`;
+  } else {
+    mainParagraph = `<p ${reminderParagraphStyle}>We would be happy to receive the payment on <strong>${dueEsc}</strong>.</p>`;
   }
-  if (relativeDateText) {
-    return `<p style="margin:0 0 8px 0">We would be happy to receive the payment <strong>${relEsc}</strong> (${dueEsc}).</p>`;
-  }
-  return `<p style="margin:0 0 8px 0">We would be happy to receive the payment on <strong>${dueEsc}</strong>.</p>`;
+  const suggestAdvanceWire =
+    dueDate &&
+    relativeDateText !== "overdue" &&
+    shouldSuggestAdvanceWireForDueDate(dueDate);
+  return suggestAdvanceWire
+    ? `${mainParagraph}${buildAdvanceWireNoteHtml(dueDate)}`
+    : mainParagraph;
 }
 
 /** Default invoice body when none is configured (Markdown; `{{…}}` then rendered to HTML). */

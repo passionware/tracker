@@ -257,6 +257,7 @@ export function EmailTemplateReminderContent({
   const paymentParagraphHtml = buildReminderPaymentParagraphHtml(
     dueDateFormatted,
     relativeDateText,
+    dueDate,
   );
   const reminderMainBodyHtml = resolveReminderEmailBodyHtml(
     reminderBodyTemplate,
