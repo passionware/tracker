@@ -1,6 +1,12 @@
 import type { BudgetTargetLogEntry } from "@/api/iteration-trigger/iteration-trigger.api";
 import type { ProjectIteration } from "@/api/project-iteration/project-iteration.api.ts";
 import { inclusiveCalendarPeriodToEpochRange } from "@/platform/lang/internationalized-date.ts";
+import {
+  buildForecastDayContext,
+  effectiveDayIndexFromOrigin,
+  effectiveElapsedBillingDays,
+  effectiveRemainingBillingDays,
+} from "@/platform/lang/forecast-day-units.ts";
 import { format } from "date-fns";
 
 export type ChartDatum = {
@@ -75,22 +81,26 @@ export function fillTargetSteps(
 function computeRegressionForecastAt(
   points: Array<{ date: number; billing: number }>,
   endDate: number,
+  dayCtx: ReturnType<typeof buildForecastDayContext>,
 ): number | null {
   const n = points.length;
+  const periodStartMs = dayCtx.periodStartMs;
   let sumX = 0;
   let sumY = 0;
   let sumXY = 0;
   let sumXX = 0;
   for (const p of points) {
-    sumX += p.date;
+    const x = effectiveDayIndexFromOrigin(periodStartMs, p.date, dayCtx);
+    sumX += x;
     sumY += p.billing;
-    sumXY += p.date * p.billing;
-    sumXX += p.date * p.date;
+    sumXY += x * p.billing;
+    sumXX += x * x;
   }
   const denom = n * sumXX - sumX * sumX;
   const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
   const intercept = (sumY - slope * sumX) / n;
-  return Math.max(0, slope * endDate + intercept);
+  const endX = effectiveDayIndexFromOrigin(periodStartMs, endDate, dayCtx);
+  return Math.max(0, slope * endX + intercept);
 }
 
 /**
@@ -100,15 +110,22 @@ function computeRegressionForecastAt(
 function computeBurnRateExtrapolationAt(
   points: Array<{ date: number; billing: number }>,
   endDate: number,
+  dayCtx: ReturnType<typeof buildForecastDayContext>,
 ): number | null {
   if (points.length < 1) return null;
   const first = points[0]!;
   const last = points[points.length - 1]!;
-  const elapsedMs = last.date - first.date;
-  if (elapsedMs <= 0 || endDate <= last.date) return last.billing;
-  const ratePerMs = (last.billing - first.billing) / elapsedMs;
-  if (ratePerMs <= 0) return last.billing;
-  return last.billing + ratePerMs * (endDate - last.date);
+  if (endDate <= last.date) return last.billing;
+
+  const elapsedDays = effectiveElapsedBillingDays(first.date, last.date, dayCtx);
+  const remainingDays = effectiveRemainingBillingDays(last.date, endDate, dayCtx);
+  if (remainingDays <= 0) return last.billing;
+
+  const billingDelta = last.billing - first.billing;
+  if (billingDelta <= 0) return last.billing;
+
+  const ratePerDay = billingDelta / elapsedDays;
+  return last.billing + ratePerDay * remainingDays;
 }
 
 /**
@@ -118,20 +135,29 @@ function computeBurnRateExtrapolationAt(
 export function computeForecastValueAt(
   points: Array<{ date: number; billing: number }>,
   endDate: number,
+  options?: { periodStartMs?: number; nowMs?: number },
 ): number | null {
   if (points.length < 1) return null;
   const last = points[points.length - 1]!;
   if (endDate <= last.date) return last.billing;
 
-  const regression = computeRegressionForecastAt(points, endDate);
-  const burnRate = computeBurnRateExtrapolationAt(points, endDate);
+  const periodStartMs = options?.periodStartMs ?? points[0]!.date;
+  const nowMs = options?.nowMs ?? Date.now();
+  const dayCtx = buildForecastDayContext(
+    points,
+    periodStartMs,
+    last.date,
+    nowMs,
+  );
+  const regression = computeRegressionForecastAt(points, endDate, dayCtx);
+  const burnRate = computeBurnRateExtrapolationAt(points, endDate, dayCtx);
 
   let forecast = last.billing;
-  if (regression != null) {
+  // Weekday burn rate avoids calendar-time inflation before the first weekend.
+  if (burnRate != null && burnRate > last.billing) {
+    forecast = burnRate;
+  } else if (regression != null) {
     forecast = monotonicCumulativeBilling(forecast, regression);
-  }
-  if (burnRate != null) {
-    forecast = monotonicCumulativeBilling(forecast, burnRate);
   }
   return forecast;
 }
@@ -160,6 +186,7 @@ export function appendForecastIfNeeded(
         ? computeForecastValueAt(
             points.map((p) => ({ date: p.date, billing: p.billing })),
             periodRange.end,
+            { periodStartMs: periodRange.start },
           )
         : lastRow.billing;
   }
