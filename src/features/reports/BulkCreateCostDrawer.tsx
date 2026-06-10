@@ -182,6 +182,9 @@ export function BulkCreateCostPanel({
   const [rateChangeUpdates, setRateChangeUpdates] = useState<
     "costAmount" | "reportAmount"
   >("costAmount");
+  /** Unlinked cost amount (advance) — increases invoiced total without a report link. */
+  const [advanceAmount, setAdvanceAmount] = useState(0);
+  const [isAdvanceIncluded, setIsAdvanceIncluded] = useState(false);
 
   const bulkCreateCostPrefs =
     services.preferenceService.useBulkCreateCostPreferences();
@@ -263,6 +266,8 @@ export function BulkCreateCostPanel({
       grossValue: grossFromNet(initialTotal, vat),
       invoiceDate: todayCalendarDate(),
     });
+    setAdvanceAmount(0);
+    setIsAdvanceIncluded(false);
     // bulkCreateCostPrefs.vatPercent read once per open/selection only (not when VAT pref changes mid-session)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedReportsKey, bulkCreateCostPrefs.vatPercent]);
@@ -361,6 +366,11 @@ export function BulkCreateCostPanel({
     () => money.sum(includedLinks.map((link) => link.costAmount)),
     [includedLinks],
   );
+  const includedAdvanceAmount = isAdvanceIncluded ? advanceAmount : 0;
+  const coveredCostTotal = useMemo(
+    () => round2(linksTotalCost + includedAdvanceAmount),
+    [includedAdvanceAmount, linksTotalCost],
+  );
   const toPaySelectedTotal = useMemo(
     () =>
       money.sum(
@@ -370,7 +380,7 @@ export function BulkCreateCostPanel({
       ),
     [includedLinks],
   );
-  const invoicedSelectedTotal = linksTotalCost;
+  const invoicedSelectedTotal = coveredCostTotal;
   const remainderSelectedTotal = useMemo(() => {
     const diff = money.subtract(toPaySelectedTotal, invoicedSelectedTotal);
     return money.compare(diff, 0) < 0 ? 0 : diff;
@@ -383,9 +393,10 @@ export function BulkCreateCostPanel({
     [includedLinks],
   );
 
-  const desiredCostAmount = costDraft.netValue ?? linksTotalCost;
-  const totalDifference = money.subtract(desiredCostAmount, linksTotalCost);
+  const desiredCostAmount = costDraft.netValue ?? coveredCostTotal;
+  const totalDifference = money.subtract(desiredCostAmount, coveredCostTotal);
   const isMismatched = money.compare(totalDifference, 0) !== 0;
+  const canAcceptAsAdvance = money.compare(totalDifference, 0) > 0;
 
   const deductionPercentClamped = Math.min(100, Math.max(0, deductionPercent));
   const paymentAmount =
@@ -429,6 +440,14 @@ export function BulkCreateCostPanel({
         link.reportId === reportId ? { ...link, ...patch } : link,
       ),
     );
+  }
+
+  function acceptAsAdvance() {
+    if (!canAcceptAsAdvance) {
+      return;
+    }
+    setIsAdvanceIncluded(true);
+    setAdvanceAmount(round2(includedAdvanceAmount + totalDifference));
   }
 
   function reduceLinkToFit(reportId: number) {
@@ -661,6 +680,7 @@ export function BulkCreateCostPanel({
             costAmount: round2(link.costAmount * r),
           })),
         );
+        setAdvanceAmount((current) => round2(current * r));
         setPendingCurrencyChange(null);
         toast.success(`Converted amounts using rate 1 ${from} = ${r} ${to}`);
       })
@@ -1137,14 +1157,76 @@ export function BulkCreateCostPanel({
                 </div>
               ))}
 
+              <div
+                className={[
+                  "rounded-md border border-dashed border-border p-3 grid grid-cols-12 gap-2 items-end",
+                  !isAdvanceIncluded ? "opacity-60" : "",
+                ].join(" ")}
+              >
+                <div className="col-span-12 md:col-span-1 flex items-center gap-2">
+                  <Checkbox
+                    checked={isAdvanceIncluded}
+                    onCheckedChange={(checked) =>
+                      setIsAdvanceIncluded(checked === true)
+                    }
+                    id="include-advance"
+                  />
+                  <label
+                    htmlFor="include-advance"
+                    className="text-xs text-muted-foreground cursor-pointer"
+                  >
+                    Include
+                  </label>
+                </div>
+                <div className="col-span-12 md:col-span-3">
+                  <div className="text-xs text-muted-foreground">Entry</div>
+                  <div className="text-sm font-medium">Advance</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Not linked to a report; increases invoiced total.
+                  </div>
+                </div>
+                <div className="col-span-6 md:col-span-2">
+                  <div className="text-xs text-muted-foreground">
+                    Report amount
+                  </div>
+                  <div className="text-sm text-muted-foreground py-2">—</div>
+                </div>
+                <div className="col-span-6 md:col-span-2">
+                  <div className="text-xs text-muted-foreground">
+                    Cost amount
+                  </div>
+                  <NumberInput
+                    aria-label="Advance cost amount"
+                    value={advanceAmount}
+                    minValue={0}
+                    isDisabled={!isAdvanceIncluded}
+                    formatOptions={{
+                      style: "currency",
+                      currency: costCurrency,
+                    }}
+                    onChange={(value) => {
+                      const amount = round2(value ?? 0);
+                      setAdvanceAmount(amount);
+                      if (amount <= 0) {
+                        setIsAdvanceIncluded(false);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
               {isMismatched && (
                 <Alert variant="info">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Amount mismatch</AlertTitle>
                   <AlertDescription>
-                    Links total is{" "}
+                    Links total
+                    {includedAdvanceAmount > 0
+                      ? " (incl. advance)"
+                      : ""}{" "}
+                    is{" "}
                     {services.formatService.financial.amount(
-                      linksTotalCost,
+                      coveredCostTotal,
                       costCurrency,
                     )}{" "}
                     while cost net amount is{" "}
@@ -1159,13 +1241,21 @@ export function BulkCreateCostPanel({
                     )}
                     .
                   </AlertDescription>
-                  <div className="mt-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setNetValue(linksTotalCost)}
+                      onClick={() => setNetValue(coveredCostTotal)}
                     >
                       Set net value to links total
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={!canAcceptAsAdvance}
+                      onClick={acceptAsAdvance}
+                    >
+                      Accept as advance
                     </Button>
                   </div>
                 </Alert>
